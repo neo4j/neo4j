@@ -19,22 +19,26 @@
  */
 package org.neo4j.kernel.impl.api.cursor;
 
+import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
-import org.neo4j.kernel.api.cursor.PropertyCursor;
-import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.cursor.PropertyItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.state.RelationshipState;
+import org.neo4j.kernel.impl.util.Cursors;
 
 /**
- * Overlays transaction state on a {@link RelationshipCursor}.
+ * Overlays transaction state on a {@link RelationshipItem} cursor.
  */
-public abstract class TxAbstractRelationshipCursor implements RelationshipCursor, RelationshipVisitor<RuntimeException>
+public abstract class TxAbstractRelationshipCursor implements Cursor<RelationshipItem>, RelationshipItem,
+        RelationshipVisitor<RuntimeException>
 {
     protected final TransactionState state;
     private final Consumer<TxAbstractRelationshipCursor> instanceCache;
 
-    protected RelationshipCursor cursor;
+    protected Cursor<RelationshipItem> cursor;
 
     private long id;
     private int type;
@@ -51,59 +55,21 @@ public abstract class TxAbstractRelationshipCursor implements RelationshipCursor
         this.instanceCache = instanceCache;
     }
 
-    public TxAbstractRelationshipCursor init( RelationshipCursor cursor )
+    public TxAbstractRelationshipCursor init( Cursor<RelationshipItem> cursor )
     {
         this.cursor = cursor;
         return this;
     }
 
     @Override
-    public long getId()
+    public RelationshipItem get()
     {
-        if (id == -1)
-            throw new IllegalStateException(  );
+        if ( id == StatementConstants.NO_SUCH_RELATIONSHIP )
+        {
+            throw new IllegalStateException();
+        }
 
-        return id;
-    }
-
-    @Override
-    public int getType()
-    {
-        if (id == -1)
-            throw new IllegalStateException(  );
-
-        return type;
-    }
-
-    @Override
-    public long getStartNode()
-    {
-        if (id == -1)
-            throw new IllegalStateException(  );
-
-        return startNodeId;
-    }
-
-    @Override
-    public long getEndNode()
-    {
-        if (id == -1)
-            throw new IllegalStateException(  );
-
-        return endNodeId;
-    }
-
-    @Override
-    public long getOtherNode( long nodeId )
-    {
-        return startNodeId == nodeId ? endNodeId : startNodeId;
-    }
-
-    @Override
-    public PropertyCursor properties()
-    {
-        return state.augmentPropertyCursor(
-                relationshipIsAddedInThisTx ? PropertyCursor.EMPTY : cursor.properties(), relationshipState );
+        return this;
     }
 
     @Override
@@ -122,5 +88,52 @@ public abstract class TxAbstractRelationshipCursor implements RelationshipCursor
         cursor = null;
         relationshipState = null;
         instanceCache.accept( this );
+    }
+
+    @Override
+    public long id()
+    {
+        return id;
+    }
+
+    @Override
+    public int type()
+    {
+        return type;
+    }
+
+    @Override
+    public long startNode()
+    {
+        return startNodeId;
+    }
+
+    @Override
+    public long endNode()
+    {
+        return endNodeId;
+    }
+
+    @Override
+    public long otherNode( long nodeId )
+    {
+        return startNodeId == nodeId ? endNodeId : startNodeId;
+    }
+
+    @Override
+    public Cursor<PropertyItem> properties()
+    {
+        return state.augmentPropertyCursor(
+                relationshipIsAddedInThisTx ? Cursors.<PropertyItem>empty() : cursor.get().properties(),
+                relationshipState );
+    }
+
+    @Override
+    public Cursor<PropertyItem> property( int propertyKeyId )
+    {
+        return state.augmentSinglePropertyCursor(
+                relationshipIsAddedInThisTx ? Cursors.<PropertyItem>empty() : cursor.get().property( propertyKeyId ),
+                relationshipState,
+                propertyKeyId );
     }
 }

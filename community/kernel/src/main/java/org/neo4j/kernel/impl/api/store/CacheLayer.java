@@ -42,14 +42,15 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.cursor.NodeCursor;
-import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -481,13 +482,13 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public NodeCursor nodesGetAllCursor( StoreStatement statement )
+    public Cursor<NodeItem> nodesGetAllCursor( StoreStatement statement )
     {
         return diskLayer.nodesGetAllCursor( statement );
     }
 
     @Override
-    public RelationshipCursor relationshipsGetAllCursor( StoreStatement storeStatement )
+    public Cursor<RelationshipItem> relationshipsGetAllCursor( StoreStatement storeStatement )
     {
         return diskLayer.relationshipsGetAllCursor( storeStatement );
     }

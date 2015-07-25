@@ -20,10 +20,10 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.util.InstanceCache;
 
 /**
  * Cursor for iterating a set of nodes. It is attached to an iterator, typically from
@@ -32,12 +32,12 @@ import org.neo4j.kernel.impl.util.InstanceCache;
 public class StoreIteratorNodeCursor extends StoreAbstractNodeCursor
 {
     private PrimitiveLongIterator iterator;
-    private InstanceCache<StoreIteratorNodeCursor> instanceCache;
+    private Consumer<StoreIteratorNodeCursor> instanceCache;
 
     public StoreIteratorNodeCursor( NodeRecord nodeRecord,
             NodeStore nodeStore,
             StoreStatement storeStatement,
-            InstanceCache<StoreIteratorNodeCursor> instanceCache )
+            Consumer<StoreIteratorNodeCursor> instanceCache )
     {
         super( nodeRecord, nodeStore, storeStatement );
         this.instanceCache = instanceCache;

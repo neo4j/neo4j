@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -47,7 +48,7 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
 
     public boolean next()
     {
-        if ( relationshipId != -1 )
+        if ( relationshipId != StatementConstants.NO_SUCH_RELATIONSHIP )
         {
             try
             {
@@ -56,7 +57,7 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
             }
             finally
             {
-                relationshipId = -1;
+                relationshipId = StatementConstants.NO_SUCH_RELATIONSHIP;
             }
         }
 

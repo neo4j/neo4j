@@ -21,13 +21,15 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.util.Iterator;
 
+import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Supplier;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.EntityType;
-import org.neo4j.kernel.api.cursor.PropertyCursor;
+import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.cursor.TxPropertyCursor;
+import org.neo4j.kernel.impl.api.cursor.TxAllPropertyCursor;
+import org.neo4j.kernel.impl.api.cursor.TxSinglePropertyCursor;
 
 /**
  * Represents the transactional changes to a relationship.
@@ -134,8 +136,16 @@ public interface RelationshipState extends PropertyContainerState
             }
 
             @Override
-            public PropertyCursor augmentPropertyCursor( Supplier<TxPropertyCursor> propertyCursor,
-                    PropertyCursor cursor )
+            public Cursor<PropertyItem> augmentPropertyCursor( Supplier<TxAllPropertyCursor> propertyCursor,
+                    Cursor<PropertyItem> cursor )
+            {
+                return cursor;
+            }
+
+            @Override
+            public Cursor<PropertyItem> augmentSinglePropertyCursor( Supplier<TxSinglePropertyCursor> propertyCursor,
+                    Cursor<PropertyItem> cursor,
+                    int propertyKeyId )
             {
                 return cursor;
             }

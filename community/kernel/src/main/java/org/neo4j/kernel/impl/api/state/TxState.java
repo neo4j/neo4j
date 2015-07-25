@@ -30,6 +30,8 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
+import org.neo4j.function.Consumer;
 import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
@@ -40,10 +42,10 @@ import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.cursor.LabelCursor;
-import org.neo4j.kernel.api.cursor.NodeCursor;
-import org.neo4j.kernel.api.cursor.PropertyCursor;
-import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.kernel.api.cursor.LabelItem;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.cursor.PropertyItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -53,11 +55,13 @@ import org.neo4j.kernel.api.txstate.RelationshipChangeVisitorAdapter;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.cursor.TxAllPropertyCursor;
 import org.neo4j.kernel.impl.api.cursor.TxIteratorNodeCursor;
 import org.neo4j.kernel.impl.api.cursor.TxIteratorRelationshipCursor;
 import org.neo4j.kernel.impl.api.cursor.TxLabelCursor;
-import org.neo4j.kernel.impl.api.cursor.TxPropertyCursor;
+import org.neo4j.kernel.impl.api.cursor.TxSingleLabelCursor;
 import org.neo4j.kernel.impl.api.cursor.TxSingleNodeCursor;
+import org.neo4j.kernel.impl.api.cursor.TxSinglePropertyCursor;
 import org.neo4j.kernel.impl.api.cursor.TxSingleRelationshipCursor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.InstanceCache;
@@ -77,9 +81,9 @@ import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.STRING
  * This class contains transaction-local changes to the graph. These changes can then be used to augment reads from the
  * committed state of the database (to make the local changes appear in local transaction read operations). At commit
  * time a visitor is sent into this class to convert the end result of the tx changes into a physical changeset.
- * <p/>
+ * <p>
  * See {@link org.neo4j.kernel.impl.api.KernelTransactionImplementation} for how this happens.
- * <p/>
+ * <p>
  * This class is very large, as it has been used as a gathering point to consolidate all transaction state knowledge
  * into one component. Now that that work is done, this class should be refactored to increase transparency in how it
  * works.
@@ -167,8 +171,10 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     private InstanceCache<TxSingleNodeCursor> singleNodeCursor;
     private InstanceCache<TxIteratorRelationshipCursor> iteratorRelationshipCursor;
     private InstanceCache<TxSingleRelationshipCursor> singleRelationshipCursor;
-    private InstanceCache<TxPropertyCursor> propertyCursor;
+    private InstanceCache<TxAllPropertyCursor> propertyCursor;
+    private InstanceCache<TxSinglePropertyCursor> singlePropertyCursor;
     private InstanceCache<TxLabelCursor> labelCursor;
+    private InstanceCache<TxSingleLabelCursor> singleLabelCursor;
 
     private boolean hasChanges, hasDataChanges;
 
@@ -190,12 +196,20 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
                 return new TxIteratorNodeCursor( TxState.this, this );
             }
         };
-        propertyCursor = new InstanceCache<TxPropertyCursor>()
+        propertyCursor = new InstanceCache<TxAllPropertyCursor>()
         {
             @Override
-            protected TxPropertyCursor create()
+            protected TxAllPropertyCursor create()
             {
-                return new TxPropertyCursor( this );
+                return new TxAllPropertyCursor( (Consumer) this );
+            }
+        };
+        singlePropertyCursor = new InstanceCache<TxSinglePropertyCursor>()
+        {
+            @Override
+            protected TxSinglePropertyCursor create()
+            {
+                return new TxSinglePropertyCursor( (Consumer) this );
             }
         };
         labelCursor = new InstanceCache<TxLabelCursor>()
@@ -204,6 +218,14 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             protected TxLabelCursor create()
             {
                 return new TxLabelCursor( this );
+            }
+        };
+        singleLabelCursor = new InstanceCache<TxSingleLabelCursor>()
+        {
+            @Override
+            protected TxSingleLabelCursor create()
+            {
+                return new TxSingleLabelCursor( this );
             }
         };
         singleRelationshipCursor = new InstanceCache<TxSingleRelationshipCursor>()
@@ -374,7 +396,8 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return new ConstraintDiffSetsVisitor( visitor );
     }
 
-    static class ConstraintDiffSetsVisitor implements PropertyConstraint.ChangeVisitor, DiffSetsVisitor<PropertyConstraint>
+    static class ConstraintDiffSetsVisitor implements PropertyConstraint.ChangeVisitor,
+            DiffSetsVisitor<PropertyConstraint>
     {
         private final TxStateVisitor visitor;
 
@@ -465,7 +488,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             @Override
             public void visitPropertyChanges( long entityId, Iterator<DefinedProperty> added,
 
-                                              Iterator<DefinedProperty> changed, Iterator<Integer> removed)
+                    Iterator<DefinedProperty> changed, Iterator<Integer> removed )
                     throws ConstraintValidationKernelException
             {
                 visitor.visitNodePropertyChanges( entityId, added, changed, removed );
@@ -817,32 +840,65 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return RELATIONSHIP_STATE.get( this, id );
     }
 
-    @Override
-    public NodeCursor augmentSingleNodeCursor( NodeCursor cursor )
+    public Cursor<NodeItem> augmentSingleNodeCursor( Cursor<NodeItem> cursor, long nodeId )
     {
-        return hasChanges ? singleNodeCursor.get().init( cursor ) : cursor;
+        return hasChanges ? singleNodeCursor.get().init( cursor, nodeId ) : cursor;
     }
 
-    @Override
-    public PropertyCursor augmentPropertyCursor( PropertyCursor cursor, PropertyContainerState propertyContainerState )
+    public Cursor<PropertyItem> augmentPropertyCursor( Cursor<PropertyItem> cursor,
+            PropertyContainerState propertyContainerState )
     {
         return propertyContainerState.augmentPropertyCursor( propertyCursor, cursor );
     }
 
-    @Override
-    public LabelCursor augmentLabelCursor( LabelCursor cursor, NodeState nodeState )
+    public Cursor<PropertyItem> augmentSinglePropertyCursor( Cursor<PropertyItem> cursor,
+            PropertyContainerState propertyContainerState, int propertyKeyId )
     {
-        return nodeState.augmentLabelCursor( labelCursor, cursor );
+        return propertyContainerState.augmentSinglePropertyCursor( singlePropertyCursor, cursor, propertyKeyId );
+    }
+
+    public Cursor<LabelItem> augmentLabelCursor( Cursor<LabelItem> cursor, NodeState nodeState )
+    {
+        ReadableDiffSets<Integer> labelDiffSets = nodeState.labelDiffSets();
+
+        if ( labelDiffSets.isEmpty() )
+        {
+            return cursor;
+        }
+        else
+        {
+            return labelCursor.get().init( cursor, labelDiffSets );
+        }
+    }
+
+    public Cursor<LabelItem> augmentSingleLabelCursor( Cursor<LabelItem> cursor, NodeState nodeState, int labelId )
+    {
+        ReadableDiffSets<Integer> labelDiffSets = nodeState.labelDiffSets();
+
+        if ( labelDiffSets.isEmpty() )
+        {
+            return cursor;
+        }
+        else
+        {
+            return singleLabelCursor.get().init( cursor, labelDiffSets, labelId );
+        }
+    }
+
+    public Cursor<RelationshipItem> augmentSingleRelationshipCursor( Cursor<RelationshipItem> cursor,
+            long relationshipId )
+    {
+        return hasChanges ? singleRelationshipCursor.get().init( cursor, relationshipId ) : cursor;
     }
 
     @Override
-    public RelationshipCursor augmentSingleRelationshipCursor( RelationshipCursor cursor )
+    public Cursor<RelationshipItem> augmentIteratorRelationshipCursor( Cursor<RelationshipItem> cursor,
+            RelationshipIterator iterator )
     {
-        return hasChanges ? singleRelationshipCursor.get().init( cursor ) : cursor;
+        return hasChanges ? iteratorRelationshipCursor.get().init( cursor, iterator ) : cursor;
     }
 
-    @Override
-    public RelationshipCursor augmentNodeRelationshipCursor( RelationshipCursor cursor,
+    public Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor,
             NodeState nodeState,
             Direction direction,
             int[] relTypes )
@@ -851,17 +907,17 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public NodeCursor augmentNodesGetAllCursor( NodeCursor cursor )
+    public Cursor<NodeItem> augmentNodesGetAllCursor( Cursor<NodeItem> cursor )
     {
         return hasChanges && nodes != null && !nodes.isEmpty() ? iteratorNodeCursor.get().init( cursor,
                 nodes.getAdded().iterator() ) : cursor;
     }
 
     @Override
-    public RelationshipCursor augmentRelationshipsGetAllCursor( RelationshipCursor cursor )
+    public Cursor<RelationshipItem> augmentRelationshipsGetAllCursor( Cursor<RelationshipItem> cursor )
     {
-        return hasChanges && relationships != null && !relationships.isEmpty() ? iteratorRelationshipCursor.get().init(
-                cursor, toPrimitiveIterator( relationships.getAdded().iterator() )) : cursor;
+        return hasChanges && !relationships.isEmpty() ? iteratorRelationshipCursor.get().init( cursor,
+                toPrimitiveIterator( relationships.getAdded().iterator() ) ) : cursor;
     }
 
     @Override
@@ -1126,7 +1182,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( constraint instanceof UniquenessConstraint )
         {
-            constraintIndexDoDrop( new IndexDescriptor( constraint.label(), constraint.propertyKey() ));
+            constraintIndexDoDrop( new IndexDescriptor( constraint.label(), constraint.propertyKey() ) );
         }
         getOrCreateLabelState( constraint.label() ).getOrCreateConstraintsChanges().remove( constraint );
         changed();
@@ -1182,7 +1238,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         if ( createdConstraintIndexesByConstraint != null && !createdConstraintIndexesByConstraint.isEmpty() )
         {
 
-            return map( new Function<UniquenessConstraint,IndexDescriptor>()
+            return map( new Function<UniquenessConstraint, IndexDescriptor>()
             {
                 @Override
                 public IndexDescriptor apply( UniquenessConstraint constraint )

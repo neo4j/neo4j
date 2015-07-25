@@ -19,15 +19,16 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.neo4j.kernel.api.cursor.PropertyCursor;
-import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.cursor.PropertyItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 /**
  * Base cursor for relationships.
  */
-public abstract class StoreAbstractRelationshipCursor implements RelationshipCursor
+public abstract class StoreAbstractRelationshipCursor implements Cursor<RelationshipItem>, RelationshipItem
 {
     protected final RelationshipRecord relationshipRecord;
 
@@ -44,39 +45,51 @@ public abstract class StoreAbstractRelationshipCursor implements RelationshipCur
     }
 
     @Override
-    public long getId()
+    public RelationshipItem get()
+    {
+        return this;
+    }
+
+    @Override
+    public long id()
     {
         return relationshipRecord.getId();
     }
 
     @Override
-    public int getType()
+    public int type()
     {
         return relationshipRecord.getType();
     }
 
     @Override
-    public long getStartNode()
+    public long startNode()
     {
         return relationshipRecord.getFirstNode();
     }
 
     @Override
-    public long getEndNode()
+    public long endNode()
     {
         return relationshipRecord.getSecondNode();
     }
 
     @Override
-    public long getOtherNode( long nodeId )
+    public long otherNode( long nodeId )
     {
         return relationshipRecord.getFirstNode() == nodeId ?
                 relationshipRecord.getSecondNode() : relationshipRecord.getFirstNode();
     }
 
     @Override
-    public PropertyCursor properties()
+    public Cursor<PropertyItem> properties()
     {
         return storeStatement.acquirePropertyCursor( relationshipRecord.getNextProp() );
+    }
+
+    @Override
+    public Cursor<PropertyItem> property( int propertyKeyId )
+    {
+        return storeStatement.acquireSinglePropertyCursor( relationshipRecord.getNextProp(), propertyKeyId );
     }
 }

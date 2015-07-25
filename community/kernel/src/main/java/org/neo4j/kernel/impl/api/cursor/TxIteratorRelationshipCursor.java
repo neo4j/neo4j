@@ -20,12 +20,13 @@
 package org.neo4j.kernel.impl.api.cursor;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
-import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.txstate.TransactionState;
 
 /**
- * Overlays transaction state on a {@link RelationshipCursor}. This additionally knows how to traverse added
+ * Overlays transaction state on a {@link RelationshipItem} cursor. This additionally knows how to traverse added
  * relationships in this transaction and skip deleted ones.
  */
 public class TxIteratorRelationshipCursor extends TxAbstractRelationshipCursor
@@ -38,7 +39,7 @@ public class TxIteratorRelationshipCursor extends TxAbstractRelationshipCursor
         super( state, (Consumer) instanceCache );
     }
 
-    public TxIteratorRelationshipCursor init( RelationshipCursor cursor,
+    public TxIteratorRelationshipCursor init( Cursor<RelationshipItem> cursor,
             PrimitiveLongIterator addedRelationshipIterator )
     {
         super.init( cursor );
@@ -58,15 +59,16 @@ public class TxIteratorRelationshipCursor extends TxAbstractRelationshipCursor
         {
             while ( cursor.next() )
             {
-                long id = cursor.getId();
+                RelationshipItem relationshipItem = cursor.get();
+                long id = relationshipItem.id();
 
                 if ( state.relationshipIsDeletedInThisTx( id ) )
                 {
                     continue;
                 }
 
-                visit( id, cursor.getType(), cursor.getStartNode(), cursor.getEndNode() );
-                relationshipState = state.getRelationshipState( cursor.getId() );
+                visit( id, relationshipItem.type(), relationshipItem.startNode(), relationshipItem.endNode() );
+                relationshipState = state.getRelationshipState( relationshipItem.id() );
                 return true;
             }
 
@@ -76,7 +78,7 @@ public class TxIteratorRelationshipCursor extends TxAbstractRelationshipCursor
 
         if ( added.hasNext() )
         {
-            relationshipState = state.getRelationshipState(  added.next() );
+            relationshipState = state.getRelationshipState( added.next() );
             relationshipState.accept( this );
             return true;
         }

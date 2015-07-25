@@ -22,55 +22,54 @@ package org.neo4j.kernel.impl.api.cursor;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.cursor.LabelItem;
+import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
 
 /**
- * Overlays transaction state on a {@link NodeItem} cursor.
+ * Overlays transaction state on a {@link LabelItem} cursor.
  */
-public class TxSingleNodeCursor
-        extends TxAbstractNodeCursor
+public class TxSingleLabelCursor
+        extends TxLabelCursor
 {
-    public TxSingleNodeCursor( TransactionState state, Consumer<TxSingleNodeCursor> cache )
+    private int labelId;
+
+    public TxSingleLabelCursor( Consumer<TxSingleLabelCursor> instanceCache )
     {
-        super( state, (Consumer) cache );
+        super( (Consumer) instanceCache );
     }
 
-    public TxSingleNodeCursor init( Cursor<NodeItem> nodeCursor, long nodeId )
+    public TxSingleLabelCursor init( Cursor<LabelItem> cursor, ReadableDiffSets<Integer> labelDiffSet, int labelId )
     {
-        this.id = nodeId;
-        super.init( nodeCursor );
+        super.init( cursor, labelDiffSet );
+        this.labelId = labelId;
         return this;
     }
 
     @Override
     public boolean next()
     {
-        if ( id == StatementConstants.NO_SUCH_NODE )
+        if ( labelDiffSet.isAdded( labelId ) )
         {
+            label = labelId;
+            return true;
+        }
+
+        if ( labelDiffSet.isRemoved( labelId ) )
+        {
+            label = StatementConstants.NO_SUCH_LABEL;
             return false;
         }
 
-        boolean exists = cursor.next();
-
-        if ( state.nodeIsDeletedInThisTx( id ) )
+        if ( cursor.next() )
         {
-            this.id = StatementConstants.NO_SUCH_NODE;
-            return false;
-        }
-
-        this.nodeIsAddedInThisTx = state.nodeIsAddedInThisTx( id );
-        if ( exists || nodeIsAddedInThisTx )
-        {
-            this.nodeState = state.getNodeState( id );
+            label = labelId;
             return true;
         }
         else
         {
-            this.id = StatementConstants.NO_SUCH_NODE;
-            this.nodeState = null;
+            label = StatementConstants.NO_SUCH_LABEL;
             return false;
         }
     }
-
 }
+

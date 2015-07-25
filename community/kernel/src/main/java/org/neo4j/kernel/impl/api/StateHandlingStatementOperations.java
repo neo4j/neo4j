@@ -30,6 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntStack;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.EntityType;
@@ -42,11 +43,11 @@ import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.cursor.EntityCursor;
-import org.neo4j.kernel.api.cursor.LabelCursor;
-import org.neo4j.kernel.api.cursor.NodeCursor;
-import org.neo4j.kernel.api.cursor.PropertyCursor;
-import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.kernel.api.cursor.EntityItem;
+import org.neo4j.kernel.api.cursor.LabelItem;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.cursor.PropertyItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -109,8 +110,6 @@ public class StateHandlingStatementOperations implements
         LegacyIndexReadOperations,
         LegacyIndexWriteOperations
 {
-    private static final int KEY_LIST_INITIAL_SIZE = 16;
-
     private final StoreReadLayer storeLayer;
     private final LegacyPropertyTrackers legacyPropertyTrackers;
     private final ConstraintIndexCreator constraintIndexCreator;
@@ -129,44 +128,47 @@ public class StateHandlingStatementOperations implements
 
     // <Cursors>
     @Override
-    public NodeCursor nodeCursor( KernelStatement statement, long nodeId )
+    public Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId )
     {
-        NodeCursor cursor = statement.getStoreStatement().acquireSingleNodeCursor( nodeId );
+        Cursor<NodeItem> cursor = statement.getStoreStatement().acquireSingleNodeCursor( nodeId );
         if ( statement.hasTxStateWithChanges() )
         {
-            return statement.txState().augmentSingleNodeCursor( cursor );
-        }
-        return cursor;
-    }
-
-    public NodeCursor nodeCursor( TxStateHolder txStateHolder, StoreStatement statement, long nodeId )
-    {
-        NodeCursor cursor = statement.acquireSingleNodeCursor( nodeId );
-        if ( txStateHolder.hasTxStateWithChanges() )
-        {
-            return txStateHolder.txState().augmentSingleNodeCursor( cursor );
+            return statement.txState().augmentSingleNodeCursor( cursor, nodeId );
         }
         return cursor;
     }
 
     @Override
-    public RelationshipCursor relationshipCursor( KernelStatement statement, long relationshipId )
+    public Cursor<NodeItem> nodeCursor( TxStateHolder txStateHolder, StoreStatement statement, long nodeId )
     {
-        RelationshipCursor cursor = statement.getStoreStatement().acquireSingleRelationshipCursor( relationshipId );
-        if ( statement.hasTxStateWithChanges() )
+        Cursor<NodeItem> cursor = statement.acquireSingleNodeCursor( nodeId );
+        if ( txStateHolder.hasTxStateWithChanges() )
         {
-            return statement.txState().augmentSingleRelationshipCursor( cursor );
+            return txStateHolder.txState().augmentSingleNodeCursor( cursor, nodeId );
         }
         return cursor;
     }
 
-    public RelationshipCursor relationshipCursor( TxStateHolder txStateHolder, StoreStatement statement,
+    @Override
+    public Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relationshipId )
+    {
+        Cursor<RelationshipItem> cursor = statement.getStoreStatement().acquireSingleRelationshipCursor(
+                relationshipId );
+        if ( statement.hasTxStateWithChanges() )
+        {
+            return statement.txState().augmentSingleRelationshipCursor( cursor, relationshipId );
+        }
+        return cursor;
+    }
+
+    @Override
+    public Cursor<RelationshipItem> relationshipCursor( TxStateHolder txStateHolder, StoreStatement statement,
             long relationshipId )
     {
-        RelationshipCursor cursor = statement.acquireSingleRelationshipCursor( relationshipId );
+        Cursor<RelationshipItem> cursor = statement.acquireSingleRelationshipCursor( relationshipId );
         if ( txStateHolder.hasTxStateWithChanges() )
         {
-            return txStateHolder.txState().augmentSingleRelationshipCursor( cursor );
+            return txStateHolder.txState().augmentSingleRelationshipCursor( cursor, relationshipId );
         }
         else
         {
@@ -175,9 +177,9 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public NodeCursor nodeCursorGetAll( KernelStatement statement )
+    public Cursor<NodeItem> nodeCursorGetAll( KernelStatement statement )
     {
-        NodeCursor cursor = storeLayer.nodesGetAllCursor( statement.getStoreStatement() );
+        Cursor<NodeItem> cursor = storeLayer.nodesGetAllCursor( statement.getStoreStatement() );
         if ( statement.hasTxStateWithChanges() )
         {
             return statement.txState().augmentNodesGetAllCursor( cursor );
@@ -186,9 +188,9 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public RelationshipCursor relationshipCursorGetAll( KernelStatement statement )
+    public Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement )
     {
-        RelationshipCursor cursor = storeLayer.relationshipsGetAllCursor( statement.getStoreStatement() );
+        Cursor<RelationshipItem> cursor = storeLayer.relationshipsGetAllCursor( statement.getStoreStatement() );
         if ( statement.hasTxStateWithChanges() )
         {
             return statement.txState().augmentRelationshipsGetAllCursor( cursor );
@@ -197,7 +199,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public NodeCursor nodeCursorGetForLabel( KernelStatement statement, int labelId )
+    public Cursor<NodeItem> nodeCursorGetForLabel( KernelStatement statement, int labelId )
     {
         // TODO Filter this properly
         return statement.getStoreStatement().acquireIteratorNodeCursor(
@@ -205,7 +207,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public NodeCursor nodeCursorGetFromIndexSeek( KernelStatement statement, IndexDescriptor index, Object value )
+    public Cursor<NodeItem> nodeCursorGetFromIndexSeek( KernelStatement statement, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
         // TODO Filter this properly
@@ -214,7 +216,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public NodeCursor nodeCursorGetFromIndexScan( KernelStatement statement, IndexDescriptor index )
+    public Cursor<NodeItem> nodeCursorGetFromIndexScan( KernelStatement statement, IndexDescriptor index )
             throws IndexNotFoundKernelException
     {
         // TODO Filter this properly
@@ -223,7 +225,16 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public NodeCursor nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement,
+    public Cursor<NodeItem> nodeCursorGetFromIndexSeekByPrefix( KernelStatement statement,
+            IndexDescriptor index,
+            String prefix ) throws IndexNotFoundKernelException
+    {
+        // TODO Filter this properly
+        return statement.getStoreStatement().acquireIteratorNodeCursor( storeLayer.nodesGetFromIndexRangeSeekByPrefix( statement, index, prefix ) );
+    }
+
+    @Override
+    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement,
                                                                IndexDescriptor index,
                                                                Number lower, boolean includeLower,
                                                                Number upper, boolean includeUpper )
@@ -237,7 +248,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public NodeCursor nodeCursorGetFromIndexRangeSeekByString( KernelStatement statement,
+    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByString( KernelStatement statement,
                                                                IndexDescriptor index,
                                                                String lower, boolean includeLower,
                                                                String upper, boolean includeUpper )
@@ -246,12 +257,12 @@ public class StateHandlingStatementOperations implements
     {
         // TODO Filter this properly
         return statement.getStoreStatement().acquireIteratorNodeCursor(
-                storeLayer.nodesGetFromIndexRangeSeekByString(statement, index, lower, includeLower, upper,
-                        includeUpper) );
+                storeLayer.nodesGetFromIndexRangeSeekByString( statement, index, lower, includeLower, upper,
+                        includeUpper ) );
     }
 
     @Override
-    public NodeCursor nodeCursorGetFromIndexRangeSeekByPrefix( KernelStatement statement, IndexDescriptor index,
+    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByPrefix( KernelStatement statement, IndexDescriptor index,
                                                                String prefix )
             throws IndexNotFoundKernelException
     {
@@ -261,7 +272,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public NodeCursor nodeCursorGetFromUniqueIndexSeek( KernelStatement statement,
+    public Cursor<NodeItem> nodeCursorGetFromUniqueIndexSeek( KernelStatement statement,
             IndexDescriptor index,
             Object value ) throws IndexBrokenKernelException, IndexNotFoundKernelException
     {
@@ -281,11 +292,10 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public void nodeDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException
+    public void nodeDelete( KernelStatement state, NodeItem node )
     {
-        assertNodeExists( state, nodeId );
-        legacyPropertyTrackers.nodeDelete( nodeId );
-        state.txState().nodeDoDelete( nodeId );
+        legacyPropertyTrackers.nodeDelete( node.id() );
+        state.txState().nodeDoDelete( node.id() );
     }
 
     private void assertNodeExists( KernelStatement state, long nodeId ) throws EntityNotFoundException
@@ -308,24 +318,22 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public void relationshipDelete( final KernelStatement state, long relationshipId ) throws EntityNotFoundException
+    public void relationshipDelete( final KernelStatement state, RelationshipItem relationship )
     {
-        assertRelationshipExists( state, relationshipId );
-
         // NOTE: We implicitly delegate to neoStoreTransaction via txState.legacyState here. This is because that
         // call returns modified properties, which node manager uses to update legacy tx state. This will be cleaned up
         // once we've removed legacy tx state.
-        legacyPropertyTrackers.relationshipDelete( relationshipId );
+        legacyPropertyTrackers.relationshipDelete( relationship.id() );
         final TransactionState txState = state.txState();
-        if ( txState.relationshipIsAddedInThisTx( relationshipId ) )
+        if ( txState.relationshipIsAddedInThisTx( relationship.id() ) )
         {
-            txState.relationshipDoDeleteAddedInThisTx( relationshipId );
+            txState.relationshipDoDeleteAddedInThisTx( relationship.id() );
         }
         else
         {
             try
             {
-                storeLayer.relationshipVisit( relationshipId, new RelationshipVisitor<RuntimeException>()
+                storeLayer.relationshipVisit( relationship.id(), new RelationshipVisitor<RuntimeException>()
                 {
                     @Override
                     public void visit( long relId, int type, long startNode, long endNode )
@@ -342,18 +350,10 @@ public class StateHandlingStatementOperations implements
         }
     }
 
-    private void assertRelationshipExists( KernelStatement state, long relationshipId ) throws EntityNotFoundException
-    {
-        if ( !relationshipExists( state, relationshipId ) )
-        {
-            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
-        }
-    }
-
     @Override
     public boolean nodeExists( KernelStatement state, long nodeId )
     {
-        try ( NodeCursor cursor = nodeCursor( state, nodeId ) )
+        try ( Cursor<NodeItem> cursor = nodeCursor( state, nodeId ) )
         {
             return cursor.next();
         }
@@ -362,46 +362,33 @@ public class StateHandlingStatementOperations implements
     @Override
     public boolean relationshipExists( KernelStatement state, long relId )
     {
-        try ( RelationshipCursor cursor = relationshipCursor( state, relId ) )
+        try ( Cursor<RelationshipItem> cursor = relationshipCursor( state, relId ) )
         {
             return cursor.next();
         }
     }
 
     @Override
-    public boolean nodeHasLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException
+    public boolean nodeHasLabel( KernelStatement state, NodeItem node, int labelId )
     {
-        try ( NodeCursor nodeCursor = nodeCursor( state, nodeId ) )
+        try ( Cursor<LabelItem> labelCursor = node.label( labelId ) )
         {
-            if ( nodeCursor.next() )
-            {
-                try ( LabelCursor labelCursor = nodeCursor.labels() )
-                {
-                    return labelCursor.seek( labelId );
-                }
-            }
-            throw new EntityNotFoundException( EntityType.NODE, nodeId );
+            return labelCursor.next();
         }
     }
 
     @Override
-    public PrimitiveIntIterator nodeGetLabels( KernelStatement state, long nodeId ) throws EntityNotFoundException
+    public PrimitiveIntIterator nodeGetLabels( KernelStatement state, NodeItem node )
     {
-        return nodeGetLabels( state, state.getStoreStatement(), nodeId );
+        return nodeGetLabels( state, state.getStoreStatement(), node );
     }
 
     @Override
-    public PrimitiveIntIterator nodeGetLabels( TxStateHolder txStateHolder, StoreStatement storeStatement, long nodeId )
-            throws EntityNotFoundException
+    public PrimitiveIntIterator nodeGetLabels( TxStateHolder txStateHolder,
+            StoreStatement storeStatement,
+            NodeItem node )
     {
-        try ( NodeCursor nodeCursor = nodeCursor( txStateHolder, storeStatement, nodeId ) )
-        {
-            if ( nodeCursor.next() )
-            {
-                return Cursors.intIterator( nodeCursor.labels(), LabelCursor.GET_LABEL );
-            }
-            throw new EntityNotFoundException( EntityType.NODE, nodeId );
-        }
+        return Cursors.intIterator( node.labels(), LabelItem.GET_LABEL );
     }
 
     public static PrimitiveIntIterator nodeGetLabels( StoreReadLayer storeLayer,
@@ -436,32 +423,32 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public boolean nodeAddLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException
+    public boolean nodeAddLabel( KernelStatement state, NodeItem node, int labelId )
     {
-        try ( NodeCursor node = nodeCursor( state, nodeId ) )
+        try ( Cursor<LabelItem> labels = node.label( labelId ) )
         {
-            if ( !node.next() )
+            if ( labels.next() )
             {
-                throw new EntityNotFoundException( EntityType.NODE, nodeId );
+                // Label is already in state or in store, no-op
+                return false;
             }
+        }
 
-            try ( LabelCursor labels = node.labels() )
+        state.txState().nodeDoAddLabel( labelId, node.id() );
+
+        try ( Cursor<PropertyItem> properties = node.properties() )
+        {
+            while ( properties.next() )
             {
-                if ( labels.seek( labelId ) )
+                PropertyItem propertyItem = properties.get();
+                IndexDescriptor descriptor = indexesGetForLabelAndPropertyKey( state, labelId,
+                        propertyItem.propertyKeyId() );
+                if ( descriptor != null )
                 {
-                    // Label is already in state or in store, no-op
-                    return false;
-                }
-            }
+                    DefinedProperty after = Property.property( propertyItem.propertyKeyId(),
+                            propertyItem.value() );
 
-            state.txState().nodeDoAddLabel( labelId, nodeId );
-
-            try ( PropertyCursor properties = node.properties() )
-            {
-                while ( properties.next() )
-                {
-                    DefinedProperty property = Property.property( properties.propertyKeyId(), properties.value() );
-                    indexUpdateProperty( state, nodeId, labelId, property.propertyKeyId(), null, property );
+                    state.txState().indexDoUpdateProperty( descriptor, node.id(), null, after );
                 }
             }
 
@@ -470,37 +457,30 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public boolean nodeRemoveLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException
+    public boolean nodeRemoveLabel( KernelStatement state, NodeItem node, int labelId )
     {
-        try ( NodeCursor node = nodeCursor( state, nodeId ) )
+        try ( Cursor<LabelItem> labels = node.label( labelId ) )
         {
-            if ( !node.next() )
+            if ( !labels.next() )
             {
-                throw new EntityNotFoundException( EntityType.NODE, nodeId );
+                // Label does not exist in state or in store, no-op
+                return false;
             }
-
-            try ( LabelCursor labels = node.labels() )
-            {
-                if ( !labels.seek( labelId ) )
-                {
-                    // Label does not exist in state or in store, no-op
-                    return false;
-                }
-            }
-
-            state.txState().nodeDoRemoveLabel( labelId, nodeId );
-
-            try ( PropertyCursor properties = node.properties() )
-            {
-                while ( properties.next() )
-                {
-                    DefinedProperty property = Property.property( properties.propertyKeyId(), properties.value() );
-                    indexUpdateProperty( state, nodeId, labelId, property.propertyKeyId(), property, null );
-                }
-            }
-
-            return true;
         }
+
+        state.txState().nodeDoRemoveLabel( labelId, node.id() );
+
+        try ( Cursor<PropertyItem> properties = node.properties() )
+        {
+            while ( properties.next() )
+            {
+                PropertyItem propItem = properties.get();
+                DefinedProperty property = Property.property( propItem.propertyKeyId(), propItem.value() );
+                indexUpdateProperty( state, node.id(), labelId, property.propertyKeyId(), property, null );
+            }
+        }
+
+        return true;
     }
 
     @Override
@@ -812,7 +792,8 @@ public class StateHandlingStatementOperations implements
 
     {
         PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexRangeSeekByNumber( state, index, lower, includeLower, upper, includeUpper );
-        return filterIndexStateChangesForRangeSeekByNumber( state, index, lower, includeLower, upper, includeUpper, committed );
+        return filterIndexStateChangesForRangeSeekByNumber( state, index, lower, includeLower, upper, includeUpper,
+                committed );
     }
 
     @Override
@@ -821,8 +802,10 @@ public class StateHandlingStatementOperations implements
                                                                      String upper, boolean includeUpper ) throws IndexNotFoundKernelException
 
     {
-        PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexRangeSeekByString(state, index, lower, includeLower, upper, includeUpper);
-        return filterIndexStateChangesForRangeSeekByString(state, index, lower, includeLower, upper, includeUpper, committed);
+        PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexRangeSeekByString( state, index, lower,
+                includeLower, upper, includeUpper );
+        return filterIndexStateChangesForRangeSeekByString( state, index, lower, includeLower, upper, includeUpper,
+                committed );
     }
 
     @Override
@@ -917,76 +900,59 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
-            throws EntityNotFoundException
+    public Property nodeSetProperty( KernelStatement state, NodeItem node, DefinedProperty property )
     {
-        try ( NodeCursor node = nodeCursor( state, nodeId ) )
+        Property existingProperty;
+        try ( Cursor<PropertyItem> properties = node.property( property.propertyKeyId() ) )
         {
-            if ( !node.next() )
+            if ( !properties.next() )
             {
-                throw new EntityNotFoundException( EntityType.NODE, nodeId );
+                legacyPropertyTrackers.nodeAddStoreProperty( node.id(), property );
+                existingProperty = Property.noProperty( property.propertyKeyId(), EntityType.NODE, node.id() );
             }
-
-            Property existingProperty;
-            try ( PropertyCursor properties = node.properties() )
+            else
             {
-                if ( !properties.seek( property.propertyKeyId() ) )
-                {
-                    legacyPropertyTrackers.nodeAddStoreProperty( nodeId, property );
-                    existingProperty = Property.noProperty( property.propertyKeyId(), EntityType.NODE, nodeId );
-                }
-                else
-                {
-                    existingProperty = Property.property( properties.propertyKeyId(), properties.value() );
-                    legacyPropertyTrackers.nodeChangeStoreProperty( nodeId, (DefinedProperty) existingProperty,
-                            property );
-                }
+                existingProperty = Property.property( properties.get().propertyKeyId(), properties.get().value() );
+                legacyPropertyTrackers.nodeChangeStoreProperty( node.id(), (DefinedProperty) existingProperty,
+                        property );
             }
-
-            state.txState().nodeDoReplaceProperty( nodeId, existingProperty, property );
-
-            PrimitiveIntCollection labelIds = getLabels( node );
-
-            indexesUpdateProperty( state, node.getId(), labelIds, property.propertyKeyId(),
-                    existingProperty instanceof DefinedProperty ? (DefinedProperty) existingProperty : null,
-                    property );
-
-            return existingProperty;
         }
+
+        state.txState().nodeDoReplaceProperty( node.id(), existingProperty, property );
+
+        PrimitiveIntCollection labelIds = getLabels( node );
+
+        indexesUpdateProperty( state, node.id(), labelIds, property.propertyKeyId(),
+                existingProperty instanceof DefinedProperty ? (DefinedProperty) existingProperty : null,
+                property );
+
+        return existingProperty;
     }
 
     @Override
-    public Property relationshipSetProperty( KernelStatement state, long relationshipId, DefinedProperty property )
-            throws EntityNotFoundException
+    public Property relationshipSetProperty( KernelStatement state,
+            RelationshipItem relationship,
+            DefinedProperty property )
     {
-        try ( RelationshipCursor relationship = relationshipCursor( state, relationshipId ) )
+        Property existingProperty;
+        try ( Cursor<PropertyItem> properties = relationship.property( property.propertyKeyId() ) )
         {
-            if ( !relationship.next() )
+            if ( !properties.next() )
             {
-                throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
+                legacyPropertyTrackers.relationshipAddStoreProperty( relationship.id(), property );
+                existingProperty = Property.noProperty( property.propertyKeyId(), EntityType.RELATIONSHIP,
+                        relationship.id() );
             }
-
-            Property existingProperty;
-            try ( PropertyCursor properties = relationship.properties() )
+            else
             {
-                if ( !properties.seek( property.propertyKeyId() ) )
-                {
-                    legacyPropertyTrackers.relationshipAddStoreProperty( relationshipId, property );
-                    existingProperty = Property.noProperty( property.propertyKeyId(), EntityType.RELATIONSHIP,
-                            relationshipId );
-                }
-                else
-                {
-                    existingProperty = Property.property( properties.propertyKeyId(), properties.value() );
-                    legacyPropertyTrackers.relationshipChangeStoreProperty( relationshipId,
-                            (DefinedProperty) existingProperty,
-                            property );
-                }
+                existingProperty = Property.property( properties.get().propertyKeyId(), properties.get().value() );
+                legacyPropertyTrackers.relationshipChangeStoreProperty( relationship.id(),
+                        (DefinedProperty) existingProperty, property );
             }
-
-            state.txState().relationshipDoReplaceProperty( relationshipId, existingProperty, property );
-            return existingProperty;
         }
+
+        state.txState().relationshipDoReplaceProperty( relationship.id(), existingProperty, property );
+        return existingProperty;
     }
 
     @Override
@@ -1001,69 +967,54 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Property nodeRemoveProperty( KernelStatement state, long nodeId, int propertyKeyId )
-            throws EntityNotFoundException
+    public Property nodeRemoveProperty( KernelStatement state, NodeItem node, int propertyKeyId )
     {
-        try ( NodeCursor node = nodeCursor( state, nodeId ) )
+        PrimitiveIntCollection labelIds = getLabels( node );
+
+        Property existingProperty;
+        try ( Cursor<PropertyItem> properties = node.property( propertyKeyId ) )
         {
-            if ( !node.next() )
+            if ( !properties.next() )
             {
-                throw new EntityNotFoundException( EntityType.NODE, nodeId );
+                existingProperty = Property.noProperty( propertyKeyId, EntityType.NODE, node.id() );
             }
-
-            PrimitiveIntCollection labelIds = getLabels( node );
-
-            Property existingProperty;
-            try ( PropertyCursor properties = node.properties() )
+            else
             {
-                if ( !properties.seek( propertyKeyId ) )
-                {
-                    existingProperty = Property.noProperty( propertyKeyId, EntityType.NODE, nodeId );
-                }
-                else
-                {
-                    existingProperty = Property.property( properties.propertyKeyId(), properties.value() );
+                existingProperty = Property.property( properties.get().propertyKeyId(), properties.get().value() );
 
-                    legacyPropertyTrackers.nodeRemoveStoreProperty( nodeId, (DefinedProperty) existingProperty );
-                    state.txState().nodeDoRemoveProperty( nodeId, (DefinedProperty) existingProperty );
+                legacyPropertyTrackers.nodeRemoveStoreProperty( node.id(), (DefinedProperty) existingProperty );
+                state.txState().nodeDoRemoveProperty( node.id(), (DefinedProperty) existingProperty );
 
-                    indexesUpdateProperty( state, node.getId(), labelIds, propertyKeyId,
-                            (DefinedProperty) existingProperty, null );
-                }
+                indexesUpdateProperty( state, node.id(), labelIds, propertyKeyId,
+                        (DefinedProperty) existingProperty, null );
             }
-            return existingProperty;
         }
+        return existingProperty;
     }
 
     @Override
-    public Property relationshipRemoveProperty( KernelStatement state, long relationshipId, int propertyKeyId )
-            throws EntityNotFoundException
+    public Property relationshipRemoveProperty( KernelStatement state,
+            RelationshipItem relationship,
+            int propertyKeyId )
     {
-        try ( RelationshipCursor relationship = relationshipCursor( state, relationshipId ) )
+        Property existingProperty;
+        try ( Cursor<PropertyItem> properties = relationship.property( propertyKeyId ) )
         {
-            if ( !relationship.next() )
+            if ( !properties.next() )
             {
-                throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
+                existingProperty = Property.noProperty( propertyKeyId, EntityType.RELATIONSHIP, relationship.id() );
             }
-
-            Property existingProperty;
-            try ( PropertyCursor properties = relationship.properties() )
+            else
             {
-                if ( !properties.seek( propertyKeyId ) )
-                {
-                    existingProperty = Property.noProperty( propertyKeyId, EntityType.RELATIONSHIP, relationshipId );
-                }
-                else
-                {
-                    existingProperty = Property.property( properties.propertyKeyId(), properties.value() );
+                existingProperty = Property.property( properties.get().propertyKeyId(), properties.get().value() );
 
-                    legacyPropertyTrackers.relationshipRemoveStoreProperty( relationshipId,
-                            (DefinedProperty) existingProperty );
-                    state.txState().relationshipDoRemoveProperty( relationshipId, (DefinedProperty) existingProperty );
-                }
+                legacyPropertyTrackers.relationshipRemoveStoreProperty( relationship.id(),
+                        (DefinedProperty) existingProperty );
+                state.txState().relationshipDoRemoveProperty( relationship.id(),
+                        (DefinedProperty) existingProperty );
             }
-            return existingProperty;
         }
+        return existingProperty;
     }
 
     @Override
@@ -1087,7 +1038,7 @@ public class StateHandlingStatementOperations implements
             PrimitiveIntCollection labels,
             int propertyKey,
             DefinedProperty before,
-            DefinedProperty after ) throws EntityNotFoundException
+            DefinedProperty after )
     {
         PrimitiveIntIterator labelIterator = labels.iterator();
         while ( labelIterator.hasNext() )
@@ -1107,105 +1058,55 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveIntIterator nodeGetPropertyKeys( KernelStatement state, long nodeId )
-            throws EntityNotFoundException
+    public PrimitiveIntIterator nodeGetPropertyKeys( KernelStatement state, NodeItem node )
     {
-        try ( NodeCursor nodeCursor = nodeCursor( state, nodeId ) )
-        {
-            if ( !nodeCursor.next() )
-            {
-                throw new EntityNotFoundException( EntityType.NODE, nodeId );
-            }
-
-            return getPropertyKeys( nodeCursor );
-        }
+        return getPropertyKeys( node );
     }
 
     @Override
-    public boolean nodeHasProperty( KernelStatement statement, long nodeId, int propertyKeyId )
-            throws EntityNotFoundException
+    public boolean nodeHasProperty( KernelStatement statement, NodeItem node, int propertyKeyId )
     {
-        return nodeHasProperty( statement, statement.getStoreStatement(), nodeId, propertyKeyId );
+        return nodeHasProperty( statement, statement.getStoreStatement(), node, propertyKeyId );
     }
 
     @Override
     public boolean nodeHasProperty( TxStateHolder txStateHolder, StoreStatement storeStatement,
-            long nodeId, int propertyKeyId ) throws EntityNotFoundException
+            NodeItem node, int propertyKeyId )
     {
-        try ( NodeCursor nodeCursor = nodeCursor( txStateHolder, storeStatement, nodeId ) )
-        {
-            return hasProperty( nodeCursor, EntityType.NODE, nodeId, propertyKeyId );
-        }
+        return hasProperty( node, propertyKeyId );
     }
 
     @Override
-    public Object nodeGetProperty( KernelStatement state, long nodeId, int propertyKeyId )
-            throws EntityNotFoundException
+    public Object nodeGetProperty( KernelStatement state, NodeItem node, int propertyKeyId )
     {
-        try ( NodeCursor nodeCursor = nodeCursor( state, nodeId ) )
-        {
-            return getProperty( nodeCursor, EntityType.NODE, nodeId, propertyKeyId );
-        }
+        return getProperty( node, propertyKeyId );
     }
 
     @Override
-    public int relationshipGetType( TxStateHolder txStateHolder, StoreStatement storeStatement, long relationshipId )
-            throws EntityNotFoundException
+    public PrimitiveIntIterator relationshipGetPropertyKeys( KernelStatement state, RelationshipItem relationship )
     {
-        try ( RelationshipCursor cursor = relationshipCursor( txStateHolder, storeStatement, relationshipId ) )
-        {
-            if ( cursor.next() )
-            {
-                return cursor.getType();
-            }
-            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
-        }
+        return getPropertyKeys( relationship );
     }
 
     @Override
-    public PrimitiveIntIterator relationshipGetPropertyKeys( KernelStatement state, long relationshipId )
-            throws EntityNotFoundException
+    public boolean relationshipHasProperty( KernelStatement state, RelationshipItem relationship, int propertyKeyId )
     {
-        try ( RelationshipCursor relCursor = relationshipCursor( state, relationshipId ) )
-        {
-            if ( !relCursor.next() )
-            {
-                throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
-            }
-
-            return getPropertyKeys( relCursor );
-        }
+        return hasProperty( relationship, propertyKeyId );
     }
 
     @Override
-    public boolean relationshipHasProperty( KernelStatement state,
-            long relationshipId,
-            int propertyKeyId ) throws EntityNotFoundException
+    public boolean relationshipHasProperty( TxStateHolder txStateHolder,
+            StoreStatement storeStatement,
+            RelationshipItem relationship,
+            int propertyKeyId )
     {
-        try ( RelationshipCursor relationshipCursor = relationshipCursor( state, relationshipId ) )
-        {
-            return hasProperty( relationshipCursor, EntityType.RELATIONSHIP, relationshipId, propertyKeyId );
-        }
+        return hasProperty( relationship, propertyKeyId );
     }
 
     @Override
-    public boolean relationshipHasProperty( TxStateHolder txStateHolder, StoreStatement storeStatement,
-            long relationshipId, int propertyKeyId ) throws EntityNotFoundException
+    public Object relationshipGetProperty( KernelStatement state, RelationshipItem relationship, int propertyKeyId )
     {
-        try ( RelationshipCursor cursor = relationshipCursor( txStateHolder, storeStatement, relationshipId ) )
-        {
-            return hasProperty( cursor, EntityType.RELATIONSHIP, relationshipId, propertyKeyId );
-        }
-    }
-
-    @Override
-    public Object relationshipGetProperty( KernelStatement state, long relationshipId, int propertyKeyId )
-            throws EntityNotFoundException
-    {
-        try ( RelationshipCursor relationshipCursor = relationshipCursor( state, relationshipId ) )
-        {
-            return getProperty( relationshipCursor, EntityType.RELATIONSHIP, relationshipId, propertyKeyId );
-        }
+        return getProperty( relationship, propertyKeyId );
     }
 
     @Override
@@ -1277,102 +1178,90 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public RelationshipIterator nodeGetRelationships( KernelStatement state, long nodeId, Direction direction,
-            int[] relTypes ) throws EntityNotFoundException
+    public RelationshipIterator nodeGetRelationships( KernelStatement state, NodeItem node, Direction direction,
+            int[] relTypes )
     {
         relTypes = deduplicate( relTypes );
 
-        try ( final NodeCursor nodeCursor = nodeCursor( state, nodeId ) )
-        {
-            if ( nodeCursor.next() )
-            {
-                return new CursorRelationshipIterator( nodeCursor.relationships( direction, relTypes ) );
-            }
-            throw new EntityNotFoundException( EntityType.NODE, nodeId );
-        }
+        return new CursorRelationshipIterator( node.relationships( direction, relTypes ) );
     }
 
     @Override
-    public RelationshipIterator nodeGetRelationships( KernelStatement state,
-            long nodeId,
-            Direction direction ) throws EntityNotFoundException
+    public RelationshipIterator nodeGetRelationships( KernelStatement state, NodeItem node, Direction direction )
     {
-        try ( final NodeCursor nodeCursor = nodeCursor( state, nodeId ) )
-        {
-            if ( nodeCursor.next() )
-            {
-                return new CursorRelationshipIterator( nodeCursor.relationships( direction ) );
-            }
-            throw new EntityNotFoundException( EntityType.NODE, nodeId );
-        }
+        return new CursorRelationshipIterator( node.relationships( direction ) );
     }
 
     @Override
-    public int nodeGetDegree( KernelStatement state,
-            long nodeId,
-            Direction direction,
-            int relType ) throws EntityNotFoundException
-
-    {
-        if ( state.hasTxStateWithChanges() )
-        {
-            int degree = 0;
-            if ( state.txState().nodeIsDeletedInThisTx( nodeId ) )
-            {
-                return 0;
-            }
-
-            if ( !state.txState().nodeIsAddedInThisTx( nodeId ) )
-            {
-                degree = storeLayer.nodeGetDegree( state.getStoreStatement(), nodeId, direction, relType );
-            }
-
-            return state.txState().augmentNodeDegree( nodeId, degree, direction, relType );
-        }
-        return storeLayer.nodeGetDegree( state.getStoreStatement(), nodeId, direction, relType );
-    }
-
-    @Override
-    public int nodeGetDegree( KernelStatement state, long nodeId, Direction direction ) throws EntityNotFoundException
-    {
-        if ( state.hasTxStateWithChanges() )
-        {
-            int degree = 0;
-            if ( state.txState().nodeIsDeletedInThisTx( nodeId ) )
-            {
-                return 0;
-            }
-
-            if ( !state.txState().nodeIsAddedInThisTx( nodeId ) )
-            {
-                degree = storeLayer.nodeGetDegree( state.getStoreStatement(), nodeId, direction );
-            }
-            return state.txState().augmentNodeDegree( nodeId, degree, direction );
-        }
-        return storeLayer.nodeGetDegree( state.getStoreStatement(), nodeId, direction );
-    }
-
-    @Override
-    public PrimitiveIntIterator nodeGetRelationshipTypes( KernelStatement state, long nodeId )
+    public int nodeGetDegree( KernelStatement state, NodeItem node, Direction direction, int relType )
             throws EntityNotFoundException
     {
-        if ( state.hasTxStateWithChanges() && state.txState().nodeModifiedInThisTx( nodeId ) )
+        if ( state.hasTxStateWithChanges() )
+        {
+            int degree = 0;
+            if ( state.txState().nodeIsDeletedInThisTx( node.id() ) )
+            {
+                return 0;
+            }
+
+            if ( !state.txState().nodeIsAddedInThisTx( node.id() ) )
+            {
+                degree = storeLayer.nodeGetDegree( state.getStoreStatement(), node.id(), direction, relType );
+            }
+
+            return state.txState().augmentNodeDegree( node.id(), degree, direction, relType );
+        }
+        else
+        {
+            return storeLayer.nodeGetDegree( state.getStoreStatement(), node.id(), direction, relType );
+        }
+    }
+
+    @Override
+    public int nodeGetDegree( KernelStatement state, NodeItem node, Direction direction )
+            throws EntityNotFoundException
+    {
+        if ( state.hasTxStateWithChanges() )
+        {
+            int degree = 0;
+            if ( state.txState().nodeIsDeletedInThisTx( node.id() ) )
+            {
+                return 0;
+            }
+
+            if ( !state.txState().nodeIsAddedInThisTx( node.id() ) )
+            {
+                degree = storeLayer.nodeGetDegree( state.getStoreStatement(), node.id(), direction );
+            }
+            return state.txState().augmentNodeDegree( node.id(), degree, direction );
+        }
+        else
+        {
+            return storeLayer.nodeGetDegree( state.getStoreStatement(), node.id(), direction );
+        }
+    }
+
+    @Override
+    public PrimitiveIntIterator nodeGetRelationshipTypes( KernelStatement state, NodeItem node )
+            throws EntityNotFoundException
+    {
+        if ( state.hasTxStateWithChanges() && state.txState().nodeModifiedInThisTx( node.id() ) )
         {
             ReadableTxState tx = state.txState();
-            if ( tx.nodeIsDeletedInThisTx( nodeId ) )
+            if ( tx.nodeIsDeletedInThisTx( node.id() ) )
             {
                 return PrimitiveIntCollections.emptyIterator();
             }
 
-            if ( tx.nodeIsAddedInThisTx( nodeId ) )
+            if ( tx.nodeIsAddedInThisTx( node.id() ) )
             {
-                return tx.nodeRelationshipTypes( nodeId );
+                return tx.nodeRelationshipTypes( node.id() );
             }
 
             Set<Integer> types = new HashSet<>();
 
             // Add types in the current transaction
-            PrimitiveIntIterator typesInTx = tx.nodeRelationshipTypes( nodeId );
+            PrimitiveIntIterator typesInTx = tx.nodeRelationshipTypes( node.id() );
             while ( typesInTx.hasNext() )
             {
                 types.add( typesInTx.next() );
@@ -1381,11 +1270,11 @@ public class StateHandlingStatementOperations implements
             // Augment with types stored on disk, minus any types where all rels of that type are deleted
             // in current tx.
             PrimitiveIntIterator committedTypes = storeLayer.nodeGetRelationshipTypes( state.getStoreStatement(),
-                    nodeId );
+                    node.id() );
             while ( committedTypes.hasNext() )
             {
                 int current = committedTypes.next();
-                if ( !types.contains( current ) && nodeGetDegree( state, nodeId, Direction.BOTH, current ) > 0 )
+                if ( !types.contains( current ) && nodeGetDegree( state, node, Direction.BOTH, current ) > 0 )
                 {
                     types.add( current );
                 }
@@ -1393,7 +1282,10 @@ public class StateHandlingStatementOperations implements
 
             return PrimitiveIntCollections.toPrimitiveIterator( types.iterator() );
         }
-        return storeLayer.nodeGetRelationshipTypes( state.getStoreStatement(), nodeId );
+        else
+        {
+            return storeLayer.nodeGetRelationshipTypes( state.getStoreStatement(), node.id() );
+        }
     }
 
     //
@@ -1840,64 +1732,49 @@ public class StateHandlingStatementOperations implements
     }
     // </Legacy index>
 
-    private PrimitiveIntIterator getPropertyKeys( EntityCursor entityCursor )
+    private PrimitiveIntIterator getPropertyKeys( EntityItem entity )
     {
-        PrimitiveIntStack keys = new PrimitiveIntStack( KEY_LIST_INITIAL_SIZE );
-        try ( PropertyCursor properties = entityCursor.properties() )
+        PrimitiveIntStack keys = new PrimitiveIntStack();
+        try ( Cursor<PropertyItem> properties = entity.properties() )
         {
             while ( properties.next() )
             {
-                keys.push( properties.propertyKeyId() );
+                keys.push( properties.get().propertyKeyId() );
             }
         }
 
         return keys.iterator();
     }
 
-    private boolean hasProperty( EntityCursor entityCursor, EntityType type, long nodeId, int propertyKeyId )
-            throws EntityNotFoundException
+    private boolean hasProperty( EntityItem entity, int propertyKeyId )
     {
-        if ( !entityCursor.next() )
+        try ( Cursor<PropertyItem> cursor = entity.property( propertyKeyId ) )
         {
-            throw new EntityNotFoundException( type, nodeId );
-        }
-
-        try ( PropertyCursor cursor = entityCursor.properties() )
-        {
-            return cursor.seek( propertyKeyId );
+            return cursor.next();
         }
     }
 
-    private Object getProperty( EntityCursor entityCursor,
-            EntityType type,
-            long id,
-            int propertyKeyId ) throws EntityNotFoundException
-
+    private Object getProperty( EntityItem entity, int propertyKeyId )
     {
-        if ( !entityCursor.next() )
+        try ( Cursor<PropertyItem> cursor = entity.property( propertyKeyId ) )
         {
-            throw new EntityNotFoundException( type, id );
-        }
-
-        try ( PropertyCursor cursor = entityCursor.properties() )
-        {
-            if ( cursor.seek( propertyKeyId ) )
+            if ( cursor.next() )
             {
-                return cursor.value();
+                return cursor.get().value();
             }
         }
 
         return null;
     }
 
-    private PrimitiveIntCollection getLabels( NodeCursor node )
+    private PrimitiveIntCollection getLabels( NodeItem node )
     {
         PrimitiveIntStack labelIds = new PrimitiveIntStack();
-        try ( LabelCursor labels = node.labels() )
+        try ( Cursor<LabelItem> labels = node.labels() )
         {
             while ( labels.next() )
             {
-                labelIds.push( labels.getLabel() );
+                labelIds.push( labels.get().getAsInt() );
             }
         }
         return labelIds;

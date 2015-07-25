@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.cursor;
 
+import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -29,32 +30,32 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
  */
 public interface DataReadCursors
 {
-    NodeCursor nodeCursor( long nodeId );
+    Cursor<NodeItem> nodeCursor( long nodeId );
 
-    RelationshipCursor relationshipCursor( long relId );
+    Cursor<RelationshipItem> relationshipCursor( long relId );
 
-    NodeCursor nodeCursorGetAll();
+    Cursor<NodeItem> nodeCursorGetAll();
 
-    RelationshipCursor relationshipCursorGetAll();
+    Cursor<RelationshipItem> relationshipCursorGetAll();
 
-    NodeCursor nodeCursorGetForLabel( int labelId );
+    Cursor<NodeItem> nodeCursorGetForLabel( int labelId );
 
-    NodeCursor nodeCursorGetFromIndexSeek( IndexDescriptor index, Object value )
+    Cursor<NodeItem> nodeCursorGetFromIndexSeek( IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException;
 
-    NodeCursor nodeCursorGetFromIndexRangeSeekByNumber( IndexDescriptor index, Number lower, boolean includeLower, Number upper, boolean includeUpper )
+    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByNumber( IndexDescriptor index, Number lower, boolean includeLower, Number upper, boolean includeUpper )
             throws IndexNotFoundKernelException;
 
-    NodeCursor nodeCursorGetFromIndexRangeSeekByString( IndexDescriptor index, String lower, boolean includeLower, String upper, boolean includeUpper )
+    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByString( IndexDescriptor index, String lower, boolean includeLower, String upper, boolean includeUpper )
             throws IndexNotFoundKernelException;
 
-    NodeCursor nodeCursorGetFromIndexRangeSeekByPrefix( IndexDescriptor index, String prefix )
+    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByPrefix( IndexDescriptor index, String prefix )
             throws IndexNotFoundKernelException;
 
-    NodeCursor nodeCursorGetFromIndexScan( IndexDescriptor index )
+    Cursor<NodeItem> nodeCursorGetFromIndexScan( IndexDescriptor index )
             throws IndexNotFoundKernelException;
 
-    NodeCursor nodeCursorGetFromUniqueIndexSeek( IndexDescriptor index, Object value )
+    Cursor<NodeItem> nodeCursorGetFromUniqueIndexSeek( IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
 }

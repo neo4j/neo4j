@@ -21,9 +21,10 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.junit.Test;
 
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.cursor.NodeCursor;
-import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.TestCase.assertTrue;
@@ -88,7 +89,7 @@ public class DiskLayerNodeAndRelTest extends DiskLayerTest
     {
         try (StoreStatement statement = disk.acquireStatement())
         {
-            try (NodeCursor node = statement.acquireSingleNodeCursor( id ))
+            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id ) )
             {
                 return node.next();
             }
@@ -99,7 +100,7 @@ public class DiskLayerNodeAndRelTest extends DiskLayerTest
     {
         try (StoreStatement statement = disk.acquireStatement())
         {
-            try (RelationshipCursor relationship = statement.acquireSingleRelationshipCursor( id ))
+            try ( Cursor<RelationshipItem> relationship = statement.acquireSingleRelationshipCursor( id ) )
             {
                 return relationship.next();
             }

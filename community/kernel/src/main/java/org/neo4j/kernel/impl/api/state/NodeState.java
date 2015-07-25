@@ -28,19 +28,22 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.EntityType;
-import org.neo4j.kernel.api.cursor.LabelCursor;
-import org.neo4j.kernel.api.cursor.PropertyCursor;
-import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.kernel.api.cursor.LabelItem;
+import org.neo4j.kernel.api.cursor.PropertyItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.txstate.UpdateTriState;
+import org.neo4j.kernel.impl.api.cursor.TxAllPropertyCursor;
 import org.neo4j.kernel.impl.api.cursor.TxIteratorRelationshipCursor;
 import org.neo4j.kernel.impl.api.cursor.TxLabelCursor;
-import org.neo4j.kernel.impl.api.cursor.TxPropertyCursor;
+import org.neo4j.kernel.impl.api.cursor.TxSingleLabelCursor;
+import org.neo4j.kernel.impl.api.cursor.TxSinglePropertyCursor;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.InstanceCache;
@@ -75,11 +78,15 @@ public interface NodeState extends PropertyContainerState
 
     PrimitiveLongIterator addedRelationships( Direction direction, int[] types );
 
-    LabelCursor augmentLabelCursor( InstanceCache<TxLabelCursor> labelCursorCache, LabelCursor cursor );
+    Cursor<LabelItem> augmentLabelCursor( InstanceCache<TxLabelCursor> labelCursorCache, Cursor<LabelItem> cursor );
 
-    RelationshipCursor augmentNodeRelationshipCursor( InstanceCache<TxIteratorRelationshipCursor>
+    Cursor<LabelItem> augmentLabelCursor( InstanceCache<TxSingleLabelCursor> labelCursorCache,
+            Cursor<LabelItem> cursor,
+            int labelId );
+
+    Cursor<RelationshipItem> augmentNodeRelationshipCursor( InstanceCache<TxIteratorRelationshipCursor>
             nodeRelationshipCursor,
-            RelationshipCursor cursor,
+            Cursor<RelationshipItem> cursor,
             Direction direction, int[] relTypes );
 
     int augmentDegree( Direction direction, int degree );
@@ -204,7 +211,8 @@ public interface NodeState extends PropertyContainerState
         }
 
         @Override
-        public LabelCursor augmentLabelCursor( InstanceCache<TxLabelCursor> labelCursorCache, LabelCursor cursor )
+        public Cursor<LabelItem> augmentLabelCursor( InstanceCache<TxLabelCursor> labelCursorCache,
+                Cursor<LabelItem> cursor )
         {
             if ( labelDiffSets == null )
             {
@@ -217,9 +225,24 @@ public interface NodeState extends PropertyContainerState
         }
 
         @Override
-        public RelationshipCursor augmentNodeRelationshipCursor( InstanceCache<TxIteratorRelationshipCursor>
+        public Cursor<LabelItem> augmentLabelCursor( InstanceCache<TxSingleLabelCursor> labelCursorCache,
+                Cursor<LabelItem> cursor,
+                int labelId )
+        {
+            if ( labelDiffSets == null )
+            {
+                return cursor;
+            }
+            else
+            {
+                return labelCursorCache.get().init( cursor, labelDiffSets );
+            }
+        }
+
+        @Override
+        public Cursor<RelationshipItem> augmentNodeRelationshipCursor( InstanceCache<TxIteratorRelationshipCursor>
                 nodeRelationshipCursorCache,
-                RelationshipCursor cursor,
+                Cursor<RelationshipItem> cursor,
                 Direction direction,
                 int[] relTypes )
         {
@@ -438,24 +461,37 @@ public interface NodeState extends PropertyContainerState
             }
 
             @Override
-            public LabelCursor augmentLabelCursor( InstanceCache<TxLabelCursor> labelCursorCache, LabelCursor cursor )
+            public Cursor<LabelItem> augmentLabelCursor( InstanceCache<TxLabelCursor> labelCursorCache,
+                    Cursor<LabelItem> cursor )
             {
                 return cursor;
             }
 
             @Override
-            public PropertyCursor augmentPropertyCursor( Supplier<TxPropertyCursor> propertyCursor,
-                    PropertyCursor cursor )
+            public Cursor<LabelItem> augmentLabelCursor( InstanceCache<TxSingleLabelCursor> labelCursorCache,
+                    Cursor<LabelItem> cursor, int labelId )
             {
                 return cursor;
             }
 
             @Override
-            public RelationshipCursor augmentNodeRelationshipCursor( InstanceCache<TxIteratorRelationshipCursor>
-                    nodeRelationshipCursor,
-                    RelationshipCursor cursor,
-                    Direction direction,
-                    int[] relTypes )
+            public Cursor<RelationshipItem> augmentNodeRelationshipCursor(
+                    InstanceCache<TxIteratorRelationshipCursor> nodeRelationshipCursor,
+                    Cursor<RelationshipItem> cursor, Direction direction, int[] relTypes )
+            {
+                return cursor;
+            }
+
+            @Override
+            public Cursor<PropertyItem> augmentPropertyCursor( Supplier<TxAllPropertyCursor> propertyCursor,
+                    Cursor<PropertyItem> cursor )
+            {
+                return cursor;
+            }
+
+            @Override
+            public Cursor<PropertyItem> augmentSinglePropertyCursor( Supplier<TxSinglePropertyCursor> propertyCursor,
+                    Cursor<PropertyItem> cursor, int propertyKeyId )
             {
                 return cursor;
             }

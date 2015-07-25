@@ -23,15 +23,20 @@ package org.neo4j.kernel.impl.api;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
-import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.cursor.LabelItem;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.cursor.PropertyItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.MandatoryNodePropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.MandatoryRelationshipPropertyConstraintViolationKernelException;
@@ -42,7 +47,7 @@ import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import static java.lang.String.format;
 
 public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
 {
@@ -56,6 +61,8 @@ public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
     private final StoreReadLayer storeLayer;
     private final StoreStatement storeStatement;
     private final TxStateHolder txStateHolder;
+    private final PrimitiveIntSet labelIds = Primitive.intSet();
+    private final PrimitiveIntSet propertyKeyIds = Primitive.intSet();
 
     public MandatoryPropertyEnforcer( EntityReadOperations operations,
             TxStateVisitor next,
@@ -90,7 +97,7 @@ public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
     public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
             throws ConstraintValidationKernelException
     {
-        validateRelationship( id, type );
+        validateRelationship( id );
         super.visitCreatedRelationship( id, type, startNode, endNode );
     }
 
@@ -102,93 +109,102 @@ public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
         super.visitRelPropertyChanges( id, added, changed, removed );
     }
 
-    private void validateNode( long node ) throws ConstraintValidationKernelException
+
+    private void validateNode( long nodeId ) throws ConstraintValidationKernelException
     {
-        for ( PrimitiveIntIterator labels = labelsOf( node ); labels.hasNext(); )
+        try ( Cursor<NodeItem> node = readOperations.nodeCursor( txStateHolder, storeStatement, nodeId ) )
         {
-            for ( NodePropertyConstraint constraint : loop( mandatoryNodePropertyConstraints( labels.next() ) ) )
+            if ( node.next() )
             {
-                if ( !nodeHasProperty( node, constraint.propertyKey() ) )
+                // Get all labels into a set for quick lookup
+                labelIds.clear();
+                try ( Cursor<LabelItem> labels = node.get().labels() )
                 {
-                    throw new MandatoryNodePropertyConstraintViolationKernelException( constraint.label(),
-                            constraint.propertyKey(), node );
+                    while ( labels.next() )
+                    {
+                        labelIds.add( labels.get().getAsInt() );
+                    }
                 }
+
+                // Iterate all constraints and find mandatory constraints that matches labels
+                propertyKeyIds.clear();
+                Iterator<PropertyConstraint> constraints = storeLayer.constraintsGetAll();
+                while ( constraints.hasNext() )
+                {
+                    PropertyConstraint constraint = constraints.next();
+                    if ( constraint instanceof MandatoryNodePropertyConstraint && labelIds.contains(
+                            ((MandatoryNodePropertyConstraint) constraint).label() ) )
+                    {
+                        if ( propertyKeyIds.isEmpty() )
+                        {
+                            // Get all key ids into a set for quick lookup
+                            try ( Cursor<PropertyItem> properties = node.get().properties() )
+                            {
+                                while ( properties.next() )
+                                {
+                                    propertyKeyIds.add( properties.get().propertyKeyId() );
+                                }
+                            }
+                        }
+
+                        // Check if this node has the mandatory property set
+                        if ( !propertyKeyIds.contains( constraint.propertyKey() ) )
+                        {
+                            throw new MandatoryNodePropertyConstraintViolationKernelException(
+                                    ((MandatoryNodePropertyConstraint) constraint).label(),
+                                    constraint.propertyKey(), nodeId );
+                        }
+                    }
+                }
+            }
+            else
+            {
+                throw new IllegalStateException( format( "Node %d with changes should exist.", nodeId ) );
             }
         }
     }
 
     private void validateRelationship( long id ) throws ConstraintValidationKernelException
     {
-        try
+        try ( Cursor<RelationshipItem> relationship = readOperations.relationshipCursor( txStateHolder, storeStatement,
+                id ) )
         {
-            int type = readOperations.relationshipGetType( txStateHolder, storeStatement, id );
-            validateRelationship( id, type );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new IllegalStateException( "Relationship with changes should exist.", e );
-        }
-    }
-
-    private void validateRelationship( long id, int type ) throws ConstraintValidationKernelException
-    {
-        Iterator<RelationshipPropertyConstraint> constraints = mandatoryRelPropertyConstraints( type );
-        while ( constraints.hasNext() )
-        {
-            RelationshipPropertyConstraint constraint = constraints.next();
-            if ( !relHasProperty( id, constraint.propertyKey() ) )
+            if ( relationship.next() )
             {
-                throw new MandatoryRelationshipPropertyConstraintViolationKernelException(
-                        constraint.relationshipType(), constraint.propertyKey(), id );
+                // Iterate all constraints and find mandatory constraints that matches relationship type
+                propertyKeyIds.clear();
+                Iterator<RelationshipPropertyConstraint> constraints = storeLayer.constraintsGetForRelationshipType(
+                        relationship.get().type() );
+                while ( constraints.hasNext() )
+                {
+                    RelationshipPropertyConstraint constraint = constraints.next();
+
+                    if ( propertyKeyIds.isEmpty() )
+                    {
+                        // Get all key ids into a set for quick lookup
+                        try ( Cursor<PropertyItem> properties = relationship.get().properties() )
+                        {
+                            while ( properties.next() )
+                            {
+                                propertyKeyIds.add( properties.get().propertyKeyId() );
+                            }
+                        }
+                    }
+
+                    // Check if this relationship has the mandatory property set
+                    if ( !propertyKeyIds.contains( constraint.propertyKey() ) )
+                    {
+                        throw new MandatoryRelationshipPropertyConstraintViolationKernelException(
+                                constraint.relationshipType(),
+                                constraint.propertyKey(), id );
+                    }
+                }
+
+            }
+            else
+            {
+                throw new IllegalStateException( format( "Relationship %d with changes should exist.", id ) );
             }
         }
-    }
-
-    private boolean nodeHasProperty( long nodeId, int propertyKeyId )
-    {
-        try
-        {
-            return readOperations.nodeHasProperty( txStateHolder, storeStatement, nodeId, propertyKeyId );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new IllegalStateException( "Node with changes should exist.", e );
-        }
-    }
-
-    private boolean relHasProperty( long relId, int propertyKeyId )
-    {
-        try
-        {
-            return readOperations.relationshipHasProperty( txStateHolder, storeStatement, relId, propertyKeyId );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new IllegalStateException( "Relationship with changes should exist.", e );
-        }
-    }
-
-    private PrimitiveIntIterator labelsOf( long nodeId )
-    {
-        try
-        {
-            return readOperations.nodeGetLabels( txStateHolder, storeStatement, nodeId );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new IllegalStateException( "Node with changes should exist.", e );
-        }
-    }
-
-    private Iterator<NodePropertyConstraint> mandatoryNodePropertyConstraints( int label )
-    {
-        return new FilteringIterator<>( storeLayer.constraintsGetForLabel( label ),
-                MANDATORY_NODE_PROPERTY_CONSTRAINT );
-    }
-
-    private Iterator<RelationshipPropertyConstraint> mandatoryRelPropertyConstraints( int type )
-    {
-        return new FilteringIterator<>( storeLayer.constraintsGetForRelationshipType( type ),
-                MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT );
     }
 }

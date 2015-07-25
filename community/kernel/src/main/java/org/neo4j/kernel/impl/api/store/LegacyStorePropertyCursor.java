@@ -21,17 +21,18 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.nio.channels.WritableByteChannel;
 
-import org.neo4j.kernel.api.cursor.PropertyCursor;
+import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.util.InstanceCache;
 
 /**
  * Cursor for all properties on a node or relationship.
- *
+ * <p>
  * This implementation uses the old PropertyBlock loading, which eager loads
  * all data on init.
  */
-public class LegacyStorePropertyCursor implements PropertyCursor
+public class LegacyStorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
 {
     private PropertyStore propertyStore;
     private InstanceCache<LegacyStorePropertyCursor> instanceCache;
@@ -53,6 +54,12 @@ public class LegacyStorePropertyCursor implements PropertyCursor
     }
 
     @Override
+    public PropertyItem get()
+    {
+        return this;
+    }
+
+    @Override
     public boolean next()
     {
         if ( propertyBlockCursor != null && propertyBlockCursor.next() )
@@ -69,7 +76,6 @@ public class LegacyStorePropertyCursor implements PropertyCursor
         return false;
     }
 
-    @Override
     public boolean seek( int keyId )
     {
         while ( next() )
@@ -104,13 +110,13 @@ public class LegacyStorePropertyCursor implements PropertyCursor
     @Override
     public long longValue()
     {
-        return ((Number)value()).longValue();
+        return ((Number) value()).longValue();
     }
 
     @Override
     public double doubleValue()
     {
-        return ((Number)value()).doubleValue();
+        return ((Number) value()).doubleValue();
     }
 
     @Override
@@ -120,9 +126,9 @@ public class LegacyStorePropertyCursor implements PropertyCursor
     }
 
     @Override
-    public void propertyData( WritableByteChannel channel )
+    public void byteArray( WritableByteChannel channel )
     {
-        throw new UnsupportedOperationException(  );
+        throw new UnsupportedOperationException();
     }
 
     @Override

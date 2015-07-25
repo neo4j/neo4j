@@ -19,23 +19,21 @@
  */
 package org.neo4j.kernel.api.cursor;
 
-import org.neo4j.cursor.Cursor;
+import org.neo4j.function.IntSupplier;
+import org.neo4j.function.ToIntFunction;
 
 /**
- * Cursor for iterating over a set of entities (nodes or relationships).
+ * Represents a single label on a node
  */
-public interface EntityCursor
-    extends Cursor
+public interface LabelItem
+        extends IntSupplier
 {
-    /**
-     * @return id of current entity
-     * @throws IllegalStateException if no current entity is selected
-     */
-    long getId();
-
-    /**
-     * @return cursor for properties of current entity
-     * @throws IllegalStateException if no current entity is selected
-     */
-    PropertyCursor properties();
+    ToIntFunction<LabelItem> GET_LABEL = new ToIntFunction<LabelItem>()
+    {
+        @Override
+        public int apply( LabelItem item )
+        {
+            return item.getAsInt();
+        }
+    };
 }

@@ -43,7 +43,7 @@ public class CursorsTest
         strings.add("foo3");
 
         final Iterator<String> iterator = strings.iterator();
-        Iterable<String> iterable = Cursors.iterable( new IOCursor<String>()
+        Iterable<String> iterable = Iterables.iterable( new IOCursor<String>()
         {
             String instance;
 
