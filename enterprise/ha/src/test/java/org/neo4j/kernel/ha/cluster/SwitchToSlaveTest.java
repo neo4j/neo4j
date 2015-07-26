@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
@@ -158,8 +159,8 @@ public class SwitchToSlaveTest
 
         when( resolver.resolveDependency( StoreLockerLifecycleAdapter.class ) ).thenReturn(
                 mockWithLifecycle( StoreLockerLifecycleAdapter.class ) );
-        when( resolver.resolveDependency( NeoStoreDataSource.class ) ).thenReturn(
-                mockWithLifecycle( NeoStoreDataSource.class ) );
+        when( resolver.resolveDependency( DataSourceManager.class ) ).thenReturn(
+                mockWithLifecycle( DataSourceManager.class ) );
         when( resolver.resolveDependency( RequestContextFactory.class ) ).thenReturn(
                 mockWithLifecycle( RequestContextFactory.class ) );
         when( resolver.resolveDependency( TransactionCommittingResponseUnpacker.class ) ).thenReturn(

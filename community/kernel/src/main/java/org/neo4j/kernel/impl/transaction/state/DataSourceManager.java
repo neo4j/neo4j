@@ -108,12 +108,12 @@ public class DataSourceManager implements Lifecycle, Provider<KernelAPI>
     public void init() throws Throwable
     {
         life = new LifeSupport();
+        life.add( dataSource );
     }
 
     @Override
     public void start() throws Throwable
     {
-        life.add( dataSource );
         life.start();
 
         for ( Listener listener : dsRegistrationListeners )
