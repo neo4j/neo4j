@@ -75,12 +75,14 @@ import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.first;
@@ -96,7 +98,7 @@ public class SwitchToSlave
     @SuppressWarnings("unchecked")
     private static final Class<? extends Lifecycle>[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[]{
             StoreLockerLifecycleAdapter.class,
-            NeoStoreDataSource.class,
+            DataSourceManager.class,
             RequestContextFactory.class,
             TransactionCommittingResponseUnpacker.class,
             IndexConfigStore.class,
@@ -122,7 +124,7 @@ public class SwitchToSlave
     private final Supplier<NeoStoreDataSource> neoDataSourceSupplier;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final ClusterMembers clusterMembers;
-    private Supplier<TransactionIdStore> transactionIdStoreSupplier;
+    private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
     private final Factory<Slave> slaveFactory;
     private final Function<Slave, SlaveServer> slaveServerFactory;
     private final UpdatePuller updatePuller;
