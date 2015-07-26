@@ -75,6 +75,7 @@ import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -96,7 +97,7 @@ public class SwitchToSlave
     @SuppressWarnings("unchecked")
     private static final Class<? extends Lifecycle>[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[]{
             StoreLockerLifecycleAdapter.class,
-            NeoStoreDataSource.class,
+            DataSourceManager.class,
             RequestContextFactory.class,
             TransactionCommittingResponseUnpacker.class,
             IndexConfigStore.class,
@@ -402,8 +403,6 @@ public class SwitchToSlave
         Slave slaveImpl = slaveFactory.newInstance();
 
         SlaveServer server = slaveServerFactory.apply(slaveImpl);
-
-        ;
 
         masterDelegateHandler.setDelegate( master );
 
