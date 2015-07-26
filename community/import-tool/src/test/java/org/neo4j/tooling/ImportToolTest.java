@@ -40,7 +40,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Predicate;
@@ -627,7 +626,7 @@ public class ImportToolTest
         File data = data( "" );
 
         // WHEN
-        importTool( "--into", dbRule.getStoreDir().getAbsolutePath(),
+        importTool( "--into", dbRule.getStoreDirAbsolutePath(),
                 "--nodes", data.getAbsolutePath() );
 
         // THEN
