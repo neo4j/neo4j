@@ -22,11 +22,9 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.helpers.UTF8;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.impl.util.Charsets;
+import org.neo4j.kernel.impl.store.StoreVersionTrailerUtil;
 
 import static org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
 
@@ -49,7 +47,7 @@ public class StoreVersionCheck
                 return new Result( Outcome.storeVersionNotFound, null, storeFilename );
             }
 
-            String actualVersion = readVersion( file, expectedVersion );
+            String actualVersion = StoreVersionTrailerUtil.readTrailer( file, expectedVersion );
             if ( actualVersion == null )
             {
                 return new Result( Outcome.storeVersionNotFound, null, storeFilename );
@@ -81,55 +79,6 @@ public class StoreVersionCheck
             throw new IllegalArgumentException( "Unexpected version " + expectedVersion );
         }
         return expectedVersion.substring( 0, spaceIndex );
-    }
-
-    public static String readVersion( PagedFile pagedFile, String expectedVersion ) throws IOException
-    {
-        byte[] encodedExpectedVersion = UTF8.encode( expectedVersion );
-        int maximumNumberOfPagesVersionSpans = encodedExpectedVersion.length / pagedFile.pageSize() + 2;
-        String version = null;
-        try ( PageCursor pageCursor = pagedFile.io(
-                Math.max( pagedFile.getLastPageId() + 1 - maximumNumberOfPagesVersionSpans, 0 ),
-                PagedFile.PF_SHARED_LOCK ) )
-        {
-            int currentPage = 0;
-            byte[] allData = new byte[pagedFile.pageSize() * maximumNumberOfPagesVersionSpans];
-            while ( currentPage < maximumNumberOfPagesVersionSpans && pageCursor.next() )
-            {
-                byte[] data = new byte[pagedFile.pageSize()];
-                do
-                {
-                    pageCursor.getBytes( data );
-                }
-                while ( pageCursor.shouldRetry() );
-                System.arraycopy( data, 0, allData, currentPage * data.length, data.length );
-                currentPage++;
-            }
-            int offset = findTrailerOffset( allData, UTF8.encode( expectedVersion.split( " " )[0] ) );
-            if ( offset != -1 )
-            {
-                version = new String( allData, offset, encodedExpectedVersion.length, Charsets.UTF_8 );
-            }
-        }
-        return version;
-    }
-
-    public static int findTrailerOffset( byte[] src, byte[] sought )
-    {
-        for ( int i = src.length - sought.length; i >= 0; i-- )
-        {
-            int pos = 0;
-            while ( pos < sought.length && src[i + pos] == sought[pos] )
-            {
-                pos++;
-            }
-            if ( pos == sought.length )
-            {
-                return i;
-            }
-
-        }
-        return -1;
     }
 
     public static class Result

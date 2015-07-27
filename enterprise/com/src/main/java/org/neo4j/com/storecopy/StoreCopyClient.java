@@ -294,7 +294,8 @@ public class StoreCopyClient
                 // last closed transaction offset will not overcome old one. Till that happens it will be
                 // impossible for recovery process to restore the store
                 File neoStore = new File( tempStoreDir, NeoStore.DEFAULT_NAME );
-                NeoStore.setRecord( pageCache, neoStore, NeoStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, LOG_HEADER_SIZE );
+                NeoStore.setRecord( pageCache, neoStore, NeoStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET,
+                        LOG_HEADER_SIZE );
             }
         }
         finally

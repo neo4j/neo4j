@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -65,33 +64,9 @@ public abstract class AbstractStore extends CommonAbstractStore
     public abstract int getRecordSize();
 
     @Override
-    protected int getEffectiveRecordSize()
-    {
-        return getRecordSize();
-    }
-
-    @Override
     protected void readAndVerifyBlockSize() throws IOException
     {
         // record size is fixed for non-dynamic stores, so nothing to do here
-    }
-
-    @Override
-    protected void verifyFileSizeAndTruncate() throws IOException
-    {
-        int expectedVersionLength = UTF8.encode( buildTypeDescriptorAndVersion( getTypeDescriptor() ) ).length;
-        long fileSize = getFileChannel().size();
-        if ( getRecordSize() != 0
-             && (fileSize - expectedVersionLength) % getRecordSize() != 0 )
-        {
-            setStoreNotOk( new IllegalStateException(
-                    "Misaligned file size " + fileSize + " for " + this + ", expected version length:" +
-                    expectedVersionLength ) );
-        }
-        if ( getStoreOk() )
-        {
-            getFileChannel().truncate( fileSize - expectedVersionLength );
-        }
     }
 
     @Override

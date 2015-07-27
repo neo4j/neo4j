@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils.FileOperation;
@@ -39,7 +40,6 @@ import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
@@ -50,6 +50,8 @@ import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.kernel.impl.store.StoreVersionTrailerUtil.getTrailerOffset;
+import static org.neo4j.kernel.impl.store.StoreVersionTrailerUtil.writeTrailer;
 
 /**
  * Contains common implementation for {@link AbstractStore} and
@@ -181,10 +183,6 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
     }
 
-    /**
-     * Note: This method runs before the file has been mapped by the page cache, and therefore needs to
-     * operate on the store files directly. This method is called by constructors.
-     */
     protected void checkVersion()
     {
         try
@@ -210,10 +208,10 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         try
         {
             readAndVerifyBlockSize();
-            verifyFileSizeAndTruncate();
+            verifyRecordAlignmentAndRemoveTrailer();
             try
             {
-                int filePageSize = pageCache.pageSize() - pageCache.pageSize() % getEffectiveRecordSize();
+                int filePageSize = pageCache.pageSize() - pageCache.pageSize() % getRecordSize();
                 storeFile = pageCache.map( getStorageFileName(), filePageSize );
             }
             catch ( IOException e )
@@ -229,28 +227,42 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
     }
 
+    private void verifyRecordAlignmentAndRemoveTrailer() throws IOException
+    {
+        String versionTrailer = buildTypeDescriptorAndVersion( getTypeDescriptor() );
+        int expectedVersionLength = UTF8.encode( versionTrailer ).length;
+        try ( PagedFile pagedFile = pageCache
+                .map( getStorageFileName(), pageCache.pageSize() - pageCache.pageSize() % getRecordSize() ) )
+        {
+            long trailerOffset =
+                    getTrailerOffset( pagedFile, versionTrailer.split( " " )[0] );
+            if ( trailerOffset != -1 && trailerOffset % getRecordSize() == 0 )
+            {
+                writeTrailer( pagedFile, new byte[expectedVersionLength], trailerOffset );
+            }
+            else
+            {
+                setStoreNotOk( new IllegalStateException(
+                        "Misaligned file size " + trailerOffset + " for " + this + ", expected version length:" +
+                        expectedVersionLength ) );
+            }
+        }
+    }
+
     protected long pageIdForRecord( long id )
     {
-        return id * getEffectiveRecordSize() / storeFile.pageSize();
+        return id * getRecordSize() / storeFile.pageSize();
     }
 
     protected int offsetForId( long id )
     {
-        return (int) (id * getEffectiveRecordSize() % storeFile.pageSize());
+        return (int) (id * getRecordSize() % storeFile.pageSize());
     }
 
     protected int recordsPerPage()
     {
-        return storeFile.pageSize() / getEffectiveRecordSize();
+        return storeFile.pageSize() / getRecordSize();
     }
-
-    protected abstract int getEffectiveRecordSize();
-
-    /**
-     * Note: This method runs before the file has been mapped by the page cache, and therefore needs to
-     * operate on the store files directly. This method is called by constructors.
-     */
-    protected abstract void verifyFileSizeAndTruncate() throws IOException;
 
     /**
      * Note: This method runs before the file has been mapped by the page cache, and therefore needs to
@@ -282,16 +294,13 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
     }
 
-    /**
-     * Note: This method runs before the file has been mapped by the page cache, and therefore needs to
-     * operate on the store files directly. This method is called by constructors.
-     */
     protected void verifyCorrectTypeDescriptorAndVersion() throws IOException
     {
         String expectedTypeDescriptorAndVersion = getTypeAndVersionDescriptor();
         try ( PagedFile pagedFile = pageCache.map( storageFileName, pageCache.pageSize() ) )
         {
-            readTypeDescriptorAndVersion = StoreVersionCheck.readVersion( pagedFile, expectedTypeDescriptorAndVersion );
+            readTypeDescriptorAndVersion = StoreVersionTrailerUtil
+                    .readTrailer( pagedFile, expectedTypeDescriptorAndVersion );
         }
         if ( readTypeDescriptorAndVersion == null )
         {
@@ -326,7 +335,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      */
     protected void rebuildIdGenerator()
     {
-        int blockSize = getEffectiveRecordSize();
+        int blockSize = getRecordSize();
         if ( blockSize <= 0 )
         {
             throw new InvalidRecordException( "Illegal blockSize: " + blockSize );
@@ -695,7 +704,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             return;
         }
         final long highId = idGenerator.getHighId();
-        final int recordSize = getEffectiveRecordSize();
+        final int recordSize = getRecordSize();
         idGenerator.close();
         IOException storedIoe = null;
         // hack for WINBLOWS
