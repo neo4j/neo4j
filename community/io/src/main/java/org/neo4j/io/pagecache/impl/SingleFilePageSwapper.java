@@ -23,8 +23,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
@@ -63,6 +66,8 @@ public class SingleFilePageSwapper implements PageSwapper
 
     private static final int channelStripeCount = 1 << channelStripePower;
     private static final int channelStripeMask = channelStripeCount - 1;
+    private static final int tokenChannelStripe = 0;
+    private static final long tokenFilePageId = 0;
 
     private static final long fileSizeOffset =
             UnsafeUtil.getFieldOffset( SingleFilePageSwapper.class, "fileSize" );
@@ -100,6 +105,7 @@ public class SingleFilePageSwapper implements PageSwapper
     private final int filePageSize;
     private volatile PageEvictionCallback onEviction;
     private final StoreChannel[] channels;
+    private FileLock fileLock;
 
     // Guarded by synchronized(this). See tryReopen() and close().
     private boolean closed;
@@ -122,7 +128,16 @@ public class SingleFilePageSwapper implements PageSwapper
         }
         this.filePageSize = filePageSize;
         this.onEviction = onEviction;
-        increaseFileSizeTo( channels[0].size() );
+        increaseFileSizeTo( channels[tokenChannelStripe].size() );
+
+        try
+        {
+            acquireLock();
+        }
+        catch ( IOException e )
+        {
+            closeAndCollectExceptions( 0, e );
+        }
     }
 
     private void increaseFileSizeTo( long newFileSize )
@@ -144,6 +159,33 @@ public class SingleFilePageSwapper implements PageSwapper
     private void setCurrentFileSize( long size )
     {
         UnsafeUtil.putLongVolatile( this, fileSizeOffset, size );
+    }
+
+    private void acquireLock() throws IOException
+    {
+        if ( FileUtils.OS_IS_WINDOWS )
+        {
+            // We don't take file locks on the individual store files on Windows, because once you've taking
+            // a file lock on a channel, you can only do IO on that file through that channel. This would
+            // mean that we can't stripe our FileChannels on Windows, which is the platform that needs striped
+            // channels the most because of lack of pwrite and pread support.
+            // This is generally fine, because the StoreLocker and the lock file will protect the store from
+            // being opened by multiple instances at the same time anyway.
+            return;
+        }
+
+        try
+        {
+            fileLock = channels[tokenChannelStripe].tryLock();
+            if ( fileLock == null )
+            {
+                throw new FileLockException( file );
+            }
+        }
+        catch ( OverlappingFileLockException e )
+        {
+            throw new FileLockException( file, e );
+        }
     }
 
     private StoreChannel channel( long filePageId )
@@ -348,6 +390,11 @@ public class SingleFilePageSwapper implements PageSwapper
         try
         {
             channels[stripe] = fs.open( file, "rw" );
+            if ( stripe == tokenChannelStripe )
+            {
+                // The closing of a FileChannel also releases all associated file locks.
+                acquireLock();
+            }
         }
         catch ( IOException e )
         {
@@ -360,23 +407,53 @@ public class SingleFilePageSwapper implements PageSwapper
     public synchronized void close() throws IOException
     {
         closed = true;
-        for ( StoreChannel channel : channels )
+        try
         {
-            channel.close();
+            closeAndCollectExceptions( 0, null );
+        }
+        finally
+        {
+            // Eagerly relinquish our reference to the onEviction callback, because even though
+            // we've closed the PagedFile at this point, there are likely still pages in the cache that are bound to
+            // this swapper, and will stay bound, until the eviction threads eventually gets around to kicking them out.
+            // It is especially important to null out the onEviction callback field, because it is in turn holding on to
+            // the striped translation table, which can be a rather large structure.
+            onEviction = null;
+        }
+    }
+
+    private void closeAndCollectExceptions( int channelIndex, IOException exception ) throws IOException
+    {
+        if ( channelIndex == channels.length )
+        {
+            if ( exception != null )
+            {
+                throw exception;
+            }
+            return;
         }
 
-        // Eagerly relinquish our reference to the onEviction callback, because even though
-        // we've closed the PagedFile at this point, there are likely still pages in the cache that are bound to this
-        // swapper, and will stay bound, until the eviction threads eventually gets around to kicking them out.
-        // It is especially important to null out the onEviction callback field, because it is in turn holding on to
-        // the striped translation table, which can be a rather large structure.
-        onEviction = null;
+        try
+        {
+            channels[channelIndex].close();
+        }
+        catch ( IOException e )
+        {
+            if ( exception == null )
+            {
+                exception = e;
+            }
+            else
+            {
+                exception.addSuppressed( e );
+            }
+        }
+        closeAndCollectExceptions( channelIndex + 1, exception );
     }
 
     @Override
     public void force() throws IOException
     {
-        int tokenFilePageId = 0;
         try
         {
             channel( tokenFilePageId ).force( false );
@@ -414,7 +491,6 @@ public class SingleFilePageSwapper implements PageSwapper
     public void truncate() throws IOException
     {
         setCurrentFileSize( 0 );
-        int tokenFilePageId = 0;
         try
         {
             channel( tokenFilePageId ).truncate( 0 );

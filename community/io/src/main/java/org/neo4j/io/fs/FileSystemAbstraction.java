@@ -42,8 +42,6 @@ public interface FileSystemAbstraction
     
     Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException;
     
-    FileLock tryLock( File fileName, StoreChannel channel ) throws IOException;
-    
     StoreChannel create( File fileName ) throws IOException;
     
     boolean fileExists( File fileName );

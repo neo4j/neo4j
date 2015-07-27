@@ -414,18 +414,15 @@ public class IdGeneratorImpl implements IdGenerator
         fileChannel.write( buffer );
     }
 
-    public static void createGenerator( FileSystemAbstraction fs, File fileName )
-    {
-        createGenerator( fs, fileName, 0 );
-    }
-
     /**
      * Creates a new id generator.
      *
      * @param fileName
      *            The name of the id generator
+     * @param throwIfFileExists
      */
-    public static void createGenerator( FileSystemAbstraction fs, File fileName, long highId )
+    public static void createGenerator( FileSystemAbstraction fs, File fileName, long highId,
+                                        boolean throwIfFileExists )
     {
         // sanity checks
         if ( fs == null )
@@ -436,7 +433,7 @@ public class IdGeneratorImpl implements IdGenerator
         {
             throw new IllegalArgumentException( "Null filename" );
         }
-        if ( fs.fileExists( fileName ) )
+        if ( throwIfFileExists && fs.fileExists( fileName ) )
         {
             throw new IllegalStateException( "Can't create IdGeneratorFile["
                 + fileName + "], file already exists" );

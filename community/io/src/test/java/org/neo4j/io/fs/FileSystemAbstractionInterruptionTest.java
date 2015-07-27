@@ -79,7 +79,7 @@ public class FileSystemAbstractionInterruptionTest
     private FileSystemAbstraction fs;
     private File file;
 
-    public FileSystemAbstractionInterruptionTest( String name, Factory<FileSystemAbstraction> factory )
+    public FileSystemAbstractionInterruptionTest( @SuppressWarnings( "UnusedParameters" ) String name, Factory<FileSystemAbstraction> factory )
     {
         fs = factory.newInstance();
     }
@@ -136,12 +136,6 @@ public class FileSystemAbstractionInterruptionTest
     public void fs_openClose() throws IOException
     {
         chan( true ).close();
-    }
-
-    @Test
-    public void fs_tryLock() throws IOException
-    {
-        fs.tryLock( file, chan( false ) ).release();
     }
 
     @Test

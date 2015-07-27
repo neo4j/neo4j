@@ -145,7 +145,7 @@ public class ConsistencyPerformanceCheck
         StoreFactory factory = new StoreFactory(
                 storeDir,
                 tuningConfiguration,
-                new DefaultIdGeneratorFactory(),
+                new DefaultIdGeneratorFactory( fileSystem ),
                 pageCache,
                 fileSystem,
                 NullLogProvider.getInstance(),

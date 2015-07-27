@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import org.neo4j.concurrent.RecentK;
 import org.neo4j.ext.udc.Edition;
@@ -47,6 +48,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.test.RegexMatcher;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.udc.UsageData;
@@ -79,7 +81,7 @@ import static org.neo4j.ext.udc.UdcConstants.VERSION;
  */
 public class UdcExtensionImplTest
 {
-    private static final String VersionPattern = "\\d\\.\\d+((\\.|\\-).*)?";
+    private static final String VersionPattern = "(\\d\\.\\d+((\\.|\\-).*)?)|(dev)";
 
     @Rule
     public TargetDirectory.TestDirectory path = TargetDirectory.testDirForTest( getClass() );
@@ -440,7 +442,7 @@ public class UdcExtensionImplTest
         graphdb = createDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         String version = handler.getQueryMap().get( VERSION );
-        assertTrue( version.matches( VersionPattern ) );
+        assertThat( version, new RegexMatcher( Pattern.compile( VersionPattern ) ) );
     }
 
     @Test

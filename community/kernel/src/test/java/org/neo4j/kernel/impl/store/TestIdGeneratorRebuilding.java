@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -39,8 +39,8 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
@@ -79,13 +79,13 @@ public class TestIdGeneratorRebuilding
                 GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "false" ) );
         File storeFile = file( "nodes" );
         fs.create( storeFile );
-        IdGeneratorImpl.createGenerator( fs, file( "nodes.id" ) );
+        IdGeneratorImpl.createGenerator( fs, file( "nodes.id" ), 0, false );
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
         NodeStore store = new NodeStore(
                 storeFile,
                 config,
-                new DefaultIdGeneratorFactory(),
+                new DefaultIdGeneratorFactory( fs ),
                 pageCacheRule.getPageCache( fs ),
                 fs,
                 NullLogProvider.getInstance(),
@@ -142,7 +142,7 @@ public class TestIdGeneratorRebuilding
         StoreFactory storeFactory = new StoreFactory(
                 storeDir,
                 config,
-                new DefaultIdGeneratorFactory(),
+                new DefaultIdGeneratorFactory( fs ),
                 pageCacheRule.getPageCache( fs ),
                 fs,
                 NullLogProvider.getInstance(),
@@ -200,13 +200,13 @@ public class TestIdGeneratorRebuilding
                 GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "false" ) );
         File storeFile = file( "nodes" );
         fs.create( storeFile );
-        IdGeneratorImpl.createGenerator( fs, file( "nodes.id" ) );
+        IdGeneratorImpl.createGenerator( fs, file( "nodes.id" ), 0, false );
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
         NodeStore store = new NodeStore(
                 storeFile,
                 config,
-                new DefaultIdGeneratorFactory(),
+                new DefaultIdGeneratorFactory( fs ),
                 pageCacheRule.getPageCache( fs ),
                 fs,
                 NullLogProvider.getInstance(),

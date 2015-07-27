@@ -94,20 +94,6 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public FileLock tryLock( File fileName, StoreChannel channel ) throws IOException
-    {
-        final java.nio.channels.FileLock lock = channel.tryLock();
-        return new FileLock()
-        {
-            @Override
-            public void release() throws IOException
-            {
-                lock.release();
-            }
-        };
-    }
-
-    @Override
     public StoreChannel create( File fileName ) throws IOException
     {
         return open( fileName, "rw" );

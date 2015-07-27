@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -40,13 +40,12 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
@@ -219,7 +218,7 @@ public class PropertyPhysicalToLogicalConverterTest
         fs.get().mkdirs( storeDir );
         Monitors monitors = new Monitors();
         StoreFactory storeFactory = new StoreFactory( storeDir, new Config(),
-                new DefaultIdGeneratorFactory(), pageCacheRule.getPageCache( fs.get() ),
+                new DefaultIdGeneratorFactory( fs.get() ), pageCacheRule.getPageCache( fs.get() ),
                 fs.get(), NullLogProvider.getInstance(), monitors );
         storeFactory.createPropertyStore();
         store = storeFactory.newPropertyStore();

@@ -115,7 +115,7 @@ public class TestNeoStore
         StoreFactory sf = new StoreFactory(
                 storeDir,
                 config,
-                new DefaultIdGeneratorFactory(),
+                new DefaultIdGeneratorFactory( fs.get() ),
                 pageCache,
                 fs.get(),
                 NullLogProvider.getInstance(),
@@ -1105,7 +1105,7 @@ public class TestNeoStore
         StoreFactory sf = new StoreFactory(
                 storeDir,
                 config,
-                new DefaultIdGeneratorFactory(),
+                new DefaultIdGeneratorFactory( fileSystem ),
                 pageCache,
                 fileSystem,
                 NullLogProvider.getInstance(),
@@ -1165,7 +1165,7 @@ public class TestNeoStore
         StoreFactory sf = new StoreFactory(
                 dir.directory(),
                 config,
-                new DefaultIdGeneratorFactory(),
+                new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
                 NullLogProvider.getInstance(),

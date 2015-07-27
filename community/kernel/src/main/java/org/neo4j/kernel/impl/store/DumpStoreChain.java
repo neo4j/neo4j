@@ -102,7 +102,7 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
 
         try ( PageCache pageCache = createPageCache( fs ) )
         {
-            DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
+            DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
             Config config = new Config();
             StoreFactory storeFactory = new StoreFactory( null, config, idGeneratorFactory, pageCache, fs, logProvider(), null );
             RecordStore<RECORD> store = store( storeFactory, storeDir );

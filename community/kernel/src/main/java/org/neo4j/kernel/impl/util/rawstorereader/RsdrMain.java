@@ -100,7 +100,7 @@ public class RsdrMain
 
     private static StoreFactory openStore( File storeDir, Config config, PageCache pageCache )
     {
-        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( files );
         return new StoreFactory(
                 storeDir, config, idGeneratorFactory, pageCache, files, NullLogProvider.getInstance(), null );
     }

@@ -168,7 +168,7 @@ public class RelationshipGroupStoreTest
         return new StoreFactory(
                 directory,
                 config( customConfig ),
-                new DefaultIdGeneratorFactory(),
+                new DefaultIdGeneratorFactory( fs ),
                 pageCache,
                 fs,
                 NullLogProvider.getInstance(),

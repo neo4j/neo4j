@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.io.File;
 
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -65,9 +66,10 @@ public class NodeFormatComplianceTest
     @Before
     public void setup()
     {
-        pageCache = pageCacheRule.getPageCache( fsRule.get() );
+        EphemeralFileSystemAbstraction fs = fsRule.get();
+        pageCache = pageCacheRule.getPageCache( fs );
         storeFactory = new StoreFactory( storeDir, new Config(),
-                new DefaultIdGeneratorFactory(), pageCache, fsRule.get(), NullLogProvider.getInstance(), new Monitors() );
+                new DefaultIdGeneratorFactory( fs ), pageCache, fs, NullLogProvider.getInstance(), new Monitors() );
     }
 
     @Test

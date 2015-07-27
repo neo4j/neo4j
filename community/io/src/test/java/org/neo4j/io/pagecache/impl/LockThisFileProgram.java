@@ -17,22 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.io.pagecache.impl;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 
-import org.neo4j.kernel.impl.store.id.IdGenerator;
-
-/**
- * @deprecated This will be moved to internal packages in the next major release.
- */
-// TODO 3.0: Move to org.neo4j.kernel.impl.store.id package
-@Deprecated
-public interface IdGeneratorFactory
+public class LockThisFileProgram
 {
-    IdGenerator open( File filename, int grabSize, IdType idType, long highId );
+    public static final String LOCKED_OUTPUT = "locked";
 
-    void create( File filename, long highId, boolean throwIfFileExists );
-
-    IdGenerator get( IdType idType );
+    public static void main( String[] args ) throws IOException
+    {
+        Path path = Paths.get( args[0] );
+        try ( FileChannel channel = FileChannel.open( path, StandardOpenOption.READ, StandardOpenOption.WRITE );
+              java.nio.channels.FileLock lock = channel.lock() )
+        {
+            System.out.println( LOCKED_OUTPUT );
+            System.out.flush();
+            System.in.read();
+        }
+    }
 }

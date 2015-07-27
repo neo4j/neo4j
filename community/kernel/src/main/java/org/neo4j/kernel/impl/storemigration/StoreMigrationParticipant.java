@@ -58,7 +58,7 @@ public interface StoreMigrationParticipant extends Resource
      * After a successful migration, move all affected files from {@code upgradeDirectory} over to
      * the {@code workingDirectory}, effectively activating the migration changes.
      * @param migrationDir directory where the
-     * {@link #migrate(java.io.File, java.io.File, org.neo4j.kernel.api.index.SchemaIndexProvider, org.neo4j.io.pagecache.PageCache) migration}
+     * {@link #migrate(java.io.File, java.io.File, org.neo4j.kernel.api.index.SchemaIndexProvider) migration}
      * put its files.
      * @param storeDir directory the store directory of the to move the migrated files to.
      * @throws IOException if unable to move one or more files.
@@ -78,7 +78,7 @@ public interface StoreMigrationParticipant extends Resource
      */
     void cleanup( File migrationDir ) throws IOException;
 
-    public static final StoreMigrationParticipant NOT_PARTICIPATING = new StoreMigrationParticipant()
+    StoreMigrationParticipant NOT_PARTICIPATING = new StoreMigrationParticipant()
     {
         @Override
         public boolean needsMigration( File sourceStoreDir ) throws IOException

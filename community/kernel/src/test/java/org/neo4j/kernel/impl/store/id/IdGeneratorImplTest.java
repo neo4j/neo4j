@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
-import java.io.File;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -34,17 +34,15 @@ import static org.junit.Assert.fail;
 
 public class IdGeneratorImplTest
 {
-
-    public final
     @Rule
-    EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
+    public final EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
     private final File file = new File( "ids" );
 
     @Test
     public void shouldNotAcceptMinusOne() throws Exception
     {
         // GIVEN
-        IdGeneratorImpl.createGenerator( fsr.get(), file );
+        IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
         IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, 0 );
 
         // WHEN
@@ -63,7 +61,7 @@ public class IdGeneratorImplTest
     {
         // GIVEN
         long highId = 12345L;
-        IdGeneratorImpl.createGenerator( fsr.get(), file, highId );
+        IdGeneratorImpl.createGenerator( fsr.get(), file, highId, false );
 
         // WHEN
         long readHighId = IdGeneratorImpl.readHighId( fsr.get(), file );
@@ -76,7 +74,7 @@ public class IdGeneratorImplTest
     public void shouldBeAbleToReadWrittenGenerator()
     {
         // Given
-        IdGeneratorImpl.createGenerator( fsr.get(), file );
+        IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
         IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, 42 );
 
         idGenerator.close();

@@ -19,16 +19,16 @@
  */
 package org.neo4j.graphdb;
 
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
@@ -64,7 +64,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabel;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
@@ -617,12 +616,9 @@ public class LabelsAcceptanceTest
         final EphemeralIdGenerator.Factory idFactory = new EphemeralIdGenerator.Factory()
         {
             @Override
-            public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType,
-                                     long highId )
+            public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
             {
-                switch ( idType )
-                {
-                case LABEL_TOKEN:
+                if ( idType == IdType.LABEL_TOKEN )
                 {
                     IdGenerator generator = generators.get( idType );
                     if ( generator == null )
@@ -640,10 +636,7 @@ public class LabelsAcceptanceTest
                     }
                     return generator;
                 }
-
-                default:
-                    return super.open( fs, fileName, grabSize, idType, Long.MAX_VALUE );
-                }
+                return super.open( fileName, grabSize, idType, Long.MAX_VALUE );
             }
         };
 
@@ -672,7 +665,7 @@ public class LabelsAcceptanceTest
                                         return new CommunityEditionModule( platformModule )
                                         {
                                             @Override
-                                            protected IdGeneratorFactory createIdGeneratorFactory()
+                                            protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs )
                                             {
                                                 return idFactory;
                                             }
@@ -686,7 +679,6 @@ public class LabelsAcceptanceTest
                                     }
                                 }.newFacade( storeDir, params, dependencies, this );
                             }
-
                         };
                     }
                 };

@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommandApplierFacade;
@@ -105,16 +106,19 @@ public class ApplyRecoveredTransactionsTest
         new PhysicalTransactionRepresentation( Arrays.asList( commands ) ).accept( applierFacade );
     }
 
-    public final @Rule EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
-    public final @Rule PageCacheRule pageCacheRule = new PageCacheRule();
+    @Rule
+    public final EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
     private NeoStore neoStore;
 
     @Before
     public void before()
     {
+        FileSystemAbstraction fs = fsr.get();
         File storeDir = new File( "dir" );
-        StoreFactory storeFactory = new StoreFactory( storeDir, new Config(), new DefaultIdGeneratorFactory(),
-                pageCacheRule.getPageCache( fsr.get() ), fsr.get(), NullLogProvider.getInstance(), new Monitors() );
+        StoreFactory storeFactory = new StoreFactory( storeDir, new Config(), new DefaultIdGeneratorFactory( fs ),
+                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance(), new Monitors() );
         neoStore = storeFactory.newNeoStore( true );
     }
 
@@ -146,10 +150,5 @@ public class ApplyRecoveredTransactionsTest
     private NodeRecord node( long id )
     {
         return new NodeRecord( id );
-    }
-
-    private long nextNodeId()
-    {
-        return neoStore.getNodeStore().nextId();
     }
 }

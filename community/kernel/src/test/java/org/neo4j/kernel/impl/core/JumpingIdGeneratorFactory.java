@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdRange;
@@ -34,7 +33,7 @@ import org.neo4j.test.impl.EphemeralIdGenerator;
 
 public class JumpingIdGeneratorFactory implements IdGeneratorFactory
 {
-    private final Map<IdType, IdGenerator> generators = new EnumMap<IdType, IdGenerator>( IdType.class );
+    private final Map<IdType, IdGenerator> generators = new EnumMap<>( IdType.class );
     private final IdGenerator forTheRest = new EphemeralIdGenerator( null );
 
     private final int sizePerJump;
@@ -45,7 +44,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId )
+    public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
     {
         return get( idType );
     }
@@ -68,7 +67,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public void create( FileSystemAbstraction fs, File fileName, long highId )
+    public void create( File fileName, long highId, boolean throwIfFileExists )
     {
     }
 

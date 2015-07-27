@@ -68,8 +68,8 @@ public class TestArrayStore
         dir = testDirectory.graphDbDir();
         Map<String, String> configParams = MapUtil.stringMap();
         Config config = new Config( configParams );
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         Monitors monitors = new Monitors();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreFactory factory = new StoreFactory(

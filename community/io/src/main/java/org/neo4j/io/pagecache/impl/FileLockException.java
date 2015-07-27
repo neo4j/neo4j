@@ -17,33 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.standard;
+package org.neo4j.io.pagecache.impl;
 
+import java.io.File;
 import java.io.IOException;
-
-import org.neo4j.io.fs.StoreChannel;
+import java.nio.channels.OverlappingFileLockException;
 
 /**
- * A temporary wrapper that disables the open/close logic for a store. This is a shim to allow the new stores to
- * work with the old stores during a transitioning period. The old stores remain responsble for recovery and startup/
- * shutdown logic, the new stores are available for reading and writing in a way that can be mixed with the old stores.
+ * Thrown when a file cannot be locked in the process of opening a {@link SingleFilePageSwapper} for it.
  */
-public class NoOpStoreOpenCloseCycle extends StoreOpenCloseCycle
+public class FileLockException extends IOException
 {
-    public NoOpStoreOpenCloseCycle()
+    public FileLockException( File file, OverlappingFileLockException throwable )
     {
-        super( null, null, null, null );
+        super( "Already locked: " + file, throwable );
     }
 
-    @Override
-    public void closeStore( StoreChannel channel, long highestIdInUse ) throws IOException
+    public FileLockException( File file )
     {
-
-    }
-
-    @Override
-    public boolean openStore( StoreChannel channel ) throws IOException
-    {
-        return false;
+        super( "Externally locked: " + file );
     }
 }

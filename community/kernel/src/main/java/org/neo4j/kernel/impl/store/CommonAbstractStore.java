@@ -22,12 +22,10 @@ package org.neo4j.kernel.impl.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.OverlappingFileLockException;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.FileLock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils.FileOperation;
 import org.neo4j.io.fs.StoreChannel;
@@ -74,7 +72,6 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     private StoreChannel fileChannel;
     private boolean storeOk = true;
     private Throwable causeOfStoreNotOk;
-    private FileLock fileLock;
     private String readTypeDescriptorAndVersion;
 
     /**
@@ -132,7 +129,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
                     e.addSuppressed( failureToClose );
                 }
             }
-            releaseFileLockAndCloseFileChannel();
+            closeFileChannel();
             throw launderedException( e );
         }
     }
@@ -181,20 +178,6 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( "Unable to open file " + storageFileName, e );
-        }
-        try
-        {
-            this.fileLock = fileSystemAbstraction.tryLock( storageFileName, fileChannel );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Unable to lock store[" + storageFileName + "]", e );
-        }
-        catch ( OverlappingFileLockException e )
-        {
-            throw new IllegalStateException( "Unable to lock store [" + storageFileName +
-                                             "], this is usually caused by another Neo4j kernel already running in " +
-                                             "this JVM for this particular store" );
         }
     }
 
@@ -351,13 +334,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
         log.debug( "Rebuilding id generator for[" + getStorageFileName() + "] ..." );
         closeIdGenerator();
-        File idFile = new File( getStorageFileName().getPath() + ".id" );
-        if ( fileSystemAbstraction.fileExists( idFile ) )
-        {
-            boolean success = fileSystemAbstraction.deleteFile( idFile );
-            assert success : "Couldn't delete " + idFile.getPath() + ", still open?";
-        }
-        createIdGenerator( idFile );
+        createIdGenerator( getIdFileName() );
         openIdGenerator();
 
         long defraggedCount = 0;
@@ -579,6 +556,11 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         return storageFileName;
     }
 
+    private File getIdFileName()
+    {
+        return new File( getStorageFileName().getPath() + ".id" );
+    }
+
     /**
      * Opens the {@link IdGenerator} used by this store.
      * <p>
@@ -589,7 +571,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      */
     protected void openIdGenerator()
     {
-        idGenerator = openIdGenerator( new File( storageFileName.getPath() + ".id" ), idType.getGrabSize() );
+        idGenerator = openIdGenerator( getIdFileName(), idType.getGrabSize() );
     }
 
     /**
@@ -604,8 +586,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     {
         try
         {
-            return idGeneratorFactory.open( fileSystemAbstraction, fileName, grabSize,
-                    getIdType(), findHighIdBackwards() );
+            return idGeneratorFactory.open( fileName, grabSize, getIdType(), findHighIdBackwards() );
         }
         catch ( IOException e )
         {
@@ -659,7 +640,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
     protected void createIdGenerator( File fileName )
     {
-        idGeneratorFactory.create( fileSystemAbstraction, fileName, 0 );
+        idGeneratorFactory.create( fileName, 0, false );
     }
 
     /** Closed the {@link IdGenerator} used by this store */
@@ -710,7 +691,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
         if ( idGenerator == null || !storeOk )
         {
-            releaseFileLockAndCloseFileChannel();
+            closeFileChannel();
             return;
         }
         final long highId = idGenerator.getHighId();
@@ -732,7 +713,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
                                         " vs file size " + fileChannel.size() );
                     fileChannel.truncate( fileChannel.position() );
                     fileChannel.force( false );
-                    releaseFileLockAndCloseFileChannel();
+                    closeFileChannel();
                 }
             } );
         }
@@ -747,14 +728,10 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
     }
 
-    protected void releaseFileLockAndCloseFileChannel()
+    protected void closeFileChannel()
     {
         try
         {
-            if ( fileLock != null )
-            {
-                fileLock.release();
-            }
             if ( fileChannel != null )
             {
                 fileChannel.close();

@@ -58,9 +58,9 @@ public class TestGrowingFileMemoryMapping
         File storeDir = testDirectory.graphDbDir();
         Config config = new Config( stringMap(
                 pagecache_memory.name(), mmapSize( NUMBER_OF_RECORDS, NodeStore.RECORD_SIZE ) ), NodeStore.Configuration.class );
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
-        Monitors monitors = new Monitors();
         DefaultFileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystemAbstraction );
+        Monitors monitors = new Monitors();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction, config );
         StoreFactory storeFactory = new StoreFactory(
                 storeDir,

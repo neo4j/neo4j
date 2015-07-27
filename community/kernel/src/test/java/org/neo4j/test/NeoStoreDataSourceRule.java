@@ -77,7 +77,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
         final Config config = new Config( stringMap( additionalConfig ),
                 GraphDatabaseSettings.class );
 
-        StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory(), pageCache, fs,
+        StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
                 NullLogProvider.getInstance(), new Monitors() );
 
         Locks locks = mock( Locks.class );

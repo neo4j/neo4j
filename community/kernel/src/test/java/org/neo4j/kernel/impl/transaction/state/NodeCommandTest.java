@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -43,16 +43,14 @@ import org.neo4j.kernel.impl.transaction.command.CommandReader;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2_2;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
-import static java.util.Arrays.asList;
-
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.ShortArray.LONG;
@@ -152,13 +150,13 @@ public class NodeCommandTest
         // Given
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
         before.setInUse( true );
-        List<DynamicRecord> beforeDyn = asList( dynamicRecord( 0, true, true, -1l, LONG.intValue(), new byte[] { 1, 2,
-                3, 4, 5, 6, 7, 8 } ) );
+        List<DynamicRecord> beforeDyn = singletonList( dynamicRecord(
+                0, true, true, -1l, LONG.intValue(), new byte[]{1, 2, 3, 4, 5, 6, 7, 8} ) );
         before.setLabelField( dynamicPointer( beforeDyn ), beforeDyn );
         NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setInUse( true );
-        List<DynamicRecord> dynamicRecords = asList( dynamicRecord( 0, false, true, -1l, LONG.intValue(), new byte[] {
-                1, 2, 3, 4, 5, 6, 7, 8 } ) );
+        List<DynamicRecord> dynamicRecords = singletonList( dynamicRecord(
+                0, false, true, -1l, LONG.intValue(), new byte[]{ 1, 2, 3, 4, 5, 6, 7, 8} ) );
         after.setLabelField( dynamicPointer( dynamicRecords ), dynamicRecords );
         // When
         Command.NodeCommand cmd = new Command.NodeCommand();
@@ -215,7 +213,7 @@ public class NodeCommandTest
         StoreFactory storeFactory = new StoreFactory(
                 dir,
                 new Config(),
-                new DefaultIdGeneratorFactory(),
+                new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
                 NullLogProvider.getInstance(),

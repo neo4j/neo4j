@@ -179,7 +179,7 @@ public class TestGraphProperties
         StoreFactory storeFactory = new StoreFactory(
                 storeDir,
                 config,
-                new DefaultIdGeneratorFactory(),
+                new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
                 NullLogProvider.getInstance(),

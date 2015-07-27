@@ -41,24 +41,26 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG
 
 public class HaIdGeneratorFactory implements IdGeneratorFactory
 {
-    private final Map<IdType, HaIdGenerator> generators =
-            new EnumMap<IdType, HaIdGenerator>( IdType.class );
-    private final IdGeneratorFactory localFactory = new DefaultIdGeneratorFactory();
+    private final Map<IdType, HaIdGenerator> generators = new EnumMap<>( IdType.class );
+    private final FileSystemAbstraction fs;
+    private final IdGeneratorFactory localFactory;
     private final DelegateInvocationHandler<Master> master;
     private final Log log;
     private final RequestContextFactory requestContextFactory;
     private IdGeneratorState globalState = IdGeneratorState.PENDING;
 
     public HaIdGeneratorFactory( DelegateInvocationHandler<Master> master, LogProvider logProvider,
-            RequestContextFactory requestContextFactory )
+            RequestContextFactory requestContextFactory, FileSystemAbstraction fs )
     {
+        this.fs = fs;
+        this.localFactory = new DefaultIdGeneratorFactory( fs );
         this.master = master;
         this.log = logProvider.getLog( getClass() );
         this.requestContextFactory = requestContextFactory;
     }
 
     @Override
-    public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId )
+    public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
     {
         HaIdGenerator previous = generators.remove( idType );
         if ( previous != null )
@@ -70,7 +72,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         switch ( globalState )
         {
         case MASTER:
-            initialIdGenerator = localFactory.open( fs, fileName, grabSize, idType, highId );
+            initialIdGenerator = localFactory.open( fileName, grabSize, idType, highId );
             break;
         case SLAVE:
             initialIdGenerator = new SlaveIdGenerator( idType, highId, master.cement(), log, requestContextFactory );
@@ -84,9 +86,9 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public void create( FileSystemAbstraction fs, File fileName, long highId )
+    public void create( File fileName, long highId, boolean throwIfFileExists )
     {
-        localFactory.create( fs, fileName, highId );
+        localFactory.create( fileName, highId, false );
     }
 
     @Override
@@ -174,8 +176,8 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
                     fs.deleteFile( fileName );
                 }
 
-                localFactory.create( fs, fileName, highId );
-                delegate = localFactory.open( fs, fileName, grabSize, idType, highId );
+                localFactory.create( fileName, highId, false );
+                delegate = localFactory.open( fileName, grabSize, idType, highId );
                 log.debug( "Instantiated master delegate " + delegate + " of type " + idType + " with highid " + highId );
             }
             else
@@ -434,7 +436,5 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
                 {
                     return VALUE_REPRESENTING_NULL;
                 }
-
-                ;
             };
 }

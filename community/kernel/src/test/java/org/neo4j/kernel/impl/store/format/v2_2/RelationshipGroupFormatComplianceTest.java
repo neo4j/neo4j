@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.io.File;
 
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -60,10 +61,12 @@ public class RelationshipGroupFormatComplianceTest
     @Before
     public void setup()
     {
-        pageCache = pageCacheRule.getPageCache( fsRule.get() );
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
+        EphemeralFileSystemAbstraction fs = fsRule.get();
+        pageCache = pageCacheRule.getPageCache( fs );
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         storeFactory = new StoreFactory(
-                storeDir, new Config(), idGeneratorFactory, pageCache, fsRule.get(), NullLogProvider.getInstance(), new Monitors() );
+                storeDir, new Config(), idGeneratorFactory, pageCache, fs, NullLogProvider.getInstance(),
+                new Monitors() );
     }
 
     @Test

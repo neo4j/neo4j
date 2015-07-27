@@ -43,6 +43,8 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
+import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
+import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -69,9 +71,10 @@ public class StoreMigratorFrom20IT
     public void shouldMigrate() throws IOException, ConsistencyCheckIncompleteException
     {
         // WHEN
-        upgrader( new StoreMigrator( monitor, fs, NullLogService.getInstance() ) )
-                .migrateIfNeeded(
-                find20FormatStoreDirectory( storeDir.directory() ), schemaIndexProvider, pageCache );
+        StoreMigrator storeMigrator = new StoreMigrator(
+                monitor, fs, pageCache, upgradableDatabase, config, NullLogService.getInstance() );
+        upgrader( storeMigrator ).migrateIfNeeded(
+                find20FormatStoreDirectory( storeDir.directory() ), schemaIndexProvider );
 
         // THEN
         assertEquals( 100, monitor.eventSize() );
@@ -103,8 +106,9 @@ public class StoreMigratorFrom20IT
         File legacyStoreDir = find20FormatStoreDirectory( storeDir.directory() );
 
         // When
-        upgrader( new StoreMigrator( monitor, fs, NullLogService.getInstance() ) ).migrateIfNeeded(
-                legacyStoreDir, schemaIndexProvider, pageCache );
+        StoreMigrator storeMigrator = new StoreMigrator(
+                monitor, fs, pageCache, upgradableDatabase, config, NullLogService.getInstance() );
+        upgrader( storeMigrator ).migrateIfNeeded( legacyStoreDir, schemaIndexProvider );
         ClusterManager.ManagedCluster cluster = buildClusterWithMasterDirIn( fs, legacyStoreDir, life );
         cluster.await( allSeesAllAsAvailable() );
         cluster.sync();
@@ -143,7 +147,7 @@ public class StoreMigratorFrom20IT
     {
         assertEquals( 1317392957120L, neoStore.getCreationTime() );
         assertEquals( -472309512128245482l, neoStore.getRandomNumber() );
-        assertEquals( 6l, neoStore.getCurrentLogVersion() );
+        assertEquals( 5l, neoStore.getCurrentLogVersion() );
         assertEquals( ALL_STORES_VERSION, versionLongToString( neoStore.getStoreVersion() ) );
         assertEquals( 1042l, neoStore.getLastCommittedTransactionId() );
     }
@@ -160,26 +164,28 @@ public class StoreMigratorFrom20IT
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 
+    private final Config config = MigrationTestUtils.defaultConfig();
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
     private StoreFactory storeFactory;
     private PageCache pageCache;
     private final LifeSupport life = new LifeSupport();
+    private UpgradableDatabase upgradableDatabase;
 
     @Before
     public void setUp()
     {
-        Config config = MigrationTestUtils.defaultConfig();
         pageCache = pageCacheRule.getPageCache( fs );
 
         storeFactory = new StoreFactory(
                 storeDir.directory(),
                 config,
-                new DefaultIdGeneratorFactory(),
+                new DefaultIdGeneratorFactory( fs ),
                 pageCache,
                 fs,
                 NullLogProvider.getInstance(),
                 new Monitors() );
+        upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
     }
 
     @After
