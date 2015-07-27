@@ -54,8 +54,10 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.DuplicateIndexSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
+import org.neo4j.kernel.api.exceptions.schema.IndexSchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -540,7 +542,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         IndexDescriptor descriptor = schemaRead().indexesGetForLabelAndPropertyKey( statement, labelId, propertyKeyId );
         if ( descriptor == null )
         {
-            throw SchemaRuleNotFoundException.forNode( labelId, propertyKeyId, "not found" );
+            throw new IndexSchemaRuleNotFoundException( labelId, propertyKeyId);
         }
         return descriptor;
     }
@@ -561,7 +563,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     @Override
     public IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
-            throws SchemaRuleNotFoundException
+            throws SchemaRuleNotFoundException, DuplicateIndexSchemaRuleException
 
     {
         IndexDescriptor result = null;
@@ -577,14 +579,14 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
                 }
                 else
                 {
-                    throw SchemaRuleNotFoundException.forNode( labelId, propertyKeyId, "duplicate uniqueness index" );
+                    throw new DuplicateIndexSchemaRuleException( labelId, propertyKeyId, true );
                 }
             }
         }
 
         if ( null == result )
         {
-            throw SchemaRuleNotFoundException.forNode( labelId, propertyKeyId, "uniqueness index not found" );
+            throw new IndexSchemaRuleNotFoundException( labelId, propertyKeyId, true);
         }
 
         return result;

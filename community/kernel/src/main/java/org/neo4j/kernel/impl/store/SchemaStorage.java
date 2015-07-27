@@ -27,6 +27,10 @@ import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.api.EntityType;
+import org.neo4j.kernel.api.exceptions.schema.DuplicateEntitySchemaRuleException;
+import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
+import org.neo4j.kernel.api.exceptions.schema.EntitySchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -44,7 +48,7 @@ import static org.neo4j.helpers.collection.Iterables.map;
 
 public class SchemaStorage implements SchemaRuleAccess
 {
-    public static enum IndexRuleKind
+    public enum IndexRuleKind
     {
         INDEX
                 {
@@ -267,25 +271,26 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     public MandatoryNodePropertyConstraintRule mandatoryNodePropertyConstraint( int labelId, int propertyKeyId )
-            throws SchemaRuleNotFoundException
+            throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
     {
         return nodeConstraintRule( MandatoryNodePropertyConstraintRule.class, labelId, propertyKeyId );
     }
 
     public MandatoryRelationshipPropertyConstraintRule mandatoryRelationshipPropertyConstraint( int typeId,
-            int propertyKeyId ) throws SchemaRuleNotFoundException
+            int propertyKeyId ) throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
     {
         return relationshipConstraintRule( MandatoryRelationshipPropertyConstraintRule.class, typeId, propertyKeyId );
     }
 
     public UniquePropertyConstraintRule uniquenessConstraint( int labelId, final int propertyKeyId )
-            throws SchemaRuleNotFoundException
+            throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
     {
         return nodeConstraintRule( UniquePropertyConstraintRule.class, labelId, propertyKeyId );
     }
 
     private <Rule extends NodePropertyConstraintRule> Rule nodeConstraintRule( Class<Rule> type,
-            final int labelId, final int propertyKeyId ) throws SchemaRuleNotFoundException
+            final int labelId, final int propertyKeyId )
+            throws SchemaRuleNotFoundException, DuplicateEntitySchemaRuleException
     {
         Iterator<Rule> rules = schemaRules( cast( type ), type, new Predicate<Rule>()
         {
@@ -298,20 +303,21 @@ public class SchemaStorage implements SchemaRuleAccess
         } );
         if ( !rules.hasNext() )
         {
-            throw SchemaRuleNotFoundException.forNode( labelId, propertyKeyId, "not found" );
+            throw new EntitySchemaRuleNotFoundException( EntityType.NODE, labelId, propertyKeyId );
         }
 
         Rule rule = rules.next();
 
         if ( rules.hasNext() )
         {
-            throw SchemaRuleNotFoundException.forNode( labelId, propertyKeyId, "found more than one matching index" );
+            throw new DuplicateEntitySchemaRuleException( EntityType.NODE, labelId, propertyKeyId );
         }
         return rule;
     }
 
     private <Rule extends RelationshipPropertyConstraintRule> Rule relationshipConstraintRule( Class<Rule> type,
-            final int relationshipTypeId, final int propertyKeyId ) throws SchemaRuleNotFoundException
+            final int relationshipTypeId, final int propertyKeyId )
+            throws SchemaRuleNotFoundException, DuplicateEntitySchemaRuleException
     {
         Iterator<Rule> rules = schemaRules( cast( type ), type, new Predicate<Rule>()
         {
@@ -324,15 +330,14 @@ public class SchemaStorage implements SchemaRuleAccess
         } );
         if ( !rules.hasNext() )
         {
-            throw SchemaRuleNotFoundException.forRelationship( relationshipTypeId, propertyKeyId, "not found" );
+            throw new EntitySchemaRuleNotFoundException( EntityType.RELATIONSHIP, relationshipTypeId, propertyKeyId );
         }
 
         Rule rule = rules.next();
 
         if ( rules.hasNext() )
         {
-            throw SchemaRuleNotFoundException.forRelationship( relationshipTypeId, propertyKeyId,
-                    "found more than one matching index" );
+            throw new DuplicateEntitySchemaRuleException( EntityType.RELATIONSHIP, relationshipTypeId, propertyKeyId );
         }
         return rule;
     }

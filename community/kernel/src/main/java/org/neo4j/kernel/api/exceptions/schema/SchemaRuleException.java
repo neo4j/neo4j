@@ -21,15 +21,23 @@ package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public abstract class SchemaRuleNotFoundException extends SchemaRuleException
+import static java.lang.String.format;
+
+public class SchemaRuleException extends SchemaKernelException
 {
-    protected static final String UNIQUE_CONSTRAINT_PREFIX = "Uniqueness constraint";
-    protected static final String CONSTRAINT_PREFIX = "Constraint";
 
-    protected SchemaRuleNotFoundException( String messageTemplate, int ruleEntityId, int propertyKeyId, String messagePrefix)
+    protected final int ruleEntityId;
+    protected final int propertyKeyId;
+    protected final String messageTemplate;
+    protected final String messagePrefix;
+
+    protected SchemaRuleException( Status status, String messageTemplate, int ruleEntityId, int propertyKeyId,
+            String messagePrefix)
     {
-        super( Status.Schema.NoSuchSchemaRule, messageTemplate, ruleEntityId, propertyKeyId, messagePrefix );
-
+        super( status, format( messageTemplate, messagePrefix, ruleEntityId, propertyKeyId ) );
+        this.ruleEntityId = ruleEntityId;
+        this.propertyKeyId = propertyKeyId;
+        this.messageTemplate = messageTemplate;
+        this.messagePrefix = messagePrefix;
     }
-
 }

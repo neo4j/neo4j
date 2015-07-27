@@ -26,7 +26,7 @@ import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
-import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
@@ -49,7 +49,7 @@ class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDat
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =
-    try { f } catch { case _: SchemaRuleNotFoundException => None }
+    try { f } catch { case _: SchemaKernelException => None }
 
   private def getOnlineIndex(descriptor: IndexDescriptor): Option[IndexDescriptor] =
     statement.readOperations().indexGetState(descriptor) match {

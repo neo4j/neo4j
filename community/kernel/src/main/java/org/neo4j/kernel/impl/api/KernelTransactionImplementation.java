@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -951,6 +952,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         "Constraint to be removed should exist, since its existence should " +
                                 "have been validated earlier and the schema should have been locked." );
             }
+            catch ( DuplicateSchemaRuleException de )
+            {
+                throw new IllegalStateException( "Multiple constraints found for specified label and property." );
+            }
             // Remove the index for the constraint as well
             visitRemovedIndex( new IndexDescriptor( element.label(), element.propertyKey() ), true );
         }
@@ -977,6 +982,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 throw new IllegalStateException(
                         "Mandatory node property constraint to be removed should exist, since its existence should " +
                                 "have been validated earlier and the schema should have been locked." );
+            }
+            catch ( DuplicateSchemaRuleException de )
+            {
+                throw new IllegalStateException( "Multiple node property constraints found for specified label and " +
+                                                 "property." );
             }
         }
 
@@ -1005,6 +1015,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 throw new IllegalStateException(
                         "Mandatory relationship property constraint to be removed should exist, since its existence " +
                                 "should have been validated earlier and the schema should have been locked." );
+            }
+            catch ( DuplicateSchemaRuleException re )
+            {
+                throw new IllegalStateException( "Multiple relationship property constraints found for specified " +
+                                                 "property and relationship type." );
             }
         }
 
