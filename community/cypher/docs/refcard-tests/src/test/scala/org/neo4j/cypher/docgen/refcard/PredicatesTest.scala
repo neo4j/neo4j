@@ -160,7 +160,17 @@ n.property LIKE "Tob%" OR n.property LIKE "Tob_"
 
 RETURN n###
 
-String pattern matching. % matches zero or more characters, _ matches exactly one character.
+String case-sensitive pattern matching. % matches zero or more characters, _ matches exactly one character.
+
+###assertion=returns-one
+MATCH n
+WHERE HAS(n.property) AND
+
+n.property ILIKE "Tob%" OR n.property ILIKE "Tob_"
+
+RETURN n###
+
+String case-insensitive pattern matching. % matches zero or more characters, _ matches exactly one character.
 
 ###assertion=returns-one parameters=regex
 MATCH n

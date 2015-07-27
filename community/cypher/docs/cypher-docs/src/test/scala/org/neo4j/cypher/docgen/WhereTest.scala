@@ -110,7 +110,8 @@ class WhereTest extends DocumentingTestBase {
   @Test def string_pattern_matching_case_sensitive() {
     testQuery(
       title = "Case-sensitive pattern matching",
-      text = "Use the `LIKE` keyword and the `%` wildcard character to do case-sensitive matching on a string suffixed by 0 or more characters:",
+      text = "The `LIKE` keyword can be used to perform case-sensitive matching on strings. Two wildcards are supported: `%` matches zero or more characters, `_` matches exactly one character. " +
+        "Matches using `LIKE` in a prefix pattern (`LIKE 'prefix%'` or `LIKE 'prefix_'`) can be solved using indexes.",
       queryText = """match (n) where n.name LIKE 'Pet%' return n""",
       optionalResultExplanation = """The "+Peter+" node will be returned.""",
       assertions = (p) => assertEquals(List(node("Peter")), p.columnAs[Node]("n").toList))
@@ -119,7 +120,7 @@ class WhereTest extends DocumentingTestBase {
   @Test def string_pattern_matching_case_insensitive() {
     testQuery(
       title = "Case-insensitive pattern matching",
-      text = "Use the `ILIKE` keyword and the `_` wildcard character to do case-insensitive matching on a string suffixed by a single character:",
+      text = "The `ILIKE` keyword can be used to perform case-insensitive matching on strings. Two wildcards are supported: `%` matches zero or more characters, `_` matches exactly one character.",
       queryText = """match (n) where n.name ILIKE 'ANDRE_' return n""",
       optionalResultExplanation = """The "+Andres+" node will be returned.""",
       assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
@@ -137,7 +138,7 @@ class WhereTest extends DocumentingTestBase {
   @Test def string_pattern_matching_escaped() {
     testQuery(
       title = "Escaping in pattern matching",
-      text = "If one of the wildcard characters (`%` or `_`) is needed inside your string, escape it. Remember that back slash needs " +
+      text = "If one of the wildcard characters (`%` or `_`) is needed inside your string, escape it. Remember that backslash needs " +
         "to be escaped in string literals.",
       queryText = """match (n) where n.email LIKE '%\_%' return n""",
       optionalResultExplanation = """No nodes match this expression.""",
