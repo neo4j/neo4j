@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -296,10 +297,19 @@ public class BatchInsertTest
         inserter.shutdown();
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs );
-        return factory.newImpermanentDatabaseBuilder( new File( inserter.getStoreDir() ) )
+        GraphDatabaseService db = factory.newImpermanentDatabaseBuilder( new File( inserter.getStoreDir() ) )
                 // Shouldn't be necessary to set dense node threshold since it's a stick config
                 .setConfig( configuration() )
                 .newGraphDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            tx.success();
+        }
+
+
+        return db;
     }
 
     private NeoStore switchToNeoStore( BatchInserter inserter )
