@@ -28,9 +28,9 @@ public interface LogEntry
 {
     void accept( LogHandler handler ) throws IOException;
 
-    byte getType();
+    LogEntryVersion getVersion();
 
-    byte getVersion();
+    byte getType();
 
     String toString( TimeZone timeZone );
 

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.command;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -40,47 +39,10 @@ import static org.neo4j.kernel.impl.store.PropertyType.STRING;
 public class PhysicalLogNeoCommandReaderV1Test
 {
     @Test
-    public void shouldReadIndexCommandHeaderCorrectly() throws Exception
-    {
-        // This bug manifested in header byte[1] {0,1,2}, which contains:
-        // [x   ,    ] start node needs long
-        // [ x  ,    ] end node needs long
-        // [  xx,xxxx] index name id
-        // would have the mask for reading "start node needs long" to 0x8, where it should have been 0x80.
-        // So we need an index name id which has the 0x8 bit set to falsely read that value as "true".
-        // Number 12 will do just fine.
-
-        // GIVEN
-        PhysicalLogNeoCommandReaderV1 reader = new PhysicalLogNeoCommandReaderV1();
-        InMemoryLogChannel data = new InMemoryLogChannel();
-        CommandWriter writer = new CommandWriter( data );
-        AddRelationshipCommand command = new AddRelationshipCommand();
-        byte indexNameId = (byte)12;
-        long entityId = 123;
-        byte keyId = (byte)1;
-        Object value = "test value";
-        long startNode = 14;
-        long endNode = 15;
-
-        // WHEN
-        command.init( indexNameId, entityId, keyId, value, startNode, endNode );
-        writer.visitIndexAddRelationshipCommand( command );
-
-        // THEN
-        AddRelationshipCommand readCommand = (AddRelationshipCommand) reader.read( data );
-        assertEquals( indexNameId, readCommand.getIndexNameId() );
-        assertEquals( entityId, readCommand.getEntityId() );
-        assertEquals( keyId, readCommand.getKeyId() );
-        assertEquals( value, readCommand.getValue() );
-        assertEquals( startNode, readCommand.getStartNode() );
-        assertEquals( endNode, readCommand.getEndNode() );
-    }
-
-    @Test
     public void shouldReadPropertyCommandWithDeletedDynamicRecords() throws Exception
     {
         // GIVEN
-        PhysicalLogNeoCommandReaderV1 reader = new PhysicalLogNeoCommandReaderV1();
+        PhysicalLogNeoCommandReaderV2_1 reader = new PhysicalLogNeoCommandReaderV2_1();
         InMemoryLogChannel data = new InMemoryLogChannel();
         CommandWriter writer = new CommandWriter( data );
         long id = 5;

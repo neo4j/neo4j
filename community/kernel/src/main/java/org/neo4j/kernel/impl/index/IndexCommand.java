@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import static java.lang.String.format;
-
 import java.io.IOException;
 import java.util.Map;
 
@@ -29,6 +27,8 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.CommandRecordVisitor;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
+
+import static java.lang.String.format;
 
 /**
  * Created from {@link IndexDefineCommand} or read from a logical log.
@@ -46,14 +46,14 @@ public abstract class IndexCommand extends Command
     public static final byte VALUE_TYPE_STRING = (byte) 6;
 
     private byte commandType;
-    protected byte indexNameId;
+    protected int indexNameId;
     protected byte entityType;
     protected long entityId;
-    protected byte keyId;
+    protected int keyId;
     protected byte valueType;
     protected Object value;
 
-    protected void init( byte commandType, byte indexNameId, byte entityType, long entityId, byte keyId, Object value )
+    protected void init( byte commandType, int indexNameId, byte entityType, long entityId, int keyId, Object value )
     {
         this.commandType = commandType ;
         this.indexNameId = indexNameId;
@@ -64,7 +64,7 @@ public abstract class IndexCommand extends Command
         this.valueType = valueTypeOf( value );
     }
 
-    public byte getIndexNameId()
+    public int getIndexNameId()
     {
         return indexNameId;
     }
@@ -79,7 +79,7 @@ public abstract class IndexCommand extends Command
         return entityId;
     }
 
-    public byte getKeyId()
+    public int getKeyId()
     {
         return keyId;
     }
@@ -144,7 +144,7 @@ public abstract class IndexCommand extends Command
 
     public static class AddNodeCommand extends IndexCommand
     {
-        public void init( byte indexNameId, long entityId, byte keyId, Object value )
+        public void init( int indexNameId, long entityId, int keyId, Object value )
         {
             super.init( NeoCommandType.INDEX_ADD_COMMAND, indexNameId, IndexEntityType.Node.id(),
                     entityId, keyId, value );
@@ -173,7 +173,7 @@ public abstract class IndexCommand extends Command
         private long startNode;
         private long endNode;
 
-        public void init( byte indexNameId, long entityId, byte keyId,
+        public void init( int indexNameId, long entityId, int keyId,
                 Object value, long startNode, long endNode )
         {
             super.init( NeoCommandType.INDEX_ADD_RELATIONSHIP_COMMAND, indexNameId, IndexEntityType.Relationship.id(),
@@ -242,7 +242,7 @@ public abstract class IndexCommand extends Command
 
     public static class RemoveCommand extends IndexCommand
     {
-        public void init( byte indexNameId, byte entityType, long entityId, byte keyId, Object value )
+        public void init( int indexNameId, byte entityType, long entityId, int keyId, Object value )
         {
             super.init( NeoCommandType.INDEX_REMOVE_COMMAND, indexNameId, entityType, entityId, keyId, value );
         }
@@ -263,7 +263,7 @@ public abstract class IndexCommand extends Command
 
     public static class DeleteCommand extends IndexCommand
     {
-        public void init( byte indexNameId, byte entityType )
+        public void init( int indexNameId, byte entityType )
         {
             super.init( NeoCommandType.INDEX_DELETE_COMMAND, indexNameId, entityType, 0L, (byte)0, null );
         }
@@ -285,7 +285,7 @@ public abstract class IndexCommand extends Command
     {
         private Map<String, String> config;
 
-        public void init( byte indexNameId, byte entityType, Map<String, String> config )
+        public void init( int indexNameId, byte entityType, Map<String, String> config )
         {
             super.init( NeoCommandType.INDEX_CREATE_COMMAND, indexNameId, entityType, 0L, (byte)0, null );
             this.config = config;

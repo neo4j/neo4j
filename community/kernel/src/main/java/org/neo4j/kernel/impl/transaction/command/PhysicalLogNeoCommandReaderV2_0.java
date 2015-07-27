@@ -49,7 +49,7 @@ import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PRO
 import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
 
-public class PhysicalLogNeoCommandReaderV0_19 implements CommandReader
+public class PhysicalLogNeoCommandReaderV2_0 implements CommandReader
 {
     private final PhysicalNeoCommandReader reader = new PhysicalNeoCommandReader();
     private ReadableLogChannel channel;
@@ -134,13 +134,25 @@ public class PhysicalLogNeoCommandReaderV0_19 implements CommandReader
         {
             long id = channel.getLong();
 
-            NodeRecord record = readNodeRecord( id );
-            if ( record == null )
+
+            NodeRecord before = readNodeRecord( id );
+            if ( before == null )
             {
                 return true;
             }
 
-            command.init( record, record );
+            NodeRecord after = readNodeRecord( id );
+            if ( after == null )
+            {
+                return true;
+            }
+
+            if ( !before.inUse() && after.inUse() )
+            {
+                after.setCreated();
+            }
+
+            command.init( before, after );
             return false;
         }
 
@@ -170,7 +182,7 @@ public class PhysicalLogNeoCommandReaderV0_19 implements CommandReader
                 record.setNextProp( channel.getLong() );
 
                 /*
-                 * Logs for version 1.9 do not contain the proper values for the following two flags. Also,
+                 * Logs for version 2.0 do not contain the proper values for the following two flags. Also,
                  * the defaults won't do, because the pointers for prev in the fist record will not be interpreted
                  * properly. So we need to set the flags explicitly here.
                  *
@@ -196,13 +208,21 @@ public class PhysicalLogNeoCommandReaderV0_19 implements CommandReader
             // ID
             long id = channel.getLong(); // 8
 
-            PropertyRecord record = readPropertyRecord( id );
-            if ( record == null )
+            // BEFORE
+            PropertyRecord before = readPropertyRecord( id );
+            if ( before == null )
             {
                 return true;
             }
 
-            command.init( record, record );
+            // AFTER
+            PropertyRecord after = readPropertyRecord( id );
+            if ( after == null )
+            {
+                return true;
+            }
+
+            command.init( before, after );
             return false;
         }
 
@@ -380,6 +400,11 @@ public class PhysicalLogNeoCommandReaderV0_19 implements CommandReader
             if ( inUse )
             {
                 record = new NodeRecord( id, false, channel.getLong(), channel.getLong() );
+                // labels
+                long labelField = channel.getLong();
+                Collection<DynamicRecord> dynamicLabelRecords = new ArrayList<>();
+                readDynamicRecords( dynamicLabelRecords, COLLECTION_DYNAMIC_RECORD_ADDER );
+                record.setLabelField( labelField, dynamicLabelRecords );
             }
             else
             {
@@ -390,7 +415,6 @@ public class PhysicalLogNeoCommandReaderV0_19 implements CommandReader
             record.setInUse( inUse );
             return record;
         }
-
 
         DynamicRecord readDynamicRecord() throws IOException
         {

@@ -43,9 +43,9 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
@@ -106,7 +106,7 @@ public class BatchingTransactionAppenderTest
         appender.append( transaction, logAppendEvent );
 
         // THEN
-        final LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new LogEntryReaderFactory().versionable();
+        final LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         try ( PhysicalTransactionCursor<ReadableVersionableLogChannel> reader =
                       new PhysicalTransactionCursor<>( channel, logEntryReader ) )
         {
@@ -153,7 +153,7 @@ public class BatchingTransactionAppenderTest
         appender.append( transaction.getTransactionRepresentation(), transaction.getCommitEntry().getTxId() );
 
         // THEN
-        LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new LogEntryReaderFactory().versionable();
+        LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         try ( PhysicalTransactionCursor<ReadableVersionableLogChannel> reader =
                 new PhysicalTransactionCursor<>( channel, logEntryReader ) )
         {
@@ -347,7 +347,7 @@ public class BatchingTransactionAppenderTest
     {
         Collection<Command> commands = new ArrayList<>();
         IndexDefineCommand command = new IndexDefineCommand();
-        command.init( new HashMap<String,Byte>(), new HashMap<String,Byte>() );
+        command.init( new HashMap<String,Integer>(), new HashMap<String,Integer>() );
         commands.add( command );
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( commands );
         transaction.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
@@ -415,8 +415,8 @@ public class BatchingTransactionAppenderTest
         {
             IndexDefineCommand defineCommand = new IndexDefineCommand();
             defineCommand.init(
-                    MapUtil.<String,Byte>genericMap( "one", (byte)1 ),
-                    MapUtil.<String,Byte>genericMap( "two", (byte)2 ) );
+                    MapUtil.<String,Integer>genericMap( "one", 1 ),
+                    MapUtil.<String,Integer>genericMap( "two", 2 ) );
             commands.add( defineCommand );
         }
         else

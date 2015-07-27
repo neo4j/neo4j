@@ -291,13 +291,14 @@ public class CommandWriter implements NeoCommandHandler
         return false;
     }
 
-    private void writeMap( Map<String,Byte> map ) throws IOException
+    private void writeMap( Map<String,Integer> map ) throws IOException
     {
         channel.put( (byte) map.size() );
-        for ( Map.Entry<String,Byte> entry : map.entrySet() )
+        for ( Map.Entry<String,Integer> entry : map.entrySet() )
         {
             write2bLengthAndString( channel, entry.getKey() );
-            channel.put( entry.getValue() );
+            int id = entry.getValue();
+            channel.putShort( (short) id );
         }
     }
 
@@ -360,12 +361,13 @@ public class CommandWriter implements NeoCommandHandler
     }
 
     protected void writeIndexCommandHeader( byte valueType, byte entityType, byte entityIdNeedsLong,
-                                            byte startNodeNeedsLong, byte endNodeNeedsLong, byte indexNameId,
-                                            byte commandKeyId ) throws IOException
+                                            byte startNodeNeedsLong, byte endNodeNeedsLong, int indexNameId,
+                                            int keyId ) throws IOException
     {
         channel.put( (byte) ((valueType << 2) | (entityType << 1) | (entityIdNeedsLong)) );
-        channel.put( (byte) ((startNodeNeedsLong << 7) | (endNodeNeedsLong << 6) | (indexNameId)) );
-        channel.put( commandKeyId );
+        channel.put( (byte) ((startNodeNeedsLong << 7) | (endNodeNeedsLong << 6)) );
+        channel.putShort( (short) indexNameId );
+        channel.putShort( (short) keyId );
     }
 
     protected void putIntOrLong( long id ) throws IOException

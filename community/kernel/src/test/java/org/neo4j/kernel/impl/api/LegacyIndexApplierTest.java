@@ -60,8 +60,8 @@ public class LegacyIndexApplierTest
     public void shouldOnlyCreateOneApplierPerProvider() throws Exception
     {
         // GIVEN
-        Map<String,Byte> names = MapUtil.<String,Byte> genericMap( "first", (byte) 0, "second", (byte) 1 );
-        Map<String,Byte> keys = MapUtil.<String,Byte> genericMap( "key", (byte) 0 );
+        Map<String,Integer> names = MapUtil.<String,Integer> genericMap( "first", 0, "second", 1 );
+        Map<String,Integer> keys = MapUtil.<String,Integer> genericMap( "key", 0 );
         String applierName = "test-applier";
         IndexConfigStore config = newIndexConfigStore( names, applierName );
         LegacyIndexApplierLookup applierLookup = mock( LegacyIndexApplierLookup.class );
@@ -95,20 +95,20 @@ public class LegacyIndexApplierTest
         return command;
     }
 
-    private static IndexDefineCommand definitions( Map<String,Byte> names, Map<String,Byte> keys )
+    private static IndexDefineCommand definitions( Map<String,Integer> names, Map<String,Integer> keys )
     {
         IndexDefineCommand definitions = new IndexDefineCommand();
         definitions.init( names, keys );
         return definitions;
     }
 
-    private IndexConfigStore newIndexConfigStore( Map<String,Byte> names, String providerName )
+    private IndexConfigStore newIndexConfigStore( Map<String,Integer> names, String providerName )
     {
         File dir = new File( "conf" );
         EphemeralFileSystemAbstraction fileSystem = fs.get();
         fileSystem.mkdirs( dir );
         IndexConfigStore store = life.add( new IndexConfigStore( dir, fileSystem ) );
-        for ( Map.Entry<String,Byte> name : names.entrySet() )
+        for ( Map.Entry<String,Integer> name : names.entrySet() )
         {
             store.set( Node.class, name.getKey(), stringMap( IndexManager.PROVIDER, providerName ) );
             store.set( Relationship.class, name.getKey(), stringMap( IndexManager.PROVIDER, providerName ) );

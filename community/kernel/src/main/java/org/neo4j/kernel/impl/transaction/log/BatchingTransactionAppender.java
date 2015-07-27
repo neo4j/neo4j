@@ -29,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
@@ -98,7 +98,7 @@ class BatchingTransactionAppender implements TransactionAppender
         this.channel = logFile.getWriter();
         this.transactionMetadataCache = transactionMetadataCache;
         this.indexCommandDetector = new IndexCommandDetector( new CommandWriter( channel ) );
-        this.transactionLogWriter = new TransactionLogWriter( new LogEntryWriterv1( channel, indexCommandDetector ) );
+        this.transactionLogWriter = new TransactionLogWriter( new LogEntryWriter( channel, indexCommandDetector ) );
         forceLock = new ReentrantLock();
     }
 

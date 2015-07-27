@@ -66,7 +66,7 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
 
-public class PhysicalLogNeoCommandReaderV2 implements CommandReader
+public class PhysicalLogNeoCommandReaderV2_2 implements CommandReader
 {
     private final PhysicalNeoCommandReader reader = new PhysicalNeoCommandReader();
     private ReadableLogChannel channel;
@@ -702,8 +702,8 @@ public class PhysicalLogNeoCommandReaderV2 implements CommandReader
         public boolean visitIndexDefineCommand( IndexDefineCommand indexDefineCommand ) throws IOException
         {
             readIndexCommandHeader();
-            Map<String,Byte> indexNames = readMap( channel );
-            Map<String,Byte> keys = readMap( channel );
+            Map<String,Integer> indexNames = readMap( channel );
+            Map<String,Integer> keys = readMap( channel );
             indexDefineCommand.init( indexNames, keys );
             return false;
         }
@@ -728,14 +728,14 @@ public class PhysicalLogNeoCommandReaderV2 implements CommandReader
             return false;
         }
 
-        private Map<String,Byte> readMap( ReadableLogChannel channel ) throws IOException
+        private Map<String,Integer> readMap( ReadableLogChannel channel ) throws IOException
         {
             byte size = channel.get();
-            Map<String,Byte> result = new HashMap<>();
+            Map<String,Integer> result = new HashMap<>();
             for ( int i = 0; i < size; i++ )
             {
                 String key = read2bLengthAndString( channel );
-                byte id = channel.get();
+                int id = channel.get();
                 if ( key == null )
                 {
                     return null;

@@ -124,8 +124,8 @@ import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategy;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
@@ -806,8 +806,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                 LogPosition position = new LogPosition( version, LOG_HEADER_SIZE );
                 try ( ReadableVersionableLogChannel channel = logFile.getReader( position ) )
                 {
-                    final LogEntryReader<ReadableVersionableLogChannel> reader =
-                            new LogEntryReaderFactory().versionable();
+                    final LogEntryReader<ReadableVersionableLogChannel> reader = new VersionAwareLogEntryReader<>();
                     LogEntry entry;
                     while ( (entry = reader.readLogEntry( channel )) != null )
                     {
@@ -916,7 +915,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore, storeRecoverer, indexUpdatesValidator,
                 recoveryVisitorMonitor );
 
-        LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new LogEntryReaderFactory().versionable();
+        LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         final Visitor<LogVersionedStoreChannel,IOException> logFileRecoverer =
                 new LogFileRecoverer( logEntryReader, recoveryVisitor );
 

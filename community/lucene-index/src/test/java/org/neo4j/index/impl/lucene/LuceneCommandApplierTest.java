@@ -66,15 +66,15 @@ public class LuceneCommandApplierTest
         {
             // WHEN issuing a command where the index name is mapped to a certain id
             IndexDefineCommand definitions = definitions(
-                    MapUtil.<String,Byte>genericMap( indexName, (byte) 0 ),
-                    MapUtil.<String,Byte>genericMap( key, (byte) 0 ) );
+                    MapUtil.<String,Integer>genericMap( indexName, 0 ),
+                    MapUtil.<String,Integer>genericMap( key, 0 ) );
             applier.visitIndexDefineCommand( definitions );
             applier.visitIndexAddNodeCommand( addNodeToIndex( definitions, indexName, 0L ) );
             // and then later issuing a command for that same index, but in another transaction where
             // the local index name id is a different one
             definitions = definitions(
-                    MapUtil.<String,Byte>genericMap( indexName, (byte) 1 ),
-                    MapUtil.<String,Byte>genericMap( key, (byte) 0 ) );
+                    MapUtil.<String,Integer>genericMap( indexName, 1 ),
+                    MapUtil.<String,Integer>genericMap( key, 0 ) );
             applier.visitIndexDefineCommand( definitions );
             applier.visitIndexAddNodeCommand( addNodeToIndex( definitions, indexName, 1L ) );
             applier.apply();
@@ -91,7 +91,7 @@ public class LuceneCommandApplierTest
         return command;
     }
 
-    private static IndexDefineCommand definitions( Map<String,Byte> names, Map<String,Byte> keys )
+    private static IndexDefineCommand definitions( Map<String,Integer> names, Map<String,Integer> keys )
     {
         IndexDefineCommand definitions = new IndexDefineCommand();
         definitions.init( names, keys );

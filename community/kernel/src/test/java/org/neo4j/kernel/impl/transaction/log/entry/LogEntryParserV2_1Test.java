@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import java.io.IOException;
-
 import org.junit.Test;
 
+import java.io.IOException;
+
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.CommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
+import org.neo4j.kernel.impl.transaction.command.CommandReader;
+import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
@@ -35,17 +36,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class LogEntryParserDispatcherV3Test
+public class LogEntryParserV2_1Test
 {
-    private final LogEntryParserDispatcher<LogEntryParsersV3> dispatcher =
-            new LogEntryParserDispatcher<>( LogEntryParsersV3.values() );
-    private final CommandReaderFactory.Default commandReaderFactory = new CommandReaderFactory.Default();
-    private final byte version = LogEntryVersions.LEGACY_LOG_ENTRY_VERSION;
+    private final LogEntryVersion version = LogEntryVersion.V2_1;
+    private final CommandReader commandReader = version.newCommandReader();
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition( 0, 37 );
 
     @Test
-    public void shouldParserStartEntry() throws IOException
+    public void shouldParseStartEntry() throws IOException
     {
         // given
         final LogEntryStart start = new LogEntryStart( version, 1, 2, 3, 4, new byte[]{}, position );
@@ -67,16 +66,21 @@ public class LogEntryParserDispatcherV3Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser<IdentifiableLogEntry> parser = dispatcher.dispatch( LogEntryByteCodes.TX_START );
-        final IdentifiableLogEntry logEntry = parser.parse( version, channel, marker, commandReaderFactory );
+        final LogEntryParser<LogEntry> parser = version.entryParser( LogEntryByteCodes.TX_START );
+        final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
-        assertEquals( start, logEntry.getEntry() );
+        assertEquals( start, entryOf( logEntry ) );
         assertFalse( parser.skip() );
     }
 
+    private LogEntry entryOf( LogEntry logEntry )
+    {
+        return logEntry instanceof IdentifiableLogEntry ? ((IdentifiableLogEntry)logEntry).getEntry() : logEntry;
+    }
+
     @Test
-    public void shouldParserOnePhaseCommitEntry() throws IOException
+    public void shouldParseOnePhaseCommitEntry() throws IOException
     {
         // given
         final LogEntryCommit commit = new OnePhaseCommit( version, 42, 21 );
@@ -91,11 +95,11 @@ public class LogEntryParserDispatcherV3Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser<IdentifiableLogEntry> parser = dispatcher.dispatch( LogEntryByteCodes.TX_1P_COMMIT );
-        final IdentifiableLogEntry logEntry = parser.parse( version, channel, marker, commandReaderFactory );
+        final LogEntryParser<LogEntry> parser = version.entryParser( LogEntryByteCodes.TX_1P_COMMIT );
+        final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
-        assertEquals( commit, logEntry.getEntry() );
+        assertEquals( commit, entryOf( logEntry ) );
         assertFalse( parser.skip() );
     }
 
@@ -115,46 +119,45 @@ public class LogEntryParserDispatcherV3Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser<IdentifiableLogEntry> parser = dispatcher.dispatch( LogEntryByteCodes.TX_2P_COMMIT );
-        final IdentifiableLogEntry logEntry = parser.parse( version, channel, marker, commandReaderFactory );
+        final LogEntryParser<LogEntry> parser = version.entryParser( LogEntryByteCodes.TX_2P_COMMIT );
+        final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
-        assertEquals( commit, logEntry.getEntry() );
+        assertEquals( commit, entryOf( logEntry ) );
         assertFalse( parser.skip() );
     }
 
     @Test
-    public void shouldParserCommandsUsingAGivenFactory() throws IOException
+    public void shouldParseCommandsUsingAGivenFactory() throws IOException
     {
         // given
         final Command.NodeCommand nodeCommand = new Command.NodeCommand();
+        nodeCommand.init( new NodeRecord( 0 ), new NodeRecord( 0 ) );
         final LogEntryCommand command = new LogEntryCommand( version, nodeCommand );
         final InMemoryLogChannel channel = new InMemoryLogChannel();
 
         // ignored data
         channel.putInt( 123 ); // identifier
         // actual read data
-        channel.put( NeoCommandType.NODE_COMMAND );
+        new CommandWriter( channel ).visitNodeCommand( nodeCommand );
 
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser<IdentifiableLogEntry> parser = dispatcher.dispatch( LogEntryByteCodes.COMMAND );
-        final IdentifiableLogEntry logEntry = parser.parse( version, channel, marker, commandReaderFactory );
+        final LogEntryParser<LogEntry> parser = version.entryParser( LogEntryByteCodes.COMMAND );
+        final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
-        assertEquals( command, logEntry.getEntry() );
+        assertEquals( command, entryOf( logEntry ) );
         assertFalse( parser.skip() );
     }
-
 
     @Test
     public void shouldParseEmptyEntry() throws IOException
     {
         // when
-        final LogEntryParser<IdentifiableLogEntry> parser = dispatcher.dispatch( LogEntryByteCodes.EMPTY );
-        final IdentifiableLogEntry logEntry = parser.parse( version, new InMemoryLogChannel(), marker,
-                commandReaderFactory );
+        final LogEntryParser<LogEntry> parser = version.entryParser( LogEntryByteCodes.EMPTY );
+        final LogEntry logEntry = parser.parse( version, new InMemoryLogChannel(), marker, commandReader );
 
         // then
         assertNull( logEntry );
@@ -176,8 +179,8 @@ public class LogEntryParserDispatcherV3Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser<IdentifiableLogEntry> parser = dispatcher.dispatch( LogEntryByteCodes.TX_PREPARE );
-        final IdentifiableLogEntry logEntry = parser.parse( version, channel, marker, commandReaderFactory );
+        final LogEntryParser<LogEntry> parser = version.entryParser( LogEntryByteCodes.TX_PREPARE );
+        final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
         assertNull( logEntry );
@@ -199,8 +202,8 @@ public class LogEntryParserDispatcherV3Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser<IdentifiableLogEntry> parser = dispatcher.dispatch( LogEntryByteCodes.DONE );
-        final IdentifiableLogEntry logEntry = parser.parse( version, channel, marker, commandReaderFactory );
+        final LogEntryParser<LogEntry> parser = version.entryParser( LogEntryByteCodes.DONE );
+        final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
         assertNull( logEntry );

@@ -31,7 +31,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
@@ -57,7 +57,7 @@ public class StoreMigratorTest
     public void shouldBeAbleToResumeMigration() throws Exception
     {
         // GIVEN a legacy database
-        File storeDirectory = createNeoStoreWithOlderVersion( Legacy20Store.LEGACY_VERSION );
+        File storeDirectory = createNeoStoreWithOlderVersion( Legacy21Store.LEGACY_VERSION );
         // and a state of the migration saying that it has done the actual migration
         Logging logging = new DevNullLoggingService();
         PageCache pageCache = pageCacheRule.getPageCache( fs );

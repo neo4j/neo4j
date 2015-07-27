@@ -30,12 +30,10 @@ import org.neo4j.kernel.impl.transaction.log.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_VERSION;
 
 public class LogHeaderReader
 {
-    private static final short CURRENT_FORMAT_VERSION = CURRENT_LOG_VERSION & 0xFF;
-
     public static LogHeader readLogHeader( ReadableLogChannel channel ) throws IOException
     {
         long encodedLogVersions = channel.getLong();

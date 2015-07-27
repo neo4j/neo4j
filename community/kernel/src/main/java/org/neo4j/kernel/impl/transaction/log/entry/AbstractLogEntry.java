@@ -25,10 +25,10 @@ import org.neo4j.helpers.Format;
 
 public abstract class AbstractLogEntry implements LogEntry
 {
+    private final LogEntryVersion version;
     private final byte type;
-    private final byte version;
 
-    AbstractLogEntry( byte type, byte version )
+    AbstractLogEntry( LogEntryVersion version, byte type )
     {
         this.type = type;
         this.version = version;
@@ -41,7 +41,7 @@ public abstract class AbstractLogEntry implements LogEntry
     }
 
     @Override
-    public byte getVersion()
+    public LogEntryVersion getVersion()
     {
         return version;
     }

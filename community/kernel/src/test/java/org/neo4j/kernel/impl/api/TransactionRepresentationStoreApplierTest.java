@@ -150,8 +150,8 @@ public class TransactionRepresentationStoreApplierTest
     {
         IndexDefineCommand definitions = new IndexDefineCommand();
         definitions.init(
-                MapUtil.<String,Byte>genericMap( "one", (byte)1 ),
-                MapUtil.<String,Byte>genericMap( "two", (byte)2 ) );
+                MapUtil.<String,Integer>genericMap( "one", 1 ),
+                MapUtil.<String,Integer>genericMap( "two", 2 ) );
         return Arrays.<Command>asList( definitions );
     }
 }

@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import static org.junit.Assert.fail;
-
 import org.junit.Test;
+
+import static org.junit.Assert.fail;
 
 public class IndexDefineCommandTest
 {
@@ -30,10 +30,10 @@ public class IndexDefineCommandTest
     {
         // Given
         IndexDefineCommand idc = new IndexDefineCommand();
+        int max = (int) (Math.pow( 2, 16 ) - 1);
 
         // When
-        // 63 keys are used, it should be fine
-        for ( int i = 0; i < 63; i++ )
+        for ( int i = 0; i < max; i++ )
         {
             idc.getOrAssignKeyId( "index" + i );
         }
@@ -42,8 +42,8 @@ public class IndexDefineCommandTest
         // it should break on the 64th
         try
         {
-            idc.getOrAssignKeyId( "index63" );
-            fail("IndexDefineCommand should not allow more than 63 indexes per transaction");
+            idc.getOrAssignKeyId( "dropThatOverflows" );
+            fail( "IndexDefineCommand should not allow more than 63 indexes per transaction" );
         }
         catch( IllegalStateException e )
         {

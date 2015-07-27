@@ -24,18 +24,18 @@ import java.io.IOException;
 import org.neo4j.kernel.impl.transaction.command.LogHandler;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_1P_COMMIT;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.CURRENT_LOG_ENTRY_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.CURRENT;
 
 public class OnePhaseCommit extends LogEntryCommit
 {
     public OnePhaseCommit( long txId, long timeWritten )
     {
-        this( CURRENT_LOG_ENTRY_VERSION, txId, timeWritten );
+        this( CURRENT, txId, timeWritten );
     }
 
-    public OnePhaseCommit( byte version, long txId, long timeWritten )
+    public OnePhaseCommit( LogEntryVersion version, long txId, long timeWritten )
     {
-        super( TX_1P_COMMIT, version, txId, timeWritten, "Commit" );
+        super( version, TX_1P_COMMIT, txId, timeWritten, "Commit" );
     }
 
     @Override

@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.transaction.command.LogHandler;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.CURRENT_LOG_ENTRY_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.CURRENT;
 
 public class LogEntryStart extends AbstractLogEntry
 {
@@ -45,14 +45,14 @@ public class LogEntryStart extends AbstractLogEntry
                           long lastCommittedTxWhenTransactionStarted, byte[] additionalHeader,
                           LogPosition startPosition )
     {
-        this( CURRENT_LOG_ENTRY_VERSION, masterId, authorId, timeWritten,
+        this( CURRENT, masterId, authorId, timeWritten,
                 lastCommittedTxWhenTransactionStarted, additionalHeader, startPosition );
     }
 
-    public LogEntryStart( byte version, int masterId, int authorId, long timeWritten,
+    public LogEntryStart( LogEntryVersion version, int masterId, int authorId, long timeWritten,
                           long lastCommittedTxWhenTransactionStarted, byte[] additionalHeader, LogPosition startPosition )
     {
-        super( TX_START, version );
+        super( version, TX_START );
         this.masterId = masterId;
         this.authorId = authorId;
         this.startPosition = startPosition;
