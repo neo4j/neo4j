@@ -612,8 +612,8 @@ public class EnterpriseEditionModule
                 }
                 else
                 {
-                    TransactionCommitProcess inner = new TransactionRepresentationCommitProcess( appender, kernelHealth,
-                                                neoStore, storeApplier, indexUpdatesValidator );
+                    TransactionCommitProcess inner = new TransactionRepresentationCommitProcess( appender, storeApplier,
+                            indexUpdatesValidator );
                     new CommitProcessSwitcher( pusher, master, commitProcessDelegate, requestContextFactory,
                             memberStateMachine, txValidator, inner );
 

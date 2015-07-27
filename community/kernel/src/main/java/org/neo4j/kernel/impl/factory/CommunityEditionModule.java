@@ -166,8 +166,7 @@ public class CommunityEditionModule
                 }
                 else
                 {
-                    return new TransactionRepresentationCommitProcess( appender, kernelHealth,
-                            neoStore, storeApplier, indexUpdatesValidator );
+                    return new TransactionRepresentationCommitProcess( appender, storeApplier, indexUpdatesValidator );
                 }
             }
         };

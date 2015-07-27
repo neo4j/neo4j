@@ -136,7 +136,7 @@ public class TransactionRecordState implements RecordState
         for ( RecordProxy<Integer, LabelTokenRecord, Void> record : context.getLabelTokenRecords().changes() )
         {
             Command.LabelTokenCommand command = new Command.LabelTokenCommand();
-            command.init(  record.forReadingLinkage()  );
+            command.init( record.forReadingLinkage() );
             commands.add( command );
         }
         for ( RecordProxy<Integer, RelationshipTypeTokenRecord, Void> record : context.getRelationshipTypeTokenRecords().changes() )
@@ -147,8 +147,7 @@ public class TransactionRecordState implements RecordState
         }
         for ( RecordProxy<Integer, PropertyKeyTokenRecord, Void> record : context.getPropertyKeyTokenRecords().changes() )
         {
-            Command.PropertyKeyTokenCommand command =
-                    new Command.PropertyKeyTokenCommand();
+            Command.PropertyKeyTokenCommand command = new Command.PropertyKeyTokenCommand();
             command.init( record.forReadingLinkage() );
             commands.add( command );
         }
@@ -169,7 +168,7 @@ public class TransactionRecordState implements RecordState
         for ( RecordProxy<Long, RelationshipRecord, Void> record : context.getRelRecords().changes() )
         {
             Command.RelationshipCommand command = new Command.RelationshipCommand();
-            command.init(  record.forReadingLinkage()  );
+            command.init( record.forReadingLinkage() );
             relCommands.add( command );
         }
         Collections.sort( relCommands, COMMAND_SORTER );
