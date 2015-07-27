@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.recovery.StoreRecoverer;
+import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -75,6 +75,7 @@ public class TestStoreAccess
 
     private boolean isUnclean( FileSystemAbstraction fileSystem ) throws IOException
     {
-        return new StoreRecoverer( fileSystem, pageCacheRule.getPageCache( fileSystem ) ).recoveryNeededAt( storeDir );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        return new RecoveryRequiredChecker( fileSystem, pageCache ).isRecoveryRequiredAt( storeDir );
     }
 }

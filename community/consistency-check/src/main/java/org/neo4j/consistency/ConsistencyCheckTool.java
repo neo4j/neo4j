@@ -31,12 +31,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
-import org.neo4j.kernel.impl.recovery.StoreRecoverer;
+import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 
@@ -48,9 +48,9 @@ public class ConsistencyCheckTool
     private static final String CONFIG = "config";
     private static final String PROP_OWNER = "propowner";
 
-    static interface ExitHandle
+    interface ExitHandle
     {
-        static final ExitHandle SYSTEM_EXIT = new ExitHandle()
+        ExitHandle SYSTEM_EXIT = new ExitHandle()
         {
             @Override
             public void pull()
@@ -80,7 +80,6 @@ public class ConsistencyCheckTool
     private final GraphDatabaseFactory dbFactory;
     private final PrintStream systemError;
     private final ExitHandle exitHandle;
-    private StoreRecoverer recoveryChecker;
     private FileSystemAbstraction fs;
 
     ConsistencyCheckTool( ConsistencyCheckService consistencyCheckService,
@@ -98,26 +97,22 @@ public class ConsistencyCheckTool
         Args arguments = Args.withFlags( RECOVERY, PROP_OWNER ).parse( args );
         File storeDir = determineStoreDirectory( arguments );
         Config tuningConfiguration = readTuningConfiguration( arguments );
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, tuningConfiguration ) )
+
+        attemptRecoveryOrCheckStateOfLogicalLogs( arguments, storeDir, tuningConfiguration );
+
+        LogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
+        try
         {
-            recoveryChecker = new StoreRecoverer( fs, pageCache );
-
-            attemptRecoveryOrCheckStateOfLogicalLogs( arguments, storeDir );
-
-            LogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
-            try
-            {
-                consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
-                        ProgressMonitorFactory.textual( System.err ), logProvider );
-            }
-            catch ( ConsistencyCheckIncompleteException e )
-            {
-                throw new ToolFailureException( "Check aborted due to exception", e );
-            }
+            consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
+                    ProgressMonitorFactory.textual( System.err ), logProvider );
+        }
+        catch ( ConsistencyCheckIncompleteException e )
+        {
+            throw new ToolFailureException( "Check aborted due to exception", e );
         }
     }
 
-    private void attemptRecoveryOrCheckStateOfLogicalLogs( Args arguments, File storeDir )
+    private void attemptRecoveryOrCheckStateOfLogicalLogs( Args arguments, File storeDir, Config tuningConfiguration )
     {
         if ( arguments.getBoolean( RECOVERY, false, true ) )
         {
@@ -125,9 +120,9 @@ public class ConsistencyCheckTool
         }
         else
         {
-            try
+            try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, tuningConfiguration ) )
             {
-                if ( recoveryChecker.recoveryNeededAt( storeDir ) )
+                if ( new RecoveryRequiredChecker( fs, pageCache ).isRecoveryRequiredAt( storeDir ) )
                 {
                     systemError.print( lines(
                             "Active logical log detected, this might be a source of inconsistencies.",
