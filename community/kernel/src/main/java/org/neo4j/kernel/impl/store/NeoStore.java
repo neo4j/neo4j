@@ -73,6 +73,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public static final String TYPE_DESCRIPTOR = "NeoStore";
     // This value means the field has not been refreshed from the store. Normally, this should happen only once
+    public static final long FIELD_NOT_PRESENT = -1;
     public static final long FIELD_NOT_INITIALIZED = Long.MIN_VALUE;
     /*
      *  9 longs in header (long + in use), time | random | version | txid | store version | graph next prop | latest
@@ -475,7 +476,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         {
             throw new RuntimeException( e );
         }
-        return -1;
+        return FIELD_NOT_PRESENT;
     }
 
     private static int getPageSize( PageCache pageCache )
@@ -642,10 +643,13 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     private long getRecordValue( PageCursor cursor, Position position )
     {
-        // The "+ 1" to skip over the inUse byte.
-        int offset = position.id * getEffectiveRecordSize() + 1;
+        int offset = position.id * getEffectiveRecordSize();
         cursor.setOffset( offset );
-        return cursor.getLong();
+        if ( cursor.getByte() == Record.IN_USE.byteValue() )
+        {
+            return cursor.getLong();
+        }
+        return FIELD_NOT_PRESENT;
     }
 
     private void incrementVersion( PageCursor cursor ) throws IOException

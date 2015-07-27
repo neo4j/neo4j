@@ -1117,6 +1117,46 @@ public class TestNeoStore
     }
 
     @Test
+    public void shouldNotReadNonRecordDataAsRecord() throws Exception
+    {
+        FileSystemAbstraction fileSystem = fs.get();
+        File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
+        StoreFactory factory =
+                new StoreFactory( fileSystem, neoStoreDir, pageCache, NullLogProvider.getInstance(), new Monitors() );
+        NeoStore neoStore = factory.newNeoStore( true );
+        neoStore.setCreationTime( 3 );
+        neoStore.setRandomNumber( 4 );
+        neoStore.setCurrentLogVersion( 5 );
+        neoStore.setLastCommittedAndClosedTransactionId( 6, 0, 0, 0 );
+        neoStore.setStoreVersion( 7 );
+        neoStore.setGraphNextProp( 8 );
+        neoStore.setLatestConstraintIntroducingTx( 9 );
+        neoStore.rebuildCountStoreIfNeeded();
+        neoStore.flush();
+        neoStore.close();
+
+        File file = new File( neoStoreDir, NeoStore.DEFAULT_NAME );
+        try ( StoreChannel channel = fileSystem.open( file, "rw" ) )
+        {
+            byte[] trailer =
+                    UTF8.encode( CommonAbstractStore.buildTypeDescriptorAndVersion( neoStore.getTypeDescriptor() ) );
+            channel.position( 0 );
+            channel.write( ByteBuffer.wrap( UTF8.encode( "This is some data that is not a record." ) ) );
+        }
+
+        neoStore = factory.newNeoStore( false );
+        assertEquals( NeoStore.FIELD_NOT_PRESENT, neoStore.getCreationTime() );
+        assertEquals( NeoStore.FIELD_NOT_PRESENT, neoStore.getRandomNumber() );
+        assertEquals( NeoStore.FIELD_NOT_PRESENT, neoStore.getCurrentLogVersion() );
+        assertEquals( NeoStore.FIELD_NOT_PRESENT, neoStore.getLastCommittedTransactionId() );
+        assertEquals( NeoStore.FIELD_NOT_PRESENT, neoStore.getStoreVersion() );
+        assertEquals( 8, neoStore.getGraphNextProp() );
+        assertEquals( 9, neoStore.getLatestConstraintIntroducingTx() );
+
+        neoStore.close();
+    }
+
+    @Test
     public void testSetLatestConstraintTx() throws Exception
     {
         // given
