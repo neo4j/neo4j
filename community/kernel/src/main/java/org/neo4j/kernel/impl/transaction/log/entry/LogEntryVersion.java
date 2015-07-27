@@ -126,7 +126,7 @@ public enum LogEntryVersion
             return new PhysicalLogNeoCommandReaderV2_2_4();
         }
     },
-    V2_3( -4, LogEntryParsersV6.class )
+    V2_3( -4, LogEntryParsersV2_3.class )
     {
         @Override
         public CommandReader newCommandReader()

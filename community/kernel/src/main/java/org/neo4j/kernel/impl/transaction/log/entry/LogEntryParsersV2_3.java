@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 
 // 2.3
-public enum LogEntryParsersV6 implements LogEntryParser<LogEntry>
+public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
 {
     EMPTY
             {

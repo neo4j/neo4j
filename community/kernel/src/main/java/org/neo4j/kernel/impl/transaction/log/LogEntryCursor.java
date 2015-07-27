@@ -49,7 +49,7 @@ public class LogEntryCursor implements IOCursor<LogEntry>
     }
 
     @Override
-    public boolean next( ) throws IOException
+    public boolean next() throws IOException
     {
         entry = logEntryReader.readLogEntry( channel );
 

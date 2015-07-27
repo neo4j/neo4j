@@ -123,6 +123,9 @@ public abstract class IteratorUtil
      * element found. If there is more than one element in the iterator a
      * {@link NoSuchElementException} will be thrown.
      *
+     * If the {@code iterator} implements {@link Resource} it will be {@link Resource#close() closed}
+     * in a {@code finally} block after the single item has been retrieved, or failed to be retrieved.
+     *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @return the single element in {@code iterator}, or {@code null} if no
@@ -138,6 +141,9 @@ public abstract class IteratorUtil
      * Returns the given iterator's single element. If there are no elements
      * or more than one element in the iterator a {@link NoSuchElementException}
      * will be thrown.
+     *
+     * If the {@code iterator} implements {@link Resource} it will be {@link Resource#close() closed}
+     * in a {@code finally} block after the single item has been retrieved, or failed to be retrieved.
      *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
@@ -281,6 +287,10 @@ public abstract class IteratorUtil
      * element found. If there is more than one element in the iterable a
      * {@link NoSuchElementException} will be thrown.
      *
+     * If the {@link Iterable#iterator() iterator} created by the {@code iterable} implements {@link Resource}
+     * it will be {@link Resource#close() closed} in a {@code finally} block after the single item
+     * has been retrieved, or failed to be retrieved.
+     *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
      * @return the single element in {@code iterable}, or {@code null} if no
@@ -297,6 +307,10 @@ public abstract class IteratorUtil
      * or more than one element in the iterable a {@link NoSuchElementException}
      * will be thrown.
      *
+     * If the {@link Iterable#iterator() iterator} created by the {@code iterable} implements {@link Resource}
+     * it will be {@link Resource#close() closed} in a {@code finally} block after the single item
+     * has been retrieved, or failed to be retrieved.
+     *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
      * @return the single element in the {@code iterable}.
@@ -311,6 +325,10 @@ public abstract class IteratorUtil
      * Returns the given iterable's single element or {@code null} if no
      * element found. If there is more than one element in the iterable a
      * {@link NoSuchElementException} will be thrown.
+     *
+     * If the {@link Iterable#iterator() iterator} created by the {@code iterable} implements {@link Resource}
+     * it will be {@link Resource#close() closed} in a {@code finally} block after the single item
+     * has been retrieved, or failed to be retrieved.
      *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
@@ -327,6 +345,9 @@ public abstract class IteratorUtil
      * Returns the given iterator's single element or {@code itemIfNone} if no
      * element found. If there is more than one element in the iterator a
      * {@link NoSuchElementException} will be thrown.
+     *
+     * If the {@code iterator} implements {@link Resource} it will be {@link Resource#close() closed}
+     * in a {@code finally} block after the single item has been retrieved, or failed to be retrieved.
      *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
