@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Collections;
-import java.util.Iterator;
-
 import org.junit.Test;
 import org.mockito.InOrder;
+
+import java.util.Collections;
+import java.util.Iterator;
 
 import org.neo4j.function.Function;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -39,7 +38,6 @@ import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
-import org.neo4j.kernel.impl.api.state.StubCursors;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 
@@ -47,9 +45,7 @@ import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.function.Functions.constant;
-import static org.neo4j.kernel.impl.api.state.StubCursors.asNode;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 
 public class LockingStatementOperationsTest
@@ -85,38 +81,34 @@ public class LockingStatementOperationsTest
     public void shouldAcquireEntityWriteLockCreatingRelationship() throws Exception
     {
         // when
-        NodeItem node1 = StubCursors.asNode( 2 );
-        NodeItem node2 = StubCursors.asNode( 3 );
-        lockingOps.relationshipCreate( state, 1, node1, node2 );
+        lockingOps.relationshipCreate( state, 1, 2, 3 );
 
         // then
         order.verify( locks ).acquireExclusive( ResourceTypes.NODE, 2 );
         order.verify( locks ).acquireExclusive( ResourceTypes.NODE, 3 );
-        order.verify( entityWriteOps ).relationshipCreate( state, 1, node1, node2 );
+        order.verify( entityWriteOps ).relationshipCreate( state, 1, 2, 3 );
     }
 
     @Test
     public void shouldAcquireEntityWriteLockBeforeAddingLabelToNode() throws Exception
     {
         // when
-        NodeItem nodeCursor = asNode( 123 );
-        lockingOps.nodeAddLabel( state, nodeCursor, 456 );
+        lockingOps.nodeAddLabel( state, 123, 456 );
 
         // then
         order.verify( locks ).acquireExclusive( ResourceTypes.NODE, 123 );
-        order.verify( entityWriteOps ).nodeAddLabel( state, nodeCursor, 456 );
+        order.verify( entityWriteOps ).nodeAddLabel( state, 123, 456 );
     }
 
     @Test
     public void shouldAcquireSchemaReadLockBeforeAddingLabelToNode() throws Exception
     {
         // when
-        NodeItem nodeCursor = asNode( 123 );
-        lockingOps.nodeAddLabel( state, nodeCursor, 456 );
+        lockingOps.nodeAddLabel( state, 123, 456 );
 
         // then
         order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
-        order.verify( entityWriteOps ).nodeAddLabel( state, nodeCursor, 456 );
+        order.verify( entityWriteOps ).nodeAddLabel( state, 123, 456 );
     }
 
     @Test
@@ -126,12 +118,11 @@ public class LockingStatementOperationsTest
         DefinedProperty property = Property.property( 8, 9 );
 
         // when
-        NodeItem nodeCursor = asNode( 123 );
-        lockingOps.nodeSetProperty( state, nodeCursor, property );
+        lockingOps.nodeSetProperty( state, 123, property );
 
         // then
         order.verify( locks ).acquireExclusive( ResourceTypes.NODE, 123 );
-        order.verify( entityWriteOps ).nodeSetProperty( state, nodeCursor, property );
+        order.verify( entityWriteOps ).nodeSetProperty( state, 123, property );
     }
 
     @Test
@@ -141,24 +132,22 @@ public class LockingStatementOperationsTest
         DefinedProperty property = Property.property( 8, 9 );
 
         // when
-        NodeItem nodeCursor = asNode( 123 );
-        lockingOps.nodeSetProperty( state, nodeCursor, property );
+        lockingOps.nodeSetProperty( state, 123, property );
 
         // then
         order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
-        order.verify( entityWriteOps ).nodeSetProperty( state, nodeCursor, property );
+        order.verify( entityWriteOps ).nodeSetProperty( state, 123, property );
     }
 
     @Test
     public void shouldAcquireEntityWriteLockBeforeDeletingNode() throws EntityNotFoundException
     {
         // WHEN
-        NodeItem nodeCursor = asNode( 123 );
-        lockingOps.nodeDelete( state, nodeCursor );
+        lockingOps.nodeDelete( state, 123 );
 
         //THEN
         order.verify( locks ).acquireExclusive( ResourceTypes.NODE, 123 );
-        order.verify( entityWriteOps ).nodeDelete( state, nodeCursor );
+        order.verify( entityWriteOps ).nodeDelete( state, 123 );
     }
 
     @Test

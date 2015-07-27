@@ -29,7 +29,6 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -259,7 +258,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
             return false;
         }
 
-        try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
+        try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
             return node.get().hasLabel( labelId );
         }
@@ -269,7 +268,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public PrimitiveIntIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
+        try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
             return node.get().getLabels();
         }
@@ -283,7 +282,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         {
             return false;
         }
-        try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
+        try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
             return node.get().hasProperty( propertyKeyId );
         }
@@ -297,7 +296,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         {
             return null;
         }
-        try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
+        try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
             return node.get().getProperty( propertyKeyId );
         }
@@ -308,7 +307,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
             throws EntityNotFoundException
     {
         statement.assertOpen();
-        try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
+        try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
             return node.get().getRelationships( direction, relTypes );
         }
@@ -319,7 +318,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
             throws EntityNotFoundException
     {
         statement.assertOpen();
-        try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
+        try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
             return node.get().getRelationships( direction );
         }
@@ -329,7 +328,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public int nodeGetDegree( long nodeId, Direction direction, int relType ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
+        try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
             return node.get().degree( direction, relType );
         }
@@ -339,7 +338,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public int nodeGetDegree( long nodeId, Direction direction ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
+        try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
             return node.get().degree( direction );
         }
@@ -349,7 +348,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
+        try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
             return node.get().getRelationshipTypes();
         }
@@ -363,7 +362,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         {
             return false;
         }
-        try ( Cursor<RelationshipItem> relationship = getRelationshipCursor( relationshipId ) )
+        try ( Cursor<RelationshipItem> relationship = dataRead().relationshipCursorById( statement, relationshipId ) )
         {
             return relationship.get().hasProperty( propertyKeyId );
         }
@@ -377,7 +376,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         {
             return null;
         }
-        try ( Cursor<RelationshipItem> relationship = getRelationshipCursor( relationshipId ) )
+        try ( Cursor<RelationshipItem> relationship = dataRead().relationshipCursorById( statement, relationshipId ) )
         {
             return relationship.get().getProperty( propertyKeyId );
         }
@@ -409,7 +408,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public PrimitiveIntIterator nodeGetPropertyKeys( long nodeId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
+        try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
             return node.get().getPropertyKeys();
         }
@@ -419,7 +418,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public PrimitiveIntIterator relationshipGetPropertyKeys( long relationshipId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        try ( Cursor<RelationshipItem> relationship = getRelationshipCursor( relationshipId ) )
+        try ( Cursor<RelationshipItem> relationship = dataRead().relationshipCursorById( statement, relationshipId ) )
         {
             return relationship.get().getPropertyKeys();
         }
@@ -542,7 +541,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         IndexDescriptor descriptor = schemaRead().indexesGetForLabelAndPropertyKey( statement, labelId, propertyKeyId );
         if ( descriptor == null )
         {
-            throw new IndexSchemaRuleNotFoundException( labelId, propertyKeyId);
+            throw new IndexSchemaRuleNotFoundException( labelId, propertyKeyId );
         }
         return descriptor;
     }
@@ -586,7 +585,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
         if ( null == result )
         {
-            throw new IndexSchemaRuleNotFoundException( labelId, propertyKeyId, true);
+            throw new IndexSchemaRuleNotFoundException( labelId, propertyKeyId, true );
         }
 
         return result;
@@ -791,7 +790,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     // <SchemaState>
     @Override
-    public <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator )
+    public <K, V> V schemaStateGetOrCreate( K key, Function<K,V> creator )
     {
         return schemaState().schemaStateGetOrCreate( statement, key, creator );
     }
@@ -816,11 +815,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public void nodeDelete( long nodeId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-
-        try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
-        {
-            dataWrite().nodeDelete( statement, node.get() );
-        }
+        dataWrite().nodeDelete( statement, nodeId );
     }
 
     @Override
@@ -828,26 +823,14 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
             throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException
     {
         statement.assertOpen();
-
-        try ( Cursor<NodeItem> startNode = getNodeCursor( startNodeId ) )
-        {
-            try ( Cursor<NodeItem> endNode = getNodeCursor( endNodeId ) )
-            {
-                return dataWrite().relationshipCreate( statement, relationshipTypeId, startNode.get(), endNode.get() );
-            }
-        }
-
+        return dataWrite().relationshipCreate( statement, relationshipTypeId, startNodeId, endNodeId );
     }
 
     @Override
     public void relationshipDelete( long relationshipId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-
-        try ( Cursor<RelationshipItem> relationship = getRelationshipCursor( relationshipId ) )
-        {
-            dataWrite().relationshipDelete( statement, relationship.get() );
-        }
+        dataWrite().relationshipDelete( statement, relationshipId );
     }
 
     @Override
@@ -855,22 +838,14 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
             throws EntityNotFoundException, ConstraintValidationKernelException
     {
         statement.assertOpen();
-
-        try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
-        {
-            return dataWrite().nodeAddLabel( statement, node.get(), labelId );
-        }
+        return dataWrite().nodeAddLabel( statement, nodeId, labelId );
     }
 
     @Override
     public boolean nodeRemoveLabel( long nodeId, int labelId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-
-        try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
-        {
-            return dataWrite().nodeRemoveLabel( statement, node.get(), labelId );
-        }
+        return dataWrite().nodeRemoveLabel( statement, nodeId, labelId );
     }
 
     @Override
@@ -878,11 +853,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
             throws EntityNotFoundException, ConstraintValidationKernelException
     {
         statement.assertOpen();
-
-        try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
-        {
-            return dataWrite().nodeSetProperty( statement, node.get(), property );
-        }
+        return dataWrite().nodeSetProperty( statement, nodeId, property );
     }
 
     @Override
@@ -890,11 +861,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
             throws EntityNotFoundException
     {
         statement.assertOpen();
-
-        try ( Cursor<RelationshipItem> relationship = getRelationshipCursor( relationshipId ) )
-        {
-            return dataWrite().relationshipSetProperty( statement, relationship.get(), property );
-        }
+            return dataWrite().relationshipSetProperty( statement, relationshipId, property );
     }
 
     @Override
@@ -908,22 +875,14 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public Property nodeRemoveProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-
-        try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
-        {
-            return dataWrite().nodeRemoveProperty( statement, node.get(), propertyKeyId );
-        }
+        return dataWrite().nodeRemoveProperty( statement, nodeId, propertyKeyId );
     }
 
     @Override
     public Property relationshipRemoveProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-
-        try ( Cursor<RelationshipItem> relationship = getRelationshipCursor( relationshipId ) )
-        {
-            return dataWrite().relationshipRemoveProperty( statement, relationship.get(), propertyKeyId );
-        }
+        return dataWrite().relationshipRemoveProperty( statement, relationshipId, propertyKeyId );
     }
 
     @Override
@@ -1080,14 +1039,14 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public void nodeLegacyIndexCreateLazily( String indexName, Map<String, String> customConfig )
+    public void nodeLegacyIndexCreateLazily( String indexName, Map<String,String> customConfig )
     {
         statement.assertOpen();
         legacyIndexWrite().nodeLegacyIndexCreateLazily( statement, indexName, customConfig );
     }
 
     @Override
-    public void nodeLegacyIndexCreate( String indexName, Map<String, String> customConfig )
+    public void nodeLegacyIndexCreate( String indexName, Map<String,String> customConfig )
     {
         statement.assertOpen();
 
@@ -1095,14 +1054,14 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public void relationshipLegacyIndexCreateLazily( String indexName, Map<String, String> customConfig )
+    public void relationshipLegacyIndexCreateLazily( String indexName, Map<String,String> customConfig )
     {
         statement.assertOpen();
         legacyIndexWrite().relationshipLegacyIndexCreateLazily( statement, indexName, customConfig );
     }
 
     @Override
-    public void relationshipLegacyIndexCreate( String indexName, Map<String, String> customConfig )
+    public void relationshipLegacyIndexCreate( String indexName, Map<String,String> customConfig )
     {
         statement.assertOpen();
 
@@ -1187,7 +1146,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public Map<String, String> nodeLegacyIndexGetConfiguration( String indexName )
+    public Map<String,String> nodeLegacyIndexGetConfiguration( String indexName )
             throws LegacyIndexNotFoundKernelException
     {
         statement.assertOpen();
@@ -1195,7 +1154,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public Map<String, String> relationshipLegacyIndexGetConfiguration( String indexName )
+    public Map<String,String> relationshipLegacyIndexGetConfiguration( String indexName )
             throws LegacyIndexNotFoundKernelException
     {
         statement.assertOpen();
@@ -1266,34 +1225,4 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     // </Counts>
-
-    private Cursor<NodeItem> getNodeCursor( long nodeId ) throws EntityNotFoundException
-    {
-        Cursor<NodeItem> node = dataRead().nodeCursor( statement, nodeId );
-
-        if ( !node.next() )
-        {
-            node.close();
-            throw new EntityNotFoundException( EntityType.NODE, nodeId );
-        }
-        else
-        {
-            return node;
-        }
-    }
-
-    private Cursor<RelationshipItem> getRelationshipCursor( long relationshipId ) throws EntityNotFoundException
-    {
-        Cursor<RelationshipItem> relationship = dataRead().relationshipCursor( statement, relationshipId );
-
-        if ( !relationship.next() )
-        {
-            relationship.close();
-            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
-        }
-        else
-        {
-            return relationship;
-        }
-    }
 }

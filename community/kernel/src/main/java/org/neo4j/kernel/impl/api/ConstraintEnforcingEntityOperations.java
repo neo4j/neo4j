@@ -36,7 +36,6 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.LabelItem;
 import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -90,8 +89,8 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public boolean nodeAddLabel( KernelStatement state, NodeItem node, int labelId )
-            throws ConstraintValidationKernelException
+    public boolean nodeAddLabel( KernelStatement state, long nodeId, int labelId )
+            throws ConstraintValidationKernelException, EntityNotFoundException
     {
         Iterator<NodePropertyConstraint> allConstraints = schemaReadOperations.constraintsGetForLabel( state, labelId );
         Iterator<NodePropertyConstraint> constraints = uniquePropertyConstraints( allConstraints );
@@ -99,39 +98,50 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         {
             PropertyConstraint constraint = constraints.next();
             int propertyKeyId = constraint.propertyKey();
-            Object propertyValue = node.getProperty( propertyKeyId );
-            if ( propertyValue != null )
+            try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
             {
-                validateNoExistingNodeWithLabelAndProperty( state, labelId, propertyKeyId, propertyValue, node.id() );
+                NodeItem node = cursor.get();
+                Object propertyValue = node.getProperty( propertyKeyId );
+                if ( propertyValue != null )
+                {
+                    validateNoExistingNodeWithLabelAndProperty( state, labelId, propertyKeyId, propertyValue, node.id() );
+                }
             }
 
         }
-        return entityWriteOperations.nodeAddLabel( state, node, labelId );
+        return entityWriteOperations.nodeAddLabel( state, nodeId, labelId );
     }
 
     @Override
-    public Property nodeSetProperty( KernelStatement state, NodeItem node, DefinedProperty property )
-            throws ConstraintValidationKernelException
+    public Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
+            throws ConstraintValidationKernelException, EntityNotFoundException
     {
-        try ( Cursor<LabelItem> labels = node.labels() )
+        try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
-            while ( labels.next() )
+
+            NodeItem node = cursor.get();
+
+            try ( Cursor<LabelItem> labels = node.labels() )
             {
-                int labelId = labels.get().getAsInt();
-                int propertyKeyId = property.propertyKeyId();
-                Iterator<NodePropertyConstraint> constraintIterator =
-                        uniquePropertyConstraints(
-                                schemaReadOperations.constraintsGetForLabelAndPropertyKey( state, labelId,
-                                        propertyKeyId ) );
-                if ( constraintIterator.hasNext() )
+                while ( labels.next() )
                 {
-                    validateNoExistingNodeWithLabelAndProperty( state, labelId, property.propertyKeyId(),
-                            property.value(), node.id() );
+                    int labelId = labels.get().getAsInt();
+                    int propertyKeyId = property.propertyKeyId();
+                    Iterator<NodePropertyConstraint> constraintIterator =
+                            uniquePropertyConstraints(
+                                    schemaReadOperations.constraintsGetForLabelAndPropertyKey( state, labelId,
+                                            propertyKeyId ) );
+                    if ( constraintIterator.hasNext() )
+                    {
+                        validateNoExistingNodeWithLabelAndProperty(
+                                state, labelId, property.propertyKeyId(), property.value(), node.id() );
+                    }
                 }
             }
+
         }
 
-        return entityWriteOperations.nodeSetProperty( state, node, property );
+        return entityWriteOperations.nodeSetProperty( state, nodeId, property );
     }
 
     private void validateNoExistingNodeWithLabelAndProperty( KernelStatement state, int labelId,
@@ -177,39 +187,39 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     // Simply delegate the rest of the invocations
 
     @Override
-    public void nodeDelete( KernelStatement state, NodeItem node )
+    public void nodeDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
-        entityWriteOperations.nodeDelete( state, node );
+        entityWriteOperations.nodeDelete( state, nodeId );
     }
 
     @Override
     public long relationshipCreate( KernelStatement statement,
             int relationshipTypeId,
-            NodeItem startNodeId,
-            NodeItem endNodeId )
+            long startNodeId,
+            long endNodeId )
             throws EntityNotFoundException
     {
         return entityWriteOperations.relationshipCreate( statement, relationshipTypeId, startNodeId, endNodeId );
     }
 
     @Override
-    public void relationshipDelete( KernelStatement state, RelationshipItem relationship )
+    public void relationshipDelete( KernelStatement state, long relationshipId ) throws EntityNotFoundException
     {
-        entityWriteOperations.relationshipDelete( state, relationship );
+        entityWriteOperations.relationshipDelete( state, relationshipId );
     }
 
     @Override
-    public boolean nodeRemoveLabel( KernelStatement state, NodeItem node, int labelId )
+    public boolean nodeRemoveLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException
     {
-        return entityWriteOperations.nodeRemoveLabel( state, node, labelId );
+        return entityWriteOperations.nodeRemoveLabel( state, nodeId, labelId );
     }
 
     @Override
     public Property relationshipSetProperty( KernelStatement state,
-            RelationshipItem relationship,
-            DefinedProperty property )
+            long relationshipId,
+            DefinedProperty property ) throws EntityNotFoundException
     {
-        return entityWriteOperations.relationshipSetProperty( state, relationship, property );
+        return entityWriteOperations.relationshipSetProperty( state, relationshipId, property );
     }
 
     @Override
@@ -219,17 +229,18 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Property nodeRemoveProperty( KernelStatement state, NodeItem node, int propertyKeyId )
+    public Property nodeRemoveProperty( KernelStatement state, long nodeId, int propertyKeyId )
+            throws EntityNotFoundException
     {
-        return entityWriteOperations.nodeRemoveProperty( state, node, propertyKeyId );
+        return entityWriteOperations.nodeRemoveProperty( state, nodeId, propertyKeyId );
     }
 
     @Override
     public Property relationshipRemoveProperty( KernelStatement state,
-            RelationshipItem relationship,
-            int propertyKeyId )
+            long relationshipId,
+            int propertyKeyId ) throws EntityNotFoundException
     {
-        return entityWriteOperations.relationshipRemoveProperty( state, relationship, propertyKeyId );
+        return entityWriteOperations.relationshipRemoveProperty( state, relationshipId, propertyKeyId );
     }
 
     @Override
@@ -374,6 +385,12 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
+    public Cursor<NodeItem> nodeCursorById( KernelStatement statement, long nodeId ) throws EntityNotFoundException
+    {
+        return entityReadOperations.nodeCursorById( statement, nodeId );
+    }
+
+    @Override
     public Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId )
     {
         return entityReadOperations.nodeCursor( statement, nodeId );
@@ -383,6 +400,12 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     public Cursor<NodeItem> nodeCursor( TxStateHolder txStateHolder, StoreStatement statement, long nodeId )
     {
         return entityReadOperations.nodeCursor( txStateHolder, statement, nodeId );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> relationshipCursorById( KernelStatement statement, long relId ) throws EntityNotFoundException
+    {
+        return entityReadOperations.relationshipCursorById( statement, relId );
     }
 
     @Override

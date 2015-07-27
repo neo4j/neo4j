@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Set;
-
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -54,11 +53,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
-import static org.neo4j.kernel.impl.api.state.StubCursors.asNode;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 
 public class StateHandlingStatementOperationsTest
@@ -85,18 +82,12 @@ public class StateHandlingStatementOperationsTest
 
         // When
         ctx.indexCreate( state, 0, 0 );
-        ctx.nodeAddLabel( state, asNode( 0 ), 0 );
+        ctx.nodeAddLabel( state, 0, 0 );
         ctx.indexDrop( state, new IndexDescriptor( 0, 0 ) );
-        ctx.nodeRemoveLabel( state, asNode( 0 ), 0 );
+        ctx.nodeRemoveLabel( state, 0, 0 );
 
-        // These are kind of in between.. property key ids are created in
-        // micro-transactions, so these methods
-        // circumvent the normal state of affairs. We may want to rub the
-        // genius-bumps over this at some point.
-        // ctx.getOrCreateLabelId("0");
-        // ctx.getOrCreatePropertyKeyId("0");
-
-        verify( storeStatement, times( 0 ) ).acquireSingleNodeCursor( 0 );
+        // one for add and one for remove
+        verify( storeStatement, times( 2 ) ).acquireSingleNodeCursor( 0 );
         verifyNoMoreInteractions( storeStatement );
     }
 
