@@ -28,11 +28,6 @@ Parses a Neo4j configuration file into a hashtable.  Multivalue keys are output 
 The full path to the file to read
 
 .EXAMPLE
-$serverObject | Confirm-Neo4jServerObject 
-
-Confirm that $serverObject is a valid Neo4j Server object
-
-.EXAMPLE
 Get-KeyValuePairsFromConfFile -Filename 'C:\Neo4j\conf\neo4j.properties'
 
 Reads the file 'C:\Neo4j\conf\neo4j.properties' and outputs a hashtable of key/value pairs

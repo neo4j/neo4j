@@ -50,11 +50,6 @@ Get-Java -Neo4jServer $serverObject -ForServer -ExtraClassPath @('C:\Java','Z:\J
 
 Retrieves the Java comamnd line to start the Neo4j server for the instance in $serverObject.  Also includes the paths C:\Java and Z:\Java in the class path.
 
-.EXAMPLE
-Confirm-Neo4jServerObject -Neo4jServer $serverObject
-
-Confirm that $serverObject is a valid Neo4j Server object
-
 .OUTPUTS
 System.Collections.Hashtable
 
