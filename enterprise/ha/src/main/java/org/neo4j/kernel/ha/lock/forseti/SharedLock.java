@@ -89,8 +89,16 @@ class SharedLock implements ForsetiLockManager.Lock
             return false;
         }
 
-        // Then add our wait list to the pile of things waiting
-        return addClientHoldingLock( client );
+        // Then add our wait list to the pile of things waiting in case if we are not there yet
+        // if we already waiting we will release a reference to keep counter in sync
+        if ( !clientHoldsThisLock( client ) )
+        {
+            // try to add client to a clients that holding current lock.
+            return addClientHoldingLock( client );
+        } else {
+            releaseReference();
+            return false;
+        }
     }
 
     public boolean release(ForsetiClient client)
@@ -178,12 +186,17 @@ class SharedLock implements ForsetiLockManager.Lock
         while(true)
         {
             int refs = refCount.get();
-            updateHolder = null;
+            cleanUpdateHolder();
             if(refCount.compareAndSet( refs, refs & ~UPDATE_LOCK_FLAG ))
             {
                 return;
             }
         }
+    }
+
+    public void cleanUpdateHolder()
+    {
+        updateHolder = null;
     }
 
     public int numberOfHolders()
@@ -264,9 +277,6 @@ class SharedLock implements ForsetiLockManager.Lock
 
     private boolean addClientHoldingLock( ForsetiClient client )
     {
-        assert !clientHoldsThisLock( client ) :
-                client + " can not grab a global lock it already holds: " + this + ".";
-
         while(true)
         {
             for ( int i = 0; i < clientsHoldingThisLock.length; i++ )

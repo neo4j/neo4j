@@ -147,7 +147,9 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
     @Override
     public Client newClient()
     {
-        return clientPool.acquire();
+        ForsetiClient forsetiClient = clientPool.acquire();
+        forsetiClient.reset();
+        return forsetiClient;
     }
 
     @Override
@@ -161,7 +163,7 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
                 for ( Map.Entry<Long, Lock> entry : lockMaps[i].entrySet() )
                 {
                     Lock lock = entry.getValue();
-                    out.visit( type, entry.getKey(), lock.describeWaitList(), 0 );
+                    out.visit( type, entry.getKey(), lock.describeWaitList(), 0, System.identityHashCode( lock ) );
                 }
             }
         }

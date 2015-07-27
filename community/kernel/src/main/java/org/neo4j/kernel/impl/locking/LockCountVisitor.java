@@ -19,14 +19,19 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-/**
- * Exception that will be thrown in case when closed {@link org.neo4j.kernel.impl.locking.Locks.Client}
- * will be used to acquire shared/exclusive lock
- */
-public class LockClientAlreadyClosedException extends RuntimeException
+public class LockCountVisitor implements  Locks.Visitor
 {
-    public LockClientAlreadyClosedException( String message )
+    private int lockCount = 0;
+
+    @Override
+    public void visit( Locks.ResourceType resourceType, long resourceId, String description, long estimatedWaitTime,
+            long lockIdentityHashCode )
     {
-        super( message );
+        lockCount++;
+    }
+
+    public int getLockCount()
+    {
+        return lockCount;
     }
 }

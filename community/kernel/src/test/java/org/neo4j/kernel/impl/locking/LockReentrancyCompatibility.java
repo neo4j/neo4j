@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import java.util.concurrent.Future;
-
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.concurrent.Future;
+
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
 @Ignore("Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite.")
@@ -199,5 +200,67 @@ public class LockReentrancyCompatibility extends LockingCompatibilityTestSuite.C
 
         // Then
         assertNotWaiting( clientB, clientBLock );
+    }
+
+    @Test
+    public void shouldUpgradeAndDowngradeSameSharedLock() throws InterruptedException
+    {
+        // when
+        clientA.acquireShared( NODE, 1L );
+        clientB.acquireShared( NODE, 1L );
+
+
+        LockIdentityExplorer sharedLockExplorer = new LockIdentityExplorer( NODE, 1L );
+        locks.accept( sharedLockExplorer );
+
+        // then xclusive should wait for shared from other client to be released
+        Future<Object> exclusiveLockFuture = acquireExclusive( clientB, NODE, 1L ).callAndAssertWaiting();
+
+        // and when
+        clientA.releaseAll();
+
+        // exclusive lock should be received
+        assertNotWaiting( clientB, exclusiveLockFuture );
+
+        // and when releasing exclusive
+        clientB.releaseExclusive( NODE, 1L );
+
+        // we still should have same read lock
+        LockIdentityExplorer releasedLockExplorer = new LockIdentityExplorer( NODE, 1L );
+        locks.accept( releasedLockExplorer );
+
+        // we still hold same lock as before
+        assertEquals( sharedLockExplorer.getLockIdentityHashCode(),
+                releasedLockExplorer.getLockIdentityHashCode() );
+    }
+
+    private static class LockIdentityExplorer implements Locks.Visitor
+    {
+
+        private Locks.ResourceType resourceType;
+        private long resourceId;
+        private long lockIdentityHashCode;
+
+        public LockIdentityExplorer( Locks.ResourceType resourceType, long resourceId )
+        {
+            this.resourceType = resourceType;
+            this.resourceId = resourceId;
+        }
+
+        @Override
+        public void visit( Locks.ResourceType resourceType, long resourceId, String description,
+                long estimatedWaitTime,
+                long lockIdentityHashCode )
+        {
+            if ( this.resourceType.equals( resourceType ) && this.resourceId == resourceId )
+            {
+                this.lockIdentityHashCode = lockIdentityHashCode;
+            }
+        }
+
+        public long getLockIdentityHashCode()
+        {
+            return lockIdentityHashCode;
+        }
     }
 }

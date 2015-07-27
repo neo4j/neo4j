@@ -45,7 +45,7 @@ public class CommunityLockManger extends LifecycleAdapter implements Locks
                 {
                     LockResource lockResource = (LockResource)resource;
                     visitor.visit( lockResource.type(), lockResource.resourceId(),
-                            element.describe(), element.maxWaitTime() );
+                            element.describe(), element.maxWaitTime(), System.identityHashCode( lockResource ) );
                 }
                 return false;
             }

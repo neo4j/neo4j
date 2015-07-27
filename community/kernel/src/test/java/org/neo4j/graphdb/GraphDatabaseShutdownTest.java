@@ -26,6 +26,7 @@ import java.util.concurrent.Future;
 import org.junit.Test;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.locking.LockCountVisitor;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -138,17 +139,8 @@ public class GraphDatabaseShutdownTest
 
     private static int lockCount( Locks locks )
     {
-        final int[] counter = new int[1];
-
-        locks.accept( new Locks.Visitor()
-        {
-            @Override
-            public void visit( Locks.ResourceType resourceType, long resourceId, String description, long waitTime )
-            {
-                counter[0]++;
-            }
-        } );
-
-        return counter[0];
+        LockCountVisitor lockCountVisitor = new LockCountVisitor();
+        locks.accept( lockCountVisitor );
+        return lockCountVisitor.getLockCount();
     }
 }

@@ -95,7 +95,8 @@ public final class LockManagerBean extends ManagementBeanProvider
             lockManager.accept( new Locks.Visitor()
             {
                 @Override
-                public void visit( Locks.ResourceType resourceType, long resourceId, String description, long waitTime )
+                public void visit( Locks.ResourceType resourceType, long resourceId, String description, long waitTime,
+                        long lockIdentityHashCode )
                 {
                     locks.add( new LockInfo( resourceType.toString(), String.valueOf( resourceId ), description ) );
                 }

@@ -28,12 +28,13 @@ import static org.mockito.Mockito.mock;
 
 public class SharedLockTest
 {
+
     @Test
     public void shouldUpgradeToUpdateLock() throws Exception
     {
         // Given
-        ForsetiClient clientA = mock(ForsetiClient.class);
-        ForsetiClient clientB = mock(ForsetiClient.class);
+        ForsetiClient clientA = mock( ForsetiClient.class );
+        ForsetiClient clientB = mock( ForsetiClient.class );
 
         SharedLock lock = new SharedLock( clientA );
         lock.acquire( clientB );
@@ -42,15 +43,15 @@ public class SharedLockTest
         assertTrue( lock.tryAcquireUpdateLock( clientA ) );
 
         // Then
-        assertThat( lock.numberOfHolders(), equalTo(2));
-        assertThat( lock.isUpdateLock(), equalTo(true));
+        assertThat( lock.numberOfHolders(), equalTo( 2 ) );
+        assertThat( lock.isUpdateLock(), equalTo( true ) );
     }
 
     @Test
     public void shouldReleaseSharedLock() throws Exception
     {
         // Given
-        ForsetiClient clientA = mock(ForsetiClient.class);
+        ForsetiClient clientA = mock( ForsetiClient.class );
         SharedLock lock = new SharedLock( clientA );
 
         // When
@@ -58,7 +59,7 @@ public class SharedLockTest
 
         // Then
         assertThat( lock.numberOfHolders(), equalTo( 0 ) );
-        assertThat( lock.isUpdateLock(), equalTo(false));
+        assertThat( lock.isUpdateLock(), equalTo( false ) );
     }
 
 }
