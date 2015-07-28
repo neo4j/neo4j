@@ -69,7 +69,7 @@ public class EigenvectorCentralityArnoldi extends EigenvectorCentralityBase
         int iterations = 3;
         // Create a list of the nodes, in order to quickly translate an index
         // into a node.
-        ArrayList<Node> nodes = new ArrayList<Node>( nodeSet.size() );
+        ArrayList<Node> nodes = new ArrayList<>( nodeSet.size() );
         for ( Node node : nodeSet )
         {
             nodes.add( node );
@@ -85,7 +85,7 @@ public class EigenvectorCentralityArnoldi extends EigenvectorCentralityBase
         while ( true )
         {
             incrementTotalIterations();
-            Map<Node,Double> newValues = new HashMap<Node,Double>();
+            Map<Node,Double> newValues = new HashMap<>();
             // "matrix multiplication"
             for ( Relationship relationship : relationshipSet )
             {
@@ -140,7 +140,12 @@ public class EigenvectorCentralityArnoldi extends EigenvectorCentralityBase
             DoubleVector qVector = new DoubleVector();
             for ( int i = 0; i < nodes.size(); ++i )
             {
-                qVector.set( i, newValues.get( nodes.get( i ) ) );
+                Node key = nodes.get( i );
+                Double value = newValues.get( key );
+                if ( value != null )
+                {
+                    qVector.set( i, value );
+                }
             }
             qMatrix.setRow( localIterations, qVector );
             if ( normalizeFactor == 0.0 || localIterations >= nodeSet.size()
