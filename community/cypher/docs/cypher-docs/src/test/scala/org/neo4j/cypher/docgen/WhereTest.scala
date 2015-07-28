@@ -246,7 +246,7 @@ subgraphs where `a` and `b` do not have a directed relationship chain between th
       title = "Simple range",
       text = "To check for an element being inside a specific range, use the inequality operators `<`, `<=`, `>=`, `>`.",
       queryText = """match (a) where a.name >= 'Peter' return a""",
-      optionalResultExplanation = "This query shows how to check if a property exists in a literal collection.",
+      optionalResultExplanation = "Nodes having a name property lexicographically greater than or equal to 'Peter' are returned.",
       assertions = (p) => assertEquals(List(node("Tobias"),node("Peter")), p.columnAs[Node]("a").toList))
   }
 
@@ -254,8 +254,8 @@ subgraphs where `a` and `b` do not have a directed relationship chain between th
     testQuery(
       title = "Composite range",
       text = "Several inequalities can be used to construct a range.",
-      queryText = """match (a) where a.name > 'Andres' AND a.name <= 'Tobias' return a""",
-      optionalResultExplanation = "This query shows how to check if a property exists in a literal collection.",
-      assertions = (p) => assertEquals(List(node("Tobias"),node("Peter")), p.columnAs[Node]("a").toList))
+      queryText = """match (a) where a.name > 'Andres' AND a.name < 'Tobias' return a""",
+      optionalResultExplanation = "Nodes having a name property lexicographically between 'Andres' and 'Tobias' are returned.",
+      assertions = (p) => assertEquals(List(node("Peter")), p.columnAs[Node]("a").toList))
   }
 }
