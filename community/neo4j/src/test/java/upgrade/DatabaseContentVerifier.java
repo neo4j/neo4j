@@ -42,6 +42,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.makeLongArray;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.makeLongString;
 
@@ -157,8 +158,8 @@ public class DatabaseContentVerifier
         {
             String[] nodeIndexes = database.index().nodeIndexNames();
             String[] relationshipIndexes = database.index().relationshipIndexNames();
-            assertArrayEquals( new String[]{"testIndex", "nodekey"}, nodeIndexes );
-            assertArrayEquals( new String[]{"relkey"}, relationshipIndexes );
+            assertEquals( asSet( "testIndex", "nodekey" ), asSet( nodeIndexes ) );
+            assertEquals( asSet( "relkey" ), asSet( relationshipIndexes ) );
             tx.success();
         }
     }
