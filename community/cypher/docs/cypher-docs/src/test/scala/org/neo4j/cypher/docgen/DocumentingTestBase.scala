@@ -74,7 +74,8 @@ trait DocumentationHelper extends GraphIcing {
   }
 
   def createCypherSnippet(query: String) = {
-    val prettifiedQuery = Prettifier(query.trim())
+    val escapedQuery = query.trim().replace("\\", "\\\\")
+    val prettifiedQuery = Prettifier(escapedQuery)
     AsciidocHelper.createCypherSnippetFromPreformattedQuery(prettifiedQuery, true)
   }
 
