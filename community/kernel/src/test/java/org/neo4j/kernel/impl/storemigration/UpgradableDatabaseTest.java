@@ -43,10 +43,11 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateToFixedLength;
@@ -226,11 +227,10 @@ public class UpgradableDatabaseTest
             catch ( StoreUpgrader.UnexpectedUpgradingStoreVersionException e )
             {
                 // then
-                final String expected =
-                        "'" + neostoreFilename + "' has a store version number that we cannot upgrade from. " +
+                assertThat( e.getMessage(), containsString( neostoreFilename ) );
+                assertThat( e.getMessage(), containsString( "has a store version number that we cannot upgrade from. " +
                         "Expected '" + Legacy21Store.LEGACY_VERSION + "' but file is version 'NodeStore " + version +
-                        "'.";
-                assertThat( e.getMessage(), is( expected ) );
+                        "'." ) );
             }
         }
     }

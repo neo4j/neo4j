@@ -42,6 +42,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -53,6 +54,7 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradingStoreVersionNotFoundException;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
@@ -71,6 +73,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -281,11 +284,8 @@ public class StoreUpgradeIntegrationTest
             }
             catch ( RuntimeException ex )
             {
-                final UpgradingStoreVersionNotFoundException expected =
-                        new UpgradingStoreVersionNotFoundException( "neostore.nodestore.db" );
-                final Throwable cause = ex.getCause().getCause().getCause();
-                assertEquals( expected.getClass(), cause.getClass() );
-                assertEquals( expected.getMessage(), cause.getMessage() );
+                assertTrue( Exceptions.contains( ex, StoreFile.NODE_STORE.storeFileName(),
+                        UpgradingStoreVersionNotFoundException.class ) );
             }
         }
     }
