@@ -32,8 +32,8 @@ class WhereTest extends DocumentingTestBase {
 
   override val properties = Map(
     "Andres" -> Map[String, Any]("age" -> 36l, "belt" -> "white"),
-    "Tobias" -> Map[String, Any]("age" -> 25l),
-    "Peter"  -> Map[String, Any]("age" -> 34l)
+    "Tobias" -> Map[String, Any]("age" -> 25l, "address" -> "Sweden/Malmö"),
+    "Peter"  -> Map[String, Any]("age" -> 34l, "email" -> "peter_n@example.com")
   )
 
   override protected def getGraphvizStyle: GraphStyle =
@@ -55,7 +55,7 @@ class WhereTest extends DocumentingTestBase {
       title = "Filter on node property",
       text = "To filter on a property, write your clause after the `WHERE` keyword. Filtering on relationship properties works just the same way.",
       queryText = """match (n) where n.age < 30 return n""",
-      optionalResultExplanation = """The "+Tobias+" node will be returned.""",
+      optionalResultExplanation = """"+Tobias+" is returned because he is younger than 30.""",
       assertions = (p) => assertEquals(List(node("Tobias")), p.columnAs[Node]("n").toList))
   }
 
@@ -64,7 +64,7 @@ class WhereTest extends DocumentingTestBase {
       title = "Filter on dynamic node property",
       text = "To filter on a property using a dynamically computed name, use square bracket syntax.",
       queryText = """match (n) where n[toLower({prop})] < 30 return n""",
-      optionalResultExplanation = """The "+Tobias+" node will be returned.""",
+      optionalResultExplanation = """"+Tobias+" is returned because he is younger than 30.""",
       parameters = Map("prop" -> "AGE"),
       assertions = (p) => assertEquals(List(node("Tobias")), p.columnAs[Node]("n").toList))
   }
@@ -75,7 +75,6 @@ class WhereTest extends DocumentingTestBase {
       text = "You can use the expected boolean operators `AND` and `OR`, and also the boolean function `NOT`. " +
         "See <<cypher-working-with-null>> for more information on how this works with +NULL+.",
       queryText = """match (n) where n.name = 'Peter' xor (n.age < 30 and n.name = "Tobias") or not (n.name = "Tobias" or n.name="Peter") return n""",
-      optionalResultExplanation = "This query shows how boolean operators can be used.",
       assertions = (p) => assertEquals(nodes("Andres", "Tobias", "Peter").toSet, p.columnAs[Node]("n").toSet))
   }
 
@@ -84,7 +83,7 @@ class WhereTest extends DocumentingTestBase {
       title = "Regular expressions",
       text = "You can match on regular expressions by using `=~ \"regexp\"`, like this:",
       queryText = """match (n) where n.name =~ 'Tob.*' return n""",
-      optionalResultExplanation = """The "+Tobias+" node will be returned.""",
+      optionalResultExplanation = """"+Tobias+" is returned because his name starts with `Tob`.""",
       assertions = (p) => assertEquals(List(node("Tobias")), p.columnAs[Node]("n").toList))
   }
 
@@ -93,9 +92,9 @@ class WhereTest extends DocumentingTestBase {
       title = "Escaping in regular expressions",
       text = "If you need a forward slash inside of your regular expression, escape it. Remember that back slash needs " +
              "to be escaped in string literals.",
-      queryText = """match (n) where n.name =~ 'Some\\/thing' return n""",
-      optionalResultExplanation = """No nodes match this regular expression.""",
-      assertions = (p) => assertEquals(List(), p.toList))
+      queryText = """match (n) where n.address =~ 'Sweden\\/Malmö' return n""",
+      optionalResultExplanation = """"+Tobias+" is returned because his address is in `Sweden/Malmö`.""",
+      assertions = (p) => assertEquals(List(node("Tobias")), p.columnAs[Node]("n").toList))
   }
 
   @Test def regular_expressions_case_insensitive() {
@@ -103,7 +102,7 @@ class WhereTest extends DocumentingTestBase {
       title = "Case insensitive regular expressions",
       text = "By pre-pending a regular expression with `(?i)`, the whole expression becomes case insensitive.",
       queryText = """match (n) where n.name =~ '(?i)ANDR.*' return n""",
-      optionalResultExplanation = """The node with name "+Andres+" is returned.""",
+      optionalResultExplanation = """"+Andres+" is returned because his name starts with `ANDR` regardless of case.""",
       assertions = (p) => assertEquals(List(Map("n" -> node("Andres"))), p.toList))
   }
 
@@ -113,7 +112,7 @@ class WhereTest extends DocumentingTestBase {
       text = "The `LIKE` keyword can be used to perform case-sensitive matching on strings. Two wildcards are supported: `%` matches zero or more characters, `_` matches exactly one character. " +
         "Matches using `LIKE` in a prefix pattern (`LIKE 'prefix%'` or `LIKE 'prefix_'`) can be solved using indexes.",
       queryText = """match (n) where n.name LIKE 'Pet%' return n""",
-      optionalResultExplanation = """The "+Peter+" node will be returned.""",
+      optionalResultExplanation = """"+Peter+" will be returned because his name starts with `Pet`.""",
       assertions = (p) => assertEquals(List(node("Peter")), p.columnAs[Node]("n").toList))
   }
 
@@ -121,8 +120,8 @@ class WhereTest extends DocumentingTestBase {
     testQuery(
       title = "Case-insensitive pattern matching",
       text = "The `ILIKE` keyword can be used to perform case-insensitive matching on strings. Two wildcards are supported: `%` matches zero or more characters, `_` matches exactly one character.",
-      queryText = """match (n) where n.name ILIKE 'ANDRE_' return n""",
-      optionalResultExplanation = """The "+Andres+" node will be returned.""",
+      queryText = """match (n) where n.name ILIKE 'ANDR_S' return n""",
+      optionalResultExplanation = """"+Andres+" will be returned because his name has six characters starting with `ANDR` and ending with `S` regardless of case.""",
       assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
   }
 
@@ -131,7 +130,7 @@ class WhereTest extends DocumentingTestBase {
       title = "Pattern matching negation",
       text = "Use the `NOT` keyword to exclude all matches on given string from your result:",
       queryText = """match (n) where n.name NOT LIKE '%s' return n""",
-      optionalResultExplanation = """The "+Peter+" node will be returned.""",
+      optionalResultExplanation = """"+Peter+" will be returned because his name does not end with `s`.""",
       assertions = (p) => assertEquals(List(node("Peter")), p.columnAs[Node]("n").toList))
   }
 
@@ -141,8 +140,8 @@ class WhereTest extends DocumentingTestBase {
       text = "If one of the wildcard characters (`%` or `_`) is needed inside your string, escape it. Remember that backslash needs " +
         "to be escaped in string literals.",
       queryText = """match (n) where n.email LIKE '%\_%' return n""",
-      optionalResultExplanation = """No nodes match this expression.""",
-      assertions = (p) => assertEquals(List(), p.toList))
+      optionalResultExplanation = """"+Peter+" will be returned because his email contains an `_`.""",
+      assertions = (p) => assertEquals(List(node("Peter")), p.columnAs[Node]("n").toList))
   }
 
   @Test def has_property() {
@@ -150,7 +149,7 @@ class WhereTest extends DocumentingTestBase {
       title = "Property exists",
       text = "To only include nodes/relationships that have a property, use the `HAS()` function and just write out the identifier and the property you expect it to have.",
       queryText = """match (n) where has(n.belt) return n""",
-      optionalResultExplanation = """The node named "+Andres+" is returned.""",
+      optionalResultExplanation = """"+Andres+" will be returned because he is the only one with a `belt` property.""",
       assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
   }
 
@@ -169,7 +168,7 @@ class WhereTest extends DocumentingTestBase {
       title = "Default to false if property is missing",
       text = "As missing properties evaluate to +NULL+, the comparision in the example will evaluate to +FALSE+ for nodes without the +belt+ property.",
       queryText = """match (n) where n.belt = 'white' return n""",
-      optionalResultExplanation = "Only nodes with the belt property are returned.",
+      optionalResultExplanation = "Only nodes with white belts are returned.",
       assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
   }
 
@@ -180,7 +179,7 @@ class WhereTest extends DocumentingTestBase {
         "advanced filtering on the type. You can use the special property `TYPE` to compare the type with something else. " +
         "In this example, the query does a regular expression comparison with the name of the relationship type.",
       queryText = """match (n)-[r]->() where n.name='Andres' and type(r) =~ 'K.*' return r""",
-      optionalResultExplanation = """This returns relationships that has a type whose name starts with K.""",
+      optionalResultExplanation = """This returns relationships that has a type whose name starts with `K`.""",
       assertions = (p) => assertEquals("KNOWS", p.columnAs[Relationship]("r").toList.head.getType.name()))
   }
 
@@ -190,7 +189,7 @@ class WhereTest extends DocumentingTestBase {
       text = "Sometimes you might want to test if a value or an identifier is +NULL+. This is done just like SQL does it, " +
         "with `IS NULL`. Also like SQL, the negative is `IS NOT NULL`, although `NOT(IS NULL x)` also works.",
       queryText = """match (person) where person.name = 'Peter' AND person.belt is null return person""",
-      optionalResultExplanation = "Nodes that have name 'Peter' but no belt property are returned.",
+      optionalResultExplanation = "Nodes that have name `Peter` but no belt property are returned.",
       assertions = (p) => assertEquals(List(Map("person" -> node("Peter"))), p.toList))
   }
 
@@ -219,7 +218,7 @@ subgraphs where `a` and `b` do not have a directed relationship chain between th
       title = "Filter on patterns with properties",
       text = """You can also add properties to your patterns:""",
       queryText = """match (n) where (n)-[:KNOWS]-({name:'Tobias'}) return n""",
-      optionalResultExplanation = "Finds all nodes that have a +KNOWS+ relationship to a node with the name +Tobias+.",
+      optionalResultExplanation = """Finds all nodes that have a +KNOWS+ relationship to a node with the name "+Tobias+".""",
       assertions = (p) => assertEquals(List(Map("n" -> node("Andres"))), p.toList))
   }
 

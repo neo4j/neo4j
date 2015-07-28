@@ -77,7 +77,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       title = "Use index",
       text = "There is usually no need to specify which indexes to use in a query, Cypher will figure that out by itself. " +
         "For example the query below will use the `Person(name)` index, if it exists. " +
-        "If you for some reason want to hint to specific indexes, see <<query-using>>.",
+        "If you want Cypher to use specific indexes, you can enforce it using hints. See <<query-using>>.",
       queryText = "match (person:Person {name: 'Andres'}) return person",
       optionalResultExplanation = "",
       assertions = {
@@ -93,7 +93,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
     testQuery(
       title = "Use index with WHERE using equality",
       text = "Indexes are also automatically used for equality comparisons of an indexed property in the WHERE clause. " +
-        "If you for some reason want to hint to specific indexes, see <<query-using>>.",
+        "If you want Cypher to use specific indexes, you can enforce it using hints. See <<query-using>>.",
       queryText = "match (person:Person) WHERE person.name = 'Andres' return person",
       optionalResultExplanation = "",
       assertions = {
@@ -130,7 +130,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       title = "Use index with IN",
       text =
         "The IN predicate on `person.name` in the following query will use the `Person(name)` index, if it exists. " +
-        "If you for some reason want Cypher to use specific indexes, you can enforce it using hints. See <<query-using>>.",
+        "If you want Cypher to use specific indexes, you can enforce it using hints. See <<query-using>>.",
       queryText = "match (person:Person) WHERE person.name IN ['Andres','Mark'] return person",
       optionalResultExplanation = "",
       assertions = {

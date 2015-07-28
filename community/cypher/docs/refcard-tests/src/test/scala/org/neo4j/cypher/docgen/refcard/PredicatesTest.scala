@@ -156,7 +156,8 @@ Properties may also be accessed using a dynamically computed property name.
 MATCH n
 WHERE HAS(n.property) AND
 
-n.property LIKE "Tob%" OR n.property ILIKE "ANDR_S"
+n.property LIKE "Tob%" OR
+n.property ILIKE "ANDR_S"
 
 RETURN n###
 
