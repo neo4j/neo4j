@@ -30,7 +30,6 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.CommandRecordVisitor;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 
-import static java.lang.Math.pow;
 import static java.lang.String.format;
 
 import static org.neo4j.collection.primitive.Primitive.intObjectMap;
@@ -47,6 +46,7 @@ import static org.neo4j.collection.primitive.Primitive.intObjectMap;
  */
 public class IndexDefineCommand extends Command
 {
+    static final int HIGHEST_POSSIBLE_ID = 0xFFFF - 1; // -1 since the actual value -1 is reserved for all-ones
     private final AtomicInteger nextIndexNameId = new AtomicInteger();
     private final AtomicInteger nextKeyId = new AtomicInteger();
     private Map<String,Integer> indexNameIdRange;
@@ -129,11 +129,11 @@ public class IndexDefineCommand extends Command
         }
 
         int nextIdInt = nextId.incrementAndGet();
-        if ( (nextIdInt & ~0xFFFF) != 0 )
+        if ( nextIdInt > HIGHEST_POSSIBLE_ID ) // >= since the actual value -1 is reserved for all-ones
         {
             throw new IllegalStateException( format(
                     "Modifying more than %d indexes in a single transaction is not supported",
-                    (int)(pow( 2, 16 ) - 1) ) );
+                    HIGHEST_POSSIBLE_ID + 1 ) );
         }
         id = nextIdInt;
 

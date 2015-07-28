@@ -695,7 +695,8 @@ public class PhysicalLogNeoCommandReaderV2_2_4 implements CommandReader, NeoComm
 
     private int getUnsignedShort( ReadableLogChannel channel ) throws IOException
     {
-        return channel.getShort() & 0xFFFF;
+        int result = channel.getShort() & 0xFFFF;
+        return result == 0xFFFF ? -1 : result;
     }
 
     private IndexCommandHeader readIndexCommandHeader() throws ReadPastEndException, IOException

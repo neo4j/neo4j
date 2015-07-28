@@ -30,20 +30,31 @@ public class IndexDefineCommandTest
     {
         // Given
         IndexDefineCommand idc = new IndexDefineCommand();
-        int max = (int) (Math.pow( 2, 16 ) - 1);
+        int count = IndexDefineCommand.HIGHEST_POSSIBLE_ID;
 
         // When
-        for ( int i = 0; i < max; i++ )
+        for ( int i = 0; i < count; i++ )
         {
-            idc.getOrAssignKeyId( "index" + i );
+            idc.getOrAssignKeyId( "key" + i );
+            idc.getOrAssignIndexNameId( "index" + i );
         }
 
         // Then
-        // it should break on the 64th
+        // it should break on too many
         try
         {
             idc.getOrAssignKeyId( "dropThatOverflows" );
-            fail( "IndexDefineCommand should not allow more than 63 indexes per transaction" );
+            fail( "IndexDefineCommand should not allow more than " + count + " indexes per transaction" );
+        }
+        catch( IllegalStateException e )
+        {
+            // wonderful
+        }
+
+        try
+        {
+            idc.getOrAssignIndexNameId( "dropThatOverflows" );
+            fail( "IndexDefineCommand should not allow more than " + count + " keys per transaction" );
         }
         catch( IllegalStateException e )
         {
