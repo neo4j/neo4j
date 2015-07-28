@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.IndexCreator;
 
@@ -65,7 +64,7 @@ public interface BatchInserter
      * @param labels a list of labels to initially create the node with.
      */
     void createNode( long id, Map<String,Object> properties, Label... labels );
-    
+
     /**
      * Checks if a node with the given id exists.
      *
@@ -91,27 +90,27 @@ public interface BatchInserter
     /**
      * Returns true iff the node with id {@code node} has a property with name
      * {@code propertyName}.
-     * 
+     *
      * @param node The node id of the node to check.
      * @param propertyName The property name to check for
      * @return True if the node has the named property - false otherwise.
      */
     boolean nodeHasProperty( long node, String propertyName );
-    
+
     /**
      * Replaces any existing labels for the given node with the supplied list of labels.
-     * 
+     *
      * @param node the node to set labels for.
      * @param labels the labels to set for the node.
      */
     void setNodeLabels( long node, Label... labels );
-    
+
     /**
      * @param node the node to get labels for.
      * @return all labels for the given node.
      */
     Iterable<Label> getNodeLabels( long node );
-    
+
     /**
      * @param node the node to check.
      * @param label the label to check.
@@ -122,7 +121,7 @@ public interface BatchInserter
     /**
      * Returns true iff the relationship with id {@code relationship} has a
      * property with name {@code propertyName}.
-     * 
+     *
      * @param relationship The relationship id of the relationship to check.
      * @param propertyName The property name to check for
      * @return True if the relationship has the named property - false
@@ -135,7 +134,7 @@ public interface BatchInserter
      * Sets the property with name {@code propertyName} of node with id
      * {@code node} to the value {@code propertyValue}. If the property exists
      * it is updated, otherwise created.
-     * 
+     *
      * @param node The node id of the node whose property is to be set
      * @param propertyName The name of the property to set
      * @param propertyValue The value of the property to set
@@ -147,7 +146,7 @@ public interface BatchInserter
      * Sets the property with name {@code propertyName} of relationship with id
      * {@code relationship} to the value {@code propertyValue}. If the property
      * exists it is updated, otherwise created.
-     * 
+     *
      * @param relationship The node id of the relationship whose property is to
      *            be set
      * @param propertyName The name of the property to set
@@ -176,7 +175,7 @@ public interface BatchInserter
     /**
      * Returns an iterable of {@link BatchRelationship relationships} connected
      * to the node with supplied id.
-     * 
+     *
      * @param nodeId the id of the node.
      * @return iterable over the relationships connected to the node.
      */
@@ -231,7 +230,7 @@ public interface BatchInserter
     /**
      * Removes the property named {@code property} from the node with id
      * {@code id}, if present.
-     * 
+     *
      * @param node The id of the node from which to remove the property
      * @param property The name of the property
      */
@@ -240,7 +239,7 @@ public interface BatchInserter
     /**
      * Removes the property named {@code property} from the relationship with id
      * {@code id}, if present.
-     * 
+     *
      * @param relationship The id of the relationship from which to remove the
      *            property
      * @param property The name of the property
@@ -266,17 +265,15 @@ public interface BatchInserter
      * an index for the given {@link Label label}.
      */
     IndexCreator createDeferredSchemaIndex( Label label );
-    
+
     /**
      * Returns a {@link ConstraintCreator} where details about the constraint can be
      * specified. When all details have been entered {@link ConstraintCreator#create()}
      * must be called for it to actually be created.
-     * 
-     * Creating a constraint will have the transaction creating it block on commit until
-     * all existing data has been verified for compliance. If any existing data doesn't
-     * comply with the constraint the transaction will not be able to commit, but
-     * fail in {@link Transaction#close()}.
-     * 
+     *
+     * Note that the batch inserter is not enforcing any constraint on the inserted data
+     * (also the one created with the batch inserter itself).
+     *
      * @param label the label this constraint is for.
      * @return a {@link ConstraintCreator} capable of providing details for, as well as creating
      * a constraint for the given {@link Label label}.
