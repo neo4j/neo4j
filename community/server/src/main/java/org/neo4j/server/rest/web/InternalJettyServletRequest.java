@@ -19,6 +19,12 @@
  */
 package org.neo4j.server.rest.web;
 
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.server.HttpChannelState;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
@@ -28,17 +34,13 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.MediaType;
-
-import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 
 public class InternalJettyServletRequest extends Request
 {
@@ -107,6 +109,24 @@ public class InternalJettyServletRequest extends Request
             }
         }
     }
+
+    private static final HttpChannelState DUMMY_HTTP_CHANNEL_STATE = new HttpChannelState( null )
+    {
+        /**
+         * This method is called when request logging is turned on.
+         * It is done to examine if the request is a continuation request in
+         * {@link RequestLogHandler#handle(String, Request, HttpServletRequest, HttpServletResponse)} method.
+         * If this request is a continuation and it is the one that started the call than it is simply logged,
+         * else a listener is installed on a continuation completion and this listener does the actual logging.
+         *
+         * We do not use the continuations/async requests so always return false in this method.
+         */
+        @Override
+        public boolean isAsync()
+        {
+            return false;
+        }
+    };
 
     private final Map<String, Object> headers;
     private final Cookie[] cookies;
@@ -340,5 +360,9 @@ public class InternalJettyServletRequest extends Request
         return String.format( "%s %s %s\n%s", getMethod(), getUri(), getProtocol(), getHttpFields() );
     }
 
-
+    @Override
+    public HttpChannelState getHttpChannelState()
+    {
+        return DUMMY_HTTP_CHANNEL_STATE;
+    }
 }

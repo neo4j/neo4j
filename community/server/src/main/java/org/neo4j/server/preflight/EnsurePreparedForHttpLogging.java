@@ -19,18 +19,17 @@
  */
 package org.neo4j.server.preflight;
 
+import org.apache.commons.io.FileUtils;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+
 import java.io.File;
 import java.io.IOException;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
-
-import org.apache.commons.io.FileUtils;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
 
 public class EnsurePreparedForHttpLogging implements PreflightTask
 {
@@ -41,41 +40,34 @@ public class EnsurePreparedForHttpLogging implements PreflightTask
     {
     	this.config = config;
     }
-    
+
     @Override
     public boolean run()
     {
         boolean enabled = config.get( ServerSettings.http_logging_enabled );
-        
         if ( !enabled )
         {
             return true;
         }
 
-        File logLocation = extractLogLocationFromConfig( config.get( ServerSettings.http_log_config_File ).getAbsolutePath() );
+        File configFile = config.get( ServerSettings.http_log_config_File );
+        if ( configFile == null )
+        {
+            failureMessage = "HTTP logging configuration file is not specified";
+            return false;
+        }
 
+        File logLocation = extractLogLocationFromConfig( configFile.getAbsolutePath() );
         if ( logLocation != null )
         {
-            if ( validateFileBasedLoggingConfig( logLocation ) )
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            return validateFileBasedLoggingConfig( logLocation );
         }
-        else
-        {
-            // File logging is not configured, no other logging can be easily checked here
-            return true;
-        }
+        // File logging is not configured, no other logging can be easily checked here
+        return true;
     }
-
 
     private boolean validateFileBasedLoggingConfig( File logLocation )
     {
-
         try
         {
             FileUtils.forceMkdir( logLocation );
