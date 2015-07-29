@@ -415,7 +415,19 @@ public class BatchInserterImpl implements BatchInserter
         propertyCreator.primitiveAddProperty( primitiveRecord, propertyKey, propertyValue, propertyRecords );
     }
 
-    private void validateNodeConstraintCanBeCreated( int labelId, int propertyKeyId )
+    private void validateIndexCanBeCreated( int labelId, int propertyKeyId )
+    {
+        verifyIndexOrUniquenessConstraintCanBeCreated( labelId, propertyKeyId,
+                "Index for given {label;property} already exists" );
+    }
+
+    private void validateUniquenessConstraintCanBeCreated( int labelId, int propertyKeyId )
+    {
+        verifyIndexOrUniquenessConstraintCanBeCreated( labelId, propertyKeyId,
+                "It is not allowed to create uniqueness constraints and indexes on the same {label;property}" );
+    }
+
+    private void verifyIndexOrUniquenessConstraintCanBeCreated( int labelId, int propertyKeyId, String errorMessage )
     {
         for ( SchemaRule rule : schemaCache.schemaRulesForLabel( labelId ) )
         {
@@ -423,24 +435,35 @@ public class BatchInserterImpl implements BatchInserter
 
             switch ( rule.getKind() )
             {
-                case INDEX_RULE:
-                case CONSTRAINT_INDEX_RULE:
-                    otherPropertyKeyId = ((IndexRule) rule).getPropertyKey();
-                    break;
-                case UNIQUENESS_CONSTRAINT:
-                    otherPropertyKeyId = ((UniquePropertyConstraintRule) rule).getPropertyKey();
-                    break;
-                case MANDATORY_NODE_PROPERTY_CONSTRAINT:
-                    otherPropertyKeyId = ((MandatoryNodePropertyConstraintRule) rule).getPropertyKey();
-                    break;
-                default:
-                    throw new IllegalStateException( "Case not handled for " + rule.getKind());
+            case INDEX_RULE:
+            case CONSTRAINT_INDEX_RULE:
+                otherPropertyKeyId = ((IndexRule) rule).getPropertyKey();
+                break;
+            case UNIQUENESS_CONSTRAINT:
+                otherPropertyKeyId = ((UniquePropertyConstraintRule) rule).getPropertyKey();
+                break;
+            case MANDATORY_NODE_PROPERTY_CONSTRAINT:
+                continue;
+            default:
+                throw new IllegalStateException( "Case not handled for " + rule.getKind() );
             }
 
             if ( otherPropertyKeyId == propertyKeyId )
             {
+                throw new ConstraintViolationException( errorMessage );
+            }
+        }
+    }
+
+    private void validateMandatoryNodePropertyConstraintCanBeCreated( int labelId, int propertyKeyId )
+    {
+        for ( SchemaRule rule : schemaCache.schemaRulesForLabel( labelId ) )
+        {
+            if ( rule.getKind() == SchemaRule.Kind.MANDATORY_NODE_PROPERTY_CONSTRAINT &&
+                 propertyKeyId == ((MandatoryNodePropertyConstraintRule) rule).getPropertyKey() )
+            {
                 throw new ConstraintViolationException(
-                        "It is not allowed to create schema constraints and indexes on the same {label;property}." );
+                        "Mandatory node property constraint for given {label;property} already exists" );
             }
         }
     }
@@ -449,21 +472,11 @@ public class BatchInserterImpl implements BatchInserter
     {
         for ( SchemaRule rule : schemaCache.schemaRulesForRelationshipType( typeId ) )
         {
-            int otherPropertyKeyId;
-
-            switch ( rule.getKind() )
+            if ( rule.getKind() == SchemaRule.Kind.MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT &&
+                 propertyKeyId == ((MandatoryRelationshipPropertyConstraintRule) rule).getPropertyKey() )
             {
-                case MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT:
-                    otherPropertyKeyId = ((MandatoryRelationshipPropertyConstraintRule) rule).getPropertyKey();
-                    break;
-                default:
-                    throw new IllegalStateException( "Case not handled for " + rule.getKind() );
-            }
-
-            if ( otherPropertyKeyId == propertyKeyId )
-            {
-                throw new ConstraintViolationException( "It is not allowed to create schema constraints and " +
-                                                        "indexes on the same {relationshipType;property}." );
+                throw new ConstraintViolationException(
+                        "Mandatory relationship property constraint for given {type;property} already exists" );
             }
         }
     }
@@ -1202,7 +1215,7 @@ public class BatchInserterImpl implements BatchInserter
             int labelId = getOrCreateLabelId( label.name() );
             int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
 
-            validateNodeConstraintCanBeCreated( labelId, propertyKeyId );
+            validateIndexCanBeCreated( labelId, propertyKeyId );
 
             createIndexRule( labelId, propertyKeyId );
             return new IndexDefinitionImpl( this, label, propertyKey, false );
@@ -1220,7 +1233,7 @@ public class BatchInserterImpl implements BatchInserter
             int labelId = getOrCreateLabelId( label.name() );
             int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
 
-            validateNodeConstraintCanBeCreated( labelId, propertyKeyId );
+            validateUniquenessConstraintCanBeCreated( labelId, propertyKeyId );
 
             createConstraintRule( new UniquenessConstraint( labelId, propertyKeyId ) );
             return new UniquenessConstraintDefinition( this, label, propertyKey );
@@ -1232,7 +1245,7 @@ public class BatchInserterImpl implements BatchInserter
             int labelId = getOrCreateLabelId( label.name() );
             int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
 
-            validateNodeConstraintCanBeCreated( labelId, propertyKeyId );
+            validateMandatoryNodePropertyConstraintCanBeCreated( labelId, propertyKeyId );
 
             createConstraintRule( new MandatoryNodePropertyConstraint( labelId, propertyKeyId ) );
             return new MandatoryNodePropertyConstraintDefinition( this, label, propertyKey );

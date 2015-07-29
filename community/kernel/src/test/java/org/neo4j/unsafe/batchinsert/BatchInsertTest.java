@@ -308,7 +308,6 @@ public class BatchInsertTest
             tx.success();
         }
 
-
         return db;
     }
 
@@ -1544,6 +1543,208 @@ public class BatchInsertTest
         finally
         {
             db.shutdown();
+        }
+    }
+
+    @Test
+    public void shouldAllowCreationOfIndexAndMandatoryPropertyConstraintOnSameLabelAndProperty() throws Exception
+    {
+        // Given
+        Label label = label( "Person" );
+        String property = "name";
+
+        BatchInserter inserter = newBatchInserter();
+
+        // When
+        inserter.createDeferredSchemaIndex( label ).on( property ).create();
+        inserter.createDeferredConstraint( label ).assertPropertyExists( property ).create();
+
+        // Then
+        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
+        try
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                List<IndexDefinition> indexes = asList( db.schema().getIndexes() );
+                assertEquals( 1, indexes.size() );
+                IndexDefinition index = indexes.get( 0 );
+                assertEquals( label.name(), index.getLabel().name() );
+                assertEquals( property, single( index.getPropertyKeys() ) );
+                List<ConstraintDefinition> constraints = asList( db.schema().getConstraints() );
+                assertEquals( 1, constraints.size() );
+                ConstraintDefinition constraint = constraints.get( 0 );
+                assertEquals( label.name(), constraint.getLabel().name() );
+                assertEquals( property, single( constraint.getPropertyKeys() ) );
+                tx.success();
+            }
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    @Test
+    public void shouldAllowCreationOfUniquenessAndMandatoryPropertyConstraintOnSameLabelAndProperty() throws Exception
+    {
+        // Given
+        Label label = label( "Person" );
+        String property = "name";
+
+        BatchInserter inserter = newBatchInserter();
+
+        // When
+        inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create();
+        inserter.createDeferredConstraint( label ).assertPropertyExists( property ).create();
+
+        // Then
+        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
+        try
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                List<ConstraintDefinition> constraints = asList( db.schema().getConstraints() );
+                assertEquals( 2, constraints.size() );
+                for ( ConstraintDefinition constraint : constraints )
+                {
+                    if ( constraint.getConstraintType() == ConstraintType.UNIQUENESS ||
+                         constraint.getConstraintType() == ConstraintType.MANDATORY_NODE_PROPERTY )
+                    {
+                        assertEquals( label.name(), constraint.getLabel().name() );
+                        assertEquals( property, single( constraint.getPropertyKeys() ) );
+                    }
+                    else
+                    {
+                        fail( "Unexpected constraint type found: " + constraint.getConstraintType() );
+                    }
+                }
+                tx.success();
+            }
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    @Test
+    public void shouldNotAllowCreationOfUniquenessConstraintAndIndexOnSameLabelAndProperty() throws Exception
+    {
+        // Given
+        Label label = label( "Person" );
+        String property = "name";
+
+        BatchInserter inserter = newBatchInserter();
+
+        // When
+        inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create();
+        try
+        {
+            inserter.createDeferredSchemaIndex( label ).on( property ).create();
+            fail( "Exception expected" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            // Then
+            assertEquals( "Index for given {label;property} already exists", e.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldNotAllowDuplicatedUniquenessConstraints() throws Exception
+    {
+        // Given
+        Label label = label( "Person" );
+        String property = "name";
+
+        BatchInserter inserter = newBatchInserter();
+
+        // When
+        inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create();
+        try
+        {
+            inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create();
+            fail( "Exception expected" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            // Then
+            assertEquals(
+                    "It is not allowed to create uniqueness constraints and indexes on the same {label;property}",
+                    e.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldNotAllowDuplicatedIndexes() throws Exception
+    {
+        // Given
+        Label label = label( "Person" );
+        String property = "name";
+
+        BatchInserter inserter = newBatchInserter();
+
+        // When
+        inserter.createDeferredSchemaIndex( label ).on( property ).create();
+        try
+        {
+            inserter.createDeferredSchemaIndex( label ).on( property ).create();
+            fail( "Exception expected" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            // Then
+            assertEquals( "Index for given {label;property} already exists", e.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldNotAllowDuplicatedMandatoryNodePropertyConstraints() throws Exception
+    {
+        // Given
+        Label label = label( "Person" );
+        String property = "name";
+
+        BatchInserter inserter = newBatchInserter();
+
+        // When
+        inserter.createDeferredConstraint( label ).assertPropertyExists( property ).create();
+        try
+        {
+            inserter.createDeferredConstraint( label ).assertPropertyExists( property ).create();
+            fail( "Exception expected" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            // Then
+            assertEquals(
+                    "Mandatory node property constraint for given {label;property} already exists",
+                    e.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldNotAllowDuplicatedMandatoryRelationshipPropertyConstraints() throws Exception
+    {
+        // Given
+        RelationshipType type = DynamicRelationshipType.withName( "KNOWS" );
+        String property = "since";
+
+        BatchInserter inserter = newBatchInserter();
+
+        // When
+        inserter.createDeferredConstraint( type ).assertPropertyExists( property ).create();
+        try
+        {
+            inserter.createDeferredConstraint( type ).assertPropertyExists( property ).create();
+            fail( "Exception expected" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            // Then
+            assertEquals(
+                    "Mandatory relationship property constraint for given {type;property} already exists",
+                    e.getMessage() );
         }
     }
 
