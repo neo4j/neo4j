@@ -59,7 +59,7 @@ public interface IndexPopulator
      * Verify constraints for all entries added so far.
      */
     @Deprecated // TODO we want to remove this in 2.1, and properly prevent value collisions.
-    void verifyDeferredConstraints( PropertyAccessor accessor ) throws Exception;
+    void verifyDeferredConstraints( PropertyAccessor accessor )  throws IndexEntryConflictException, IOException;
 
     /**
      * Return an updater for applying a set of changes to this index, generally this will be a set of changes from a

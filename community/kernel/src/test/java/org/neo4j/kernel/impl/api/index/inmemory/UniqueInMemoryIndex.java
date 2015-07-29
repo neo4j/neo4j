@@ -99,29 +99,41 @@ class UniqueInMemoryIndex extends InMemoryIndex
     }
 
     @Override
-    public void verifyDeferredConstraints( final PropertyAccessor accessor ) throws Exception
+    public void verifyDeferredConstraints( final PropertyAccessor accessor )
+            throws IndexEntryConflictException, IOException
     {
-        indexData.iterateAll( new InMemoryIndexImplementation.IndexEntryIterator()
+        try
         {
-            @Override
-            public void visitEntry( Object key, Set<Long> nodeIds ) throws Exception
+            indexData.iterateAll( new InMemoryIndexImplementation.IndexEntryIterator()
             {
-                List<Entry> entries = new ArrayList<>();
-                for (long nodeId : nodeIds )
+                @Override
+                public void visitEntry( Object key, Set<Long> nodeIds ) throws Exception
                 {
-                    Property property = accessor.getProperty( nodeId, propertyKeyId );
-                    Object value = property.value();
-                    for ( Entry current : entries )
+                    List<Entry> entries = new ArrayList<>();
+                    for ( long nodeId : nodeIds )
                     {
-                        if (current.property.valueEquals( value ))
+                        Property property = accessor.getProperty( nodeId, propertyKeyId );
+                        Object value = property.value();
+                        for ( Entry current : entries )
                         {
-                            throw new PreexistingIndexEntryConflictException( value, current.nodeId, nodeId );
+                            if ( current.property.valueEquals( value ) )
+                            {
+                                throw new PreexistingIndexEntryConflictException( value, current.nodeId, nodeId );
+                            }
                         }
+                        entries.add( new Entry( nodeId, property ) );
                     }
-                    entries.add( new Entry( nodeId, property) );
                 }
-            }
-        } );
+            } );
+        } catch ( PreexistingIndexEntryConflictException e )
+        {
+            throw e;
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
+
     }
 
     private static class Entry {
