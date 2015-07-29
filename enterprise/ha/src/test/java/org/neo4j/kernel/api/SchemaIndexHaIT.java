@@ -446,7 +446,8 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor ) throws Exception
+        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+                throws IndexEntryConflictException, IOException
         {
             delegate.verifyDeferredConstraints( propertyAccessor );
         }
