@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp
 import org.neo4j.cypher.internal.compiler.v2_3.ast.UsingJoinHint
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp.joinSolverStep._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan, NodeHashJoin, PatternRelationship}
 
 case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
@@ -40,19 +41,53 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
         rightNodes = rhs.solved.graph.patternNodes;
         overlap = leftNodes intersect rightNodes if overlap.nonEmpty
       ) yield {
-
-        val hints = qg.hints.collect {
-          case hint@UsingJoinHint(identifier) if overlap contains IdName(identifier.name) => hint
-        }
-
-        Iterator(
-          context.logicalPlanProducer.planNodeHashJoin(overlap, lhs, rhs, hints),
-          context.logicalPlanProducer.planNodeHashJoin(overlap, rhs, lhs, hints)
-        )
+        planJoins(lhs, rhs, overlap, qg)
       }
 
     // This should be (and is) lazy
     result.flatten
+  }
+}
+
+object joinSolverStep {
+
+  def planJoinsOnTopOfExpands(qg: QueryGraph, lhsOpt: Option[LogicalPlan], rhsSet: Set[LogicalPlan])
+                             (implicit context: LogicalPlanningContext): Iterator[LogicalPlan] = {
+    val lhs = lhsOpt.getOrElse {
+      return Iterator.empty
+    }
+
+    val joinHintsPresent = qg.hints.exists {
+      case _: UsingJoinHint => true
+      case _ => false
+    }
+
+    if (joinHintsPresent) {
+      val result =
+        for {
+          rhs <- rhsSet
+          overlap = lhs.solved.graph.patternNodes intersect rhs.solved.graph.patternNodes
+          if overlap.nonEmpty
+        } yield {
+          planJoins(lhs, rhs, overlap, qg)
+        }
+
+      result.flatten.iterator
+    }
+    else
+      Iterator.empty
+  }
+
+  private def planJoins(lhs: LogicalPlan, rhs: LogicalPlan, overlap: Set[IdName], qg: QueryGraph)
+                       (implicit context: LogicalPlanningContext) = {
+    val hints = qg.hints.collect {
+      case hint@UsingJoinHint(identifier) if overlap contains IdName(identifier.name) => hint
+    }
+
+    Iterator(
+      context.logicalPlanProducer.planNodeHashJoin(overlap, lhs, rhs, hints),
+      context.logicalPlanProducer.planNodeHashJoin(overlap, rhs, lhs, hints)
+    )
   }
 }
 

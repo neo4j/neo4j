@@ -279,7 +279,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
               |RETURN a.prop
           """.stripMargin))
 
-      error.getMessage should include("Cannot use join hint")
+      error.getMessage should include("Cannot use join hint for single node pattern")
     }
 
     test(s"$plannerName should fail when join hint is applied to a relationship") {
@@ -308,17 +308,38 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
       error.getMessage should include("Type mismatch: expected Node but was Path")
     }
 
-    test(s"$plannerName should fail when join hint is applied to a pattern of length 1") {
-      val error = intercept[SyntaxException](
-        executeWithCostPlannerOnly(
-          s"""
-             |CYPHER planner=$plannerName
-              |MATCH (a:A)-->(b:B)
-              |USING JOIN ON b
-              |RETURN a.prop
-          """.stripMargin))
+    test(s"$plannerName should work when join hint is applied to the start node of a single hop pattern") {
+      val a = createLabeledNode(Map("prop" -> "foo"), "A")
+      val b = createLabeledNode(Map("prop" -> "bar"), "B")
+      relate(a, b)
 
-      error.getMessage should include("Cannot use join hint")
+      val result = executeWithCostPlannerOnly(
+        s"""
+           |CYPHER planner=$plannerName
+            |MATCH (a:A)-->(b:B)
+            |USING JOIN ON a
+            |RETURN a.prop AS res
+          """.stripMargin)
+
+      result.toList should equal(List(Map("res" -> "foo")))
+      result.executionPlanDescription() should includeHashJoinOn("a")
+    }
+
+    test(s"$plannerName should work when join hint is applied to the end node of a single hop pattern") {
+      val a = createLabeledNode(Map("prop" -> "foo"), "A")
+      val b = createLabeledNode(Map("prop" -> "bar"), "B")
+      relate(a, b)
+
+      val result = executeWithCostPlannerOnly(
+        s"""
+           |CYPHER planner=$plannerName
+            |MATCH (a:A)-->(b:B)
+            |USING JOIN ON b
+            |RETURN b.prop AS res
+          """.stripMargin)
+
+      result.toList should equal(List(Map("res" -> "bar")))
+      result.executionPlanDescription() should includeHashJoinOn("b")
     }
 
     test(s"$plannerName should be able to use join hints for multiple hop pattern") {
