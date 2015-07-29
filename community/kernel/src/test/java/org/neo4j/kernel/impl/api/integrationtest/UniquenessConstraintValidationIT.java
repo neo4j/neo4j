@@ -90,7 +90,32 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldEnforceUniquenessConstraintOnAddLabel() throws Exception
+    public void shouldEnforceUniquenessConstraintOnAddLabelForNumberPropertyOnNodeNotFromTransaction() throws Exception
+    {
+        // given
+        constrainedNode( "Label1", "key1", 1 );
+
+        // when
+        DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+        long node = createNode( statement, "key1", 1 );
+        commit();
+
+        statement = dataWriteOperationsInNewTransaction();
+        try
+        {
+            statement.nodeAddLabel( node, statement.labelGetOrCreateForName( "Label1" ) );
+
+            fail( "should have thrown exception" );
+        }
+        // then
+        catch ( UniquePropertyConstraintViolationKernelException e )
+        {
+            assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "\"key1\"=[1]" ) );
+        }
+    }
+
+    @Test
+    public void shouldEnforceUniquenessConstraintOnAddLabelForStringProperty() throws Exception
     {
         // given
         constrainedNode( "Label1", "key1", "value1" );

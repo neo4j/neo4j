@@ -99,15 +99,12 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         {
             PropertyConstraint constraint = constraints.next();
             int propertyKeyId = constraint.propertyKey();
-
-            try ( Cursor<PropertyItem> properties = node.property( propertyKeyId ) )
+            Object propertyValue = node.getProperty( propertyKeyId );
+            if ( propertyValue != null )
             {
-                if ( properties.next() )
-                {
-                    validateNoExistingNodeWithLabelAndProperty( state, labelId, propertyKeyId, properties.get().value(),
-                            node.id() );
-                }
+                validateNoExistingNodeWithLabelAndProperty( state, labelId, propertyKeyId, propertyValue, node.id() );
             }
+
         }
         return entityWriteOperations.nodeAddLabel( state, node, labelId );
     }
