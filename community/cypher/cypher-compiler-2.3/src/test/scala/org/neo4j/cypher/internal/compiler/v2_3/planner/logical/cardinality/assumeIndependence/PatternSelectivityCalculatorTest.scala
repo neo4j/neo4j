@@ -36,7 +36,7 @@ import scala.collection.mutable
 
 class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanConstructionTestSupport with AstConstructionTestSupport {
 
-  test("should not divide by zero if there are no node with a given label") {
+  test("should return zero if there are no nodes with the given labels") {
     val stats: GraphStatistics = mock[GraphStatistics]
     when(stats.nodesWithLabelCardinality(any())).thenReturn(Cardinality(0))
     when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(42))
@@ -50,7 +50,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
     implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(ident("a"), Seq(label))(pos))))
     val result = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
 
-    result should equal(Selectivity.ONE)
+    result should equal(Selectivity.ZERO)
   }
 
   test("should not consider label selectivity twice") {
