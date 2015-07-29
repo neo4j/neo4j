@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 
@@ -91,11 +90,10 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
             DynamicStringStore stringPropertyStore,
             PropertyKeyTokenStore propertyKeyTokenStore,
             DynamicArrayStore arrayPropertyStore,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            StoreVersionMismatchHandler versionMismatchHandler )
     {
         super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, logProvider, versionMismatchHandler, monitors );
+                fileSystemAbstraction, logProvider, versionMismatchHandler );
         this.stringPropertyStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayPropertyStore = arrayPropertyStore;

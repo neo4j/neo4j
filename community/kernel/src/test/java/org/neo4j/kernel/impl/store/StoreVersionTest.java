@@ -37,7 +37,6 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -59,8 +58,7 @@ public class StoreVersionTest
                 new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
-                NullLogProvider.getInstance(),
-                monitors );
+                NullLogProvider.getInstance() );
         NeoStore neoStore = sf.newNeoStore( true );
 
         CommonAbstractStore[] stores = {
@@ -90,7 +88,6 @@ public class StoreVersionTest
 
         try
         {
-            Monitors monitors = new Monitors();
             new NodeStore(
                     workingFile,
                     config,
@@ -99,8 +96,7 @@ public class StoreVersionTest
                     fs.get(),
                     NullLogProvider.getInstance(),
                     null,
-                    StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
-                    monitors );
+                    StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
             fail( "Should have thrown exception" );
         }
         catch ( NotCurrentStoreVersionException e )
@@ -120,8 +116,7 @@ public class StoreVersionTest
                 new DefaultIdGeneratorFactory( fileSystemAbstraction ),
                 pageCache,
                 fileSystemAbstraction,
-                NullLogProvider.getInstance(),
-                monitors );
+                NullLogProvider.getInstance() );
         NeoStore neoStore = sf.newNeoStore( true );
 
         // The first checks the instance method, the other the public one
@@ -149,7 +144,6 @@ public class StoreVersionTest
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final File outputDir = new File( "target/var/" + StoreVersionTest.class.getSimpleName() ).getAbsoluteFile();
     private final Config config = new Config( stringMap(), GraphDatabaseSettings.class );
-    private final Monitors monitors = new Monitors();
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
 }

@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -108,7 +107,6 @@ public class ConsistencyCheckService
             throws ConsistencyCheckIncompleteException
     {
         Log log = logProvider.getLog( getClass() );
-        Monitors monitors = new Monitors();
         Config consistencyCheckerConfig = tuningConfiguration.with(
                 MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
 
@@ -116,8 +114,7 @@ public class ConsistencyCheckService
                 storeDir,
                 consistencyCheckerConfig,
                 new DefaultIdGeneratorFactory( fileSystem ),
-                pageCache, fileSystem, logProvider,
-                monitors
+                pageCache, fileSystem, logProvider
         );
 
         ConsistencySummaryStatistics summary;

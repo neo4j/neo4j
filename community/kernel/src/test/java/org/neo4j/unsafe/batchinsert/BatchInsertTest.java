@@ -92,7 +92,6 @@ import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -320,7 +319,7 @@ public class BatchInsertTest
         inserter.shutdown();
         File dir = new File( inserter.getStoreDir() );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance(), new Monitors() );
+        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance() );
         return storeFactory.newNeoStore( false );
     }
 

@@ -28,7 +28,6 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Dynamic store that stores strings.
@@ -47,11 +46,10 @@ public class DynamicStringStore extends AbstractDynamicStore
             PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            StoreVersionMismatchHandler versionMismatchHandler )
     {
         super( fileName, configuration, idType, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, logProvider, versionMismatchHandler, monitors );
+                fileSystemAbstraction, logProvider, versionMismatchHandler );
     }
 
     @Override

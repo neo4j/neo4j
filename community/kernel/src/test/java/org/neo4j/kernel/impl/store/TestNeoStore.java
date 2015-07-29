@@ -29,7 +29,6 @@ import org.junit.rules.ExpectedException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -113,7 +112,6 @@ public class TestNeoStore
     {
         storeDir = dir.graphDbDir();
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
-        Monitors monitors = new Monitors();
         pageCache = pageCacheRule.getPageCache( fs.get() );
         StoreFactory sf = new StoreFactory(
                 storeDir,
@@ -121,8 +119,7 @@ public class TestNeoStore
                 new DefaultIdGeneratorFactory( fs.get() ),
                 pageCache,
                 fs.get(),
-                NullLogProvider.getInstance(),
-                monitors );
+                NullLogProvider.getInstance() );
         sf.createNeoStore().close();
     }
 
@@ -140,7 +137,7 @@ public class TestNeoStore
         {
             if ( stringToIndex.containsKey( key ) )
             {
-                return Arrays.asList( stringToIndex.get( key ) );
+                return Collections.singletonList( stringToIndex.get( key ) );
             }
             return Collections.emptyList();
         }
@@ -1111,8 +1108,7 @@ public class TestNeoStore
                 new DefaultIdGeneratorFactory( fileSystem ),
                 pageCache,
                 fileSystem,
-                NullLogProvider.getInstance(),
-                monitors );
+                NullLogProvider.getInstance() );
 
         NeoStore neoStore = sf.newNeoStore( false );
         assertEquals( 12, neoStore.getCurrentLogVersion() );
@@ -1125,7 +1121,7 @@ public class TestNeoStore
         FileSystemAbstraction fileSystem = fs.get();
         File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
         StoreFactory factory =
-                new StoreFactory( fileSystem, neoStoreDir, pageCache, NullLogProvider.getInstance(), new Monitors() );
+                new StoreFactory( fileSystem, neoStoreDir, pageCache, NullLogProvider.getInstance() );
         NeoStore neoStore = factory.newNeoStore( true );
         neoStore.setCreationTime( 3 );
         neoStore.setRandomNumber( 4 );
@@ -1163,7 +1159,6 @@ public class TestNeoStore
     public void testSetLatestConstraintTx() throws Exception
     {
         // given
-        Monitors monitors = new Monitors();
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
         StoreFactory sf = new StoreFactory(
                 dir.directory(),
@@ -1171,8 +1166,7 @@ public class TestNeoStore
                 new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
-                NullLogProvider.getInstance(),
-                monitors );
+                NullLogProvider.getInstance() );
 
         // when
         NeoStore neoStore = sf.newNeoStore( true );
@@ -1199,9 +1193,8 @@ public class TestNeoStore
     @Test
     public void shouldInitializeTheTxIdToOne()
     {
-        StoreFactory factory =
-                new StoreFactory( fs.get(), new File( "graph.db/neostore" ), pageCache, NullLogProvider.getInstance(),
-                        new Monitors() );
+        StoreFactory factory = new StoreFactory(
+                fs.get(), new File( "graph.db/neostore" ), pageCache, NullLogProvider.getInstance() );
 
         NeoStore neoStore = factory.newNeoStore( true );
         neoStore.close();
@@ -1219,7 +1212,7 @@ public class TestNeoStore
         FileSystemAbstraction fileSystem = fs.get();
         File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
         StoreFactory factory =
-                new StoreFactory( fileSystem, neoStoreDir, pageCache, NullLogProvider.getInstance(), new Monitors() );
+                new StoreFactory( fileSystem, neoStoreDir, pageCache, NullLogProvider.getInstance() );
 
         NeoStore neoStore = factory.newNeoStore( true );
         neoStore.close();
@@ -1235,8 +1228,8 @@ public class TestNeoStore
     {
         FileSystemAbstraction fileSystem = fs.get();
         File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
-        StoreFactory factory =
-                new StoreFactory( fileSystem, neoStoreDir, pageCache, NullLogProvider.getInstance(), new Monitors() );
+        StoreFactory factory = new StoreFactory(
+                fileSystem, neoStoreDir, pageCache, NullLogProvider.getInstance() );
         NeoStore neoStore = factory.newNeoStore( true );
         neoStore.setCreationTime( 3 );
         neoStore.setRandomNumber( 4 );

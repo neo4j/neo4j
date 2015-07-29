@@ -44,7 +44,6 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.util.Bits;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -70,7 +69,6 @@ public class TestArrayStore
         Config config = new Config( configParams );
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        Monitors monitors = new Monitors();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreFactory factory = new StoreFactory(
                 dir,
@@ -78,8 +76,7 @@ public class TestArrayStore
                 idGeneratorFactory,
                 pageCache,
                 fs,
-                NullLogProvider.getInstance(),
-                monitors );
+                NullLogProvider.getInstance() );
         File fileName = new File( dir, "arraystore" );
         factory.createDynamicArrayStore( fileName, 120 );
         arrayStore = new DynamicArrayStore(
@@ -90,8 +87,7 @@ public class TestArrayStore
                 pageCache,
                 fs,
                 NullLogProvider.getInstance(),
-                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
-                monitors );
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
     }
 
     @After

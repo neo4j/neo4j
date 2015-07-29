@@ -38,7 +38,6 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertTrue;
@@ -170,8 +169,7 @@ public class TestStore
                     ID_GENERATOR_FACTORY,
                     pageCache,
                     FILE_SYSTEM,
-                    NullLogProvider.getInstance(),
-                    new Monitors() ).
+                    NullLogProvider.getInstance() ).
                     createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ) );
             return new Store( fileName, pageCache );
         }

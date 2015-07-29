@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
@@ -453,15 +452,13 @@ public class NodeLabelsFieldTest
     {
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
-        Monitors monitors = new Monitors();
         StoreFactory storeFactory = new StoreFactory(
                 storeDir,
                 new Config(),
                 new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
-                NullLogProvider.getInstance(),
-                monitors );
+                NullLogProvider.getInstance() );
         storeFactory.createNodeStore();
         nodeStore = storeFactory.newNodeStore();
     }

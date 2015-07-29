@@ -41,7 +41,6 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.PageCacheRule;
@@ -123,7 +122,7 @@ public class ManyPropertyKeysIT
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreFactory storeFactory =
-                new StoreFactory( fs, storeDir, pageCache, NullLogProvider.getInstance(), new Monitors() );
+                new StoreFactory( fs, storeDir, pageCache, NullLogProvider.getInstance() );
         NeoStore neoStore = storeFactory.newNeoStore( true );
         PropertyKeyTokenStore store = neoStore.getPropertyKeyTokenStore();
         for ( int i = 0; i < propertyKeyCount; i++ )

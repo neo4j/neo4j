@@ -42,7 +42,6 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -56,7 +55,6 @@ public class TestDynamicStore
 {
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
-    private static final Monitors monitors = new Monitors();
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     private File storeDir;
@@ -133,8 +131,7 @@ public class TestDynamicStore
                 idGeneratorFactory,
                 pageCache,
                 fs.get(),
-                NullLogProvider.getInstance(),
-                monitors ).createDynamicArrayStore( fileName, blockSize );
+                NullLogProvider.getInstance() ).createDynamicArrayStore( fileName, blockSize );
     }
 
     private DynamicArrayStore newStore()
@@ -148,8 +145,7 @@ public class TestDynamicStore
                 pageCache,
                 fs.get(),
                 NullLogProvider.getInstance(),
-                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
-                new Monitors() );
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
     }
 
     private void deleteBothFiles()

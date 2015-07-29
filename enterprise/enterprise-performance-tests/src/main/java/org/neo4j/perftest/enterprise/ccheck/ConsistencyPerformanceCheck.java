@@ -148,8 +148,7 @@ public class ConsistencyPerformanceCheck
                 new DefaultIdGeneratorFactory( fileSystem ),
                 pageCache,
                 fileSystem,
-                NullLogProvider.getInstance(),
-                monitors );
+                NullLogProvider.getInstance() );
 
         NeoStore neoStore = factory.newNeoStore( true );
 

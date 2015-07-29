@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -90,8 +89,7 @@ public class TestIdGeneratorRebuilding
                 fs,
                 NullLogProvider.getInstance(),
                 labelStore,
-                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
-                new Monitors() );
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
         store.makeStoreOk();
 
         // ... that contain a number of records ...
@@ -145,8 +143,7 @@ public class TestIdGeneratorRebuilding
                 new DefaultIdGeneratorFactory( fs ),
                 pageCacheRule.getPageCache( fs ),
                 fs,
-                NullLogProvider.getInstance(),
-                new Monitors() );
+                NullLogProvider.getInstance() );
         storeFactory.createDynamicStringStore( storeFile, 30, IdType.STRING_BLOCK );
         DynamicStringStore store = storeFactory.newDynamicStringStore(
                 storeFile, IdType.STRING_BLOCK );
@@ -211,8 +208,7 @@ public class TestIdGeneratorRebuilding
                 fs,
                 NullLogProvider.getInstance(),
                 labelStore,
-                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
-                new Monitors() );
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
         store.makeStoreOk();
 
         // ... that contain enough records to fill several file pages ...

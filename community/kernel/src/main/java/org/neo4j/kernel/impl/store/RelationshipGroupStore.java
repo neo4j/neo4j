@@ -30,7 +30,6 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
@@ -56,11 +55,10 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
             PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            StoreVersionMismatchHandler versionMismatchHandler )
     {
         super( fileName, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, logProvider, versionMismatchHandler, monitors );
+                fileSystemAbstraction, logProvider, versionMismatchHandler );
     }
 
     @Override

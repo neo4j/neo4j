@@ -184,7 +184,7 @@ public class BatchingNeoStore implements AutoCloseable, NeoStoreSupplier
                 PageCacheTracer.NULL ) )
         {
             StoreFactory storeFactory = new StoreFactory(
-                    fileSystem, new File( storeDir ), pageCache, NullLogProvider.getInstance(), new Monitors() );
+                    fileSystem, new File( storeDir ), pageCache, NullLogProvider.getInstance() );
             storeFactory.createNeoStore().close();
         }
     }
@@ -193,7 +193,7 @@ public class BatchingNeoStore implements AutoCloseable, NeoStoreSupplier
     {
         BatchingIdGeneratorFactory idGeneratorFactory = new BatchingIdGeneratorFactory( fileSystem );
         StoreFactory storeFactory = new StoreFactory(
-                storeDir, neo4jConfig, idGeneratorFactory, pageCache, fileSystem, logProvider, monitors );
+                storeDir, neo4jConfig, idGeneratorFactory, pageCache, fileSystem, logProvider );
         return storeFactory.newNeoStore( true );
     }
 

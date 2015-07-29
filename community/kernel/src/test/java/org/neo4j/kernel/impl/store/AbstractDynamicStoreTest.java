@@ -34,7 +34,6 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -112,8 +111,7 @@ public class AbstractDynamicStoreTest
                 pageCache,
                 fs,
                 NullLogProvider.getInstance(),
-                StoreVersionMismatchHandler.ALLOW_OLD_VERSION,
-                new Monitors() )
+                StoreVersionMismatchHandler.ALLOW_OLD_VERSION )
         {
             @Override
             public void accept( Processor processor, DynamicRecord record )

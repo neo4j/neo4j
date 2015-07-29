@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
@@ -101,7 +100,7 @@ public class StoreMigratorTest
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory( fs, storeDirectory, pageCache,
-                logService.getInternalLogProvider(), new Monitors() );
+                logService.getInternalLogProvider() );
         storeFactory.newNeoStore( false ).close();
     }
 }

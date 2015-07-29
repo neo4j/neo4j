@@ -30,7 +30,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 /**
@@ -50,11 +49,10 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
             FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
             DynamicStringStore nameStore,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            StoreVersionMismatchHandler versionMismatchHandler )
     {
         super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                logProvider, nameStore, versionMismatchHandler, monitors, new RelationshipTypeToken.Factory() );
+                logProvider, nameStore, versionMismatchHandler, new RelationshipTypeToken.Factory() );
     }
 
     @Override

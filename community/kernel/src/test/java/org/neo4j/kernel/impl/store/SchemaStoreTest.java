@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -153,15 +152,13 @@ public class SchemaStoreTest
         fs.get().mkdirs( storeDir );
         config = new Config();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs.get() );
-        Monitors monitors = new Monitors();
         storeFactory = new StoreFactory(
                 storeDir,
                 config,
                 idGeneratorFactory,
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
-                NullLogProvider.getInstance(),
-                monitors );
+                NullLogProvider.getInstance() );
         storeFactory.createSchemaStore();
         store = storeFactory.newSchemaStore();
     }

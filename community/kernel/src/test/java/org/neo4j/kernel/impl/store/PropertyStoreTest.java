@@ -79,7 +79,7 @@ public class PropertyStoreTest
         final PropertyStore store = new PropertyStore( path, config, new JumpingIdGeneratorFactory( 1 ), pageCache,
                 fileSystemAbstraction, NullLogProvider.getInstance(),
                 stringPropertyStore, mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
-                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION, null );
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
 
         try
         {

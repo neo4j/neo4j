@@ -102,7 +102,7 @@ public class RsdrMain
     {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( files );
         return new StoreFactory(
-                storeDir, config, idGeneratorFactory, pageCache, files, NullLogProvider.getInstance(), null );
+                storeDir, config, idGeneratorFactory, pageCache, files, NullLogProvider.getInstance() );
     }
 
     private static void interact( NeoStore neoStore ) throws IOException

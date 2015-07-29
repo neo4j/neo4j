@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 
@@ -173,7 +172,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             RelationshipTypeTokenStore relTypeStore, LabelTokenStore labelTokenStore, PropertyStore propStore,
             RelationshipStore relStore, NodeStore nodeStore, SchemaStore schemaStore,
             RelationshipGroupStore relGroupStore, CountsTracker counts,
-            StoreVersionMismatchHandler versionMismatchHandler, Monitors monitors )
+            StoreVersionMismatchHandler versionMismatchHandler )
     {
         super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 logProvider, versionMismatchHandler );

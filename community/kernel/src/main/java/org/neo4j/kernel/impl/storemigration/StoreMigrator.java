@@ -79,7 +79,6 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Charsets;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
@@ -357,7 +356,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         final File storeFileBase = new File( migrationDir, NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
 
         final StoreFactory storeFactory =
-                new StoreFactory( fileSystem, storeDir, pageCache, NullLogProvider.getInstance(), new Monitors(),
+                new StoreFactory( fileSystem, storeDir, pageCache, NullLogProvider.getInstance(),
                         StoreVersionMismatchHandler.ALLOW_OLD_VERSION );
         try ( NodeStore nodeStore = storeFactory.newNodeStore();
               RelationshipStore relationshipStore = storeFactory.newRelationshipStore() )
@@ -531,7 +530,7 @@ public class StoreMigrator implements StoreMigrationParticipant
                 migrationDir,
                 new Config(),
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache,
-                fileSystem, NullLogProvider.getInstance(), new Monitors() );
+                fileSystem, NullLogProvider.getInstance() );
     }
 
     private void migratePropertyKeys( Legacy19Store legacyStore, PageCache pageCache, File migrationDir )

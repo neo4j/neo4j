@@ -52,7 +52,6 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
@@ -342,7 +341,6 @@ public class UpgradeStoreIT
     private void createManyRelationshipTypes( File path, int numberOfTypes )
     {
         File fileName = new File( path, "neostore.relationshiptypestore.db" );
-        Monitors monitors = new Monitors();
         Config config = new Config();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
@@ -354,10 +352,9 @@ public class UpgradeStoreIT
                 pageCache,
                 fs,
                 NullLogProvider.getInstance(),
-                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
-                monitors );
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
         RelationshipTypeTokenStore store = new RelationshipTypeTokenStoreWithOneOlderVersion(
-                fileName, stringStore, monitors, fs, pageCache );
+                fileName, stringStore, fs, pageCache );
         for ( int i = 0; i < numberOfTypes; i++ )
         {
             String name = "type" + i;
@@ -381,7 +378,6 @@ public class UpgradeStoreIT
         public RelationshipTypeTokenStoreWithOneOlderVersion(
                 File fileName,
                 DynamicStringStore stringStore,
-                Monitors monitors,
                 FileSystemAbstraction fs,
                 PageCache pageCache )
         {
@@ -392,8 +388,7 @@ public class UpgradeStoreIT
                     fs,
                     NullLogProvider.getInstance(),
                     stringStore,
-                    StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
-                    monitors );
+                    StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
         }
 
         @Override

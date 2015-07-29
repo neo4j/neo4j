@@ -55,7 +55,6 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -267,8 +266,7 @@ public class StoreMigratorFrom19IT
                 new DefaultIdGeneratorFactory( fs ),
                 pageCache,
                 fs,
-                NullLogProvider.getInstance(),
-                new Monitors() );
+                NullLogProvider.getInstance() );
         upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
     }
 

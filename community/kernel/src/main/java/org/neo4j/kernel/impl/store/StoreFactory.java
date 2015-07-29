@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
@@ -84,35 +83,32 @@ public class StoreFactory
     private final Log log;
     private final StoreVersionMismatchHandler versionMismatchHandler;
     private final File neoStoreFileName;
-    private final Monitors monitors;
     private final PageCache pageCache;
 
-    public StoreFactory( FileSystemAbstraction fileSystem, File storeDir, PageCache pageCache, LogProvider logProvider,
-            Monitors monitors )
+    public StoreFactory( FileSystemAbstraction fs, File storeDir, PageCache pageCache, LogProvider logProvider )
     {
-        this( fileSystem, storeDir, pageCache, logProvider, monitors, StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
+        this( fs, storeDir, pageCache, logProvider, StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
     }
 
     @SuppressWarnings( "deprecation" )
     public StoreFactory( FileSystemAbstraction fileSystem, File storeDir, PageCache pageCache, LogProvider logProvider,
-                         Monitors monitors, StoreVersionMismatchHandler versionMismatchHandler )
+                         StoreVersionMismatchHandler versionMismatchHandler )
     {
         this( storeDir, new Config(),
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
-                logProvider, monitors, versionMismatchHandler );
+                logProvider, versionMismatchHandler );
     }
 
     public StoreFactory( File storeDir, Config config, @SuppressWarnings( "deprecation" ) IdGeneratorFactory idGeneratorFactory,
-                         PageCache pageCache, FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider,
-                         Monitors monitors )
+                         PageCache pageCache, FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider )
     {
         this( storeDir, config, idGeneratorFactory, pageCache, fileSystemAbstraction, logProvider,
-                monitors, StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
     }
 
-    public StoreFactory( File storeDir, Config config, @SuppressWarnings( "deprecation" ) IdGeneratorFactory idGeneratorFactory,
+    private StoreFactory( File storeDir, Config config, @SuppressWarnings( "deprecation" ) IdGeneratorFactory idGeneratorFactory,
                          PageCache pageCache, FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider,
-                         Monitors monitors, StoreVersionMismatchHandler versionMismatchHandler )
+                         StoreVersionMismatchHandler versionMismatchHandler )
     {
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
@@ -121,7 +117,6 @@ public class StoreFactory
         this.log = logProvider.getLog( getClass() );
         this.versionMismatchHandler = versionMismatchHandler;
         this.neoStoreFileName = new File( storeDir, NeoStore.DEFAULT_NAME );
-        this.monitors = monitors;
         this.pageCache = pageCache;
     }
 
@@ -130,21 +125,21 @@ public class StoreFactory
         return typeDescriptor + " " + CommonAbstractStore.ALL_STORES_VERSION;
     }
 
-    public File storeFileName( String toAppend )
+    private File storeFileName( String toAppend )
     {
         return new File( neoStoreFileName.getPath() + toAppend );
     }
 
-    public File storeFileName( StoreFile file, StoreFileType type )
+    private File storeFileName( StoreFile file, StoreFileType type )
     {
         return new File( neoStoreFileName.getParentFile(), file.fileName( type ) );
     }
 
-    public NeoStore newNeoStore( boolean allowCreateEmpty )
+    public NeoStore newNeoStore( boolean createIfNotExist )
     {
         boolean storeExists = storeExists();
 
-        if ( !storeExists && allowCreateEmpty )
+        if ( !storeExists && createIfNotExist )
         {
             return createNeoStore();
         }
@@ -160,7 +155,7 @@ public class StoreFactory
                 newSchemaStore(),
                 newRelationshipGroupStore(),
                 newCountsStore(),
-                versionMismatchHandler, monitors );
+                versionMismatchHandler );
     }
 
     public boolean storeExists()
@@ -176,7 +171,7 @@ public class StoreFactory
     public RelationshipGroupStore newRelationshipGroupStore( File baseFile )
     {
         return new RelationshipGroupStore( baseFile, config,
-                idGeneratorFactory, pageCache, fileSystemAbstraction, logProvider, versionMismatchHandler, monitors );
+                idGeneratorFactory, pageCache, fileSystemAbstraction, logProvider, versionMismatchHandler );
     }
 
     public SchemaStore newSchemaStore()
@@ -188,14 +183,14 @@ public class StoreFactory
     public SchemaStore newSchemaStore( File baseFile )
     {
         return new SchemaStore( baseFile, config, IdType.SCHEMA,
-                idGeneratorFactory, pageCache, fileSystemAbstraction, logProvider, versionMismatchHandler, monitors );
+                idGeneratorFactory, pageCache, fileSystemAbstraction, logProvider, versionMismatchHandler );
     }
 
     public DynamicStringStore newDynamicStringStore( File fileName,
                                                      @SuppressWarnings( "deprecation" ) IdType nameIdType )
     {
         return new DynamicStringStore( fileName, config, nameIdType, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, logProvider, versionMismatchHandler, monitors );
+                fileSystemAbstraction, logProvider, versionMismatchHandler );
     }
 
     public RelationshipTypeTokenStore newRelationshipTypeTokenStore()
@@ -217,7 +212,7 @@ public class StoreFactory
                 IdType.RELATIONSHIP_TYPE_TOKEN_NAME );
         return new RelationshipTypeTokenStore( relationshipTypeTokenStore, config,
                 idGeneratorFactory, pageCache, fileSystemAbstraction, logProvider, nameStore,
-                versionMismatchHandler, monitors );
+                versionMismatchHandler );
     }
 
     public PropertyStore newPropertyStore()
@@ -234,7 +229,6 @@ public class StoreFactory
                 new File( baseFile.getPath() + INDEX_PART ) );
     }
 
-    @SuppressWarnings( "deprecation" )
     private PropertyStore newPropertyStore( File propertyStringStore, File propertyArrayStore, File propertyStore,
                                             File propertyKeysStore )
     {
@@ -243,7 +237,7 @@ public class StoreFactory
         DynamicArrayStore arrayPropertyStore = newDynamicArrayStore( propertyArrayStore, IdType.ARRAY_BLOCK );
         return new PropertyStore( propertyStore, config, idGeneratorFactory,
                 pageCache, fileSystemAbstraction, logProvider, stringPropertyStore, propertyKeyTokenStore,
-                arrayPropertyStore, versionMismatchHandler, monitors );
+                arrayPropertyStore, versionMismatchHandler );
     }
 
     public PropertyKeyTokenStore newPropertyKeyTokenStore()
@@ -265,7 +259,7 @@ public class StoreFactory
                 IdType.PROPERTY_KEY_TOKEN_NAME );
         return new PropertyKeyTokenStore( propertyKeyTokenStore, config,
                 idGeneratorFactory, pageCache, fileSystemAbstraction, logProvider, nameStore,
-                versionMismatchHandler, monitors );
+                versionMismatchHandler );
     }
 
     public LabelTokenStore newLabelTokenStore()
@@ -284,7 +278,7 @@ public class StoreFactory
         @SuppressWarnings( "deprecation" )
         DynamicStringStore nameStore = newDynamicStringStore( labelTokenNamesStore, IdType.LABEL_TOKEN_NAME );
         return new LabelTokenStore( labelTokenStore, config, idGeneratorFactory,
-                pageCache, fileSystemAbstraction, logProvider, nameStore, versionMismatchHandler, monitors );
+                pageCache, fileSystemAbstraction, logProvider, nameStore, versionMismatchHandler );
     }
 
     public RelationshipStore newRelationshipStore()
@@ -295,13 +289,13 @@ public class StoreFactory
     public RelationshipStore newRelationshipStore( File baseFile )
     {
         return new RelationshipStore( baseFile, config,
-                idGeneratorFactory, pageCache, fileSystemAbstraction, logProvider, versionMismatchHandler, monitors );
+                idGeneratorFactory, pageCache, fileSystemAbstraction, logProvider, versionMismatchHandler );
     }
 
-    public DynamicArrayStore newDynamicArrayStore( File fileName, @SuppressWarnings( "deprecation" ) IdType idType )
+    private DynamicArrayStore newDynamicArrayStore( File fileName, @SuppressWarnings( "deprecation" ) IdType idType )
     {
         return new DynamicArrayStore( fileName, config, idType, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, logProvider, versionMismatchHandler, monitors );
+                fileSystemAbstraction, logProvider, versionMismatchHandler );
     }
 
     public NodeStore newNodeStore()
@@ -319,9 +313,9 @@ public class StoreFactory
     {
         DynamicArrayStore dynamicLabelStore = new DynamicArrayStore( labelStore,
                 config, IdType.NODE_LABELS, idGeneratorFactory, pageCache, fileSystemAbstraction, logProvider,
-                versionMismatchHandler, monitors );
+                versionMismatchHandler );
         return new NodeStore( nodeStore, config, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, logProvider, dynamicLabelStore, versionMismatchHandler, monitors );
+                fileSystemAbstraction, logProvider, dynamicLabelStore, versionMismatchHandler );
     }
 
     public CountsTracker newCountsStore()
@@ -337,7 +331,7 @@ public class StoreFactory
         return createNeoStore( new StoreId() );
     }
 
-    public NeoStore createNeoStore( StoreId storeId )
+    private NeoStore createNeoStore( StoreId storeId )
     {
         // Go ahead and create the store
         log.info( "Creating new db @ " + neoStoreFileName );
@@ -412,7 +406,7 @@ public class StoreFactory
      * filename is <CODE>null</CODE> or the file already exists an <CODE>IOException</CODE>
      * is thrown.
      */
-    public void createRelationshipStore()
+    private void createRelationshipStore()
     {
         createEmptyStore( storeFileName( RELATIONSHIP_STORE_NAME ),
                 buildTypeDescriptorAndVersion( RelationshipStore.TYPE_DESCRIPTOR ) );
@@ -471,7 +465,7 @@ public class StoreFactory
     }
 
     @SuppressWarnings( "deprecation" )
-    public void createPropertyKeyTokenStore()
+    private void createPropertyKeyTokenStore()
     {
         createEmptyStore( storeFileName( PROPERTY_KEY_TOKEN_STORE_NAME ),
                 buildTypeDescriptorAndVersion( PropertyKeyTokenStore.TYPE_DESCRIPTOR ) );
@@ -508,7 +502,7 @@ public class StoreFactory
      * @param baseBlockSize The number of bytes for each block
      * @param typeAndVersionDescriptor The type and version descriptor that identifies this store
      */
-    public void createEmptyDynamicStore( File fileName, int baseBlockSize,
+    private void createEmptyDynamicStore( File fileName, int baseBlockSize,
                                          String typeAndVersionDescriptor,
                                          @SuppressWarnings( "deprecation" ) IdType idType )
     {
@@ -562,7 +556,7 @@ public class StoreFactory
     }
 
     @SuppressWarnings( "deprecation" )
-    public void createRelationshipGroupStore( int denseNodeThreshold )
+    private void createRelationshipGroupStore( int denseNodeThreshold )
     {
         ByteBuffer firstRecord = ByteBuffer.allocate( RelationshipGroupStore.RECORD_SIZE ).putInt( denseNodeThreshold );
         firstRecord.flip();
@@ -572,6 +566,7 @@ public class StoreFactory
                 firstRecord, IdType.RELATIONSHIP_GROUP );
     }
 
+    // TODO make private or remove
     public void createEmptyStore( File fileName, String typeAndVersionDescriptor )
     {
         createEmptyStore( fileName, typeAndVersionDescriptor, null, null );

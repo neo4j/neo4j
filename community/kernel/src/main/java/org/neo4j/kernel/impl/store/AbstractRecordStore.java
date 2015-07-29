@@ -28,8 +28,6 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.Collections.singletonList;
@@ -45,8 +43,7 @@ public abstract class AbstractRecordStore<R extends AbstractBaseRecord> extends 
             PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            StoreVersionMismatchHandler versionMismatchHandler )
     {
         super( fileName, conf, idType, idGeneratorFactory, pageCache, fileSystemAbstraction, logProvider,
                 versionMismatchHandler );
@@ -56,12 +53,6 @@ public abstract class AbstractRecordStore<R extends AbstractBaseRecord> extends 
     public Collection<R> getRecords( long id )
     {
         return singletonList( getRecord( id ) );
-    }
-
-    @Override
-    public long getNextRecordReference( R record )
-    {
-        return Record.NULL_REFERENCE.intValue();
     }
 
     @Override

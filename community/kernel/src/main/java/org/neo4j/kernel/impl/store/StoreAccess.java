@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 /**
@@ -104,13 +103,13 @@ public class StoreAccess
 
     public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir )
     {
-        this( fileSystem, pageCache, storeDir, new Config(), new Monitors() );
+        this( fileSystem, pageCache, storeDir, new Config() );
     }
 
-    private StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config, Monitors monitors )
+    private StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config )
     {
         this( new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
-                fileSystem, NullLogProvider.getInstance(), monitors ).newNeoStore( false ) );
+                fileSystem, NullLogProvider.getInstance() ).newNeoStore( false ) );
         this.closeable = true;
     }
 

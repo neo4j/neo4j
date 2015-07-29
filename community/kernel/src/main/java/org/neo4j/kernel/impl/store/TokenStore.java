@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.core.TokenFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
@@ -69,11 +68,10 @@ public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token
             LogProvider logProvider,
             DynamicStringStore nameStore,
             StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors,
             TokenFactory<TOKEN> tokenFactory )
     {
         super( fileName, configuration, idType, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, logProvider, versionMismatchHandler, monitors );
+                fileSystemAbstraction, logProvider, versionMismatchHandler );
         this.nameStore = nameStore;
         this.tokenFactory = tokenFactory;
     }

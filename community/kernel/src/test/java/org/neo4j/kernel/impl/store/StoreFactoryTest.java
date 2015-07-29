@@ -34,7 +34,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -61,7 +60,7 @@ public class StoreFactoryTest
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
 
         storeFactory = new StoreFactory( testDirectory.graphDbDir(), new Config(),
-                idGeneratorFactory, pageCache, fs, NullLogProvider.getInstance(), new Monitors() );
+                idGeneratorFactory, pageCache, fs, NullLogProvider.getInstance() );
     }
 
     @After
@@ -104,7 +103,7 @@ public class StoreFactoryTest
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreFactory readOnlyStoreFactory = new StoreFactory( testDirectory.directory( "readOnlyStore" ),
                 new Config( MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) ),
-                new DefaultIdGeneratorFactory( fs ), pageCache, fs, NullLogProvider.getInstance(), new Monitors() );
+                new DefaultIdGeneratorFactory( fs ), pageCache, fs, NullLogProvider.getInstance() );
         neoStore = readOnlyStoreFactory.createNeoStore();
         long lastClosedTransactionId = neoStore.getLastClosedTransactionId();
 

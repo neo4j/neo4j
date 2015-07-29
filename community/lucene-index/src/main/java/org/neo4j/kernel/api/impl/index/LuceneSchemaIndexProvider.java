@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.impl.store.StoreVersionMismatchHandler.ALLOW_OLD_VERSION;
 
@@ -155,7 +154,9 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
             @Override
             public SchemaStore provide( File dir, PageCache pageCache )
             {
-                return new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance(), new Monitors(), ALLOW_OLD_VERSION ).newSchemaStore();
+                StoreFactory storeFactory = new StoreFactory(
+                        fs, dir, pageCache, NullLogProvider.getInstance(), ALLOW_OLD_VERSION );
+                return  storeFactory.newSchemaStore();
             }
         } );
     }

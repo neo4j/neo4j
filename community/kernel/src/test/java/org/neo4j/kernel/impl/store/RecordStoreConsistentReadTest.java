@@ -41,14 +41,12 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
 
 public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S extends RecordStore<R>>
@@ -74,7 +72,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         pageCache = pageCacheRule.withInconsistentReads( pageCache, nextReadIsInconsistent );
         File storeDir = new File( "stores" );
-        StoreFactory factory = new StoreFactory( fs, storeDir, pageCache, NullLogProvider.getInstance(), new Monitors() );
+        StoreFactory factory = new StoreFactory( fs, storeDir, pageCache, NullLogProvider.getInstance() );
         NeoStore neoStore = factory.newNeoStore( true );
         S store = initialiseStore( neoStore );
 

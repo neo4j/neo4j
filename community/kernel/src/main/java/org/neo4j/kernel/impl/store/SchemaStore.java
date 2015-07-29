@@ -35,7 +35,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.store.record.SchemaRule.Kind.deserialize;
@@ -56,11 +55,10 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
             PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            StoreVersionMismatchHandler versionMismatchHandler )
     {
         super( fileName, conf, idType, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                logProvider, versionMismatchHandler, monitors );
+                logProvider, versionMismatchHandler );
     }
 
     @Override

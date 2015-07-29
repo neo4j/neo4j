@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,8 +28,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.junit.Test;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
@@ -255,7 +255,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingPropertyStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, null, NullLogProvider.getInstance(), null, null, null, null, null );
+            super( null, new Config(), null, null, null, NullLogProvider.getInstance(), null, null, null, null );
             this.currentRecording = currentRecording;
         }
 
@@ -287,7 +287,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingNodeStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, null, NullLogProvider.getInstance(), null, null, null );
+            super( null, new Config(), null, null, null, NullLogProvider.getInstance(), null, null );
             this.currentRecording = currentRecording;
         }
 
@@ -327,7 +327,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingRelationshipStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, null, NullLogProvider.getInstance(), null, null );
+            super( null, new Config(), null, null, null, NullLogProvider.getInstance(), null );
             this.currentRecording = currentRecording;
         }
 

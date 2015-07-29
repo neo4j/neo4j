@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.transaction.command.CommandReader;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2_2;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -208,7 +207,6 @@ public class NodeCommandTest
     {
         File dir = new File( "dir" );
         fs.get().mkdirs( dir );
-        Monitors monitors = new Monitors();
         @SuppressWarnings("deprecation")
         StoreFactory storeFactory = new StoreFactory(
                 dir,
@@ -216,8 +214,7 @@ public class NodeCommandTest
                 new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
-                NullLogProvider.getInstance(),
-                monitors );
+                NullLogProvider.getInstance() );
         storeFactory.createNodeStore();
         nodeStore = storeFactory.newNodeStore();
     }

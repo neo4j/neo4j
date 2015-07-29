@@ -30,7 +30,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Implementation of the property store.
@@ -50,11 +49,10 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord, To
             FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
             DynamicStringStore nameStore,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            StoreVersionMismatchHandler versionMismatchHandler )
     {
         super( fileName, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                logProvider, nameStore, versionMismatchHandler, monitors, new Token.Factory() );
+                logProvider, nameStore, versionMismatchHandler, new Token.Factory() );
     }
 
     @Override

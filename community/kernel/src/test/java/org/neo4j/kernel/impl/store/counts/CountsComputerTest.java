@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
@@ -329,7 +328,7 @@ public class CountsComputerTest
     {
         cleanupCountsForRebuilding();
 
-        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance(), new Monitors() );
+        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance() );
         try ( Lifespan life = new Lifespan();
               NodeStore nodeStore = storeFactory.newNodeStore();
               RelationshipStore relationshipStore = storeFactory.newRelationshipStore() )

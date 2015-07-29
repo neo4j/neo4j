@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
@@ -118,7 +117,7 @@ public class ApplyRecoveredTransactionsTest
         FileSystemAbstraction fs = fsr.get();
         File storeDir = new File( "dir" );
         StoreFactory storeFactory = new StoreFactory( storeDir, new Config(), new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance(), new Monitors() );
+                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
         neoStore = storeFactory.newNeoStore( true );
     }
 

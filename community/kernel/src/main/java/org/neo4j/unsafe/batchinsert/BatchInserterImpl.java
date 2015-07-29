@@ -143,7 +143,6 @@ import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 
@@ -242,7 +241,6 @@ public class BatchInserterImpl implements BatchInserter
         Map<String, String> params = getDefaultParams();
         params.putAll( stringParams );
         this.config = new Config( params, GraphDatabaseSettings.class );
-        Monitors monitors = new Monitors();
 
         life = new LifeSupport();
         this.fileSystem = fileSystem;
@@ -266,8 +264,7 @@ public class BatchInserterImpl implements BatchInserter
                 idGeneratorFactory,
                 pageCache,
                 fileSystem,
-                logService.getInternalLogProvider(),
-                monitors );
+                logService.getInternalLogProvider() );
 
         if ( dump )
         {

@@ -32,7 +32,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -58,11 +57,10 @@ public class StoreVersionTrailerUtilTest
     public void setUpNeoStore() throws Exception
     {
         Config config = new Config( new HashMap<String,String>(), GraphDatabaseSettings.class );
-        Monitors monitors = new Monitors();
         pageCache = pageCacheRule.getPageCache( fs.get() );
         StoreFactory sf =
                 new StoreFactory( dir.graphDbDir(), config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
-                        fs.get(), NullLogProvider.getInstance(), monitors );
+                        fs.get(), NullLogProvider.getInstance() );
         sf.createNeoStore().close();
         neoStoreFile = new File( dir.graphDbDir(), NeoStore.DEFAULT_NAME );
     }

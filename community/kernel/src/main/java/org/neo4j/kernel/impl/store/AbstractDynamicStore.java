@@ -40,7 +40,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
@@ -87,8 +86,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            StoreVersionMismatchHandler versionMismatchHandler )
     {
         super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider,
                 versionMismatchHandler );
@@ -167,8 +165,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         return buffer;
     }
 
-    public static Pair<byte[]/*header in the first record*/, byte[]/*all other bytes*/>
-    readFullByteArrayFromHeavyRecords(
+    /**
+     * @return Pair&lt; header-in-first-record , all-other-bytes &gt;
+     */
+    public static Pair<byte[], byte[]> readFullByteArrayFromHeavyRecords(
             Iterable<DynamicRecord> records, PropertyType propertyType )
     {
         byte[] header = null;
@@ -190,9 +190,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         assert header != null : "header should be non-null since records should not be empty";
         int sourceOffset = header.length;
         int offset = 0;
-        for ( int j = 0; j < byteList.size(); j++ )
+        for ( byte[] currentArray : byteList )
         {
-            byte[] currentArray = byteList.get( j );
             System.arraycopy( currentArray, sourceOffset, bArray, offset,
                     currentArray.length - sourceOffset );
             offset += (currentArray.length - sourceOffset);
@@ -595,12 +594,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     public Collection<DynamicRecord> getRecords( long startBlockId )
     {
         return getRecords( startBlockId, true );
-    }
-
-    @Override
-    public long getNextRecordReference( DynamicRecord record )
-    {
-        return record.getNextBlock();
     }
 
     @Override

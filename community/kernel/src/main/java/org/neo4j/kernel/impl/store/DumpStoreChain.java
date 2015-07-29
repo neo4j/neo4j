@@ -104,7 +104,7 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
         {
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
             Config config = new Config();
-            StoreFactory storeFactory = new StoreFactory( null, config, idGeneratorFactory, pageCache, fs, logProvider(), null );
+            StoreFactory storeFactory = new StoreFactory( null, config, idGeneratorFactory, pageCache, fs, logProvider() );
             RecordStore<RECORD> store = store( storeFactory, storeDir );
             try
             {

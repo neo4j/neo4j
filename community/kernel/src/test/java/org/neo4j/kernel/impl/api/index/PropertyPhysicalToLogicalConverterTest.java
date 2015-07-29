@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -216,10 +215,9 @@ public class PropertyPhysicalToLogicalConverterTest
     {
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
-        Monitors monitors = new Monitors();
         StoreFactory storeFactory = new StoreFactory( storeDir, new Config(),
                 new DefaultIdGeneratorFactory( fs.get() ), pageCacheRule.getPageCache( fs.get() ),
-                fs.get(), NullLogProvider.getInstance(), monitors );
+                fs.get(), NullLogProvider.getInstance() );
         storeFactory.createPropertyStore();
         store = storeFactory.newPropertyStore();
         converter = new PropertyPhysicalToLogicalConverter( store );
