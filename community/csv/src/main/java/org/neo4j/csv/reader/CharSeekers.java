@@ -77,6 +77,12 @@ public class CharSeekers
             {
                 return bufferSize;
             }
+
+            @Override
+            public boolean multilineFields()
+            {
+                return true;
+            }
         }, readAhead );
     }
 }
