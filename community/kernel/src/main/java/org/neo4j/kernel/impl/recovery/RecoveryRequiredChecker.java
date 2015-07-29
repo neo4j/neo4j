@@ -21,12 +21,9 @@ package org.neo4j.kernel.impl.recovery;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
@@ -36,62 +33,39 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.recovery.LatestCheckPointFinder;
 import org.neo4j.kernel.recovery.PositionToRecoverFrom;
-import org.neo4j.logging.LogProvider;
 
 /**
- * For now, an external tool that can determine if a given store will need
- * recovery, and perform recovery on given stores.
+ * An external tool that can determine if a given store will need recovery.
  */
-public class StoreRecoverer
+public class RecoveryRequiredChecker
 {
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
 
-    public StoreRecoverer( FileSystemAbstraction fs, PageCache pageCache )
+    public RecoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache )
     {
         this.fs = fs;
         this.pageCache = pageCache;
     }
 
-    public boolean recoveryNeededAt( File dataDir ) throws IOException
+    public boolean isRecoveryRequiredAt( File dataDir ) throws IOException
     {
         File neoStore = new File( dataDir, NeoStore.DEFAULT_NAME );
-        long logVersion = NeoStore.isStorePresent( pageCache, dataDir )
-                          ? NeoStore.getRecord( pageCache, neoStore, NeoStore.Position.LOG_VERSION )
-                          : 0;
-        return recoveryNeededAt( dataDir, logVersion );
-    }
+        boolean noStoreFound = !NeoStore.isStorePresent( pageCache, dataDir );
 
-    public boolean recoveryNeededAt( File dataDir, long currentLogVersion ) throws IOException
-    {
         // We need config to determine where the logical log files are
-        if ( !NeoStore.isStorePresent( pageCache, dataDir ) )
+        if ( noStoreFound )
         {
             // No database in the specified directory.
             return false;
         }
 
+        long logVersion = NeoStore.getRecord( pageCache, neoStore, NeoStore.Position.LOG_VERSION );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( dataDir, fs );
 
         LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>( LogEntryVersion.CURRENT.byteCode() );
 
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-
-        return new PositionToRecoverFrom( finder ).apply( currentLogVersion ) != LogPosition.UNSPECIFIED;
-    }
-
-    public void recover( File dataDir, Map<String,String> params, LogProvider userLogProvider )
-    {
-        // For now, just launch a full embedded database on top of the
-        // directory.
-        // In a perfect world, to be expanded to only do recovery, and to be
-        // used as a component of the database, rather than something that is bolted
-        // on outside it like this.
-
-        new EmbeddedGraphDatabase(
-                dataDir.getAbsolutePath(),
-                params,
-                GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider ) )
-                .shutdown();
+        return new PositionToRecoverFrom( finder ).apply( logVersion ) != LogPosition.UNSPECIFIED;
     }
 }
