@@ -6,6 +6,8 @@ o Added reverse function for reversing strings
 o Unfulfillable index hints (e.g. on non-existing indices) will now produce a warning or throw an error as configured
 o String prefix searches using LIKE can now be solved using index seeks using any planner
 o Now supports dynamic property lookup (f.e. using n['property'])
+o Usage of bare node patterns is now deprecated
+o Range queries can now be solved using index seeks
 
 2.3-M02
 -------
