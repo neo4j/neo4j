@@ -129,7 +129,7 @@ class BrowseForDatabaseActionListener implements ActionListener
         fileDialog.setDirectory( directoryDisplay.getText() );
         fileDialog.setVisible( true );
 
-        selectedFile = new File( fileDialog.getFile() );
+        selectedFile = new File( fileDialog.getDirectory(), fileDialog.getFile() );
         System.setProperty( "apple.awt.fileDialogForDirectories", "false" );
 
         return selectedFile;
