@@ -7,7 +7,7 @@ To gain good performance, these are the things to look into first:
 * Make sure the JVM is not spending too much time performing garbage collection.
   The goal is to have a large enough heap to make sure that heavy/peak load will not result in so called GC trashing (performance can drop as much as two orders of magnitude when GC trashing happens).
 * Start the JVM with the -server flag and a good sized heap (see <<configuration-jvm>>). Having too large heap may also hurt performance so you may have to try some different heap sizes.
-* Use the parallel/concurrent garbage collector (we found that +-XX:+UseConcMarkSweepGC+ works well in most use-cases).
+* Use a parallel/concurrent garbage collector (we found that +-XX:+UseG1GC+ works well in most use-cases).
 * Give the Neo4j page cache as much memory as you can spare.
   After configuring the JVM heap size, you can leave 2-4GBs for the operating system (assuming the machine is dedicated to running Neo4j), and assign the rest to the Neo4j page cache with the +dbms.pagecache.memory+ setting, unless you know your store will be small enough to fit in less.
 

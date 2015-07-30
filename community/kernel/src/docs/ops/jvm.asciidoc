@@ -40,9 +40,9 @@ Number of entities,RAM size,Heap configuration,Reserved RAM for the OS
 |======================================================================================================
 
 [TIP]
-The recommended garbage collector to use when running Neo4j in production is the Concurrent Mark and Sweep Compactor turned on by supplying +-XX:+UseConcMarkSweepGC+ as a JVM parameter.
+The recommended garbage collector to use when running Neo4j in production is the G1 garbage collector turned on by supplying +-XX:+UseG1GC+ as a JVM parameter.
 
-When having made sure that the heap size is well configured the second thing to tune in order to tune the garbage collector for your application is to specify the sizes of the different generations of the heap. The default settings are well tuned for "normal" applications, and work quite well for most applications, but if you have an application with either really high allocation rate, or a lot of long lived objects you might want to consider tuning the sizes of the heap generation. The ratio between the young and tenured generation of the heap is specified by using the +-XX:NewRatio=\#+ command line option (where +#+ is replaced by a number). The default ratio is 1:12 for client mode JVM, and 1:8 for server mode JVM. You can also specify the size of the young generation explicitly using the +-Xmn+ command line option, which works just like the +-Xmx+ option that specifies the total heap space.
+When having made sure that the heap size is well configured the second thing is to tune the garbage collector for your application. Each garbage collector has parameters to modify its behaviour; we recommend that you experiment with these while running your application under realistic load.
 
 [options="header", cols=",,m,"]
 |====
@@ -53,6 +53,7 @@ When having made sure that the heap size is well configured the second thing to 
 |ParNew |Young |-XX:+UseParNewGC |The parallel Young Generation Collector -- can only be used with the Concurrent mark and sweep compactor.
 |PS Scavenge |Young |-XX:+UseParallelGC |The parallel object scavenger
 |PS MarkSweep |Tenured |-XX:+UseParallelGC |The parallel mark and sweep collector
+|G1 |All |-XX:+UseGCG1 |The garbage-first collector
 |====
 
 These are the default configurations on some platforms according to our non-exhaustive research:

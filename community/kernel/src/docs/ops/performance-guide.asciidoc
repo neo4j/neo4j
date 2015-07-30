@@ -15,7 +15,7 @@ load will not result in so called GC trashing
 Start the JVM with +-server+ flag and +-Xmx<good sized heap>+ 
 (f.ex. -Xmx512M for 512Mb memory or -Xmx3G for 3Gb memory). Having too large heap 
 may also hurt performance so you may have to try out some different heap sizes. 
-Make sure a parallel/concurrent garbage collector is running (+-XX:+UseConcMarkSweepGC+ works well in most use-cases).
+Make sure a parallel/concurrent garbage collector is running (+-XX:+UseG1GC+ works well in most use-cases).
 
 Finally make sure that the OS has some memory left to manage proper file system 
 caches. This means, if your server has 8GB of RAM don't use all of that RAM for 

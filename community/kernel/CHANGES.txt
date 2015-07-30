@@ -3,6 +3,8 @@
 o Status codes of the 'transient' classification now cause transactions to be rolled back. This resolves several
   outstanding issues where deadlocks, network errors and other similar problems required clients to manually roll back
   transactions. Only ClientError and ClientNotification classified status codes leave open transactions running.
+o G1 is now the recommended garbage collector and the default when using standard Neo4j packages. It is important to use
+  an up-to-date version of Java with this collector as there are bugs in earlier versions of Java 7 and Java 8.
 
 2.3.0-M01
 ---------
