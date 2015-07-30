@@ -137,7 +137,7 @@ class InMemoryIndex
         }
 
         @Override
-        public void verifyDeferredConstraints( PropertyAccessor accessor ) throws Exception
+        public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
         {
             InMemoryIndex.this.verifyDeferredConstraints( accessor );
         }
@@ -184,7 +184,7 @@ class InMemoryIndex
         }
     }
 
-    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws Exception
+    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
     {
     }
 

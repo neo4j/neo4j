@@ -64,6 +64,8 @@ import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -228,7 +230,7 @@ public class BatchInsertTest
         String[] array2 = { "a" };
 
         long id1 = batchInserter.createNode(map("array", array1));
-        long id2 = batchInserter.createNode(map());
+        long id2 = batchInserter.createNode( map() );
 
         // When
         batchInserter.getNodeProperties( id1 ).get( "array" );
@@ -240,7 +242,7 @@ public class BatchInsertTest
         batchInserter.setNodeProperty( id2, "array", array2 );
 
         // Then
-        assertThat( (String[])batchInserter.getNodeProperties( id1 ).get( "array" ), equalTo(array1) );
+        assertThat( (String[]) batchInserter.getNodeProperties( id1 ).get( "array" ), equalTo( array1 ) );
 
         batchInserter.shutdown();
 
@@ -288,7 +290,7 @@ public class BatchInsertTest
         inserter.setNodeProperty( node, key, value );
 
         GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
-        assertThat( getNodeInTx( node, db ), inTx( db, hasProperty( key ).withValue( value )  ) );
+        assertThat( getNodeInTx( node, db ), inTx( db, hasProperty( key ).withValue( value ) ) );
         db.shutdown();
     }
 
@@ -1044,12 +1046,12 @@ public class BatchInsertTest
 
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
         when( provider.getPopulator( anyLong(), any( IndexDescriptor.class ),
-                any( IndexConfiguration.class ), any( IndexSamplingConfig.class) ) ).thenReturn( populator );
+                any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( populator );
 
         BatchInserter inserter = newBatchInserterWithSchemaIndexProvider(
                 singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
 
-        inserter.createDeferredSchemaIndex( label("Hacker") ).on( "handle" ).create();
+        inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
 
         long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );
 
@@ -1060,9 +1062,10 @@ public class BatchInsertTest
         verify( provider ).init();
         verify( provider ).start();
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
-                any( IndexSamplingConfig.class) );
+                any( IndexSamplingConfig.class ) );
         verify( populator ).create();
         verify( populator ).add( nodeId, "Jakewins" );
+        verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
         verify( provider ).shutdown();
@@ -1083,7 +1086,7 @@ public class BatchInsertTest
         BatchInserter inserter = newBatchInserterWithSchemaIndexProvider(
                 singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
 
-        inserter.createDeferredConstraint( label("Hacker") ).assertPropertyIsUnique( "handle" ).create();
+        inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
 
         long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );
 
@@ -1097,6 +1100,7 @@ public class BatchInsertTest
                 any( IndexSamplingConfig.class ) );
         verify( populator ).create();
         verify( populator ).add( nodeId, "Jakewins" );
+        verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
         verify( provider ).shutdown();
@@ -1132,6 +1136,7 @@ public class BatchInsertTest
         verify( populator ).create();
         verify( populator ).add( jakewins, "Jakewins" );
         verify( populator ).add( boggle, "b0ggl3" );
+        verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
         verify( provider ).shutdown();
@@ -1249,9 +1254,9 @@ public class BatchInsertTest
         properties.put("birthday_day", 8);
         properties.put("creationDate", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").parse( "2010-04-22T18:05:40.912+0000" ).getTime());
         properties.put("locationIP", "46.151.255.205");
-        properties.put("browserUsed", "Firefox");
-        properties.put("email", new String[0]);
-        properties.put("languages", new String[0]);
+        properties.put( "browserUsed", "Firefox" );
+        properties.put( "email", new String[0] );
+        properties.put( "languages", new String[0] );
         long personNodeId = inserter.createNode(properties);
 
         assertEquals( "Shevchenko", inserter.getNodeProperties( personNodeId ).get( "lastName" ) );
@@ -1745,6 +1750,35 @@ public class BatchInsertTest
             assertEquals(
                     "Mandatory relationship property constraint for given {type;property} already exists",
                     e.getMessage() );
+        }
+    }
+
+    @Test
+    public void uniquenessConstraintShouldBeCheckedOnBatchInserterShutdownAndFailIfViolated() throws Exception
+    {
+        // Given
+        Label label = DynamicLabel.label( "Foo" );
+        String property = "Bar";
+        String value = "Baz";
+
+        BatchInserter inserter = newBatchInserter();
+
+        // When
+        inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create();
+
+        inserter.createNode( Collections.<String,Object>singletonMap( property, value ), label );
+        inserter.createNode( Collections.<String,Object>singletonMap( property, value ), label );
+
+        // Then
+        try
+        {
+            inserter.shutdown();
+            fail( "Node that violates uniqueness constraint was created by batch inserter" );
+        }
+        catch ( RuntimeException ex )
+        {
+            // good
+            assertEquals( new PreexistingIndexEntryConflictException( value, 0, 1 ), ex.getCause() );
         }
     }
 
