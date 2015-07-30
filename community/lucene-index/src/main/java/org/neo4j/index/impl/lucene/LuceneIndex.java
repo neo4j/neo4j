@@ -46,6 +46,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexCommandFactory;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.index.impl.lucene.EntityId.IdData;
+import org.neo4j.index.impl.lucene.EntityId.RelationshipData;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.api.LegacyIndex;
@@ -100,10 +102,11 @@ public abstract class LuceneIndex implements LegacyIndex
     public void addNode( long entityId, String key, Object value )
     {
         assertValidKey( key );
+        EntityId entity = new IdData( entityId );
         for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
         {
             oneValue = getCorrectValue( oneValue );
-            transaction.add( this, entityId, key, oneValue );
+            transaction.add( this, entity, key, oneValue );
             commandFactory.addNode( identifier.indexName, entityId, key, oneValue );
         }
     }
@@ -142,30 +145,33 @@ public abstract class LuceneIndex implements LegacyIndex
      * entity.
      */
     @Override
-    public void remove( long entity, String key, Object value )
+    public void remove( long entityId, String key, Object value )
     {
         assertValidKey( key );
+        EntityId entity = new IdData( entityId );
         for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
         {
             oneValue = getCorrectValue( oneValue );
             transaction.remove( this, entity, key, oneValue );
-            addRemoveCommand( entity, key, oneValue );
+            addRemoveCommand( entityId, key, oneValue );
         }
     }
 
     @Override
-    public void remove( long entity, String key )
+    public void remove( long entityId, String key )
     {
         assertValidKey( key );
+        EntityId entity = new IdData( entityId );
         transaction.remove( this, entity, key );
-        addRemoveCommand( entity, key, null );
+        addRemoveCommand( entityId, key, null );
     }
 
     @Override
-    public void remove( long entity )
+    public void remove( long entityId )
     {
+        EntityId entity = new IdData( entityId );
         transaction.remove( this, entity );
-        addRemoveCommand( entity, null, null );
+        addRemoveCommand( entityId, null, null );
     }
 
     @Override
@@ -216,8 +222,8 @@ public abstract class LuceneIndex implements LegacyIndex
     protected LegacyIndexHits query( Query query, String keyForDirectLookup,
             Object valueForDirectLookup, QueryContext additionalParametersOrNull )
     {
-        List<Long> simpleTransactionStateIds = new ArrayList<>();
-        Collection<Long> removedIdsFromTransactionState = Collections.emptySet();
+        List<EntityId> simpleTransactionStateIds = new ArrayList<>();
+        Collection<EntityId> removedIdsFromTransactionState = Collections.emptySet();
         IndexSearcher fulltextTransactionStateSearcher = null;
         if ( transaction != null )
         {
@@ -248,7 +254,7 @@ public abstract class LuceneIndex implements LegacyIndex
         if ( searcher != null )
         {
             boolean foundInCache = false;
-            LruCache<String, Collection<Long>> cachedIdsMap = null;
+            LruCache<String, Collection<EntityId>> cachedIdsMap = null;
             if ( keyForDirectLookup != null )
             {
                 cachedIdsMap = dataSource.getFromCache(
@@ -286,7 +292,7 @@ public abstract class LuceneIndex implements LegacyIndex
         return idIterator;
     }
 
-    private PrimitiveLongSet gatherIdsModifiedInTransactionState( List<Long> simpleTransactionStateIds,
+    private PrimitiveLongSet gatherIdsModifiedInTransactionState( List<EntityId> simpleTransactionStateIds,
             IndexSearcher fulltextTransactionStateSearcher, Query query ) throws IOException
     {
         // If there's no state them don't bother gathering it
@@ -311,9 +317,9 @@ public abstract class LuceneIndex implements LegacyIndex
         PrimitiveLongSet set = longSet( simpleTransactionStateIds.size() + fulltextSize );
 
         // Add from simple tx state
-        for ( Long id : simpleTransactionStateIds )
+        for ( EntityId id : simpleTransactionStateIds )
         {
-            set.add( id );
+            set.add( id.id() );
         }
 
         // Add from fulltext tx state
@@ -325,18 +331,18 @@ public abstract class LuceneIndex implements LegacyIndex
     }
 
     private boolean fillFromCache(
-            LruCache<String, Collection<Long>> cachedNodesMap,
-            List<Long> ids, String valueAsString,
-            Collection<Long> deletedNodes )
+            LruCache<String, Collection<EntityId>> cachedNodesMap,
+            List<EntityId> ids, String valueAsString,
+            Collection<EntityId> deletedNodes )
     {
         boolean found = false;
         if ( cachedNodesMap != null )
         {
-            Collection<Long> cachedNodes = cachedNodesMap.get( valueAsString );
+            Collection<EntityId> cachedNodes = cachedNodesMap.get( valueAsString );
             if ( cachedNodes != null )
             {
                 found = true;
-                for ( Long cachedNodeId : cachedNodes )
+                for ( EntityId cachedNodeId : cachedNodes )
                 {
                     if ( !deletedNodes.contains( cachedNodeId ) )
                     {
@@ -349,7 +355,7 @@ public abstract class LuceneIndex implements LegacyIndex
     }
 
     private IndexHits<Document> search( IndexReference searcherRef, IndexSearcher fulltextTransactionStateSearcher,
-            Query query, QueryContext additionalParametersOrNull, Collection<Long> removed ) throws IOException
+            Query query, QueryContext additionalParametersOrNull, Collection<EntityId> removed ) throws IOException
     {
         if ( fulltextTransactionStateSearcher != null && !removed.isEmpty() )
         {
@@ -376,15 +382,16 @@ public abstract class LuceneIndex implements LegacyIndex
         return result;
     }
 
-    private void letThroughAdditions( IndexSearcher additionsSearcher, Query query, Collection<Long> removed )
+    private void letThroughAdditions( IndexSearcher additionsSearcher, Query query, Collection<EntityId> removed )
             throws IOException
     {
         Hits hits = new Hits( additionsSearcher, query, null );
         HitsIterator iterator = new HitsIterator( hits );
+        EntityId.LongCostume id = new EntityId.LongCostume();
         while ( iterator.hasNext() )
         {
             String idString = iterator.next().getField( KEY_DOC_ID ).stringValue();
-            removed.remove( Long.valueOf( idString ) );
+            removed.remove( id.setId( Long.parseLong( idString ) ) );
         }
     }
 
@@ -461,15 +468,15 @@ public abstract class LuceneIndex implements LegacyIndex
         }
 
         @Override
-        public void addRelationship( long entity, String key, Object value, long startNode, long endNode )
+        public void addRelationship( long entityId, String key, Object value, long startNode, long endNode )
         {
             assertValidKey( key );
-            RelationshipId id = RelationshipId.of( entity, startNode, endNode );
+            RelationshipData entity = new RelationshipData( entityId, startNode, endNode );
             for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
             {
                 oneValue = getCorrectValue( oneValue );
-                transaction.add( this, id, key, oneValue );
-                commandFactory.addRelationship( identifier.indexName, entity, key, oneValue, startNode, endNode );
+                transaction.add( this, entity, key, oneValue );
+                commandFactory.addRelationship( identifier.indexName, entityId, key, oneValue, startNode, endNode );
             }
         }
 
@@ -512,33 +519,33 @@ public abstract class LuceneIndex implements LegacyIndex
         }
 
         @Override
-        public void removeRelationship( long entity, String key, Object value, long startNode, long endNode )
+        public void removeRelationship( long entityId, String key, Object value, long startNode, long endNode )
         {
             assertValidKey( key );
-            RelationshipId id = RelationshipId.of( entity, startNode, endNode );
+            RelationshipData entity = new RelationshipData( entityId, startNode, endNode );
             for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
             {
                 oneValue = getCorrectValue( oneValue );
-                transaction.remove( this, id, key, oneValue );
-                addRemoveCommand( entity, key, oneValue );
+                transaction.remove( this, entity, key, oneValue );
+                addRemoveCommand( entityId, key, oneValue );
             }
         }
 
         @Override
-        public void removeRelationship( long entity, String key, long startNode, long endNode )
+        public void removeRelationship( long entityId, String key, long startNode, long endNode )
         {
             assertValidKey( key );
-            RelationshipId id = RelationshipId.of( entity, startNode, endNode );
-            transaction.remove( this, id, key );
-            addRemoveCommand( entity, key, null );
+            RelationshipData entity = new RelationshipData( entityId, startNode, endNode );
+            transaction.remove( this, entity, key );
+            addRemoveCommand( entityId, key, null );
         }
 
         @Override
-        public void removeRelationship( long entity, long startNode, long endNode )
+        public void removeRelationship( long entityId, long startNode, long endNode )
         {
-            RelationshipId id = RelationshipId.of( entity, startNode, endNode );
-            transaction.remove( this, id );
-            addRemoveCommand( entity, null, null );
+            RelationshipData entity = new RelationshipData( entityId, startNode, endNode );
+            transaction.remove( this, entity );
+            addRemoveCommand( entityId, null, null );
         }
 
         private static void addIfAssigned( BooleanQuery query, long node, String field )

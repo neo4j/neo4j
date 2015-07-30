@@ -500,14 +500,14 @@ public class LuceneDataSource implements Lifecycle
         }
     }
 
-    LruCache<String, Collection<Long>> getFromCache( IndexIdentifier identifier, String key )
+    LruCache<String, Collection<EntityId>> getFromCache( IndexIdentifier identifier, String key )
     {
         return caching.get( identifier, key );
     }
 
     void invalidateCache( IndexIdentifier identifier, String key, Object value )
     {
-        LruCache<String, Collection<Long>> cache = caching.get( identifier, key );
+        LruCache<String, Collection<EntityId>> cache = caching.get( identifier, key );
         if ( cache != null )
         {
             cache.remove( value.toString() );

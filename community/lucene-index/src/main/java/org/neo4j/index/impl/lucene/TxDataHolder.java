@@ -38,27 +38,27 @@ class TxDataHolder implements Closeable
         this.data = initialData;
     }
 
-    void add( Object entityId, String key, Object value )
+    void add( EntityId entityId, String key, Object value )
     {
         this.data.add( this, entityId, key, value );
     }
 
-    void remove( Object entityId, String key, Object value )
+    void remove( EntityId entityId, String key, Object value )
     {
         this.data.remove( this, entityId, key, value );
     }
 
-    Collection<Long> query( Query query, QueryContext contextOrNull )
+    Collection<EntityId> query( Query query, QueryContext contextOrNull )
     {
         return this.data.query( this, query, contextOrNull );
     }
 
-    Collection<Long> get( String key, Object value )
+    Collection<EntityId> get( String key, Object value )
     {
         return this.data.get( this, key, value );
     }
 
-    Collection<Long> getOrphans( String key )
+    Collection<EntityId> getOrphans( String key )
     {
         return this.data.getOrphans( key );
     }

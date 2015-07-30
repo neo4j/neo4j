@@ -19,6 +19,12 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import java.io.IOException;
+
+import org.apache.lucene.index.IndexWriter;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 
@@ -26,6 +32,49 @@ import org.neo4j.index.lucene.ValueContext;
 
 public abstract class LuceneUtil
 {
+    static void close( IndexWriter writer )
+    {
+        close( (Object) writer );
+    }
+
+    static void close( IndexSearcher searcher )
+    {
+        close( (Object) searcher );
+    }
+
+    static void close( IndexReader reader )
+    {
+        close( (Object) reader );
+    }
+
+    private static void close( Object object )
+    {
+        if ( object == null )
+        {
+            return;
+        }
+
+        try
+        {
+            if ( object instanceof IndexWriter )
+            {
+                ((IndexWriter) object).close();
+            }
+            else if ( object instanceof IndexSearcher )
+            {
+                ((IndexSearcher) object).close();
+            }
+            else if ( object instanceof IndexReader )
+            {
+                ((IndexReader) object).close();
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
     /**
      * Will create a {@link Query} with a query for numeric ranges, that is
      * values that have been indexed using {@link ValueContext#indexNumeric()}.

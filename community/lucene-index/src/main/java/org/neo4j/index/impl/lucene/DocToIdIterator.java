@@ -28,12 +28,13 @@ import org.neo4j.graphdb.index.IndexHits;
 
 public class DocToIdIterator extends AbstractLegacyIndexHits
 {
-    private final Collection<Long> removedInTransactionState;
+    private final Collection<EntityId> removedInTransactionState;
+    private final EntityId.LongCostume idCostume = new EntityId.LongCostume();
     private IndexReference searcherOrNull;
     private final IndexHits<Document> source;
     private final PrimitiveLongSet idsModifiedInTransactionState;
 
-    public DocToIdIterator( IndexHits<Document> source, Collection<Long> exclude, IndexReference searcherOrNull,
+    public DocToIdIterator( IndexHits<Document> source, Collection<EntityId> exclude, IndexReference searcherOrNull,
             PrimitiveLongSet idsModifiedInTransactionState )
     {
         this.source = source;
@@ -56,7 +57,8 @@ public class DocToIdIterator extends AbstractLegacyIndexHits
             boolean documentIsFromStore = doc.getFieldable( FullTxData.TX_STATE_KEY ) == null;
             boolean idWillBeReturnedByTransactionStateInstead =
                     documentIsFromStore && idsModifiedInTransactionState.contains( id );
-            if ( removedInTransactionState.contains( id ) || idWillBeReturnedByTransactionStateInstead )
+            if ( removedInTransactionState.contains( idCostume.setId( id ) ) ||
+                    idWillBeReturnedByTransactionStateInstead )
             {
                 // Skip this one, continue to the next
                 continue;
