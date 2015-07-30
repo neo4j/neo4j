@@ -32,7 +32,7 @@ class WhereTest extends DocumentingTestBase {
 
   override val properties = Map(
     "Andres" -> Map[String, Any]("age" -> 36l, "belt" -> "white"),
-    "Tobias" -> Map[String, Any]("age" -> 25l, "address" -> "Sweden/Malmö"),
+    "Tobias" -> Map[String, Any]("age" -> 25l, "address" -> "Sweden/Malmo"),
     "Peter"  -> Map[String, Any]("age" -> 34l, "email" -> "peter_n@example.com")
   )
 
