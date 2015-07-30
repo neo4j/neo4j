@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{NamedPath, NodeById, RelatedTo, SingleNode}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.{NamedPathPipe, PipeMonitor}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.NamedPathPipe
 import org.neo4j.graphdb.Direction
 
 class NamedPathBuilderTest extends BuilderTest {
-  private implicit val monitor = mock[PipeMonitor]
+
   val builder = new NamedPathBuilder
 
   test("should_not_accept_if_pattern_is_not_yet_solved") {

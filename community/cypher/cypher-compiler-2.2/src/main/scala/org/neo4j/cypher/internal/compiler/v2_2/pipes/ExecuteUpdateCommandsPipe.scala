@@ -36,8 +36,6 @@ case class ExecuteUpdateCommandsPipe(source: Pipe, commands: Seq[UpdateAction])(
     case ctx => executeMutationCommands(ctx, state, commands.size == 1)
   }
 
-  val allKeys = commands.flatMap( c => c.identifiers.map(_._1) )
-
   private def executeMutationCommands(ctx: ExecutionContext,
                                       state: QueryState,
                                       singleCommand: Boolean): Iterator[ExecutionContext] =

@@ -22,12 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders
 import org.neo4j.cypher.internal.compiler.v2_2.commands.ReturnItem
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.{ExtractPipe, PipeMonitor}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.ExtractPipe
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
 class ExtractBuilderTest extends BuilderTest {
 
-  private implicit val monitor = mock[PipeMonitor]
   val builder = new ExtractBuilder
 
   test("should_solve_the_predicates_that_are_possible_to_solve") {

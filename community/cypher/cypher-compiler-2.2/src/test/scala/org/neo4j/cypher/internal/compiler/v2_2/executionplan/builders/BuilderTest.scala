@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
 trait BuilderTest extends CypherFunSuite {
 
-  private implicit val monitor = mock[PipeMonitor]
+  implicit val monitor = mock[PipeMonitor]
 
   def createPipe(nodes: Seq[String] = Seq(), relationships: Seq[String] = Seq()): FakePipe = {
     val nodeIdentifiers = nodes.map(x => x -> CTNode)
