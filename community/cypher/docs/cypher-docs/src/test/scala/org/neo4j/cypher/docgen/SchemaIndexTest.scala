@@ -113,7 +113,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
     testQuery(
       title = "Use index with WHERE using inequality",
       text = "Indexes are also automatically used for inequality (range) comparisons of an indexed property in the WHERE clause. " +
-        "If you for some reason want to hint to specific indexes, see <<query-using>>.",
+        "If you want Cypher to use specific indexes, you can enforce it using hints. See <<query-using>>.",
       queryText = "match (person:Person) WHERE person.name > 'B' return person",
       optionalResultExplanation = "",
       assertions = {

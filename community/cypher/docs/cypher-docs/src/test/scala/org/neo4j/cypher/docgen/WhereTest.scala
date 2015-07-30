@@ -92,8 +92,8 @@ class WhereTest extends DocumentingTestBase {
       title = "Escaping in regular expressions",
       text = "If you need a forward slash inside of your regular expression, escape it. Remember that back slash needs " +
              "to be escaped in string literals.",
-      queryText = """match (n) where n.address =~ 'Sweden\\/Malmö' return n""",
-      optionalResultExplanation = """"+Tobias+" is returned because his address is in `Sweden/Malmö`.""",
+      queryText = """match (n) where n.address =~ 'Sweden\\/Malmo' return n""",
+      optionalResultExplanation = """"+Tobias+" is returned because his address is in `Sweden/Malmo`.""",
       assertions = (p) => assertEquals(List(node("Tobias")), p.columnAs[Node]("n").toList))
   }
 
