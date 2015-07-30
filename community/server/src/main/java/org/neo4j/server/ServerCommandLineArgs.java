@@ -21,17 +21,28 @@ package org.neo4j.server;
 
 import java.io.File;
 import java.util.Collection;
+
 import org.neo4j.function.Function;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.util.Converters;
 
 import static org.neo4j.helpers.Pair.pair;
 
 /**
- * Parses command line arguments for the server bootstrappers.
+ * Parses command line arguments for the server bootstrappers. Format is as follows:
+ * <ul>
+ * <li>Configuration file can be specified by <strong>--config=path/to/config.properties</strong> or
+ * <strong>-C=path/to/config.properties</strong></li>
+ * <li>Specific overridden configuration options, directly specified as arguments can be specified with
+ * <strong>-c key=value</strong>, for example <strong>-c org.neo4j.server.database.location=my/own/path</strong>
+ * or enabled boolean properties with <strong>-c key</strong>, f.ex <strong>-c org.neo4j.server.webserver.statistics</strong>
+ * </ul>
  */
 public class ServerCommandLineArgs
 {
+    static final String CONFIG_KEY_ALT_1 = "config";
+    static final String CONFIG_KEY_ALT_2 = "C";
     private final File configFile;
     private final Pair<String,String>[] configOverrides;
 
@@ -59,33 +70,28 @@ public class ServerCommandLineArgs
 
     private static File detemineConfigFile( Args arguments )
     {
-        return new File( arguments.get( "C", arguments.get( "config", "config/neo4j.config" ) ) );
+        return new File( arguments.get( CONFIG_KEY_ALT_2,
+                arguments.get( CONFIG_KEY_ALT_1, "config/neo4j.config" ) ) );
     }
 
     private static Pair<String,String>[] parseConfigOverrides( Args arguments )
     {
-        Collection<Pair<String,String>> options = arguments.interpretOptions("c", new Function<String, Pair<String,String>>()
-        {
-            @Override
-            public Pair<String, String> apply( String s )
-            {
-                return null;
-            }
-        }, new Function<String, Pair<String,String>>()
-        {
-            @Override
-            public Pair<String,String> apply( String s )
-            {
-                if(s.contains("="))
+        Collection<Pair<String,String>> options = arguments.interpretOptions( "c",
+                Converters.<Pair<String,String>>optional(), new Function<String, Pair<String,String>>()
                 {
-                    String[] keyVal = s.split("=", 2);
-                    return pair(keyVal[0], keyVal[1]);
-                }
-                // Shortcut to specify boolean flags ("-c dbms.enableTheFeature")
-                return pair(s, "true");
-            }
-        });
+                    @Override
+                    public Pair<String,String> apply( String s )
+                    {
+                        if ( s.contains( "=" ) )
+                        {
+                            String[] keyVal = s.split( "=", 2 );
+                            return pair( keyVal[0], keyVal[1] );
+                        }
+                        // Shortcut to specify boolean flags ("-c dbms.enableTheFeature")
+                        return pair( s, "true" );
+                    }
+                });
 
-        return options.toArray(new Pair[options.size()]);
+        return options.toArray( new Pair[options.size()] );
     }
 }

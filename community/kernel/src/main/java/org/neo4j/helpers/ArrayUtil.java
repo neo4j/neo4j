@@ -376,6 +376,14 @@ public abstract class ArrayUtil
         return result;
     }
 
+    /**
+     * @return the array version of the vararg argument.
+     */
+    public static <T> T[] array( T... varargs )
+    {
+        return varargs;
+    }
+
     private ArrayUtil()
     {   // No instances allowed
     }
