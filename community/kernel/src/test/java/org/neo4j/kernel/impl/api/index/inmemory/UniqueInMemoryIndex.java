@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.api.index.inmemory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.Reservation;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.UniquePropertyIndexUpdater;
 
@@ -109,19 +108,16 @@ class UniqueInMemoryIndex extends InMemoryIndex
                 @Override
                 public void visitEntry( Object key, Set<Long> nodeIds ) throws Exception
                 {
-                    List<Entry> entries = new ArrayList<>();
+                    Map<Object,Long> entries = new HashMap<>();
                     for ( long nodeId : nodeIds )
                     {
-                        Property property = accessor.getProperty( nodeId, propertyKeyId );
-                        Object value = property.value();
-                        for ( Entry current : entries )
+                        final Object value = accessor.getProperty( nodeId, propertyKeyId ).value();
+                        if ( entries.containsKey( value ) )
                         {
-                            if ( current.property.valueEquals( value ) )
-                            {
-                                throw new PreexistingIndexEntryConflictException( value, current.nodeId, nodeId );
-                            }
+                            long existingNodeId = entries.get( value );
+                            throw new PreexistingIndexEntryConflictException( value, existingNodeId, nodeId );
                         }
-                        entries.add( new Entry( nodeId, property ) );
+                        entries.put( value, nodeId );
                     }
                 }
             } );
@@ -132,18 +128,6 @@ class UniqueInMemoryIndex extends InMemoryIndex
         catch ( Exception e )
         {
             throw new RuntimeException( e );
-        }
-
-    }
-
-    private static class Entry {
-        long nodeId;
-        Property property;
-
-        private Entry( long nodeId, Property property )
-        {
-            this.nodeId = nodeId;
-            this.property = property;
         }
     }
 }
