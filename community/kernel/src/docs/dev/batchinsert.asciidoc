@@ -12,8 +12,8 @@ Be aware of the following points when using batch insertion:
 * The intended use is for initial import of data but you can use it on an existing database if the existing database is shutdown first.
 * Batch insertion is _not thread safe._
 * Batch insertion is _non-transactional._
-* Batch insertion will re-populate all existing indexes and indexes created during batch insertion
-  on shutdown.
+* Batch insertion is _not enforcing constraints_ on the inserted data.
+* Batch insertion will re-populate all existing indexes and indexes created during batch insertion on shutdown.
 * Unless +shutdown+ is successfully invoked at the end of the import, the database files _will_ be corrupt.
 
 [WARNING]
