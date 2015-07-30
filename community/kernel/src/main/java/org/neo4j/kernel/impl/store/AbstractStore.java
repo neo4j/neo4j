@@ -52,7 +52,7 @@ public abstract class AbstractStore extends CommonAbstractStore
             LogProvider logProvider,
             StoreVersionMismatchHandler versionMismatchHandler )
     {
-        super( fileName, conf, idType, idGeneratorFactory, pageCache, fileSystemAbstraction, logProvider,
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider,
                 versionMismatchHandler );
     }
 

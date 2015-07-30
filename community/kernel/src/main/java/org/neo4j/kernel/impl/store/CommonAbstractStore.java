@@ -21,15 +21,11 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils.FileOperation;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -44,10 +40,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 
-import static java.nio.ByteBuffer.wrap;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.UTF8.encode;
-import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.kernel.impl.store.StoreVersionTrailerUtil.getTrailerOffset;
@@ -67,11 +61,9 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     protected final IdType idType;
     private final IdGeneratorFactory idGeneratorFactory;
     private final StoreVersionMismatchHandler versionMismatchHandler;
-    protected FileSystemAbstraction fileSystemAbstraction;
     protected final Log log;
     protected PagedFile storeFile;
     private IdGenerator idGenerator;
-    private StoreChannel fileChannel;
     private boolean storeOk = true;
     private Throwable causeOfStoreNotOk;
     private String readTypeDescriptorAndVersion;
@@ -97,7 +89,6 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
             StoreVersionMismatchHandler versionMismatchHandler )
     {
@@ -105,7 +96,6 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         this.configuration = configuration;
         this.idGeneratorFactory = idGeneratorFactory;
         this.pageCache = pageCache;
-        this.fileSystemAbstraction = fileSystemAbstraction;
         this.idType = idType;
         this.log = logProvider.getLog( getClass() );
         this.versionMismatchHandler = versionMismatchHandler;
@@ -131,7 +121,6 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
                     e.addSuppressed( failureToClose );
                 }
             }
-            closeFileChannel();
             throw launderedException( e );
         }
     }
@@ -164,18 +153,12 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     public abstract String getTypeDescriptor();
 
     /**
-     * Note: This method runs before the file has been mapped by the page cache, and therefore needs to
-     * operate on the store files directly. This method is called by constructors.
+     * This method is called by constructors.
      */
     protected void checkStorage()
     {
-        if ( !fileSystemAbstraction.fileExists( storageFileName ) )
+        try ( PagedFile file = pageCache.map( storageFileName, pageCache.pageSize() ) )
         {
-            throw new StoreNotFoundException( "No such store[" + storageFileName + "] in " + fileSystemAbstraction );
-        }
-        try
-        {
-            this.fileChannel = fileSystemAbstraction.open( storageFileName, "rw" );
         }
         catch ( IOException e )
         {
@@ -323,6 +306,32 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
     }
 
+    protected int getHeaderRecord() throws IOException
+    {
+        int headerRecord = 0 ;
+        try ( PagedFile pagedFile = pageCache
+                .map( getStorageFileName(), pageCache.pageSize() ) )
+        {
+            try ( PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+            {
+                if ( pageCursor.next() )
+                {
+                    do
+                    {
+                        headerRecord = pageCursor.getInt();
+                    }
+                    while ( pageCursor.shouldRetry() );
+                }
+            }
+        }
+        if ( headerRecord <= 0 )
+        {
+            throw new InvalidRecordException( "Illegal block size: " +
+                    headerRecord + " in " + getStorageFileName() );
+        }
+        return headerRecord;
+    }
+
     protected abstract boolean isInUse( byte inUseByte );
 
     /**
@@ -364,8 +373,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException(
-                    "Unable to rebuild id generator " + getStorageFileName(), e );
+            throw new UnderlyingStorageException( "Unable to rebuild id generator " + getStorageFileName(), e );
         }
 
         log.debug( "[" + getStorageFileName() + "] high id=" + getHighId()
@@ -446,8 +454,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * <p>
      * This default implementation does nothing.
      * <p>
-     * Note: This method runs before the store file is unmapped from the page cache,
-     * and is therefore not allowed to operate on the store files directly.
+     * Note: This method runs before the store file is unmapped from the page cache.
      */
     protected void closeStorage()
     {
@@ -680,92 +687,38 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * <p>
      * This method will start by invoking the {@link #closeStorage} method
      * giving the implementing store way to do anything that it needs to do
-     * before the fileChannel is closed.
+     * before the pagedFile is closed.
      */
     @Override
     public void close()
     {
-        if ( fileChannel == null )
+        closeStorage();
+        if ( idGenerator == null || !storeOk )
         {
+            try
+            {
+                storeFile.close();
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( "Failed to close store file: " + getStorageFileName(), e );
+            }
             return;
         }
-        closeStorage();
         try
         {
+            long trailerOffset = idGenerator.getHighId() * getRecordSize();
+            idGenerator.close();
+
+            log.debug( "Closing " + storageFileName + ", writing trailer at " + trailerOffset );
+            writeTrailer( storeFile, encode( versionMismatchHandler.trailerToWrite( getTypeAndVersionDescriptor(),
+                    readTypeDescriptorAndVersion ) ), trailerOffset );
             storeFile.close();
         }
-        catch ( IOException e )
+        catch ( IOException | IllegalStateException e )
         {
             throw new UnderlyingStorageException( "Failed to close store file: " + getStorageFileName(), e );
         }
-        if ( idGenerator == null || !storeOk )
-        {
-            closeFileChannel();
-            return;
-        }
-        final long highId = idGenerator.getHighId();
-        final int recordSize = getRecordSize();
-        idGenerator.close();
-        IOException storedIoe = null;
-        // hack for WINBLOWS
-        try
-        {
-            windowsSafeIOOperation( new FileOperation()
-            {
-                @Override
-                public void perform() throws IOException
-                {
-                    fileChannel.position( highId * recordSize );
-                    ByteBuffer buffer = wrap( encode( versionMismatchHandler.trailerToWrite( getTypeAndVersionDescriptor(), readTypeDescriptorAndVersion ) ) );
-                    fileChannel.write( buffer );
-                    log.debug( "Closing " + storageFileName + ", truncating at " + fileChannel.position() +
-                                        " vs file size " + fileChannel.size() );
-                    fileChannel.truncate( fileChannel.position() );
-                    fileChannel.force( false );
-                    closeFileChannel();
-                }
-            } );
-        }
-        catch ( IOException e )
-        {
-            storedIoe = e;
-        }
-
-        if ( storedIoe != null )
-        {
-            throw new UnderlyingStorageException( "Unable to close store " + getStorageFileName(), storedIoe );
-        }
-    }
-
-    protected void closeFileChannel()
-    {
-        try
-        {
-            if ( fileChannel != null )
-            {
-                fileChannel.close();
-            }
-        }
-        catch ( IOException e )
-        {
-            log.warn( "Could not close [" + storageFileName + "]", e );
-        }
-        fileChannel = null;
-    }
-
-    /**
-     * Returns a <CODE>StoreChannel</CODE> to this storage's file. If
-     * <CODE>close()</CODE> method has been invoked <CODE>null</CODE> will be
-     * returned.
-     * <p>
-     * Note: You can only operate directly on the StoreChannel while the file
-     * is not mapped in the page cache.
-     *
-     * @return A file channel to this storage
-     */
-    protected final StoreChannel getFileChannel()
-    {
-        return fileChannel;
     }
 
     /** @return The highest possible id in use, -1 if no id in use. */
@@ -794,9 +747,15 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
     private long calculateHighestIdInUseByLookingAtFileSize()
     {
-        try
+        int recordAlignedPageSize = pageCache.pageSize() - pageCache.pageSize() % getRecordSize();
+        try ( PagedFile pagedFile = pageCache.map( getStorageFileName(), recordAlignedPageSize ) )
         {
-            return getFileChannel().size() / getRecordSize();
+            long id = recordsPerPage() * (pagedFile.getLastPageId() + 1);
+            if ( id == 0 )
+            {
+                return -1;
+            }
+            return id;
         }
         catch ( IOException e )
         {

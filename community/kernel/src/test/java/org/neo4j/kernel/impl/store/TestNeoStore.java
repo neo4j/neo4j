@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.io.IOException;
@@ -96,6 +97,8 @@ public class TestNeoStore
     public TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTestWithEphemeralFS( fs.get(), getClass() );
     @Rule
     public NeoStoreDataSourceRule dsRule = new NeoStoreDataSourceRule();
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     private PageCache pageCache;
     private File storeDir;
@@ -1206,6 +1209,23 @@ public class TestNeoStore
         neoStore.close();
 
         assertEquals( TransactionIdStore.BASE_TX_ID, lastCommittedTransactionId );
+    }
+
+    @Test
+    public void shouldThrowUnderlyingStorageExceptionWhenFailingToLoadStorage()
+    {
+        FileSystemAbstraction fileSystem = fs.get();
+        File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
+        StoreFactory factory =
+                new StoreFactory( fileSystem, neoStoreDir, pageCache, NullLogProvider.getInstance(), new Monitors() );
+
+        NeoStore neoStore = factory.newNeoStore( true );
+        neoStore.close();
+        File file = new File( neoStoreDir, NeoStore.DEFAULT_NAME );
+        fileSystem.deleteFile( file );
+        exception.expect( UnderlyingStorageException.class );
+        factory.newNeoStore( false );
+        exception.expect( IllegalStateException.class );
     }
 
     @Test
