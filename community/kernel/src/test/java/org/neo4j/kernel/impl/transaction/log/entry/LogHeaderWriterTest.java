@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import org.junit.Test;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -62,7 +63,7 @@ public class LogHeaderWriterTest
         byte logFormatVersion = decodeLogFormatVersion( encodedLogVersions );
         assertEquals( CURRENT_LOG_VERSION, logFormatVersion );
 
-        long logVersion = decodeLogVersion( logFormatVersion, encodedLogVersions, true );
+        long logVersion = decodeLogVersion( encodedLogVersions );
         assertEquals( expectedLogVersion, logVersion );
 
         long txId = channel.getLong();
@@ -87,7 +88,7 @@ public class LogHeaderWriterTest
         byte logFormatVersion = decodeLogFormatVersion( encodedLogVersions );
         assertEquals( CURRENT_LOG_VERSION, logFormatVersion );
 
-        long logVersion = decodeLogVersion( logFormatVersion, encodedLogVersions, true );
+        long logVersion = decodeLogVersion( encodedLogVersions );
         assertEquals( expectedLogVersion, logVersion );
 
         long txId = result.getLong();
@@ -119,7 +120,7 @@ public class LogHeaderWriterTest
         byte logFormatVersion = decodeLogFormatVersion( encodedLogVersions );
         assertEquals( CURRENT_LOG_VERSION, logFormatVersion );
 
-        long logVersion = decodeLogVersion( logFormatVersion, encodedLogVersions, true );
+        long logVersion = decodeLogVersion( encodedLogVersions );
         assertEquals( expectedLogVersion, logVersion );
 
         long txId = result.getLong();
@@ -154,7 +155,7 @@ public class LogHeaderWriterTest
         byte logFormatVersion = decodeLogFormatVersion( encodedLogVersions );
         assertEquals( CURRENT_LOG_VERSION, logFormatVersion );
 
-        long logVersion = decodeLogVersion( logFormatVersion, encodedLogVersions, true );
+        long logVersion = decodeLogVersion( encodedLogVersions );
         assertEquals( expectedLogVersion, logVersion );
 
         long txId = result.getLong();
