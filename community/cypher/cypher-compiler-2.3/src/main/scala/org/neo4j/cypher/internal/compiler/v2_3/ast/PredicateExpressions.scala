@@ -166,6 +166,9 @@ sealed trait InequalityExpression extends Expression with BinaryOperatorExpressi
   )
 
   def swap: InequalityExpression
+
+  def lhs: Expression
+  def rhs: Expression
 }
 
 final case class LessThan(lhs: Expression, rhs: Expression)(val position: InputPosition) extends InequalityExpression {

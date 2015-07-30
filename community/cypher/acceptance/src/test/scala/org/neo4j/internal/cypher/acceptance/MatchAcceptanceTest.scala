@@ -958,7 +958,23 @@ return b
     // then
     result.toList should equal (List(Map("n" -> jake)))
     result.executionPlanDescription.toString should include("IndexSeek")
-    println(result.executionPlanDescription())
+  }
+
+  test("should be able to use index hints with inequality/range predicates") {
+    // given
+    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    relate(andres, createNode())
+    relate(jake, createNode())
+
+    graph.createIndex("Person", "name")
+
+    // when
+    val result = executeWithAllPlanners("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name > 'Jac' RETURN n")
+
+    // then
+    result.toList should equal (List(Map("n" -> jake)))
+    result.executionPlanDescription.toString should include("IndexSeek")
   }
 
   test("should be able to use label as start point") {

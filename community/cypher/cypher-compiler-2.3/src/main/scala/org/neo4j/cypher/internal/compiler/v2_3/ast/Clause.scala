@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper.RichString
 import org.neo4j.cypher.internal.compiler.v2_3.notification.CartesianProductNotification
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{PrefixRangeSeekable, AsStringRangeSeekable, AsPropertySeekable}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 import scala.annotation.tailrec
@@ -148,6 +148,10 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
           (acc, _) => acc :+ name
         case AsStringRangeSeekable(PrefixRangeSeekable(_, _, Identifier(id), PropertyKeyName(name))) if id == identifier =>
           (acc, _) => acc :+ name
+        case expr: InequalityExpression => expr.lhs match {
+            case Property(Identifier(id), PropertyKeyName(name)) if id == identifier =>
+              (acc, _) => acc :+ name
+          }
         case _: Where | _: And | _: Ands | _: Set[_] =>
           (acc, children) => children(acc)
         case _ =>
