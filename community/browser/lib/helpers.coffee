@@ -20,7 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 'use strict'
 
-window = window || {}
+if not window
+  window = {}
+
 window.neo = window.neo || {}
 neo = window.neo
 
@@ -45,15 +47,13 @@ class neo.helpers
 
     @extendDeep = (dst) =>
       that = @
-      angular.forEach(arguments, (obj) ->
+      for index, obj of arguments
         if (obj != dst)
-          angular.forEach(obj, (value, key)  ->
-            if (dst[key] && angular.isObject(dst[key]))
+          for key, value of obj
+            if (dst[key] && typeof dst[key] is 'object' && Object.getOwnPropertyNames(dst[key]).length > 0)
               that.extendDeep(dst[key], value)
-            else if(!angular.isFunction(dst[key]))
+            else if(typeof dst[key] isnt 'function')
               dst[key] = value
-          )
-      )
       dst
 
     @extend = (objects) ->
