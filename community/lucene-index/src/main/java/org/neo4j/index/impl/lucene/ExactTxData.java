@@ -22,7 +22,6 @@ package org.neo4j.index.impl.lucene;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,9 +34,8 @@ import org.neo4j.index.lucene.ValueContext;
 
 public class ExactTxData extends TxData
 {
-    private Map<String, Map<Object, Set<Object>>> data;
+    private Map<String, Map<Object, Set<EntityId>>> data;
     private boolean hasOrphans;
-    private boolean hasRelationshipIds;
 
     ExactTxData( LuceneIndex index )
     {
@@ -45,27 +43,23 @@ public class ExactTxData extends TxData
     }
 
     @Override
-    void add( TxDataHolder holder, Object entityId, String key, Object value )
+    void add( TxDataHolder holder, EntityId entityId, String key, Object value )
     {
         idCollection( key, value, true ).add( entityId );
-        if ( !hasRelationshipIds && entityId instanceof RelationshipId )
-        {
-            hasRelationshipIds = true;
-        }
     }
 
-    private Set<Object> idCollection( String key, Object value, boolean create )
+    private Set<EntityId> idCollection( String key, Object value, boolean create )
     {
-        Map<Object, Set<Object>> keyMap = keyMap( key, create );
+        Map<Object, Set<EntityId>> keyMap = keyMap( key, create );
         if ( keyMap == null )
         {
             return null;
         }
 
-        Set<Object> ids = keyMap.get( value );
+        Set<EntityId> ids = keyMap.get( value );
         if ( ids == null && create )
         {
-            ids = new HashSet<Object>();
+            ids = new HashSet<>();
             keyMap.put( value, ids );
             if ( value == null )
             {
@@ -75,7 +69,7 @@ public class ExactTxData extends TxData
         return ids;
     }
 
-    private Map<Object, Set<Object>> keyMap( String key, boolean create )
+    private Map<Object, Set<EntityId>> keyMap( String key, boolean create )
     {
         if ( data == null )
         {
@@ -89,7 +83,7 @@ public class ExactTxData extends TxData
             }
         }
 
-        Map<Object, Set<Object>> inner = data.get( key );
+        Map<Object, Set<EntityId>> inner = data.get( key );
         if ( inner == null && create )
         {
             inner = new HashMap<>();
@@ -107,13 +101,13 @@ public class ExactTxData extends TxData
         FullTxData data = new FullTxData( index );
         if ( this.data != null )
         {
-            for ( Map.Entry<String, Map<Object, Set<Object>>> entry : this.data.entrySet() )
+            for ( Map.Entry<String, Map<Object, Set<EntityId>>> entry : this.data.entrySet() )
             {
                 String key = entry.getKey();
-                for ( Map.Entry<Object, Set<Object>> valueEntry : entry.getValue().entrySet() )
+                for ( Map.Entry<Object, Set<EntityId>> valueEntry : entry.getValue().entrySet() )
                 {
                     Object value = valueEntry.getKey();
-                    for ( Object id : valueEntry.getValue() )
+                    for ( EntityId id : valueEntry.getValue() )
                     {
                         data.add( null, id, key, value );
                     }
@@ -129,7 +123,7 @@ public class ExactTxData extends TxData
     }
 
     @Override
-    Collection<Long> query( TxDataHolder holder, Query query, QueryContext contextOrNull )
+    Collection<EntityId> query( TxDataHolder holder, Query query, QueryContext contextOrNull )
     {
         if ( contextOrNull != null && contextOrNull.getTradeCorrectnessForSpeed() )
         {
@@ -142,7 +136,7 @@ public class ExactTxData extends TxData
     }
 
     @Override
-    void remove( TxDataHolder holder, Object entityId, String key, Object value )
+    void remove( TxDataHolder holder, EntityId entityId, String key, Object value )
     {
         if ( data == null )
         {
@@ -157,7 +151,7 @@ public class ExactTxData extends TxData
         }
         else
         {
-            Collection<Object> ids = idCollection( key, value, false );
+            Collection<EntityId> ids = idCollection( key, value, false );
             if ( ids != null )
             {
                 ids.remove( entityId );
@@ -166,50 +160,28 @@ public class ExactTxData extends TxData
     }
 
     @Override
-    Collection<Long> get( TxDataHolder holder, String key, Object value )
+    Collection<EntityId> get( TxDataHolder holder, String key, Object value )
     {
         value = value instanceof ValueContext ? ((ValueContext) value).getCorrectValue() : value.toString();
-        Set<Object> ids = idCollection( key, value, false );
+        Set<EntityId> ids = idCollection( key, value, false );
         if ( ids == null || ids.isEmpty() )
         {
             return Collections.emptySet();
         }
-        return toLongs( ids );
+        return ids;
     }
 
     @Override
-    Collection<Long> getOrphans( String key )
+    Collection<EntityId> getOrphans( String key )
     {
         if ( !hasOrphans )
         {
             return null;
         }
 
-        Set<Object> orphans = idCollection( null, null, false );
-        Set<Object> keyOrphans = idCollection( key, null, false );
-        Collection<Long> orphanLongs = orphans != null ? toLongs( orphans ) : null;
-        Collection<Long> keyOrphanLongs = keyOrphans != null ? toLongs( keyOrphans ) : null;
-        return LuceneTransactionState.merge( orphanLongs, keyOrphanLongs );
-    }
-
-    @SuppressWarnings( { "unchecked", "rawtypes" } )
-    private Collection<Long> toLongs( Set<Object> ids )
-    {
-        if (ids.isEmpty()) return Collections.emptySet();
-
-        if ( !hasRelationshipIds )
-        {
-            return (Collection) ids;
-        }
-        else
-        {
-            Collection<Long> longs = new ArrayList<>(ids.size());
-            for ( Object id : ids )
-            {
-                longs.add( ((RelationshipId) id).id );
-            }
-            return longs;
-        }
+        Set<EntityId> orphans = idCollection( null, null, false );
+        Set<EntityId> keyOrphans = idCollection( key, null, false );
+        return LuceneTransactionState.merge( orphans, keyOrphans );
     }
 
     @Override

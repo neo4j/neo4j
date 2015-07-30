@@ -35,7 +35,7 @@ class LuceneTransactionState implements Closeable
 {
     private final Map<IndexIdentifier, TxDataBoth> txData = new HashMap<>();
 
-    void add( LuceneIndex index, Object entity, String key, Object value )
+    void add( LuceneIndex index, EntityId entity, String key, Object value )
     {
         TxDataBoth data = getTxData( index, true );
         insert( entity, key, value, data.added( true ), data.removed( false ) );
@@ -54,19 +54,19 @@ class LuceneTransactionState implements Closeable
         return data;
     }
 
-    void remove( LuceneIndex index, Object entity, String key, Object value )
+    void remove( LuceneIndex index, EntityId entity, String key, Object value )
     {
         TxDataBoth data = getTxData( index, true );
         insert( entity, key, value, data.removed( true ), data.added( false ) );
     }
 
-    void remove( LuceneIndex index, Object entity, String key )
+    void remove( LuceneIndex index, EntityId entity, String key )
     {
         TxDataBoth data = getTxData( index, true );
         insert( entity, key, null, data.removed( true ), data.added( false ) );
     }
 
-    void remove( LuceneIndex index, Object entity )
+    void remove( LuceneIndex index, EntityId entity )
     {
         TxDataBoth data = getTxData( index, true );
         insert( entity, null, null, data.removed( true ), data.added( false ) );
@@ -78,7 +78,7 @@ class LuceneTransactionState implements Closeable
         txData.put( identifier, new DeletedTxDataBoth( index ) );
     }
 
-    private void insert( Object entity, String key, Object value, TxDataHolder insertInto,
+    private void insert( EntityId entity, String key, Object value, TxDataHolder insertInto,
                                                        TxDataHolder removeFrom )
     {
         if ( removeFrom != null )
@@ -88,18 +88,18 @@ class LuceneTransactionState implements Closeable
         insertInto.add( entity, key, value );
     }
 
-    Collection<Long> getRemovedIds( LuceneIndex index, Query query )
+    Collection<EntityId> getRemovedIds( LuceneIndex index, Query query )
     {
         TxDataHolder removed = removedTxDataOrNull( index );
         if ( removed == null )
         {
             return Collections.emptySet();
         }
-        Collection<Long> ids = removed.query( query, null );
-        return ids != null ? ids : Collections.<Long>emptySet();
+        Collection<EntityId> ids = removed.query( query, null );
+        return ids != null ? ids : Collections.<EntityId>emptySet();
     }
 
-    Collection<Long> getRemovedIds( LuceneIndex index,
+    Collection<EntityId> getRemovedIds( LuceneIndex index,
             String key, Object value )
     {
         TxDataHolder removed = removedTxDataOrNull( index );
@@ -107,12 +107,12 @@ class LuceneTransactionState implements Closeable
         {
             return Collections.emptySet();
         }
-        Collection<Long> ids = removed.get( key, value );
-        Collection<Long> orphanIds = removed.getOrphans( key );
+        Collection<EntityId> ids = removed.get( key, value );
+        Collection<EntityId> orphanIds = removed.getOrphans( key );
         return merge( ids, orphanIds );
     }
 
-    static Collection<Long> merge( Collection<Long> c1, Collection<Long> c2 )
+    static Collection<EntityId> merge( Collection<EntityId> c1, Collection<EntityId> c2 )
     {
         if ( c1 == null && c2 == null )
         {
@@ -128,7 +128,7 @@ class LuceneTransactionState implements Closeable
             {
                 return c1;
             }
-            Collection<Long> result = new HashSet<>( c1.size()+c2.size(), 1 );
+            Collection<EntityId> result = new HashSet<>( c1.size()+c2.size(), 1 );
             result.addAll( c1 );
             result.addAll( c2 );
             return result;
@@ -139,15 +139,15 @@ class LuceneTransactionState implements Closeable
         }
     }
 
-    Collection<Long> getAddedIds( LuceneIndex index, String key, Object value )
+    Collection<EntityId> getAddedIds( LuceneIndex index, String key, Object value )
     {
         TxDataHolder added = addedTxDataOrNull( index );
         if ( added == null )
         {
             return Collections.emptySet();
         }
-        Collection<Long> ids = added.get( key, value );
-        return ids != null ? ids : Collections.<Long>emptySet();
+        Collection<EntityId> ids = added.get( key, value );
+        return ids != null ? ids : Collections.<EntityId>emptySet();
     }
 
     TxDataHolder addedTxDataOrNull( LuceneIndex index )

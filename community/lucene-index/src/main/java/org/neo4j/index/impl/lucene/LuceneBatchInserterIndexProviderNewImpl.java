@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.index.impl.lucene.EntityId.RelationshipData;
 import org.neo4j.index.impl.lucene.LuceneBatchInserterIndex.RelationshipLookup;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
@@ -57,11 +58,11 @@ public class LuceneBatchInserterIndexProviderNewImpl implements BatchInserterInd
         this.relationshipLookup = new LuceneBatchInserterIndex.RelationshipLookup()
         {
             @Override
-            public RelationshipId lookup( long id )
+            public EntityId lookup( long id )
             {
                 // TODO too may objects allocated here
                 BatchRelationship rel = inserter.getRelationshipById( id );
-                return RelationshipId.of( id, rel.getStartNode(), rel.getEndNode() );
+                return new RelationshipData( id, rel.getStartNode(), rel.getEndNode() );
             }
         };
     }

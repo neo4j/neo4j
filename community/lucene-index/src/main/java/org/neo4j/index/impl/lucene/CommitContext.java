@@ -59,9 +59,9 @@ class CommitContext implements Closeable
         }
     }
 
-    DocumentContext getDocument( Object entityId, boolean allowCreate )
+    DocumentContext getDocument( EntityId entityId, boolean allowCreate )
     {
-        long id = entityId instanceof Long ? (Long) entityId : ( (RelationshipId) entityId ).id;
+        long id = entityId.id();
         DocumentContext context = documents.get( id );
         if ( context != null )
         {
