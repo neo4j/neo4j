@@ -51,7 +51,7 @@ public class ChunkedOutputTest
     {
         // When
         out.writeByte( (byte) 1 ).writeShort( (short) 2 );
-        out.messageBoundaryHook().run();
+        out.onMessageComplete();
         out.flush();
 
         // Then
@@ -65,7 +65,7 @@ public class ChunkedOutputTest
     {
         // When
         out.writeLong( 1 ).writeLong( 2 ).writeLong( 3 );
-        out.messageBoundaryHook().run();
+        out.onMessageComplete();
         out.flush();
 
         // Then
@@ -80,7 +80,7 @@ public class ChunkedOutputTest
     {
         // Given 2 bytes left in buffer + chunk is closed
         out.writeBytes( new byte[10], 0, 10 );  // 2 (header) + 10
-        out.messageBoundaryHook().run();        // 2 (ending)
+        out.onMessageComplete();                // 2 (ending)
 
         // When write 2 bytes
         out.writeShort( (short) 33 );           // 2 (header) + 2
@@ -96,7 +96,7 @@ public class ChunkedOutputTest
     {
         // Given
         out.writeBytes( new byte[16], 0, 16 ); // 2 + 16 is greater than the default max size 16
-        out.messageBoundaryHook().run();
+        out.onMessageComplete();
         out.flush();
 
         // When & Then

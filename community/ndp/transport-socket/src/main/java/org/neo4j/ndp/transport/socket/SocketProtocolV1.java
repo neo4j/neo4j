@@ -63,6 +63,17 @@ public class SocketProtocolV1 implements SocketProtocol
     private final AtomicInteger inFlight = new AtomicInteger( 0 );
     private final ErrorReporter errorReporter;
 
+    // Remembering that the actual work processing is done in threads separate from the IO threads, this callback gets invoked for each
+    // completed request on the worker thread. We use it to ensure that we flush outbound buffers when all in-flight messages for a session have been handled.
+    private final Runnable onEachCompletedMessage = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            onMessageDone();
+        }
+    };
+
     public enum State
     {
         AWAITING_CHUNK,
@@ -81,16 +92,9 @@ public class SocketProtocolV1 implements SocketProtocol
         this.errorReporter = new ErrorReporter( logging, usageData );
         this.output = new ChunkedOutput( channel, DEFAULT_BUFFER_SIZE );
         this.input = new ChunkedInput();
-        this.packer = new PackStreamMessageFormatV1.Writer( new PackStream.Packer( output ), output.messageBoundaryHook() );
+        this.packer = new PackStreamMessageFormatV1.Writer( new PackStream.Packer( output ), output );
         this.unpacker = new PackStreamMessageFormatV1.Reader( new PackStream.Unpacker( input ) );
-        this.bridge = new TransportBridge( log ).reset( session, packer, new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                onMessageDone();
-            }
-        } );
+        this.bridge = new TransportBridge( log ).reset( session, packer, onEachCompletedMessage );
     }
 
     /**
@@ -102,7 +106,6 @@ public class SocketProtocolV1 implements SocketProtocol
     @Override
     public void handle( ChannelHandlerContext channelContext, ByteBuf data )
     {
-        onBatchOfMessagesStarted();
         try
         {
             while ( data.readableBytes() > 0 )
@@ -167,7 +170,6 @@ public class SocketProtocolV1 implements SocketProtocol
         finally
         {
             data.release();
-            onBatchOfMessagesDone();
         }
     }
 
@@ -178,12 +180,15 @@ public class SocketProtocolV1 implements SocketProtocol
     }
 
     @Override
-    public void close()
+    public synchronized void close()
     {
-        state = State.CLOSED;
-        input.close();
-        session.close();
-        output.close();
+        if( state != State.CLOSED )
+        {
+            state = State.CLOSED;
+            input.close();
+            session.close();
+            output.close();
+        }
     }
 
     public State state()
@@ -211,7 +216,7 @@ public class SocketProtocolV1 implements SocketProtocol
         {
             onMessageStarted();
             unpacker.read( bridge );
-            // onMessageDone() called via request completion callback in TransportBridge
+            // onMessageDone() called via onEachCompletedMessage
         }
         catch ( Throwable e )
         {
@@ -229,6 +234,8 @@ public class SocketProtocolV1 implements SocketProtocol
         {
             try
             {
+                // TODO: This is dangerousish, since the worker thread may be writing to the packer at the same time. Better have an approach where we can
+                // signal to the worker that we are shutting it down because of this error, and it can signal to the client.
                 publishError( packer, Neo4jError.from( e ) );
                 packer.flush();
             }
@@ -249,31 +256,10 @@ public class SocketProtocolV1 implements SocketProtocol
     }
 
     /*
-     * The methods below are used to determine the when to flush our output buffers explicitly. The
-     * buffers are implicitly flushed when they fill up, so what the code below deals with is detecting when
-     * messaging has "stalled", meaning we're not processing anything and there's no new messages waiting from the
-     * client. Since the session backend is allowed to be async, this is a bit tricky.
-     *
-     * We use a single atomic integer to track both the number of in-flight requests,
-     * as well as the "batch of messages" that the user sent, tracked as if it
-     * were a single pending request. Doing it this way makes the concurrency edge cases much simpler,
-     * we just increment the counter when we receive a network packet from the user, and for each message we
-     * start processing. We decrement it for each message we're done with and when we're done with a network
-     * packet.
-     *
-     * Whenever the counter hits 0, we know no processing is taking place, and thus that we should flush.
+     * Ths methods below are used to track in-flight messages (messages the client has sent us that are waiting to be processed). We use this information
+     * to determine when to explicitly flush our output buffers - if there are no more pending messages when a message is done processing, we should flush
+     * the buffers for the session.
      */
-
-    public void onBatchOfMessagesStarted()
-    {
-        onMessageStarted();
-    }
-
-    public void onBatchOfMessagesDone()
-    {
-        onMessageDone();
-    }
-
     private void onMessageStarted()
     {
         inFlight.incrementAndGet();
@@ -281,10 +267,12 @@ public class SocketProtocolV1 implements SocketProtocol
 
     private void onMessageDone()
     {
-        if ( inFlight.decrementAndGet() == 0 )
+        // If this is the last in-flight message, and we're not in the middle of reading another message over the wire
+        if ( inFlight.decrementAndGet() == 0 && state == State.AWAITING_CHUNK )
         {
             try
             {
+                // Then flush outbound buffers
                 packer.flush();
             }
             catch ( IOException e )

@@ -96,23 +96,23 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
     public static class Writer implements MessageFormat.Writer
     {
-        public static final Runnable NO_OP = new Runnable()
+        public static final MessageBoundaryHook NO_OP = new MessageBoundaryHook()
         {
             @Override
-            public void run()
+            public void onMessageComplete() throws IOException
             {
-                // no-op
+
             }
         };
 
         private final PackStream.Packer packer;
-        private final Runnable onMessageComplete;
+        private final MessageBoundaryHook onMessageComplete;
 
         /**
          * @param packer serializer to output channel
          * @param onMessageComplete invoked for each message, after it's done writing to the output
          */
-        public Writer( PackStream.Packer packer, Runnable onMessageComplete )
+        public Writer( PackStream.Packer packer, MessageBoundaryHook onMessageComplete )
         {
             this.packer = packer;
             this.onMessageComplete = onMessageComplete;
@@ -132,7 +132,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             packer.packStructHeader( 2, MessageTypes.MSG_RUN );
             packer.pack( statement );
             packRawMap( params );
-            onMessageComplete.run();
+            onMessageComplete.onMessageComplete();
         }
 
         @Override
@@ -140,7 +140,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 throws IOException
         {
             packer.packStructHeader( 0, MessageTypes.MSG_PULL_ALL );
-            onMessageComplete.run();
+            onMessageComplete.onMessageComplete();
         }
 
         @Override
@@ -148,14 +148,14 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 throws IOException
         {
             packer.packStructHeader( 0, MessageTypes.MSG_DISCARD_ALL );
-            onMessageComplete.run();
+            onMessageComplete.onMessageComplete();
         }
 
         @Override
         public void handleAckFailureMessage() throws IOException
         {
             packer.packStructHeader( 0, MessageTypes.MSG_ACK_FAILURE );
-            onMessageComplete.run();
+            onMessageComplete.onMessageComplete();
         }
 
         @Override
@@ -169,7 +169,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             {
                 packValue( field );
             }
-            onMessageComplete.run();
+            onMessageComplete.onMessageComplete();
         }
 
         @Override
@@ -178,7 +178,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         {
             packer.packStructHeader( 1, MessageTypes.MSG_SUCCESS );
             packRawMap( metadata );
-            onMessageComplete.run();
+            onMessageComplete.onMessageComplete();
         }
 
         @Override
@@ -193,14 +193,15 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
             packer.pack( "message" );
             packer.pack( message );
-            onMessageComplete.run();
+            
+            onMessageComplete.onMessageComplete();
         }
 
         @Override
         public void handleIgnoredMessage() throws IOException
         {
             packer.packStructHeader( 0, MessageTypes.MSG_IGNORED );
-            onMessageComplete.run();
+            onMessageComplete.onMessageComplete();
         }
 
         @Override
@@ -208,7 +209,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         {
             packer.packStructHeader( 1, MessageTypes.MSG_INITIALIZE );
             packer.pack( clientName );
-            onMessageComplete.run();
+            onMessageComplete.onMessageComplete();
         }
 
         @Override

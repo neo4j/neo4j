@@ -99,4 +99,22 @@ public class ChunkedInputTest
         // Then
         assertThat( bytes, equalTo( new byte[]{1, 2, 3, 4, 5} ) );
     }
+
+    @Test
+    public void shouldHandleEmptyBuffer() throws Throwable
+    {
+        // Given the user sent an empty network frame
+        ChunkedInput ch = new ChunkedInput();
+
+        ch.append( wrappedBuffer( new byte[]{1, 2} ) );
+        ch.append( wrappedBuffer( new byte[0] ) );
+        ch.append( wrappedBuffer( new byte[]{3} ) );
+
+        // When
+        byte[] bytes = new byte[3];
+        ch.readBytes( bytes, 0, 3 );
+
+        // Then
+        assertThat( bytes, equalTo( new byte[]{1, 2, 3} ) );
+    }
 }

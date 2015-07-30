@@ -25,11 +25,16 @@ import io.netty.channel.Channel;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.ndp.messaging.v1.MessageBoundaryHook;
 import org.neo4j.packstream.PackOutput;
 
 import static java.lang.Math.max;
 
-public class ChunkedOutput implements PackOutput
+/**
+ * A target output for {@link org.neo4j.packstream.PackStream} which breaks the data into a continuous stream of chunks before pushing them into a netty
+ * channel.
+ */
+public class ChunkedOutput implements PackOutput, MessageBoundaryHook
 {
     public static final int CHUNK_HEADER_SIZE = 2;
     public static final int MESSAGE_BOUNDARY = 0;
@@ -43,36 +48,6 @@ public class ChunkedOutput implements PackOutput
 
     /** Are currently in the middle of writing a chunk? */
     private boolean chunkOpen = false;
-
-    private Runnable onMessageComplete = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            try
-            {
-                closeChunkIfOpen();
-
-                // Ensure there's space to write the message boundary
-                if ( buffer.writableBytes() < CHUNK_HEADER_SIZE )
-                {
-                    flush();
-                }
-
-                // Write message boundary
-                buffer.writeShort( MESSAGE_BOUNDARY );
-
-                // Mark us as not currently in a chunk
-                chunkOpen = false;
-            }
-            catch ( IOException e )
-            {
-                // TODO: Don't use runnable here then, use something that can throw this IOException
-                throw new RuntimeException( e );
-            }
-
-        }
-    };
 
     public ChunkedOutput( Channel ch, int bufferSize )
     {
@@ -88,7 +63,13 @@ public class ChunkedOutput implements PackOutput
         if ( buffer.readableBytes() > 0 )
         {
             closeChunkIfOpen();
-            channel.writeAndFlush( buffer, channel.voidPromise() );
+
+            // Local copy and clear the buffer field. This ensures that the buffer is not re-released if the flush call fails
+            ByteBuf out = this.buffer;
+            this.buffer = null;
+
+            channel.writeAndFlush( out, channel.voidPromise() );
+
             newBuffer();
         }
         return this;
@@ -139,6 +120,7 @@ public class ChunkedOutput implements PackOutput
     {
         // TODO: If data is larger than our chunk size or so, we're very likely better off just passing this ByteBuffer on rather than doing the copy here
         // TODO: *however* note that we need some way to find out when the data has been written (and thus the buffer can be re-used) if we take that approach
+        // See the comment in #newBuffer for an approach that would allow that
         while ( data.remaining() > 0 )
         {
             // Ensure there is an open chunk, and that it has at least one byte of space left
@@ -196,13 +178,11 @@ public class ChunkedOutput implements PackOutput
     private void newBuffer()
     {
         // Assumption: We're using nettys buffer pooling here
+        // If we wanted to, we can optimize this further and restrict memory usage by using our own ByteBuf impl. Each Output instance would have, say, 3
+        // buffers that it rotates. Fill one up, send it to be async flushed, fill the next one up, etc. When release is called by Netty, push buffer back
+        // onto our local stack. That way there are no global data structures for managing memory, no fragmentation and a fixed amount of RAM per session used.
         buffer = channel.alloc().buffer( bufferSize, bufferSize );
         chunkOpen = false;
-    }
-
-    public Runnable messageBoundaryHook()
-    {
-        return onMessageComplete;
     }
 
     public void close()
@@ -212,5 +192,23 @@ public class ChunkedOutput implements PackOutput
             buffer.release();
             buffer = null;
         }
+    }
+
+    @Override
+    public void onMessageComplete() throws IOException
+    {
+        closeChunkIfOpen();
+
+        // Ensure there's space to write the message boundary
+        if ( buffer.writableBytes() < CHUNK_HEADER_SIZE )
+        {
+            flush();
+        }
+
+        // Write message boundary
+        buffer.writeShort( MESSAGE_BOUNDARY );
+
+        // Mark us as not currently in a chunk
+        chunkOpen = false;
     }
 }
