@@ -61,7 +61,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
     public Statement instance()
     {
         checkIfShutdown();
-        return getKernelTransactionBoundToThisThread( true ).acquireStatement();
+        return getKernelTransactionBoundToThisThread(true).acquireStatement();
     }
 
     private void assertInUnterminatedTransaction( TopLevelTransaction transaction )

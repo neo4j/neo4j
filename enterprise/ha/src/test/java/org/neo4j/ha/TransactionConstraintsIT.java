@@ -19,13 +19,14 @@
  */
 package org.neo4j.ha;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
-
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -51,12 +52,12 @@ import org.neo4j.test.ha.ClusterRule;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
@@ -231,8 +232,7 @@ public class TransactionConstraintsIT
         deleteNode( cluster.getMaster(), node.getId() );
 
         // WHEN
-        Transaction tx = aSlave.beginTx();
-        try
+        try(Transaction tx = aSlave.beginTx())
         {
             node.setProperty( "name", "test" );
             fail( "Shouldn't be able to modify a node deleted on master" );
@@ -241,10 +241,6 @@ public class TransactionConstraintsIT
         {
             // THEN
             // -- the transactions gotten back in the response should delete that node
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -277,6 +273,7 @@ public class TransactionConstraintsIT
         Transaction tx2 = thread2.execute( new BeginTx() );
         tx1.acquireReadLock( commonNode );
         thread2.execute( new AcquireReadLockOnReferenceNode( tx2, commonNode ) );
+
         // -- and one of them wanting (and awaiting) to upgrade its read lock to a write lock
         Future<Lock> writeLockFuture = thread2.executeDontWait( new AcquireWriteLock( tx2, new Callable<Node>(){
             @Override
@@ -300,6 +297,10 @@ public class TransactionConstraintsIT
             // -- Deadlock detection is non-deterministic, so either the slave or the master will detect it
             writeLockFuture.get();
             fail( "Deadlock exception should have been thrown" );
+        }
+        catch ( ExecutionException e )
+        {
+            assertThat( e.getCause(), instanceOf( DeadlockDetectedException.class) );
         }
         catch ( DeadlockDetectedException e )
         {
@@ -477,7 +478,15 @@ public class TransactionConstraintsIT
         @Override
         public Lock doWork( HighlyAvailableGraphDatabase state )
         {
-            return tx.acquireReadLock( commonNode );
+            try
+            {
+                return tx.acquireReadLock( commonNode );
+            }
+            catch( DeadlockDetectedException e)
+            {
+                tx.close();
+                throw e;
+            }
         }
     }
 
@@ -495,7 +504,15 @@ public class TransactionConstraintsIT
         @Override
         public Lock doWork( HighlyAvailableGraphDatabase state ) throws Exception
         {
-            return tx.acquireWriteLock( callable.call() );
+            try
+            {
+                return tx.acquireWriteLock( callable.call() );
+            }
+            catch( DeadlockDetectedException e)
+            {
+                tx.close();
+                throw e;
+            }
         }
     }
 
