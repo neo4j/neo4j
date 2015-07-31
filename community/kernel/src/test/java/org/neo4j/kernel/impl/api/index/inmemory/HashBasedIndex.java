@@ -197,7 +197,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
             iterateAll( new IndexEntryIterator()
             {
                 @Override
-                public void visitEntry( Object value, Set<Long> nodeIds ) throws Exception
+                public void visitEntry( Object value, Set<Long> nodeIds )
                 {
                     int ids = nodeIds.size();
                     if ( ids > 0 )
