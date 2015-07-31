@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import scala.collection.JavaConversions;
+
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
-
-import scala.collection.JavaConversions;
+import java.util.Objects;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.graphdb.ExecutionPlanDescription;
@@ -55,20 +56,25 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Result
 {
     private final org.neo4j.cypher.ExtendedExecutionResult inner;
-    private ResourceIterator<Map<String, Object>> iter = null;
+
+    /**
+     * Initialized lazily and should be accessed with {@link #innerIterator()} method
+     * because {@link #accept(ResultVisitor)} does not require iterator.
+     */
+    private ResourceIterator<Map<String,Object>> innerIterator;
 
     /**
      * Constructor used by the Cypher framework. End-users should not
      * create an ExecutionResult directly, but instead use the result
      * returned from calling {@link ExecutionEngine#execute(String)}.
      */
-    public ExecutionResult( org.neo4j.cypher.ExtendedExecutionResult projection)
+    public ExecutionResult( org.neo4j.cypher.ExtendedExecutionResult projection )
     {
-        inner = projection;
+        inner = Objects.requireNonNull( projection );
         //if updating query we must fetch the iterator right away in order to eagerly perform updates
         if ( projection.executionType().queryType() == QueryType.WRITE )
         {
-            ensureIterator();
+            innerIterator();
         }
     }
 
@@ -201,17 +207,15 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     @Override
     public ResourceIterator<Map<String, Object>> iterator()
     {
-        ensureIterator();
-        return iter; // legacy method - don't convert exceptions...
+        return innerIterator(); // legacy method - don't convert exceptions...
     }
 
     @Override
     public boolean hasNext()
     {
-        ensureIterator();
         try
         {
-            return iter.hasNext();
+            return innerIterator().hasNext();
         }
         catch ( CypherException e )
         {
@@ -222,10 +226,9 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     @Override
     public Map<String, Object> next()
     {
-        ensureIterator();
         try
         {
-            return iter.next();
+            return innerIterator().next();
         }
         catch ( CypherException e )
         {
@@ -236,22 +239,19 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     @Override
     public void close()
     {
-        ensureIterator();
         try
         {
-            iter.close();
+            // inner iterator might be null if this result was consumed using visitor
+            if ( innerIterator != null )
+            {
+                innerIterator.close();
+            }
+            // but we still need to close the underlying exetended execution result
+            inner.close();
         }
         catch ( CypherException e )
         {
             throw converted( e );
-        }
-    }
-
-    private void ensureIterator()
-    {
-        if (iter == null)
-        {
-            iter = inner.javaIterator();
         }
     }
 
@@ -311,6 +311,15 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     public Iterable<Notification> getNotifications()
     {
         return JavaConversions.asJavaIterable( inner.notifications() );
+    }
+
+    private ResourceIterator<Map<String,Object>> innerIterator()
+    {
+        if ( innerIterator == null )
+        {
+            innerIterator = inner.javaIterator();
+        }
+        return innerIterator;
     }
 
     private static class ExceptionConversion<T> implements ResourceIterator<T>

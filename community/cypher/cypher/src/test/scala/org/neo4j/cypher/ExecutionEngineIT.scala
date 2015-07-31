@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.cypher.internal.compiler.v2_3.CostBasedPlannerName
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
@@ -205,6 +206,22 @@ class ExecutionEngineIT extends CypherFunSuite {
     txBridge(db).hasTransaction shouldBe false
   }
 
+  test("should be possible to close compiled result after it is consumed") {
+    // given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+
+    // when
+    val result = db.execute("CYPHER runtime=compiled MATCH (n) RETURN n")
+    result.accept(new ResultVisitor[RuntimeException] {
+      def visit(row: ResultRow) = true
+    })
+
+    result.close()
+
+    // then
+    // call to close actually worked
+  }
+
   private implicit class RichDb(db: GraphDatabaseService) {
     def planDescriptionForQuery(query: String) = {
       val res = db.execute(query)
@@ -212,7 +229,6 @@ class ExecutionEngineIT extends CypherFunSuite {
       res.getExecutionPlanDescription
     }
   }
-
 
   private def txBridge(db: GraphDatabaseService) = {
     db.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])

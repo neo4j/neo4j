@@ -21,11 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
 import java.util
 
-import org.neo4j.cypher.internal.compiler.v2_3.{NormalMode, ExecutionMode}
-import org.neo4j.cypher.internal.compiler.v2_3.TaskCloser
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ResultRowImpl
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.helpers.collection.Iterables._
 
@@ -129,6 +128,23 @@ class CompiledExecutionResultTest extends CypherFunSuite {
 
     // also then
     intercept[IllegalStateException](result.javaIterator.hasNext)
+  }
+
+  test("close should work after result is consumed") {
+    // given
+    val result = newCompiledExecutionResult(javaMap("a" -> "1", "b" -> "2"))
+
+    // when
+    result.accept(new ResultVisitor[Exception] {
+      override def visit(row: ResultRow): Boolean = {
+        true
+      }
+    })
+
+    result.close()
+
+    // then
+    // call of close actually worked
   }
 
   private def newCompiledExecutionResult(row: util.Map[String, Any] = new util.HashMap(),
