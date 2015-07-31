@@ -19,51 +19,50 @@
  */
 package org.neo4j.cypher;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
-
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.neo4j.cypher.internal.compiler.v2_2.CypherCacheHitMonitor;
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement;
-import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Result;
-import org.neo4j.helpers.Pair;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
-import org.neo4j.test.RepeatRule;
 
 import static java.util.Collections.singletonMap;
-
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class QueryInvalidationIT
 {
-    public final @Rule DatabaseRule db = new ImpermanentDatabaseRule();
+    private static final int USERS = 10;
+    private static final int CONNECTIONS = 100;
+
+    @Rule
+    public final DatabaseRule db = new ImpermanentDatabaseRule();
 
     @Test
     public void shouldRePlanAfterDataChangesFromAnEmptyDatabase() throws Exception
     {
         // GIVEN
-        Random random = ThreadLocalRandom.current();
-        int USERS = 10, CONNECTIONS = 100;
         TestMonitor monitor = new TestMonitor();
         db.resolveDependency( Monitors.class ).addMonitorListener( monitor );
         // - setup schema -
-        db.execute( "CREATE INDEX ON :User(userId)" );
+        createIndex();
         // - execute the query without the existence data -
-        distantFriend( random, USERS );
+        executeDistantFriendsCountQuery( USERS );
 
-        long replanTime = System.currentTimeMillis() + 1_100;
+        long replanTime = System.currentTimeMillis() + 1_800;
 
         // - create data -
-        createData( 0, USERS, CONNECTIONS, random );
+        createData( 0, USERS, CONNECTIONS );
 
         // - after the query TTL has expired -
         while ( System.currentTimeMillis() < replanTime )
@@ -74,30 +73,28 @@ public class QueryInvalidationIT
         // WHEN
         monitor.reset();
         // - execute the query again -
-        distantFriend( random, USERS );
+        executeDistantFriendsCountQuery( USERS );
 
         // THEN
-        assertEquals( "Query should have been replanned.", 1, monitor.discards );
+        assertEquals( "Query should have been replanned.", 1, monitor.discards.get() );
     }
 
     @Test
     public void shouldRePlanAfterDataChangesFromAPopulatedDatabase() throws Exception
     {
         // GIVEN
-        Random random = ThreadLocalRandom.current();
-        int USERS = 10, CONNECTIONS = 100;
         TestMonitor monitor = new TestMonitor();
         db.resolveDependency( Monitors.class ).addMonitorListener( monitor );
         // - setup schema -
-        db.execute( "CREATE INDEX ON :User(userId)" );
+        createIndex();
         //create some data
-        createData( 0, USERS, CONNECTIONS, random );
-        distantFriend( random, USERS );
+        createData( 0, USERS, CONNECTIONS );
+        executeDistantFriendsCountQuery( USERS );
 
-        long replanTime = System.currentTimeMillis() + 1_100;
+        long replanTime = System.currentTimeMillis() + 1_800;
 
         //create more date
-        createData( USERS, USERS, CONNECTIONS, random );
+        createData( USERS, USERS, CONNECTIONS );
 
         // - after the query TTL has expired -
         while ( System.currentTimeMillis() < replanTime )
@@ -108,27 +105,42 @@ public class QueryInvalidationIT
         // WHEN
         monitor.reset();
         // - execute the query again -
-        distantFriend( random, USERS );
+        executeDistantFriendsCountQuery( USERS );
 
         // THEN
-        assertEquals( "Query should have been replanned.", 1, monitor.discards );
+        assertEquals( "Query should have been replanned.", 1, monitor.discards.get() );
     }
 
-    private void createData(long startingUserId, int numUsers, int numConnections, Random random)
+    private void createIndex()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( DynamicLabel.label( "User" ) ).on( "userId" ).create();
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 10, SECONDS );
+            tx.success();
+        }
+    }
+
+    private void createData( long startingUserId, int numUsers, int numConnections )
     {
         for ( long userId = startingUserId; userId < numUsers + startingUserId; userId++ )
         {
             db.execute( "CREATE (newUser:User {userId: {userId}})", singletonMap( "userId", (Object) userId ) );
         }
-        Map<String, Object> params = new HashMap<>();
+        Map<String,Object> params = new HashMap<>();
         for ( int i = 0; i < numConnections; i++ )
         {
-            long user1 = startingUserId + random.nextInt( numUsers );
+            long user1 = startingUserId + randomInt( numUsers );
             long user2;
             do
             {
-                user2 = startingUserId + random.nextInt( numUsers );
-            } while ( user1 == user2 );
+                user2 = startingUserId + randomInt( numUsers );
+            }
+            while ( user1 == user2 );
             params.put( "user1", user1 );
             params.put( "user2", user2 );
             db.execute( "MATCH (user1:User { userId: {user1} }), (user2:User { userId: {user2} }) " +
@@ -136,40 +148,61 @@ public class QueryInvalidationIT
         }
     }
 
-    private Pair<Long, ExecutionPlanDescription> distantFriend( Random random, int USERS )
+    private void executeDistantFriendsCountQuery( int userId )
     {
-        Result result = db
-                .execute( "MATCH (user:User { userId: {userId} } ) -[:FRIEND]- () -[:FRIEND]- (distantFriend) " +
-                          "RETURN COUNT(distinct distantFriend)",
-                          singletonMap( "userId", (Object) (long) random.nextInt( USERS ) ) );
-        return Pair.of( (Long) single( single( result ).values() ), result.getExecutionPlanDescription() );
+        Map<String,Object> params = singletonMap( "userId", (Object) (long) randomInt( userId ) );
+
+        try ( Result result = db.execute(
+                "MATCH (user:User { userId: {userId} } ) -[:FRIEND]- () -[:FRIEND]- (distantFriend) " +
+                "RETURN COUNT(distinct distantFriend)", params ) )
+        {
+            while ( result.hasNext() )
+            {
+                result.next();
+            }
+        }
+    }
+
+    private static int randomInt( int max )
+    {
+        return ThreadLocalRandom.current().nextInt( max );
     }
 
     private static class TestMonitor implements CypherCacheHitMonitor<Statement>
     {
-        int hits, misses, discards;
+        private final AtomicInteger hits = new AtomicInteger();
+        private final AtomicInteger misses = new AtomicInteger();
+        private final AtomicInteger discards = new AtomicInteger();
 
         @Override
-        public synchronized void cacheHit( Statement key )
+        public void cacheHit( Statement key )
         {
-            hits++;
+            hits.incrementAndGet();
         }
 
         @Override
-        public synchronized void cacheMiss( Statement key )
+        public void cacheMiss( Statement key )
         {
-            misses++;
+            misses.incrementAndGet();
         }
 
         @Override
-        public synchronized void cacheDiscard( Statement key )
+        public void cacheDiscard( Statement key )
         {
-            discards++;
+            discards.incrementAndGet();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "TestMonitor{hits=" + hits + ", misses=" + misses + ", discards=" + discards + "}";
         }
 
         public void reset()
         {
-            hits = misses = discards = 0;
+            hits.set( 0 );
+            misses.set( 0 );
+            discards.set( 0 );
         }
     }
 }
