@@ -496,7 +496,7 @@ public class BatchInserterImpl implements BatchInserter
         flushStrategy.forceFlush();
     }
 
-    private void repopulateAllIndexes() throws IOException, IndexCapacityExceededException
+    private void repopulateAllIndexes() throws IOException, IndexCapacityExceededException, IndexEntryConflictException
     {
         if ( !labelsTouched )
         {
@@ -569,6 +569,7 @@ public class BatchInserterImpl implements BatchInserter
 
         for ( IndexPopulator populator : populators )
         {
+            populator.verifyDeferredConstraints( storeView );
             populator.close( true );
         }
         labelUpdateVisitor.close();
@@ -1026,19 +1027,19 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public void shutdown()
     {
-        flushStrategy.forceFlush();
-
         if ( isShutdown )
         {
             throw new IllegalStateException( "Batch inserter already has shutdown" );
         }
         isShutdown = true;
 
+        flushStrategy.forceFlush();
+
         try
         {
             repopulateAllIndexes();
         }
-        catch ( IOException | IndexCapacityExceededException e )
+        catch ( IOException | IndexCapacityExceededException | IndexEntryConflictException e )
         {
             throw new RuntimeException( e );
         }

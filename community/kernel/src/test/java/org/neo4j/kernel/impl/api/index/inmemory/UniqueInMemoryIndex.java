@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.api.index.inmemory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -99,40 +99,37 @@ class UniqueInMemoryIndex extends InMemoryIndex
     }
 
     @Override
-    public void verifyDeferredConstraints( final PropertyAccessor accessor ) throws Exception
+    public void verifyDeferredConstraints( final PropertyAccessor accessor )
+            throws IndexEntryConflictException, IOException
     {
-        indexData.iterateAll( new InMemoryIndexImplementation.IndexEntryIterator()
+        try
         {
-            @Override
-            public void visitEntry( Object key, Set<Long> nodeIds ) throws Exception
+            indexData.iterateAll( new InMemoryIndexImplementation.IndexEntryIterator()
             {
-                List<Entry> entries = new ArrayList<>();
-                for (long nodeId : nodeIds )
+                @Override
+                public void visitEntry( Object key, Set<Long> nodeIds ) throws Exception
                 {
-                    Property property = accessor.getProperty( nodeId, propertyKeyId );
-                    Object value = property.value();
-                    for ( Entry current : entries )
+                    Map<Object,Long> entries = new HashMap<>();
+                    for ( long nodeId : nodeIds )
                     {
-                        if (current.property.valueEquals( value ))
+                        final Object value = accessor.getProperty( nodeId, propertyKeyId ).value();
+                        if ( entries.containsKey( value ) )
                         {
-                            throw new PreexistingIndexEntryConflictException( value, current.nodeId, nodeId );
+                            long existingNodeId = entries.get( value );
+                            throw new PreexistingIndexEntryConflictException( value, existingNodeId, nodeId );
                         }
+                        entries.put( value, nodeId );
                     }
-                    entries.add( new Entry( nodeId, property) );
                 }
-            }
-        } );
-    }
-
-    private static class Entry
-    {
-        long nodeId;
-        Property property;
-
-        private Entry( long nodeId, Property property )
+            } );
+        }
+        catch ( PreexistingIndexEntryConflictException e )
         {
-            this.nodeId = nodeId;
-            this.property = property;
+            throw e;
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
         }
     }
 }
