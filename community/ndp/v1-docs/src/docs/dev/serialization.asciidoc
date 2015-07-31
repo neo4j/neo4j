@@ -23,8 +23,7 @@ For details on the layout and meaning of specific messages, see <<ndp-messaging,
 |<<ndp-value-pathstruct,Path>>                  |The record of a directed walk through the graph, a sequence of zero or more segments*. A path with zero segments consists of a single node.
 |=======================
 
-NOTE: *A segment is the record of a single step traversal through a graph, encompassing a start node, a relationship
-traversed either forwards or backwards and an end node.
+NOTE: A segment is the record of a single step traversal through a graph, encompassing a start node, a relationship traversed either forwards or backwards and an end node.
 
 === Markers
 
@@ -46,7 +45,7 @@ The size itself is either an 8-bit, 16-bit or 32-bit big-endian unsigned integer
 
 The diagram below illustrates the general layout for a sized value, here with a 16-bit size:
 
-image:images/packstream-sized.png[]
+image:packstream-sized.png[]
 
 [[ndp-packstream-null]]
 === Null
@@ -115,7 +114,7 @@ These markers can be identified by a zero high-order bit or by a high-order nibb
 
 The available encodings are illustrated below and each shows a valid representation for the decimal value 42, with marker bytes in green:
 
-image:images/packstream-integers.png[]
+image:packstream-integers.png[]
 
 Note that while encoding small numbers in wider formats is supported, it is generally recommended to use the most compact representation possible.
 The following table shows the optimal representation for every possible integer:
@@ -179,14 +178,14 @@ The encoded data then immediately follows the marker.
 The example below shows how the string "Hello" would be represented:
 
 // TODO: Convert this to a code-segment that can be tested
-image:images/packstream-tinytext.png[]
+image:packstream-tinytext.png[]
 
 ==== Regular Text Strings
 For encoded text containing 16 bytes or more, the marker `0xD0`, `0xD1` or `0xD2` should be used, depending on scale.
 This marker is followed by the size and the UTF-8 encoded data as in the example below:
 
 // TODO: Convert this to a code-segment that can be tested
-image:images/packstream-text.png[]
+image:packstream-text.png[]
 
 ==== Examples
 

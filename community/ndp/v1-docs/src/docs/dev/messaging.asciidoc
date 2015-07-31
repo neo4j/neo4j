@@ -18,7 +18,7 @@ For example, `RECORD` messages are classed as detail messages and `SUCCESS` mess
 
 The diagrams below illustrates a basic exchange wherein the client sends a request message and receives a series of response messages.
 
-image:images/simple-exchange.png[]
+image:simple-exchange.png[]
 
 === Initialization
 
@@ -31,7 +31,7 @@ The `INITIALIZE` message message should be sent by the client as the first messa
 The client is not required to wait for a response before sending more messages.
 Sending multiple messages together like this is called pipelining:
 
-image:images/pipelining.png[]
+image:pipelining.png[]
 
 For performance reasons, it is recommended that clients use pipelining as much as possible.
 Through pipelining, multiple messages can be transmitted together in the same network package, significantly reducing latency and increasing throughput.
@@ -50,13 +50,13 @@ Until the server receives the `ACK_FAILURE` message, it will send an `IGNORED` m
 
 The diagram below illustrates a typical flow involving `ACK_FAILURE` messages:
 
-image:images/failure-ack.png[]
+image:failure-ack.png[]
 
 Here, the original failure is acknowledged immediately by the client, allowing the subsequent RUN to be actioned as expected.
 
 This second diagram shows a sequence where a pair of request messages are sent together:
 
-image:images/failure-optimistic.png[]
+image:failure-optimistic.png[]
 
 Here, the client optimistically sends a pair of messages. The first of these fails and the second is consequently `IGNORED`.
 Once the client acknowledges the failure, it is then able to resend a corrected RUN message.

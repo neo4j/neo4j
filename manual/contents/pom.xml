@@ -24,6 +24,7 @@
     <neo4j.version>${project.version}</neo4j.version>
     <attach-docs-phase>none</attach-docs-phase>
     <attach-test-jar-phase>none</attach-test-jar-phase>
+    <ndp-attribute></ndp-attribute>
     <additional-document-attributes>${ndp-attribute}</additional-document-attributes>
   </properties>
 

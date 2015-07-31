@@ -146,13 +146,13 @@
             </goals>
             <configuration>
               <backend>html</backend>
-              <outputDirectory>${basedir}/target/protocol-manual/html</outputDirectory>
+              <outputDirectory>${project.build.directory}/protocol-manual/html</outputDirectory>
             </configuration>
           </execution>
         </executions>
         <configuration>
           <sourceDirectory>${basedir}/src/docs/dev</sourceDirectory>
-          <imagesDir>.</imagesDir>
+          <sourceDocumentName>index.asciidoc</sourceDocumentName>
           <attributes>
             <pagenums/>
             <toc/>
