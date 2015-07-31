@@ -54,8 +54,6 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
      * <p/>
      * This will start a background job in the database that will create and populate the index.
      * You can check the status of your index by listing all the indexes for the relevant label.
-     * The created index will show up, but have a state of +POPULATING+ until the index is ready,
-     * where it is marked as +ONLINE+.
      */
     @Documented
     @Test
