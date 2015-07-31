@@ -195,8 +195,9 @@ final class MuninnPagedFile implements PagedFile
         {
             for ( Object[] chunk : translationTable )
             {
-                // TODO only flush pages that are actually dirty, except we can tolerate flushing a few clean pages if
-                // TODO it means we can use larger vectors
+                // TODO Look into if we can tolerate flushing a few clean pages if it means we can use larger vectors.
+                // TODO The clean pages in question must still be loaded, though. Otherwise we'll end up writing
+                // TODO garbage to the file.
                 int pagesGrabbed = 0;
                 for ( Object element : chunk )
                 {
@@ -241,17 +242,24 @@ final class MuninnPagedFile implements PagedFile
         FlushEvent flush = null;
         try
         {
+            // Write the pages vector
             MuninnPage firstPage = pages[0];
             long startFilePageId = firstPage.getFilePageId();
             flush = flushOpportunity.beginFlush( startFilePageId, firstPage.getCachePageId(), swapper );
             long bytesWritten = swapper.write( startFilePageId, pages, 0, pagesGrabbed );
+
+            // Update the flush event
             flush.addBytesWritten( bytesWritten );
             flush.addPagesFlushed( pagesGrabbed );
             flush.done();
+
+            // Mark the flushed pages as clean
             for ( int j = 0; j < pagesGrabbed; j++ )
             {
                 pages[j].markAsClean();
             }
+
+            // There are now 0 'grabbed' pages
             return 0;
         }
         catch ( IOException ioe )
@@ -264,6 +272,7 @@ final class MuninnPagedFile implements PagedFile
         }
         finally
         {
+            // Always unlock all the pages in the vector
             for ( int j = 0; j < pagesGrabbed; j++ )
             {
                 pages[j].unlockRead( stamps[j] );
