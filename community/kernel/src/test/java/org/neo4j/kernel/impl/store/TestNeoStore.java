@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,12 +33,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
@@ -84,16 +84,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestNeoStore
 {
-    private File storeDir;
-    private PropertyStore pStore;
-    private RelationshipTypeTokenStore rtStore;
-    private NeoStoreDataSource ds;
-
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
@@ -104,6 +98,10 @@ public class TestNeoStore
     public NeoStoreDataSourceRule dsRule = new NeoStoreDataSourceRule();
 
     private PageCache pageCache;
+    private File storeDir;
+    private PropertyStore pStore;
+    private RelationshipTypeTokenStore rtStore;
+    private NeoStoreDataSource ds;
 
     @Before
     public void setUpNeoStore() throws Exception

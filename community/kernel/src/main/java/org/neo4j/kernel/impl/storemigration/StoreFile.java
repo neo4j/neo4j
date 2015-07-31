@@ -21,14 +21,13 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.function.Predicate;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.AbstractStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
@@ -48,12 +47,13 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 
-import static org.neo4j.helpers.Exceptions.withMessage;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
 import static org.neo4j.kernel.impl.store.NeoStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.NeoStore.setRecord;
 import static org.neo4j.kernel.impl.store.NeoStore.versionStringToLong;
+import static org.neo4j.kernel.impl.store.StoreVersionTrailerUtil.getTrailerOffset;
+import static org.neo4j.kernel.impl.store.StoreVersionTrailerUtil.writeTrailer;
 
 public enum StoreFile
 {
@@ -259,18 +259,18 @@ public enum StoreFile
         }
     }
 
-    public static void ensureStoreVersion( FileSystemAbstraction fs, PageCache pageCache,
-                                           File storeDir, Iterable<StoreFile> files ) throws IOException
+    public static void ensureStoreVersion( PageCache pageCache, File storeDir, Iterable<StoreFile> files )
+            throws IOException
     {
-        ensureStoreVersion( fs, pageCache, storeDir, files, ALL_STORES_VERSION );
+        ensureStoreVersion( pageCache, storeDir, files, ALL_STORES_VERSION );
     }
 
-    public static void ensureStoreVersion( FileSystemAbstraction fs, PageCache pageCache,
-                                           File storeDir, Iterable<StoreFile> files, String version ) throws IOException
+    public static void ensureStoreVersion( PageCache pageCache, File storeDir, Iterable<StoreFile> files,
+            String version ) throws IOException
     {
         for ( StoreFile file : files )
         {
-            setStoreVersionTrailer( fs, new File( storeDir, file.storeFileName() ), file.isOptional(),
+            setStoreVersionTrailer( pageCache, new File( storeDir, file.storeFileName() ), file.isOptional(),
                     buildTypeDescriptorAndVersion( file.typeDescriptor(), version ) );
         }
         setRecord( pageCache, new File( storeDir, DEFAULT_NAME ), Position.STORE_VERSION,
@@ -282,12 +282,11 @@ public enum StoreFile
         return false;
     }
 
-    private static void setStoreVersionTrailer( FileSystemAbstraction fs, File targetStoreFileName, boolean optional,
-                                                String versionTrailer ) throws IOException
+    private static void setStoreVersionTrailer( PageCache pageCache, File targetStoreFileName, boolean optional,
+            String versionTrailer ) throws IOException
     {
         byte[] trailer = UTF8.encode( versionTrailer );
-        long fileSize = 0;
-        if ( !fs.fileExists( targetStoreFileName ) )
+        if ( !storeExists( pageCache, targetStoreFileName ) )
         {
             if ( optional )
             {
@@ -298,16 +297,26 @@ public enum StoreFile
                 throw new IllegalStateException( "Required file missing: " + targetStoreFileName );
             }
         }
-        try ( StoreChannel fileChannel = fs.open( targetStoreFileName, "rw" ) )
+        try ( PagedFile pagedFile = pageCache.map( targetStoreFileName, pageCache.pageSize() ) )
         {
-            fileSize = fileChannel.size();
-            fileChannel.position( fileChannel.size() - trailer.length );
-            fileChannel.write( ByteBuffer.wrap( trailer ) );
+            long trailerOffset =
+                    getTrailerOffset( pagedFile, versionTrailer.split( " " )[0] );
+            if ( trailerOffset != -1 )
+            {
+                writeTrailer( pagedFile, trailer, trailerOffset );
+            }
         }
-        catch ( IllegalArgumentException e )
+    }
+
+    private static boolean storeExists( PageCache pageCache, File targetStoreFileName )
+    {
+        try ( PagedFile file = pageCache.map( targetStoreFileName, pageCache.pageSize() ) )
         {
-            throw withMessage( e, e.getMessage() + " | " + "size:" + fileSize + ", trailer:" + trailer.length +
-                    " for " + targetStoreFileName );
         }
+        catch ( IOException e )
+        {
+            return false;
+        }
+        return true;
     }
 }

@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
+import org.neo4j.kernel.impl.store.StoreVersionTrailerUtil;
 import org.neo4j.test.Unzip;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -197,7 +198,7 @@ public class MigrationTestUtils
             try ( PagedFile pagedFile = pageCache
                     .map( new File( workingDirectory, storeFile.storeFileName() ), pageCache.pageSize() ) )
             {
-                foundVersion = StoreVersionCheck.readVersion( pagedFile, version );
+                foundVersion = StoreVersionTrailerUtil.readTrailer( pagedFile, version );
             }
             if ( !version.equals( foundVersion ) )
             {

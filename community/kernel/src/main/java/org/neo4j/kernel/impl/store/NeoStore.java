@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
@@ -377,23 +376,14 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         long previousValue = FIELD_NOT_INITIALIZED;
         try ( PagedFile pagedFile = pageCache.map( neoStore, getPageSize( pageCache ) ) )
         {
-            if ( pagedFile.getLastPageId() == -1 )
-            {
-                return previousValue;
-            }
+            String expectedTrailer = buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
+
+            long trailerOffset = StoreVersionTrailerUtil.getTrailerOffset( pagedFile, expectedTrailer );
+            int recordOffset = RECORD_SIZE * position.id;
             try ( PageCursor pageCursor = pagedFile.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
             {
                 if ( pageCursor.next() )
                 {
-                    byte[] trailerData = UTF8.encode( buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ) );
-                    byte[] allData = new byte[pagedFile.pageSize()];
-                    do
-                    {
-                        pageCursor.getBytes( allData );
-                    }
-                    while ( pageCursor.shouldRetry() );
-                    int trailerOffset = StoreVersionCheck.findTrailerOffset( allData, trailerData );
-                    int recordOffset = RECORD_SIZE * position.id;
                     if ( recordOffset < trailerOffset )
                     {
                         // We're overwriting a record, get the previous value
@@ -419,19 +409,14 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
                         pageCursor.putLong( value );
                     }
                     while ( pageCursor.shouldRetry() );
-
-                    // Append the trailer if we cut it off previously
-                    int newTrailerOffset = recordOffset + RECORD_SIZE;
-                    if ( newTrailerOffset > trailerOffset )
-                    {
-                        do
-                        {
-                            pageCursor.setOffset( newTrailerOffset );
-                            pageCursor.putBytes( trailerData );
-                        }
-                        while ( pageCursor.shouldRetry() );
-                    }
                 }
+            }
+
+            // Append the trailer if needed
+            int newTrailerOffset = recordOffset + RECORD_SIZE;
+            if ( newTrailerOffset > trailerOffset )
+            {
+                StoreVersionTrailerUtil.writeTrailer( pagedFile, UTF8.encode( expectedTrailer ), newTrailerOffset );
             }
         }
         return previousValue;
@@ -643,7 +628,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     private long getRecordValue( PageCursor cursor, Position position )
     {
-        int offset = position.id * getEffectiveRecordSize();
+        int offset = position.id * getRecordSize();
         cursor.setOffset( offset );
         if ( cursor.getByte() == Record.IN_USE.byteValue() )
         {
@@ -654,7 +639,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     private void incrementVersion( PageCursor cursor ) throws IOException
     {
-        int offset = Position.LOG_VERSION.id * getEffectiveRecordSize();
+        int offset = Position.LOG_VERSION.id * getRecordSize();
         long value;
         do
         {

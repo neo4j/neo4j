@@ -441,7 +441,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, storeFiles,
                 true, // OK if it's not there (1.9)
                 false, StoreFileType.values() );
-        StoreFile.ensureStoreVersion( fileSystem, pageCache, migrationDir, storeFiles );
+        StoreFile.ensureStoreVersion( pageCache, migrationDir, storeFiles );
     }
 
     private AdditionalInitialIds readAdditionalIds( File storeDir, final long lastTxId, final long lastTxChecksum,
@@ -842,7 +842,7 @@ public class StoreMigrator implements StoreMigrationParticipant
     private void ensureStoreVersions( File dir ) throws IOException
     {
         final Iterable<StoreFile> versionedStores = iterable( allExcept() );
-        StoreFile.ensureStoreVersion( fileSystem, pageCache, dir, versionedStores );
+        StoreFile.ensureStoreVersion( pageCache, dir, versionedStores );
     }
 
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( File migrationDir, File storeDir ) throws IOException

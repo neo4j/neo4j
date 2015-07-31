@@ -52,6 +52,11 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public class StoreMigratorTest
 {
+    @Rule
+    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+    public final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
 
     @Parameterized.Parameter(0)
@@ -99,10 +104,4 @@ public class StoreMigratorTest
                 logService.getInternalLogProvider(), new Monitors() );
         storeFactory.newNeoStore( false ).close();
     }
-
-    @Rule
-    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
-    public final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
 }

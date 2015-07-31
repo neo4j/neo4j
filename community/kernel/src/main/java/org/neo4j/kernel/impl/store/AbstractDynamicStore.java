@@ -30,7 +30,6 @@ import java.util.List;
 
 import org.neo4j.cursor.GenericCursor;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -230,12 +229,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     }
 
     @Override
-    protected int getEffectiveRecordSize()
-    {
-        return getBlockSize();
-    }
-
-    @Override
     public int getRecordSize()
     {
         return getBlockSize();
@@ -256,23 +249,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     public int getNumberOfReservedLowIds()
     {
         return 1;
-    }
-
-    @Override
-    protected void verifyFileSizeAndTruncate() throws IOException
-    {
-        int expectedVersionLength = UTF8.encode( buildTypeDescriptorAndVersion( getTypeDescriptor() ) ).length;
-        long fileSize = getFileChannel().size();
-        if ( (fileSize - expectedVersionLength) % blockSize != 0 )
-        {
-            setStoreNotOk( new IllegalStateException(
-                    "Misaligned file size " + fileSize + " for " + this + ", expected version length " +
-                            expectedVersionLength ) );
-        }
-        if ( getStoreOk() )
-        {
-            getFileChannel().truncate( fileSize - expectedVersionLength );
-        }
     }
 
     @Override
