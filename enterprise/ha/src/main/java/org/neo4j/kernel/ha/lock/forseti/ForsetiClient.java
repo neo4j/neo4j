@@ -19,13 +19,16 @@
  */
 package org.neo4j.kernel.ha.lock.forseti;
 
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.pool.LinkedQueuePool;
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
+import org.neo4j.function.Function;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -46,6 +49,17 @@ public class ForsetiClient implements Locks.Client
 {
     /** Id for this client */
     private final int myId;
+
+    /**
+     * Alias for this client, a user-friendly name used in error messages and lock descriptions. Ideally the user can use the description to tell which query is
+     * problematic.
+     */
+    private String description;
+
+    /**
+     * For helpful errors, this resolves a user-friendly description for a client, given a client id.
+     */
+    private final Function<Integer,String> clientDescription;
 
     /** resourceType -> lock map. These are the global lock maps, shared across all clients. */
     private final ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps;
@@ -79,9 +93,12 @@ public class ForsetiClient implements Locks.Client
     public ForsetiClient( int id,
                           ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps,
                           WaitStrategy<AcquireLockTimeoutException>[] waitStrategies,
-                          LinkedQueuePool<ForsetiClient> clientPool )
+                          LinkedQueuePool<ForsetiClient> clientPool,
+                          Function<Integer, String> clientDescription )
     {
         this.myId                = id;
+        this.description = String.format("Client[%d]", id);
+        this.clientDescription = clientDescription;
         this.lockMaps            = lockMaps;
         this.waitStrategies      = waitStrategies;
         this.clientPool          = clientPool;
@@ -501,6 +518,7 @@ public class ForsetiClient implements Locks.Client
     public void close()
     {
         releaseAll();
+        description = "N/A";
         clientPool.release( this );
     }
 
@@ -555,7 +573,7 @@ public class ForsetiClient implements Locks.Client
     @Override
     public String toString()
     {
-        return String.format( "ForsetiClient[%d]", myId );
+        return "Tx[" + myId + "]";
     }
 
     /** Release a lock from the global pool. */
@@ -579,8 +597,7 @@ public class ForsetiClient implements Locks.Client
         int lockCount = localLocks.remove( resourceId );
         if(lockCount == -1)
         {
-            throw new IllegalStateException( this + " cannot release lock that it does not hold: " +
-                    type + "[" + resourceId + "]." );
+            throw new IllegalStateException( this + " cannot release lock that it does not hold: " + type + "[" + resourceId + "]." );
         }
 
         if(lockCount > 1)
@@ -683,27 +700,64 @@ public class ForsetiClient implements Locks.Client
         lock.copyHolderWaitListsInto( waitList );
         if(lock.anyHolderIsWaitingFor( myId ) && lock.holderWaitListSize() >= waitListSize())
         {
-            waitList.clear();
-            throw new DeadlockDetectedException( this + " can't acquire " + lock + " on " + type + "("+resourceId+"), because holders of that lock " +
-                    "are waiting for " + this + ".\n Wait list:" + lock.describeWaitList() );
+            Set<Integer> involvedParties = new TreeSet<>(); // treeset to keep the clients sorted by id, just for readability purposes
+            String waitList = lock.describeWaitList( involvedParties );
+            String legend = ForsetiLockManager.legendForClients( involvedParties, clientDescription );
+            String desc = format("%s can't lock %s(%d), because that resource is locked by others in " +
+                                 "a way that would cause a deadlock if we waited for them.\nThe lock currently is %s, " +
+                                 "and holders of that lock are waiting in the following way: %s%n%nTransactions:%s",
+                                 this, type, resourceId, lock, waitList, legend);
+
+            this.waitList.clear();
+            throw new DeadlockDetectedException( desc );
         }
     }
 
-    public String describeWaitList()
+    /**
+     * Describe who this client is waiting for in a human-comprehensible way.
+     * @param involvedParties All clients listed in the description will be added to this set, allowing the callee to print a legend with
+     *                        (client names -> descriptions) at the end of its output
+     */
+    public String describeWaitList( Set<Integer> involvedParties )
     {
-        StringBuilder sb = new StringBuilder( format( "%nClient[%d] waits for [", id() ) );
-        PrimitiveIntIterator iter = waitList.iterator();
-        for ( int i = 0; iter.hasNext(); i++ )
+        if(waitList.size() <= 1)
         {
-            sb.append( i > 0 ? "," : "" ).append( iter.next() );
+            return format( "%n<Tx[%d], running>", myId );
         }
-        sb.append( "]" );
+
+        StringBuilder sb = new StringBuilder( format( "%n<Tx[%d], waiting for ", myId ) );
+        PrimitiveIntIterator iter = waitList.iterator();
+        boolean first = true;
+        while( iter.hasNext() )
+        {
+            int clientId = iter.next();
+            if( clientId != myId )
+            {
+                involvedParties.add( clientId );
+                sb.append( first ? "" : "," ).append( "Tx[" + clientId + "]" );
+                first = false;
+            }
+        }
+        sb.append( ">" );
         return sb.toString();
     }
 
     public int id()
     {
         return myId;
+    }
+
+    @Override
+    public Locks.Client description( String desc )
+    {
+        this.description = desc;
+        return this;
+    }
+
+    @Override
+    public String description()
+    {
+        return description;
     }
 
     // Visitors used for bulk ops on the lock maps (such as releasing all locks)

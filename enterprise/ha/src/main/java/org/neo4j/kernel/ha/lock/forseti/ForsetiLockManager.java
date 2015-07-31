@@ -21,18 +21,22 @@ package org.neo4j.kernel.ha.lock.forseti;
 
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.collection.pool.LinkedQueuePool;
-import org.neo4j.collection.pool.Pool;
+import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static java.lang.String.format;
 
 /**
  * <h1>Forseti, the Nordic god of justice</h1>
@@ -96,6 +100,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 public class ForsetiLockManager extends LifecycleAdapter implements Locks
 {
+
     /** This is Forsetis internal lock API, which it uses to do deadlock detection. */
     interface Lock
     {
@@ -103,8 +108,11 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
         int holderWaitListSize();
         boolean anyHolderIsWaitingFor( int client );
 
-        /** For introspection and error messages */
-        String describeWaitList();
+        /**
+         * For introspection and error messages
+         * @param involvedParties Clients involved in the waiting will be appended to this set, to allow the callee to construct a legend with client descriptions
+         */
+        String describeWaitList( Set<Integer> involvedParties );
     }
 
     /** Pointers to lock maps, one array per resource type. */
@@ -114,7 +122,7 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
     private final ResourceType[] resourceTypes;
 
     /** Pool forseti clients. */
-    private final Pool<ForsetiClient> clientPool;
+    private final ForsetiClientFlyweightPool clientPool;
 
     @SuppressWarnings( "unchecked" )
     public ForsetiLockManager( ResourceType... resourceTypes )
@@ -159,7 +167,10 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
                 for ( Map.Entry<Long, Lock> entry : lockMaps[i].entrySet() )
                 {
                     Lock lock = entry.getValue();
-                    out.visit( type, entry.getKey(), lock.describeWaitList(), 0 );
+                    Set<Integer> involvedParties = new TreeSet<>();
+                    String waitList = lock.describeWaitList( involvedParties );
+                    String legend = legendForClients( involvedParties, clientPool.clientDescription );
+                    out.visit( type, entry.getKey(), format("%s: %s%nTransactions:%s", lock.toString(), waitList, legend), 0 );
                 }
             }
         }
@@ -183,8 +194,18 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
         /** Re-use ids, forseti uses these in arrays, so we want to keep them low and not loose them. */
         // TODO we could use a synchronised SimpleBitSet instead, since we know that we only care about reusing a very limited set of integers.
         private final Queue<Integer> unusedIds = new ConcurrentLinkedQueue<>();
+        private final ConcurrentMap<Integer, ForsetiClient> clientsById = new ConcurrentHashMap<>();
         private final ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps;
         private final WaitStrategy<AcquireLockTimeoutException>[] waitStrategies;
+        private final Function<Integer,String> clientDescription = new Function<Integer,String>()
+        {
+            @Override
+            public String apply( Integer integer ) throws RuntimeException
+            {
+                ForsetiClient client = clientsById.get( integer );
+                return client != null ? client.description() : "N/A";
+            }
+        };
 
         public ForsetiClientFlyweightPool(
                 ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps,
@@ -203,18 +224,32 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
             {
                 id = clientIds.getAndIncrement();
             }
-            return new ForsetiClient(id, lockMaps, waitStrategies, this );
+            ForsetiClient client = new ForsetiClient( id, lockMaps, waitStrategies, this, clientDescription );
+            clientsById.put( id, client );
+            return client;
         }
 
         @Override
         protected void dispose( ForsetiClient resource )
         {
             super.dispose( resource );
+            clientsById.remove( resource.id() );
             if(resource.id() < 1024)
             {
                 // Re-use all ids < 1024
                 unusedIds.offer( resource.id() );
             }
         }
+    }
+
+    /** For error messages etc, build a legend of client id -> description, to allow users to tell what each of the different clients were up to */
+    public static String legendForClients( Set<Integer> clientIds, Function<Integer, String> clientDescription )
+    {
+        StringBuilder out = new StringBuilder();
+        for ( Integer clientId : clientIds )
+        {
+            out.append( format("%n  Tx[%d]: %s", clientId, clientDescription.apply( clientId ) ) );
+        }
+        return out.toString();
     }
 }

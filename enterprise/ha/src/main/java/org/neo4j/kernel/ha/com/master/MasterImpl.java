@@ -33,7 +33,6 @@ import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.function.Consumer;
 import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.Factory;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -144,11 +143,12 @@ public class MasterImpl extends LifecycleAdapter implements Master
     @Override
     public void start() throws Throwable
     {
-        this.slaveLockSessions = new TimedRepository<>( new Factory<Locks.Client>()
+        this.slaveLockSessions = new TimedRepository<>( new TimedRepository.ValueFactory<RequestContext, Locks.Client>()
             {
-                @Override public Locks.Client newInstance()
+                @Override public Locks.Client newInstance(RequestContext ctx)
                 {
-                    return spi.acquireClient();
+                    return spi.acquireClient().description(
+                            String.format("Locks held on behalf of slave `%d`, slave transaction id `%d`", ctx.machineId(), ctx.getEventIdentifier() ) );
                 }
             }, new Consumer<Locks.Client>()
             {
