@@ -3797,7 +3797,7 @@ public abstract class PageCacheTest<T extends PageCache>
                 return new DelegatingPageSwapper( delegate )
                 {
                     @Override
-                    public int write( long filePageId, Page page ) throws IOException
+                    public long write( long filePageId, Page page ) throws IOException
                     {
                         try
                         {

@@ -35,13 +35,13 @@ public class DummyPageSwapper implements PageSwapper
     }
 
     @Override
-    public int read( long filePageId, Page page ) throws IOException
+    public long read( long filePageId, Page page ) throws IOException
     {
         return 0;
     }
 
     @Override
-    public int write( long filePageId, Page page ) throws IOException
+    public long write( long filePageId, Page page ) throws IOException
     {
         return 0;
     }
@@ -79,13 +79,13 @@ public class DummyPageSwapper implements PageSwapper
     }
 
     @Override
-    public int read( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException
+    public long read( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException
     {
         return 0;
     }
 
     @Override
-    public int write( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException
+    public long write( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException
     {
         return 0;
     }

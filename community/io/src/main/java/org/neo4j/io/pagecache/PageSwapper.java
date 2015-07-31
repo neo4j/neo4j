@@ -43,8 +43,7 @@ public interface PageSwapper
      * interrupted. If this happens, then the implementation must reopen the
      * channel and the operation must be retried.
      */
-    // TODO all these read and write methods should return long instead of int
-    int read( long filePageId, Page page ) throws IOException;
+    long read( long filePageId, Page page ) throws IOException;
 
     /**
      * Read pages from the file into the given pages, starting from the given startFilePageId.
@@ -62,7 +61,7 @@ public interface PageSwapper
      * interrupted. If this happens, then the implementation must reopen the
      * channel and the operation must be retried.
      */
-    int read( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException;
+    long read( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException;
 
     /**
      * Write the contents of the given page, to the concrete file on the file
@@ -75,7 +74,7 @@ public interface PageSwapper
      * interrupted. If this happens, then implementation must reopen the
      * channel and the operation must be retried.
      */
-    int write( long filePageId, Page page ) throws IOException;
+    long write( long filePageId, Page page ) throws IOException;
 
     /**
      * Write the contents of the given pages, to the concrete file on the file system,
@@ -93,7 +92,7 @@ public interface PageSwapper
      * interrupted. If this happens, then implementation must reopen the
      * channel and the operation must be retried.
      */
-    int write( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException;
+    long write( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException;
 
     /**
      * Notification that a page has been evicted, used to clean up state in structures

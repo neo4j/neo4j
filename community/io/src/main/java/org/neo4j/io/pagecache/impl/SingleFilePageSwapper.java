@@ -285,7 +285,7 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public int read( long filePageId, Page page ) throws IOException
+    public long read( long filePageId, Page page ) throws IOException
     {
         long fileOffset = pageIdToPosition( filePageId );
         try
@@ -307,7 +307,7 @@ public class SingleFilePageSwapper implements PageSwapper
             tryReopen( filePageId, e );
             boolean interrupted = Thread.interrupted();
             // Recurse because this is hopefully a very rare occurrence.
-            int bytesRead = read( filePageId, page );
+            long bytesRead = read( filePageId, page );
             if ( interrupted )
             {
                 Thread.currentThread().interrupt();
@@ -318,7 +318,7 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public int read( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException
+    public long read( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException
     {
         if ( positionLockGetter != null && hasPositionLock )
         {
@@ -339,13 +339,13 @@ public class SingleFilePageSwapper implements PageSwapper
         return readPositionedVectoredFallback( startFilePageId, pages, arrayOffset, length );
     }
 
-    private int readPositionedVectoredToFileChannel(
+    private long readPositionedVectoredToFileChannel(
             long startFilePageId, Page[] pages, int arrayOffset, int length ) throws Exception
     {
         long fileOffset = pageIdToPosition( startFilePageId );
         FileChannel channel = unwrappedChannel( startFilePageId );
         ByteBuffer[] srcs = convertToByteBuffers( pages, arrayOffset, length );
-        int bytesRead = lockPositionReadVector( startFilePageId, channel, fileOffset, srcs );
+        long bytesRead = lockPositionReadVector( startFilePageId, channel, fileOffset, srcs );
         if ( bytesRead == -1 )
         {
             for ( Page page : pages )
@@ -356,8 +356,8 @@ public class SingleFilePageSwapper implements PageSwapper
         }
         else if ( bytesRead < filePageSize * length )
         {
-            int pagesRead = bytesRead / filePageSize;
-            int bytesReadIntoLastReadPage = bytesRead % filePageSize;
+            int pagesRead = (int) (bytesRead / filePageSize);
+            int bytesReadIntoLastReadPage = (int) (bytesRead % filePageSize);
             int pagesNeedingZeroing = length - pagesRead;
             for ( int i = 0; i < pagesNeedingZeroing; i++ )
             {
@@ -375,7 +375,7 @@ public class SingleFilePageSwapper implements PageSwapper
         return bytesRead;
     }
 
-    private int lockPositionReadVector(
+    private long lockPositionReadVector(
             long filePageId, FileChannel channel, long fileOffset, ByteBuffer[] srcs ) throws IOException
     {
         try
@@ -383,7 +383,7 @@ public class SingleFilePageSwapper implements PageSwapper
             synchronized ( positionLock( channel ) )
             {
                 channel.position( fileOffset );
-                return (int) channel.read( srcs );
+                return channel.read( srcs );
             }
         }
         catch ( ClosedChannelException e )
@@ -395,7 +395,7 @@ public class SingleFilePageSwapper implements PageSwapper
             boolean interrupted = Thread.interrupted();
             // Recurse because this is hopefully a very rare occurrence.
             channel = unwrappedChannel( filePageId );
-            int bytesWritten = lockPositionReadVector( filePageId, channel, fileOffset, srcs );
+            long bytesWritten = lockPositionReadVector( filePageId, channel, fileOffset, srcs );
             if ( interrupted )
             {
                 Thread.currentThread().interrupt();
@@ -416,7 +416,7 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public int write( long filePageId, Page page ) throws IOException
+    public long write( long filePageId, Page page ) throws IOException
     {
         long fileOffset = pageIdToPosition( filePageId );
         increaseFileSizeTo( fileOffset + filePageSize );
@@ -433,7 +433,7 @@ public class SingleFilePageSwapper implements PageSwapper
             tryReopen( filePageId, e );
             boolean interrupted = Thread.interrupted();
             // Recurse because this is hopefully a very rare occurrence.
-            int bytesWritten = write( filePageId, page );
+            long bytesWritten = write( filePageId, page );
             if ( interrupted )
             {
                 Thread.currentThread().interrupt();
@@ -443,7 +443,7 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public int write( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException
+    public long write( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException
     {
         if ( positionLockGetter != null && hasPositionLock )
         {
@@ -464,7 +464,7 @@ public class SingleFilePageSwapper implements PageSwapper
         return writePositionVectoredFallback( startFilePageId, pages, arrayOffset, length );
     }
 
-    private int writePositionedVectoredToFileChannel(
+    private long writePositionedVectoredToFileChannel(
             long startFilePageId, Page[] pages, int arrayOffset, int length ) throws Exception
     {
         long fileOffset = pageIdToPosition( startFilePageId );
@@ -476,13 +476,13 @@ public class SingleFilePageSwapper implements PageSwapper
 
     private ByteBuffer[] convertToByteBuffers( Page[] pages, int arrayOffset, int length ) throws Exception
     {
-        ByteBuffer[] srcs = new ByteBuffer[length];
+        ByteBuffer[] buffers = new ByteBuffer[length];
         for ( int i = 0; i < length; i++ )
         {
             Page page = pages[arrayOffset + i];
-            srcs[i] = UnsafeUtil.newDirectByteBuffer( page.address(), filePageSize );
+            buffers[i] = UnsafeUtil.newDirectByteBuffer( page.address(), filePageSize );
         }
-        return srcs;
+        return buffers;
     }
 
     private FileChannel unwrappedChannel( long startFilePageId )
@@ -491,7 +491,7 @@ public class SingleFilePageSwapper implements PageSwapper
         return StoreFileChannel.unwrap( storeChannel );
     }
 
-    private int lockPositionWriteVector(
+    private long lockPositionWriteVector(
             long filePageId, FileChannel channel, long fileOffset, ByteBuffer[] srcs ) throws IOException
     {
         try
@@ -499,7 +499,7 @@ public class SingleFilePageSwapper implements PageSwapper
             synchronized ( positionLock( channel ) )
             {
                 channel.position( fileOffset );
-                return (int) channel.write( srcs );
+                return channel.write( srcs );
             }
         }
         catch ( ClosedChannelException e )
@@ -511,7 +511,7 @@ public class SingleFilePageSwapper implements PageSwapper
             boolean interrupted = Thread.interrupted();
             // Recurse because this is hopefully a very rare occurrence.
             channel = unwrappedChannel( filePageId );
-            int bytesWritten = lockPositionWriteVector( filePageId, channel, fileOffset, srcs );
+            long bytesWritten = lockPositionWriteVector( filePageId, channel, fileOffset, srcs );
             if ( interrupted )
             {
                 Thread.currentThread().interrupt();

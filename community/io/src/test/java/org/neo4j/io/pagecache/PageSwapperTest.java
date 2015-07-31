@@ -121,17 +121,22 @@ public abstract class PageSwapperTest
         PageSwapperFactory swapperFactory = swapperFactory();
         PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, true );
 
-        assertThat( swapper.write( 0, page ), is( page.size() ) );
+        assertThat( swapper.write( 0, page ), is( sizeOf( page ) ) );
                 page.putInt( 0, 0 );
         Thread.currentThread().interrupt();
 
-        assertThat( swapper.read( 0, page ), is( page.size() ) );
+        assertThat( swapper.read( 0, page ), is( sizeOf( page ) ) );
         assertTrue( Thread.currentThread().isInterrupted() );
         assertThat( page.getInt( 0 ), is( 1 ) );
 
-        assertThat( swapper.read( 0, page ), is( page.size() ) );
+        assertThat( swapper.read( 0, page ), is( sizeOf( page ) ) );
         assertTrue( Thread.currentThread().isInterrupted() );
         assertThat( page.getInt( 0 ), is( 1 ) );
+    }
+
+    private long sizeOf( ByteBufferPage page )
+    {
+        return page.size();
     }
 
     @Test
@@ -144,15 +149,15 @@ public abstract class PageSwapperTest
         PageSwapperFactory swapperFactory = swapperFactory();
         PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, true );
 
-        assertThat( swapper.write( 0, page ), is( page.size() ) );
+        assertThat( swapper.write( 0, page ), is( sizeOf( page ) ) );
                 page.putInt( 0, 0 );
         Thread.currentThread().interrupt();
 
-        assertThat( swapper.read( 0, new Page[]{page}, 0, 1 ), is( page.size() ) );
+        assertThat( swapper.read( 0, new Page[]{page}, 0, 1 ), is( sizeOf( page ) ) );
         assertTrue( Thread.currentThread().isInterrupted() );
         assertThat( page.getInt( 0 ), is( 1 ) );
 
-        assertThat( swapper.read( 0, new Page[] {page}, 0, 1 ), is( page.size() ) );
+        assertThat( swapper.read( 0, new Page[] {page}, 0, 1 ), is( sizeOf( page ) ) );
         assertTrue( Thread.currentThread().isInterrupted() );
         assertThat( page.getInt( 0 ), is( 1 ) );
     }
@@ -169,18 +174,18 @@ public abstract class PageSwapperTest
 
         Thread.currentThread().interrupt();
 
-        assertThat( swapper.write( 0, page ), is( page.size() ) );
+        assertThat( swapper.write( 0, page ), is( sizeOf( page ) ) );
         assertTrue( Thread.currentThread().isInterrupted() );
 
         page.putInt( 0, 0 );
-        assertThat( swapper.read( 0, page ), is( page.size() ) );
+        assertThat( swapper.read( 0, page ), is( sizeOf( page ) ) );
         assertThat( page.getInt( 0 ), is( 1 ) );
 
-        assertThat( swapper.write( 0, page ), is( page.size() ) );
+        assertThat( swapper.write( 0, page ), is( sizeOf( page ) ) );
         assertTrue( Thread.currentThread().isInterrupted() );
 
         page.putInt( 0, 0 );
-        assertThat( swapper.read( 0, page ), is( page.size() ) );
+        assertThat( swapper.read( 0, page ), is( sizeOf( page ) ) );
         assertThat( page.getInt( 0 ), is( 1 ) );
     }
 
@@ -196,18 +201,18 @@ public abstract class PageSwapperTest
 
         Thread.currentThread().interrupt();
 
-        assertThat( swapper.write( 0, new Page[] {page}, 0, 1 ), is( page.size() ) );
+        assertThat( swapper.write( 0, new Page[] {page}, 0, 1 ), is( sizeOf( page ) ) );
         assertTrue( Thread.currentThread().isInterrupted() );
 
         page.putInt( 0, 0 );
-        assertThat( swapper.read( 0, page ), is( page.size() ) );
+        assertThat( swapper.read( 0, page ), is( sizeOf( page ) ) );
         assertThat( page.getInt( 0 ), is( 1 ) );
 
-        assertThat( swapper.write( 0, new Page[] {page}, 0, 1 ), is( page.size() ) );
+        assertThat( swapper.write( 0, new Page[] {page}, 0, 1 ), is( sizeOf( page ) ) );
         assertTrue( Thread.currentThread().isInterrupted() );
 
         page.putInt( 0, 0 );
-        assertThat( swapper.read( 0, page ), is( page.size() ) );
+        assertThat( swapper.read( 0, page ), is( sizeOf( page ) ) );
         assertThat( page.getInt( 0 ), is( 1 ) );
     }
 
@@ -623,19 +628,19 @@ public abstract class PageSwapperTest
         swapper.read( 0, result );
         assertThat( result.getInt( 0 ), is( 0 ) );
         result.putInt( 0, 0 );
-        assertThat( swapper.read( 1, result ), is( 4 ) );
+        assertThat( swapper.read( 1, result ), is( 4L ) );
         assertThat( result.getInt( 0 ), is( 2 ) );
         result.putInt( 0, 0 );
-        assertThat( swapper.read( 2, result ), is( 4 ) );
+        assertThat( swapper.read( 2, result ), is( 4L ) );
         assertThat( result.getInt( 0 ), is( 3 ) );
         result.putInt( 0, 0 );
-        assertThat( swapper.read( 3, result ), is( 4 ) );
+        assertThat( swapper.read( 3, result ), is( 4L ) );
         assertThat( result.getInt( 0 ), is( 4 ) );
         result.putInt( 0, 0 );
-        assertThat( swapper.read( 4, result ), is( 4 ) );
+        assertThat( swapper.read( 4, result ), is( 4L ) );
         assertThat( result.getInt( 0 ), is( 5 ) );
         result.putInt( 0, 0 );
-        assertThat( swapper.read( 5, result ), is( 0 ) );
+        assertThat( swapper.read( 5, result ), is( 0L ) );
         assertThat( result.getInt( 0 ), is( 0 ) );
     }
 
@@ -663,7 +668,7 @@ public abstract class PageSwapperTest
         ByteBufferPage pageD = createPage( 4 );
 
         // Read 4 pages of 4 bytes each
-        assertThat( swapper.read( 1, new Page[]{pageA, pageB, pageC, pageD}, 0, 4 ), is( 4 * 4 ) );
+        assertThat( swapper.read( 1, new Page[]{pageA, pageB, pageC, pageD}, 0, 4 ), is( 4 * 4L ) );
 
         assertThat( pageA.getInt( 0 ), is( 2 ) );
         assertThat( pageB.getInt( 0 ), is( 3 ) );
@@ -680,7 +685,7 @@ public abstract class PageSwapperTest
 
         ByteBufferPage page = createPage( 4 );
         page.putInt( 1, 0 );
-        assertThat( swapper.read( 0, new Page[]{page}, 0, 1 ), is( 0 ) );
+        assertThat( swapper.read( 0, new Page[]{page}, 0, 1 ), is( 0L ) );
         assertThat( page.getInt( 0 ), is( 0 ) );
     }
 
@@ -699,7 +704,7 @@ public abstract class PageSwapperTest
         ByteBufferPage pageB = createPage( 4 );
         pageA.putInt( -1, 0 );
         pageB.putInt( -1, 0 );
-        assertThat( swapper.read( 3, new Page[]{pageA, pageB}, 0, 2 ), is( 0 ) );
+        assertThat( swapper.read( 3, new Page[]{pageA, pageB}, 0, 2 ), is( 0L ) );
         assertThat( pageA.getInt( 0 ), is( 0 ) );
         assertThat( pageB.getInt( 0 ), is( 0 ) );
     }
@@ -721,7 +726,7 @@ public abstract class PageSwapperTest
         ByteBufferPage pageB = createPage( 8 );
         pageA.putLong( X, 0 );
         pageB.putLong( Y, 0 );
-        assertThat( swapper.read( 1, new Page[]{pageA, pageB}, 0, 2 ), is( 12 ) );
+        assertThat( swapper.read( 1, new Page[]{pageA, pageB}, 0, 2 ), is( 12L ) );
         assertThat( pageA.getLong( 0 ), is( 0xFFFF_FFFF_FFFF_FFFFL ) );
         assertThat( pageB.getLong( 0 ), is( 0xFFFF_FFFF_0000_0000L ) );
     }
@@ -749,7 +754,7 @@ public abstract class PageSwapperTest
         pageA.putInt( -1, 0 );
         pageB.putInt( -1, 0 );
         pageC.putInt( -1, 0 );
-        assertThat( swapper.read( 0, new Page[]{pageA, pageB, pageC}, 0, 3 ), is( 12 ) );
+        assertThat( swapper.read( 0, new Page[]{pageA, pageB, pageC}, 0, 3 ), is( 12L ) );
         assertThat( pageA.getInt( 0 ), is( 1 ) );
         assertThat( pageA.getInt( 4 ), is( 2 ) );
         assertThat( pageB.getInt( 0 ), is( 3 ) );
@@ -792,8 +797,8 @@ public abstract class PageSwapperTest
                     if ( rng.nextBoolean() )
                     {
                         // Do read
-                        int bytesRead = swapper.read( startFilePageId, pages, 0, pages.length );
-                        assertThat( bytesRead, is( pages.length * 4 ) );
+                        long bytesRead = swapper.read( startFilePageId, pages, 0, pages.length );
+                        assertThat( bytesRead, is( pages.length * 4L ) );
                         for ( int j = 0; j < pages.length; j++ )
                         {
                             int expectedValue = (int) (1 + j + startFilePageId);
@@ -809,7 +814,7 @@ public abstract class PageSwapperTest
                             int value = (int) (1 + j + startFilePageId);
                             pages[j].putInt( value, 0 );
                         }
-                        assertThat( swapper.write( startFilePageId, pages, 0, pages.length ), is( pages.length * 4 ) );
+                        assertThat( swapper.write( startFilePageId, pages, 0, pages.length ), is( pages.length * 4L ) );
                     }
                 }
                 return null;
@@ -849,16 +854,16 @@ public abstract class PageSwapperTest
         pageD.putInt( 4, 0 );
 
         Page[] pages = {pageA, pageB, pageC, pageD};
-        int bytesWritten = swapper.write( 0, pages, 0, 4 );
-        assertThat( bytesWritten, is( 16 ) );
+        long bytesWritten = swapper.write( 0, pages, 0, 4 );
+        assertThat( bytesWritten, is( 16L ) );
 
         pageA.putInt( 5, 0 );
         pageB.putInt( 6, 0 );
         pageC.putInt( 7, 0 );
         pageD.putInt( 8, 0 );
 
-        int bytesRead = swapper.read( 1, pages, 1, 2 );
-        assertThat( bytesRead, is( 8 ) );
+        long bytesRead = swapper.read( 1, pages, 1, 2 );
+        assertThat( bytesRead, is( 8L ) );
 
         int[] actualValues = {pageA.getInt( 0 ), pageB.getInt( 0 ), pageC.getInt( 0 ), pageD.getInt( 0 )};
         int[] expectedValues = {5, 2, 3, 8};
@@ -883,22 +888,22 @@ public abstract class PageSwapperTest
         pageD.putInt( 4, 0 );
 
         Page[] pages = {pageA, pageB, pageC, pageD};
-        int bytesWritten = swapper.write( 0, pages, 0, 4 );
-        assertThat( bytesWritten, is( 16 ) );
+        long bytesWritten = swapper.write( 0, pages, 0, 4 );
+        assertThat( bytesWritten, is( 16L ) );
 
         pageB.putInt( 6, 0 );
         pageC.putInt( 7, 0 );
 
         bytesWritten = swapper.write( 1, pages, 1, 2 );
-        assertThat( bytesWritten, is( 8 ) );
+        assertThat( bytesWritten, is( 8L ) );
 
         pageA.putInt( 0, 0 );
         pageB.putInt( 0, 0 );
         pageC.putInt( 0, 0 );
         pageD.putInt( 0, 0 );
 
-        int bytesRead = swapper.read( 0, pages, 0, 4 );
-        assertThat( bytesRead, is( 16 ) );
+        long bytesRead = swapper.read( 0, pages, 0, 4 );
+        assertThat( bytesRead, is( 16L ) );
 
         int[] actualValues = {pageA.getInt( 0 ), pageB.getInt( 0 ), pageC.getInt( 0 ), pageD.getInt( 0 )};
         int[] expectedValues = {1, 6, 7, 4};

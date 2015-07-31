@@ -32,7 +32,7 @@ public interface FlushEvent
     FlushEvent NULL = new FlushEvent()
     {
         @Override
-        public void addBytesWritten( int bytes )
+        public void addBytesWritten( long bytes )
         {
         }
 
@@ -55,7 +55,7 @@ public interface FlushEvent
     /**
      * Add up a number of bytes that has been written to the file.
      */
-    void addBytesWritten( int bytes );
+    void addBytesWritten( long bytes );
 
     /**
      * The page flush has completed successfully.

@@ -313,7 +313,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         }
 
         @Override
-        public void addBytesWritten( int bytes )
+        public void addBytesWritten( long bytes )
         {
             bytesWritten += bytes;
         }
@@ -406,7 +406,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         private Throwable exception;
 
         @Override
-        public void addBytesRead( int bytes )
+        public void addBytesRead( long bytes )
         {
             bytesRead += bytes;
         }

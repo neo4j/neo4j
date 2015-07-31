@@ -244,7 +244,7 @@ final class MuninnPagedFile implements PagedFile
             MuninnPage firstPage = pages[0];
             long startFilePageId = firstPage.getFilePageId();
             flush = flushOpportunity.beginFlush( startFilePageId, firstPage.getCachePageId(), swapper );
-            int bytesWritten = swapper.write( startFilePageId, pages, 0, pagesGrabbed );
+            long bytesWritten = swapper.write( startFilePageId, pages, 0, pagesGrabbed );
             flush.addBytesWritten( bytesWritten );
             flush.addPagesFlushed( pagesGrabbed );
             flush.done();
