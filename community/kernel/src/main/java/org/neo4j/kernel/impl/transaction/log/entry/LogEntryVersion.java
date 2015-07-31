@@ -118,7 +118,8 @@ public enum LogEntryVersion
         }
     },
     // as of 2015-07-23: neo4j 2.2.4 legacy index command header has bigger id space
-    V2_2_4( -3, LogEntryParsersV2_2_4.class )
+    // -4 is correct, -3 can be found in some 2.3 milestones that's why we play it safe
+    V2_2_4( -4, LogEntryParsersV2_2_4.class )
     {
         @Override
         public CommandReader newCommandReader()

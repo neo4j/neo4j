@@ -30,7 +30,6 @@ import org.neo4j.kernel.impl.transaction.log.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_VERSION;
 
 public class LogHeaderReader
 {
@@ -38,7 +37,7 @@ public class LogHeaderReader
     {
         long encodedLogVersions = channel.getLong();
         byte logFormatVersion = decodeLogFormatVersion( encodedLogVersions );
-        long logVersion = decodeLogVersion( logFormatVersion, encodedLogVersions, true );
+        long logVersion = decodeLogVersion( encodedLogVersions );
         long previousCommittedTx = channel.getLong();
         return new LogHeader( logFormatVersion, logVersion, previousCommittedTx );
     }
@@ -69,18 +68,14 @@ public class LogHeaderReader
         buffer.flip();
         long encodedLogVersions = buffer.getLong();
         byte logFormatVersion = decodeLogFormatVersion( encodedLogVersions );
-        long logVersion = decodeLogVersion( logFormatVersion, encodedLogVersions, strict );
+        long logVersion = decodeLogVersion( encodedLogVersions );
         long previousCommittedTx = buffer.getLong();
         return new LogHeader( logFormatVersion, logVersion, previousCommittedTx );
     }
 
-    public static long decodeLogVersion( byte logFormatVersion, long encLogVersion, boolean strict )
+    public static long decodeLogVersion( long encLogVersion )
             throws IllegalLogFormatException
     {
-        if ( strict && CURRENT_FORMAT_VERSION != logFormatVersion )
-        {
-            throw new IllegalLogFormatException( CURRENT_FORMAT_VERSION, logFormatVersion );
-        }
         return (encLogVersion & 0x00FFFFFFFFFFFFFFL);
     }
 
