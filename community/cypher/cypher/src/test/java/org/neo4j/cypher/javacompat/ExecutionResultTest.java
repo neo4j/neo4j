@@ -20,33 +20,37 @@
 package org.neo4j.cypher.javacompat;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.neo4j.cypher.ArithmeticException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.test.TestGraphDatabaseFactory;
-
-import java.util.Map;
+import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.hamcrest.core.IsNull.nullValue;
 
 public class ExecutionResultTest
 {
-    private GraphDatabaseAPI db;
+    @Rule
+    public final ImpermanentDatabaseRule db = new ImpermanentDatabaseRule();
     private ExecutionEngine engine;
 
     @Before
-    public void setUp() throws Exception
+    public void initializeExecutionEngine() throws Exception
     {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .newGraphDatabase();
         engine = new ExecutionEngine( db );
     }
 
@@ -58,7 +62,7 @@ public class ExecutionResultTest
         createNode();
         createNode();
         ExecutionResult executionResult = engine.execute( "CYPHER runtime=interpreted MATCH (n) RETURN n" );
-        ResourceIterator<Map<String, Object>> resultIterator = executionResult.iterator();
+        ResourceIterator<Map<String,Object>> resultIterator = executionResult.iterator();
         resultIterator.next();
         assertThat( activeTransaction(), is( notNullValue() ) );
 
@@ -88,13 +92,13 @@ public class ExecutionResultTest
         assertThat( activeTransaction(), is( nullValue() ) );
     }
 
-    @Test(expected = ArithmeticException.class)
+    @Test( expected = ArithmeticException.class )
     public void shouldThrowAppropriateException() throws Exception
     {
         engine.execute( "RETURN rand()/0" ).iterator().next();
     }
 
-    @Test(expected = ArithmeticException.class)
+    @Test( expected = ArithmeticException.class )
     public void shouldThrowAppropriateExceptionAlsoWhenVisiting() throws Exception
     {
         engine.execute( "RETURN rand()/0" ).accept( new Result.ResultVisitor()
@@ -105,6 +109,112 @@ public class ExecutionResultTest
                 return true;
             }
         } );
+    }
+
+    @Test
+    public void shouldBePossibleToConsumeCompiledExecutionResultsWithIterator()
+    {
+        // Given
+        createNode();
+        createNode();
+
+        // When
+        List<Map<String,Object>> listResult;
+        try ( Result result = db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ) )
+        {
+            listResult = Iterables.toList( result );
+        }
+
+        // Then
+        assertThat( listResult, hasSize( 2 ) );
+    }
+
+    @Test
+    public void shouldBePossibleToCloseNotFullyConsumedCompiledExecutionResults()
+    {
+        // Given
+        createNode();
+        createNode();
+
+        // When
+        Map<String,Object> firstRow = null;
+        try ( Result result = db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ) )
+        {
+            if ( result.hasNext() )
+            {
+                firstRow = result.next();
+            }
+        }
+
+        // Then
+        assertThat( firstRow, notNullValue() );
+    }
+
+    @Test
+    public void shouldBePossibleToConsumeCompiledExecutionResultsWithVisitor()
+    {
+        // Given
+        createNode();
+        createNode();
+
+        // When
+        final List<Result.ResultRow> listResult = new ArrayList<>();
+        try ( Result result = db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ) )
+        {
+            result.accept( new Result.ResultVisitor<RuntimeException>()
+            {
+                @Override
+                public boolean visit( Result.ResultRow row ) throws RuntimeException
+                {
+                    listResult.add( row );
+                    return true;
+                }
+            } );
+        }
+
+        // Then
+        assertThat( listResult, hasSize( 2 ) );
+    }
+
+    @Test
+    public void shouldBePossibleToCloseNotFullyVisitedCompiledExecutionResult()
+    {
+        // Given
+        createNode();
+        createNode();
+
+        // When
+        final List<Result.ResultRow> listResult = new ArrayList<>();
+        try ( Result result = db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ) )
+        {
+            result.accept( new Result.ResultVisitor<RuntimeException>()
+            {
+                @Override
+                public boolean visit( Result.ResultRow row ) throws RuntimeException
+                {
+                    listResult.add( row );
+                    // return false so that no more result rows would be visited
+                    return false;
+                }
+            } );
+        }
+
+        // Then
+        assertThat( listResult, hasSize( 1 ) );
+    }
+
+    @Test
+    public void shouldBePossibleToCloseNotConsumedCompiledExecutionResult()
+    {
+        // Given
+        createNode();
+
+        // When
+        try ( Result ignore = db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ) )
+        {
+            // Then
+            // just close result without consuming it
+        }
     }
 
     private void createNode()

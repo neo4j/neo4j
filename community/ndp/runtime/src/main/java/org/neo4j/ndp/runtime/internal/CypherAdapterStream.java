@@ -28,7 +28,6 @@ public class CypherAdapterStream implements RecordStream
     private final Result delegate;
     private final String[] fieldNames;
     private CypherAdapterRecord currentRecord;
-    private boolean exhaustedResult = false;
 
     public CypherAdapterStream( Result delegate )
     {
@@ -40,11 +39,7 @@ public class CypherAdapterStream implements RecordStream
     @Override
     public void close()
     {
-        // TODO Temp workaround for bug in Cypher, only close if we've not exhausted the result, fix the root cause
-        if(!exhaustedResult)
-        {
-            delegate.close();
-        }
+        delegate.close();
     }
 
     @Override
@@ -64,8 +59,7 @@ public class CypherAdapterStream implements RecordStream
                 visitor.visit( currentRecord.reset( row ) );
                 return true;
             }
-        });
-        exhaustedResult = true;
+        } );
     }
 
     private static class CypherAdapterRecord implements Record
