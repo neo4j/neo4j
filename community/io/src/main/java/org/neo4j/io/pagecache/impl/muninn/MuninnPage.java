@@ -317,21 +317,6 @@ final class MuninnPage extends StampedLock implements Page
         }
     }
 
-    /**
-     * NOTE: This method must be called while holding a pessimistic lock on the page.
-     */
-    public void flush(
-            PageSwapper swapper,
-            long filePageId,
-            FlushEventOpportunity flushOpportunity ) throws IOException
-    {
-        if ( isDirty() && this.swapper == swapper && this.filePageId == filePageId )
-        {
-            // The page is bound to the given swapper and has stuff to flush
-            doFlush( swapper, filePageId, flushOpportunity );
-        }
-    }
-
     private void doFlush(
             PageSwapper swapper,
             long filePageId,
@@ -431,11 +416,6 @@ final class MuninnPage extends StampedLock implements Page
             pointer = memoryManager.allocateAligned( size() );
             UnsafeUtil.setMemory( pointer, size(), MuninnPageCache.ZERO_BYTE );
         }
-    }
-
-    public PageSwapper getSwapper()
-    {
-        return swapper;
     }
 
     public long getFilePageId()

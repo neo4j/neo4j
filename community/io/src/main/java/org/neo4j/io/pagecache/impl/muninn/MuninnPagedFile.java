@@ -191,6 +191,7 @@ final class MuninnPagedFile implements PagedFile
         pageCache.pauseBackgroundFlushTask();
         long[] stamps = new long[translationTableChunkSize];
         MuninnPage[] pages = new MuninnPage[translationTableChunkSize];
+        long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
         try
         {
             for ( Object[] chunk : translationTable )
@@ -201,12 +202,16 @@ final class MuninnPagedFile implements PagedFile
                 int pagesGrabbed = 0;
                 for ( Object element : chunk )
                 {
+                    filePageId++;
                     if ( element instanceof MuninnPage )
                     {
                         MuninnPage page = (MuninnPage) element;
                         stamps[pagesGrabbed] = page.readLock();
-                        if ( page.isLoaded() && page.isDirty() )
+                        if ( page.isBoundTo( swapper, filePageId ) && page.isDirty() )
                         {
+                            // The page is still bound to the expected file and file page id after we locked it,
+                            // so we didn't race with eviction and faulting, and the page is dirty.
+                            // So we add it to our IO vector.
                             pages[pagesGrabbed] = page;
                             pagesGrabbed++;
                             continue;
