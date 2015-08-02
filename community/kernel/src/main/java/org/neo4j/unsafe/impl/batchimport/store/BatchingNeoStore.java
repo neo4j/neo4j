@@ -62,6 +62,7 @@ import org.neo4j.unsafe.impl.batchimport.store.io.IoTracer;
 import static java.lang.String.valueOf;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
@@ -92,14 +93,16 @@ public class BatchingNeoStore implements AutoCloseable, NeoStoreSupplier
         this.monitors = monitors;
         this.logProvider = logService.getInternalLogProvider();
         this.storeDir = storeDir;
-        this.neo4jConfig = new Config( stringMap( dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ) ),
-                        GraphDatabaseSettings.class );
+        this.neo4jConfig = new Config( stringMap(
+                dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ),
+                pagecache_memory.name(), valueOf( config.writeBufferSize() ) ),
+                GraphDatabaseSettings.class );
         final PageCacheTracer tracer = new DefaultPageCacheTracer();
         this.pageCache = createPageCache( fileSystem, neo4jConfig, logProvider, tracer );
         this.ioTracer = new IoTracer()
         {
             @Override
-            public long countBytesWrittem()
+            public long countBytesWritten()
             {
                 return tracer.countBytesWritten();
             }

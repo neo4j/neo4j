@@ -24,12 +24,12 @@ package org.neo4j.unsafe.impl.batchimport.store.io;
  */
 public interface IoTracer
 {
-    long countBytesWrittem();
+    long countBytesWritten();
 
     public static final IoTracer NONE = new IoTracer()
     {
         @Override
-        public long countBytesWrittem()
+        public long countBytesWritten()
         {
             return 0;
         }

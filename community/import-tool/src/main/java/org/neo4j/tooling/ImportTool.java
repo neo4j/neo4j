@@ -415,15 +415,15 @@ public class ImportTool
         return new org.neo4j.unsafe.impl.batchimport.Configuration.Default()
         {
             @Override
-            public int maxNumberOfProcessors()
+            public int writeBufferSize()
             {
-                return processors != null ? processors.intValue() : super.maxNumberOfProcessors();
+                return defaultSettingsSuitableForTests? 1024 * 1024 * 8 : super.writeBufferSize();
             }
 
             @Override
-            public int bigFileChannelBufferSizeMultiplier()
+            public int maxNumberOfProcessors()
             {
-                return defaultSettingsSuitableForTests ? 1 : super.bigFileChannelBufferSizeMultiplier();
+                return processors != null ? processors.intValue() : super.maxNumberOfProcessors();
             }
         };
     }
