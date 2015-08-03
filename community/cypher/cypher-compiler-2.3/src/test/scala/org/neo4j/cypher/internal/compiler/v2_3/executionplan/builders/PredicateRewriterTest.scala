@@ -23,12 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier, Literal, Property}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{UnresolvedLabel, UnresolvedProperty}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlanInProgress, Namer, PlanBuilder}
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.PipeMonitor
 import org.neo4j.graphdb.Direction
 
 class PredicateRewriterTest extends BuilderTest {
-
-  private implicit val monitor = mock[PipeMonitor]
 
   def builder: PlanBuilder = new PredicateRewriter(new Namer {
     var count = 0

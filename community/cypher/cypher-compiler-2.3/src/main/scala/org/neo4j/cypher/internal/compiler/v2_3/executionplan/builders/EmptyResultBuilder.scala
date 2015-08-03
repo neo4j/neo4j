@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{PlanBuilder, ExecutionPlanInProgress}
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{PipeMonitor, EmptyResultPipe}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EmptyResultPipe, PipeMonitor}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 
 /**
@@ -36,14 +36,19 @@ class EmptyResultBuilder extends PlanBuilder {
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val q = plan.query
 
+    val emptyResultPipeWasNotAlreadyPlanned = plan.pipe match {
+      case _: EmptyResultPipe => false
+      case _ => true
+    }
     val noSortingLeftToDo = q.sort.isEmpty
     val noSkipOrLimitLeftToDo = q.slice.isEmpty
-    val nothingToReturnButPipeNotEmpty = q.returns.size == 0 && plan.pipe.symbols.size > 0
+    val nothingToReturn = q.returns.isEmpty
     val isLastPipe = q.tail.isEmpty
 
+    emptyResultPipeWasNotAlreadyPlanned &&
       noSortingLeftToDo &&
       noSkipOrLimitLeftToDo &&
       isLastPipe &&
-      nothingToReturnButPipeNotEmpty
+      nothingToReturn
   }
 }

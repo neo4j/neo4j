@@ -22,12 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Identifier
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.DeleteEntityAction
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.PipeMonitor
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 
 class DeleteAndPropertySetBuilderTest extends BuilderTest {
-
-  private implicit val monitor = mock[PipeMonitor]
 
   val builder = new UpdateActionBuilder
   val planContext = mock[PlanContext]

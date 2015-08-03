@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import org.neo4j.cypher.ExecutionEngineFunSuite
+package org.neo4j.cypher
 
 class ForeachAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -39,5 +39,16 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite {
     rows should equal(10)
     val ids = execute("MATCH (:root)-[:PARENT*]->(c:child) RETURN c.id AS id ORDER BY c.id").toList
     ids should equal((1 to 110).map(i => Map("id" -> i)))
+  }
+
+  test("foreach should return no results") {
+    // given
+    val query = "FOREACH( n in range( 0, 1 ) | CREATE (p:Person) )"
+
+    // when
+    val result = execute(query).toList
+
+    // then
+    result shouldBe empty
   }
 }
