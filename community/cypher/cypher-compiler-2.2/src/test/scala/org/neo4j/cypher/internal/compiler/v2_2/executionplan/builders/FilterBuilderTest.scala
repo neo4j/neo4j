@@ -25,11 +25,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Identifier,
 import org.neo4j.cypher.internal.compiler.v2_2.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{Equals, Predicate, SingleNode}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.PipeMonitor
 
 class FilterBuilderTest extends BuilderTest {
 
-  private implicit val monitor: PipeMonitor = mock[PipeMonitor]
   val builder = new FilterBuilder
 
   test("does_not_offer_to_solve_queries_without_start_items") {
