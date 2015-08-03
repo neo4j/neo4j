@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 
@@ -84,9 +85,10 @@ public class MadeUpServerImplementation implements MadeUpCommunicationInterface
             @Override
             public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
             {
-                for ( int i = 0; i < txCount; i++ )
+                for ( int i = 1; i <= txCount; i++ )
                 {
-                    CommittedTransactionRepresentation transaction = createTransaction( i );
+                    CommittedTransactionRepresentation transaction =
+                            createTransaction( TransactionIdStore.BASE_TX_ID + i );
                     visitor.visit( transaction );
                 }
             }
