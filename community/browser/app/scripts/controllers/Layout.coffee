@@ -75,6 +75,7 @@ angular.module('neo4jApp.controllers')
         _codeMirror = _editor
         _codeMirror.focus()
 
+
         _codeMirror.on "change", (cm) ->
           $scope.editorChanged(cm)
           $scope.focusEditor()
@@ -96,6 +97,7 @@ angular.module('neo4jApp.controllers')
       $scope.editorChanged = (codeMirror) ->
         $scope.editorOneLine = codeMirror.lineCount() == 1 and !Editor.document
         $scope.disableHighlighting = codeMirror.getValue().trim()[0] == ':'
+        $scope.editor.checkCypherContent codeMirror
 
       $scope.isDrawerShown = false
       $scope.whichDrawer = ""

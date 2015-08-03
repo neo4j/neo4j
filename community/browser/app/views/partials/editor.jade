@@ -21,7 +21,7 @@
   .view-editor
     span(ng-class="{'one-line': editorOneLine, 'disable-highlighting': disableHighlighting}")
       .prompt.code-style $
-      ui-codemirror('ui-codemirror-opts'="{theme: 'neo', mode: 'cypher', autofocus: true, lineNumbers: true, lineWrapping: true, onLoad: codemirrorLoaded}",
+      ui-codemirror('ui-codemirror-opts'="{gutters:['cypher-hints'], theme: 'neo', mode: 'cypher', autofocus: true, lineNumbers: true, lineWrapping: true, onLoad: codemirrorLoaded}",
         ng-model='editor.content',
         placeholder='{{motd.tip}}'
         )
@@ -44,6 +44,6 @@
       .actions
         a.fa.fa-times-circle(ng-click='editor.showMessage = null')
     .message-bar.info(ng-if='unauthorized', ng-class="editor.errorCode")
-      span 
+      span
         | Database access not available. Please use <code click-to-code="':server connect'">:server connect</code>
         | to establish connection. There's a graph waiting for you.

@@ -26,9 +26,10 @@ angular.module('neo4jApp.services')
     'Frame'
     'Settings'
     'HistoryService'
+    'CypherParser'
     'motdService'
     '$timeout'
-    (Document, Frame, Settings, HistoryService, motdService, $timeout) ->
+    (Document, Frame, Settings, HistoryService, CypherParser, motdService, $timeout) ->
       class Editor
         constructor: ->
           @history = HistoryService
@@ -38,7 +39,7 @@ angular.module('neo4jApp.services')
         execScript: (input, no_duplicates = false) ->
           @showMessage = no
 
-          if no_duplicates 
+          if no_duplicates
             frame = Frame.createOne(input: input)
             return unless frame
           else
@@ -114,6 +115,26 @@ angular.module('neo4jApp.services')
           @errorCode = type
           @errorMessage = message
 
+        checkCypherContent: (cm) ->
+          cb = (err, res) ->
+            cm.clearGutter 'cypher-hints'
+            return if err
+            if res.raw.response.data.notifications?.length
+              for item in res.raw.response.data.notifications
+                do(item) ->
+                  cm.setGutterMarker(item.position.line-1, "cypher-hints", (()->
+                      r = document.createElement("div")
+                      r.style.color = "#822"
+                      r.innerHTML = "<i class='fa fa-exclamation-triangle gutter-warning'></i>"
+                      r.title = item.title + "\n" + item.description
+                      r.onclick = ->
+                        Frame.create({input:"EXPLAIN #{input}", showCypherNotification: yes})
+                      return r)()
+                  )
+          input = cm.getValue()
+          CypherParser.runHints cm, cb
+
+
       editor = new Editor()
 
       # Configure codemirror
@@ -148,7 +169,7 @@ angular.module('neo4jApp.services')
 
       CodeMirror.keyMap["default"]["Cmd-Enter"] = "execCurrent"
       CodeMirror.keyMap["default"]["Ctrl-Enter"] = "execCurrent"
-      
+
       CodeMirror.keyMap["default"]["Up"] = "handleUp"
       CodeMirror.keyMap["default"]["Down"] = "handleDown"
       CodeMirror.keyMap["default"]["Cmd-Up"] = "historyPrev"

@@ -24,9 +24,15 @@ div(ng-controller="CypherResultCtrl", fullscreen)
               i.fa.fa-file-text-o
               span.mini-menu-item-text Errors
             br
-          button.btn(ng-class='{active: isActive("raw")}', ng-click='setActive("raw")')
-            i.fa.fa-code
-            span.mini-menu-item-text Code
+          .button-holder(ng-show="isAvailable('messages')")
+            button.btn(ng-class='{active: isActive("messages")}', ng-click='setActive("messages")')
+              i.fa.fa-file-text-o
+              span.mini-menu-item-text Notifs
+            br
+          .button-holder
+            button.btn(ng-class='{active: isActive("raw")}', ng-click='setActive("raw")')
+              i.fa.fa-code
+              span.mini-menu-item-text Code
     .right-inner-frame.no-indicator(ng-class='{"no-left-menu": frame.type != "cypher" || availableModes.length < 1}')
       .inner
         .view-result(ng-class='{error: frame.hasErrors}')
@@ -121,6 +127,19 @@ div(ng-controller="CypherResultCtrl", fullscreen)
               article.help.no-data.has-status-bar
                 pre(ng-bind="frame.detailedErrorText")
             include partials/error-status-bar
+
+          .view-result-messages.result.with-frame-menu(ng-show='isActive("messages")')
+            .messages-holder
+              article.help.no-data.has-status-bar
+                .cypher-messages(ng-repeat="(index, message) in frame.response.raw.response.data.notifications")
+                  .cypher-message(class="cypher-message-{{message.severity | lowercase}}")
+                    | {{message.severity}}
+                  h4
+                    {{message.title}}
+                  p {{message.description}}
+                  pre(cypher-hint="message.position", cypher-input="{{frame.input}}")
+                  hr(ng-show="!$last")
+            include partials/messages-status-bar
 
           .view-result-loading(ng-show='frame.isLoading && !frame.isTerminating')
             .spinner
