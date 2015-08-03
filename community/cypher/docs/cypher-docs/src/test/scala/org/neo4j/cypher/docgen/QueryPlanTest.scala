@@ -80,7 +80,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
         """Reads all nodes from the node store. The identifier that will contain the nodes is seen in the arguments.
           |The following query will return all nodes. It's not a good idea to run a query like this on a production database.""".stripMargin,
       queryText = """MATCH (n) RETURN n""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("AllNodesScan"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("AllNodesScan"))
     )
   }
 
@@ -93,7 +93,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
           |This will ensure that we won't end up with duplicate `Country` nodes in our database.
         """.stripMargin,
       queryText = """CREATE CONSTRAINT ON (c:Country) ASSERT c.name is UNIQUE""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("ConstraintOperation"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("ConstraintOperation"))
     )
   }
 
@@ -105,7 +105,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
           |The following query will return unique locations that have people working in them
         """.stripMargin,
       queryText = """MATCH (l:Location)<-[:WORKS_IN]-(p:Person) RETURN DISTINCT l""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("Distinct"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Distinct"))
     )
   }
 
@@ -117,7 +117,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
           |The following query will collect the people who work in every location before returning any rows.
         """.stripMargin,
       queryText = """MATCH (l:Location)<-[:WORKS_IN]-(p:Person) RETURN l.name AS location, COLLECT(p.name) AS people""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("EagerAggregation"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("EagerAggregation"))
     )
   }
 
@@ -129,7 +129,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
           |The following query will create a `Person` node with the name property set to `Alistair`
         """.stripMargin,
       queryText = """CREATE (:Person {name: "Alistair"})""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("UpdateGraph"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("UpdateGraph"))
     )
   }
 
@@ -141,7 +141,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
           |The following query will create a node but won't return anything.
         """.stripMargin,
       queryText = """CREATE (:Person)""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("EmptyResult"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("EmptyResult"))
     )
   }
 
@@ -151,7 +151,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       text = """Using the label index, fetches all nodes with a specific label on them.
                 |The following query will return all nodes which have label `Person` where the property `name` has the value "me" via a scan of the `Person` label index.""".stripMargin,
       queryText = """MATCH (person:Person {name: "me"}) RETURN person""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("LabelScan"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("LabelScan"))
     )
   }
 
@@ -161,7 +161,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       text = """Finds nodes using an index seek. The node identifier and the index used is shown in the arguments of the operator.
                 |The following query will return all nodes which have label `Location` where the property `name` has the value "Malmo" using the `Location` index.""".stripMargin,
       queryText = """MATCH (location:Location {name: "Malmo"}) RETURN location""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeIndexSeek"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeIndexSeek"))
     )
   }
 
@@ -172,7 +172,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
         """Finds nodes using an index seek on a unique index. The node identifier and the index used is shown in the arguments of the operator.
           |The following query will return all nodes which have the label `Team` where the property `name` has the value "Field" using the `Team` unique index.""".stripMargin,
       queryText = """MATCH (team:Team {name: "Field"}) RETURN team""".stripMargin,
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeUniqueIndexSeek"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeUniqueIndexSeek"))
     )
   }
 
@@ -187,7 +187,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
                           |The following query will return all location nodes which have a name property starting with the text 'Lon'.
                         """.stripMargin,
                  queryText = "MATCH (l:Location) WHERE l.name LIKE 'Lon%' RETURN l",
-                 assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString(IndexSeekByRange.name))
+                 assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString(IndexSeekByRange.name))
     )
   }
 
@@ -202,7 +202,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
                           |The following query will return all location nodes which have a name property starting with the text 'Engineer'.
                         """.stripMargin,
                  queryText = "MATCH (t:Team) WHERE t.name LIKE 'Engineer%' RETURN t",
-                 assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString(UniqueIndexSeekByRange.name))
+                 assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString(UniqueIndexSeekByRange.name))
     )
   }
 
@@ -217,7 +217,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
                           |The following query will return all location nodes having a name property.
                         """.stripMargin,
                  queryText = "MATCH (l:Location) WHERE has(l.name) RETURN l",
-                 assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeIndexScan"))
+                 assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeIndexScan"))
     )
   }
 
@@ -228,7 +228,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
         """Reads one or more nodes by id from the node store.
           |The following query will return the node which has nodeId `0`.""".stripMargin,
       queryText = """MATCH (n) WHERE id(n) = 0 RETURN n""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeByIdSeek"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeByIdSeek"))
     )
   }
 
@@ -239,7 +239,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
         """For each row from its input, projection executes a set of expressions and produces a row with the results of the expressions.
           |The following query will produce one row with the value "hello".""".stripMargin,
       queryText = """RETURN "hello" AS greeting""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("Projection"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Projection"))
     )
   }
 
@@ -250,7 +250,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
         """Filters each row coming from the child operator, only passing through rows that evaluate the predicates to `TRUE`.
           |The following query will look for nodes with the label `Person` and filter those whose name begins with the letter `a`.""".stripMargin,
       queryText = """MATCH (p:Person) WHERE p.name =~ "^a.*" RETURN p""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("Filter"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Filter"))
     )
   }
 
@@ -262,7 +262,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
           |The following query will produce all combinations of people and teams. With five people and two teams we will see ten combinations. This is analogous to the 'cross join' in SQL which is also defined as a 'cartesian product'.
         """.stripMargin,
       queryText = """MATCH (p:Person), (t:Team) RETURN p, t""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("CartesianProduct"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("CartesianProduct"))
     )
   }
 
@@ -274,7 +274,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
           |The following query will find all the people and the location they work in if there is one.
         """.stripMargin,
       queryText = """MATCH (p:Person) OPTIONAL MATCH (p)-[:WORKS_IN]->(l) RETURN p, l""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("Optional"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Optional"))
     )
   }
 
@@ -292,7 +292,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
         """MATCH (p:Person)
            OPTIONAL MATCH (p)-[works_in:WORKS_IN]->(l) WHERE works_in.duration > 180
            RETURN p, l""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("OptionalExpand(All)"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("OptionalExpand(All)"))
     )
   }
 
@@ -305,7 +305,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
           |The following query will find all the people and return them sorted alphabetically by name.
         """.stripMargin,
       queryText = """MATCH (p:Person) RETURN p ORDER BY p.name""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("Sort"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Sort"))
     )
   }
 
@@ -318,7 +318,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
           |The following query will find the first 2 people sorted alphabetically by name.
         """.stripMargin,
       queryText = """MATCH (p:Person) RETURN p ORDER BY p.name LIMIT 2""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("Top"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Top"))
     )
   }
 
@@ -331,7 +331,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
           |The following query will return the first 3 people in an arbitrary order.
         """.stripMargin,
       queryText = """MATCH (p:Person) RETURN p LIMIT 3""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("Limit"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Limit"))
     )
   }
 
@@ -344,7 +344,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
           |The following query will return my friends of friends.
         """.stripMargin,
       queryText = """MATCH (p:Person {name: "me"})-[:FRIENDS_WITH]->(fof) RETURN fof""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("Expand(All)"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Expand(All)"))
     )
   }
 
@@ -363,7 +363,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
         """MATCH (other:Person)
            WHERE (other)-[:FRIENDS_WITH]->()
            RETURN other""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("SemiApply"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("SemiApply"))
     )
   }
 
@@ -381,7 +381,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
         """MATCH (other:Person)
            WHERE (other)-[:FRIENDS_WITH]->() OR (other)-[:WORKS_IN]->()
            RETURN other""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("LetSemiApply"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("LetSemiApply"))
     )
   }
 
@@ -399,7 +399,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
         """MATCH (other:Person)
            WHERE NOT((other)-[:FRIENDS_WITH]->()) OR (other)-[:WORKS_IN]->()
            RETURN other""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("LetAntiSemiApply"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("LetAntiSemiApply"))
     )
   }
 
@@ -418,7 +418,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
         """MATCH (other:Person)
            WHERE other.age > 25 OR (other)-[:FRIENDS_WITH]->()
            RETURN other""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("SelectOrSemiApply"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("SelectOrSemiApply"))
     )
   }
 
@@ -435,7 +435,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
         """MATCH (me:Person {name: "me"}), (other:Person)
            WHERE NOT (me)-[:FRIENDS_WITH]->(other)
            RETURN other""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("AntiSemiApply"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("AntiSemiApply"))
     )
   }
 
@@ -451,7 +451,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
         """MATCH (other:Person)
            WHERE other.age > 25 OR NOT (other)-[:FRIENDS_WITH]->()
            RETURN other""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("SelectOrAntiSemiApply"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("SelectOrAntiSemiApply"))
     )
   }
 
@@ -468,7 +468,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
            WHERE id(r) = 0
            RETURN r, n1
         """.stripMargin,
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("DirectedRelationshipByIdSeek"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("DirectedRelationshipByIdSeek"))
     )
   }
 
@@ -486,7 +486,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
            WHERE id(r) = 1
            RETURN r, n1
         """.stripMargin,
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("UndirectedRelationshipByIdSeek"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("UndirectedRelationshipByIdSeek"))
     )
   }
 
@@ -501,7 +501,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       queryText =
         """MATCH (andreas:Person {name:'Andreas'})-[:WORKS_IN]->(location)<-[:WORKS_IN]-(mattias:Person {name:'Mattis'})
            RETURN location""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeHashJoin"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeHashJoin"))
     )
   }
 
@@ -519,7 +519,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
            ORDER BY p.id
            SKIP 1
         """.stripMargin,
-      assertion = (p) =>  assertThat(p.executionPlanDescription().toString, containsString("Skip"))
+      assertions = (p) =>  assertThat(p.executionPlanDescription().toString, containsString("Skip"))
     )
   }
 
@@ -541,7 +541,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
            OPTIONAL MATCH (p)-[:WORKS_IN*1..2]->(city)
            RETURN p, city
         """.stripMargin,
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("Apply"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Apply"))
     )
   }
 
@@ -557,7 +557,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
            MATCH (p:Country)
            RETURN p.name
         """.stripMargin,
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("Union"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Union"))
     )
   }
 
@@ -568,7 +568,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
         """Takes a collection of values and returns one row per item in the collection.
           |The following query will return one row for each of the numbers 1 to 5.""".stripMargin,
       queryText = """UNWIND range(1,5) as value return value;""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("UNWIND"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("UNWIND"))
     )
   }
 

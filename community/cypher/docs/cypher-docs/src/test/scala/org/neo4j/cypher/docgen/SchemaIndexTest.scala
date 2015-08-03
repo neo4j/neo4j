@@ -51,10 +51,9 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
 
   @Test def create_index_on_a_label() {
     testQuery(
-      title = "Create index on a label",
+      title = "Create an index",
       text = "To create an index on a property for all nodes that have a label, use +CREATE+ +INDEX+ +ON+. " +
-        "Note that the index is not immediately available, but will be created in the background. " +
-        "See <<graphdb-neo4j-schema-indexes>> for details.",
+        "Note that the index is not immediately available, but will be created in the background.",
       queryText = "create index on :Person(name)",
       optionalResultExplanation = "",
       assertions = (p) => assertIndexesOnLabels("Person", List(List("name")))
@@ -63,8 +62,8 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
 
   @Test def drop_index_on_a_label() {
     prepareAndTestQuery(
-      title = "Drop index on a label",
-      text = "To drop an index on all nodes that have a label, use the +DROP+ +INDEX+ clause.",
+      title = "Drop an index",
+      text = "To drop an index on all nodes that have a label and property combination, use the +DROP+ +INDEX+ clause.",
       prepare = _ => executePreparationQueries(List("create index on :Person(name)")),
       queryText = "drop index on :Person(name)",
       optionalResultExplanation = "",
@@ -73,13 +72,12 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
   }
 
   @Test def use_index() {
-    testQuery(
+    profileQuery(
       title = "Use index",
       text = "There is usually no need to specify which indexes to use in a query, Cypher will figure that out by itself. " +
         "For example the query below will use the `Person(name)` index, if it exists. " +
         "If you want Cypher to use specific indexes, you can enforce it using hints. See <<query-using>>.",
       queryText = "match (person:Person {name: 'Andres'}) return person",
-      optionalResultExplanation = "",
       assertions = {
         (p) =>
           assertEquals(1, p.size)
@@ -90,12 +88,11 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
   }
 
   @Test def use_index_with_where_using_equality() {
-    testQuery(
+    profileQuery(
       title = "Use index with WHERE using equality",
       text = "Indexes are also automatically used for equality comparisons of an indexed property in the WHERE clause. " +
         "If you want Cypher to use specific indexes, you can enforce it using hints. See <<query-using>>.",
       queryText = "match (person:Person) WHERE person.name = 'Andres' return person",
-      optionalResultExplanation = "",
       assertions = {
         (p) =>
           assertEquals(1, p.size)
@@ -110,12 +107,11 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
     executePreparationQueries((0 to 300).map { i =>
       "CREATE (:Person)"
     }.toList)
-    testQuery(
+    profileQuery(
       title = "Use index with WHERE using inequality",
       text = "Indexes are also automatically used for inequality (range) comparisons of an indexed property in the WHERE clause. " +
         "If you want Cypher to use specific indexes, you can enforce it using hints. See <<query-using>>.",
       queryText = "match (person:Person) WHERE person.name > 'B' return person",
-      optionalResultExplanation = "",
       assertions = {
         (p) =>
           assertEquals(1, p.size)
@@ -126,13 +122,12 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
   }
 
   @Test def use_index_with_in() {
-    testQuery(
+    profileQuery(
       title = "Use index with IN",
       text =
         "The IN predicate on `person.name` in the following query will use the `Person(name)` index, if it exists. " +
         "If you want Cypher to use specific indexes, you can enforce it using hints. See <<query-using>>.",
       queryText = "match (person:Person) WHERE person.name IN ['Andres','Mark'] return person",
-      optionalResultExplanation = "",
       assertions = {
         (p) =>
           assertEquals(2, p.size)
@@ -152,7 +147,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       text =
         "The `LIKE` predicate on `person.name` in the following query will use the `Person(name)` index, if it exists. ",
       queryText = "MATCH (person:Person) WHERE person.name LIKE 'And%' return person",
-      assertion = {
+      assertions = {
         (p) =>
           assertEquals(1, p.size)
           assertThat(p.executionPlanDescription().toString, containsString(IndexSeekByRange.name))
@@ -170,7 +165,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       text =
         "The `has(p.name)` predicate in the following query will use the `Person(name)` index, if it exists.",
       queryText = "MATCH (p:Person) WHERE has(p.name) RETURN p",
-      assertion = {
+      assertions = {
         (p) =>
           assertEquals(2, p.size)
           assertThat(p.executionPlanDescription().toString, containsString("NodeIndexScan"))
