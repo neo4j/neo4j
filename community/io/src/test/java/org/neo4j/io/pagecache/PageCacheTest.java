@@ -3405,14 +3405,14 @@ public abstract class PageCacheTest<T extends PageCache>
         final RecordFormat recordFormat = new StandardRecordFormat();
         final int filePageCount = 100;
         RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness();
-        harness.setConcurrencyLevel( 6 );
+        harness.setConcurrencyLevel( 16 );
         harness.setUseAdversarialIO( false );
         harness.setCachePageCount( 100 );
         harness.setFilePageCount( filePageCount );
         harness.setCachePageSize( pageCachePageSize );
         harness.setFilePageSize( pageCachePageSize );
         harness.setInitialMappedFiles( 3 );
-        harness.setCommandCount( 10000 );
+        harness.setCommandCount( 50_000 );
         harness.disableCommands( Command.MapFile, Command.UnmapFile, Command.ReadRecord );
         harness.setVerification( new Phase()
         {
@@ -3425,11 +3425,22 @@ public abstract class PageCacheTest<T extends PageCache>
                     try ( PagedFile pf = pageCache.map( file, pageCachePageSize );
                           PageCursor cursor = pf.io( 0, PF_SHARED_LOCK ) )
                     {
-                        for ( int pageId = 0; pageId < filePageCount; pageId++ )
+                        for ( int pageId = 0; pageId < filePageCount && cursor.next(); pageId++ )
                         {
-                            cursor.next();
-                            recordFormat.assertRecordsWrittenCorrectly( cursor );
+                            try
+                            {
+                                recordFormat.assertRecordsWrittenCorrectly( cursor );
+                            }
+                            catch ( Throwable th )
+                            {
+                                th.addSuppressed( new Exception( "pageId = " + pageId ) );
+                                throw th;
+                            }
                         }
+                    }
+                    try ( StoreChannel channel = fs.open( file, "r" ) )
+                    {
+                        recordFormat.assertRecordsWrittenCorrectly( file, channel );
                     }
                 }
             }
