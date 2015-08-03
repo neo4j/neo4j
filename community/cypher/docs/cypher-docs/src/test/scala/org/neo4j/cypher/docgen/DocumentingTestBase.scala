@@ -144,12 +144,12 @@ trait DocumentationHelper extends GraphIcing {
 }
 
 abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper with GraphIcing with ResetStrategy {
-  def testQuery(title: String, text: String, queryText: String, optionalResultExplanation: String,
+  def testQuery(title: String, text: String, queryText: String, optionalResultExplanation: String = null,
                 parameters: Map[String, Any] = Map.empty, assertions: InternalExecutionResult => Unit) {
     internalTestQuery(title, text, queryText, optionalResultExplanation, None, None, parameters, assertions)
   }
 
-  def testFailingQuery[T <: CypherException: ClassTag](title: String, text: String, queryText: String, optionalResultExplanation: String) {
+  def testFailingQuery[T <: CypherException: ClassTag](title: String, text: String, queryText: String, optionalResultExplanation: String = null) {
     val classTag = implicitly[ClassTag[T]]
     internalTestQuery(title, text, queryText, optionalResultExplanation, Some(classTag), None, Map.empty, _ => {})
   }
@@ -487,7 +487,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
                         result: Either[CypherException, String],
                         consoleData: String,
                         parameters: Map[String, Any]) {
-    if (parameters != null) {
+    if (parameters != null && !parameters.isEmpty) {
       writer.append(JavaExecutionEngineDocTest.parametersToAsciidoc(mapMapValue(parameters)))
     }
     val output = new StringBuilder(2048)
@@ -495,8 +495,10 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     output.append(createCypherSnippet(query))
     writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".query", output.toString()))
     writer.println()
-    writer.println(returns)
-    writer.println()
+    if (returns != null && !returns.isEmpty) {
+      writer.println(returns)
+      writer.println()
+    }
 
     output.clear()
     result match {
