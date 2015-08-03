@@ -100,7 +100,7 @@ public class FullCheck
 
         if ( !summary.isConsistent() )
         {
-            logger.logMessage( "Inconsistencies found: " + summary );
+            logger.info( "Inconsistencies found: " + summary );
         }
         return summary;
     }

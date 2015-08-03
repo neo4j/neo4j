@@ -282,7 +282,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 }
                 catch ( Throwable e )
                 {
-                    msgLog.logMessage( "Failed to switch to master", e );
+                    msgLog.error( "Failed to switch to master", e );
                     // Since this master switch failed, elect someone else
                     election.demote( instanceId );
                 }
@@ -369,7 +369,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 }
                 catch ( Throwable t )
                 {
-                    msgLog.logMessage( "Error while trying to switch to slave", t );
+                    msgLog.error( "Error while trying to switch to slave", t );
 
                     // Try again later
                     wait.set( (1 + wait.get() * 2) ); // Exponential backoff
@@ -377,7 +377,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
                     modeSwitcherFuture = modeSwitcherExecutor.schedule( this, wait.get(), TimeUnit.SECONDS );
 
-                    msgLog.logMessage( "Attempting to switch to slave in " + wait.get() + "s" );
+                    msgLog.info( "Attempting to switch to slave in " + wait.get() + "s" );
                 }
             }
         }, cancellationHandle );
@@ -385,7 +385,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private void switchToPending()
     {
-        msgLog.logMessage( "I am " + instanceId + ", moving to pending" );
+        msgLog.info( "I am " + instanceId + ", moving to pending" );
 
         startModeSwitching( new Runnable()
         {

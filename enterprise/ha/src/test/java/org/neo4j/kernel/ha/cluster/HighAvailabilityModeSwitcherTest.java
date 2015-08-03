@@ -44,6 +44,7 @@ import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
@@ -51,7 +52,6 @@ import org.neo4j.kernel.logging.Logging;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -63,7 +63,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.PENDING;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.TO_SLAVE;
 
@@ -409,7 +408,7 @@ public class HighAvailabilityModeSwitcherTest
         // A HAMS
         SwitchToSlave switchToSlave = mock( SwitchToSlave.class );
         Logging logging = mock( Logging.class );
-        StringLogger msgLog = mock( StringLogger.class );
+        TestLogger msgLog = new TestLogger();
         when( logging.getMessagesLog( HighAvailabilityModeSwitcher.class ) ).thenReturn( msgLog );
         HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( switchToSlave,
                 mock( SwitchToMaster.class ), mock( Election.class ), mock( ClusterMemberAvailability.class ),
@@ -432,7 +431,7 @@ public class HighAvailabilityModeSwitcherTest
         // No switching to slave must happen
         verifyZeroInteractions( switchToSlave );
         // And an error must be logged
-        verify( msgLog, times( 1 ) ).error( anyString() );
+        msgLog.assertLogCallAtLevel( "ERROR", 1 );
     }
 
     @Test

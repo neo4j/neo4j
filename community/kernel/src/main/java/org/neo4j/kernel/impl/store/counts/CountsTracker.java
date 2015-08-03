@@ -86,27 +86,27 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
             @Override
             public void failedToOpenStoreFile( File path, Exception error )
             {
-                logger.logMessage( "Failed to open counts store file: " + path, error );
+                logger.error( "Failed to open counts store file: " + path, error );
             }
 
             @Override
             public void beforeRotation( File source, File target, Headers headers )
             {
-                logger.logMessage( format( "About to rotate counts store at transaction %d to [%s], from [%s].",
+                logger.info( format( "About to rotate counts store at transaction %d to [%s], from [%s].",
                                            headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
             }
 
             @Override
             public void rotationSucceeded( File source, File target, Headers headers )
             {
-                logger.logMessage( format( "Successfully rotated counts store at transaction %d to [%s], from [%s].",
+                logger.info( format( "Successfully rotated counts store at transaction %d to [%s], from [%s].",
                                            headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
             }
 
             @Override
             public void rotationFailed( File source, File target, Headers headers, Exception e )
             {
-                logger.logMessage( format( "Failed to rotate counts store at transaction %d to [%s], from [%s].",
+                logger.error( format( "Failed to rotate counts store at transaction %d to [%s], from [%s].",
                                            headers.get( FileVersion.FILE_VERSION ).txId, target, source ), e );
             }
         }, 16, 16, HEADER_FIELDS );

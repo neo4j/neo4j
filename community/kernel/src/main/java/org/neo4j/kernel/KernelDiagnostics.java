@@ -65,12 +65,12 @@ abstract class KernelDiagnostics implements DiagnosticsProvider
         @Override
         void dump( StringLogger logger )
         {
-            logger.logMessage( "Graph Database: " + graphDb.getName() + " " + storeId );
-            logger.logMessage( "Kernel version: " + Version.getKernel() );
-            logger.logMessage( "Neo4j component versions:" );
+            logger.info( "Graph Database: " + graphDb.getName() + " " + storeId );
+            logger.info( "Kernel version: " + Version.getKernel() );
+            logger.info( "Neo4j component versions:" );
             for ( Version componentVersion : Service.load( Version.class ) )
             {
-                logger.logMessage( "  " + componentVersion + "; revision: " + componentVersion.getRevision() );
+                logger.info( "  " + componentVersion + "; revision: " + componentVersion.getRevision() );
             }
         }
     }

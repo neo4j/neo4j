@@ -21,6 +21,10 @@ package org.neo4j.kernel.logging;
 
 public class LogMarker
 {
+    public static final String CONSOLE = "console";
+    public static final LogMarker CONSOLE_MARK = new LogMarker( CONSOLE );
+    public static final LogMarker NO_MARK = new LogMarker( "no_mark" );
+
     private final String name;
 
     public LogMarker( String name )
@@ -33,7 +37,11 @@ public class LogMarker
         return name;
     }
 
-    public static final String CONSOLE = "console";
-
-    public static final LogMarker CONSOLE_MARK = new LogMarker( CONSOLE );
+    @Override
+    public String toString()
+    {
+        return "LogMarker{" +
+               "name='" + name + '\'' +
+               '}';
+    }
 }

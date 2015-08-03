@@ -25,16 +25,15 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Visitable;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.logging.LogMarker;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.Predicates.equalTo;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.filter;
@@ -46,7 +45,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
  */
 public class TestLogger extends StringLogger
 {
-
     private enum Level
     {
         DEBUG,
@@ -56,34 +54,73 @@ public class TestLogger extends StringLogger
         UNKNOWN
     }
 
-    public static final class LogCall implements Visitable<Visitor<LogCall, RuntimeException>>
+    public static final class LogCall implements Visitable<Visitor<LogCall,RuntimeException>>
     {
-
         protected final Level level;
         protected final String message;
         protected final Throwable cause;
         protected final boolean flush;
+        protected final LogMarker marker;
 
-        private LogCall( Level level, String message, Throwable cause, boolean flush )
+        private LogCall( Level level, String message, Throwable cause, boolean flush, LogMarker marker )
         {
             this.level = level;
             this.message = message;
             this.cause = cause;
             this.flush = flush;
+            this.marker = marker;
         }
 
         // DSL sugar methods to use when writing assertions.
-        public static LogCall debug(String msg) { return new LogCall(Level.DEBUG, msg, null, false); }
-        public static LogCall info(String msg)  { return new LogCall(Level.INFO,  msg, null, false); }
-        public static LogCall warn(String msg)  { return new LogCall(Level.WARN,  msg, null, false); }
-        public static LogCall error(String msg) { return new LogCall(Level.ERROR, msg, null, false); }
-        public static LogCall unknown(String msg) { return new LogCall(Level.UNKNOWN, msg, null, false); }
+        public static LogCall debug( String msg )
+        {
+            return new LogCall( Level.DEBUG, msg, null, false, LogMarker.NO_MARK );
+        }
 
-        public static LogCall debug(String msg, Throwable c) { return new LogCall(Level.DEBUG, msg, c, false); }
-        public static LogCall info(String msg,  Throwable c) { return new LogCall(Level.INFO,  msg, c, false); }
-        public static LogCall warn(String msg,  Throwable c) { return new LogCall(Level.WARN,  msg, c, false); }
-        public static LogCall error(String msg, Throwable c) { return new LogCall(Level.ERROR, msg, c, false); }
-        public static LogCall unknown(String msg, Throwable c) { return new LogCall(Level.UNKNOWN, msg, c, false); }
+        public static LogCall info( String msg )
+        {
+            return new LogCall( Level.INFO, msg, null, false, LogMarker.NO_MARK );
+        }
+
+        public static LogCall warn( String msg )
+        {
+            return new LogCall( Level.WARN, msg, null, false, LogMarker.NO_MARK );
+        }
+
+        public static LogCall error( String msg )
+        {
+            return new LogCall( Level.ERROR, msg, null, false, LogMarker.NO_MARK );
+        }
+
+        public static LogCall unknown( String msg )
+        {
+            return new LogCall( Level.UNKNOWN, msg, null, false, LogMarker.NO_MARK );
+        }
+
+        public static LogCall debug( String msg, Throwable c )
+        {
+            return new LogCall( Level.DEBUG, msg, c, false, LogMarker.NO_MARK );
+        }
+
+        public static LogCall info( String msg, Throwable c )
+        {
+            return new LogCall( Level.INFO, msg, c, false, LogMarker.NO_MARK );
+        }
+
+        public static LogCall warn( String msg, Throwable c )
+        {
+            return new LogCall( Level.WARN, msg, c, false, LogMarker.NO_MARK );
+        }
+
+        public static LogCall error( String msg, Throwable c )
+        {
+            return new LogCall( Level.ERROR, msg, c, false, LogMarker.NO_MARK );
+        }
+
+        public static LogCall unknown( String msg, Throwable c )
+        {
+            return new LogCall( Level.UNKNOWN, msg, c, false, LogMarker.NO_MARK );
+        }
 
         @Override
         public void accept( Visitor<LogCall,RuntimeException> visitor )
@@ -94,25 +131,41 @@ public class TestLogger extends StringLogger
         @Override
         public String toString()
         {
-            return "LogCall{ " + level +
-                    ", message='" + message + '\'' +
-                    ", cause=" + cause +
-                    '}';
+            return "LogCall{" +
+                   "level=" + level +
+                   ", message='" + message + '\'' +
+                   ", cause=" + cause +
+                   ", flush=" + flush +
+                   ", marker=" + marker +
+                   '}';
         }
 
         @Override
         public boolean equals( Object o )
         {
             if ( this == o )
+            {
                 return true;
+            }
             if ( o == null || getClass() != o.getClass() )
+            {
                 return false;
+            }
 
             LogCall logCall = (LogCall) o;
 
-            return flush == logCall.flush && level == logCall.level &&
-                    message.equals( logCall.message ) &&
-                    !(cause != null ? !cause.equals( logCall.cause ) : logCall.cause != null);
+            return flush == logCall.flush &&
+                   level == logCall.level &&
+                   logCall.marker == marker &&
+                   message.equals( logCall.message ) &&
+                   (cause == null
+                    ? logCall.cause == null
+                    : cause.getClass() == logCall.cause.getClass() &&
+                      (cause.getMessage() == null
+                       ? logCall.cause.getMessage() == null
+                       : (cause.getMessage().equals( logCall.cause.getMessage() ))
+                      )
+                   );
         }
 
         @Override
@@ -120,6 +173,7 @@ public class TestLogger extends StringLogger
         {
             int result = level.hashCode();
             result = 31 * result + message.hashCode();
+            result = 31 * result + marker.hashCode();
             result = 31 * result + (cause != null ? cause.hashCode() : 0);
             result = 31 * result + (flush ? 1 : 0);
             return result;
@@ -132,25 +186,27 @@ public class TestLogger extends StringLogger
     // TEST TOOLS
     //
 
-    public void assertExactly(LogCall... expectedLogCalls )
+    public void assertExactly( LogCall... expectedLogCalls )
     {
         Iterator<LogCall> expected = asList( expectedLogCalls ).iterator();
-        Iterator<LogCall> actual   = logCalls.iterator();
+        Iterator<LogCall> actual = logCalls.iterator();
 
-        while(expected.hasNext())
+        while ( expected.hasNext() )
         {
-            if(actual.hasNext())
+            if ( actual.hasNext() )
             {
                 assertEquals( expected.next(), actual.next() );
-            } else
+            }
+            else
             {
-                fail(format( "Got fewer log calls than expected. The missing log calls were: \n%s", serialize(expected)));
+                fail( format( "Got fewer log calls than expected. The missing log calls were: \n%s", serialize(
+                        expected ) ) );
             }
         }
 
-        if(actual.hasNext())
+        if ( actual.hasNext() )
         {
-            fail(format( "Got more log calls than expected. The remaining log calls were: \n%s", serialize(actual)));
+            fail( format( "Got more log calls than expected. The remaining log calls were: \n%s", serialize( actual ) ) );
         }
     }
 
@@ -159,12 +215,13 @@ public class TestLogger extends StringLogger
      */
     public void assertAtLeastOnce( LogCall... expectedCalls )
     {
-        Set<LogCall> expected = asSet(expectedCalls);
+        Set<LogCall> expected = asSet( expectedCalls );
         for ( LogCall logCall : logCalls )
-            expected.remove( logCall );
-        if(expected.size() > 0)
+        { expected.remove( logCall ); }
+        if ( expected.size() > 0 )
         {
-            fail( "These log calls were expected, but never occurred: \n" + serialize( expected.iterator() ) + "\nActual log calls were:\n" + serialize( logCalls.iterator() ) );
+            fail( "These log calls were expected, but never occurred: \n" + serialize( expected.iterator() ) +
+                  "\nActual log calls were:\n" + serialize( logCalls.iterator() ) );
         }
     }
 
@@ -178,6 +235,20 @@ public class TestLogger extends StringLogger
             }
         }
         fail( "Expected at least one log statement containing '" + partOfMessage + "', but none found. ctual log calls were:\n" + serialize( logCalls.iterator() ) );
+    }
+
+    public void assertLogCallAtLevel( String level, int amount )
+    {
+        final Level logLevel = Level.valueOf( level );
+        long count = Iterables.count( Iterables.filter( new Predicate<LogCall>()
+        {
+            @Override
+            public boolean accept( LogCall logCall )
+            {
+                return logLevel.equals( logCall.level );
+            }
+        }, logCalls ) );
+        assertEquals( amount, count );
     }
 
     public void assertNoDebugs()
@@ -238,83 +309,45 @@ public class TestLogger extends StringLogger
     // IMPLEMENTATION
     //
 
-    private void log( Level level, String message, Throwable cause )
+    private void log( Level level, String message, Throwable cause, boolean flush, LogMarker logMarker )
     {
-        logCalls.add( new LogCall(level, message, cause, false) );
+        logCalls.add( new LogCall( level, message, cause, flush, logMarker ) );
     }
 
     @Override
-    public void debug( String msg )
+    public boolean isDebugEnabled()
     {
-        debug( msg, null );
+        return true;
     }
 
     @Override
-    public void debug( String msg, Throwable cause )
+    protected void doDebug( String msg, Throwable cause, boolean flush, LogMarker logMarker )
     {
-        log( Level.DEBUG, msg, cause );
+        log( Level.DEBUG, msg, cause, flush, logMarker );
     }
 
     @Override
-    public void info( String msg )
+    public void info( String msg, Throwable cause, boolean flush, LogMarker logMarker )
     {
-        info( msg, null );
+        log( Level.INFO, msg, cause, flush, logMarker );
     }
 
     @Override
-    public void info( String msg, Throwable cause )
+    public void warn( String msg, Throwable cause, boolean flush, LogMarker logMarker )
     {
-        log( Level.INFO, msg, cause );
+        log( Level.WARN, msg, cause, flush, logMarker );
     }
 
     @Override
-    public void warn( String msg )
+    public void error( String msg, Throwable cause, boolean flush, LogMarker logMarker )
     {
-        warn( msg, null );
-    }
-
-    @Override
-    public void warn( String msg, Throwable cause )
-    {
-        log( Level.WARN, msg, cause );
-    }
-
-    @Override
-    public void error( String msg )
-    {
-        error( msg, null );
-    }
-
-    @Override
-    public void error( String msg, Throwable cause )
-    {
-        log( Level.ERROR, msg, cause );
-    }
-
-    @Override
-    public void logMessage( String msg, Throwable cause, boolean flush )
-    {
-        log( Level.UNKNOWN, msg, cause );
-    }
-
-    @Override
-    public void logMessage( String msg, boolean flush )
-    {
-        logMessage( msg, null, flush );
-    }
-
-    @Override
-    public void logMessage( String msg, LogMarker marker )
-    {
-        logMessage( msg, null, false );
+        log( Level.ERROR, msg, cause, flush, logMarker );
     }
 
     @Override
     protected void logLine( String line )
     {
-        // Not sure about the state of the line logger. For now, we delegate to throw the "don't use this" runtime exception
-        // please modify appropriately if you know anything about this, because I'm not confident about this. /jake
-        logMessage( line );
+        info( line );
     }
 
     @Override

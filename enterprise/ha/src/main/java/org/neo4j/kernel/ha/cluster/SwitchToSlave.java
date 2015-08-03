@@ -570,7 +570,7 @@ public class SwitchToSlave
                     handshake.txChecksum() + ", where handshake is " + handshake;
             throw new BranchedDataException( msg );
         }
-        msgLog.logMessage( "Checksum for last committed tx ok with lastTxId=" +
+        msgLog.info( "Checksum for last committed tx ok with lastTxId=" +
                 myLastCommittedTx + " with checksum=" + myChecksum, true );
     }
 }

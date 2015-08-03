@@ -19,12 +19,6 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import java.net.URI;
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -33,20 +27,25 @@ import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.net.URI;
+import java.util.HashSet;
+import java.util.Set;
+import javax.servlet.http.HttpServletRequest;
+
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.web.QuerySessionProvider;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 
 import static java.util.Arrays.asList;
-
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.argThat;
@@ -60,7 +59,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.transactional.StubStatementDeserializer.statements;
 
@@ -366,7 +364,7 @@ public class TransactionHandleTest
         TransitionalTxManagementKernelTransaction transactionContext = kernel.newTransaction();
         doThrow( new NullPointerException() ).when( transactionContext ).commit();
 
-        StringLogger log = mock( StringLogger.class );
+        TestLogger log = new TestLogger();
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
 
@@ -385,7 +383,7 @@ public class TransactionHandleTest
         handle.commit( statements( statement ), output, false, mock( HttpServletRequest.class ) );
 
         // then
-        verify( log ).error( eq( "Failed to commit transaction." ), any( NullPointerException.class ) );
+        log.assertExactly( TestLogger.LogCall.error( "Failed to commit transaction.", new NullPointerException(  ) ) );
         verify( registry ).forget( 1337l );
 
         InOrder outputOrder = inOrder( output );

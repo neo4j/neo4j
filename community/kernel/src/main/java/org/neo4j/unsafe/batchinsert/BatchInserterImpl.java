@@ -257,7 +257,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             dumpConfiguration( params );
         }
-        msgLog.logMessage( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
+        msgLog.info( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
         life.start();
         neoStore = sf.newNeoStore( true );
         neoStore.verifyStoreOk();
@@ -920,7 +920,7 @@ public class BatchInserterImpl implements BatchInserter
             throw new UnderlyingStorageException( "Could not release store lock", e );
         }
 
-        msgLog.logMessage( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")", true );
+        msgLog.info( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")", true );
         msgLog.close();
         life.shutdown();
     }

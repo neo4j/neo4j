@@ -52,18 +52,19 @@ public class LogbackService
 
     public LogbackService( Config config, LoggerContext loggerContext )
     {
-        this(config, loggerContext, "neo4j-logback.xml", new Monitors());
+        this( config, loggerContext, "neo4j-logback.xml", new Monitors() );
     }
 
     public LogbackService( final Config config, final LoggerContext loggerContext,
-                           final String logbackConfigurationFilename,
-                           final Monitors monitors)
+            final String logbackConfigurationFilename,
+            final Monitors monitors )
     {
         this.config = config;
         this.loggerContext = loggerContext;
-        MonitoredRollingPolicy.setMonitorsInstance(monitors);
+        MonitoredRollingPolicy.setMonitorsInstance( monitors );
 
-        // We do the initialization in the constructor, because some services will use logging during creation phase, before init.
+        // We do the initialization in the constructor, because some services will use logging during creation phase,
+        // before init.
         final File storeDir = config.get( GraphDatabaseSettings.store_dir );
 
         if ( storeDir != null )
@@ -99,7 +100,7 @@ public class LogbackService
                     JoranConfigurator configurator = new JoranConfigurator();
                     configurator.setContext( loggerContext );
 
-                    if (config.getParams().containsKey( "ha.server_id" ))
+                    if ( config.getParams().containsKey( "ha.server_id" ) )
                     {
                         loggerContext.putProperty( "host", config.getParams().get( "ha.server_id" ) );
                     }
@@ -116,9 +117,10 @@ public class LogbackService
                     {
                         URL resource = getClass().getClassLoader().getResource( logbackConfigurationFilename );
 
-                        if (resource == null)
+                        if ( resource == null )
                         {
-                            throw new IllegalStateException( String.format("Could not find %s configuration", logbackConfigurationFilename ));
+                            throw new IllegalStateException( String.format( "Could not find %s configuration",
+                                    logbackConfigurationFilename ) );
                         }
 
                         configurator.doConfigure( resource );
@@ -139,7 +141,7 @@ public class LogbackService
             loggingLife.start();
 
             // Unset this to ensure we don't leak memory through statics
-            MonitoredRollingPolicy.setMonitorsInstance(null);
+            MonitoredRollingPolicy.setMonitorsInstance( null );
 
             restartOnChange = new RestartOnChange( "remote_logging_", loggingLife );
             config.addConfigurationChangeListener( restartOnChange );
@@ -169,8 +171,7 @@ public class LogbackService
         return new ConsoleLogger( new Slf4jToStringLoggerAdapter( loggerContext.getLogger( loggingClass ) ) );
     }
 
-    private static class Slf4jToStringLoggerAdapter
-            extends StringLogger
+    private static class Slf4jToStringLoggerAdapter extends StringLogger
     {
         private final Logger logger;
         private final boolean debugEnabled;
@@ -188,57 +189,44 @@ public class LogbackService
         }
 
         @Override
-        public void logLongMessage( final String msg, Visitor<LineLogger, RuntimeException> source, final boolean flush )
+        public void logLongMessage( final String msg, Visitor<LineLogger,RuntimeException> source, final boolean flush )
         {
-            logMessage( msg, flush );
+            info( msg, flush );
             source.visit( new LineLogger()
             {
                 @Override
                 public void logLine( String line )
                 {
-                    logMessage( line, flush );
+                    info( line, flush );
                 }
             } );
         }
 
         @Override
-        public void logMessage( String msg, boolean flush )
+        protected void doDebug( String msg, Throwable cause, boolean flush, LogMarker logMarker )
         {
-            if ( isDebugEnabled() )
+            if ( logMarker == LogMarker.NO_MARK )
             {
-                logger.debug( msg );
+                if ( cause == null )
+                {
+                    logger.debug( msg );
+                }
+                else
+                {
+                    logger.debug( msg, cause );
+                }
             }
             else
             {
-                logger.info( msg );
+                if ( cause == null )
+                {
+                    logger.debug( from( logMarker ), msg );
+                }
+                else
+                {
+                    logger.debug( from( logMarker ), msg, cause );
+                }
             }
-        }
-
-        @Override
-        public void logMessage( String msg, LogMarker marker )
-        {
-           logger.info( from( marker ), msg );
-        }
-
-        @Override
-        public void logMessage( String msg, Throwable cause, boolean flush )
-        {
-            logger.error( msg, cause );
-        }
-
-        @Override
-        public void debug( String msg )
-        {
-            if ( isDebugEnabled() )
-            {
-                logger.debug( msg );
-            }
-        }
-
-        @Override
-        public void debug( String msg, Throwable cause )
-        {
-            logger.debug( msg, cause );
         }
 
         @Override
@@ -248,39 +236,84 @@ public class LogbackService
         }
 
         @Override
-        public void info( String msg )
+        public void info( String msg, Throwable cause, boolean flushIgnored, LogMarker logMarker )
         {
-            logger.info( msg );
+            if ( logMarker == LogMarker.NO_MARK )
+            {
+                if ( cause == null )
+                {
+                    logger.info( msg );
+                }
+                else
+                {
+                    logger.info( msg, cause );
+                }
+            }
+            else
+            {
+                if ( cause == null )
+                {
+                    logger.info( from( logMarker ), msg );
+                }
+                else
+                {
+                    logger.info( from( logMarker ), msg, cause );
+                }
+            }
         }
 
         @Override
-        public void info( String msg, Throwable cause )
+        public void warn( String msg, Throwable cause, boolean flush, LogMarker logMarker )
         {
-            logger.info( msg, cause );
+            if ( logMarker == LogMarker.NO_MARK )
+            {
+                if ( cause == null )
+                {
+                    logger.warn( msg );
+                }
+                else
+                {
+                    logger.warn( msg, cause );
+                }
+            }
+            else
+            {
+                if ( cause == null )
+                {
+                    logger.warn( from( logMarker ), msg );
+                }
+                else
+                {
+                    logger.warn( from( logMarker ), msg, cause );
+                }
+            }
         }
 
         @Override
-        public void warn( String msg )
+        public void error( String msg, Throwable cause, boolean flush, LogMarker logMarker )
         {
-            logger.warn( msg );
-        }
-
-        @Override
-        public void warn( String msg, Throwable throwable )
-        {
-            logger.warn( msg, throwable );
-        }
-
-        @Override
-        public void error( String msg )
-        {
-            logger.error( msg );
-        }
-
-        @Override
-        public void error( String msg, Throwable throwable )
-        {
-            logger.error( msg, throwable );
+            if ( logMarker == LogMarker.NO_MARK )
+            {
+                if ( cause == null )
+                {
+                    logger.error( msg );
+                }
+                else
+                {
+                    logger.error( msg, cause );
+                }
+            }
+            else
+            {
+                if ( cause == null )
+                {
+                    logger.error( from( logMarker ), msg );
+                }
+                else
+                {
+                    logger.error( from( logMarker ), msg, cause );
+                }
+            }
         }
 
         @Override

@@ -60,8 +60,8 @@ public class HighAvailabilityDiagnostics
         builder.append( "High Availability diagnostics\n" ).
                 append( "Member state:" ).append( memberStateMachine.getCurrentState().name() ).append( "\n" ).
                 append( "State machines:\n" );
-        
+
         clusterClient.dumpDiagnostics( builder );
-        log.logMessage( builder.toString() );
+        log.info( builder.toString() );
     }
 }

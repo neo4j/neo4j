@@ -19,45 +19,43 @@
  */
 package org.neo4j.com;
 
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 import org.junit.Test;
-import org.neo4j.kernel.impl.util.StringLogger;
+
+import org.neo4j.kernel.impl.util.TestLogger;
 
 public class LoggingResourcePoolMonitorTest
 {
     @Test
     public void testUpdatedCurrentPeakSizeLogsOnlyOnChange() throws Exception
     {
-        StringLogger logger = mock( StringLogger.class );
+        TestLogger logger = new TestLogger();
         LoggingResourcePoolMonitor monitor = new LoggingResourcePoolMonitor( logger );
 
         monitor.updatedCurrentPeakSize( 10 );
-        verify( logger, times( 1 ) ).debug( anyString() );
+        logger.assertLogCallAtLevel( "DEBUG", 1 );
+        logger.clear();
 
         monitor.updatedCurrentPeakSize( 10 );
-        verify( logger, times( 1 ) ).debug( anyString() );
+        logger.assertNoDebugs();
 
         monitor.updatedCurrentPeakSize( 11 );
-        verify( logger, times( 2 ) ).debug( anyString() );
+        logger.assertLogCallAtLevel( "DEBUG", 1 );
     }
 
     @Test
     public void testUpdatedTargetSizeOnlyOnChange() throws Exception
     {
-        StringLogger logger = mock( StringLogger.class );
+        TestLogger logger = new TestLogger();
         LoggingResourcePoolMonitor monitor = new LoggingResourcePoolMonitor( logger );
 
         monitor.updatedTargetSize( 10 );
-        verify( logger, times( 1 ) ).debug( anyString() );
+        logger.assertLogCallAtLevel( "DEBUG", 1 );
+        logger.clear();
 
         monitor.updatedTargetSize( 10 );
-        verify( logger, times( 1 ) ).debug( anyString() );
+        logger.assertNoDebugs();
 
         monitor.updatedTargetSize( 11 );
-        verify( logger, times( 2 ) ).debug( anyString() );
+        logger.assertLogCallAtLevel( "DEBUG", 1 );
     }
 }

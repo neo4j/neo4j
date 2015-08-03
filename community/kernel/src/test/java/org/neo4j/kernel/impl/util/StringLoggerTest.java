@@ -32,7 +32,9 @@ import org.junit.rules.TestName;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.logging.LogMarker;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
@@ -68,10 +70,10 @@ public class StringLoggerTest
         // First rotation
         while ( !fileSystem.fileExists( oldFile ) )
         {
-            logger.logMessage( prefix + counter++, true );
+            logger.info( prefix + counter++, true );
         }
         int mark1 = counter-1;
-        logger.logMessage( prefix + counter++, true );
+        logger.info( prefix + counter++, true );
         assertTrue( firstLineOfFile( oldFile ).contains( prefix + "0" ) );
         assertTrue( lastLineOfFile( oldFile ).first().contains( prefix + mark1 ) );
         assertTrue( firstLineOfFile( logFile ).contains( prefix + (counter-1) ) );
@@ -79,10 +81,10 @@ public class StringLoggerTest
         // Second rotation
         while ( !fileSystem.fileExists( oldestFile ) )
         {
-            logger.logMessage( prefix + counter++, true );
+            logger.info( prefix + counter++, true );
         }
         int mark2 = counter-1;
-        logger.logMessage( prefix + counter++, true );
+        logger.info( prefix + counter++, true );
         assertTrue( firstLineOfFile( oldestFile ).contains( prefix + "0" ) );
         assertTrue( lastLineOfFile( oldestFile ).first().contains( prefix + mark1 ) );
         assertTrue( firstLineOfFile( oldFile ).contains( prefix + (mark1+1) ) );
@@ -94,7 +96,7 @@ public class StringLoggerTest
         long previousSize = 0;
         while ( true )
         {
-            logger.logMessage( prefix + counter++, true );
+            logger.info( prefix + counter++, true );
             if ( fileSystem.getFileSize( logFile ) < previousSize )
             {
                 break;
@@ -122,11 +124,11 @@ public class StringLoggerTest
             @Override
             public void run()
             {
-                logger.logMessage( baseMessage + " from trigger", true );
+                logger.info( baseMessage + " from trigger", true );
             }
         };
         logger.addRotationListener( trigger );
-        logger.logMessage( baseMessage + " from main", true );
+        logger.info( baseMessage + " from main", true );
 
         File rotated = new File( target, "messages.log.1" );
         assertTrue( "rotated file not present, should have been created", fileSystem.fileExists( rotated ) );
@@ -173,7 +175,7 @@ public class StringLoggerTest
         StringBuffer buffer = new StringBuffer();
         StringLogger delegate = StringLogger.wrap( buffer );
         FakeClock fakeClock = new FakeClock();
-        StringLogger cappedLogger = StringLogger.cappedLogger( delegate,
+        StringLogger cappedLogger = cappedLogger( delegate,
                 CappedOperation.<String>time( fakeClock, 1, TimeUnit.MILLISECONDS ) );
 
         fakeClock.forward( 1, TimeUnit.MILLISECONDS );
@@ -186,6 +188,90 @@ public class StringLoggerTest
         assertThat( output, containsString( "f1rst" ) );
         assertThat( output, containsString( "th1rd" ) );
         assertThat( output, not( containsString( "s3cond" ) ) );
+    }
+
+    private static StringLogger cappedLogger(
+            final StringLogger delegate,
+            final CappedOperation.Switch<String> capSwitch )
+    {
+        return new StringLogger()
+        {
+            @Override
+            protected void doDebug( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+            {
+                if ( capSwitch.accept( msg ) )
+                {
+                    delegate.doDebug( msg, cause, flush, logMarker );
+                    capSwitch.reset();
+                }
+            }
+
+            @Override
+            public void info( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+            {
+                if ( capSwitch.accept( msg ) )
+                {
+                    delegate.info( msg, cause, flush, logMarker );
+                    capSwitch.reset();
+                }
+            }
+
+            @Override
+            public void warn( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+            {
+                if ( capSwitch.accept( msg ) )
+                {
+                    delegate.warn( msg, cause, flush, logMarker );
+                    capSwitch.reset();
+                }
+            }
+
+            @Override
+            public void error( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+            {
+                if ( capSwitch.accept( msg ) )
+                {
+                    delegate.error( msg, cause, flush, logMarker );
+                    capSwitch.reset();
+                }
+            }
+
+            @Override
+            public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
+            {
+                if ( capSwitch.accept( msg ) )
+                {
+                    delegate.logLongMessage( msg, source, flush );
+                }
+            }
+
+            @Override
+            public void addRotationListener( Runnable listener )
+            {
+                delegate.addRotationListener( listener );
+            }
+
+            @Override
+            public void flush()
+            {
+                delegate.flush();
+            }
+
+            @Override
+            public void close()
+            {
+                delegate.close();
+            }
+
+            @Override
+            protected void logLine( String line )
+            {
+                if ( capSwitch.accept( line ) )
+                {
+                    delegate.logLine( line );
+                }
+            }
+        };
     }
 
     private Predicate<String> stringContaining( final String string )

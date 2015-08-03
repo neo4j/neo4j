@@ -47,50 +47,58 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class BufferingLogger extends StringLogger
 {
+    private enum Level
+    {
+        DEBUG, INFO, WARN, ERROR
+    }
+
     private static class LogMessage
     {
         private final String message;
         private final Throwable throwable;
         private final boolean flush;
+        private final LogMarker logMarker;
+        private final Level level;
 
-        public LogMessage( String message, Throwable throwable, boolean flush )
+        public LogMessage( String message, Throwable throwable, boolean flush, LogMarker logMarker, Level level )
         {
             this.message = message;
             this.throwable = throwable;
             this.flush = flush;
+            this.logMarker = logMarker;
+            this.level = level;
         }
     }
 
     private final Queue<LogMessage> buffer = new ConcurrentLinkedQueue<>();
 
-    @Override
-    public void logMessage( String msg )
+    private void log( String msg, Throwable cause, boolean flush, LogMarker logMarker, Level level )
     {
-        logMessage( msg, null, false );
+        buffer.add( new LogMessage( msg, cause, flush, logMarker, level ) );
     }
 
     @Override
-    public void logMessage( String msg, Throwable throwable )
+    protected void doDebug( String msg, Throwable cause, boolean flush, LogMarker logMarker )
     {
-        logMessage( msg, throwable, false );
+        log( msg, cause, flush, logMarker, Level.DEBUG );
     }
 
     @Override
-    public void logMessage( String msg, boolean flush )
+    public void info( String msg, Throwable cause, boolean flush, LogMarker logMarker )
     {
-        logMessage( msg, null, flush );
+        log( msg, cause, flush, logMarker, Level.INFO );
     }
 
     @Override
-    public void logMessage( String msg, LogMarker marker )
+    public void warn( String msg, Throwable cause, boolean flush, LogMarker logMarker )
     {
-        logMessage( msg );
+        log( msg, cause, flush, logMarker, Level.WARN );
     }
 
     @Override
-    public void logMessage( String msg, Throwable cause, boolean flush )
+    public void error( String msg, Throwable cause, boolean flush, LogMarker logMarker )
     {
-        buffer.add( new LogMessage( msg, cause, flush ) );
+        log( msg, cause, flush, logMarker, Level.ERROR );
     }
 
     @Override
@@ -107,13 +115,13 @@ public class BufferingLogger extends StringLogger
     @Override
     protected void logLine( String line )
     {
-        logMessage( line );
+        info( line );
     }
 
     @Override
     public void flush()
     {
-        logMessage( "", true );
+        info( "", true );
     }
 
     @Override
@@ -127,18 +135,25 @@ public class BufferingLogger extends StringLogger
      */
     public void replayInto( StringLogger other )
     {
-        LogMessage message = buffer.poll();
-        while ( message != null )
+        for  ( LogMessage message; ( message = buffer.poll()) != null ; )
         {
-            if ( message.throwable != null )
+            switch ( message.level )
             {
-                other.logMessage( message.message, message.throwable, message.flush );
+            case DEBUG:
+                other.debug( message.message, message.throwable, message.flush, message.logMarker );
+                break;
+            case INFO:
+                other.info( message.message, message.throwable, message.flush, message.logMarker );
+                break;
+            case WARN:
+                other.warn( message.message, message.throwable, message.flush, message.logMarker );
+                break;
+            case ERROR:
+                other.error( message.message, message.throwable, message.flush, message.logMarker );
+                break;
+            default:
+                throw new IllegalStateException( "Unknown log level " + message.level );
             }
-            else
-            {
-                other.logMessage( message.message, message.flush );
-            }
-            message = buffer.poll();
         }
     }
 

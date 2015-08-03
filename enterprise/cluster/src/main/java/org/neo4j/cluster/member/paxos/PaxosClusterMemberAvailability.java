@@ -67,7 +67,7 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
             public void listeningAt( URI me )
             {
                 serverClusterId = me;
-                PaxosClusterMemberAvailability.this.logger.logMessage( "Listening at:" + me );
+                PaxosClusterMemberAvailability.this.logger.info( "Listening at:" + me );
             }
         };
     }

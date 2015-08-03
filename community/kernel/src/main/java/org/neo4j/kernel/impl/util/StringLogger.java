@@ -196,31 +196,38 @@ public abstract class StringLogger
         return new StringLogger()
         {
             @Override
-            public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
+            protected void doDebug( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+            {
+                logger1.doDebug( msg, cause, flush, logMarker );
+                logger2.doDebug( msg, cause, flush, logMarker );
+            }
+
+            @Override
+            public void info( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+            {
+                logger1.info( msg, cause, flush, logMarker );
+                logger2.info( msg, cause, flush, logMarker );
+            }
+
+            @Override
+            public void warn( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+            {
+                logger1.warn( msg, cause, flush, logMarker );
+                logger2.warn( msg, cause, flush, logMarker );
+            }
+
+            @Override
+            public void error( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+            {
+                logger1.error( msg, cause, flush, logMarker );
+                logger2.error( msg, cause, flush, logMarker );
+            }
+
+            @Override
+            public void logLongMessage( String msg, Visitor<LineLogger,RuntimeException> source, boolean flush )
             {
                 logger1.logLongMessage( msg, source, flush );
                 logger2.logLongMessage( msg, source, flush );
-            }
-
-            @Override
-            public void logMessage( String msg, boolean flush )
-            {
-                logger1.logMessage( msg, flush );
-                logger2.logMessage( msg, flush );
-            }
-
-            @Override
-            public void logMessage( String msg, LogMarker marker )
-            {
-                logger1.logMessage( msg, marker );
-                logger2.logMessage( msg, marker );
-            }
-
-            @Override
-            public void logMessage( String msg, Throwable cause, boolean flush )
-            {
-                logger1.logMessage( msg, cause, flush );
-                logger2.logMessage( msg, cause, flush );
             }
 
             @Override
@@ -253,78 +260,6 @@ public abstract class StringLogger
         };
     }
 
-    public static StringLogger cappedLogger(
-            final StringLogger delegate,
-            final CappedOperation.Switch<String> capSwitch )
-    {
-        return new StringLogger()
-        {
-            @Override
-            public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
-            {
-                if ( capSwitch.accept( msg ) )
-                {
-                    delegate.logLongMessage( msg, source, flush );
-                }
-            }
-
-            @Override
-            public void logMessage( String msg, boolean flush )
-            {
-                if ( capSwitch.accept( msg ) )
-                {
-                    delegate.logMessage( msg, flush );
-                    capSwitch.reset();
-                }
-            }
-
-            @Override
-            public void logMessage( String msg, LogMarker marker )
-            {
-                if ( capSwitch.accept( msg ) )
-                {
-                    delegate.logMessage( msg, marker );
-                }
-            }
-
-            @Override
-            public void logMessage( String msg, Throwable cause, boolean flush )
-            {
-                if ( capSwitch.accept( msg ) )
-                {
-                    delegate.logMessage( msg, cause, flush );
-                }
-            }
-
-            @Override
-            public void addRotationListener( Runnable listener )
-            {
-                delegate.addRotationListener( listener );
-            }
-
-            @Override
-            public void flush()
-            {
-                delegate.flush();
-            }
-
-            @Override
-            public void close()
-            {
-                delegate.close();
-            }
-
-            @Override
-            protected void logLine( String line )
-            {
-                if ( capSwitch.accept( line ) )
-                {
-                    delegate.logLine( line );
-                }
-            }
-        };
-    }
-
     /**
      * Create a StringLogger that only creates a file on the first attempt to write something to the log.
      */
@@ -335,31 +270,38 @@ public abstract class StringLogger
             StringLogger logger = null;
 
             @Override
+            public void doDebug( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+            {
+                createLogger();
+                logger.doDebug( msg, cause, flush, logMarker );
+            }
+
+            @Override
+            public void info( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+            {
+                createLogger();
+                logger.info( msg, cause, flush, logMarker );
+            }
+
+            @Override
+            public void warn( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+            {
+                createLogger();
+                logger.warn( msg, cause, flush, logMarker );
+            }
+
+            @Override
+            public void error( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+            {
+                createLogger();
+                logger.error( msg, cause, flush, logMarker );
+            }
+
+            @Override
             public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
             {
                 createLogger();
                 logger.logLongMessage( msg, source, flush );
-            }
-
-            @Override
-            public void logMessage( String msg, boolean flush )
-            {
-                createLogger();
-                logger.logMessage( msg, flush );
-            }
-
-            @Override
-            public void logMessage( String msg, LogMarker marker )
-            {
-                createLogger();
-                logger.logMessage( msg, marker );
-            }
-
-            @Override
-            public void logMessage( String msg, Throwable cause, boolean flush )
-            {
-                createLogger();
-                logger.logMessage( msg, cause, flush );
             }
 
             @Override
@@ -401,72 +343,106 @@ public abstract class StringLogger
         };
     }
 
-    public void logMessage( String msg )
+    public final void debug( String msg )
     {
-        logMessage( msg, false );
+        debug( msg, null );
     }
 
-    public void logMessage( String msg, Throwable cause )
+    public final void debug( String msg, boolean flush )
     {
-        logMessage( msg, cause, false );
+        debug( msg, null, flush );
     }
 
-    public void logMessage( String msg, Throwable cause, boolean flush, LogMarker marker )
+    public final void debug( String msg, Throwable cause )
     {
-        // LogMarker is used by subclasses
-        logMessage( msg, cause, flush );
+        debug( msg, cause, false );
     }
 
-    public void debug( String msg )
+    public final void debug( String msg, Throwable cause, boolean flush )
+    {
+        debug( msg, cause, flush, LogMarker.NO_MARK );
+    }
+
+    public final void debug( String msg, Throwable cause, boolean flush, LogMarker logMarker )
     {
         if ( isDebugEnabled() )
         {
-            logMessage( msg );
+            doDebug( msg, cause, flush, logMarker );
         }
     }
 
-    public void debug( String msg, Throwable cause )
-    {
-        if ( isDebugEnabled() )
-        {
-            logMessage( msg, cause );
-        }
-    }
+    protected abstract void doDebug( String msg, Throwable cause, boolean flush, LogMarker logMarker );
 
     public boolean isDebugEnabled()
     {
         return false;
     }
 
-    public void info( String msg )
+    public final void info( String msg )
     {
-        logMessage( msg );
+        info( msg, null );
     }
 
-    public void info( String msg, Throwable cause )
+    public final void info( String msg, boolean flush )
     {
-        logMessage( msg, cause );
+        info( msg, null, flush );
     }
 
-    public void warn( String msg )
+    public final void info( String msg, Throwable cause )
     {
-        logMessage( msg );
+        info( msg, cause, false );
     }
 
-    public void warn( String msg, Throwable throwable )
+    public final void info( String msg, Throwable cause, boolean flush )
     {
-        logMessage( msg, throwable );
+        info( msg, cause, flush, LogMarker.NO_MARK );
     }
 
-    public void error( String msg )
+    public abstract void info( String msg, Throwable cause, boolean flush, LogMarker logMarker );
+
+    public final void warn( String msg )
     {
-        logMessage( msg );
+        warn( msg, null );
     }
 
-    public void error( String msg, Throwable throwable )
+    public final void warn( String msg, boolean flush )
     {
-        logMessage( msg, throwable );
+        warn( msg, null, flush );
     }
+
+    public final void warn( String msg, Throwable cause )
+    {
+        warn( msg, cause, false );
+    }
+
+    public final void warn( String msg, Throwable cause, boolean flush )
+    {
+        warn( msg, cause, flush, LogMarker.NO_MARK );
+    }
+
+    public abstract void warn( String msg, Throwable cause, boolean flush, LogMarker logMarker );
+
+    public final void error( String msg )
+    {
+        error( msg, null );
+    }
+
+    public final void error( String msg, boolean flush )
+    {
+        error( msg, null, flush );
+    }
+
+    public final void error( String msg, Throwable cause )
+    {
+        error( msg, cause, false );
+    }
+
+    public final void error( String msg, Throwable cause, boolean flush )
+    {
+        error( msg, cause, flush, LogMarker.NO_MARK );
+    }
+
+    public abstract void error( String msg, Throwable cause, boolean flush, LogMarker logMarker );
 
     public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source )
     {
@@ -506,12 +482,6 @@ public abstract class StringLogger
 
     public abstract void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush );
 
-    public abstract void logMessage( String msg, boolean flush );
-
-    public abstract void logMessage( String msg, LogMarker marker );
-
-    public abstract void logMessage( String msg, Throwable cause, boolean flush );
-
     public abstract void addRotationListener( Runnable listener );
 
     public abstract void flush();
@@ -523,17 +493,22 @@ public abstract class StringLogger
     public static final StringLogger DEV_NULL = new StringLogger()
     {
         @Override
-        public void logMessage( String msg, boolean flush )
+        public void doDebug( String msg, Throwable cause, boolean flush, LogMarker logMarker )
         {
         }
 
         @Override
-        public void logMessage( String msg, LogMarker marker )
+        public void info( String msg, Throwable cause, boolean flush, LogMarker logMarker )
         {
         }
 
         @Override
-        public void logMessage( String msg, Throwable cause, boolean flush )
+        public void warn( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+        {
+        }
+
+        @Override
+        public void error( String msg, Throwable cause, boolean flush, LogMarker logMarker )
         {
         }
 
@@ -611,6 +586,55 @@ public abstract class StringLogger
         }
 
         @Override
+        protected void doDebug( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+        {
+            doLogMessage( msg, cause, flush, logMarker, "DEBUG" );
+        }
+
+        @Override
+        public void info( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+        {
+            doLogMessage( msg, cause, flush, logMarker, "INFO" );
+        }
+
+        @Override
+        public void warn( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+        {
+            doLogMessage( msg, cause, flush, logMarker, "WARN" );
+        }
+
+        @Override
+        public void error( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+        {
+            doLogMessage( msg, cause, flush, logMarker, "ERROR" );
+        }
+
+        private synchronized void doLogMessage( String msg, Throwable cause, boolean flush, LogMarker ignored, String level )
+        {
+            String message = time();
+            if ( cause != null )
+            {
+                message = message + " " + level + " [org.neo4j]: " + msg + " " + cause.getMessage();
+            }
+            else
+            {
+                message = message + " " + level + "  [org.neo4j]: " + msg;
+            }
+
+            out.println( message );
+            if ( cause != null )
+            {
+                cause.printStackTrace( out );
+            }
+
+            if ( flush )
+            {
+                out.flush();
+            }
+            checkRotation();
+        }
+
+        @Override
         public void addRotationListener( Runnable trigger )
         {
             onRotation.add( trigger );
@@ -625,39 +649,10 @@ public abstract class StringLogger
             }
         }
 
-        @Override
-        public synchronized void logMessage( String msg, boolean flush )
-        {
-            out.println( time() + " INFO  [org.neo4j]: " + msg );
-            if ( flush )
-            {
-                out.flush();
-            }
-            checkRotation();
-        }
-
-        @Override
-        public void logMessage( String msg, LogMarker marker )
-        {
-            // LogMarker is used by subclasses
-            logMessage( msg );
-        }
 
         private String time()
         {
             return Format.date();
-        }
-
-        @Override
-        public synchronized void logMessage( String msg, Throwable cause, boolean flush )
-        {
-            out.println( time() + " ERROR [org.neo4j]: " + msg + " " + cause.getMessage());
-            cause.printStackTrace( out );
-            if ( flush )
-            {
-                out.flush();
-            }
-            checkRotation();
         }
 
         @Override

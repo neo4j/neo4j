@@ -512,15 +512,15 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         catch ( Throwable e )
         {
             // Something unexpected happened during startup
-            msgLog.logMessage( "Exception occurred while setting up store modules. Attempting to close things down.",
-                    e, true);
+            msgLog.error(
+                    "Exception occurred while setting up store modules. Attempting to close things down.", e, true );
             try
             { // Close the neostore, so that locks are released properly
                 neoStoreModule.neoStore().close();
             }
             catch ( Exception closeException )
             {
-                msgLog.logMessage( "Couldn't close neostore after startup failure" );
+                msgLog.error( "Couldn't close neostore after startup failure" );
             }
             throw Exceptions.launderedException( e );
         }
@@ -532,15 +532,15 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         catch ( Throwable e )
         {
             // Something unexpected happened during startup
-            msgLog.logMessage( "Exception occurred while starting the datasource. Attempting to close things down.",
-                    e, true);
+            msgLog.error(
+                    "Exception occurred while starting the datasource. Attempting to close things down.", e, true );
             try
             { // Close the neostore, so that locks are released properly
                 neoStoreModule.neoStore().close();
             }
             catch ( Exception closeException )
             {
-                msgLog.logMessage( "Couldn't close neostore after startup failure" );
+                msgLog.error( "Couldn't close neostore after startup failure" );
             }
             throw Exceptions.launderedException( e );
         }

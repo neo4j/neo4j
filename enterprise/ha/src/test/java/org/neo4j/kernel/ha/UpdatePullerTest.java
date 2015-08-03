@@ -53,6 +53,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.BufferingLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.LogMarker;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OnDemandJobScheduler;
@@ -471,17 +472,10 @@ public class UpdatePullerTest
         }
 
         @Override
-        public synchronized void logMessage( String msg, Throwable cause )
+        public synchronized void error( String msg, Throwable cause, boolean flush, LogMarker logMarker )
         {
             errors.add( cause );
-            super.logMessage( msg, cause );
-        }
-
-        @Override
-        public synchronized void logMessage( String msg, Throwable cause, boolean flush )
-        {
-            errors.add( cause );
-            super.logMessage( msg, cause, flush );
+            super.error( msg, cause, flush, logMarker );
         }
     }
 }
