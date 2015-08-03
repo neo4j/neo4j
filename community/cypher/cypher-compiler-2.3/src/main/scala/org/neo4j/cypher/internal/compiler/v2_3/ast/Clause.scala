@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper.RichString
 import org.neo4j.cypher.internal.compiler.v2_3.notification.CartesianProductNotification
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 import scala.annotation.tailrec
@@ -118,9 +119,11 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
           || !containsPropertyPredicate(identifier, property) =>
         SemanticError(
           """|Cannot use index hint in this context.
-            | Index hints require using an equality comparison or IN condition or checking property
-            | existence on a node in WHERE (either directly or as part of a top-level AND).
-            | The comparison cannot be between two property values.
+            | Index hints are only supported for the following predicates in WHERE
+            | (either directly or as part of a top-level AND):
+            | equality comparison, inequality (range) comparison, LIKE pattern matching,
+            | IN condition or checking property existence.
+            | The comparison cannot be performed between two property values.
             | Note that the label and property comparison must be specified on a
             | non-optional node""".stripLinesAndMargins, hint.position)
       case hint@UsingScanHint(Identifier(identifier), LabelName(labelName))
@@ -145,6 +148,12 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
         case predicate@FunctionInvocation(_, _, IndexedSeq(Property(Identifier(id), PropertyKeyName(name))))
           if id == identifier && predicate.function == Some(functions.Has) =>
           (acc, _) => acc :+ name
+        case AsStringRangeSeekable(PrefixRangeSeekable(_, _, Identifier(id), PropertyKeyName(name))) if id == identifier =>
+          (acc, _) => acc :+ name
+        case expr: InequalityExpression => expr.lhs match {
+            case Property(Identifier(id), PropertyKeyName(name)) if id == identifier =>
+              (acc, _) => acc :+ name
+          }
         case _: Where | _: And | _: Ands | _: Set[_] =>
           (acc, children) => children(acc)
         case _ =>
