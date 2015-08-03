@@ -28,7 +28,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -64,14 +63,13 @@ public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
             DynamicStringStore nameStore,
             StoreVersionMismatchHandler versionMismatchHandler,
             TokenFactory<TOKEN> tokenFactory )
     {
         super( fileName, configuration, idType, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, logProvider, versionMismatchHandler );
+                logProvider, versionMismatchHandler );
         this.nameStore = nameStore;
         this.tokenFactory = tokenFactory;
     }
@@ -99,16 +97,6 @@ public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token
     {
         nameStore.visitStore( visitor );
         visitor.visit( this );
-    }
-
-    @Override
-    protected void closeStorage()
-    {
-        if ( nameStore != null )
-        {
-            nameStore.close();
-            nameStore = null;
-        }
     }
 
     @Override

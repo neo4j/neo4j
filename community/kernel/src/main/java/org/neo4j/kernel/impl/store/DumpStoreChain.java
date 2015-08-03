@@ -104,10 +104,10 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
         {
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
             Config config = new Config();
-            StoreFactory storeFactory = new StoreFactory( null, config, idGeneratorFactory, pageCache, fs, logProvider() );
-            RecordStore<RECORD> store = store( storeFactory, storeDir );
-            try
+            StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider() );
+            try ( NeoStores neoStores = storeFactory.openNeoStores( false ) )
             {
+                RecordStore<RECORD> store = store( neoStores );
                 for ( long next = first; next != -1; )
                 {
                     RECORD record = store.forceGetRecord( next );
@@ -115,16 +115,12 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
                     next = next( record );
                 }
             }
-            finally
-            {
-                store.close();
-            }
         }
     }
 
     abstract long next( RECORD record );
 
-    abstract RecordStore<RECORD> store( StoreFactory factory, File storeDir );
+    abstract RecordStore<RECORD> store( NeoStores neoStores );
 
     private static DumpStoreChain propertyChain( Args args )
     {
@@ -149,11 +145,11 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
             return new DumpRelationshipChain( -1, node, false )
             {
                 @Override
-                RelationshipStore store( StoreFactory factory, File storeFile )
+                RelationshipStore store( NeoStores neoStores )
                 {
-                    NodeRecord nodeRecord = nodeRecord( factory, storeFile, node );
+                    NodeRecord nodeRecord = nodeRecord( neoStores, node );
                     first = nodeRecord.isDense() ? -1 : nodeRecord.getNextRel();
-                    return super.store( factory, new File( storeFile, RELSTORE ) );
+                    return super.store( neoStores );
                 }
             };
         }
@@ -162,10 +158,10 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
             return new DumpPropertyChain( -1, false )
             {
                 @Override
-                PropertyStore store( StoreFactory factory, File storeDir )
+                PropertyStore store( NeoStores neoStores )
                 {
-                    first = nodeRecord( factory, storeDir, node ).getNextProp();
-                    return super.store( factory, new File( storeDir, PROPSTORE ) );
+                    first = nodeRecord( neoStores, node ).getNextProp();
+                    return super.store( neoStores );
                 }
             };
         }
@@ -175,12 +171,9 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
         }
     }
 
-    private static NodeRecord nodeRecord( StoreFactory factory, File storeDir, long id )
+    private static NodeRecord nodeRecord( NeoStores neoStores, long id )
     {
-        try ( NodeStore store = factory.newNodeStore( new File( storeDir, NODESTORE ) ) )
-        {
-            return store.forceGetRecord( id );
-        }
+        return neoStores.getNodeStore().forceGetRecord( id );
     }
 
     private static void verifyFilesExists( File... files )
@@ -239,9 +232,9 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
         }
 
         @Override
-        PropertyStore store( StoreFactory factory, File storeFile )
+        PropertyStore store( NeoStores neoStores )
         {
-            return factory.newPropertyStore( storeFile );
+            return neoStores.getPropertyStore();
         }
 
         @Override
@@ -264,9 +257,9 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
         }
 
         @Override
-        RelationshipStore store( StoreFactory factory, File storeFile )
+        RelationshipStore store( NeoStores neoStores )
         {
-            return factory.newRelationshipStore( storeFile );
+            return neoStores.getRelationshipStore();
         }
 
         @Override

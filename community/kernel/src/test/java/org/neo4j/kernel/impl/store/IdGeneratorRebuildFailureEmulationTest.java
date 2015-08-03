@@ -68,10 +68,10 @@ public class IdGeneratorRebuildFailureEmulationTest
     public static final class FailureBeforeRebuild extends IdGeneratorRebuildFailureEmulationTest
     {
         @Override
-        protected void emulateFailureOnRebuildOf( NeoStore neostore )
+        protected void emulateFailureOnRebuildOf( NeoStores neoStores )
         {
             // emulate a failure during rebuild by not issuing this call:
-            // neostore.makeStoreOk();
+            // neostores.makeStoreOk();
         }
     }
 
@@ -81,12 +81,12 @@ public class IdGeneratorRebuildFailureEmulationTest
         File idFile = new File( storeDir, Thread.currentThread().getStackTrace()[2].getMethodName().replace( '_', '.' ) + ".id" );
         // emulate the need for rebuilding id generators by deleting it
         fs.deleteFile( idFile );
-        NeoStore neostore = null;
+        NeoStores neoStores = null;
         try
         {
-            neostore = factory.newNeoStore( false );
+            neoStores = factory.openNeoStores( false );
             // emulate a failure during rebuild:
-            emulateFailureOnRebuildOf( neostore );
+            emulateFailureOnRebuildOf( neoStores );
         }
         catch ( UnderlyingStorageException expected )
         {
@@ -96,16 +96,16 @@ public class IdGeneratorRebuildFailureEmulationTest
         {
             // we want close to not misbehave
             // (and for example truncate the file based on the wrong highId)
-            if ( neostore != null )
+            if ( neoStores != null )
             {
-                neostore.close();
+                neoStores.close();
             }
         }
     }
 
-    void emulateFailureOnRebuildOf( NeoStore neostore )
+    void emulateFailureOnRebuildOf( NeoStores neoStores )
     {
-        fail( "emulateFailureOnRebuildOf(NeoStore) must be overridden" );
+        fail( "emulateFailureOnRebuildOf(NeoStores) must be overridden" );
     }
 
     private FileSystem fs;

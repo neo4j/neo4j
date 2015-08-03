@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCountsCommand;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
@@ -52,7 +52,7 @@ import static org.neo4j.kernel.impl.util.Bits.bitFlags;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write3bLengthAndString;
 
-public class CommandWriter implements NeoCommandHandler
+public class CommandWriter implements CommandHandler
 {
     private final WritableLogChannel channel;
 

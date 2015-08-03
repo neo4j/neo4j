@@ -73,14 +73,14 @@ public class NodeStoreTest
     public final EphemeralFileSystemRule efs = new EphemeralFileSystemRule();
 
     private NodeStore nodeStore;
+    private NeoStores neoStores;
 
     @After
     public void tearDown()
     {
-        if ( nodeStore != null )
+        if ( neoStores != null )
         {
-            nodeStore.close();
-            nodeStore = null;
+            neoStores.close();
         }
     }
 
@@ -316,8 +316,8 @@ public class NodeStoreTest
                 pageCache,
                 fs,
                 NullLogProvider.getInstance() );
-        factory.createNodeStore();
-        nodeStore = factory.newNodeStore();
+        neoStores = factory.openNeoStores( true );
+        nodeStore = neoStores.getNodeStore();
         return nodeStore;
     }
 }

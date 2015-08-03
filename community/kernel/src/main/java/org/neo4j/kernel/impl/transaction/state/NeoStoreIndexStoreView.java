@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreIdIterator;
@@ -62,12 +62,12 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     private final LockService locks;
     private final CountsTracker counts;
 
-    public NeoStoreIndexStoreView( LockService locks, NeoStore neoStore )
+    public NeoStoreIndexStoreView( LockService locks, NeoStores neoStores )
     {
         this.locks = locks;
-        this.propertyStore = neoStore.getPropertyStore();
-        this.nodeStore = neoStore.getNodeStore();
-        this.counts = neoStore.getCounts();
+        this.propertyStore = neoStores.getPropertyStore();
+        this.nodeStore = neoStores.getNodeStore();
+        this.counts = neoStores.getCounts();
     }
 
     @Override

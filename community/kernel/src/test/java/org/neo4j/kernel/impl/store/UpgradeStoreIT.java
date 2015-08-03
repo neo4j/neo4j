@@ -316,7 +316,7 @@ public class UpgradeStoreIT
     private void setOlderNeoStoreVersion( File path ) throws IOException
     {
         String oldVersion = "NeoStore v0.9.6";
-        FileChannel channel = new RandomAccessFile( new File( path, NeoStore.DEFAULT_NAME ), "rw" ).getChannel();
+        FileChannel channel = new RandomAccessFile( new File( path, MetaDataStore.DEFAULT_NAME ), "rw" ).getChannel();
         channel.position( channel.size() - UTF8.encode( oldVersion ).length );
         ByteBuffer buffer = ByteBuffer.wrap( UTF8.encode( oldVersion ) );
         channel.write( buffer );
@@ -345,14 +345,14 @@ public class UpgradeStoreIT
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         DynamicStringStore stringStore = new DynamicStringStore(
-                new File( fileName.getPath() + ".names"),
+                new File( fileName.getPath() + ".names" ),
                 config,
                 IdType.RELATIONSHIP_TYPE_TOKEN_NAME,
                 new DefaultIdGeneratorFactory( fs ),
                 pageCache,
-                fs,
                 NullLogProvider.getInstance(),
-                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
+                TokenStore.NAME_STORE_BLOCK_SIZE );
         RelationshipTypeTokenStore store = new RelationshipTypeTokenStoreWithOneOlderVersion(
                 fileName, stringStore, fs, pageCache );
         for ( int i = 0; i < numberOfTypes; i++ )
@@ -385,10 +385,10 @@ public class UpgradeStoreIT
                     config,
                     new NoLimitIdGeneratorFactory( fs ),
                     pageCache,
-                    fs,
                     NullLogProvider.getInstance(),
                     stringStore,
-                    StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
+                    StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
+                    true );
         }
 
         @Override

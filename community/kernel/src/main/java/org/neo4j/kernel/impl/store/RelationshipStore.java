@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -54,12 +53,11 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord>
             Config configuration,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
             StoreVersionMismatchHandler versionMismatchHandler )
     {
         super( fileName, configuration, IdType.RELATIONSHIP, idGeneratorFactory,
-                pageCache, fileSystemAbstraction, logProvider, versionMismatchHandler );
+                pageCache, logProvider, versionMismatchHandler );
     }
 
     @Override

@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.test.EmbeddedDatabaseRule;
@@ -78,7 +78,7 @@ public class NeoStoreIndexStoreViewTest
     Node alistair;
     Node stefan;
     LockService locks;
-    NeoStore neoStore;
+    NeoStores neoStores;
     CountsTracker counts;
 
     @Test
@@ -164,8 +164,8 @@ public class NeoStoreIndexStoreViewTest
         createAlistairAndStefanNodes();
         getOrCreateIds();
 
-        neoStore = new StoreAccess( graphDb ).getRawNeoStore();
-        counts = neoStore.getCounts();
+        neoStores = new StoreAccess( graphDb ).getRawNeoStores();
+        counts = neoStores.getCounts();
         locks = mock( LockService.class, new Answer()
         {
             @Override
@@ -180,7 +180,7 @@ public class NeoStoreIndexStoreViewTest
                 return lock;
             }
         } );
-        storeView = new NeoStoreIndexStoreView( locks, neoStore );
+        storeView = new NeoStoreIndexStoreView( locks, neoStores );
     }
 
     private void createAlistairAndStefanNodes()

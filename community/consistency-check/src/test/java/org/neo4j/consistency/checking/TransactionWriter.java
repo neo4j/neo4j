@@ -23,11 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.neo4j.kernel.impl.store.AbstractRecordStore;
-import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.SchemaStore;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -41,7 +37,6 @@ import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.CommandRecordVisitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 
 import static org.neo4j.kernel.impl.store.TokenStore.NAME_STORE_BLOCK_SIZE;
@@ -326,78 +321,5 @@ public class TransactionWriter
         }
         record.setNameId( dynamicIds[0] );
         return record;
-    }
-
-    public static class NeoStoreCommandRecordVisitor implements CommandRecordVisitor
-    {
-        private final NeoStore neoStore;
-
-        public NeoStoreCommandRecordVisitor( NeoStore neoStore )
-        {
-            this.neoStore = neoStore;
-        }
-
-        private <RECORD extends AbstractBaseRecord,STORE extends AbstractRecordStore<RECORD>> void update( STORE store, RECORD record )
-        {
-            store.updateRecord( record );
-        }
-
-        @Override
-        public void visitNode( NodeRecord record )
-        {
-            update( neoStore.getNodeStore(), record );
-        }
-
-        @Override
-        public void visitRelationship( RelationshipRecord record )
-        {
-            update( neoStore.getRelationshipStore(), record );
-        }
-
-        @Override
-        public void visitRelationshipGroup( RelationshipGroupRecord record )
-        {
-            update( neoStore.getRelationshipGroupStore(), record );
-        }
-
-        @Override
-        public void visitProperty( PropertyRecord record )
-        {
-            update( neoStore.getPropertyStore(), record );
-        }
-
-        @Override
-        public void visitRelationshipTypeToken( RelationshipTypeTokenRecord record )
-        {
-            update( neoStore.getRelationshipTypeTokenStore(), record );
-        }
-
-        @Override
-        public void visitLabelToken( LabelTokenRecord record )
-        {
-            update( neoStore.getLabelTokenStore(), record );
-        }
-
-        @Override
-        public void visitPropertyKeyToken( PropertyKeyTokenRecord record )
-        {
-            update( neoStore.getPropertyStore().getPropertyKeyTokenStore(), record );
-        }
-
-        @Override
-        public void visitNeoStore( NeoStoreRecord record )
-        {
-            neoStore.setGraphNextProp( record.getNextProp() );
-        }
-
-        @Override
-        public void visitSchemaRule( Collection<DynamicRecord> records )
-        {
-            SchemaStore schemaStore = neoStore.getSchemaStore();
-            for ( DynamicRecord record : records )
-            {
-                schemaStore.updateRecord( record );
-            }
-        }
     }
 }

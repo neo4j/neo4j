@@ -33,6 +33,7 @@ import java.util.Set;
 
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -66,6 +67,7 @@ public class NodeCommandTest
     private final CommandWriter commandWriter = new CommandWriter( channel );
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private NeoStores neoStores;
 
     @Test
     public void shouldSerializeAndDeserializeUnusedRecords() throws Exception
@@ -215,13 +217,13 @@ public class NodeCommandTest
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
                 NullLogProvider.getInstance() );
-        storeFactory.createNodeStore();
-        nodeStore = storeFactory.newNodeStore();
+        neoStores = storeFactory.openNeoStores( true );
+        nodeStore = neoStores.getNodeStore();
     }
 
     @After
     public void after() throws Exception
     {
-        nodeStore.close();
+        neoStores.close();
     }
 }

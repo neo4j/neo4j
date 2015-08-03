@@ -26,6 +26,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -48,9 +49,9 @@ import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.StoreLogService;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
-import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.store.NeoStore.Position;
+import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.PageCacheRule;
@@ -343,10 +344,10 @@ public class TestBackup
         }
     }
 
-    private long getLastCommittedTx( String path, PageCache pageCache )
+    private long getLastCommittedTx( String path, PageCache pageCache ) throws IOException
     {
-        File neoStore = new File( path, NeoStore.DEFAULT_NAME );
-        return NeoStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
+        File neoStore = new File( path, MetaDataStore.DEFAULT_NAME );
+        return MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
     }
 
     @Test
@@ -524,10 +525,10 @@ public class TestBackup
         return new File( directory, StoreLogService.INTERNAL_LOG_NAME ).exists();
     }
 
-    private long lastTxChecksumOf( File storeDir, PageCache pageCache )
+    private long lastTxChecksumOf( File storeDir, PageCache pageCache ) throws IOException
     {
-        File neoStore = new File( storeDir, NeoStore.DEFAULT_NAME );
-        return NeoStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
+        File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        return MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
     }
 
     private ServerInterface startServer( File path ) throws Exception

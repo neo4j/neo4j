@@ -40,14 +40,9 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.index.util.FolderLayout;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.store.SchemaStore;
-import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
-import org.neo4j.logging.NullLogProvider;
-
-import static org.neo4j.kernel.impl.store.StoreVersionMismatchHandler.ALLOW_OLD_VERSION;
 
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
@@ -149,16 +144,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs, PageCache pageCache,
                                                                 UpgradableDatabase upgradableDatabase )
     {
-        return new SchemaIndexMigrator( fs, pageCache, upgradableDatabase, new SchemaIndexMigrator.SchemaStoreProvider()
-        {
-            @Override
-            public SchemaStore provide( File dir, PageCache pageCache )
-            {
-                StoreFactory storeFactory = new StoreFactory(
-                        fs, dir, pageCache, NullLogProvider.getInstance(), ALLOW_OLD_VERSION );
-                return  storeFactory.newSchemaStore();
-            }
-        } );
+        return new SchemaIndexMigrator( fs, pageCache, upgradableDatabase );
     }
 
     @Override

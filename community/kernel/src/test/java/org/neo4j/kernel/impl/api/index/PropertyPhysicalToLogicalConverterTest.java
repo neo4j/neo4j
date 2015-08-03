@@ -35,6 +35,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -51,6 +52,9 @@ import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class PropertyPhysicalToLogicalConverterTest
 {
+
+    private NeoStores neoStores;
+
     @Test
     public void shouldNotConvertInlinedAddedProperty() throws Exception
     {
@@ -218,15 +222,15 @@ public class PropertyPhysicalToLogicalConverterTest
         StoreFactory storeFactory = new StoreFactory( storeDir, new Config(),
                 new DefaultIdGeneratorFactory( fs.get() ), pageCacheRule.getPageCache( fs.get() ),
                 fs.get(), NullLogProvider.getInstance() );
-        storeFactory.createPropertyStore();
-        store = storeFactory.newPropertyStore();
+        neoStores = storeFactory.openNeoStores( true );
+        store = neoStores.getPropertyStore();
         converter = new PropertyPhysicalToLogicalConverter( store );
     }
 
     @After
     public void after() throws Exception
     {
-        store.close();
+        neoStores.close();
     }
 
     private Iterable<NodePropertyUpdate> convert( long[] labelsBefore,

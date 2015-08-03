@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -65,10 +65,10 @@ public class RelationshipCreatorTest
     {
         // GIVEN
         long nodeId = createNodeWithRelationships( DENSE_NODE_THRESHOLD );
-        NeoStore neoStore = flipToNeoStore();
+        NeoStores neoStores = flipToNeoStores();
 
-        Tracker tracker = new Tracker( neoStore );
-        RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( neoStore.getRelationshipGroupStore() );
+        Tracker tracker = new Tracker( neoStores );
+        RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore() );
         RelationshipCreator relationshipCreator = new RelationshipCreator( tracker, groupGetter, 5 );
 
         // WHEN
@@ -80,10 +80,10 @@ public class RelationshipCreatorTest
         assertFalse( tracker.relationshipLocksAcquired.isEmpty() );
     }
 
-    private NeoStore flipToNeoStore()
+    private NeoStores flipToNeoStores()
     {
         return dbRule.getGraphDatabaseAPI().getDependencyResolver().resolveDependency(
-                NeoStoreSupplier.class ).get();
+                NeoStoresSupplier.class ).get();
     }
 
     private long createNodeWithRelationships( int count )
@@ -108,9 +108,9 @@ public class RelationshipCreatorTest
         private final Set<Long> relationshipLocksAcquired = new HashSet<>();
         private final Set<Long> changedRelationships = new HashSet<>();
 
-        public Tracker( NeoStore neoStore )
+        public Tracker( NeoStores neoStores )
         {
-            this.delegate = new DirectRecordAccessSet( neoStore );
+            this.delegate = new DirectRecordAccessSet( neoStores );
             this.relRecords = new TrackingRecordAccess<>( delegate.getRelRecords(), this );
         }
 

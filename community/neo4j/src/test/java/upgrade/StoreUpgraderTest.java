@@ -42,7 +42,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
@@ -288,16 +289,18 @@ public class StoreUpgraderTest
         newUpgrader( ALLOW_UPGRADE, pageCache ).migrateIfNeeded( dbDirectory, schemaIndexProvider );
 
         // Then
-        NeoStore neoStore = new StoreFactory( fileSystem, dbDirectory, pageCache,
-                NullLogProvider.getInstance() ).newNeoStore( false );
+        NeoStores neoStores = new StoreFactory( fileSystem, dbDirectory, pageCache,
+                NullLogProvider.getInstance() ).openNeoStores( false );
 
-        assertThat( neoStore.getUpgradeTransaction()[0], equalTo( neoStore.getLastCommittedTransaction()[0] ) );
-        assertThat( neoStore.getUpgradeTransaction()[1], equalTo( neoStore.getLastCommittedTransaction()[1] ) );
-        assertThat( neoStore.getUpgradeTime(), not( equalTo( NeoStore.FIELD_NOT_INITIALIZED ) ) );
+        assertThat( neoStores.getMetaDataStore().getUpgradeTransaction()[0], equalTo( neoStores.getMetaDataStore()
+                                                                          .getLastCommittedTransaction()[0] ) );
+        assertThat( neoStores.getMetaDataStore().getUpgradeTransaction()[1], equalTo( neoStores.getMetaDataStore()
+                                                                          .getLastCommittedTransaction()[1] ) );
+        assertThat( neoStores.getMetaDataStore().getUpgradeTime(), not( equalTo( MetaDataStore.FIELD_NOT_INITIALIZED ) ) );
 
         long minuteAgo = System.currentTimeMillis() - MINUTES.toMillis( 1 );
-        assertThat( neoStore.getUpgradeTime(), greaterThan( minuteAgo ) );
-        neoStore.close();
+        assertThat( neoStores.getMetaDataStore().getUpgradeTime(), greaterThan( minuteAgo ) );
+        neoStores.close();
     }
 
     @Test

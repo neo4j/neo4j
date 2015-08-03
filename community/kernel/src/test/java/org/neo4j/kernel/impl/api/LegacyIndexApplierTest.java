@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.test.EphemeralFileSystemRule;
 
@@ -67,7 +67,7 @@ public class LegacyIndexApplierTest
         String applierName = "test-applier";
         IndexConfigStore config = newIndexConfigStore( names, applierName );
         LegacyIndexApplierLookup applierLookup = mock( LegacyIndexApplierLookup.class );
-        when( applierLookup.newApplier( anyString(), anyBoolean() ) ).thenReturn( mock( NeoCommandHandler.class ) );
+        when( applierLookup.newApplier( anyString(), anyBoolean() ) ).thenReturn( mock( CommandHandler.class ) );
         try ( LegacyIndexApplier applier = new LegacyIndexApplier( config, applierLookup, BYPASS, BASE_TX_ID, INTERNAL ) )
         {
             // WHEN

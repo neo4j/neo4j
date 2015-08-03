@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 
+import org.neo4j.function.Function;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -33,9 +34,6 @@ import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.logging.FormattedLogProvider;
@@ -53,20 +51,33 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
             System.err.println( "SYNTAX: [file[:id[,id]*]]+" );
             return;
         }
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         try ( PageCache pageCache = createPageCache( fs ) )
         {
-            DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-            StoreFactory storeFactory = new StoreFactory( null, new Config(), idGeneratorFactory, pageCache, fs, logProvider() );
+            Function<File, StoreFactory> createStoreFactory = new Function<File,StoreFactory>()
+            {
+                @Override
+                public StoreFactory apply( File file )
+                {
+                    return new StoreFactory(
+                            file.getParentFile(),
+                            new Config(),
+                            idGeneratorFactory,
+                            pageCache,
+                            fs,
+                            logProvider() );
+                }
+            };
 
             for ( String arg : args )
             {
-                dumpFile( storeFactory, arg );
+                dumpFile( createStoreFactory, arg );
             }
         }
     }
 
-    private static void dumpFile( StoreFactory storeFactory, String arg ) throws Exception
+    private static void dumpFile( Function<File, StoreFactory> createStoreFactory, String arg ) throws Exception
     {
         File file = new File( arg );
         long[] ids = null; // null means all possible ids
@@ -96,34 +107,37 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
                 throw new IllegalArgumentException( "No such file: " + arg );
             }
         }
-        switch ( file.getName() )
+        try ( NeoStores neoStores = createStoreFactory.apply( file ).openNeoStores( false ) )
         {
-        case "neostore.nodestore.db":
-            dumpNodeStore( file, storeFactory, ids );
-            break;
-        case "neostore.relationshipstore.db":
-            dumpRelationshipStore( file, storeFactory, ids );
-            break;
-        case "neostore.propertystore.db":
-            dumpPropertyStore( file, storeFactory, ids );
-            break;
-        case "neostore.schemastore.db":
-            dumpSchemaStore( file, storeFactory, ids );
-            break;
-        case "neostore.propertystore.db.index":
-            dumpPropertyKeys( file, storeFactory, ids );
-            break;
-        case "neostore.labeltokenstore.db":
-            dumpLabels( file, storeFactory, ids );
-            break;
-        case "neostore.relationshiptypestore.db":
-            dumpRelationshipTypes( file, storeFactory, ids );
-            break;
-        case "neostore.relationshipgroupstore.db":
-            dumpRelationshipGroups( file, storeFactory, ids );
-            break;
-        default:
-            throw new IllegalArgumentException( "Unknown store file: " + arg );
+            switch ( file.getName() )
+            {
+            case "neostore.nodestore.db":
+                dumpNodeStore( neoStores, ids );
+                break;
+            case "neostore.relationshipstore.db":
+                dumpRelationshipStore( neoStores, ids );
+                break;
+            case "neostore.propertystore.db":
+                dumpPropertyStore( neoStores, ids );
+                break;
+            case "neostore.schemastore.db":
+                dumpSchemaStore( neoStores, ids );
+                break;
+            case "neostore.propertystore.db.index":
+                dumpPropertyKeys( neoStores, ids );
+                break;
+            case "neostore.labeltokenstore.db":
+                dumpLabels( neoStores, ids );
+                break;
+            case "neostore.relationshiptypestore.db":
+                dumpRelationshipTypes( neoStores, ids );
+                break;
+            case "neostore.relationshipgroupstore.db":
+                dumpRelationshipGroups( neoStores, ids );
+                break;
+            default:
+                throw new IllegalArgumentException( "Unknown store file: " + arg );
+            }
         }
     }
 
@@ -132,19 +146,25 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         return Boolean.getBoolean( "logger" ) ? FormattedLogProvider.toOutputStream( System.out ) : NullLogProvider.getInstance();
     }
 
-    private static void dumpPropertyKeys( File file, StoreFactory storeFactory, long[] ids ) throws Exception
+    private static <R extends AbstractBaseRecord, S extends CommonAbstractStore & RecordStore<R>> void dump(
+            long[] ids, S store ) throws Exception
     {
-        dumpTokens( storeFactory.newPropertyKeyTokenStore( file ), ids );
+        new DumpStore<R,S>( System.out ).dump( store, ids );
     }
 
-    private static void dumpLabels( File file, StoreFactory storeFactory, long[] ids ) throws Exception
+    private static void dumpPropertyKeys( NeoStores neoStores, long[] ids ) throws Exception
     {
-        dumpTokens( storeFactory.newLabelTokenStore( file ), ids );
+        dumpTokens( neoStores.getPropertyKeyTokenStore(), ids );
     }
 
-    private static void dumpRelationshipTypes( File file, StoreFactory storeFactory, long[] ids ) throws Exception
+    private static void dumpLabels( NeoStores neoStores, long[] ids ) throws Exception
     {
-        dumpTokens( storeFactory.newRelationshipTypeTokenStore( file ), ids );
+        dumpTokens( neoStores.getLabelTokenStore(), ids );
+    }
+
+    private static void dumpRelationshipTypes( NeoStores neoStores, long[] ids ) throws Exception
+    {
+        dumpTokens( neoStores.getRelationshipTypeTokenStore(), ids );
     }
 
     private static <R extends TokenRecord, T extends Token> void dumpTokens( final TokenStore<R, T> store, long[] ids ) throws Exception
@@ -171,33 +191,24 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         }
     }
 
-    private static void dumpRelationshipGroups( File file, StoreFactory storeFactory, long[] ids ) throws Exception
+    private static void dumpRelationshipGroups( NeoStores neoStores, long[] ids ) throws Exception
     {
-        try ( RelationshipGroupStore store = storeFactory.newRelationshipGroupStore( file ) )
-        {
-            new DumpStore<RelationshipGroupRecord,RelationshipGroupStore>( System.out ).dump( store, ids );
-        }
+        dump( ids, neoStores.getRelationshipGroupStore() );
     }
 
-    private static void dumpRelationshipStore( File file, StoreFactory storeFactory, long[] ids ) throws Exception
+    private static void dumpRelationshipStore( NeoStores neoStores, long[] ids ) throws Exception
     {
-        try ( RelationshipStore store = storeFactory.newRelationshipStore( file ) )
-        {
-            new DumpStore<RelationshipRecord,RelationshipStore>( System.out ).dump( store, ids );
-        }
+        dump( ids, neoStores.getRelationshipStore() );
     }
 
-    private static void dumpPropertyStore( File file, StoreFactory storeFactory, long[] ids ) throws Exception
+    private static void dumpPropertyStore( NeoStores neoStores, long[] ids ) throws Exception
     {
-        try ( PropertyStore store = storeFactory.newPropertyStore( file ) )
-        {
-            new DumpStore<PropertyRecord, PropertyStore>( System.out ).dump( store, ids );
-        }
+        dump( ids, neoStores.getPropertyStore() );
     }
 
-    private static void dumpSchemaStore( File file, StoreFactory storeFactory, long ids[] ) throws Exception
+    private static void dumpSchemaStore( NeoStores neoStores, long ids[] ) throws Exception
     {
-        try ( SchemaStore store = storeFactory.newSchemaStore( file ) )
+        try ( SchemaStore store = neoStores.getSchemaStore() )
         {
             final SchemaStorage storage = new SchemaStorage( store );
             new DumpStore<DynamicRecord,SchemaStore>( System.out )
@@ -213,19 +224,16 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         }
     }
 
-    private static void dumpNodeStore( File file, StoreFactory storeFactory, long[] ids ) throws Exception
+    private static void dumpNodeStore( NeoStores neoStores, long[] ids ) throws Exception
     {
-        try ( NodeStore store = storeFactory.newNodeStore( file ) )
+        new DumpStore<NodeRecord,NodeStore>( System.out )
         {
-            new DumpStore<NodeRecord,NodeStore>( System.out )
+            @Override
+            protected Object transform( NodeRecord record ) throws Exception
             {
-                @Override
-                protected Object transform( NodeRecord record ) throws Exception
-                {
-                    return record.inUse() ? record : "";
-                }
-            }.dump( store, ids );
-        }
+                return record.inUse() ? record : "";
+            }
+        }.dump( neoStores.getNodeStore(), ids );
     }
 
     private final PrintStream out;

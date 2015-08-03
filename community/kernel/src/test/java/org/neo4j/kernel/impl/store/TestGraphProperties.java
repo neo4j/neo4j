@@ -180,10 +180,10 @@ public class TestGraphProperties
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
                 NullLogProvider.getInstance() );
-        NeoStore neoStore = storeFactory.newNeoStore( false );
-        long prop = neoStore.getGraphNextProp();
+        NeoStores neoStores = storeFactory.openNeoStores( false );
+        long prop = neoStores.getMetaDataStore().getGraphNextProp();
         assertTrue( prop != 0 );
-        neoStore.close();
+        neoStores.close();
     }
 
     @Test

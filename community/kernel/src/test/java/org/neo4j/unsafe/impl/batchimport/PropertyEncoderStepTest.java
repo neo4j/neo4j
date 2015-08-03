@@ -28,7 +28,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
@@ -50,7 +50,7 @@ public class PropertyEncoderStepTest
 {
     public final @Rule EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     public final @Rule PageCacheRule pageCacheRule = new PageCacheRule();
-    private NeoStore neoStore;
+    private NeoStores neoStores;
     private PageCache pageCache;
 
     @Before
@@ -60,13 +60,13 @@ public class PropertyEncoderStepTest
         pageCache = pageCacheRule.getPageCache( fsRule.get() );
         StoreFactory storeFactory = new StoreFactory(
                 fsRule.get(), storeDir, pageCache, NullLogProvider.getInstance() );
-        neoStore = storeFactory.createNeoStore();
+        neoStores = storeFactory.openNeoStores( true );
     }
 
     @After
     public void closeNeoStore() throws IOException
     {
-        neoStore.close();
+        neoStores.close();
         pageCache.close();
     }
 
@@ -77,9 +77,9 @@ public class PropertyEncoderStepTest
         // GIVEN
         StageControl control = mock( StageControl.class );
         BatchingPropertyKeyTokenRepository tokens =
-                new BatchingPropertyKeyTokenRepository( neoStore.getPropertyKeyTokenStore(), 0 );
+                new BatchingPropertyKeyTokenRepository( neoStores.getPropertyKeyTokenStore(), 0 );
         Step<Batch<InputNode,NodeRecord>> step =
-                new PropertyEncoderStep<>( control, DEFAULT, tokens, neoStore.getPropertyStore() );
+                new PropertyEncoderStep<>( control, DEFAULT, tokens, neoStores.getPropertyStore() );
         @SuppressWarnings( "rawtypes" )
         Step downstream = mock( Step.class );
         step.setDownstream( downstream );

@@ -42,7 +42,7 @@ public class PhysicalLogNeoCommandReaderV1Test
     public void shouldReadPropertyCommandWithDeletedDynamicRecords() throws Exception
     {
         // GIVEN
-        PhysicalLogNeoCommandReaderV2_1 reader = new PhysicalLogNeoCommandReaderV2_1();
+        PhysicalLogCommandReaderV2_1 reader = new PhysicalLogCommandReaderV2_1();
         InMemoryLogChannel data = new InMemoryLogChannel();
         CommandWriter writer = new CommandWriter( data );
         long id = 5;

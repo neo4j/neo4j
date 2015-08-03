@@ -30,10 +30,11 @@ import java.util.List;
 
 import org.neo4j.cursor.GenericCursor;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -76,6 +77,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     private static int notInUseSignal = 2;
     private static int illegalSizeSignal = 3;
 
+    private final int blockSizeFromConfiguration;
     private int blockSize;
 
     public AbstractDynamicStore(
@@ -84,12 +86,12 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
-            StoreVersionMismatchHandler versionMismatchHandler )
+            StoreVersionMismatchHandler versionMismatchHandler,
+            int blockSizeFromConfiguration )
     {
-        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider,
-                versionMismatchHandler );
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, versionMismatchHandler );
+        this.blockSizeFromConfiguration = blockSizeFromConfiguration;
     }
 
     /**
@@ -101,6 +103,38 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     public static int getRecordSize( int dataSize )
     {
         return dataSize + BLOCK_HEADER_SIZE;
+    }
+
+    @Override
+    protected void initialiseNewStoreFile( PagedFile file ) throws IOException
+    {
+        int blockSize = blockSizeFromConfiguration;
+        if ( blockSize < 1 || blockSize > 0xFFFF )
+        {
+            throw new IllegalArgumentException( "Illegal block size[" + blockSize + "], limit is 65535" );
+        }
+
+        blockSize += BLOCK_HEADER_SIZE;
+
+        try ( PageCursor pageCursor = file.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
+        {
+            if ( pageCursor.next() )
+            {
+                do
+                {
+                    pageCursor.putInt( blockSize );
+                }
+                while ( pageCursor.shouldRetry() );
+            }
+        }
+        StoreVersionTrailerUtil.writeTrailer( file, UTF8.encode( getTypeAndVersionDescriptor() ), blockSize );
+
+        File idFileName = new File( storageFileName.getPath() + ".id" );
+        idGeneratorFactory.create( idFileName, 0, true );
+        // TODO highestIdInUse = 0 works now, but not when slave can create store files.
+        IdGenerator idGenerator = idGeneratorFactory.open( idFileName, idType.getGrabSize(), idType, 0 );
+        idGenerator.nextId(); // reserve first for blockSize
+        idGenerator.close();
     }
 
     public static void allocateRecordsFromBytes(

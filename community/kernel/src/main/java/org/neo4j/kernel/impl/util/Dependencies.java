@@ -76,7 +76,7 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
 
         // Out of options
         throw new IllegalArgumentException(
-                "Weird exception nesting here, but anyways, I couldn't find any dependency for " + type );
+                "No dependency satisfies type " + type );
     }
 
     public <T> Supplier<T> provideDependency( final Class<T> type, final SelectionStrategy selector)

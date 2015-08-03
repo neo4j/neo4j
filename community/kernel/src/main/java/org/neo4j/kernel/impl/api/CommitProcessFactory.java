@@ -22,14 +22,14 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
 
 public interface CommitProcessFactory
 {
     TransactionCommitProcess create( TransactionAppender appender, KernelHealth kernelHealth,
-                                     NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier,
+                                     NeoStores neoStores, TransactionRepresentationStoreApplier storeApplier,
                                      NeoStoreInjectedTransactionValidator txValidator,
                                      IndexUpdatesValidator indexUpdatesValidator, Config config );
 }

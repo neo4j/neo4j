@@ -20,10 +20,7 @@
 package upgrade;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.regex.Pattern;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -66,20 +63,5 @@ public class StoreMigratorTestUtil
         life.start();
 
         return clusterManager.getDefaultCluster();
-    }
-
-    public static File[] findAllMatchingFiles( File baseDir, String regex )
-    {
-        final Pattern pattern = Pattern.compile( regex );
-        File[] files = baseDir.listFiles( new FilenameFilter()
-        {
-            @Override
-            public boolean accept( File dir, String name )
-            {
-                return pattern.matcher( name ).matches();
-            }
-        } );
-        Arrays.sort( files );
-        return files;
     }
 }

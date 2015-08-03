@@ -52,7 +52,7 @@ public class PhysicalLogNeoCommandReaderV2_2_4Test
         writer.visitIndexRemoveCommand( removeCommand );
 
         // WHEN
-        PhysicalLogNeoCommandReaderV2_2_4 reader = new PhysicalLogNeoCommandReaderV2_2_4();
+        PhysicalLogCommandReaderV2_2_4 reader = new PhysicalLogCommandReaderV2_2_4();
         assertTrue( reader.read( channel ) instanceof IndexDefineCommand );
         RemoveCommand readRemoveCommand = (RemoveCommand) reader.read( channel );
 

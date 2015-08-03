@@ -41,7 +41,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
-public class BatchingNeoStoreTest
+public class BatchingNeoStoresTest
 {
     @Test
     public void shouldNotOpenStoreWithNodesOrRelationshipsInIt() throws Exception
@@ -52,7 +52,7 @@ public class BatchingNeoStoreTest
         // WHEN
         try ( PageCache pageCache = pageCacheRule.getPageCache( fsr.get() ) )
         {
-            new BatchingNeoStore( fsr.get(), storeDir, DEFAULT,
+            new BatchingNeoStores( fsr.get(), storeDir, DEFAULT,
                     NullLogService.getInstance(), new Monitors(), EMPTY );
             fail( "Should fail on existing data" );
         }

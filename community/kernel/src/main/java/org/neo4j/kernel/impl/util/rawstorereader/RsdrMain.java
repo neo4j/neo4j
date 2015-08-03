@@ -26,7 +26,6 @@ import java.nio.ByteBuffer;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.xml.bind.DatatypeConverter;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -39,7 +38,8 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -54,7 +54,6 @@ import org.neo4j.logging.NullLogProvider;
 
 import static javax.transaction.xa.Xid.MAXBQUALSIZE;
 import static javax.transaction.xa.Xid.MAXGTRIDSIZE;
-
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
@@ -84,9 +83,9 @@ public class RsdrMain
         Config config = buildConfig();
         try ( PageCache pageCache = createPageCache( files, config ) )
         {
-            StoreFactory factory = openStore( new File( storedir, NeoStore.DEFAULT_NAME ), config, pageCache );
-            NeoStore neoStore = factory.newNeoStore( false );
-            interact( neoStore );
+            StoreFactory factory = openStore( new File( storedir, MetaDataStore.DEFAULT_NAME ), config, pageCache );
+            NeoStores neoStores = factory.openNeoStores( false );
+            interact( neoStores );
         }
     }
 
@@ -105,7 +104,7 @@ public class RsdrMain
                 storeDir, config, idGeneratorFactory, pageCache, files, NullLogProvider.getInstance() );
     }
 
-    private static void interact( NeoStore neoStore ) throws IOException
+    private static void interact( NeoStores neoStores ) throws IOException
     {
         printHelp();
 
@@ -113,7 +112,7 @@ public class RsdrMain
         do
         {
             cmd = console.readLine( "neo? " );
-        } while ( execute( cmd, neoStore ) );
+        } while ( execute( cmd, neoStores ) );
         System.exit( 0 );
     }
 
@@ -128,7 +127,7 @@ public class RsdrMain
                 "  q            quit%n" );
     }
 
-    private static boolean execute( String cmd, NeoStore neoStore ) throws IOException
+    private static boolean execute( String cmd, NeoStores neoStores ) throws IOException
     {
         if ( cmd == null || cmd.equals( "q" ) )
         {
@@ -140,11 +139,11 @@ public class RsdrMain
         }
         else if ( cmd.equals( "l" ) )
         {
-            listFiles( neoStore );
+            listFiles( neoStores );
         }
         else if ( cmd.startsWith( "r" ) )
         {
-            read( cmd, neoStore );
+            read( cmd, neoStores );
         }
         else if ( !cmd.trim().isEmpty() )
         {
@@ -153,9 +152,9 @@ public class RsdrMain
         return true;
     }
 
-    private static void listFiles( NeoStore neoStore )
+    private static void listFiles( NeoStores neoStores )
     {
-        File storedir = neoStore.getStorageFileName().getParentFile();
+        File storedir = neoStores.getStoreDir();
         File[] listing = files.listFiles( storedir );
         for ( File file : listing )
         {
@@ -163,7 +162,7 @@ public class RsdrMain
         }
     }
 
-    private static void read( String cmd, NeoStore neoStore ) throws IOException
+    private static void read( String cmd, NeoStores neoStores ) throws IOException
     {
         Matcher matcher = readCommandPattern.matcher( cmd );
         if ( matcher.find() )
@@ -176,14 +175,14 @@ public class RsdrMain
             long fromId = lower != null? Long.parseLong( lower ) : 0L;
             long toId = upper != null ? Long.parseLong( upper ) : Long.MAX_VALUE;
 
-            RecordStore store = getStore( fname, neoStore );
+            RecordStore store = getStore( fname, neoStores );
             if ( store != null )
             {
                 readStore( store, fromId, toId, pattern );
                 return;
             }
 
-            IOCursor<LogEntry> cursor = getLogCursor( fname, neoStore );
+            IOCursor<LogEntry> cursor = getLogCursor( fname, neoStores );
             if ( cursor != null )
             {
                 readLog( cursor, fromId, toId, pattern );
@@ -245,25 +244,25 @@ public class RsdrMain
         }
     }
 
-    private static RecordStore getStore( String fname, NeoStore neoStore )
+    private static RecordStore getStore( String fname, NeoStores neoStores )
     {
         switch ( fname )
         {
-            case "neostore.nodestore.db": return neoStore.getNodeStore();
-            case "neostore.labeltokenstore.db": return neoStore.getLabelTokenStore();
-            case "neostore.propertystore.db.index": return neoStore.getPropertyKeyTokenStore();
-            case "neostore.propertystore.db": return neoStore.getPropertyStore();
-            case "neostore.relationshipgroupstore.db": return neoStore.getRelationshipGroupStore();
-            case "neostore.relationshipstore.db": return neoStore.getRelationshipStore();
-            case "neostore.relationshiptypestore.db": return neoStore.getRelationshipTypeTokenStore();
-            case "neostore.schemastore.db": return neoStore.getSchemaStore();
+            case "neostore.nodestore.db": return neoStores.getNodeStore();
+            case "neostore.labeltokenstore.db": return neoStores.getLabelTokenStore();
+            case "neostore.propertystore.db.index": return neoStores.getPropertyKeyTokenStore();
+            case "neostore.propertystore.db": return neoStores.getPropertyStore();
+            case "neostore.relationshipgroupstore.db": return neoStores.getRelationshipGroupStore();
+            case "neostore.relationshipstore.db": return neoStores.getRelationshipStore();
+            case "neostore.relationshiptypestore.db": return neoStores.getRelationshipTypeTokenStore();
+            case "neostore.schemastore.db": return neoStores.getSchemaStore();
         }
         return null;
     }
 
-    private static IOCursor<LogEntry> getLogCursor( String fname, NeoStore neoStore ) throws IOException
+    private static IOCursor<LogEntry> getLogCursor( String fname, NeoStores neoStores ) throws IOException
     {
-        File file = new File( neoStore.getStorageFileName().getParent(), fname );
+        File file = new File( neoStores.getStoreDir(), fname );
         StoreChannel fileChannel = files.open( file, "r" );
         ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + MAXGTRIDSIZE + MAXBQUALSIZE * 10 );
         LogHeader logHeader = readLogHeader( buffer, fileChannel, false );

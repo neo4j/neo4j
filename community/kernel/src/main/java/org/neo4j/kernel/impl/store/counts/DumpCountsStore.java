@@ -33,6 +33,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.kvstore.Headers;
@@ -58,17 +59,19 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
 
     public static void dumpCountsStore( FileSystemAbstraction fs, File path, PrintStream out ) throws IOException
     {
-        try ( PageCache pages = createPageCache( fs ); Lifespan life = new Lifespan() )
+        try ( PageCache pages = createPageCache( fs );
+              Lifespan life = new Lifespan() )
         {
             if ( fs.isDirectory( path ) )
             {
                 StoreFactory factory = new StoreFactory( fs, path, pages, NullLogProvider.getInstance() );
-                life.add( factory.newCountsStore() ).accept( new DumpCountsStore( out, factory ) );
+                NeoStores neoStores = life.add( factory.openNeoStores( false ) );
+                neoStores.getCounts().accept( new DumpCountsStore( out, neoStores ) );
             }
             else
             {
-                CountsTracker tracker = new CountsTracker( NullLogProvider.getInstance(), fs, pages, new Config(),
-                        path );
+                CountsTracker tracker = new CountsTracker(
+                        NullLogProvider.getInstance(), fs, pages, new Config(), path );
                 if ( fs.fileExists( path ) )
                 {
                     tracker.visitFile( path, new DumpCountsStore( out ) );
@@ -87,12 +90,12 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
                 Collections.<Token>emptyList() );
     }
 
-    DumpCountsStore( PrintStream out, StoreFactory factory )
+    DumpCountsStore( PrintStream out, NeoStores neoStores )
     {
         this( out,
-              allTokensFrom( factory.newLabelTokenStore() ),
-              allTokensFrom( factory.newRelationshipTypeTokenStore() ),
-              allTokensFrom( factory.newPropertyKeyTokenStore() ) );
+              allTokensFrom( neoStores.getLabelTokenStore() ),
+              allTokensFrom( neoStores.getRelationshipTypeTokenStore() ),
+              allTokensFrom( neoStores.getPropertyKeyTokenStore() ) );
     }
 
     private final PrintStream out;

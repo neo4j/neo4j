@@ -20,20 +20,33 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 
 public class ReadOnlyLogVersionRepository implements LogVersionRepository
 {
     private final long logVersion;
     private volatile boolean incrementVersionCalled;
 
-    public ReadOnlyLogVersionRepository( PageCache pageCache, File storeDir )
+    public ReadOnlyLogVersionRepository( PageCache pageCache, File storeDir ) throws IOException
     {
-        File neoStore = new File( storeDir, NeoStore.DEFAULT_NAME );
-        this.logVersion = NeoStore.isStorePresent( pageCache, storeDir ) ?
-                          NeoStore.getRecord( pageCache, neoStore, NeoStore.Position.LOG_VERSION ) : 0;
+        File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        this.logVersion = readLogVersion( pageCache, neoStore );
+    }
+
+    private long readLogVersion( PageCache pageCache, File neoStore ) throws IOException
+    {
+        try
+        {
+            return MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION );
+        }
+        catch ( NoSuchFileException ignore )
+        {
+            return 0;
+        }
     }
 
     @Override

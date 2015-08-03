@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -50,25 +51,28 @@ public class StoreFactoryTest
     @Rule
     public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
     private StoreFactory storeFactory;
-    private NeoStore neoStore;
+    private NeoStores neoStores;
+    private File storeDir;
 
     @Before
-    public void setUp()
+    public void setUp() throws IOException
     {
         FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
 
-        storeFactory = new StoreFactory( testDirectory.graphDbDir(), new Config(),
+        storeDir = testDirectory.graphDbDir();
+        fs.mkdirs( storeDir );
+        storeFactory = new StoreFactory( storeDir, new Config(),
                 idGeneratorFactory, pageCache, fs, NullLogProvider.getInstance() );
     }
 
     @After
     public void tearDown()
     {
-        if ( neoStore != null )
+        if ( neoStores != null )
         {
-            neoStore.close();
+            neoStores.close();
         }
     }
 
@@ -76,23 +80,25 @@ public class StoreFactoryTest
     public void shouldHaveSameCreationTimeAndUpgradeTimeOnStartup() throws Exception
     {
         // When
-        neoStore = storeFactory.createNeoStore();
+        neoStores = storeFactory.openNeoStores( true );
+        MetaDataStore metaDataStore = neoStores.getMetaDataStore();
 
         // Then
-        assertThat( neoStore.getUpgradeTime(), equalTo( neoStore.getCreationTime() ) );
+        assertThat( metaDataStore.getUpgradeTime(), equalTo( metaDataStore.getCreationTime() ) );
     }
 
     @Test
     public void shouldHaveSameCommittedTransactionAndUpgradeTransactionOnStartup() throws Exception
     {
         // When
-        neoStore = storeFactory.createNeoStore();
+        neoStores = storeFactory.openNeoStores( true );
+        MetaDataStore metaDataStore = neoStores.getMetaDataStore();
 
         // Then
-        long[] lastCommittedTransaction = neoStore.getLastCommittedTransaction();
+        long[] lastCommittedTransaction = metaDataStore.getLastCommittedTransaction();
         long[] txIdChecksum = new long[2];
         System.arraycopy( lastCommittedTransaction, 0, txIdChecksum, 0, 2 );
-        assertArrayEquals( neoStore.getUpgradeTransaction(), txIdChecksum );
+        assertArrayEquals( metaDataStore.getUpgradeTransaction(), txIdChecksum );
     }
 
     @Test
@@ -104,10 +110,19 @@ public class StoreFactoryTest
         StoreFactory readOnlyStoreFactory = new StoreFactory( testDirectory.directory( "readOnlyStore" ),
                 new Config( MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) ),
                 new DefaultIdGeneratorFactory( fs ), pageCache, fs, NullLogProvider.getInstance() );
-        neoStore = readOnlyStoreFactory.createNeoStore();
-        long lastClosedTransactionId = neoStore.getLastClosedTransactionId();
+        neoStores = readOnlyStoreFactory.openNeoStores( true );
+        long lastClosedTransactionId = neoStores.getMetaDataStore().getLastClosedTransactionId();
 
         // then
-        assertEquals( -1, neoStore.getCounts().rotate( lastClosedTransactionId ));
+        assertEquals( -1, neoStores.getCounts().rotate( lastClosedTransactionId ) );
+    }
+
+    @Test( expected = StoreNotFoundException.class )
+    public void shouldThrowWhenOpeningNonExistingNeoStores()
+    {
+        try ( NeoStores neoStores = storeFactory.openNeoStores( false ) )
+        {
+            neoStores.getMetaDataStore();
+        }
     }
 }

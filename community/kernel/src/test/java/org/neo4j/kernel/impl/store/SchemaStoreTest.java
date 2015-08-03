@@ -47,6 +47,48 @@ import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.
 
 public class SchemaStoreTest
 {
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private Config config;
+    private SchemaStore store;
+    private NeoStores neoStores;
+    private StoreFactory storeFactory;
+
+    @Before
+    public void before() throws Exception
+    {
+        File storeDir = new File( "dir" );
+        fs.get().mkdirs( storeDir );
+        config = new Config();
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs.get() );
+        storeFactory = new StoreFactory(
+                storeDir,
+                config,
+                idGeneratorFactory,
+                pageCacheRule.getPageCache( fs.get() ),
+                fs.get(),
+                NullLogProvider.getInstance() );
+        neoStores = storeFactory.openNeoStores( true );
+        store = neoStores.getSchemaStore();
+    }
+
+    @After
+    public void after() throws Exception
+    {
+        neoStores.close();
+    }
+
+    private long storeRule( SchemaRule rule )
+    {
+        Collection<DynamicRecord> records = store.allocateFrom( rule );
+        for ( DynamicRecord record : records )
+        {
+            store.updateRecord( record );
+        }
+        return first( records ).getId();
+    }
+
     @Test
     public void serializationAndDeserialization() throws Exception
     {
@@ -87,7 +129,7 @@ public class SchemaStoreTest
         assertEquals( rules, readRules );
     }
 
-//    ENABLE WHEN MULTIPLE PROPERTY KEYS PER INDEX RULE IS SUPPORTED
+//    TODO ENABLE WHEN MULTIPLE PROPERTY KEYS PER INDEX RULE IS SUPPORTED
 //    @Test
 //    public void storeAndLoadSingleLongRule() throws Exception
 //    {
@@ -127,45 +169,4 @@ public class SchemaStoreTest
 //            propertyKeys[i] = i;
 //        return new IndexRule( store.nextId(), label, POPULATING, propertyKeys );
 //    }
-
-    private long storeRule( SchemaRule rule )
-    {
-        Collection<DynamicRecord> records = store.allocateFrom( rule );
-        for ( DynamicRecord record : records )
-        {
-            store.updateRecord( record );
-        }
-        return first( records ).getId();
-    }
-
-    @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private Config config;
-    private SchemaStore store;
-    private StoreFactory storeFactory;
-
-    @Before
-    public void before() throws Exception
-    {
-        File storeDir = new File( "dir" );
-        fs.get().mkdirs( storeDir );
-        config = new Config();
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs.get() );
-        storeFactory = new StoreFactory(
-                storeDir,
-                config,
-                idGeneratorFactory,
-                pageCacheRule.getPageCache( fs.get() ),
-                fs.get(),
-                NullLogProvider.getInstance() );
-        storeFactory.createSchemaStore();
-        store = storeFactory.newSchemaStore();
-    }
-
-    @After
-    public void after() throws Exception
-    {
-        store.close();
-    }
 }

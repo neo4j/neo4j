@@ -34,7 +34,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.Token;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.hamcrest.Matchers.contains;
@@ -100,11 +100,11 @@ public class NonIndexedConflictResolverTest
         }
 
         DependencyResolver resolver = api.getDependencyResolver();
-        NeoStoreSupplier neoStoreSupplier = resolver.resolveDependency( NeoStoreSupplier.class );
-        NeoStore neoStore = neoStoreSupplier.get();
-        nodeStore = neoStore.getNodeStore();
-        propertyStore = neoStore.getPropertyStore();
-        propertyKeyTokenStore = neoStore.getPropertyKeyTokenStore();
+        NeoStoresSupplier neoStoresSupplier = resolver.resolveDependency( NeoStoresSupplier.class );
+        NeoStores neoStores = neoStoresSupplier.get();
+        nodeStore = neoStores.getNodeStore();
+        propertyStore = neoStores.getPropertyStore();
+        propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
 
         tokenA = findTokenFor( propertyKeyTokenStore, propKeyA );
         Token tokenB = findTokenFor( propertyKeyTokenStore, propKeyB );

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -44,12 +43,12 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord, Token>
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
             DynamicStringStore nameStore,
-            StoreVersionMismatchHandler versionMismatchHandler )
+            StoreVersionMismatchHandler versionMismatchHandler,
+            boolean createIfNotExists )
     {
-        super( fileName, config, IdType.LABEL_TOKEN, idGeneratorFactory, pageCache, fileSystemAbstraction,
+        super( fileName, config, IdType.LABEL_TOKEN, idGeneratorFactory, pageCache,
                 logProvider, nameStore, versionMismatchHandler, new Token.Factory() );
     }
 

@@ -101,6 +101,6 @@ public class StoreMigratorTest
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory( fs, storeDirectory, pageCache,
                 logService.getInternalLogProvider() );
-        storeFactory.newNeoStore( false ).close();
+        storeFactory.openNeoStores( false ).close();
     }
 }

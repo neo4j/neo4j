@@ -20,12 +20,12 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.neo4j.kernel.impl.transaction.command.CommandReader;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV1_9;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2_0;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2_1;
+import org.neo4j.kernel.impl.transaction.command.CommandHandler;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV1_9;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_0;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_1;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2_2;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2_2_4;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2_4;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 
 import static java.lang.String.format;
@@ -62,7 +62,7 @@ import static java.lang.String.format;
  * the log entry verision will be bumped.
  *   The process of making an update to log entry or command format is to NOT change any existing class, but to:
  * <ol>
- * <li>Copy {@link PhysicalLogNeoCommandReaderV2_2_4} or similar and modify the new copy</li>
+ * <li>Copy {@link PhysicalLogCommandReaderV2_2_4} or similar and modify the new copy</li>
  * <li>Copy {@link LogEntryParsersV2_2_4} or similar and modify the new copy</li>
  * <li>Add an entry in this enum, like {@link #V2_2_4} pointing to the above new classes</li>
  * <li>Modify {@link CommandWriter} and {@link LogEntryWriter} with required changes</li>
@@ -70,8 +70,8 @@ import static java.lang.String.format;
  * Everything apart from that should just work and Neo4j should automatically support the new version as well.
  *
  * The {@link #newCommandReader()} creates a new instance every time. An example of a {@link CommandReader}
- * is {@link PhysicalLogNeoCommandReaderV2_2_4}. They are really (sort of) stateless, but the way they
- * are implemented, via the use of {@link NeoCommandHandler} the channel to read from must be injected by
+ * is {@link PhysicalLogCommandReaderV2_2_4}. They are really (sort of) stateless, but the way they
+ * are implemented, via the use of {@link CommandHandler} the channel to read from must be injected by
  * constructor or other means. That's why they have to be created at certain points and retained as long
  * as it makes sense, local to the reading thread.
  *
@@ -87,7 +87,7 @@ public enum LogEntryVersion
         @Override
         public CommandReader newCommandReader()
         {
-            return new PhysicalLogNeoCommandReaderV1_9();
+            return new PhysicalLogCommandReaderV1_9();
         }
     },
     // as of 2013-02-09: neo4j 2.0 Labels & Indexing
@@ -96,7 +96,7 @@ public enum LogEntryVersion
         @Override
         public CommandReader newCommandReader()
         {
-            return new PhysicalLogNeoCommandReaderV2_0();
+            return new PhysicalLogCommandReaderV2_0();
         }
     },
     // as of 2014-02-06: neo4j 2.1 Dense nodes, split by type/direction into groups
@@ -105,7 +105,7 @@ public enum LogEntryVersion
         @Override
         public CommandReader newCommandReader()
         {
-            return new PhysicalLogNeoCommandReaderV2_1();
+            return new PhysicalLogCommandReaderV2_1();
         }
     },
     // as of 2014-05-23: neo4j 2.2 Removal of JTA / unified data source
@@ -124,7 +124,7 @@ public enum LogEntryVersion
         @Override
         public CommandReader newCommandReader()
         {
-            return new PhysicalLogNeoCommandReaderV2_2_4();
+            return new PhysicalLogCommandReaderV2_2_4();
         }
     },
     V2_3( -5, LogEntryParsersV2_3.class )
@@ -132,7 +132,7 @@ public enum LogEntryVersion
         @Override
         public CommandReader newCommandReader()
         {
-            return new PhysicalLogNeoCommandReaderV2_2_4();
+            return new PhysicalLogCommandReaderV2_2_4();
         }
     };
 
@@ -210,7 +210,7 @@ public enum LogEntryVersion
     }
 
     /**
-     * Why do we create {@link CommandReader}s like this? The only reason is that we're using the {@link NeoCommandHandler}
+     * Why do we create {@link CommandReader}s like this? The only reason is that we're using the {@link CommandHandler}
      * as interface to drive the reading, and those methods doesn't accept the source of information as argument,
      * i.e. in this case the channel. It's causing head aches actually. Perhaps we should include some genericified
      * source in those calls as well?

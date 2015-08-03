@@ -19,20 +19,20 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 
-public final class SimpleNeoStoreSupplier implements NeoStoreSupplier
+public final class SimpleNeoStoresSupplier implements NeoStoresSupplier
 {
-    private NeoStore neoStore;
+    private NeoStores neoStores;
 
-    public SimpleNeoStoreSupplier( NeoStore neoStore )
+    public SimpleNeoStoresSupplier( NeoStores neoStores )
     {
-        this.neoStore = neoStore;
+        this.neoStores = neoStores;
     }
 
     @Override
-    public NeoStore get()
+    public NeoStores get()
     {
-        return neoStore;
+        return neoStores;
     }
 }

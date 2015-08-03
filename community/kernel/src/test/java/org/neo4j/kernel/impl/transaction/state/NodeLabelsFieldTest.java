@@ -38,6 +38,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -66,6 +67,9 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class NodeLabelsFieldTest
 {
+
+    private NeoStores neoStores;
+
     @Test
     public void shouldInlineOneLabel() throws Exception
     {
@@ -459,17 +463,14 @@ public class NodeLabelsFieldTest
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
                 NullLogProvider.getInstance() );
-        storeFactory.createNodeStore();
-        nodeStore = storeFactory.newNodeStore();
+        neoStores = storeFactory.openNeoStores( true );
+        nodeStore = neoStores.getNodeStore();
     }
 
     @After
     public void cleanUp()
     {
-        if ( nodeStore != null )
-        {
-            nodeStore.close();
-        }
+        neoStores.close();
     }
 
     private NodeRecord nodeRecordWithInlinedLabels( long... labels )

@@ -63,22 +63,22 @@ public class StoreAccess
     private final CountsAccessor counts;
     // internal state
     private boolean closeable;
-    private final NeoStore neoStore;
+    private final NeoStores neoStores;
 
     public StoreAccess( GraphDatabaseAPI graphdb )
     {
-        this( getNeoStoreFrom( graphdb ) );
+        this( getNeoStoresFrom( graphdb ) );
     }
 
     @SuppressWarnings( "deprecation" )
-    private static NeoStore getNeoStoreFrom( GraphDatabaseAPI graphdb )
+    private static NeoStores getNeoStoresFrom( GraphDatabaseAPI graphdb )
     {
-        return graphdb.getDependencyResolver().resolveDependency( NeoStore.class );
+        return graphdb.getDependencyResolver().resolveDependency( NeoStores.class );
     }
 
-    public StoreAccess( NeoStore store )
+    public StoreAccess( NeoStores store )
     {
-        this.neoStore = store;
+        this.neoStores = store;
         this.schemaStore = wrapStore( store.getSchemaStore() );
         this.nodeStore = wrapStore( store.getNodeStore() );
         this.relStore = wrapStore( store.getRelationshipStore() );
@@ -109,13 +109,13 @@ public class StoreAccess
     private StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config )
     {
         this( new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
-                fileSystem, NullLogProvider.getInstance() ).newNeoStore( false ) );
+                fileSystem, NullLogProvider.getInstance() ).openNeoStores( false ) );
         this.closeable = true;
     }
 
-    public NeoStore getRawNeoStore()
+    public NeoStores getRawNeoStores()
     {
-        return neoStore;
+        return neoStores;
     }
 
     public RecordStore<DynamicRecord> getSchemaStore()
@@ -240,7 +240,7 @@ public class StoreAccess
         if ( closeable )
         {
             closeable = false;
-            neoStore.close();
+            neoStores.close();
         }
     }
 }

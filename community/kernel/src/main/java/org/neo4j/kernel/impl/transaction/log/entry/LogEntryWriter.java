@@ -23,9 +23,9 @@ import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
@@ -39,7 +39,7 @@ public class LogEntryWriter
     private final WritableLogChannel channel;
     private final Visitor<Command,IOException> serializer;
 
-    public LogEntryWriter( WritableLogChannel channel, final NeoCommandHandler commandWriter )
+    public LogEntryWriter( WritableLogChannel channel, final CommandHandler commandWriter )
     {
         this.channel = channel;
         this.serializer = new Visitor<Command,IOException>()

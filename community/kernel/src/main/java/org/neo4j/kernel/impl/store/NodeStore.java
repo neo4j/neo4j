@@ -29,7 +29,6 @@ import java.util.Iterator;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -83,13 +82,11 @@ public class NodeStore extends AbstractRecordStore<NodeRecord>
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
             DynamicArrayStore dynamicLabelStore,
             StoreVersionMismatchHandler versionMismatchHandler )
     {
-        super( fileName, config, IdType.NODE, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                logProvider, versionMismatchHandler );
+        super( fileName, config, IdType.NODE, idGeneratorFactory, pageCache, logProvider, versionMismatchHandler );
         this.dynamicLabelStore = dynamicLabelStore;
     }
 
@@ -375,16 +372,6 @@ public class NodeStore extends AbstractRecordStore<NodeRecord>
     public DynamicArrayStore getDynamicLabelStore()
     {
         return dynamicLabelStore;
-    }
-
-    @Override
-    protected void closeStorage()
-    {
-        if ( dynamicLabelStore != null )
-        {
-            dynamicLabelStore.close();
-            dynamicLabelStore = null;
-        }
     }
 
     public Collection<DynamicRecord> allocateRecordsForDynamicLabels( long nodeId, long[] labels,

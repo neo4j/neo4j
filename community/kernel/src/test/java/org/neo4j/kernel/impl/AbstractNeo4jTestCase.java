@@ -51,10 +51,10 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 @AbstractNeo4jTestCase.RequiresPersistentGraphDatabase( false )
@@ -312,8 +312,8 @@ public abstract class AbstractNeo4jTestCase
 
     protected PropertyStore propertyStore()
     {
-        NeoStore neoStore = graphDb.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
-        return neoStore.getPropertyStore();
+        NeoStores neoStores = graphDb.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get();
+        return neoStores.getPropertyStore();
     }
 
     public static File unzip( File targetDir, Class<?> testClass, String resource ) throws IOException
