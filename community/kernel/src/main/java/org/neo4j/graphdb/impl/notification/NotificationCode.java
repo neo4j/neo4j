@@ -61,8 +61,13 @@ public enum NotificationCode
     ),
     JOIN_HINT_UNFULFILLABLE(
         SeverityLevel.WARNING,
-        Status.Statement.JoinUnsupportedWarning,
+        Status.Statement.JoinHintUnfulfillableWarning,
         "The hinted hash join was not planned"
+    ),
+    JOIN_HINT_UNSUPPORTED(
+        SeverityLevel.WARNING,
+        Status.Statement.JoinHintUnsupportedWarning,
+        "Using RULE planner is unsupported for queries with join hints, please use COST planner instead"
     ),
     LENGTH_ON_NON_PATH(
         SeverityLevel.WARNING,

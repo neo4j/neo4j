@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.parser
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.StatementConverters
-import StatementConverters._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.{commands => legacyCommands, _}
 import org.parboiled.scala._
 
@@ -50,5 +50,5 @@ class ConstraintTest extends ParserTest[ast.Command, legacyCommands.AbstractQuer
     assertFails("DROP CONSTRAINT ON (foo:Foo) foo.name IS UNIQUE")
   }
 
-  def convert(astNode: ast.Command): legacyCommands.AbstractQuery = astNode.asQuery
+  def convert(astNode: ast.Command): legacyCommands.AbstractQuery = astNode.asQuery(devNullLogger)
 }

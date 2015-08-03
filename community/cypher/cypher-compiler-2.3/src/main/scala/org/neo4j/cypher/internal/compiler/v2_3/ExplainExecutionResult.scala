@@ -32,7 +32,7 @@ import org.neo4j.graphdb.Result.ResultVisitor
 
 case class ExplainExecutionResult(columns: List[String],
                                   executionPlanDescription: InternalPlanDescription, queryType: QueryType,
-                                  notifications: Seq[InternalNotification])
+                                  notifications: Set[InternalNotification])
   extends InternalExecutionResult {
 
   def javaIterator: ResourceIterator[util.Map[String, Any]] = new EmptyResourceIterator()

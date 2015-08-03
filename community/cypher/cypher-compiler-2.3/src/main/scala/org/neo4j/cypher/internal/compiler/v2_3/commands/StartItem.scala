@@ -142,12 +142,6 @@ case class NodeByLabel(varName: String, label: String)
   override def localEffects(symbols: SymbolTable) = Effects(ReadsLabel(label))
 }
 
-case class NodeJoin(varName: String)
-  extends StartItem(varName, Seq())
-  with ReadOnlyStartItem with Hint with NodeStartItemIdentifiers {
-  override def localEffects(symbols: SymbolTable) = Effects()
-}
-
 case class AllNodes(columnName: String) extends StartItem(columnName, Seq.empty)
   with ReadOnlyStartItem with NodeStartItemIdentifiers {
   override def localEffects(symbols: SymbolTable) = Effects(ReadsNodes)

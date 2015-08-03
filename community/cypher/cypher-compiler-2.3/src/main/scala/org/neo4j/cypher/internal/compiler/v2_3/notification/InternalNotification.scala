@@ -40,4 +40,6 @@ case class IndexHintUnfulfillableNotification(label: String, propertyKey: String
 
 case class JoinHintUnfulfillableNotification(identified: String) extends InternalNotification
 
+case class JoinHintUnsupportedNotification(identified: String) extends InternalNotification
+
 case class BareNodeSyntaxDeprecatedNotification(position: InputPosition) extends InternalNotification

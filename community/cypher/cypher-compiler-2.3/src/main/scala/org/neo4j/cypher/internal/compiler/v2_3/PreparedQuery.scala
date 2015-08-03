@@ -32,7 +32,7 @@ case class PreparedQuery(statement: Statement,
                                                             val scopeTree: Scope,
                                                             val notificationLogger: InternalNotificationLogger) {
 
-  def abstractQuery: AbstractQuery = statement.asQuery.setQueryText(queryText)
+  def abstractQuery: AbstractQuery = statement.asQuery(notificationLogger).setQueryText(queryText)
 
   def isPeriodicCommit = statement match {
     case ast.Query(Some(_), _) => true

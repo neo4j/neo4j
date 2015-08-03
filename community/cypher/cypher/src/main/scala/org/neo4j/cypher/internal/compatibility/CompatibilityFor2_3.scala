@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerFactory, CypherException => CypherException_v2_3, DPPlannerName, ExplainMode => ExplainModev2_3, GreedyPlannerName, IDPPlannerName, InfoLogger, Monitors, NormalMode => NormalModev2_3, PlannerName, ProfileMode => ProfileModev2_3, _}
 import org.neo4j.cypher.internal.spi.v2_3.{GeneratedQueryStructure, TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
-import org.neo4j.cypher.{JoinHintException, ArithmeticException, CypherExecutionException, CypherTypeException, EntityNotFoundException, FailedIndexException, HintException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
+import org.neo4j.cypher.{ArithmeticException, CypherExecutionException, CypherTypeException, EntityNotFoundException, FailedIndexException, HintException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, JoinHintException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
 import org.neo4j.graphdb.{GraphDatabaseService, InputPosition, QueryExecutionType, ResourceIterator}
@@ -299,6 +299,8 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
       NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(InputPosition.empty, NotificationDetail.Factory.index(label, propertyKey))
     case JoinHintUnfulfillableNotification(identifier) =>
       NotificationCode.JOIN_HINT_UNFULFILLABLE.notification(InputPosition.empty, NotificationDetail.Factory.join(identifier))
+    case JoinHintUnsupportedNotification(identifier) =>
+      NotificationCode.JOIN_HINT_UNSUPPORTED.notification(InputPosition.empty, NotificationDetail.Factory.join(identifier))
     case BareNodeSyntaxDeprecatedNotification(pos) =>
       NotificationCode.BARE_NODE_SYNTAX_DEPRECATED.notification(pos.asInputPosition)
   }
