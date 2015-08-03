@@ -21,6 +21,9 @@ package org.neo4j.codegen.source;
 
 import org.apache.commons.lang3.StringEscapeUtils;
 
+import java.util.Deque;
+import java.util.LinkedList;
+
 import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.ExpressionVisitor;
 import org.neo4j.codegen.FieldReference;
@@ -33,21 +36,36 @@ import org.neo4j.codegen.TypeReference;
 
 class MethodWriter implements MethodEmitter, ExpressionVisitor
 {
+    private static final Runnable BOTTOM = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            throw new IllegalStateException( "Popped too many levels!" );
+        }
+    }, LEVEL = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+        }
+    };
     private static final String INDENTATION = "    ";
     private final StringBuilder target;
     private final ClassWriter classWriter;
-    private int level;
+    private final Deque<Runnable> level = new LinkedList<>();
 
     public MethodWriter( StringBuilder target, ClassWriter classWriter )
     {
         this.target = target;
         this.classWriter = classWriter;
-        this.level = 2;
+        this.level.push( BOTTOM );
+        this.level.push( LEVEL );
     }
 
     private StringBuilder indent()
     {
-        for ( int i = 0; i < level; i++ )
+        for ( int level = this.level.size(); level-- > 0; )
         {
             target.append( INDENTATION );
         }
@@ -62,7 +80,7 @@ class MethodWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void done()
     {
-        if ( level != 1 )
+        if ( level.size() != 1 )
         {
             throw new IllegalStateException( "unbalanced blocks!" );
         }
@@ -124,7 +142,7 @@ class MethodWriter implements MethodEmitter, ExpressionVisitor
         iterable.accept( this );
         append( " )\n" );
         indent().append( "{\n" );
-        level++;
+        level.push( LEVEL );
     }
 
     @Override
@@ -142,7 +160,7 @@ class MethodWriter implements MethodEmitter, ExpressionVisitor
         test.accept( this );
         append( " )\n" );
         indent().append( "{\n" );
-        level++;
+        level.push( LEVEL );
     }
 
     @Override
@@ -152,7 +170,7 @@ class MethodWriter implements MethodEmitter, ExpressionVisitor
         test.accept( this );
         append( " )\n" );
         indent().append( "{\n" );
-        level++;
+        level.push( LEVEL );
     }
 
     @Override
@@ -161,7 +179,7 @@ class MethodWriter implements MethodEmitter, ExpressionVisitor
         indent().append( "catch ( " ).append( exception.type().name() ).append( " " ).append( exception.name() )
                 .append( " )\n" );
         indent().append( "{\n" );
-        level++;
+        level.push( LEVEL );
     }
 
     @Override
@@ -169,27 +187,55 @@ class MethodWriter implements MethodEmitter, ExpressionVisitor
     {
         indent().append( "finally\n" );
         indent().append( "{\n" );
-        level++;
+        level.push( LEVEL );
     }
 
     @Override
-    public void beginTry( Resource... resources )
+    public void beginTry( final Resource... resources )
     {
-        indent().append( "try" );
-        if ( resources.length > 0 )
+        if ( resources.length > 0 && classWriter.configuration.isSet( SourceCode.SIMPLIFY_TRY_WITH_RESOURCE ) )
         {
-            String sep = " ( ";
             for ( Resource resource : resources )
             {
-                append( sep ).append( resource.type().name() ).append( " " ).append( resource.name() ).append( " = " );
+                indent().append( resource.type().name() ).append( " " ).append( resource.name() ).append( " = " );
                 resource.producer().accept( this );
-                sep = "; ";
+                append( ";\n" );
             }
-            append( " )" );
+            indent().append( "try\n" );
+            indent().append( "{" );
+            level.push( new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    beginFinally();
+                    for ( Resource resource : resources )
+                    {
+                        indent().append( resource.name() ).append( ".close();\n" );
+                    }
+                    endBlock();
+                }
+            } );
         }
-        append( "\n" );
-        indent().append( "{\n" );
-        level++;
+        else
+        {
+            indent().append( "try" );
+            if ( resources.length > 0 )
+            {
+                String sep = " ( ";
+                for ( Resource resource : resources )
+                {
+                    append( sep ).append( resource.type().name() ).append( " " ).append( resource.name() )
+                            .append( " = " );
+                    resource.producer().accept( this );
+                    sep = "; ";
+                }
+                append( " )" );
+            }
+            append( "\n" );
+            indent().append( "{\n" );
+            level.push( LEVEL );
+        }
     }
 
     @Override
@@ -203,8 +249,9 @@ class MethodWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void endBlock()
     {
-        level--;
+        Runnable action = level.pop();
         indent().append( "}\n" );
+        action.run();
     }
 
     @Override
@@ -311,7 +358,7 @@ class MethodWriter implements MethodEmitter, ExpressionVisitor
     {
         append( "!( " );
         expression.accept( this );
-        append(" )");
+        append( " )" );
     }
 
     @Override
@@ -338,7 +385,7 @@ class MethodWriter implements MethodEmitter, ExpressionVisitor
     public void or( Expression lhs, Expression rhs )
     {
         lhs.accept( this );
-        append( " || ");
+        append( " || " );
         rhs.accept( this );
     }
 
