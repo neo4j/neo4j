@@ -191,4 +191,28 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     val e = intercept[IllegalStateException](resources.getCsvIterator(new URL(url)))
     e.getMessage should include(url)
   }
+
+  test("should parse multiline fields") {
+    // given
+    val url = createCSVTempFileURL {
+      writer =>
+        writer.println("a\tb")
+        writer.println("1\t\"Bar\"")
+        writer.println("2\t\"Bar\n\nQuux\n\"")
+        writer.println("3\t\"Bar\n\nQuux\"")
+    }
+
+    //when
+    val result: List[Array[String]] = resources.getCsvIterator(new URL(url), Some("\t")).toList
+
+    (result zip List(
+      Array[String]("a", "b"),
+      Array[String]("1", "Bar"),
+      Array[String]("2", "Bar\n\nQuux\n"),
+      Array[String]("3", "Bar\n\nQuux")
+    )).foreach {
+      case (r, expected) =>
+        r should equal(expected)
+    }
+  }
 }
