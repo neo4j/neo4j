@@ -19,13 +19,13 @@
  */
 package org.neo4j.com;
 
+import org.jboss.netty.buffer.ChannelBuffer;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-
-import org.jboss.netty.buffer.ChannelBuffer;
 
 import org.neo4j.com.MadeUpServer.MadeUpRequestType;
 import org.neo4j.com.monitor.RequestMonitor;
@@ -90,7 +90,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
 
     private RequestContext getRequestContext()
     {
-        return new RequestContext( EMPTY.getEpoch(), EMPTY.machineId(), EMPTY.getEventIdentifier(), 1,
+        return new RequestContext( EMPTY.getEpoch(), EMPTY.machineId(), EMPTY.getEventIdentifier(), 2,
                 EMPTY.getChecksum() );
     }
 

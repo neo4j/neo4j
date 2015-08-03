@@ -40,12 +40,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Clock;
@@ -54,6 +56,7 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.Log;
@@ -140,8 +143,9 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         this.txVerifier = txVerifier;
         this.byteCounterMonitor = byteCounterMonitor;
         this.requestMonitor = requestMonitor;
-
         this.connectedSlaveChannels = new IdleChannelReaper( this, logProvider, clock, config.getOldChannelThreshold() );
+        this.chunkSize = config.getChunkSize();
+        assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
     }
 
     private static void writeStoreId( StoreId storeId, ChannelBuffer targetBuffer )
@@ -156,11 +160,6 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     @Override
     public void init() throws Throwable
     {
-    }
-
-    @Override
-    public void start() throws Throwable
-    {
         chunkSize = config.getChunkSize();
         assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
 
@@ -170,7 +169,12 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         unfinishedTransactionExecutor = newScheduledThreadPool( 2, named( "Unfinished transactions" ) );
         silentChannelExecutor = newSingleThreadScheduledExecutor( named( "Silent channel reaper" ) );
         silentChannelExecutor.scheduleWithFixedDelay( connectedSlaveChannels, 5, 5, TimeUnit.SECONDS );
+    }
 
+    @Override
+    public void start() throws Throwable
+    {
+        String className = getClass().getSimpleName();
         ExecutorService bossExecutor = newCachedThreadPool( daemon( "Boss-" + className ) );
         ExecutorService workerExecutor = newCachedThreadPool( daemon( "Worker-" + className ) );
         bootstrap = new ServerBootstrap( new NioServerSocketChannelFactory(
@@ -202,26 +206,23 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     @Override
     public void stop() throws Throwable
     {
-        msgLog.info( getClass().getSimpleName() + " communication server shutting down and unbinding from  " + socketAddress );
-        // Close all open connections
+        String name = getClass().getSimpleName();
+        msgLog.info( name + " communication server shutting down and unbinding from  " + socketAddress );
+
         shuttingDown = true;
-
-        targetCallExecutor.shutdown();
-        targetCallExecutor.awaitTermination( 10, TimeUnit.SECONDS );
-        unfinishedTransactionExecutor.shutdown();
-        unfinishedTransactionExecutor.awaitTermination( 10, TimeUnit.SECONDS );
-
-        silentChannelExecutor.shutdown();
-        silentChannelExecutor.awaitTermination( 10, TimeUnit.SECONDS );
-
         channelGroup.close().awaitUninterruptibly();
-
         bootstrap.releaseExternalResources();
     }
 
     @Override
     public void shutdown() throws Throwable
     {
+        targetCallExecutor.shutdown();
+        targetCallExecutor.awaitTermination( 10, TimeUnit.SECONDS );
+        unfinishedTransactionExecutor.shutdown();
+        unfinishedTransactionExecutor.awaitTermination( 10, TimeUnit.SECONDS );
+        silentChannelExecutor.shutdown();
+        silentChannelExecutor.awaitTermination( 10, TimeUnit.SECONDS );
     }
 
     public InetSocketAddress getSocketAddress()
@@ -508,10 +509,11 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         long neoTx = buffer.readLong();
         long checksum = buffer.readLong();
 
-        RequestContext readRequestContext = new RequestContext( sessionId, machineId, eventIdentifier, neoTx, checksum );
-        // Only perform checksum checks on the neo data source. If there's none in the request
-        // then don't perform any such check.
-        if ( neoTx > 0 )
+        RequestContext readRequestContext =
+                new RequestContext( sessionId, machineId, eventIdentifier, neoTx, checksum );
+
+        // verify checksum only if there are transactions committed in the store
+        if ( neoTx > TransactionIdStore.BASE_TX_ID )
         {
             txVerifier.assertMatch( neoTx, checksum );
         }

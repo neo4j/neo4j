@@ -34,11 +34,12 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
 import static java.lang.System.currentTimeMillis;
 import static java.lang.Thread.yield;
-import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -310,6 +311,7 @@ public class TestCommunication
                 throw new FailingException( failureMessage );
             }
         };
+
         MadeUpServer server = builder.verifier( failingVerifier ).server();
         MadeUpClient client = builder.client();
         addToLifeAndStart( server, client );
@@ -362,7 +364,9 @@ public class TestCommunication
         Builder myBuilder = builder.chunkSize( MadeUpServer.FRAME_LENGTH + 10 );
         try
         {
-            myBuilder.server().start();
+            MadeUpServer server = myBuilder.server();
+            server.init();
+            server.start();
             fail( "Shouldn't be possible" );
         }
         catch ( IllegalArgumentException e )
@@ -461,7 +465,7 @@ public class TestCommunication
     public void shouldStreamBackTransactions() throws Exception
     {
         // GIVEN
-        int value = 11, txCount = 3;
+        int value = 11, txCount = 5;
         life.add( builder.server() );
         MadeUpClient client = life.add( builder.client() );
         life.start();
@@ -474,7 +478,7 @@ public class TestCommunication
 
         // THEN
         assertEquals( value, responseValue );
-        assertEquals( txCount, handler.expectedTxId );
+        assertEquals( txCount, handler.expectedTxId - TransactionIdStore.BASE_TX_ID );
     }
 
     @Test
@@ -502,6 +506,7 @@ public class TestCommunication
     {
         life.add( server );
         life.add( client );
+        life.init();
         life.start();
     }
 
@@ -605,7 +610,7 @@ public class TestCommunication
             implements Response.Handler, Visitor<CommittedTransactionRepresentation,IOException>
     {
         private final long txCount;
-        private long expectedTxId;
+        private long expectedTxId = 1;
 
         public TransactionStreamVerifyingResponseHandler( int txCount )
         {
@@ -627,8 +632,9 @@ public class TestCommunication
         @Override
         public boolean visit( CommittedTransactionRepresentation element ) throws IOException
         {
-            assertEquals( expectedTxId++, element.getCommitEntry().getTxId() );
-            assertThat( element.getCommitEntry().getTxId(), lessThan( txCount ) );
+            assertEquals( expectedTxId + TransactionIdStore.BASE_TX_ID, element.getCommitEntry().getTxId() );
+            expectedTxId++;
+            assertThat( element.getCommitEntry().getTxId(), lessThanOrEqualTo( txCount + TransactionIdStore.BASE_TX_ID ) );
             return false;
         }
     }
