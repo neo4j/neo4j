@@ -58,7 +58,8 @@ public interface Locks extends Lifecycle
     interface Visitor
     {
         /** Visit the description of a lock held by at least one client. */
-        void visit( ResourceType resourceType, long resourceId, String description, long estimatedWaitTime );
+        void visit( ResourceType resourceType, long resourceId, String description, long estimatedWaitTime,
+                long lockIdentityHashCode );
     }
 
     /** Locks are split by resource types. It is up to the implementation to define the contract for these. */

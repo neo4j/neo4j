@@ -20,12 +20,10 @@
 package org.neo4j.kernel.impl.locking;
 
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
-@Ignore("Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite.")
 public class CloseCompatibility extends LockingCompatibilityTestSuite.Compatibility
 {
     public CloseCompatibility( LockingCompatibilityTestSuite suite )
@@ -34,7 +32,6 @@ public class CloseCompatibility extends LockingCompatibilityTestSuite.Compatibil
     }
 
     @Test
-    @Ignore("Will be merged and enabled when both lock managers will support it")
     public void closeShouldWaitAllOperationToFinish()
     {
         // given
@@ -54,37 +51,27 @@ public class CloseCompatibility extends LockingCompatibilityTestSuite.Compatibil
         // reader/writer waiter in any threads
         // those should be gracefully finish and client should be closed
 
-        final int[] counters = new int[1];
-        locks.accept( new Locks.Visitor()
-        {
-            @Override
-            public void visit( Locks.ResourceType resourceType, long resourceId, String description,
-                    long estimatedWaitTime )
-            {
-                counters[0] ++;
-            }
-        } );
-        Assert.assertEquals( 0, counters[0] );
+        LockCountVisitor lockCountVisitor = new LockCountVisitor();
+        locks.accept( lockCountVisitor );
+        Assert.assertEquals( 0, lockCountVisitor.getLockCount() );
+
     }
 
-    @Test(expected = LockClientAlreadyClosedException.class)
-    @Ignore("Will be enabled when both clients support it.")
+    @Test( expected = LockClientAlreadyClosedException.class )
     public void shouldNotBeAbleToAcquireSharedLockFromClosedClient()
     {
         clientA.close();
-        clientA.acquireShared( NODE, 1l);
+        clientA.acquireShared( NODE, 1l );
     }
 
-    @Test(expected = LockClientAlreadyClosedException.class)
-    @Ignore("Will be enabled when both clients support it.")
+    @Test( expected = LockClientAlreadyClosedException.class )
     public void shouldNotBeAbleToAcquireExclusiveLockFromClosedClient()
     {
         clientA.close();
-        clientA.acquireExclusive( NODE, 1l);
+        clientA.acquireExclusive( NODE, 1l );
     }
 
     @Test
-    @Ignore("Will be enabled when both clients support it.")
     public void shouldNotBeAbleToAcquireLocksUsingTryFromClosedClient()
     {
         clientA.close();
