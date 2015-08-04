@@ -20,11 +20,12 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.graphdb.Path
 import org.scalatest.prop.TableDrivenPropertyChecks._
 
 class UniquenessAcceptanceTest extends ExecutionEngineFunSuite {
 
-  test("should_not_reuse_the_relationship_that_has_just_been_traversed") {
+  test("should not reuse the relationship that has just been traversed") {
     // Given
     relate(createNode("Me"), createNode("Bob"))
 
@@ -35,7 +36,7 @@ class UniquenessAcceptanceTest extends ExecutionEngineFunSuite {
     result.toList shouldBe empty
   }
 
-  test("should_not_reuse_a_relationship_that_was_used_earlier") {
+  test("should not reuse a relationship that was used earlier") {
     // Given a graph: n1-->n2, n2-->n2
     val n1 = createNode("start")
     val n2 = createNode()
@@ -49,7 +50,7 @@ class UniquenessAcceptanceTest extends ExecutionEngineFunSuite {
     result.toList shouldBe empty
   }
 
-  test("should_reuse_relationships_that_were_used_in_a_different_clause") {
+  test("should reuse relationships that were used in a different clause") {
     // Given
     // leaf1-->parent
     // leaf2-->parent
@@ -66,7 +67,7 @@ class UniquenessAcceptanceTest extends ExecutionEngineFunSuite {
     result should have size 2
   }
 
-  test("should_reuse_relationships_even_though_they_are_in_context_but_not_used_in_a_pattern") {
+  test("should reuse relationships even though they are in context but not used in a pattern") {
     // Given
     // leaf1-->parent
     // leaf2-->parent
@@ -138,6 +139,23 @@ class UniquenessAcceptanceTest extends ExecutionEngineFunSuite {
       // r1 >> r2
       // r1-r2
       result should equal(3)
+    }
+  }
+
+  test("should consider uniqueness when doing cartesian products") {
+    // Given
+    val r1 = relate(createNode(), createNode())
+    val r2 = relate(createNode(), createNode())
+    forAll(planners) { planner =>
+
+      // When
+      val result = execute(s"$planner MATCH p=()-->(), q=()-->() RETURN p, q")
+
+      // Then find paths
+      val rels = result.toList.map(row => row("p").asInstanceOf[Path].lastRelationship())
+
+      rels should have size 2
+      rels.toSet should equal(Set(r1, r2))
     }
   }
 }
