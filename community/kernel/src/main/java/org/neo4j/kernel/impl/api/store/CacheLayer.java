@@ -40,7 +40,10 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.Iterator;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
@@ -59,6 +62,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.PropertyValueComparison;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -68,6 +72,8 @@ import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_NUMBERS;
+import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_STRINGS;
 
 /**
  * This is the object-caching layer. It delegates to the legacy object cache system if possible, or delegates to the
@@ -267,7 +273,9 @@ public class CacheLayer implements StoreReadLayer
             throws IndexNotFoundKernelException
 
     {
-        return diskLayer.nodesGetFromIndexRangeSeekByNumber( state, index, lower, includeLower, upper, includeUpper );
+        return COMPARE_NUMBERS.isEmptyRange( lower, includeLower, upper, includeUpper )
+            ? PrimitiveLongCollections.emptyIterator()
+            : diskLayer.nodesGetFromIndexRangeSeekByNumber( state, index, lower, includeLower, upper, includeUpper );
     }
 
     @Override
@@ -278,7 +286,9 @@ public class CacheLayer implements StoreReadLayer
             throws IndexNotFoundKernelException
 
     {
-        return diskLayer.nodesGetFromIndexRangeSeekByString( state, index, lower, includeLower, upper, includeUpper );
+        return COMPARE_STRINGS.isEmptyRange( lower, includeLower, upper, includeUpper )
+            ? PrimitiveLongCollections.emptyIterator()
+            : diskLayer.nodesGetFromIndexRangeSeekByString( state, index, lower, includeLower, upper, includeUpper );
     }
 
     @Override

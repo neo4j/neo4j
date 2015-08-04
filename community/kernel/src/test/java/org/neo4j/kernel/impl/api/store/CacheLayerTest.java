@@ -20,16 +20,21 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.util.Set;
 
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.KernelStatement;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
@@ -72,5 +77,44 @@ public class CacheLayerTest
 
         // When & Then
         assertThat( asSet( context.constraintsGetForLabelAndPropertyKey( labelId, propertyId ) ), equalTo( constraints ) );
+    }
+
+
+    @Test
+    public void shouldNotCallToDiskLayerOnEmptyRangeSeekByNumber() throws Exception
+    {
+        // Given
+        int labelId = 0, propertyId = 1;
+        IndexDescriptor index = new IndexDescriptor( labelId, propertyId );
+        KernelStatement statement = mock( KernelStatement.class );
+
+        // When
+        assertFalse(
+            context.nodesGetFromIndexRangeSeekByNumber( statement, index, 20, true, 10, false ).hasNext()
+        );
+
+        // Then
+        verifyZeroInteractions( schemaCache );
+        verifyZeroInteractions( statement );
+        verifyZeroInteractions( diskLayer );
+    }
+
+    @Test
+    public void shouldNotCallToDiskLayerOnEmptyRangeSeekByString() throws Exception
+    {
+        // Given
+        int labelId = 0, propertyId = 1;
+        IndexDescriptor index = new IndexDescriptor( labelId, propertyId );
+        KernelStatement statement = mock( KernelStatement.class );
+
+        // When
+        assertFalse(
+            context.nodesGetFromIndexRangeSeekByString( statement, index, "b", false, "a", false ).hasNext()
+        );
+
+        // Then
+        verifyZeroInteractions( schemaCache );
+        verifyZeroInteractions( statement );
+        verifyZeroInteractions( diskLayer );
     }
 }
