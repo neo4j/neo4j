@@ -108,7 +108,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         return directory;
     }
 
-    public static abstract class Transaction
+    public abstract static class Transaction
     {
         public final long startTimestamp = currentTimeMillis();
 

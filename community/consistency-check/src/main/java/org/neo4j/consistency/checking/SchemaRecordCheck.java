@@ -26,15 +26,16 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.impl.store.record.MandatoryNodePropertyConstraintRule;
-import org.neo4j.kernel.impl.store.record.MandatoryRelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.MandatoryNodePropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.MandatoryRelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 
 /**
  * Note that this class builds up an in-memory representation of the complete schema store by being used in
@@ -59,22 +60,22 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
     }
 
     final SchemaRuleAccess ruleAccess;
-    final Map<Long, DynamicRecord> indexObligations;
-    final Map<Long, DynamicRecord> constraintObligations;
-    final Map<SchemaRuleContent, DynamicRecord> contentMap;
-    final Phase phase;
+    private final Map<Long, DynamicRecord> indexObligations;
+    private final Map<Long, DynamicRecord> constraintObligations;
+    private final Map<SchemaRule, DynamicRecord> seenRulesToRecords;
+    private final Phase phase;
 
     private SchemaRecordCheck(
             SchemaRuleAccess ruleAccess,
             Map<Long, DynamicRecord> indexObligations,
             Map<Long, DynamicRecord> constraintObligations,
-            Map<SchemaRuleContent, DynamicRecord> contentMap,
+            Map<SchemaRule, DynamicRecord> seenRulesToRecords,
             Phase phase )
     {
         this.ruleAccess = ruleAccess;
         this.indexObligations = indexObligations;
         this.constraintObligations = constraintObligations;
-        this.contentMap = contentMap;
+        this.seenRulesToRecords = seenRulesToRecords;
         this.phase = phase;
     }
 
@@ -83,14 +84,14 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         this( ruleAccess,
               new HashMap<Long, DynamicRecord>(),
               new HashMap<Long, DynamicRecord>(),
-              new HashMap<SchemaRuleContent, DynamicRecord>(),
+              new HashMap<SchemaRule, DynamicRecord>(),
               Phase.CHECK_RULES );
     }
 
     public SchemaRecordCheck forObligationChecking()
     {
         return new SchemaRecordCheck(
-                ruleAccess, indexObligations, constraintObligations, contentMap, Phase.CHECK_OBLIGATIONS );
+                ruleAccess, indexObligations, constraintObligations, seenRulesToRecords, Phase.CHECK_OBLIGATIONS );
     }
 
     @Override
@@ -112,19 +113,6 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
                 return;
             }
 
-            // given a parsed schema rule
-            if ( Phase.CHECK_RULES == phase )
-            {
-                engine.comparativeCheck( records.label( rule.getLabel() ), VALID_LABEL );
-
-                SchemaRuleContent content = new SchemaRuleContent( rule );
-                DynamicRecord previousContentRecord = contentMap.put( content, record );
-                if ( null != previousContentRecord )
-                {
-                    engine.report().duplicateRuleContent( previousContentRecord );
-                }
-            }
-
             SchemaRule.Kind kind = rule.getKind();
             switch ( kind )
             {
@@ -136,11 +124,11 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
                     checkUniquenessConstraintRule( (UniquePropertyConstraintRule) rule, engine, record, records );
                     break;
                 case MANDATORY_NODE_PROPERTY_CONSTRAINT:
-                    checkMandatoryProperty( ((MandatoryNodePropertyConstraintRule) rule).getPropertyKey(),
-                            records, engine );
+                    checkMandatoryNodePropertyRule( (MandatoryNodePropertyConstraintRule) rule, record, records,
+                            engine );
                     break;
                 case MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT:
-                    checkMandatoryProperty( ((MandatoryRelationshipPropertyConstraintRule) rule).getPropertyKey(),
+                    checkMandatoryRelationshipPropertyRule( (MandatoryRelationshipPropertyConstraintRule) rule, record,
                             records, engine );
                     break;
                 default:
@@ -155,7 +143,10 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
     {
         if ( phase == Phase.CHECK_RULES )
         {
+            engine.comparativeCheck( records.label( rule.getLabel() ), VALID_LABEL );
             engine.comparativeCheck( records.propertyKey( rule.getPropertyKey() ), VALID_PROPERTY_KEY );
+            checkForDuplicates( rule, record, engine );
+
             DynamicRecord previousObligation = indexObligations.put( rule.getOwnedIndex(), record );
             if ( null != previousObligation )
             {
@@ -179,12 +170,26 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         }
     }
 
-    private void checkMandatoryProperty( int propertyKey, RecordAccess records,
+    private void checkMandatoryNodePropertyRule( MandatoryNodePropertyConstraintRule rule, DynamicRecord record,
+            RecordAccess records, CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
+    {
+        if ( phase == Phase.CHECK_RULES )
+        {
+            engine.comparativeCheck( records.label( rule.getLabel() ), VALID_LABEL );
+            engine.comparativeCheck( records.propertyKey( rule.getPropertyKey() ), VALID_PROPERTY_KEY );
+            checkForDuplicates( rule, record, engine );
+        }
+    }
+
+    private void checkMandatoryRelationshipPropertyRule( MandatoryRelationshipPropertyConstraintRule rule,
+            DynamicRecord record, RecordAccess records,
             CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
     {
         if ( phase == Phase.CHECK_RULES )
         {
-            engine.comparativeCheck( records.propertyKey( propertyKey ), VALID_PROPERTY_KEY );
+            engine.comparativeCheck( records.relationshipType( rule.getRelationshipType() ), VALID_RELATIONSHIP_TYPE );
+            engine.comparativeCheck( records.propertyKey( rule.getPropertyKey() ), VALID_PROPERTY_KEY );
+            checkForDuplicates( rule, record, engine );
         }
     }
 
@@ -194,7 +199,10 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
     {
         if ( phase == Phase.CHECK_RULES )
         {
+            engine.comparativeCheck( records.label( rule.getLabel() ), VALID_LABEL );
             engine.comparativeCheck( records.propertyKey( rule.getPropertyKey() ), VALID_PROPERTY_KEY );
+            checkForDuplicates( rule, record, engine );
+
             if ( rule.isConstraintIndex() && rule.getOwningConstraint() != null )
             {
                 DynamicRecord previousObligation = constraintObligations.put( rule.getOwningConstraint(), record );
@@ -228,6 +236,16 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         }
     }
 
+    private void checkForDuplicates( SchemaRule rule, DynamicRecord record,
+            CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
+    {
+        DynamicRecord previousContentRecord = seenRulesToRecords.put( rule, record );
+        if ( previousContentRecord != null )
+        {
+            engine.report().duplicateRuleContent( previousContentRecord );
+        }
+    }
+
     @Override
     public void checkChange( DynamicRecord oldRecord, DynamicRecord newRecord,
                              CheckerEngine<DynamicRecord, ConsistencyReport.SchemaConsistencyReport> engine,
@@ -235,7 +253,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
     {
     }
 
-    public static final ComparativeRecordChecker<DynamicRecord,LabelTokenRecord,
+    private static final ComparativeRecordChecker<DynamicRecord,LabelTokenRecord,
             ConsistencyReport.SchemaConsistencyReport> VALID_LABEL =
             new ComparativeRecordChecker<DynamicRecord, LabelTokenRecord, ConsistencyReport.SchemaConsistencyReport>()
     {
@@ -251,7 +269,24 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         }
     };
 
-    public static final ComparativeRecordChecker<DynamicRecord, PropertyKeyTokenRecord,
+    private static final ComparativeRecordChecker<DynamicRecord,RelationshipTypeTokenRecord,
+            ConsistencyReport.SchemaConsistencyReport> VALID_RELATIONSHIP_TYPE =
+            new ComparativeRecordChecker<DynamicRecord, RelationshipTypeTokenRecord,
+                    ConsistencyReport.SchemaConsistencyReport>()
+    {
+        @Override
+        public void checkReference( DynamicRecord record, RelationshipTypeTokenRecord relTypeTokenRecord,
+                                    CheckerEngine<DynamicRecord, ConsistencyReport.SchemaConsistencyReport> engine,
+                                    RecordAccess records )
+        {
+            if ( !relTypeTokenRecord.inUse() )
+            {
+                engine.report().relationshipTypeNotInUse( relTypeTokenRecord );
+            }
+        }
+    };
+
+    private static final ComparativeRecordChecker<DynamicRecord, PropertyKeyTokenRecord,
             ConsistencyReport.SchemaConsistencyReport> VALID_PROPERTY_KEY =
             new ComparativeRecordChecker<DynamicRecord, PropertyKeyTokenRecord, ConsistencyReport.SchemaConsistencyReport>()
     {
