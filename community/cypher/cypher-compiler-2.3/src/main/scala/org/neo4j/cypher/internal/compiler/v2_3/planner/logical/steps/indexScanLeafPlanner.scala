@@ -47,7 +47,7 @@ object indexScanLeafPlanner extends LeafPlanner {
               case hint@UsingIndexHint(Identifier(`name`), `labelName`, Identifier(`propertyKeyName`)) => hint
             }
             context.logicalPlanProducer.planNodeIndexScan(idName, LabelToken(labelName, labelId),
-              PropertyKeyToken(propertyKey, propertyKey.id.head), Seq(predicate, labelPredicate),
+              PropertyKeyToken(propertyKey, propertyKey.id.head), Seq(scannable.expr, labelPredicate),
               hint, qg.argumentIds)
           }
 

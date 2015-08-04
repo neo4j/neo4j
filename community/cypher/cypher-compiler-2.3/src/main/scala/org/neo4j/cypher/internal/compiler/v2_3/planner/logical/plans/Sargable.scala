@@ -56,10 +56,38 @@ object AsPropertySeekable {
 }
 
 object AsPropertyScannable {
-  def unapply(v: Any) = v match {
+  def unapply(v: Any): Option[Scannable[Expression]] = v match {
+
     case func@FunctionInvocation(_, _, IndexedSeq(property@Property(ident: Identifier, _)))
       if func.function.contains(functions.Has) =>
-      Some(PropertyScannable(func, ident, property))
+      Some(ExplicitlyPropertyScannable(func, ident, property))
+
+    case expr: Equals =>
+      partialPropertyPredicate(expr, expr.lhs)
+
+    case expr: InequalityExpression =>
+      partialPropertyPredicate(expr, expr.lhs)
+
+    case like: Like =>
+      partialPropertyPredicate(like, like.lhs)
+
+    case regex: RegexMatch =>
+      partialPropertyPredicate(regex, regex.lhs)
+
+    case expr: NotEquals =>
+      partialPropertyPredicate(expr, expr.lhs)
+
+    case _ =>
+      None
+  }
+
+  private def partialPropertyPredicate[P <: Expression](predicate: P, lhs: Expression) = lhs match {
+    case property@Property(ident: Identifier, _) =>
+      PartialPredicate.ifNotEqual(
+        FunctionInvocation(FunctionName(functions.Has.name)(predicate.position), property)(predicate.position),
+        predicate
+      ).map(ImplicitlyPropertyScannable(_, ident, property))
+
     case _ =>
       None
   }
@@ -99,7 +127,7 @@ object AsValueRangeSeekable {
   }
 }
 
-sealed trait Sargable[T <: Expression] {
+sealed trait Sargable[+T <: Expression] {
   def expr: T
   def ident: Identifier
 
@@ -157,13 +185,18 @@ case class InequalityRangeSeekable(ident: Identifier, propertyKeyName: PropertyK
     RangeQueryExpression(InequalitySeekRangeWrapper(range)(ident.position))
 }
 
-sealed trait Scannable[T <: Expression] extends Sargable[T]
-
-case class PropertyScannable(expr: FunctionInvocation, ident: Identifier, property: Property)
-  extends Scannable[FunctionInvocation] {
+sealed trait Scannable[+T <: Expression] extends Sargable[T] {
+  def ident: Identifier
+  def property: Property
 
   def propertyKey = property.propertyKey
 }
+
+case class ExplicitlyPropertyScannable(expr: FunctionInvocation, ident: Identifier, property: Property)
+  extends Scannable[FunctionInvocation]
+
+case class ImplicitlyPropertyScannable[+T <: Expression](expr: PartialPredicate[T], ident: Identifier, property: Property)
+  extends Scannable[PartialPredicate[T]]
 
 sealed trait SeekableArgs {
   def expr: Expression

@@ -60,7 +60,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     Mockito.when(stats.nodesWithLabelCardinality(Some(LabelId(0)))).thenReturn(1000.0)
     val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
 
-    val result = calculator(PartialPredicate.ifNotEqual[HasLabels](HasLabels(ident("n"), Seq(LabelName("Page")_))_, mock[HasLabels]))
+    val result = calculator(PartialPredicate[HasLabels](HasLabels(ident("n"), Seq(LabelName("Page")_))_, mock[HasLabels]))
 
     result.factor should equal(0.5)
   }

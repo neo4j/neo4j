@@ -113,8 +113,12 @@ sealed trait PartialPredicate[+P <: Expression] extends Expression {
 }
 
 object PartialPredicate {
-  def ifNotEqual[P <: Expression](coveredPredicate: P, coveringPredicate: Expression): Expression =
-    if (coveredPredicate == coveringPredicate) coveringPredicate else PartialPredicateWrapper(coveredPredicate, coveringPredicate)
+
+  def apply[P <: Expression](coveredPredicate: P, coveringPredicate: Expression): Expression =
+    ifNotEqual(coveredPredicate, coveringPredicate).getOrElse(coveredPredicate)
+
+  def ifNotEqual[P <: Expression](coveredPredicate: P, coveringPredicate: Expression): Option[PartialPredicate[P]] =
+    if (coveredPredicate == coveringPredicate) None else Some(PartialPredicateWrapper(coveredPredicate, coveringPredicate))
 
   final case class PartialPredicateWrapper[P <: Expression](coveredPredicate: P, coveringPredicate: Expression) extends PartialPredicate[P] {
     override def semanticCheck(ctx: SemanticContext): SemanticCheck = coveredPredicate.semanticCheck(ctx)
