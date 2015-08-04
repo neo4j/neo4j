@@ -354,9 +354,24 @@ public class PageCacheRule extends ExternalResource
         }
 
         @Override
+        public void getBytes( byte[] data, int arrayOffset, int length )
+        {
+            if ( !currentReadIsInconsistent )
+            {
+                cursor.getBytes( data, arrayOffset, length );
+            }
+        }
+
+        @Override
         public void putBytes( byte[] data )
         {
             cursor.putBytes( data );
+        }
+
+        @Override
+        public void putBytes( byte[] data, int arrayOffset, int length )
+        {
+            cursor.putBytes( data, arrayOffset, length );
         }
 
         @Override

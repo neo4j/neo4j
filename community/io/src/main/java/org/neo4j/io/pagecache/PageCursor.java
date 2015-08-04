@@ -198,6 +198,15 @@ public interface PageCursor extends AutoCloseable
     void getBytes( byte[] data );
 
     /**
+     * Read the given length of bytes from the page into the given array, starting from the current offset into the
+     * page, and writing from the given array offset, and then increment the current offset by the length argument.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the current offset plus the length reaches beyond the end of the page.
+     */
+    void getBytes( byte[] data, int arrayOffset, int length );
+
+    /**
      * Write out all the bytes of the given array into the page, beginning at the current offset into the page,
      * and then increment the current offset by the length of the array.
      *
@@ -205,6 +214,15 @@ public interface PageCursor extends AutoCloseable
      * if the current offset plus the length of the array reaches beyond the end of the page.
      */
     void putBytes( byte[] data );
+
+    /**
+     * Write out the given length of bytes from the given offset into the the given array of bytes, into the page,
+     * beginning at the current offset into the page, and then increment the current offset by the length argument.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the current offset plus the length reaches beyond the end of the page.
+     */
+    void putBytes( byte[] data, int arrayOffset, int length );
 
     /**
      * Get the signed short at the current page offset, and then increment the offset by one.

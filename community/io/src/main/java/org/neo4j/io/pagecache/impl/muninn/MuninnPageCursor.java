@@ -364,15 +364,27 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public void getBytes( byte[] data )
     {
-        page.getBytes( data, offset );
-        offset += data.length;
+        getBytes( data, 0, data.length );
     }
 
     @Override
-    public void putBytes( byte[] data )
+    public void getBytes( byte[] data, int arrayOffset, int length )
     {
-        page.putBytes( data, offset );
-        offset += data.length;
+        page.getBytes( data, offset, arrayOffset, length );
+        offset += length;
+    }
+
+    @Override
+    public final void putBytes( byte[] data )
+    {
+        putBytes( data, 0, data.length );
+    }
+
+    @Override
+    public void putBytes( byte[] data, int arrayOffset, int length )
+    {
+        page.putBytes( data, offset, arrayOffset, length );
+        offset += length;
     }
 
     @Override

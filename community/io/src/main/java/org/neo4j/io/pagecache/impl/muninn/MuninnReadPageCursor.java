@@ -142,7 +142,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     }
 
     @Override
-    public void putBytes( byte[] data )
+    public void putBytes( byte[] data, int arrayOffset, int length )
     {
         throw new IllegalStateException( "Cannot write to read-locked page" );
     }
