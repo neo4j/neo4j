@@ -79,13 +79,13 @@ public abstract class StoreVersionTrailerUtil
 
         try ( PageCursor pageCursor = pagedFile.io( firstPageThatTrailerMightBeIn, PagedFile.PF_SHARED_LOCK ) )
         {
-            byte[] allData = getTheBytesThatWillContainTheTrailer( pageSize, firstPageThatTrailerMightBeIn, lastPageId,
-                    pageCursor );
+            byte[] data = getTheBytesThatWillContainTheTrailer(
+                    pageSize, firstPageThatTrailerMightBeIn, lastPageId, pageCursor );
             int trailerPositionRelativeToFirstPageTrailerMightBeIn =
-                    findTrailerPositionInArray( allData, UTF8.encode( expectedTrailer.split( " " )[0] ) );
+                    findTrailerPositionInArray( data, UTF8.encode( expectedTrailer.split( " " )[0] ) );
             if ( trailerPositionRelativeToFirstPageTrailerMightBeIn != -1 )
             {
-                version = new String( allData, trailerPositionRelativeToFirstPageTrailerMightBeIn,
+                version = new String( data, trailerPositionRelativeToFirstPageTrailerMightBeIn,
                         encodedExpectedTrailerLength, Charsets.UTF_8 );
             }
         }
@@ -93,7 +93,7 @@ public abstract class StoreVersionTrailerUtil
     }
 
     /**
-     * Write the given trailer att the given offset into the file.
+     * Write the given trailer at the given offset into the file.
      *
      * @param pagedFile The paged file to write the trailer into
      * @param trailer The trailer to be written, encoded in UTF-8
@@ -103,26 +103,28 @@ public abstract class StoreVersionTrailerUtil
     public static void writeTrailer( PagedFile pagedFile, byte[] trailer, long trailerOffset ) throws IOException
     {
         int pageSize = pagedFile.pageSize();
-        long pageIdTrailerStartsIn = trailerOffset / pageSize;
+        long startPageId = trailerOffset / pageSize;
+        int pageOffset = (int) (trailerOffset % pageSize);
+        int bytesLeftToWrite = trailer.length;
 
-        try ( PageCursor pageCursor = pagedFile.io( pageIdTrailerStartsIn, PagedFile.PF_EXCLUSIVE_LOCK ) )
+        try ( PageCursor cursor = pagedFile.io( startPageId, PagedFile.PF_EXCLUSIVE_LOCK ) )
         {
-            int writtenOffset = 0;
-            while ( writtenOffset < trailer.length )
+            do
             {
-                pageCursor.next();
-                pageCursor.setOffset( (int) ((writtenOffset + trailerOffset) % pageSize) );
+                cursor.next(); // Should always be true because we take an exclusive lock
+                cursor.setOffset( pageOffset );
+
+                int bytesInThisPage = Math.min( bytesLeftToWrite, pageSize - pageOffset );
                 do
                 {
-                    do
-                    {
-                        pageCursor.putByte( trailer[writtenOffset] );
-                    }
-                    while ( pageCursor.shouldRetry() );
-                    writtenOffset++;
+                    cursor.putBytes( trailer, trailer.length - bytesLeftToWrite, bytesInThisPage );
                 }
-                while ( (writtenOffset + trailerOffset) % pageSize != 0 && writtenOffset < trailer.length );
+                while ( cursor.shouldRetry() );
+
+                bytesLeftToWrite -= bytesInThisPage;
+                pageOffset = 0;
             }
+            while ( bytesLeftToWrite > 0 );
         }
     }
 
@@ -133,12 +135,12 @@ public abstract class StoreVersionTrailerUtil
         return Math.max( lastPageId + 1 - maximumNumberOfPagesVersionSpans, 0 );
     }
 
-    private static int findTrailerPositionInArray( byte[] dataThatShouldContailTrailer, byte[] trailer )
+    private static int findTrailerPositionInArray( byte[] dataThatShouldContainTrailer, byte[] trailer )
     {
-        for ( int i = dataThatShouldContailTrailer.length - trailer.length; i >= 0; i-- )
+        for ( int i = dataThatShouldContainTrailer.length - trailer.length; i >= 0; i-- )
         {
             int pos = 0;
-            while ( pos < trailer.length && dataThatShouldContailTrailer[i + pos] == trailer[pos] )
+            while ( pos < trailer.length && dataThatShouldContainTrailer[i + pos] == trailer[pos] )
             {
                 pos++;
             }
@@ -158,19 +160,17 @@ public abstract class StoreVersionTrailerUtil
     private static byte[] getTheBytesThatWillContainTheTrailer( int pageSize, long firstPageThatTrailerMightBeIn,
             long lastPageId, PageCursor pageCursor ) throws IOException
     {
-        byte[] allData = new byte[(int) (pageSize * (lastPageId - firstPageThatTrailerMightBeIn + 1))];
-        byte[] data = new byte[pageSize];
-        int currentPage = 0;
+        byte[] data = new byte[(int) (pageSize * (lastPageId - firstPageThatTrailerMightBeIn + 1))];
+        int arrayOffset = 0;
         while ( pageCursor.next() )
         {
             do
             {
-                pageCursor.getBytes( data );
+                pageCursor.getBytes( data, arrayOffset, pageSize );
             }
             while ( pageCursor.shouldRetry() );
-            System.arraycopy( data, 0, allData, currentPage * data.length, data.length );
-            currentPage++;
+            arrayOffset += pageSize;
         }
-        return allData;
+        return data;
     }
 }
