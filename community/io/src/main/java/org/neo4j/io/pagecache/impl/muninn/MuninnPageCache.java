@@ -236,7 +236,8 @@ public class MuninnPageCache implements PageCache
         this.printExceptionsOnClose = true;
 
         long alignment = swapperFactory.getRequiredBufferAlignment();
-        MemoryManager memoryManager = new MemoryManager( maxPages * cachePageSize, alignment );
+        long expectedMaxMemory = ((long) maxPages) * cachePageSize; // cast to long prevents overflow
+        MemoryManager memoryManager = new MemoryManager( expectedMaxMemory, alignment );
         Object pageList = null;
         int pageIndex = maxPages;
         while ( pageIndex --> 0 )
