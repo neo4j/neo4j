@@ -2,10 +2,11 @@
 = Using
 
 [abstract]
-`USING` is used to give Neo4j hints about which index to use, or to scan instead of using an index.
+`USING` is used to influence the decisions of the planner when building an execution plan for a query.
+NOTE: Forcing planner behaviour is an advanced feature, and should be used with caution by experienced developers and/or database administrators only, as it may cause queries to perform poorly.
 
-If you do not specify an explicit `START` clause, Cypher needs to infer where in the graph to start your query.
-This is done by looking at the `MATCH` clause and the `WHERE` conditions and using that information to find a useful index.
+When executing a query, Neo4j needs to decide where in the query graph to start matching.
+This is done by looking at the `MATCH` clause and the `WHERE` conditions and using that information to find useful indexes.
 
 This index might not be the best choice though -- sometimes multiple indexes could be used, and Neo4j has picked the wrong one (from a performance point of view).
 
@@ -18,9 +19,12 @@ It will force Cypher to not use an index that could have been used, and instead 
 
 NOTE: You cannot use index hints if your query has a `START` clause.
 
+You can also force Neo4j to produce plans which perform joins between query sub-graphs.
+
 include::query-using-an-index-hint.asciidoc[]
 
 include::query-using-multiple-index-hints.asciidoc[]
 
 include::hinting-a-label-scan.asciidoc[]
 
+include::hinting-a-join.asciidoc[]
