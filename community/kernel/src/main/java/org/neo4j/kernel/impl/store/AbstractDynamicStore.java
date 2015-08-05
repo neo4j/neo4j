@@ -90,7 +90,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             StoreVersionMismatchHandler versionMismatchHandler,
             Monitors monitors )
     {
-        super( fileName, conf, idType, idGeneratorFactory, pageCache, fileSystemAbstraction, logProvider,
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider,
                 versionMismatchHandler );
     }
 
@@ -254,16 +254,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     @Override
     protected void readAndVerifyBlockSize() throws IOException
     {
-        ByteBuffer buffer = ByteBuffer.allocate( 4 );
-        getFileChannel().position( 0 );
-        getFileChannel().read( buffer );
-        buffer.flip();
-        blockSize = buffer.getInt();
-        if ( blockSize <= 0 )
-        {
-            throw new InvalidRecordException( "Illegal block size: " +
-                    blockSize + " in " + getStorageFileName() );
-        }
+        blockSize = getHeaderRecord();
     }
 
     /**

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -124,17 +123,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     @Override
     protected void readAndVerifyBlockSize() throws IOException
     {
-        // Read dense node threshold from the first record in the store (reserved for this threshold)
-        ByteBuffer buffer = ByteBuffer.allocate( 4 );
-        getFileChannel().position( 0 );
-        getFileChannel().read( buffer );
-        buffer.flip();
-        denseNodeThreshold = buffer.getInt();
-        if ( denseNodeThreshold < 0 )
-        {
-            throw new InvalidRecordException( "Illegal block size: " + denseNodeThreshold
-                    + " in " + getStorageFileName() );
-        }
+        denseNodeThreshold = getHeaderRecord();
     }
 
     private RelationshipGroupRecord getRecord( long id, PageCursor cursor )

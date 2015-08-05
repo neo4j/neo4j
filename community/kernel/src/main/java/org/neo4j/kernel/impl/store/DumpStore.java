@@ -24,8 +24,9 @@ import java.io.PrintStream;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -239,19 +240,17 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
     {
         store.makeStoreOk();
         int size = store.getRecordSize();
-        StoreChannel fileChannel = store.getFileChannel();
-        ByteBuffer buffer = ByteBuffer.allocate( size );
         out.println( "store.getRecordSize() = " + size );
         out.println( "<dump>" );
         long used = 0;
-
+        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         if ( ids == null )
         {
             long high = store.getHighestPossibleIdInUse();
 
             for ( long id = 0; id <= high; id++ )
             {
-                boolean inUse = dumpRecord( store, size, fileChannel, buffer, id );
+                boolean inUse = dumpRecord( store, size, id );
 
                 if ( inUse )
                 {
@@ -261,20 +260,21 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         }
         else
         {
-            for( long id : ids )
+            for ( long id : ids )
             {
-                dumpRecord( store, size, fileChannel, buffer, id );
+                dumpRecord( store, size, id );
             }
         }
         out.println( "</dump>" );
 
         if ( ids == null )
         {
-            out.printf( "used = %s / highId = %s (%.2f%%)%n", used, store.getHighId(), used * 100.0 / store.getHighId() );
+            out.printf( "used = %s / highId = %s (%.2f%%)%n", used, store.getHighId(),
+                    used * 100.0 / store.getHighId() );
         }
     }
 
-    private boolean dumpRecord( STORE store, int size, StoreChannel fileChannel, ByteBuffer buffer, long id ) throws Exception
+    private boolean dumpRecord( STORE store, int size, long id ) throws Exception
     {
         RECORD record = store.forceGetRecord( id );
 
@@ -289,12 +289,21 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         else
         {
             out.print( record );
-            buffer.clear();
-            fileChannel.read( buffer, id * size );
-            buffer.flip();
-            dumpHex( record, buffer, id, size );
+            byte[] data = new byte[size];
+            try ( PageCursor pageCursor = store.storeFile.io( id / store.recordsPerPage(), PagedFile.PF_SHARED_LOCK ) )
+            {
+                if ( pageCursor.next() )
+                {
+                    do
+                    {
+                        pageCursor.setOffset( (int) (id % store.recordsPerPage() * size) );
+                        pageCursor.getBytes( data );
+                    }
+                    while ( pageCursor.shouldRetry() );
+                }
+            }
+            dumpHex( record, ByteBuffer.wrap( data ), id, size );
         }
-
         return record.inUse();
     }
 
