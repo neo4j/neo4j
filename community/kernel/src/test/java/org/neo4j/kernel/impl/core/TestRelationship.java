@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -41,7 +41,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -994,7 +993,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         // When
         try ( Transaction tx = db.beginTx() )
         {
-            relationship.delete(); // should throw IllegalStateException as this relationship is already deleted
+            relationship.delete();
             tx.success();
         }
     }

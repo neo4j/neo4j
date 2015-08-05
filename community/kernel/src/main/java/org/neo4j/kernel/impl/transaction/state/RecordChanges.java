@@ -53,6 +53,14 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
     }
 
     @Override
+    public String toString()
+    {
+        return "RecordChanges{" +
+               "recordChanges=" + recordChanges +
+               '}';
+    }
+
+    @Override
     public RecordProxy<KEY, RECORD, ADDITIONAL> getIfLoaded( KEY key )
     {
         return recordChanges.get( key );
@@ -155,6 +163,16 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
             this.manageBeforeState = manageBeforeState;
             this.created = created;
             this.additionalData = additionalData;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "RecordChange{" +
+                   "record=" + record +
+                   "key=" + key +
+                   "created=" + created +
+                   '}';
         }
 
         @Override

@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import java.util.Collections;
-
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.Collections;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -46,12 +46,10 @@ import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -60,7 +58,7 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asLabelCursor;
-import static org.neo4j.kernel.impl.api.state.StubCursors.asNode;
+import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
 
 public class IndexQueryTransactionStateTest
@@ -104,14 +102,18 @@ public class IndexQueryTransactionStateTest
         txContext = new ConstraintEnforcingEntityOperations(
                 stateHandlingOperations, stateHandlingOperations, stateHandlingOperations, stateHandlingOperations );
     }
+
     @Test
     public void shouldExcludeRemovedNodesFromIndexQuery() throws Exception
     {
         // Given
+        long nodeId = 2l;
         when( store.nodesGetFromIndexSeek( state, indexDescriptor, value ) )
-                .then( answerAsPrimitiveLongIteratorFrom( asList( 1l, 2l, 3l ) ) );
+                .then( answerAsPrimitiveLongIteratorFrom( asList( 1l, nodeId, 3l ) ) );
 
-        txContext.nodeDelete( state, asNode( 2l ) );
+        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn( asNodeCursor( nodeId ) );
+
+        txContext.nodeDelete( state, nodeId );
 
         // When
         PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
@@ -124,10 +126,13 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeRemovedNodeFromUniqueIndexQuery() throws Exception
     {
         // Given
+        long nodeId = 1l;
         when( store.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value ) ).thenReturn(
-                asPrimitiveResourceIterator( 1l ) );
+                asPrimitiveResourceIterator( nodeId ) );
 
-        txContext.nodeDelete( state, asNode( 1l ) );
+        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn( asNodeCursor( nodeId ) );
+
+        txContext.nodeDelete( state, nodeId );
 
         // When
         long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
@@ -176,17 +181,22 @@ public class IndexQueryTransactionStateTest
         when( store.nodesGetFromIndexSeek( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
-        state.txState().nodeDoReplaceProperty( 1l, noNodeProperty( 1l, propertyKeyId ),
+        long nodeId = 1l;
+        state.txState().nodeDoReplaceProperty( nodeId, noNodeProperty( nodeId, propertyKeyId ),
                 stringProperty( propertyKeyId, value ) );
 
-        txContext.nodeAddLabel( state, asNode( 1l, asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                Cursors.<LabelItem>empty() ), labelId );
+        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
+                asNodeCursor( nodeId,
+                        asPropertyCursor( stringProperty( propertyKeyId, value ) ),
+                        Cursors.<LabelItem>empty() ) );
+
+        txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When
         PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
 
         // Then
-        assertThat( asSet( result ), equalTo( asSet( 1l, 2l, 3l ) ) );
+        assertThat( asSet( result ), equalTo( asSet( nodeId, 2l, 3l ) ) );
     }
 
     @Test
@@ -196,17 +206,22 @@ public class IndexQueryTransactionStateTest
         when( store.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator() );
 
-        state.txState().nodeDoReplaceProperty( 1l, noNodeProperty( 1l, propertyKeyId ),
+        long nodeId = 1l;
+        state.txState().nodeDoReplaceProperty( nodeId, noNodeProperty( nodeId, propertyKeyId ),
                 stringProperty( propertyKeyId, value ) );
 
-        txContext.nodeAddLabel( state, asNode( 1l, asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                Cursors.<LabelItem>empty() ), labelId );
+        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
+                asNodeCursor( nodeId,
+                        asPropertyCursor( stringProperty( propertyKeyId, value ) ),
+                        Cursors.<LabelItem>empty() ) );
+
+        txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When
         long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
 
         // Then
-        assertThat( result, equalTo( 1l ) );
+        assertThat( result, equalTo( nodeId ) );
     }
 
     @Test
@@ -216,14 +231,20 @@ public class IndexQueryTransactionStateTest
         when( store.nodesGetFromIndexSeek( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
-        txContext.nodeAddLabel( state, asNode( 1l, asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                asLabelCursor() ), labelId );
+        long nodeId = 1l;
+
+        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
+                asNodeCursor( nodeId,
+                        asPropertyCursor( stringProperty( propertyKeyId, value ) ),
+                        asLabelCursor() ) );
+
+        txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When
         PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
 
         // Then
-        assertThat( asSet( result ), equalTo( asSet( 1l, 2l, 3l ) ) );
+        assertThat( asSet( result ), equalTo( asSet( nodeId, 2l, 3l ) ) );
     }
 
     @Test
@@ -233,25 +254,36 @@ public class IndexQueryTransactionStateTest
         when( store.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator() );
 
-        txContext.nodeAddLabel( state, asNode( 2l, asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                asLabelCursor() ), labelId );
+        long nodeId = 2l;
+
+        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
+                asNodeCursor( nodeId,
+                        asPropertyCursor( stringProperty( propertyKeyId, value ) ),
+                        asLabelCursor() ) );
+
+        txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When
         long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
 
         // Then
-        assertThat( result, equalTo( 2l ) );
+        assertThat( result, equalTo( nodeId ) );
     }
 
     @Test
     public void shouldExcludeExistingNodesWithCorrectPropertyAfterRemovingLabel() throws Exception
     {
         // Given
+        long nodeId = 1l;
         when( store.nodesGetFromIndexSeek( state, indexDescriptor, value ) )
-                .then( answerAsPrimitiveLongIteratorFrom( asList( 1l, 2l, 3l ) ) );
+                .then( answerAsPrimitiveLongIteratorFrom( asList( nodeId, 2l, 3l ) ) );
 
-        txContext.nodeRemoveLabel( state, asNode( 1l, asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                asLabelCursor( labelId ) ), labelId );
+        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
+                asNodeCursor( nodeId,
+                        asPropertyCursor( stringProperty( propertyKeyId, value ) ),
+                        asLabelCursor( labelId ) ) );
+
+        txContext.nodeRemoveLabel( state, nodeId, labelId );
 
         // When
         PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
@@ -264,11 +296,16 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeExistingUniqueNodeWithCorrectPropertyAfterRemovingLabel() throws Exception
     {
         // Given
+        long nodeId = 1l;
         when( store.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value ) ).thenReturn(
-                asPrimitiveResourceIterator( 1l ) );
+                asPrimitiveResourceIterator( nodeId ) );
 
-        txContext.nodeRemoveLabel( state, asNode( 1l, asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                asLabelCursor( labelId ) ), labelId );
+        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
+                asNodeCursor( nodeId,
+                        asPropertyCursor( stringProperty( propertyKeyId, value ) ),
+                        asLabelCursor( labelId ) ) );
+
+        txContext.nodeRemoveLabel( state, nodeId, labelId );
 
         // When
         long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
@@ -284,10 +321,16 @@ public class IndexQueryTransactionStateTest
         when( store.nodesGetFromIndexSeek( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
-        state.txState().nodeDoReplaceProperty( 1l, Property.noNodeProperty( 1l, propertyKeyId ),
+        long nodeId = 1l;
+        state.txState().nodeDoReplaceProperty( nodeId, Property.noNodeProperty( nodeId, propertyKeyId ),
                 Property.intProperty( propertyKeyId, 10 ) );
 
-        txContext.nodeAddLabel( state, asNode( 1l, asPropertyCursor(), asLabelCursor( labelId ) ), labelId );
+        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
+                asNodeCursor( nodeId,
+                        asPropertyCursor(),
+                        asLabelCursor( labelId ) ) );
+
+        txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When
         PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
@@ -300,12 +343,16 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeUniqueNodeWithRemovedProperty() throws Exception
     {
         // Given
-
+        long nodeId = 1l;
         when( store.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value ) ).thenReturn(
-                asPrimitiveResourceIterator( 1l ) );
+                asPrimitiveResourceIterator( nodeId ) );
 
-        txContext.nodeRemoveProperty( state, asNode( 1l, asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                asLabelCursor( labelId ) ), propertyKeyId );
+        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
+                asNodeCursor( nodeId,
+                        asPropertyCursor( stringProperty( propertyKeyId, value ) ),
+                        asLabelCursor( labelId ) ) );
+
+        txContext.nodeRemoveProperty( state, nodeId, propertyKeyId );
 
         // When
         long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -27,7 +26,6 @@ import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
@@ -39,25 +37,20 @@ import static org.neo4j.kernel.api.exceptions.Status.Transaction.ValidationFaile
 public class TransactionRepresentationCommitProcess implements TransactionCommitProcess
 {
     private final TransactionAppender appender;
-    private final KernelHealth kernelHealth;
-    private final TransactionIdStore transactionIdStore;
     private final TransactionRepresentationStoreApplier storeApplier;
     private final IndexUpdatesValidator indexUpdatesValidator;
 
-    public TransactionRepresentationCommitProcess(TransactionAppender appender, KernelHealth kernelHealth,
-            TransactionIdStore transactionIdStore, TransactionRepresentationStoreApplier storeApplier,
-            IndexUpdatesValidator indexUpdatesValidator )
+    public TransactionRepresentationCommitProcess( TransactionAppender appender,
+            TransactionRepresentationStoreApplier storeApplier, IndexUpdatesValidator indexUpdatesValidator )
     {
         this.appender = appender;
-        this.transactionIdStore = transactionIdStore;
-        this.kernelHealth = kernelHealth;
         this.storeApplier = storeApplier;
         this.indexUpdatesValidator = indexUpdatesValidator;
     }
 
     @Override
     public long commit( TransactionRepresentation transaction, LockGroup locks, CommitEvent commitEvent,
-                        TransactionApplicationMode mode ) throws TransactionFailureException
+            TransactionApplicationMode mode ) throws TransactionFailureException
     {
         try ( ValidatedIndexUpdates indexUpdates = validateIndexUpdates( transaction, mode ) )
         {
@@ -68,8 +61,7 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
     }
 
     private ValidatedIndexUpdates validateIndexUpdates( TransactionRepresentation transaction,
-                                                        TransactionApplicationMode mode)
-            throws TransactionFailureException
+            TransactionApplicationMode mode ) throws TransactionFailureException
     {
         try
         {

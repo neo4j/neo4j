@@ -59,8 +59,8 @@ public class GuardingStatementOperations implements
     @Override
     public long relationshipCreate( KernelStatement statement,
             int relationshipTypeId,
-            NodeItem startNodeId,
-            NodeItem endNodeId )
+            long startNodeId,
+            long endNodeId )
             throws EntityNotFoundException
     {
         guard.check();
@@ -75,49 +75,49 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public void nodeDelete( KernelStatement state, NodeItem node )
+    public void nodeDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
         guard.check();
-        entityWriteDelegate.nodeDelete( state, node );
+        entityWriteDelegate.nodeDelete( state, nodeId );
     }
 
     @Override
-    public void relationshipDelete( KernelStatement state, RelationshipItem relationship )
+    public void relationshipDelete( KernelStatement state, long relationshipId ) throws EntityNotFoundException
     {
         guard.check();
-        entityWriteDelegate.relationshipDelete( state, relationship );
+        entityWriteDelegate.relationshipDelete( state, relationshipId );
     }
 
     @Override
-    public boolean nodeAddLabel( KernelStatement state, NodeItem node, int labelId )
-            throws ConstraintValidationKernelException
+    public boolean nodeAddLabel( KernelStatement state, long nodeId, int labelId )
+            throws ConstraintValidationKernelException, EntityNotFoundException
     {
         guard.check();
-        return entityWriteDelegate.nodeAddLabel( state, node, labelId );
+        return entityWriteDelegate.nodeAddLabel( state, nodeId, labelId );
     }
 
     @Override
-    public boolean nodeRemoveLabel( KernelStatement state, NodeItem node, int labelId )
+    public boolean nodeRemoveLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException
     {
         guard.check();
-        return entityWriteDelegate.nodeRemoveLabel( state, node, labelId );
+        return entityWriteDelegate.nodeRemoveLabel( state, nodeId, labelId );
     }
 
     @Override
-    public Property nodeSetProperty( KernelStatement state, NodeItem node, DefinedProperty property )
-            throws ConstraintValidationKernelException
+    public Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
+            throws ConstraintValidationKernelException, EntityNotFoundException
     {
         guard.check();
-        return entityWriteDelegate.nodeSetProperty( state, node, property );
+        return entityWriteDelegate.nodeSetProperty( state, nodeId, property );
     }
 
     @Override
     public Property relationshipSetProperty( KernelStatement state,
-            RelationshipItem relationship,
-            DefinedProperty property )
+            long relationshipId,
+            DefinedProperty property ) throws EntityNotFoundException
     {
         guard.check();
-        return entityWriteDelegate.relationshipSetProperty( state, relationship, property );
+        return entityWriteDelegate.relationshipSetProperty( state, relationshipId, property );
     }
 
     @Override
@@ -128,19 +128,20 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Property nodeRemoveProperty( KernelStatement state, NodeItem node, int propertyKeyId )
+    public Property nodeRemoveProperty( KernelStatement state, long nodeId, int propertyKeyId )
+            throws EntityNotFoundException
     {
         guard.check();
-        return entityWriteDelegate.nodeRemoveProperty( state, node, propertyKeyId );
+        return entityWriteDelegate.nodeRemoveProperty( state, nodeId, propertyKeyId );
     }
 
     @Override
     public Property relationshipRemoveProperty( KernelStatement state,
-            RelationshipItem relationship,
-            int propertyKeyId )
+            long relationshipId,
+            int propertyKeyId ) throws EntityNotFoundException
     {
         guard.check();
-        return entityWriteDelegate.relationshipRemoveProperty( state, relationship, propertyKeyId );
+        return entityWriteDelegate.relationshipRemoveProperty( state, relationshipId, propertyKeyId );
     }
 
     @Override
@@ -260,6 +261,13 @@ public class GuardingStatementOperations implements
     }
 
     @Override
+    public Cursor<NodeItem> nodeCursorById( KernelStatement statement, long nodeId ) throws EntityNotFoundException
+    {
+        guard.check();
+        return entityReadDelegate.nodeCursorById( statement, nodeId );
+    }
+
+    @Override
     public Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId )
     {
         guard.check();
@@ -271,6 +279,14 @@ public class GuardingStatementOperations implements
     {
         guard.check();
         return entityReadDelegate.nodeCursor( txStateHolder, statement, nodeId );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> relationshipCursorById( KernelStatement statement, long relId )
+            throws EntityNotFoundException
+    {
+        guard.check();
+        return entityReadDelegate.relationshipCursorById( statement, relId );
     }
 
     @Override

@@ -50,7 +50,6 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -108,6 +107,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
+import static java.lang.Integer.parseInt;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -126,9 +126,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.lang.Integer.parseInt;
-
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -144,8 +141,8 @@ import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
 import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
+import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class NeoStoreTransactionTest
@@ -1497,8 +1494,8 @@ public class NeoStoreTransactionTest
 
         PropertyLoader propertyLoader = new PropertyLoader( neoStore );
 
-        return new TransactionRepresentationCommitProcess( appenderMock, mock( KernelHealth.class ),
-                neoStore, applier, new IndexUpdatesValidator( neoStore, null, propertyLoader, indexing ) );
+        return new TransactionRepresentationCommitProcess( appenderMock, applier,
+                new IndexUpdatesValidator( neoStore, null, propertyLoader, indexing ) );
     }
 
     @After

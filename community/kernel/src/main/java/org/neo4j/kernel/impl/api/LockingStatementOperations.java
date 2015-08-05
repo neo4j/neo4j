@@ -29,8 +29,6 @@ import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -84,8 +82,8 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public boolean nodeAddLabel( KernelStatement state, NodeItem node, int labelId )
-            throws ConstraintValidationKernelException
+    public boolean nodeAddLabel( KernelStatement state, long nodeId, int labelId )
+            throws ConstraintValidationKernelException, EntityNotFoundException
     {
         // TODO (BBC, 22/11/13):
         // In order to enforce constraints we need to check whether this change violates constraints; we therefore need
@@ -100,18 +98,18 @@ public class LockingStatementOperations implements
         // by ConstraintEnforcingEntityOperations included the full cake, with locking included.
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
 
-        state.locks().acquireExclusive( ResourceTypes.NODE, node.id() );
+        state.locks().acquireExclusive( ResourceTypes.NODE, nodeId );
         state.assertOpen();
 
-        return entityWriteDelegate.nodeAddLabel( state, node, labelId );
+        return entityWriteDelegate.nodeAddLabel( state, nodeId, labelId );
     }
 
     @Override
-    public boolean nodeRemoveLabel( KernelStatement state, NodeItem node, int labelId )
+    public boolean nodeRemoveLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException
     {
-        state.locks().acquireExclusive( ResourceTypes.NODE, node.id() );
+        state.locks().acquireExclusive( ResourceTypes.NODE, nodeId );
         state.assertOpen();
-        return entityWriteDelegate.nodeRemoveLabel( state, node, labelId );
+        return entityWriteDelegate.nodeRemoveLabel( state, nodeId, labelId );
     }
 
     @Override
@@ -248,11 +246,11 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public void nodeDelete( KernelStatement state, NodeItem node )
+    public void nodeDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
-        state.locks().acquireExclusive( ResourceTypes.NODE, node.id() );
+        state.locks().acquireExclusive( ResourceTypes.NODE, nodeId );
         state.assertOpen();
-        entityWriteDelegate.nodeDelete( state, node );
+        entityWriteDelegate.nodeDelete( state, nodeId );
     }
 
     @Override
@@ -264,16 +262,13 @@ public class LockingStatementOperations implements
     @Override
     public long relationshipCreate( KernelStatement state,
             int relationshipTypeId,
-            NodeItem startNode,
-            NodeItem endNode )
+            long startNodeId,
+            long endNodeId )
             throws EntityNotFoundException
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
 
         // Order the locks to lower the risk of deadlocks with other threads adding rels concurrently
-        long startNodeId = startNode.id();
-        long endNodeId = endNode.id();
-
         if ( startNodeId < endNodeId )
         {
             state.locks().acquireExclusive( ResourceTypes.NODE, startNodeId );
@@ -285,33 +280,25 @@ public class LockingStatementOperations implements
             state.locks().acquireExclusive( ResourceTypes.NODE, startNodeId );
         }
         state.assertOpen();
-        return entityWriteDelegate.relationshipCreate( state, relationshipTypeId, startNode, endNode );
+        return entityWriteDelegate.relationshipCreate( state, relationshipTypeId, startNodeId, endNodeId );
     }
 
     @Override
-    public void relationshipDelete( final KernelStatement state, RelationshipItem relationship )
+    public void relationshipDelete( final KernelStatement state, long relationshipId ) throws EntityNotFoundException
     {
-        try
-        {
-            entityReadDelegate.relationshipVisit( state, relationship.id(),
-                    new RelationshipVisitor<RuntimeException>()
+        entityReadDelegate.relationshipVisit( state, relationshipId,
+                new RelationshipVisitor<RuntimeException>()
+                {
+                    @Override
+                    public void visit( long relId, int type, long startNode, long endNode )
                     {
-                        @Override
-                        public void visit( long relId, int type, long startNode, long endNode )
-                        {
-                            state.locks().acquireExclusive( ResourceTypes.NODE, startNode );
-                            state.locks().acquireExclusive( ResourceTypes.NODE, endNode );
-                        }
-                    } );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new IllegalStateException(
-                    "Unable to delete relationship[" + relationship.id() + "] since it is already deleted." );
-        }
-        state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationship.id() );
+                        state.locks().acquireExclusive( ResourceTypes.NODE, startNode );
+                        state.locks().acquireExclusive( ResourceTypes.NODE, endNode );
+                    }
+                } );
+        state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
         state.assertOpen();
-        entityWriteDelegate.relationshipDelete( state, relationship );
+        entityWriteDelegate.relationshipDelete( state, relationshipId );
     }
 
     @Override
@@ -405,8 +392,8 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Property nodeSetProperty( KernelStatement state, NodeItem node, DefinedProperty property )
-            throws ConstraintValidationKernelException
+    public Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
+            throws ConstraintValidationKernelException, EntityNotFoundException
     {
         // TODO (BBC, 22/11/13):
         // In order to enforce constraints we need to check whether this change violates constraints; we therefore need
@@ -421,37 +408,38 @@ public class LockingStatementOperations implements
         // by ConstraintEnforcingEntityOperations included the full cake, with locking included.
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
 
-        state.locks().acquireExclusive( ResourceTypes.NODE, node.id() );
+        state.locks().acquireExclusive( ResourceTypes.NODE, nodeId );
         state.assertOpen();
-        return entityWriteDelegate.nodeSetProperty( state, node, property );
+        return entityWriteDelegate.nodeSetProperty( state, nodeId, property );
     }
 
     @Override
-    public Property nodeRemoveProperty( KernelStatement state, NodeItem node, int propertyKeyId )
+    public Property nodeRemoveProperty( KernelStatement state, long nodeId, int propertyKeyId )
+            throws EntityNotFoundException
     {
-        state.locks().acquireExclusive( ResourceTypes.NODE, node.id() );
+        state.locks().acquireExclusive( ResourceTypes.NODE, nodeId );
         state.assertOpen();
-        return entityWriteDelegate.nodeRemoveProperty( state, node, propertyKeyId );
+        return entityWriteDelegate.nodeRemoveProperty( state, nodeId, propertyKeyId );
     }
 
     @Override
     public Property relationshipSetProperty( KernelStatement state,
-            RelationshipItem relationship,
-            DefinedProperty property )
+            long relationshipId,
+            DefinedProperty property ) throws EntityNotFoundException
     {
-        state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationship.id() );
+        state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
         state.assertOpen();
-        return entityWriteDelegate.relationshipSetProperty( state, relationship, property );
+        return entityWriteDelegate.relationshipSetProperty( state, relationshipId, property );
     }
 
     @Override
     public Property relationshipRemoveProperty( KernelStatement state,
-            RelationshipItem relationship,
-            int propertyKeyId )
+            long relationshipId,
+            int propertyKeyId ) throws EntityNotFoundException
     {
-        state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationship.id() );
+        state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
         state.assertOpen();
-        return entityWriteDelegate.relationshipRemoveProperty( state, relationship, propertyKeyId );
+        return entityWriteDelegate.relationshipRemoveProperty( state, relationshipId, propertyKeyId );
     }
 
     @Override

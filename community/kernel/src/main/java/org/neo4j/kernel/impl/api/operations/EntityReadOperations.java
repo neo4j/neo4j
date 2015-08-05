@@ -118,9 +118,14 @@ public interface EntityReadOperations
     <EXCEPTION extends Exception> void relationshipVisit( KernelStatement statement, long relId,
             RelationshipVisitor<EXCEPTION> visitor ) throws EntityNotFoundException, EXCEPTION;
 
+    Cursor<NodeItem> nodeCursorById( KernelStatement statement, long nodeId ) throws EntityNotFoundException;
+
     Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId );
 
     Cursor<NodeItem> nodeCursor( TxStateHolder txStateHolder, StoreStatement statement, long nodeId );
+
+    Cursor<RelationshipItem> relationshipCursorById( KernelStatement statement, long relId )
+            throws EntityNotFoundException;
 
     Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relId );
 

@@ -33,7 +33,6 @@ import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -59,7 +58,6 @@ import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.PageCacheRule;
@@ -353,8 +351,6 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             TransactionRepresentationCommitProcess commitProcess =
                     new TransactionRepresentationCommitProcess(
                             dependencyResolver.resolveDependency( TransactionAppender.class ),
-                            dependencyResolver.resolveDependency( KernelHealth.class ),
-                            dependencyResolver.resolveDependency( NeoStoreSupplier.class ).get(),
                             dependencyResolver.resolveDependency( TransactionRepresentationStoreApplier.class ),
                             dependencyResolver.resolveDependency( IndexUpdatesValidator.class ) );
             TransactionIdStore transactionIdStore = database.getDependencyResolver().resolveDependency(

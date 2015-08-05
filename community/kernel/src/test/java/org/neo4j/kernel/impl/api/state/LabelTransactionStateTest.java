@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.Before;
-import org.junit.Test;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.cursor.NodeItem;
@@ -46,12 +46,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asLabelCursor;
-import static org.neo4j.kernel.impl.api.state.StubCursors.asNode;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
 
@@ -83,13 +81,7 @@ public class LabelTransactionStateTest
         commitNoLabels();
 
         // WHEN
-        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
-        {
-            if ( cursor.next() )
-            {
-                txContext.nodeAddLabel( state, cursor.get(), labelId1 );
-            }
-        }
+        txContext.nodeAddLabel( state, nodeId, labelId1 );
 
         // THEN
         assertLabels( labelId1 );
@@ -102,13 +94,7 @@ public class LabelTransactionStateTest
         commitLabels( labelId1 );
 
         // WHEN
-        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
-        {
-            if ( cursor.next() )
-            {
-                txContext.nodeAddLabel( state, cursor.get(), labelId2 );
-            }
-        }
+        txContext.nodeAddLabel( state, nodeId, labelId2 );
 
         // THEN
         assertLabels( labelId1, labelId2 );
@@ -121,13 +107,7 @@ public class LabelTransactionStateTest
         commitLabels( labelId1 );
 
         // WHEN
-        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
-        {
-            if ( cursor.next() )
-            {
-                txContext.nodeAddLabel( state, cursor.get(), labelId1 );
-            }
-        }
+        txContext.nodeAddLabel( state, nodeId, labelId1 );
 
         // THEN
         assertLabels( labelId1 );
@@ -140,13 +120,8 @@ public class LabelTransactionStateTest
         commitLabels( labelId1, labelId2 );
 
         // WHEN
-        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
-        {
-            if ( cursor.next() )
-            {
-                txContext.nodeRemoveLabel( state, cursor.get(), labelId1 );
-            }
-        }
+        txContext.nodeRemoveLabel( state, nodeId, labelId1 );
+
         // THEN
         assertLabels( labelId2 );
     }
@@ -158,21 +133,8 @@ public class LabelTransactionStateTest
         commitLabels( labelId1 );
 
         // WHEN
-        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
-        {
-            if ( cursor.next() )
-            {
-                txContext.nodeAddLabel( state, cursor.get(), labelId2 );
-            }
-        }
-
-        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
-        {
-            if ( cursor.next() )
-            {
-                txContext.nodeRemoveLabel( state, cursor.get(), labelId2 );
-            }
-        }
+        txContext.nodeAddLabel( state, nodeId, labelId2 );
+        txContext.nodeRemoveLabel( state, nodeId, labelId2 );
 
         // THEN
         assertLabels( labelId1 );
@@ -185,21 +147,8 @@ public class LabelTransactionStateTest
         commitLabels( labelId1 );
 
         // WHEN
-        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
-        {
-            if ( cursor.next() )
-            {
-                txContext.nodeRemoveLabel( state, cursor.get(), labelId1 );
-            }
-        }
-
-        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
-        {
-            if ( cursor.next() )
-            {
-                txContext.nodeAddLabel( state, cursor.get(), labelId1 );
-            }
-        }
+        txContext.nodeRemoveLabel( state, nodeId, labelId1 );
+        txContext.nodeAddLabel( state, nodeId, labelId1 );
 
         // THEN
         assertLabels( labelId1 );
@@ -215,7 +164,7 @@ public class LabelTransactionStateTest
                 labels( 2, 1, 3 ) );
 
         // WHEN
-        txContext.nodeAddLabel( state, asNode( 2 ), 2 );
+        txContext.nodeAddLabel( state, 2, 2 );
 
         // THEN
         assertEquals( asSet( 0L, 1L, 2L ), asSet( txContext.nodesGetForLabel( state, 2 ) ) );
@@ -231,13 +180,7 @@ public class LabelTransactionStateTest
                 labels( 2, 1, 3 ) );
 
         // WHEN
-        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, 1 ) )
-        {
-            if ( cursor.next() )
-            {
-                txContext.nodeRemoveLabel( state, cursor.get(), 2 );
-            }
-        }
+        txContext.nodeRemoveLabel( state, 1, 2 );
 
         // THEN
         assertEquals( asSet( 0L ), asSet( txContext.nodesGetForLabel( state, 2 ) ) );
@@ -250,16 +193,10 @@ public class LabelTransactionStateTest
         commitNoLabels();
 
         // WHEN
-        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
-        {
-            if ( cursor.next() )
-            {
-                boolean added = txContext.nodeAddLabel( state, cursor.get(), labelId1 );
+        boolean added = txContext.nodeAddLabel( state, nodeId, labelId1 );
 
-                // THEN
-                assertTrue( "Should have been added now", added );
-            }
-        }
+        // THEN
+        assertTrue( "Should have been added now", added );
     }
 
     @Test
@@ -269,16 +206,10 @@ public class LabelTransactionStateTest
         commitLabels( labelId1 );
 
         // WHEN
-        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
-        {
-            if ( cursor.next() )
-            {
-                boolean added = txContext.nodeAddLabel( state, cursor.get(), labelId1 );
+        boolean added = txContext.nodeAddLabel( state, nodeId, labelId1 );
 
-                // THEN
-                assertFalse( "Shouldn't have been added now", added );
-            }
-        }
+        // THEN
+        assertFalse( "Shouldn't have been added now", added );
     }
 
     @Test
@@ -288,17 +219,10 @@ public class LabelTransactionStateTest
         commitLabels( labelId1 );
 
         // WHEN
-        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
-        {
-            if ( cursor.next() )
-            {
-                boolean removed = txContext.nodeRemoveLabel( state, cursor.get(), labelId1 );
+        boolean removed = txContext.nodeRemoveLabel( state, nodeId, labelId1 );
 
-                // THEN
-                assertTrue( "Should have been removed now", removed );
-            }
-
-        }
+        // THEN
+        assertTrue( "Should have been removed now", removed );
     }
 
     @Test
@@ -308,13 +232,7 @@ public class LabelTransactionStateTest
         commitNoLabels();
 
         // WHEN
-        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
-        {
-            if ( cursor.next() )
-            {
-                txContext.nodeAddLabel( state, cursor.get(), labelId1 );
-            }
-        }
+        txContext.nodeAddLabel( state, nodeId, labelId1 );
 
         // THEN
         assertLabels( labelId1 );
@@ -326,14 +244,11 @@ public class LabelTransactionStateTest
         // GIVEN
         when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337 ) );
 
-        // WHEN and THEN
-        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, 1337 ) )
-        {
-            if ( cursor.next() )
-            {
-                assertTrue( "Label should have been added", txContext.nodeAddLabel( state, cursor.get(), 12 ) );
-            }
-        }
+        // WHEN
+        boolean added = txContext.nodeAddLabel( state, 1337, 12 );
+
+        // THEN
+        assertTrue( "Label should have been added", added );
     }
 
     @Test
@@ -343,14 +258,11 @@ public class LabelTransactionStateTest
         when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337, asPropertyCursor(),
                 asLabelCursor( 12 ) ) );
 
-        // WHEN and THEN
-        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, 1337 ) )
-        {
-            if ( cursor.next() )
-            {
-                assertFalse( "Label should have been added", txContext.nodeAddLabel( state, cursor.get(), 12 ) );
-            }
-        }
+        // WHEN
+        boolean added = txContext.nodeAddLabel( state, 1337, 12 );
+
+        // THEN
+        assertFalse( "Label should have been added", added );
     }
 
     @Test
@@ -360,14 +272,11 @@ public class LabelTransactionStateTest
         when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337, asPropertyCursor(),
                 asLabelCursor( 12 ) ) );
 
-        // WHEN and THEN
-        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, 1337 ) )
-        {
-            if ( cursor.next() )
-            {
-                assertTrue( "Label should have been removed", txContext.nodeRemoveLabel( state, cursor.get(), 12 ) );
-            }
-        }
+        // WHEN
+        boolean added = txContext.nodeRemoveLabel( state, 1337, 12 );
+
+        // THEN
+        assertTrue( "Label should have been removed", added );
     }
 
     @Test
@@ -376,15 +285,11 @@ public class LabelTransactionStateTest
         // GIVEN
         when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337 ) );
 
-        // WHEN and THEN
-        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, 1337 ) )
-        {
-            if ( cursor.next() )
-            {
-                assertFalse( "Label should have been removed",
-                        txContext.nodeRemoveLabel( state, cursor.get(), 12 ) );
-            }
-        }
+        // WHEN
+        boolean removed = txContext.nodeRemoveLabel( state, 1337, 12 );
+
+        // THEN
+        assertFalse( "Label should have been removed", removed );
     }
 
     // exists
@@ -418,7 +323,7 @@ public class LabelTransactionStateTest
 
     private void commitLabels( Labels... labels ) throws Exception
     {
-        Map<Integer, Collection<Long>> allLabels = new HashMap<>();
+        Map<Integer,Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
             when( storeStatement.acquireSingleNodeCursor( nodeLabels.nodeId ) ).thenReturn( StubCursors.asNodeCursor(
@@ -436,7 +341,7 @@ public class LabelTransactionStateTest
             }
         }
 
-        for ( Map.Entry<Integer, Collection<Long>> entry : allLabels.entrySet() )
+        for ( Map.Entry<Integer,Collection<Long>> entry : allLabels.entrySet() )
         {
             when( store.nodesGetForLabel( state, entry.getKey() ) ).then( answerAsPrimitiveLongIteratorFrom( entry
                     .getValue() ) );
