@@ -284,26 +284,24 @@ final class MuninnPage extends StampedLock implements Page
         UnsafeUtil.putByte( p + 1, (byte)( value      ) );
     }
 
-    public void getBytes( byte[] data, int offset )
+    public void getBytes( byte[] data, int pageOffset, int arrayOffset, int length )
     {
-        checkBounds( offset + data.length );
-        long address = pointer + offset;
-        int length = data.length;
+        checkBounds( pageOffset + length );
+        long address = pointer + pageOffset;
         for ( int i = 0; i < length; i++ )
         {
-            data[i] = UnsafeUtil.getByte( address );
-            address++;
+            data[arrayOffset + i] = UnsafeUtil.getByte( address + i );
         }
     }
 
-    public void putBytes( byte[] data, int offset )
+    public void putBytes( byte[] data, int pageOffset, int arrayOffset, int length )
     {
-        checkBounds( offset + data.length );
-        long address = pointer + offset;
-        for ( byte b : data )
+        checkBounds( pageOffset + length );
+        long address = pointer + pageOffset;
+        for ( int i = 0; i < length; i++ )
         {
-            UnsafeUtil.putByte( address, b );
-            address++;
+            byte b = data[arrayOffset + i];
+            UnsafeUtil.putByte( address + i, b );
         }
     }
 

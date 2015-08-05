@@ -1886,6 +1886,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
+    @SuppressWarnings( "unused" )
     @Test( expected = IllegalStateException.class )
     public void mustThrowWhenClaimingExclusivelyMoreThanOneCursorFromSamePagedFile() throws IOException
     {
@@ -1899,6 +1900,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
+    @SuppressWarnings( "unused" )
     @Test( expected = IllegalStateException.class )
     public void mustThrowWhenClaimingExclusivelyMoreThanOneCursorFromSamePageCacheButDifferentPagedFiles() throws Exception
     {
@@ -1913,8 +1915,9 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
+    @SuppressWarnings( "unused" )
     @Test( expected = IllegalStateException.class )
-    public void mustThrowWhenClaimingSharinglyMoreThanOneCursorFromSamePagedFile() throws IOException
+    public void mustThrowWhenClaimingWithSharedLockMoreThanOneCursorFromSamePagedFile() throws IOException
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
 
@@ -1926,8 +1929,9 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
+    @SuppressWarnings( "unused" )
     @Test( expected = IllegalStateException.class )
-    public void mustThrowWhenClaimingSharinglyMoreThanOneCursorFromSamePageCacheButDifferentPagedFiles() throws Exception
+    public void mustThrowWhenClaimingWithSharedLockMoreThanOneCursorFromSamePageCacheButDifferentPagedFiles() throws Exception
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
 
@@ -1940,6 +1944,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
+    @SuppressWarnings( "unused" )
     @Test( expected = IllegalStateException.class )
     public void mustThrowWhenClaimingReadCursorWhileHavingWriteCursor() throws Exception
     {
@@ -1954,6 +1959,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
+    @SuppressWarnings( "unused" )
     @Test( expected = IllegalStateException.class )
     public void mustThrowWhenClaimingWriteCursorWhileHavingReadCursor() throws Exception
     {
@@ -2326,6 +2332,7 @@ public abstract class PageCacheTest<T extends PageCache>
         long initialLastPageId = pagedFile.getLastPageId();
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
         {
+            //noinspection StatementWithEmptyBody
             while ( cursor.next() )
             {
                 // scan through the lot
@@ -2347,6 +2354,7 @@ public abstract class PageCacheTest<T extends PageCache>
         long initialLastPageId = pagedFile.getLastPageId();
         try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
         {
+            //noinspection StatementWithEmptyBody
             while ( cursor.next() )
             {
                 // scan through the lot
@@ -2450,6 +2458,8 @@ public abstract class PageCacheTest<T extends PageCache>
         assertThat( cursor.getOffset(), is( 15 ) );
         cursor.putBytes( new byte[]{1, 2, 3} );
         assertThat( cursor.getOffset(), is( 18 ) );
+        cursor.putBytes( new byte[]{1, 2, 3}, 1, 1 );
+        assertThat( cursor.getOffset(), is( 19 ) );
     }
 
     private void verifyReadOffsets( PageCursor cursor )
@@ -2465,15 +2475,18 @@ public abstract class PageCacheTest<T extends PageCache>
         assertThat( cursor.getOffset(), is( 15 ) );
         cursor.getBytes( new byte[3] );
         assertThat( cursor.getOffset(), is( 18 ) );
+        cursor.getBytes( new byte[3], 1, 1 );
+        assertThat( cursor.getOffset(), is( 19 ) );
 
         byte[] expectedBytes = new byte[] {
                 0, 0, 0, 0, 0, 0, 0, 1, // first; long
                 0, 0, 0, 1, // second; int
                 0, 1, // third; short
                 1, // fourth; byte
-                1, 2, 3 // lastly; more bytes
+                1, 2, 3, // lastly; more bytes
+                2
         };
-        byte[] actualBytes = new byte[18];
+        byte[] actualBytes = new byte[19];
         cursor.setOffset( 0 );
         cursor.getBytes( actualBytes );
         assertThat( actualBytes, byteArray( expectedBytes ) );
@@ -2695,7 +2708,7 @@ public abstract class PageCacheTest<T extends PageCache>
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
 
         final PagedFile pf = pageCache.map( file, filePageSize );
-        final CountDownLatch hasLockkLatch = new CountDownLatch( 1 );
+        final CountDownLatch hasLockLatch = new CountDownLatch( 1 );
         final CountDownLatch unlockLatch = new CountDownLatch( 1 );
         final CountDownLatch secondThreadGotLockLatch = new CountDownLatch( 1 );
 
@@ -2707,14 +2720,14 @@ public abstract class PageCacheTest<T extends PageCache>
                 try ( PageCursor cursor = pf.io( 0, PF_EXCLUSIVE_LOCK ) )
                 {
                     cursor.next();
-                    hasLockkLatch.countDown();
+                    hasLockLatch.countDown();
                     unlockLatch.await();
                 }
                 return null;
             }
         } );
 
-        hasLockkLatch.await(); // An exclusive lock is now held on page 0.
+        hasLockLatch.await(); // An exclusive lock is now held on page 0.
 
         Future<Object> takeLockFuture = executor.submit( new Callable<Object>()
         {
@@ -2786,9 +2799,9 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    private static interface PageCursorAction
+    private interface PageCursorAction
     {
-        public void apply( PageCursor cursor );
+        void apply( PageCursor cursor );
     }
 
     @Test( timeout = 1000, expected = IndexOutOfBoundsException.class )
@@ -2936,6 +2949,34 @@ public abstract class PageCacheTest<T extends PageCache>
         } );
     }
 
+    @Test( timeout = 1000, expected = IndexOutOfBoundsException.class )
+    public void putBytesWithOffsetAndLengthBeyondPageEndMustThrow() throws IOException
+    {
+        final byte[] bytes = new byte[] { 1, 2, 3 };
+        verifyPageBounds( new PageCursorAction()
+        {
+            @Override
+            public void apply( PageCursor cursor )
+            {
+                cursor.putBytes( bytes, 1, 1 );
+            }
+        } );
+    }
+
+    @Test( timeout = 1000, expected = IndexOutOfBoundsException.class )
+    public void getBytesWithOffsetAndLengthBeyondPageEndMustThrow() throws IOException
+    {
+        final byte[] bytes = new byte[3];
+        verifyPageBounds( new PageCursorAction()
+        {
+            @Override
+            public void apply( PageCursor cursor )
+            {
+                cursor.getBytes( bytes, 1, 1 );
+            }
+        } );
+    }
+
     private void verifyPageBounds( PageCursorAction action ) throws IOException
     {
         generateFileWithRecords( file, 1, recordSize );
@@ -2997,6 +3038,7 @@ public abstract class PageCacheTest<T extends PageCache>
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
         {
+            //noinspection StatementWithEmptyBody
             while ( cursor.next() )
             {
                 // Profound and interesting I/O.
@@ -3048,8 +3090,10 @@ public abstract class PageCacheTest<T extends PageCache>
         // Read pages until the dirty page gets flushed
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
         {
+            //noinspection InfiniteLoopStatement
             for (;;)
             {
+                //noinspection StatementWithEmptyBody
                 while ( cursor.next() )
                 {
                     // Profound and interesting I/O.
@@ -3098,6 +3142,7 @@ public abstract class PageCacheTest<T extends PageCache>
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
         {
+            //noinspection InfiniteLoopStatement
             for (;;) // Keep writing until we get an exception! (when the cache starts evicting stuff)
             {
                 assertTrue( cursor.next() );
@@ -4016,6 +4061,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
+    @SuppressWarnings( "unused" )
     @Test( expected = UnsupportedOperationException.class )
     public void mappingAlreadyMappedFileWithTruncateOptionMustThrow() throws Exception
     {

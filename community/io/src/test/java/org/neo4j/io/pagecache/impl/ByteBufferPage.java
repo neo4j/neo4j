@@ -93,19 +93,19 @@ public class ByteBufferPage implements Page
         buffer.putInt( offset, value );
     }
 
-    public void getBytes( byte[] data, int offset )
+    public void getBytes( byte[] data, int pageOffset, int arrayOffset, int length )
     {
-        for (int i = 0; i < data.length; i++)
+        for (int i = 0; i < length; i++)
         {
-            data[i] = getByte( i + offset );
+            data[arrayOffset + i] = getByte( pageOffset + i );
         }
     }
 
-    public void putBytes( byte[] data, int offset )
+    public void putBytes( byte[] data, int pageOffset, int arrayOffset, int length )
     {
-        for (int i = 0; i < data.length; i++)
+        for (int i = 0; i < length; i++)
         {
-            putByte( data[i], offset + i );
+            putByte( data[arrayOffset + i], pageOffset + i );
         }
     }
 

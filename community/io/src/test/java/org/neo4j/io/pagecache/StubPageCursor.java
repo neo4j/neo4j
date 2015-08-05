@@ -147,7 +147,7 @@ public class StubPageCursor implements PageCursor
     }
 
     @Override
-    public long getLong(int offset)
+    public long getLong( int offset )
     {
         try
         {
@@ -159,18 +159,18 @@ public class StubPageCursor implements PageCursor
     }
 
     @Override
-    public void putLong( long l )
+    public void putLong( long value )
     {
-        putLong( currentOffset, l );
+        putLong( currentOffset, value );
         currentOffset += 8;
     }
 
     @Override
-    public void putLong( int offset, long l )
+    public void putLong( int offset, long value )
     {
         try
         {
-            page.putLong( l, offset );
+            page.putLong( value, offset );
         } catch( BufferOverflowException | BufferUnderflowException e )
         {
             throw outOfBoundsException( e );
@@ -210,18 +210,18 @@ public class StubPageCursor implements PageCursor
     }
 
     @Override
-    public void putInt( int i )
+    public void putInt( int value )
     {
-        putInt( currentOffset, i );
+        putInt( currentOffset, value );
         currentOffset += 4;
     }
 
     @Override
-    public void putInt( int offset, int i )
+    public void putInt( int offset, int value )
     {
         try
         {
-            page.putInt( i, offset );
+            page.putInt( value, offset );
         } catch( BufferOverflowException | BufferUnderflowException e )
         {
             throw outOfBoundsException( e );
@@ -231,10 +231,16 @@ public class StubPageCursor implements PageCursor
     @Override
     public void getBytes( byte[] data )
     {
+        getBytes( data, 0, data.length );
+    }
+
+    @Override
+    public void getBytes( byte[] data, int arrayOffset, int length )
+    {
         try
         {
-            page.getBytes( data, currentOffset );
-            currentOffset += data.length;
+            page.getBytes( data, currentOffset, arrayOffset, length );
+            currentOffset += length;
         } catch( BufferOverflowException | BufferUnderflowException e )
         {
             throw outOfBoundsException( e );
@@ -244,10 +250,16 @@ public class StubPageCursor implements PageCursor
     @Override
     public void putBytes( byte[] data )
     {
+        putBytes( data, 0, data.length );
+    }
+
+    @Override
+    public void putBytes( byte[] data, int arrayOffset, int length )
+    {
         try
         {
-            page.putBytes( data, currentOffset );
-            currentOffset += data.length;
+            page.putBytes( data, currentOffset, arrayOffset, length );
+            currentOffset += length;
         } catch( BufferOverflowException | BufferUnderflowException e )
         {
             throw outOfBoundsException( e );
