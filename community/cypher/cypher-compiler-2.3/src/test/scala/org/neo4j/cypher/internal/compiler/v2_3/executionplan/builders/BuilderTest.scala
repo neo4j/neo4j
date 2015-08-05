@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands.Query
+import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery, PlanBuilder}
+import org.neo4j.cypher.internal.compiler.v2_3.mutation.UpdateAction
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
@@ -70,6 +71,21 @@ trait BuilderTest extends CypherFunSuite {
   def assertRejects(planInProgress: ExecutionPlanInProgress) {
     withClue("Should not accept this")(builder.canWorkWith(planInProgress, context)) should equal(false)
   }
+
+  def newQuery(start: Seq[StartItem] = Seq(),
+               where: Seq[Predicate] = Seq(),
+               updates: Seq[UpdateAction] = Seq(),
+               patterns: Seq[Pattern] = Seq(),
+               returns: Seq[ReturnColumn] = Seq(),
+               tail: Option[PartiallySolvedQuery] = None) =
+    PartiallySolvedQuery().copy(
+      start = start.map(Unsolved(_)),
+      where = where.map(Unsolved(_)),
+      patterns = patterns.map(Unsolved(_)),
+      returns = returns.map(Unsolved(_)),
+      updates = updates.map(Unsolved(_)),
+      tail = tail
+    )
 
   def builder: PlanBuilder
   var context:PlanContext=null

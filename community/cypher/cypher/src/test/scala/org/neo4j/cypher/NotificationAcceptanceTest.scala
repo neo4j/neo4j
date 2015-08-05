@@ -52,7 +52,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("warn when using length on collection") {
     val result = executeWithAllPlanners("explain return length([1, 2, 3])")
 
-    result.notifications should equal(List(LengthOnNonPathNotification(InputPosition(14, 1, 15))))
+    result.notifications should equal(Set(LengthOnNonPathNotification(InputPosition(14, 1, 15))))
   }
 
   test("do not warn when using length on a path") {
@@ -64,13 +64,13 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("do warn when using length on a pattern expression") {
     val result = executeWithAllPlanners("explain match (a) where a.name='Alice' return length((a)-->()-->())")
 
-    result.notifications should equal(List(LengthOnNonPathNotification(InputPosition(45, 1, 46))))
+    result.notifications should equal(Set(LengthOnNonPathNotification(InputPosition(45, 1, 46))))
   }
 
   test("do warn when using length on a string") {
     val result = executeWithAllPlanners("explain return length('a string')")
 
-    result.notifications should equal(List(LengthOnNonPathNotification(InputPosition(14, 1, 15))))
+    result.notifications should equal(Set(LengthOnNonPathNotification(InputPosition(14, 1, 15))))
   }
 
   test("do not warn when using size on a collection") {
@@ -90,7 +90,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
   test("warn when requesting COST on an update query") {
     val result = innerExecute("EXPLAIN CYPHER planner=COST MATCH (n:Movie) SET n.title = 'The Movie'")
-    result.notifications should equal(List(PlannerUnsupportedNotification))
+    result.notifications should equal(Set(PlannerUnsupportedNotification))
   }
 
   test("do not warn when requesting RULE on an update query") {
@@ -125,5 +125,17 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("warn for bare node pattern") {
     val result = innerExecute("EXPLAIN MATCH n-->(m) RETURN n, m")
     result.notifications.toSet should equal(Set(BareNodeSyntaxDeprecatedNotification(InputPosition(6, 1, 7))))
+  }
+
+  test("should warn when join hint is used with RULE planner with EXPLAIN") {
+    val result = innerExecute( """CYPHER planner=rule EXPLAIN MATCH (a)-->(b) USING JOIN ON b RETURN a, b""")
+
+    result.notifications should equal(Set(JoinHintUnsupportedNotification("b")))
+  }
+
+  test("should not warn when join hint is used with RULE planner without EXPLAIN") {
+    val result = innerExecute( """CYPHER planner=rule MATCH (a)-->(b) USING JOIN ON b RETURN a, b""")
+
+    result.notifications shouldBe empty
   }
 }

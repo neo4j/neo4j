@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.greedy
 
+import org.neo4j.cypher.internal.compiler.v2_3.ast.UsingJoinHint
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CandidateGenerator, LogicalPlanningContext}
@@ -39,8 +40,13 @@ object join extends CandidateGenerator[GreedyPlanTable] {
         val shared = left.availableSymbols & right.availableSymbols
 
         if (shared.nonEmpty && shared.forall(isApplicable)) {
-          joinPlans += context.logicalPlanProducer.planNodeHashJoin(shared, left, right)
-          joinPlans += context.logicalPlanProducer.planNodeHashJoin(shared, right, left)
+
+          val hints = queryGraph.hints.collect {
+            case hint@UsingJoinHint(identifier) if shared contains IdName(identifier.name) => hint
+          }
+
+          joinPlans += context.logicalPlanProducer.planNodeHashJoin(shared, left, right, hints)
+          joinPlans += context.logicalPlanProducer.planNodeHashJoin(shared, right, left, hints)
         }
       }
     }

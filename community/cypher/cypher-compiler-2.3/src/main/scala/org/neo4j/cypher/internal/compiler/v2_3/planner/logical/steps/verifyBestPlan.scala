@@ -19,20 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_3.IndexHintException
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{LabelName, Identifier, UsingIndexHint}
-import org.neo4j.cypher.internal.compiler.v2_3.notification.IndexHintUnfulfillableNotification
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{Identifier, LabelName, UsingIndexHint, UsingJoinHint}
+import org.neo4j.cypher.internal.compiler.v2_3.notification.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlanningContext, PlanTransformer}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantHandleQueryException, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_3.{IndexHintException, JoinHintException}
 
 object verifyBestPlan extends PlanTransformer[PlannerQuery] {
   def apply(plan: LogicalPlan, expected: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val constructed = plan.solved
     if (expected != constructed) {
-      val unfulfillableHints = unfulfillableIndexHints(expected, context.planContext)
-      val expectedWithoutHints = expected.withoutHints(unfulfillableHints)
+      val unfulfillableIndexHints = findUnfulfillableIndexHints(expected, context.planContext)
+      val unfulfillableJoinHints = findUnfulfillableJoinHints(expected, context.planContext)
+      val expectedWithoutHints = expected.withoutHints(unfulfillableIndexHints ++ unfulfillableJoinHints)
       if (expectedWithoutHints != constructed) {
         if (expected.withoutHints(expected.allHints) != constructed.withoutHints(constructed.allHints)) {
           // unknown planner issue failed to find plan (without regard for differences in hints)
@@ -42,30 +43,57 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
           throw new CantHandleQueryException(s"Expected \n${expected.allHints} \n\n\nInstead, got: \n${constructed.allHints}")
         }
       } else {
-        // hints referred to non-existent indexes ("explicit hints")
-        if (context.useErrorsOverWarnings) {
-          val firstIndexHint = unfulfillableHints.head
-          throw new IndexHintException(firstIndexHint.identifier.name, firstIndexHint.label.name, firstIndexHint.property.name, "No such index")
-        } else {
-          unfulfillableHints.foreach { hint =>
-            context.notificationLogger.log(IndexHintUnfulfillableNotification(hint.label.name, hint.property.name))
-          }
-        }
+        processUnfulfilledIndexHints(context, unfulfillableIndexHints)
+        processUnfulfilledJoinHints(context, unfulfillableJoinHints)
       }
     }
     plan
   }
 
-  private def unfulfillableIndexHints(query: PlannerQuery, planContext: PlanContext): Set[UsingIndexHint] = {
+  private def processUnfulfilledIndexHints(context: LogicalPlanningContext, hints: Set[UsingIndexHint]) = {
+    if (hints.nonEmpty) {
+      // hints referred to non-existent indexes ("explicit hints")
+      if (context.useErrorsOverWarnings) {
+        val firstIndexHint = hints.head
+        throw new IndexHintException(firstIndexHint.identifier.name, firstIndexHint.label.name, firstIndexHint.property.name, "No such index")
+      } else {
+        hints.foreach { hint =>
+          context.notificationLogger.log(IndexHintUnfulfillableNotification(hint.label.name, hint.property.name))
+        }
+      }
+    }
+  }
+
+  private def processUnfulfilledJoinHints(context: LogicalPlanningContext, hints: Set[UsingJoinHint]) = {
+    if (hints.nonEmpty) {
+      // we were unable to plan hash join on some requested nodes
+      if (context.useErrorsOverWarnings) {
+        val firstJoinHint = hints.head
+        throw new JoinHintException(firstJoinHint.identifier.name, "Unable to plan hash join")
+      } else {
+        hints.foreach { hint =>
+          context.notificationLogger.log(JoinHintUnfulfillableNotification(hint.identifier.name))
+        }
+      }
+    }
+  }
+
+  private def findUnfulfillableIndexHints(query: PlannerQuery, planContext: PlanContext): Set[UsingIndexHint] = {
     query.allHints.flatMap {
       // using index name:label(property)
       case hint@UsingIndexHint(Identifier(name), LabelName(label), Identifier(property))
         if planContext.getIndexRule( label, property ).isDefined ||
-           planContext.getUniqueIndexRule( label, property ).isDefined => None
+          planContext.getUniqueIndexRule( label, property ).isDefined => None
       // no such index exists
       case hint@UsingIndexHint(Identifier(name), LabelName(label), Identifier(property)) => Option(hint)
       // don't care about other hints
       case hint => None
+    }
+  }
+
+  private def findUnfulfillableJoinHints(query: PlannerQuery, planContext: PlanContext): Set[UsingJoinHint] = {
+    query.allHints.collect {
+      case hint: UsingJoinHint => hint
     }
   }
 }

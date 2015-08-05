@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
-import org.neo4j.cypher.internal.compiler.v2_3.mutation.UpdateAction
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.FakePipe
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
@@ -52,7 +51,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
   test("should_create_multiple_start_points_for_disjoint_graphs") {
     // Given
-    val query = q(
+    val query = newQuery(
       patterns = Seq(SingleNode(identifier), SingleNode(otherIdentifier))
     )
 
@@ -66,9 +65,9 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
   test("should_not_create_start_points_tail_query") {
     // Given
-    val query = q(
+    val query = newQuery(
       patterns = Seq(SingleNode(identifier)),
-      tail = Some(q(
+      tail = Some(newQuery(
         patterns = Seq(SingleNode(otherIdentifier))
       ))
     )
@@ -83,7 +82,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
   test("should_create_multiple_index_start_points_when_available_for_disjoint_graphs") {
     // Given
-    val query = q(
+    val query = newQuery(
       patterns = Seq(SingleNode(identifier), SingleNode(otherIdentifier)),
       where = Seq(HasLabel(Identifier(identifier), KeyToken.Unresolved("Person", TokenType.Label)),
         Equals(Property(Identifier(identifier), PropertyKey("prop1")), Literal("banana")))
@@ -103,17 +102,17 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
   test("should_not_accept_queries_with_start_items_on_all_levels") {
     assertRejects(
-      q(start = Seq(NodeById("n", 0)))
+      newQuery(start = Seq(NodeById("n", 0)))
     )
 
     assertRejects(
-      q(start = Seq(NodeById("n", 0)))
+      newQuery(start = Seq(NodeById("n", 0)))
     )
   }
 
   test("should_pick_an_index_if_only_one_possible_exists") {
     // Given
-    val query = q(where = Seq(
+    val query = newQuery(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
       Equals(Property(Identifier(identifier), propertyKey), expression)
     ), patterns = Seq(
@@ -132,7 +131,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
   test("should_pick_an_uniqueness_constraint_index_if_only_one_possible_exists") {
     // Given
-    val query = q(where = Seq(
+    val query = newQuery(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
       Equals(Property(Identifier(identifier), propertyKey), expression)
     ), patterns = Seq(
@@ -151,7 +150,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
   test("should_pick_an_index_if_only_one_possible_exists_other_side") {
     // Given
-    val query = q(where = Seq(
+    val query = newQuery(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
       Equals(expression, Property(Identifier(identifier), propertyKey))
     ), patterns = Seq(
@@ -170,7 +169,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
   test("should_pick_an_uniqueness_constraint_index_if_only_one_possible_exists_other_side") {
     // Given
-    val query = q(where = Seq(
+    val query = newQuery(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
       Equals(expression, Property(Identifier(identifier), propertyKey))
     ), patterns = Seq(
@@ -189,7 +188,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
   test("should_pick_an_index_if_only_one_possible_nullable_property_exists") {
     // Given
-    val query = q(where = Seq(
+    val query = newQuery(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
       Equals(Property(Identifier(identifier), propertyKey), expression)
     ), patterns = Seq(
@@ -208,7 +207,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
   test("should_pick_an_index_if_only_one_possible_nullable_property_exists_other_side") {
     // Given
-    val query = q(where = Seq(
+    val query = newQuery(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
       Equals(expression, Property(Identifier(identifier), propertyKey))
     ), patterns = Seq(
@@ -227,7 +226,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
   test("should_pick_an_uniqueness_constraint_index_if_only_one_possible_nullable_property_exists") {
     // Given
-    val query = q(where = Seq(
+    val query = newQuery(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
       Equals(Property(Identifier(identifier), propertyKey), expression)
     ), patterns = Seq(
@@ -246,7 +245,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
   test("should_pick_any_index_available") {
     // Given
-    val query = q(where = Seq(
+    val query = newQuery(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
       Equals(Property(Identifier(identifier), propertyKey), expression),
       Equals(Property(Identifier(identifier), otherPropertyKey), expression)
@@ -275,7 +274,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
         val like: ast.Like = ast.Like(ast.Property(ident("n"), ast.PropertyKeyName(property)_)_, ast.LikePattern(ast.StringLiteral("prefix%")_))_
         val likePredicate = like.asCommandPredicate
 
-        val query = q(
+        val query = newQuery(
           where = Seq(labelPredicate, likePredicate),
           patterns = Seq(SingleNode(identifier))
         )
@@ -305,7 +304,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
         val inequality = ast.AndedPropertyInequalities(ident("n"), prop, NonEmptyList(ast.GreaterThan(prop, ast.SignedDecimalIntegerLiteral("42") _) _))
         val inequalityPredicate = inequality.asCommandPredicate
 
-        val query = q(
+        val query = newQuery(
           where = Seq(labelPredicate, inequalityPredicate),
           patterns = Seq(SingleNode(identifier))
         )
@@ -326,7 +325,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
   test("should_prefer_uniqueness_constraint_indexes_over_other_indexes") {
     // Given
-    val query = q(where = Seq(
+    val query = newQuery(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
       Equals(Property(Identifier(identifier), propertyKey), expression),
       Equals(Property(Identifier(identifier), otherPropertyKey), expression)
@@ -348,7 +347,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
   test("should_prefer_uniqueness_constraint_indexes_over_other_indexes_other_side") {
     // Given
-    val query = q(where = Seq(
+    val query = newQuery(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
       Equals(Property(Identifier(identifier), propertyKey), expression),
       Equals(Property(Identifier(identifier), otherPropertyKey), expression)
@@ -370,7 +369,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
   test("should_produce_label_start_points_when_no_property_predicate_is_used") {
     // Given MATCH n:Person
-    val query = q(where = Seq(
+    val query = newQuery(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label))
     ), patterns = Seq(
       SingleNode(identifier)
@@ -385,7 +384,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
   test("should_identify_start_points_with_id_from_where") {
     // Given MATCH n WHERE id(n) == 0
     val nodeId = 0
-    val query = q(where = Seq(
+    val query = newQuery(where = Seq(
       Equals(IdFunction(Identifier(identifier)), Literal(nodeId))
     ), patterns = Seq(
       SingleNode(identifier)
@@ -402,7 +401,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
     val propertyLookup: Property = Property(Identifier(identifier), PropertyKey("otherId"))
     val equalityPredicate: Equals = Equals(IdFunction(Identifier(otherIdentifier)), propertyLookup)
-    val query = q(
+    val query = newQuery(
       where = Seq(equalityPredicate),
       patterns = Seq(SingleNode(otherIdentifier))
     )
@@ -420,7 +419,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
     val propertyLookup: Property = Property(Identifier(identifier), PropertyKey("collection"))
     val equalityPredicate: Equals = Equals(IdFunction(Identifier(otherIdentifier)), propertyLookup)
     val collectionPredicate: AnyInCollection = AnyInCollection(propertyLookup, "-_-INNER-_-", equalityPredicate)
-    val query = q(
+    val query = newQuery(
       where = Seq(collectionPredicate),
       patterns = Seq(SingleNode(otherIdentifier))
     )
@@ -434,7 +433,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
   test("should_produce_label_start_points_when_no_matching_index_exist") {
     // Given
-    val query = q(where = Seq(
+    val query = newQuery(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
       Equals(Property(Identifier(identifier), propertyKey), expression)
     ), patterns = Seq(
@@ -469,7 +468,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
     val expression2 = Literal(666)
 
     // MATCH p=shortestPath( (a:Person{prop:42}) -[*]-> (b{prop:666}) )
-    val query = q(
+    val query = newQuery(
       where = Seq(
         HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
         Equals(Property(Identifier(identifier), propertyKey), expression1),
@@ -495,7 +494,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
     // Given
 
     // START a=node(0) MATCH a-[x]->b, c-[x]->d
-    val query = q(
+    val query = newQuery(
       start = Seq(NodeById("a", 0)),
       patterns = Seq(
         RelatedTo(SingleNode("a"),SingleNode("b"), "x", Seq.empty, Direction.OUTGOING, Map.empty),
@@ -513,7 +512,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
   test("should_not_introduce_start_points_if_provided_by_last_pipe") {
     // Given
     val pipe = new FakePipe(Iterator.empty, identifier -> CTNode)
-    val query = q(
+    val query = newQuery(
       patterns = Seq(SingleNode(identifier), SingleNode(otherIdentifier))
     )
 
@@ -526,7 +525,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
   test("should_not_introduce_start_points_if_relationship_is_bound") {
     // Given
-    val query = q(
+    val query = newQuery(
       start = Seq(RelationshipById("r", 123)),
       patterns = Seq(RelatedTo(identifier, otherIdentifier, "r", "KNOWS", Direction.BOTH))
     )
@@ -534,19 +533,4 @@ class StartPointChoosingBuilderTest extends BuilderTest {
     // When + Then
     assertRejects(query)
   }
-
-  private def q(start: Seq[StartItem] = Seq(),
-                where: Seq[Predicate] = Seq(),
-                updates: Seq[UpdateAction] = Seq(),
-                patterns: Seq[Pattern] = Seq(),
-                returns: Seq[ReturnColumn] = Seq(),
-                tail: Option[PartiallySolvedQuery] = None) =
-    PartiallySolvedQuery().copy(
-      start = start.map(Unsolved(_)),
-      where = where.map(Unsolved(_)),
-      patterns = patterns.map(Unsolved(_)),
-      returns = returns.map(Unsolved(_)),
-      updates = updates.map(Unsolved(_)),
-      tail = tail
-    )
 }

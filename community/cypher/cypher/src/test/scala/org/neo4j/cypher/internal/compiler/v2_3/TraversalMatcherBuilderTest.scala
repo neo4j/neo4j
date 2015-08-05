@@ -138,5 +138,5 @@ class TraversalMatcherBuilderTest extends GraphDatabaseFunSuite with BuilderTest
 
   private val parser = new CypherParser
 
-  private def query(text: String): PartiallySolvedQuery = PartiallySolvedQuery(parser.parse(text).asQuery.asInstanceOf[Query])
+  private def query(text: String): PartiallySolvedQuery = PartiallySolvedQuery(parser.parse(text).asQuery(devNullLogger).asInstanceOf[Query])
 }

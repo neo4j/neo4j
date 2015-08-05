@@ -3110,7 +3110,8 @@ class CypherParserTest extends CypherFunSuite {
   }
 
   test("compile query integration test") {
-    val q = parser.parse("create (a1) create (a2) create (a3) create (a4) create (a5) create (a6) create (a7)").asQuery.asInstanceOf[commands.Query]
+    val parsedQuery = parser.parse("create (a1) create (a2) create (a3) create (a4) create (a5) create (a6) create (a7)")
+    val q = parsedQuery.asQuery(devNullLogger).asInstanceOf[commands.Query]
     assert(q.tail.nonEmpty, "wasn't compacted enough")
     val compacted = q.compact
 
@@ -3127,7 +3128,8 @@ class CypherParserTest extends CypherFunSuite {
   }
 
   test("compile query integration test 2") {
-    val q = parser.parse("create (a1) create (a2) create (a3) with a1 create (a4) return a1, a4").asQuery.asInstanceOf[commands.Query]
+    val parsedQuery = parser.parse("create (a1) create (a2) create (a3) with a1 create (a4) return a1, a4")
+    val q = parsedQuery.asQuery(devNullLogger).asInstanceOf[commands.Query]
     val compacted = q.compact
     var lastQ = compacted
 
@@ -3258,7 +3260,7 @@ class CypherParserTest extends CypherFunSuite {
 
   private def expectQuery(query: String, expectedQuery: AbstractQuery) {
     val parsedQuery = parser.parse(query)
-    val abstractQuery = parsedQuery.asQuery
+    val abstractQuery = parsedQuery.asQuery(devNullLogger)
     try {
       assertThat(query, abstractQuery, equalTo(expectedQuery))
     } catch {

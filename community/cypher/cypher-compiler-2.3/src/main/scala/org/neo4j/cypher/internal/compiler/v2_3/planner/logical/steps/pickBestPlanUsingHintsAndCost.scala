@@ -42,6 +42,7 @@ object pickBestPlanUsingHintsAndCost extends LogicalPlanningFunction0[CandidateS
             println(s"\t* ${plan.toString}")
             println(s"\t\t${costs(plan, context.input)}")
             println(s"\t\t${plan.solved.estimatedCardinality}")
+            println(s"\t\tHints(${plan.solved.numHints})")
           }
 
           val best = sortedPlans.head
@@ -49,6 +50,7 @@ object pickBestPlanUsingHintsAndCost extends LogicalPlanningFunction0[CandidateS
           println(s"\t${best.toString}")
           println(s"\t\t${costs(best, context.input)}")
           println(s"\t\t${best.solved.estimatedCardinality}")
+          println(s"\t\tHints(${best.solved.numHints})")
           println()
         }
       }

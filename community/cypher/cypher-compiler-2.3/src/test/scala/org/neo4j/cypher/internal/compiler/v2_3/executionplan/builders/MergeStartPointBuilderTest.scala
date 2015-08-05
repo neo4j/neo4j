@@ -25,8 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken.Unresolved
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType}
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.compiler.v2_3.mutation.{ForeachAction, MergeNodeAction, UpdateAction}
+import org.neo4j.cypher.internal.compiler.v2_3.mutation.{ForeachAction, MergeNodeAction}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.FakePipe
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
@@ -48,7 +47,7 @@ class MergeStartPointBuilderTest extends BuilderTest {
   test("should_solved_merge_node_start_points") {
     // Given MERGE (x:Label)
     val pipe = new FakePipe(Iterator.empty, identifier -> CTNode)
-    val query = q(
+    val query = newQuery(
       updates = Seq(mergeNodeAction)
     )
     when(context.getOptLabelId("Label")).thenReturn(Some(42))
@@ -69,7 +68,7 @@ class MergeStartPointBuilderTest extends BuilderTest {
     val pipe = new FakePipe(Iterator.empty, identifier -> CTNode)
     val collection = Collection(Literal(1), Literal(2), Literal(3))
     val prop = Unresolved("prop", TokenType.PropertyKey)
-    val query = q(
+    val query = newQuery(
       updates = Seq(ForeachAction(collection, "x", Seq(mergeNodeAction.copy(props = Map(prop -> Identifier("x"))))))
     )
     when(context.getOptLabelId("Label")).thenReturn(Some(42))
@@ -85,19 +84,4 @@ class MergeStartPointBuilderTest extends BuilderTest {
         fail("Expected something else, but got this: " + plan.query.updates)
     }
   }
-
-  private def q(start: Seq[StartItem] = Seq(),
-                where: Seq[Predicate] = Seq(),
-                updates: Seq[UpdateAction] = Seq(),
-                patterns: Seq[Pattern] = Seq(),
-                returns: Seq[ReturnColumn] = Seq(),
-                tail: Option[PartiallySolvedQuery] = None) =
-    PartiallySolvedQuery().copy(
-      start = start.map(Unsolved(_)),
-      where = where.map(Unsolved(_)),
-      patterns = patterns.map(Unsolved(_)),
-      returns = returns.map(Unsolved(_)),
-      updates = updates.map(Unsolved(_)),
-      tail = tail
-    )
 }

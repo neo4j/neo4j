@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers.IteratorSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp.expandSolverStep.{planSinglePatternSide, planSingleProjectEndpoints}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp.joinSolverStep.planJoinsOnTopOfExpands
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.solveOptionalMatches.OptionalSolver
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.{applyOptional, outerHashJoin}
@@ -137,20 +138,22 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
     }
   }
 
-  private def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Iterable[LogicalPlan])
+  private def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Set[LogicalPlan])
                                (implicit context: LogicalPlanningContext): Iterable[LogicalPlan] = {
 
-    leaves.collect {
+    leaves.flatMap {
       case plan if plan.solved.lastQueryGraph.patternRelationships.contains(pattern) =>
         Set(plan)
       case plan if plan.solved.lastQueryGraph.allCoveredIds.contains(pattern.name) =>
         Set(planSingleProjectEndpoints(pattern, plan))
       case plan =>
         val (start, end) = pattern.nodes
-        val leftPlan = planSinglePatternSide(qg, pattern, plan, start)
-        val rightPlan = planSinglePatternSide(qg, pattern, plan, end)
-        leftPlan.toSet ++ rightPlan.toSet
-    }.flatten
+        val leftExpand = planSinglePatternSide(qg, pattern, plan, start)
+        val leftJoin = planJoinsOnTopOfExpands(qg, leftExpand, leaves)
+        val rightExpand = planSinglePatternSide(qg, pattern, plan, end)
+        val rightJoin = planJoinsOnTopOfExpands(qg, rightExpand, leaves)
+        leftExpand.toSet ++ rightExpand.toSet ++ leftJoin.toSet ++ rightJoin.toSet
+    }
   }
 
   private def connectComponentsAndSolveOptionalMatch(plans: Set[LogicalPlan], qg: QueryGraph)

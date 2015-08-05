@@ -67,6 +67,12 @@ object Pattern {
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Pattern._
 
 case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) extends ASTNode with ASTParticle {
+
+  lazy val length = this.fold(0) {
+    case RelationshipChain(_, _, _) => _ + 1
+    case _ => identity
+  }
+
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     patternParts.foldSemanticCheck(_.declareIdentifiers(ctx)) chain
     patternParts.foldSemanticCheck(_.semanticCheck(ctx)) chain

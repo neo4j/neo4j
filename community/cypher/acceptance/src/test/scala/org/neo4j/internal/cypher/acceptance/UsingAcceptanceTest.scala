@@ -19,7 +19,12 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{HintException, ExecutionEngineFunSuite, IndexHintException, NewPlannerTestSupport, SyntaxException}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.KeyNames
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.compiler.v2_3.{GreedyPlannerName, IDPPlannerName}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, HintException, IndexHintException, NewPlannerTestSupport, SyntaxException}
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -244,4 +249,208 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     error.getMessage should equal("The current planner cannot satisfy all hints in the query, please try removing hints or try with another planner")
   }
+
+  val plannersThatSupportJoinHints = Seq(GreedyPlannerName, IDPPlannerName)
+
+  plannersThatSupportJoinHints.foreach { planner =>
+
+    val plannerName = planner.name.toLowerCase
+
+    test(s"$plannerName should fail when join hint is applied to an undefined node") {
+      val error = intercept[SyntaxException](
+        executeWithCostPlannerOnly(
+          s"""
+             |CYPHER planner=$plannerName
+              |MATCH (a:A)-->(b:B)<--(c:C)
+              |USING JOIN ON d
+              |RETURN a.prop
+          """.stripMargin))
+
+      error.getMessage should include("d not defined")
+    }
+
+    test(s"$plannerName should fail when join hint is applied to a single node") {
+      val error = intercept[SyntaxException](
+        executeWithCostPlannerOnly(
+          s"""
+             |CYPHER planner=$plannerName
+              |MATCH (a:A)
+              |USING JOIN ON a
+              |RETURN a.prop
+          """.stripMargin))
+
+      error.getMessage should include("Cannot use join hint for single node pattern")
+    }
+
+    test(s"$plannerName should fail when join hint is applied to a relationship") {
+      val error = intercept[SyntaxException](
+        executeWithCostPlannerOnly(
+          s"""
+             |CYPHER planner=$plannerName
+              |MATCH (a:A)-[r1]->(b:B)-[r2]->(c:C)
+              |USING JOIN ON r1
+              |RETURN a.prop
+          """.stripMargin))
+
+      error.getMessage should include("Type mismatch: expected Node but was Relationship")
+    }
+
+    test(s"$plannerName should fail when join hint is applied to a path") {
+      val error = intercept[SyntaxException](
+        executeWithCostPlannerOnly(
+          s"""
+             |CYPHER planner=$plannerName
+              |MATCH p=(a:A)-->(b:B)-->(c:C)
+              |USING JOIN ON p
+              |RETURN a.prop
+          """.stripMargin))
+
+      error.getMessage should include("Type mismatch: expected Node but was Path")
+    }
+
+    test(s"$plannerName should work when join hint is applied to the start node of a single hop pattern") {
+      val a = createLabeledNode(Map("prop" -> "foo"), "A")
+      val b = createLabeledNode(Map("prop" -> "bar"), "B")
+      relate(a, b)
+
+      val result = executeWithCostPlannerOnly(
+        s"""
+           |CYPHER planner=$plannerName
+            |MATCH (a:A)-->(b:B)
+            |USING JOIN ON a
+            |RETURN a.prop AS res
+          """.stripMargin)
+
+      result.toList should equal(List(Map("res" -> "foo")))
+      result.executionPlanDescription() should includeHashJoinOn("a")
+    }
+
+    test(s"$plannerName should work when join hint is applied to the end node of a single hop pattern") {
+      val a = createLabeledNode(Map("prop" -> "foo"), "A")
+      val b = createLabeledNode(Map("prop" -> "bar"), "B")
+      relate(a, b)
+
+      val result = executeWithCostPlannerOnly(
+        s"""
+           |CYPHER planner=$plannerName
+            |MATCH (a:A)-->(b:B)
+            |USING JOIN ON b
+            |RETURN b.prop AS res
+          """.stripMargin)
+
+      result.toList should equal(List(Map("res" -> "bar")))
+      result.executionPlanDescription() should includeHashJoinOn("b")
+    }
+
+    test(s"$plannerName should be able to use join hints for multiple hop pattern") {
+      val a = createNode(("prop", "foo"))
+      val b = createNode()
+      val c = createNode()
+      val d = createNode()
+      val e = createNode(("prop", "foo"))
+
+      relate(a, b, "X")
+      relate(b, c, "X")
+      relate(c, d, "X")
+      relate(d, e, "X")
+
+      val result = executeWithCostPlannerOnly(
+        s"""
+           |CYPHER planner=$plannerName
+            |MATCH (a)-[:X]->(b)-[:X]->(c)-[:X]->(d)-[:X]->(e)
+            |USING JOIN ON c
+            |WHERE a.prop = e.prop
+            |RETURN c""".stripMargin)
+
+      result.toList should equal(List(Map("c" -> c)))
+      result.executionPlanDescription() should includeHashJoinOn("c")
+    }
+
+    test(s"$plannerName should be able to use join hints for queries with var length pattern") {
+      val a = createLabeledNode(Map("prop" -> "foo"), "Foo")
+      val b = createNode()
+      val c = createNode()
+      val d = createNode()
+      val e = createLabeledNode(Map("prop" -> "foo"), "Bar")
+
+      relate(a, b, "X")
+      relate(b, c, "X")
+      relate(c, d, "X")
+      relate(e, d, "Y")
+
+      val result = executeWithCostPlannerOnly(
+        s"""
+           |CYPHER planner=$plannerName
+            |MATCH (a:Foo)-[:X*]->(b)<-[:Y]->(c:Bar)
+            |USING JOIN ON b
+            |WHERE a.prop = c.prop
+            |RETURN c""".stripMargin)
+
+      result.toList should equal(List(Map("c" -> e)))
+      result.executionPlanDescription() should includeHashJoinOn("b")
+    }
+
+    test(s"$plannerName should be able to use multiple join hints") {
+      val a = createNode(("prop", "foo"))
+      val b = createNode()
+      val c = createNode()
+      val d = createNode()
+      val e = createNode(("prop", "foo"))
+
+      relate(a, b, "X")
+      relate(b, c, "X")
+      relate(c, d, "X")
+      relate(d, e, "X")
+
+      val result = executeWithCostPlannerOnly(
+        s"""
+           |CYPHER planner=$plannerName
+            |MATCH (a)-[:X]->(b)-[:X]->(c)-[:X]->(d)-[:X]->(e)
+            |USING JOIN ON b
+            |USING JOIN ON c
+            |USING JOIN ON d
+            |WHERE a.prop = e.prop
+            |RETURN b, d""".stripMargin)
+
+      result.toList should equal(List(Map("b" -> b, "d" -> d)))
+      result.executionPlanDescription() should includeHashJoinOn("b")
+      result.executionPlanDescription() should includeHashJoinOn("c")
+      result.executionPlanDescription() should includeHashJoinOn("d")
+    }
+
+  }
+
+  test("rule planner should ignore join hint") {
+    val a = createNode()
+    val m = createNode()
+    val z = createNode()
+    relate(a, m)
+    relate(z, m)
+
+    val result = innerExecute(
+      """
+        |CYPHER planner=rule
+        |MATCH (a)-->(m)<--(z)
+        |USING JOIN ON m
+        |RETURN DISTINCT m""".stripMargin).toList
+
+    result should equal(List(Map("m" -> m)))
+  }
+
+  case class includeHashJoinOn(nodeIdentifier: String) extends Matcher[InternalPlanDescription] {
+
+    private val hashJoinStr = classOf[NodeHashJoin].getSimpleName
+
+    override def apply(result: InternalPlanDescription): MatchResult = {
+      val hashJoinExists = result.flatten.exists { description =>
+        description.name == hashJoinStr && description.arguments.contains(KeyNames(Seq(nodeIdentifier)))
+      }
+
+      MatchResult(hashJoinExists, matchResultMsg(negated = false, result), matchResultMsg(negated = true, result))
+    }
+
+    private def matchResultMsg(negated: Boolean, result: InternalPlanDescription) =
+      s"$hashJoinStr on node '$nodeIdentifier' ${if (negated) "" else "not"}found in plan description\n $result"
+  }
+
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.greedy
 
+import org.neo4j.cypher.internal.compiler.v2_3.ast.UsingJoinHint
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CandidateGenerator, LogicalPlanningContext}
@@ -27,7 +28,28 @@ object expandsOrJoins extends CandidateGenerator[GreedyPlanTable] {
   def apply(planTable: GreedyPlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
     val projectedEndpoints = projectEndpoints(planTable, queryGraph)
     val expansions = expand(planTable, queryGraph)
+    val joinsOnTopOfExpands = planJoinsOnTopOfExpands(queryGraph, planTable, expansions)
     val joins = join(planTable, queryGraph)
-    projectedEndpoints ++ expansions ++ joins
+    projectedEndpoints ++ expansions ++ joinsOnTopOfExpands ++ joins
   }
+
+  private def planJoinsOnTopOfExpands(queryGraph: QueryGraph, planTable: GreedyPlanTable, expansions: Seq[LogicalPlan])
+                                     (implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
+    val joinHintsPresent = queryGraph.hints.exists {
+      case _: UsingJoinHint => true
+      case _ => false
+    }
+
+    if (joinHintsPresent) {
+      expansions.collect {
+        case expansion if hasLeafPlanAsChild(expansion) =>
+          val table = planTable + expansion
+          join(table, queryGraph)
+      }.flatten
+    }
+    else
+      Seq.empty
+  }
+
+  private def hasLeafPlanAsChild(plan: LogicalPlan) = plan.lhs.exists(p => p.lhs.isEmpty && p.rhs.isEmpty)
 }

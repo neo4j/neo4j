@@ -132,6 +132,9 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
           """|Cannot use label scan hint in this context.
              | Label scan hints require using a simple label test in WHERE (either directly or as part of a
              | top-level AND). Note that the label must be specified on a non-optional node""".stripLinesAndMargins, hint.position)
+      case hint@UsingJoinHint(_)
+        if pattern.length == 0 =>
+        SemanticError("Cannot use join hint for single node pattern.", hint.position)
     }
     error.getOrElse(SemanticCheckResult.success)
   }

@@ -19,33 +19,35 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_3.notification.IndexHintUnfulfillableNotification
-import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_3.{RecordingNotificationLogger, IndexHintException}
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.planner._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v2_3.ast._
+import org.neo4j.cypher.internal.compiler.v2_3.notification.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
+import org.neo4j.cypher.internal.compiler.v2_3.planner._
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.{IndexHintException, JoinHintException, RecordingNotificationLogger}
+import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
-  private def getIndexHint(): Hint = { UsingIndexHint(ident("a"), LabelName("User")_, ident("name"))_ }
+  private def newIndexHint(): Hint = { UsingIndexHint(ident("a"), LabelName("User")_, ident("name"))_ }
 
-  private def getQueryWithIdxHint(): PlannerQuery = {
-    val indexHint = getIndexHint()
-    val query = PlannerQuery(
-      QueryGraph(
-        patternNodes = Set(IdName("a"), IdName("b"))
-      ).addHints(Set(indexHint))
-    )
-    query
-  }
+  private def newJoinHint(): Hint = { UsingJoinHint(ident("a"))_ }
+
+  private def newQueryWithIdxHint() = PlannerQuery(
+    QueryGraph(
+      patternNodes = Set(IdName("a"), IdName("b"))
+    ).addHints(Set(newIndexHint())))
+
+  private def newQueryWithJoinHint() = PlannerQuery(
+    QueryGraph(
+      patternNodes = Set(IdName("a"), IdName("b"))
+    ).addHints(Set(newJoinHint())))
 
   private def getPlanContext(hasIndex: Boolean): PlanContext = {
 
@@ -111,7 +113,16 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       planContext = getPlanContext(false), useErrorsOverWarnings = true)
 
     a [IndexHintException] should be thrownBy {
-      verifyBestPlan(greedyPlanTableWith(getSimpleLogicalPlanWithAandB()).uniquePlan, getQueryWithIdxHint())
+      verifyBestPlan(greedyPlanTableWith(getSimpleLogicalPlanWithAandB()).uniquePlan, newQueryWithIdxHint())
+    }
+  }
+
+  test("should throw when finding plan that contains unfulfillable join hint") {
+    implicit val logicalPlanContext = newMockedLogicalPlanningContext(
+      planContext = getPlanContext(false), useErrorsOverWarnings = true)
+
+    a [JoinHintException] should be thrownBy {
+      verifyBestPlan(greedyPlanTableWith(getSimpleLogicalPlanWithAandB()).uniquePlan, newQueryWithJoinHint())
     }
   }
 
@@ -121,8 +132,18 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       planContext = getPlanContext(false), useErrorsOverWarnings = false,
       notificationLogger = notificationLogger)
 
-    verifyBestPlan(greedyPlanTableWith(getSimpleLogicalPlanWithAandB()).uniquePlan, getQueryWithIdxHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
+    verifyBestPlan(greedyPlanTableWith(getSimpleLogicalPlanWithAandB()).uniquePlan, newQueryWithIdxHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
     notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("User", "name"))
+  }
+
+  test("should issue warning when finding plan that contains unfulfillable join hint") {
+    val notificationLogger = new RecordingNotificationLogger
+    implicit val logicalPlanContext = newMockedLogicalPlanningContext(
+      planContext = getPlanContext(false), useErrorsOverWarnings = false,
+      notificationLogger = notificationLogger)
+
+    verifyBestPlan(greedyPlanTableWith(getSimpleLogicalPlanWithAandB()).uniquePlan, newQueryWithJoinHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
+    notificationLogger.notifications should contain(JoinHintUnfulfillableNotification("a"))
   }
 
   test("should succeed when finding plan that contains fulfillable index hint") {
@@ -130,9 +151,20 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     implicit val logicalPlanContext = newMockedLogicalPlanningContext(
       planContext = getPlanContext(true), useErrorsOverWarnings = false,
       notificationLogger = notificationLogger)
-    val plan: LogicalPlan = newMockedLogicalPlan(Set(IdName("a"), IdName("b")), hints = Set[Hint](getIndexHint()))
+    val plan: LogicalPlan = newMockedLogicalPlan(Set(IdName("a"), IdName("b")), hints = Set[Hint](newIndexHint()))
 
-    verifyBestPlan(greedyPlanTableWith(plan).uniquePlan, getQueryWithIdxHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
+    verifyBestPlan(greedyPlanTableWith(plan).uniquePlan, newQueryWithIdxHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
+    notificationLogger.notifications should be(empty)
+  }
+
+  test("should succeed when finding plan that contains fulfillable join hint") {
+    val notificationLogger = new RecordingNotificationLogger
+    implicit val logicalPlanContext = newMockedLogicalPlanningContext(
+      planContext = getPlanContext(true), useErrorsOverWarnings = false,
+      notificationLogger = notificationLogger)
+    val plan: LogicalPlan = newMockedLogicalPlan(Set(IdName("a"), IdName("b")), hints = Set[Hint](newJoinHint()))
+
+    verifyBestPlan(greedyPlanTableWith(plan).uniquePlan, newQueryWithJoinHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
     notificationLogger.notifications should be(empty)
   }
 
@@ -141,7 +173,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       planContext = getPlanContext(true), useErrorsOverWarnings = false)
 
     a [CantHandleQueryException] should be thrownBy {
-      verifyBestPlan(greedyPlanTableWith(getSimpleLogicalPlanWithAandB()).uniquePlan, getQueryWithIdxHint())
+      verifyBestPlan(greedyPlanTableWith(getSimpleLogicalPlanWithAandB()).uniquePlan, newQueryWithIdxHint())
     }
   }
 }
