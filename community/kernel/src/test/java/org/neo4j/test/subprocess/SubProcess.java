@@ -64,12 +64,17 @@ public abstract class SubProcess<T, P> implements Serializable
         // Used when no interface is declared
     }
 
+    // by default source and destination for subprocess standard I/O to be the same as those of the current process
+    private static final boolean INHERIT_IO_DEFAULT_VALUE = true;
+
     private final Class<T> t;
+    private transient boolean inheritIo = INHERIT_IO_DEFAULT_VALUE;
     private final transient Predicate<String> classPathFilter;
 
     @SuppressWarnings( { "unchecked", "rawtypes" } )
-    public SubProcess( Predicate<String> classPathFilter )
+    public SubProcess( Predicate<String> classPathFilter, boolean inheritIo )
     {
+        this.inheritIo = inheritIo;
         if ( getClass().getSuperclass() != SubProcess.class )
         {
             throw new ClassCastException( SubProcess.class.getName() + " may only be extended one level " );
@@ -112,9 +117,19 @@ public abstract class SubProcess<T, P> implements Serializable
         this.classPathFilter = classPathFilter;
     }
 
+    public SubProcess( Predicate<String> classPathFilter )
+    {
+        this( classPathFilter, INHERIT_IO_DEFAULT_VALUE );
+    }
+
+    public SubProcess( boolean inheritIo )
+    {
+        this(null, inheritIo);
+    }
+
     public SubProcess()
     {
-        this( null );
+        this( null, INHERIT_IO_DEFAULT_VALUE );
     }
 
     public T start( P parameter, BreakPoint... breakpoints )
@@ -143,18 +158,25 @@ public abstract class SubProcess<T, P> implements Serializable
             {
                 if ( debugger != null )
                 {
-                    process = start( "java", "-ea", "-Xmx1G", debugger.listen(), "-Djava.awt.headless=true", "-cp",
+                    process = start(inheritIo, "java", "-ea", "-Xmx1G", debugger.listen(),
+                            "-Djava.awt.headless=true", "-cp",
                             classPath( System.getProperty( "java.class.path" ) ), SubProcess.class.getName(),
                             serialize( callback ) );
                 }
                 else
                 {
-                    process = start( "java", "-ea", "-Xmx1G", "-Djava.awt.headless=true", "-cp", classPath( System.getProperty( "java.class.path" ) ),
+                    process = start(inheritIo, "java", "-ea", "-Xmx1G", "-Djava.awt.headless=true", "-cp",
+                            classPath( System.getProperty( "java.class.path" ) ),
                             SubProcess.class.getName(), serialize( callback ) );
                 }
                 pid = getPid( process );
-                pipe( "[" + toString() + ":" + pid + "] ", process.getErrorStream(), errorStreamTarget() );
-                pipe( "[" + toString() + ":" + pid + "] ", process.getInputStream(), inputStreamTarget() );
+                // if IO was not inherited by current process we need to pipe error and input stream to corresponding
+                // target streams
+                if (!inheritIo)
+                {
+                    pipe( "[" + toString() + ":" + pid + "] ", process.getErrorStream(), errorStreamTarget() );
+                    pipe( "[" + toString() + ":" + pid + "] ", process.getInputStream(), inputStreamTarget() );
+                }
                 if ( debugger != null )
                 {
                     debugDispatch = debugger.connect( toString() + ":" + pid );
@@ -212,9 +234,13 @@ public abstract class SubProcess<T, P> implements Serializable
         return result.toString();
     }
 
-    private static Process start( String... args )
+    private static Process start(boolean inheritIo, String... args )
     {
         ProcessBuilder builder = new ProcessBuilder( args );
+        if ( inheritIo )
+        {
+            builder.inheritIO();
+        }
         try
         {
             return builder.start();
