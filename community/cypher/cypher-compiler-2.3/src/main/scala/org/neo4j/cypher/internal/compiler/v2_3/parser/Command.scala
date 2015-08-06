@@ -74,10 +74,10 @@ trait Command extends Parser
     keyword("ASSERT") ~~ PropertyExpression ~~ keyword("IS UNIQUE")
 
   private def NodeMandatoryConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Identifier ~~ NodeLabel ~~ ")" ~~
-    keyword("ASSERT") ~~ PropertyExpression ~~ keyword("IS NOT NULL")
+    keyword("ASSERT EXISTS") ~~ "(" ~~ PropertyExpression ~~ ")"
 
   private def RelationshipMandatoryConstraintSyntax = keyword("CONSTRAINT ON") ~~ RelationshipPatternSyntax ~~
-    keyword("ASSERT") ~~ PropertyExpression ~~ keyword("IS NOT NULL")
+    keyword("ASSERT EXISTS") ~~ "(" ~~ PropertyExpression ~~ ")"
 
   private def RelationshipPatternSyntax = rule(
     ("()-[" ~~ Identifier ~~ RelType ~~ "]-()")

@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.api.constraints;
 
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.StatementTokenNameLookup;
+import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
 import org.neo4j.kernel.impl.coreapi.schema.MandatoryRelationshipPropertyConstraintDefinition;
 
@@ -51,15 +54,27 @@ public class MandatoryRelationshipPropertyConstraint extends RelationshipPropert
     }
 
     @Override
-    String constraintString()
+    public ConstraintDefinition asConstraintDefinition( InternalSchemaActions schemaActions, ReadOperations readOps )
     {
-        return "NOT NULL";
+        StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOps );
+        return new MandatoryRelationshipPropertyConstraintDefinition( schemaActions,
+                DynamicRelationshipType.withName( lookup.relationshipTypeGetName( relationshipTypeId ) ),
+                lookup.propertyKeyGetName( propertyKeyId ) );
     }
 
     @Override
-    public ConstraintDefinition asConstraintDefinition( InternalSchemaActions schemaActions, ReadOperations readOps )
+    public String userDescription( TokenNameLookup tokenNameLookup )
     {
-        return new MandatoryRelationshipPropertyConstraintDefinition( schemaActions,
-                relTypeById( relationshipType(), readOps ), propertyKeyById( propertyKeyId, readOps ) );
+        String typeName = tokenNameLookup.relationshipTypeGetName( relationshipTypeId );
+        String boundIdentifier = typeName.toLowerCase();
+        return String.format( "CONSTRAINT ON ()-[ %s:%s ]-() ASSERT exists(%s.%s)",
+                boundIdentifier, typeName, boundIdentifier, tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "CONSTRAINT ON ()-[ n:relationshipType[%s] ]-() ASSERT exists(n.property[%s])",
+                relationshipTypeId, propertyKeyId );
     }
 }

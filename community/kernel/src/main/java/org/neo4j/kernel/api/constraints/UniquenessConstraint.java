@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.api.constraints;
 
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.StatementTokenNameLookup;
+import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 
@@ -45,21 +48,33 @@ public class UniquenessConstraint extends NodePropertyConstraint
     }
 
     @Override
-    String constraintString()
-    {
-        return "UNIQUE";
-    }
-
-    @Override
     public ConstraintDefinition asConstraintDefinition( InternalSchemaActions schemaActions, ReadOperations readOps )
     {
-        return new UniquenessConstraintDefinition( schemaActions, labelById( label(), readOps ),
-                propertyKeyById( propertyKeyId, readOps ) );
+        StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOps );
+        return new UniquenessConstraintDefinition( schemaActions,
+                DynamicLabel.label( lookup.labelGetName( labelId ) ),
+                lookup.propertyKeyGetName( propertyKeyId ) );
     }
 
     @Override
     public ConstraintType type()
     {
         return ConstraintType.UNIQUENESS;
+    }
+
+    @Override
+    public String userDescription( TokenNameLookup tokenNameLookup )
+    {
+        String labelName = tokenNameLookup.labelGetName( labelId );
+        String boundIdentifier = labelName.toLowerCase();
+        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s.%s IS UNIQUE",
+                boundIdentifier, labelName, boundIdentifier, tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "CONSTRAINT ON ( n:label[%s] ) ASSERT n.property[%s] IS UNIQUE",
+                labelId, propertyKeyId );
     }
 }

@@ -93,7 +93,7 @@ Drop the unique constraint and index on the label `Person` and property `name`.
 //
 
 CREATE CONSTRAINT ON (p:Person)
-       ASSERT p.name IS NOT NULL
+       ASSERT exists(p.name)
 ###
 
 Create a mandatory node property constraint on the label `Person` and property `name`.
@@ -104,7 +104,7 @@ removed from an existing node with the `Person` label, the write operation will 
 //
 
 DROP CONSTRAINT ON (p:Person)
-     ASSERT p.name IS NOT NULL
+     ASSERT exists(p.name)
 ###
 
 Drop the mandatory node property constraint on the label `Person` and property `name`.
@@ -113,7 +113,7 @@ Drop the mandatory node property constraint on the label `Person` and property `
 //
 
 CREATE CONSTRAINT ON ()-[l:LIKED]-()
-       ASSERT l.when IS NOT NULL
+       ASSERT exists(l.when)
 ###
 
 Create a mandatory relationship property constraint on the type `LIKED` and property `when`.
@@ -124,7 +124,7 @@ removed from an existing relationship with the `LIKED` type, the write operation
 //
 
 DROP CONSTRAINT ON ()-[l:LIKED]-()
-     ASSERT l.when IS NOT NULL
+     ASSERT exists(l.when)
 ###
 
 Drop the mandatory relationship property constraint on the type `LIKED` and property `when`.

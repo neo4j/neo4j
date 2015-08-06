@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.api.constraints;
 
-import org.neo4j.kernel.api.TokenNameLookup;
-
 public abstract class NodePropertyConstraint extends PropertyConstraint
 {
-    private final int labelId;
+    protected final int labelId;
 
     public NodePropertyConstraint( int labelId, int propertyKeyId )
     {
@@ -31,18 +29,9 @@ public abstract class NodePropertyConstraint extends PropertyConstraint
         this.labelId = labelId;
     }
 
-    public int label()
+    public final int label()
     {
         return labelId;
-    }
-
-    @Override
-    public String userDescription( TokenNameLookup tokenNameLookup )
-    {
-        String labelName = tokenNameLookup.labelGetName( labelId );
-        String boundIdentifier = labelName.toLowerCase();
-        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s.%s IS %s", boundIdentifier, labelName,
-                boundIdentifier, tokenNameLookup.propertyKeyGetName( propertyKeyId ), constraintString() );
     }
 
     @Override
@@ -65,12 +54,5 @@ public abstract class NodePropertyConstraint extends PropertyConstraint
     public int hashCode()
     {
         return 31 * propertyKeyId + labelId;
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format( "CONSTRAINT ON ( n:label[%s] ) ASSERT n.property[%s] IS %s",
-                labelId, propertyKeyId, constraintString() );
     }
 }
