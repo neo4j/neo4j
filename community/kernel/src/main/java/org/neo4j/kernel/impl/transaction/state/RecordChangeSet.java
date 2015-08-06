@@ -49,7 +49,13 @@ public class RecordChangeSet implements RecordAccessSet
 
     public RecordChangeSet( NeoStore neoStore )
     {
-        this(   Loaders.nodeLoader( neoStore.getNodeStore() ),
+        this( false, neoStore );
+    }
+
+    public RecordChangeSet( boolean beforeStateForAll, NeoStore neoStore )
+    {
+        this(   beforeStateForAll,
+                Loaders.nodeLoader( neoStore.getNodeStore() ),
                 Loaders.propertyLoader( neoStore.getPropertyStore() ),
                 Loaders.relationshipLoader( neoStore.getRelationshipStore() ),
                 Loaders.relationshipGroupLoader( neoStore.getRelationshipGroupStore() ),
@@ -60,6 +66,7 @@ public class RecordChangeSet implements RecordAccessSet
     }
 
     public RecordChangeSet(
+            boolean beforeStateForAll,
             Loader<Long,NodeRecord,Void> nodeLoader,
             Loader<Long,PropertyRecord,PrimitiveRecord> propertyLoader,
             Loader<Long,RelationshipRecord,Void> relationshipLoader,
@@ -71,12 +78,12 @@ public class RecordChangeSet implements RecordAccessSet
     {
         this.nodeRecords = new RecordChanges<>( nodeLoader, true, changeCounter );
         this.propertyRecords = new RecordChanges<>( propertyLoader, true, changeCounter );
-        this.relRecords = new RecordChanges<>( relationshipLoader, false, changeCounter );
-        this.relGroupRecords = new RecordChanges<>( relationshipGroupLoader, false, changeCounter );
+        this.relRecords = new RecordChanges<>( relationshipLoader, beforeStateForAll, changeCounter );
+        this.relGroupRecords = new RecordChanges<>( relationshipGroupLoader, beforeStateForAll, changeCounter );
         this.schemaRuleChanges = new RecordChanges<>( schemaRuleLoader, true, changeCounter );
-        this.propertyKeyTokenChanges = new RecordChanges<>( propertyKeyTokenLoader, false, changeCounter );
-        this.labelTokenChanges = new RecordChanges<>( labelTokenLoader, false, changeCounter );
-        this.relationshipTypeTokenChanges = new RecordChanges<>( relationshipTypeTokenLoader, false, changeCounter );
+        this.propertyKeyTokenChanges = new RecordChanges<>( propertyKeyTokenLoader, beforeStateForAll, changeCounter );
+        this.labelTokenChanges = new RecordChanges<>( labelTokenLoader, beforeStateForAll, changeCounter );
+        this.relationshipTypeTokenChanges = new RecordChanges<>( relationshipTypeTokenLoader, beforeStateForAll, changeCounter );
     }
 
     @Override

@@ -52,21 +52,30 @@ public abstract class AbstractAppServer extends SimpleAppServer
 {
     private final Map<String, App> apps = new TreeMap<>();
 
+    public AbstractAppServer()
+            throws RemoteException
+    {
+        this( true );
+    }
+
 	/**
 	 * Constructs a new server.
 	 * @throws RemoteException if there's an RMI error.
 	 */
-	public AbstractAppServer()
-		throws RemoteException
-	{
-		super();
-        for ( App app : Service.load( App.class ) )
+    public AbstractAppServer( boolean addFromServiceLoading )
+        throws RemoteException
+    {
+        super();
+        if ( addFromServiceLoading )
         {
-            addApp( app );
+            for ( App app : Service.load( App.class ) )
+            {
+                addApp( app );
+            }
         }
-	}
+    }
 
-    private void addApp( App app )
+    protected void addApp( App app )
     {
         apps.put( app.getName(), app );
         try
