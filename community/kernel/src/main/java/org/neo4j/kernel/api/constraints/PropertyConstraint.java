@@ -19,17 +19,10 @@
  */
 package org.neo4j.kernel.api.constraints;
 
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
 
 public abstract class PropertyConstraint
@@ -67,8 +60,6 @@ public abstract class PropertyConstraint
 
     public abstract ConstraintType type();
 
-    abstract String constraintString();
-
     public abstract String userDescription( TokenNameLookup tokenNameLookup );
 
     public abstract ConstraintDefinition asConstraintDefinition( InternalSchemaActions schemaActions,
@@ -82,40 +73,4 @@ public abstract class PropertyConstraint
 
     @Override
     public abstract String toString();
-
-    protected static Label labelById( int id, ReadOperations readOps )
-    {
-        try
-        {
-            return DynamicLabel.label( readOps.labelGetName( id ) );
-        }
-        catch ( LabelNotFoundKernelException e )
-        {
-            throw new IllegalStateException( "Couldn't find label name for id: " + id );
-        }
-    }
-
-    protected static String propertyKeyById( int id, ReadOperations readOps )
-    {
-        try
-        {
-            return readOps.propertyKeyGetName( id );
-        }
-        catch ( PropertyKeyIdNotFoundKernelException e )
-        {
-            throw new IllegalStateException( "Couldn't find property for id: " + id );
-        }
-    }
-
-    protected static RelationshipType relTypeById( int id, ReadOperations readOps )
-    {
-        try
-        {
-            return DynamicRelationshipType.withName( readOps.relationshipTypeGetName( id ) );
-        }
-        catch ( RelationshipTypeIdNotFoundKernelException e )
-        {
-            throw new IllegalStateException( "Couldn't find relationship type name for id: " + id );
-        }
-    }
 }

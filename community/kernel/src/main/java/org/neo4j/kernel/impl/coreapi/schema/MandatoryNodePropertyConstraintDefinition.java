@@ -48,7 +48,7 @@ public class MandatoryNodePropertyConstraintDefinition extends NodeConstraintDef
     @Override
     public String toString()
     {
-        return format( "ON (%1$s:%2$s) ASSERT %1$s.%3$s IS NOT NULL",
+        return format( "ON (%1$s:%2$s) ASSERT has(%1$s.%3$s)",
                 label.name().toLowerCase(), label.name(), propertyKey );
     }
 }
