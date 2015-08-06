@@ -96,6 +96,31 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     found.map(_.identifiers).toList should equal(List(Set("l")))
   }
 
+  test("should handle nulls in index lookup") {
+    // Given
+    val cat = createLabeledNode("Cat")
+    val dog = createLabeledNode("Dog")
+    relate(cat, dog, "FRIEND_OF")
+
+    // create many nodes with label 'Place' to make sure index seek is planned
+    (1 to 100).foreach(i => createLabeledNode(Map("name" -> s"Area $i"), "Place"))
+
+    graph.createIndex("Place", "name")
+
+    // When
+    val result = executeWithCostPlannerOnly(
+      """
+        |MATCH ()-[f:FRIEND_OF]->()
+        |WITH f.placeName AS placeName
+        |OPTIONAL MATCH (p:Place)
+        |WHERE p.name = placeName
+        |RETURN p, placeName
+      """.stripMargin)
+
+    // Then
+    result.toList should equal(List(Map("p" -> null, "placeName" -> null)))
+  }
+
   private def setUpDatabaseForTests() {
     executeWithRulePlanner(
       """CREATE (architect:Matrix { name:'The Architect' }),

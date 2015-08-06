@@ -36,23 +36,13 @@ object indexQuery extends GraphElementPropertyFunctions {
             labelName: String,
             propertyName: String): Iterator[Node] = queryExpression match {
     case SingleQueryExpression(inner) =>
-      val in = inner(m)(state)
-      in match {
-        case null =>
-          Iterator.empty
-
-        case value =>
-          val neoValue = makeValueNeoSafe(value)
-          index(neoValue).toIterator
-      }
+      val value = inner(m)(state)
+      lookupNodes(value, index).toIterator
 
     case ManyQueryExpression(inner) =>
       inner(m)(state) match {
         case IsCollection(coll) => coll.toSet.toSeq.flatMap {
-          value: Any =>
-            val neoValue: Any = makeValueNeoSafe(value)
-            index(neoValue)
-
+          value: Any => lookupNodes(value, index)
         }.iterator
         case null => Iterator.empty
         case _ => throw new CypherTypeException(s"Expected the value for looking up :$labelName($propertyName) to be a collection but it was not.")
@@ -67,5 +57,13 @@ object indexQuery extends GraphElementPropertyFunctions {
         case InequalitySeekRangeExpression(range) => range.mapBounds(_(m)(state)).mapBounds(makeValueNeoSafe)
       }
       index(range).toIterator
+  }
+
+  private def lookupNodes(value: Any, index: Any => GenTraversableOnce[Node]) = value match {
+    case null =>
+      Iterator.empty
+    case _ =>
+      val neoValue: Any = makeValueNeoSafe(value)
+      index(neoValue)
   }
 }
