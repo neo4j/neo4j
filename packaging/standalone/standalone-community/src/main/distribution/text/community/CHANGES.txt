@@ -1,5 +1,13 @@
 For Release Notes, see http://neo4j.com/release-notes/neo4j-${project.version}/
 
+2.2.4
+-----
+Cypher:
+o DbHits for property lookups reduced to one per lookup
+o Identifiers are properly exposed in nested foreach clauses
+o Better eviction policy for the plan cache
+o Fixes #4673 - index seeks experience nulls from IN
+
 2.2.3
 -----
 Browser:
