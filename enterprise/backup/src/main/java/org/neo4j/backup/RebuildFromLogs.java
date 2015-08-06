@@ -29,7 +29,6 @@ import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -39,7 +38,6 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -48,6 +46,7 @@ import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
@@ -63,15 +62,17 @@ import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.lang.String.format;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.openForVersion;
 import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 class RebuildFromLogs
 {
     private static final String FULL_CHECK = "full";
+    private static final String UP_TO_TX_ID = "tx";
 
     private static final FileSystemAbstraction FS = new DefaultFileSystemAbstraction();
 
@@ -92,7 +93,8 @@ class RebuildFromLogs
                 resolver.resolveDependency( IndexingService.class ) );
     }
 
-    RebuildFromLogs applyTransactionsFrom( ProgressListener progress, File sourceDir ) throws IOException
+
+    void applyTransactionsFrom( File sourceDir, long upToTxId ) throws IOException
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( sourceDir, FS );
         int startVersion = 0;
@@ -103,19 +105,21 @@ class RebuildFromLogs
         try ( IOCursor<CommittedTransactionRepresentation> cursor =
                       new PhysicalTransactionCursor<>( channel, new VersionAwareLogEntryReader<>() ) )
         {
-            while (cursor.next())
+            while ( cursor.next() )
             {
+                long txId = cursor.get().getCommitEntry().getTxId();
+                TransactionRepresentation transaction = cursor.get().getTransactionRepresentation();
                 try ( LockGroup locks = new LockGroup();
-                      ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate(
-                              cursor.get().getTransactionRepresentation(), TransactionApplicationMode.EXTERNAL ) )
+                      ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate( transaction, EXTERNAL ) )
                 {
-                    storeApplier.apply( cursor.get().getTransactionRepresentation(), indexUpdates, locks,
-                            cursor.get().getCommitEntry().getTxId(), TransactionApplicationMode.EXTERNAL );
+                    storeApplier.apply( transaction, indexUpdates, locks, txId, EXTERNAL );
+                }
+                if ( upToTxId != BASE_TX_ID && upToTxId == txId )
+                {
+                    return;
                 }
             }
         }
-
-        return this;
     }
 
     public static void main( String[] args ) throws Exception
@@ -128,6 +132,7 @@ class RebuildFromLogs
         Args params = Args.withFlags( FULL_CHECK ).parse( args );
         @SuppressWarnings("boxing")
         boolean full = params.getBoolean( FULL_CHECK, false, true );
+        long txId = params.getNumber( UP_TO_TX_ID, BASE_TX_ID ).longValue();
         List<String> orphans = params.orphans();
         args = orphans.toArray( new String[orphans.size()] );
         if ( args.length != 2 )
@@ -189,9 +194,10 @@ class RebuildFromLogs
                 {
                     progress = ProgressMonitorFactory.textual( System.err );
                 }
-                ProgressListener listener = progress.singlePart(
-                        format( "Rebuilding store from %s transactions ", txCount ), txCount );
-                RebuildFromLogs rebuilder = new RebuildFromLogs( graphdb ).applyTransactionsFrom( listener, source );
+                progress.singlePart( format( "Rebuilding store from %s transactions ", txCount ), txCount );
+                RebuildFromLogs rebuilder = new RebuildFromLogs( graphdb );
+                rebuilder.applyTransactionsFrom( source, txId );
+
                 // if we didn't run the full checker for each transaction, run it afterwards
                 if ( !full )
                 {
@@ -245,5 +251,6 @@ class RebuildFromLogs
         System.err.println( "WHERE:   <source dir>  is the path for where transactions to rebuild from are stored" );
         System.err.println( "         <target dir>  is the path for where to create the new graph database" );
         System.err.println( "         -full     --  to run a full check over the entire store for each transaction" );
+        System.err.println( "         -tx       --  to rebuild the store up to a given transaction" );
     }
 }
