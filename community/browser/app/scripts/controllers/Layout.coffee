@@ -97,7 +97,7 @@ angular.module('neo4jApp.controllers')
       $scope.editorChanged = (codeMirror) ->
         $scope.editorOneLine = codeMirror.lineCount() == 1 and !Editor.document
         $scope.disableHighlighting = codeMirror.getValue().trim()[0] == ':'
-        $scope.editor.checkCypherContent codeMirror
+        checkCypherContent(codeMirror)
 
       $scope.isDrawerShown = false
       $scope.whichDrawer = ""
@@ -160,6 +160,11 @@ angular.module('neo4jApp.controllers')
             'top': $('.view-editor').height() + $('.file-bar').height()
           $scope.$emit 'layout.changed'
       , 100)
+
+      checkCypherContent = Utils.debounce(
+        (codeMirror) ->
+          $scope.editor.checkCypherContent codeMirror
+      , 200)
 
       $(window).resize(resizeStream)
 
