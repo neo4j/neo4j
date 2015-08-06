@@ -59,10 +59,16 @@ public class NeoStoreTransactionContext
 
     public NeoStoreTransactionContext( NeoStoreTransactionContextSupplier supplier, NeoStore neoStore )
     {
+        this( supplier, neoStore, new RecordChangeSet( neoStore ) );
+    }
+
+    public NeoStoreTransactionContext( NeoStoreTransactionContextSupplier supplier, NeoStore neoStore,
+            RecordAccessSet recordAccessSet )
+    {
         this.supplier = supplier;
         this.neoStore = neoStore;
 
-        recordChangeSet = new RecordChangeSet( neoStore );
+        this.recordChangeSet = recordAccessSet;
 
         locker = new TransactionalRelationshipLocker();
         relationshipGroupGetter = new RelationshipGroupGetter( neoStore.getRelationshipGroupStore() );
