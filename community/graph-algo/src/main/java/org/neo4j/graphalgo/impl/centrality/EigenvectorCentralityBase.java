@@ -181,7 +181,7 @@ public abstract class EigenvectorCentralityBase implements EigenvectorCentrality
     private boolean makeSureValueCorrespondsToMostSignificantEigenvector()
     {
         int sign = 0;
-        int otherSign = 0;
+        int otherSign;
         Iterator<Node> iter = nodeSet.iterator();
         Node next;
         Double value;
@@ -228,6 +228,28 @@ public abstract class EigenvectorCentralityBase implements EigenvectorCentrality
      * @return Number of iterations.
      */
     protected abstract int runInternalIteration();
+
+    /**
+     * Method that performs matrix-vector multiplication Ax.
+     * Where relationshipSet is A and values is x.
+     * Result is stored in newValues.
+     */
+    public void matrixMultiplication( Map<Node,Double> newValues )
+    {
+        for ( Relationship relationship : relationshipSet )
+        {
+            if ( relationDirection.equals( Direction.BOTH )
+                 || relationDirection.equals( Direction.OUTGOING ) )
+            {
+                processRelationship( newValues, relationship, false );
+            }
+            if ( relationDirection.equals( Direction.BOTH )
+                 || relationDirection.equals( Direction.INCOMING ) )
+            {
+                processRelationship( newValues, relationship, true );
+            }
+        }
+    }
 
     /**
      * Internal method used in the "matrix multiplication" in each iteration.
