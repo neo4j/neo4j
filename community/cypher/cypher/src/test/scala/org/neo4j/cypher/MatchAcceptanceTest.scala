@@ -26,6 +26,19 @@ import scala.collection.JavaConverters._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+  test("predicates that throw exceptions should not matter if other predicates return false") {
+    val root = createLabeledNode(Map("name" -> "x"), "Root")
+    val child1 = createLabeledNode(Map("id" -> "text"), "TextNode")
+    val child2 = createLabeledNode(Map("id" -> 0), "IntNode")
+    relate(root, child1)
+    relate(root, child2)
+
+    val query = "MATCH (:Root {name:'x'})-->(i:TextNode) WHERE i.id =~ 'te.*' RETURN i"
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("i" -> child1)))
+  }
+
   test("combines aggregation and named path") {
     val node1 = createNode("num" -> 1)
     val node2 = createNode("num" -> 2)

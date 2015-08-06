@@ -20,14 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_2.commands
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import commands.expressions.{Literal, Expression}
-import commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ReadsRelationshipProperty, ReadsLabel, ReadsNodeProperty, Effects}
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.{IsCollection, CollectionSupport, CastSupport}
-import pipes.QueryState
-import symbols._
-import org.neo4j.cypher.internal.compiler.v2_2.helpers._
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Expression, Literal}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{Effects, ReadsLabel}
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.{CastSupport, CollectionSupport, IsCollection}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb._
+
+import scala.util.{Failure, Success, Try}
 
 abstract class Predicate extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = isMatch(ctx).getOrElse(null)
@@ -98,13 +99,21 @@ case class Ands(predicates: List[Predicate]) extends Predicate {
 
 
 class And(val a: Predicate, val b: Predicate) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = (a.isMatch(m), b.isMatch(m)) match {
-    case (None, None)        => None
-    case (Some(true), None)  => None
-    case (Some(false), None) => Some(false)
-    case (None, Some(true))  => None
-    case (None, Some(false)) => Some(false)
-    case (Some(l), Some(r))  => Some(l && r)
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
+    (Try(a.isMatch(m)), Try(b.isMatch(m))) match {
+      case (Failure(_), Success(Some(false))) => Some(false)
+      case (Success(Some(false)), Failure(_)) => Some(false)
+      case (Failure(e), _)                    => throw e
+      case (_, Failure(e))                    => throw e
+      case (Success(aMatch), Success(bMatch)) => (aMatch, bMatch) match {
+        case (None, None)        => None
+        case (Some(true), None)  => None
+        case (Some(false), None) => Some(false)
+        case (None, Some(true))  => None
+        case (None, Some(false)) => Some(false)
+        case (Some(l), Some(r))  => Some(l && r)
+      }
+    }
   }
 
   override def atoms: Seq[Predicate] = a.atoms ++ b.atoms
