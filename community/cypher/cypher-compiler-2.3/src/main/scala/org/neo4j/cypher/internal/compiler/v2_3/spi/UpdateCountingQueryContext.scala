@@ -36,8 +36,8 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   private val indexesRemoved = new Counter
   private val uniqueConstraintsAdded = new Counter
   private val uniqueConstraintsRemoved = new Counter
-  private val mandatoryConstraintsAdded = new Counter
-  private val mandatoryConstraintsRemoved = new Counter
+  private val propertyExistenceConstraintsAdded = new Counter
+  private val propertyExistenceConstraintsRemoved = new Counter
 
   def getStatistics = InternalQueryStatistics(
     nodesCreated = nodesCreated.count,
@@ -51,8 +51,8 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     indexesRemoved = indexesRemoved.count,
     uniqueConstraintsAdded = uniqueConstraintsAdded.count,
     uniqueConstraintsRemoved = uniqueConstraintsRemoved.count,
-    mandatoryConstraintsAdded = mandatoryConstraintsAdded.count,
-    mandatoryConstraintsRemoved = mandatoryConstraintsRemoved.count)
+    existenceConstraintsAdded = propertyExistenceConstraintsAdded.count,
+    existenceConstraintsRemoved = propertyExistenceConstraintsRemoved.count)
 
   override def getOptStatistics = Some(getStatistics)
 
@@ -105,26 +105,26 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     uniqueConstraintsRemoved.increase()
   }
 
-  override def createNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int) = {
-    val result = inner.createNodeMandatoryConstraint(labelId, propertyKeyId)
-    result.ifCreated { mandatoryConstraintsAdded.increase() }
+  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) = {
+    val result = inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId)
+    result.ifCreated { propertyExistenceConstraintsAdded.increase() }
     result
   }
 
-  override def dropNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int) {
-    inner.dropNodeMandatoryConstraint(labelId, propertyKeyId)
-    mandatoryConstraintsRemoved.increase()
+  override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) {
+    inner.dropNodePropertyExistenceConstraint(labelId, propertyKeyId)
+    propertyExistenceConstraintsRemoved.increase()
   }
 
-  override def createRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int) = {
-    val result = inner.createRelationshipMandatoryConstraint(relTypeId, propertyKeyId)
-    result.ifCreated { mandatoryConstraintsAdded.increase() }
+  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) = {
+    val result = inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId)
+    result.ifCreated { propertyExistenceConstraintsAdded.increase() }
     result
   }
 
-  override def dropRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int) {
-    inner.dropRelationshipMandatoryConstraint(relTypeId, propertyKeyId)
-    mandatoryConstraintsRemoved.increase()
+  override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) {
+    inner.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId)
+    propertyExistenceConstraintsRemoved.increase()
   }
 
   override def nodeGetDegree(node: Long, dir: Direction): Int = super.nodeGetDegree(node, dir)

@@ -20,28 +20,28 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 
-public class MandatoryRelationshipPropertyConstraintVerificationFailedKernelException
+public class NodePropertyExistenceConstraintVerificationFailedKernelException
         extends ConstraintVerificationFailedKernelException
 {
-    private final MandatoryRelationshipPropertyConstraint constraint;
-    private final long relationshipId;
+    private final NodePropertyExistenceConstraint constraint;
+    private final long nodeId;
 
-    public MandatoryRelationshipPropertyConstraintVerificationFailedKernelException(
-            MandatoryRelationshipPropertyConstraint constraint, long relationshipId )
+    public NodePropertyExistenceConstraintVerificationFailedKernelException( NodePropertyExistenceConstraint constraint,
+            long nodeId )
     {
         super( constraint );
         this.constraint = constraint;
-        this.relationshipId = relationshipId;
+        this.nodeId = nodeId;
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return String.format( "Relationship(%s) with type `%s` has no value for property `%s`",
-                relationshipId,
-                tokenNameLookup.relationshipTypeGetName( constraint.relationshipType() ),
+        return String.format( "Node(%s) with label `%s` has no value for property `%s`",
+                nodeId,
+                tokenNameLookup.labelGetName( constraint.label() ),
                 tokenNameLookup.propertyKeyGetName( constraint.propertyKey() ) );
     }
 }

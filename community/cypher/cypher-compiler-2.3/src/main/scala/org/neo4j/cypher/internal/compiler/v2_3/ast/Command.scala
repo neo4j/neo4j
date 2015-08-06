@@ -65,10 +65,10 @@ case class CreateUniquePropertyConstraint(identifier: Identifier, label: LabelNa
 
 case class DropUniquePropertyConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
 
-case class CreateNodeMandatoryPropertyConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
+case class CreateNodePropertyExistenceConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
 
-case class DropNodeMandatoryPropertyConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
+case class DropNodePropertyExistenceConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
 
-case class CreateRelationshipMandatoryPropertyConstraint(identifier: Identifier, relType: RelTypeName, property: Property)(val position: InputPosition) extends RelationshipPropertyConstraintCommand
+case class CreateRelationshipPropertyExistenceConstraint(identifier: Identifier, relType: RelTypeName, property: Property)(val position: InputPosition) extends RelationshipPropertyConstraintCommand
 
-case class DropRelationshipMandatoryPropertyConstraint(identifier: Identifier, relType: RelTypeName, property: Property)(val position: InputPosition) extends RelationshipPropertyConstraintCommand
+case class DropRelationshipPropertyExistenceConstraint(identifier: Identifier, relType: RelTypeName, property: Property)(val position: InputPosition) extends RelationshipPropertyConstraintCommand

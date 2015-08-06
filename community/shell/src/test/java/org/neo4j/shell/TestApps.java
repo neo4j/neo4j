@@ -870,7 +870,7 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListMandatoryNodePropertyConstraints() throws Exception
+    public void canListNodePropertyExistenceConstraints() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -883,7 +883,7 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListMandatoryRelationshipPropertyConstraints() throws Exception
+    public void canListRelationshipPropertyExistenceConstraints() throws Exception
     {
         // GIVEN
         RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
@@ -909,7 +909,7 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListMandatoryNodePropertyConstraintsByLabel() throws Exception
+    public void canListNodePropertyExistenceConstraintsByLabel() throws Exception
     {
         // GIVEN
         Label label1 = label( "Person" );
@@ -922,7 +922,7 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListMandatoryRelationshipPropertyConstraintsByType() throws Exception
+    public void canListRelationshipPropertyExistenceConstraintsByType() throws Exception
     {
         // GIVEN
         RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
@@ -935,7 +935,7 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListMandatoryRelationshipPropertyConstraintsByTypeAndProperty() throws Exception
+    public void canListRelationshipPropertyExistenceConstraintsByTypeAndProperty() throws Exception
     {
         // GIVEN
         RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
@@ -949,7 +949,7 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListBothNodeAndRelationshipMandatoryPropertyConstraints() throws Exception
+    public void canListBothNodeAndRelationshipPropertyExistenceConstraints() throws Exception
     {
         // GIVEN
         Label label = DynamicLabel.label( "Person" );
@@ -971,7 +971,7 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListBothNodeAndRelationshipMandatoryPropertyConstraintsByLabelAndType() throws Exception
+    public void canListBothNodeAndRelationshipPropertyExistenceConstraintsByLabelAndType() throws Exception
     {
         // GIVEN
         Label label = DynamicLabel.label( "Person" );
@@ -1036,7 +1036,7 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListMandatoryNodePropertyConstraintsByLabelAndProperty() throws Exception
+    public void canListNodePropertyExistenceConstraintsByLabelAndProperty() throws Exception
     {
         // GIVEN
         Label label1 = label( "Person" );

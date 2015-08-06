@@ -1460,7 +1460,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldCreateMandatoryNodePropertyConstraint() throws Exception
+    public void shouldCreateNodePropertyExistenceConstraint() throws Exception
     {
         // Given
         Label label = label( "Person" );
@@ -1490,7 +1490,7 @@ public class BatchInsertTest
                 db.createNode( label );
                 tx.success();
             }
-            fail( "Mandatory node property constraint was violated, exception expected" );
+            fail( "Node property existence constraint was violated, exception expected" );
         }
         catch ( ConstraintViolationException e )
         {
@@ -1506,7 +1506,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldCreateMandatoryRelationshipPropertyConstraint() throws Exception
+    public void shouldCreateRelationshipPropertyExistenceConstraint() throws Exception
     {
         // Given
         RelationshipType type = DynamicRelationshipType.withName( "KNOWS" );
@@ -1536,7 +1536,7 @@ public class BatchInsertTest
                 db.createNode().createRelationshipTo( db.createNode(), type );
                 tx.success();
             }
-            fail( "Mandatory relationship property constraint was violated, exception expected" );
+            fail( "Relationship property existence constraint was violated, exception expected" );
         }
         catch ( ConstraintViolationException e )
         {
@@ -1552,7 +1552,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldAllowCreationOfIndexAndMandatoryPropertyConstraintOnSameLabelAndProperty() throws Exception
+    public void shouldAllowCreationOfIndexAndExistenceConstraintOnSameLabelAndProperty() throws Exception
     {
         // Given
         Label label = label( "Person" );
@@ -1590,7 +1590,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldAllowCreationOfUniquenessAndMandatoryPropertyConstraintOnSameLabelAndProperty() throws Exception
+    public void shouldAllowCreationOfUniquenessAndExistenceConstraintOnSameLabelAndProperty() throws Exception
     {
         // Given
         Label label = label( "Person" );
@@ -1613,7 +1613,7 @@ public class BatchInsertTest
                 for ( ConstraintDefinition constraint : constraints )
                 {
                     if ( constraint.getConstraintType() == ConstraintType.UNIQUENESS ||
-                         constraint.getConstraintType() == ConstraintType.MANDATORY_NODE_PROPERTY )
+                         constraint.getConstraintType() == ConstraintType.NODE_PROPERTY_EXISTENCE )
                     {
                         assertEquals( label.name(), constraint.getLabel().name() );
                         assertEquals( property, single( constraint.getPropertyKeys() ) );
@@ -1704,7 +1704,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldNotAllowDuplicatedMandatoryNodePropertyConstraints() throws Exception
+    public void shouldNotAllowDuplicatedNodePropertyExistenceConstraints() throws Exception
     {
         // Given
         Label label = label( "Person" );
@@ -1723,13 +1723,13 @@ public class BatchInsertTest
         {
             // Then
             assertEquals(
-                    "Mandatory node property constraint for given {label;property} already exists",
+                    "Node property existence constraint for given {label;property} already exists",
                     e.getMessage() );
         }
     }
 
     @Test
-    public void shouldNotAllowDuplicatedMandatoryRelationshipPropertyConstraints() throws Exception
+    public void shouldNotAllowDuplicatedRelationshipPropertyExistenceConstraints() throws Exception
     {
         // Given
         RelationshipType type = DynamicRelationshipType.withName( "KNOWS" );
@@ -1748,7 +1748,7 @@ public class BatchInsertTest
         {
             // Then
             assertEquals(
-                    "Mandatory relationship property constraint for given {type;property} already exists",
+                    "Relationship property existence constraint for given {type;property} already exists",
                     e.getMessage() );
         }
     }

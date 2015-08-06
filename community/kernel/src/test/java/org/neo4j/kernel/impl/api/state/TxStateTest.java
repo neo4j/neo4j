@@ -35,7 +35,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -1028,10 +1028,10 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldAddMandatoryRelationshipPropertyConstraint()
+    public void shouldAddRelationshipPropertyExistenceConstraint()
     {
         // Given
-        MandatoryRelationshipPropertyConstraint constraint = new MandatoryRelationshipPropertyConstraint( 1, 42 );
+        RelationshipPropertyExistenceConstraint constraint = new RelationshipPropertyExistenceConstraint( 1, 42 );
 
         // When
         state.constraintDoAdd( constraint );
@@ -1041,11 +1041,11 @@ public class TxStateTest
     }
 
     @Test
-    public void addingMandatoryRelPropertyConstraintConstraintShouldBeIdempotent()
+    public void addingRelationshipPropertyExistenceConstraintConstraintShouldBeIdempotent()
     {
         // Given
-        MandatoryRelationshipPropertyConstraint constraint1 = new MandatoryRelationshipPropertyConstraint( 1, 42 );
-        MandatoryRelationshipPropertyConstraint constraint2 = new MandatoryRelationshipPropertyConstraint( 1, 42 );
+        RelationshipPropertyExistenceConstraint constraint1 = new RelationshipPropertyExistenceConstraint( 1, 42 );
+        RelationshipPropertyExistenceConstraint constraint2 = new RelationshipPropertyExistenceConstraint( 1, 42 );
 
         // When
         state.constraintDoAdd( constraint1 );
@@ -1057,10 +1057,10 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldDropMandatoryRelationshipPropertyConstraint()
+    public void shouldDropRelationshipPropertyExistenceConstraint()
     {
         // Given
-        MandatoryRelationshipPropertyConstraint constraint = new MandatoryRelationshipPropertyConstraint( 1, 42 );
+        RelationshipPropertyExistenceConstraint constraint = new RelationshipPropertyExistenceConstraint( 1, 42 );
         state.constraintDoAdd( constraint );
 
         // When
@@ -1071,12 +1071,12 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldDifferentiateMandatoryRelationshipPropertyConstraints() throws Exception
+    public void shouldDifferentiateRelationshipPropertyExistenceConstraints() throws Exception
     {
         // Given
-        MandatoryRelationshipPropertyConstraint constraint1 = new MandatoryRelationshipPropertyConstraint( 1, 11 );
-        MandatoryRelationshipPropertyConstraint constraint2 = new MandatoryRelationshipPropertyConstraint( 1, 22 );
-        MandatoryRelationshipPropertyConstraint constraint3 = new MandatoryRelationshipPropertyConstraint( 3, 33 );
+        RelationshipPropertyExistenceConstraint constraint1 = new RelationshipPropertyExistenceConstraint( 1, 11 );
+        RelationshipPropertyExistenceConstraint constraint2 = new RelationshipPropertyExistenceConstraint( 1, 22 );
+        RelationshipPropertyExistenceConstraint constraint3 = new RelationshipPropertyExistenceConstraint( 3, 33 );
 
         // When
         state.constraintDoAdd( constraint1 );

@@ -23,8 +23,8 @@ import java.util.Iterator;
 
 import org.neo4j.function.Function;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -311,21 +311,21 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public MandatoryNodePropertyConstraint mandatoryNodePropertyConstraintCreate( KernelStatement state, int labelId,
+    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( KernelStatement state, int labelId,
             int propertyKeyId ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
         state.locks().acquireExclusive( ResourceTypes.SCHEMA, schemaResource() );
         state.assertOpen();
-        return schemaWriteDelegate.mandatoryNodePropertyConstraintCreate( state, labelId, propertyKeyId );
+        return schemaWriteDelegate.nodePropertyExistenceConstraintCreate( state, labelId, propertyKeyId );
     }
 
     @Override
-    public MandatoryRelationshipPropertyConstraint mandatoryRelationshipPropertyConstraintCreate( KernelStatement state,
+    public RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate( KernelStatement state,
             int relTypeId, int propertyKeyId ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
         state.locks().acquireExclusive( ResourceTypes.SCHEMA, schemaResource() );
         state.assertOpen();
-        return schemaWriteDelegate.mandatoryRelationshipPropertyConstraintCreate( state, relTypeId, propertyKeyId );
+        return schemaWriteDelegate.relationshipPropertyExistenceConstraintCreate( state, relTypeId, propertyKeyId );
     }
 
     @Override

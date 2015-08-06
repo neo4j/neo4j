@@ -34,8 +34,8 @@ import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.DegreeItem;
@@ -66,8 +66,8 @@ import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.store.record.MandatoryNodePropertyConstraintRule;
-import org.neo4j.kernel.impl.store.record.MandatoryRelationshipPropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
+import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
@@ -397,10 +397,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         while ( constraints.hasNext() )
         {
             PropertyConstraint constraint = constraints.next();
-            if ( constraint.type() == ConstraintType.MANDATORY_NODE_PROPERTY ||
-                    constraint.type() == ConstraintType.MANDATORY_RELATIONSHIP_PROPERTY )
+            if ( constraint.type() == ConstraintType.NODE_PROPERTY_EXISTENCE ||
+                    constraint.type() == ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE )
             {
-                return new MandatoryPropertyEnforcer( operations.entityReadOperations(), txStateToRecordStateVisitor,
+                return new PropertyExistenceEnforcer( operations.entityReadOperations(), txStateToRecordStateVisitor,
                         this, storeLayer, storeStatement );
             }
         }
@@ -961,27 +961,27 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         @Override
-        public void visitAddedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint element )
+        public void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
         {
             clearState = true;
-            recordState.createSchemaRule( MandatoryNodePropertyConstraintRule.mandatoryNodePropertyConstraintRule(
+            recordState.createSchemaRule( NodePropertyExistenceConstraintRule.nodePropertyExistenceConstraintRule(
                     schemaStorage.newRuleId(), element.label(), element.propertyKey() ) );
         }
 
         @Override
-        public void visitRemovedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint element )
+        public void visitRemovedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
         {
             try
             {
                 clearState = true;
                 recordState.dropSchemaRule(
-                        schemaStorage.mandatoryNodePropertyConstraint( element.label(), element.propertyKey() ) );
+                        schemaStorage.nodePropertyExistenceConstraint( element.label(), element.propertyKey() ) );
             }
             catch ( SchemaRuleNotFoundException e )
             {
                 throw new IllegalStateException(
-                        "Mandatory node property constraint to be removed should exist, since its existence should " +
-                                "have been validated earlier and the schema should have been locked." );
+                        "Node property existence constraint to be removed should exist, since its existence should " +
+                        "have been validated earlier and the schema should have been locked." );
             }
             catch ( DuplicateSchemaRuleException de )
             {
@@ -991,30 +991,29 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         @Override
-        public void visitAddedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint element )
+        public void visitAddedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
         {
             clearState = true;
             recordState.createSchemaRule(
-                    MandatoryRelationshipPropertyConstraintRule.mandatoryRelPropertyConstraintRule(
+                    RelationshipPropertyExistenceConstraintRule.relPropertyExistenceConstraintRule(
                             schemaStorage.newRuleId(), element.relationshipType(), element.propertyKey() ) );
         }
 
         @Override
-        public void visitRemovedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint
-                element )
+        public void visitRemovedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
         {
             try
             {
                 clearState = true;
-                SchemaRule rule = schemaStorage.mandatoryRelationshipPropertyConstraint( element.relationshipType(),
+                SchemaRule rule = schemaStorage.relationshipPropertyExistenceConstraint( element.relationshipType(),
                         element.propertyKey() );
                 recordState.dropSchemaRule( rule );
             }
             catch ( SchemaRuleNotFoundException e )
             {
                 throw new IllegalStateException(
-                        "Mandatory relationship property constraint to be removed should exist, since its existence " +
-                                "should have been validated earlier and the schema should have been locked." );
+                        "Relationship property existence constraint to be removed should exist, since its existence " +
+                        "should have been validated earlier and the schema should have been locked." );
             }
             catch ( DuplicateSchemaRuleException re )
             {

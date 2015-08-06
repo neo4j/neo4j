@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
 import org.neo4j.cypher.{ConstraintValidationException, CypherExecutionException, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.kernel.api.exceptions.Status
 
-class MandatoryPropertyConstraintAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CollectionSupport {
+class PropertyExistenceConstraintAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CollectionSupport {
 
   test("node: should enforce constraints on creation") {
     // GIVEN

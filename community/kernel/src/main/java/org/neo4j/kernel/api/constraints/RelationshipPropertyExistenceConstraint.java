@@ -26,11 +26,11 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
-import org.neo4j.kernel.impl.coreapi.schema.MandatoryRelationshipPropertyConstraintDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
 
-public class MandatoryRelationshipPropertyConstraint extends RelationshipPropertyConstraint
+public class RelationshipPropertyExistenceConstraint extends RelationshipPropertyConstraint
 {
-    public MandatoryRelationshipPropertyConstraint( int relTypeId, int propertyKeyId )
+    public RelationshipPropertyExistenceConstraint( int relTypeId, int propertyKeyId )
     {
         super( relTypeId, propertyKeyId );
     }
@@ -38,26 +38,26 @@ public class MandatoryRelationshipPropertyConstraint extends RelationshipPropert
     @Override
     public void added( ChangeVisitor visitor )
     {
-        visitor.visitAddedRelationshipMandatoryPropertyConstraint( this );
+        visitor.visitAddedRelationshipPropertyExistenceConstraint( this );
     }
 
     @Override
     public void removed( ChangeVisitor visitor )
     {
-        visitor.visitRemovedRelationshipMandatoryPropertyConstraint( this );
+        visitor.visitRemovedRelationshipPropertyExistenceConstraint( this );
     }
 
     @Override
     public ConstraintType type()
     {
-        return ConstraintType.MANDATORY_RELATIONSHIP_PROPERTY;
+        return ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE;
     }
 
     @Override
     public ConstraintDefinition asConstraintDefinition( InternalSchemaActions schemaActions, ReadOperations readOps )
     {
         StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOps );
-        return new MandatoryRelationshipPropertyConstraintDefinition( schemaActions,
+        return new RelationshipPropertyExistenceConstraintDefinition( schemaActions,
                 DynamicRelationshipType.withName( lookup.relationshipTypeGetName( relationshipTypeId ) ),
                 lookup.propertyKeyGetName( propertyKeyId ) );
     }

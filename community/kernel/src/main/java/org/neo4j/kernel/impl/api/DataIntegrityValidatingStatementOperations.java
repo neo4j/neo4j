@@ -23,8 +23,8 @@ import java.util.Iterator;
 
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -159,7 +159,7 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public MandatoryNodePropertyConstraint mandatoryNodePropertyConstraintCreate( KernelStatement state, int labelId,
+    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( KernelStatement state, int labelId,
             int propertyKey ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
         Iterator<NodePropertyConstraint> constraints = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
@@ -167,18 +167,18 @@ public class DataIntegrityValidatingStatementOperations implements
         while ( constraints.hasNext() )
         {
             NodePropertyConstraint constraint = constraints.next();
-            if ( constraint instanceof MandatoryNodePropertyConstraint )
+            if ( constraint instanceof NodePropertyExistenceConstraint )
             {
                 throw new AlreadyConstrainedException( constraint, OperationContext.CONSTRAINT_CREATION,
                         new StatementTokenNameLookup( state.readOperations() ) );
             }
         }
 
-        return schemaWriteDelegate.mandatoryNodePropertyConstraintCreate( state, labelId, propertyKey );
+        return schemaWriteDelegate.nodePropertyExistenceConstraintCreate( state, labelId, propertyKey );
     }
 
     @Override
-    public MandatoryRelationshipPropertyConstraint mandatoryRelationshipPropertyConstraintCreate( KernelStatement state,
+    public RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate( KernelStatement state,
             int relTypeId, int propertyKeyId ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
         Iterator<RelationshipPropertyConstraint> constraints = schemaReadDelegate.constraintsGetForRelationshipTypeAndPropertyKey(
@@ -186,14 +186,14 @@ public class DataIntegrityValidatingStatementOperations implements
         while ( constraints.hasNext() )
         {
             RelationshipPropertyConstraint constraint = constraints.next();
-            if ( constraint instanceof MandatoryRelationshipPropertyConstraint )
+            if ( constraint instanceof RelationshipPropertyExistenceConstraint )
             {
                 throw new AlreadyConstrainedException( constraint, OperationContext.CONSTRAINT_CREATION,
                         new StatementTokenNameLookup( state.readOperations() ) );
             }
         }
 
-        return schemaWriteDelegate.mandatoryRelationshipPropertyConstraintCreate( state, relTypeId, propertyKeyId );
+        return schemaWriteDelegate.relationshipPropertyExistenceConstraintCreate( state, relTypeId, propertyKeyId );
     }
 
     @Override

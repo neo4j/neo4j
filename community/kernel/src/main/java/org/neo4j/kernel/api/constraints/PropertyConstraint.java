@@ -33,13 +33,13 @@ public abstract class PropertyConstraint
 
         void visitRemovedUniquePropertyConstraint( UniquenessConstraint constraint );
 
-        void visitAddedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint constraint );
+        void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint constraint );
 
-        void visitRemovedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint constraint );
+        void visitRemovedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint constraint );
 
-        void visitAddedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint constraint );
+        void visitAddedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint constraint );
 
-        void visitRemovedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint constraint );
+        void visitRemovedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint constraint );
     }
 
     protected final int propertyKeyId;

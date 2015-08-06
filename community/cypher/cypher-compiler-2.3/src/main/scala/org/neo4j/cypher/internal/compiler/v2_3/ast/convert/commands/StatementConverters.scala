@@ -52,26 +52,26 @@ object StatementConverters {
           label = s.label.name,
           idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,
           propertyKey = s.property.propertyKey.name)
-      case s: ast.CreateNodeMandatoryPropertyConstraint =>
-        commands.CreateNodeMandatoryPropertyConstraint(
+      case s: ast.CreateNodePropertyExistenceConstraint =>
+        commands.CreateNodePropertyExistenceConstraint(
           id = s.identifier.name,
           label = s.label.name,
           idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,
           propertyKey = s.property.propertyKey.name)
-      case s: ast.DropNodeMandatoryPropertyConstraint =>
-        commands.DropNodeMandatoryPropertyConstraint(
+      case s: ast.DropNodePropertyExistenceConstraint =>
+        commands.DropNodePropertyExistenceConstraint(
           id = s.identifier.name,
           label = s.label.name,
           idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,
           propertyKey = s.property.propertyKey.name)
-      case s: ast.CreateRelationshipMandatoryPropertyConstraint =>
-        commands.CreateRelationshipMandatoryPropertyConstraint(
+      case s: ast.CreateRelationshipPropertyExistenceConstraint =>
+        commands.CreateRelationshipPropertyExistenceConstraint(
           id = s.identifier.name,
           relType = s.relType.name,
           idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,
           propertyKey = s.property.propertyKey.name)
-      case s: ast.DropRelationshipMandatoryPropertyConstraint =>
-        commands.DropRelationshipMandatoryPropertyConstraint(
+      case s: ast.DropRelationshipPropertyExistenceConstraint =>
+        commands.DropRelationshipPropertyExistenceConstraint(
           id = s.identifier.name,
           relType = s.relType.name,
           idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,

@@ -133,55 +133,55 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
     assert(stats.uniqueConstraintsRemoved === 0)
   }
 
-  test("correct statistics for mandatory node property constraint added") {
+  test("correct statistics for added node property existence constraint") {
     val result = execute("create constraint on (n:Person) assert exists(n.name)")
     val stats  = result.queryStatistics()
 
-    assert(stats.mandatoryConstraintsAdded === 1)
-    assert(stats.mandatoryConstraintsRemoved === 0)
+    assert(stats.existenceConstraintsAdded === 1)
+    assert(stats.existenceConstraintsRemoved === 0)
   }
 
-  test("correct statistics for mandatory node property constraint added twice") {
+  test("correct statistics for node property existence constraint added twice") {
     execute("create constraint on (n:Person) assert exists(n.name)")
     val result = execute("create constraint on (n:Person) assert exists(n.name)")
     val stats  = result.queryStatistics()
 
-    assert(stats.mandatoryConstraintsAdded === 0)
-    assert(stats.mandatoryConstraintsRemoved === 0)
+    assert(stats.existenceConstraintsAdded === 0)
+    assert(stats.existenceConstraintsRemoved === 0)
   }
 
-  test("correct statistics for mandatory node property constraint dropped") {
+  test("correct statistics for dropped node property existence constraint") {
     execute("create constraint on (n:Person) assert exists(n.name)")
     val result = execute("drop constraint on (n:Person) assert exists(n.name)")
     val stats  = result.queryStatistics()
 
-    assert(stats.mandatoryConstraintsAdded === 0)
-    assert(stats.mandatoryConstraintsRemoved === 1)
+    assert(stats.existenceConstraintsAdded === 0)
+    assert(stats.existenceConstraintsRemoved === 1)
   }
 
-  test("correct statistics for mandatory relationship property constraint added") {
+  test("correct statistics for added relationship property existence constraint") {
     val result = execute("create constraint on ()-[r:KNOWS]-() assert exists(r.since)")
     val stats  = result.queryStatistics()
 
-    assert(stats.mandatoryConstraintsAdded === 1)
-    assert(stats.mandatoryConstraintsRemoved === 0)
+    assert(stats.existenceConstraintsAdded === 1)
+    assert(stats.existenceConstraintsRemoved === 0)
   }
 
-  test("correct statistics for mandatory relationship property constraint added twice") {
+  test("correct statistics for relationship property existence constraint added twice") {
     execute("create constraint on ()-[r:KNOWS]-() assert exists(r.since)")
     val result = execute("create constraint on ()-[r:KNOWS]-() assert exists(r.since)")
     val stats  = result.queryStatistics()
 
-    assert(stats.mandatoryConstraintsAdded === 0)
-    assert(stats.mandatoryConstraintsRemoved === 0)
+    assert(stats.existenceConstraintsAdded === 0)
+    assert(stats.existenceConstraintsRemoved === 0)
   }
 
-  test("correct statistics for mandatory relationship property constraint dropped") {
+  test("correct statistics for dropped relationship property existence constraint") {
     execute("create constraint on ()-[r:KNOWS]-() assert exists(r.since)")
     val result = execute("drop constraint on ()-[r:KNOWS]-() assert exists(r.since)")
     val stats  = result.queryStatistics()
 
-    assert(stats.mandatoryConstraintsAdded === 0)
-    assert(stats.mandatoryConstraintsRemoved === 1)
+    assert(stats.existenceConstraintsAdded === 0)
+    assert(stats.existenceConstraintsRemoved === 1)
   }
 }

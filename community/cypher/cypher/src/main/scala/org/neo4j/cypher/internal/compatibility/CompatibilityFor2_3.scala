@@ -247,8 +247,8 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
       labelsRemoved = i.labelsRemoved,
       indexesAdded = i.indexesAdded,
       indexesRemoved = i.indexesRemoved,
-      constraintsAdded = i.uniqueConstraintsAdded + i.mandatoryConstraintsAdded,
-      constraintsRemoved = i.uniqueConstraintsRemoved + i.mandatoryConstraintsRemoved
+      constraintsAdded = i.uniqueConstraintsAdded + i.existenceConstraintsAdded,
+      constraintsRemoved = i.uniqueConstraintsRemoved + i.existenceConstraintsRemoved
     )
   }
 

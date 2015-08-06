@@ -27,14 +27,14 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.store.record.MandatoryNodePropertyConstraintRule;
-import org.neo4j.kernel.impl.store.record.MandatoryRelationshipPropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
+import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
@@ -45,8 +45,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.store.record.MandatoryNodePropertyConstraintRule.mandatoryNodePropertyConstraintRule;
-import static org.neo4j.kernel.impl.store.record.MandatoryRelationshipPropertyConstraintRule.mandatoryRelPropertyConstraintRule;
+import static org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule.nodePropertyExistenceConstraintRule;
+import static org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule.relPropertyExistenceConstraintRule;
 import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
 
 public class SchemaCacheTest
@@ -106,14 +106,14 @@ public class SchemaCacheTest
         // WHEN
         cache.addSchemaRule( uniquenessConstraintRule( 0l, 1, 2, 133l ) );
         cache.addSchemaRule( uniquenessConstraintRule( 1l, 3, 4, 133l ) );
-        cache.addSchemaRule( mandatoryRelPropertyConstraintRule( 2l, 5, 6 ) );
-        cache.addSchemaRule( mandatoryNodePropertyConstraintRule( 3l, 7, 8 ) );
+        cache.addSchemaRule( relPropertyExistenceConstraintRule( 2l, 5, 6 ) );
+        cache.addSchemaRule( nodePropertyExistenceConstraintRule( 3l, 7, 8 ) );
 
         // THEN
         assertEquals(
                 asSet( new UniquenessConstraint( 1, 2 ), new UniquenessConstraint( 3, 4 ),
-                        new MandatoryRelationshipPropertyConstraint( 5, 6 ),
-                        new MandatoryNodePropertyConstraint( 7, 8 ) ),
+                        new RelationshipPropertyExistenceConstraint( 5, 6 ),
+                        new NodePropertyExistenceConstraint( 7, 8 ) ),
                 asSet( cache.constraints() ) );
 
         assertEquals(
@@ -129,11 +129,11 @@ public class SchemaCacheTest
                 asSet( cache.constraintsForLabelAndProperty( 1, 3 ) ) );
 
         assertEquals(
-                asSet( new MandatoryRelationshipPropertyConstraint( 5, 6 ) ),
+                asSet( new RelationshipPropertyExistenceConstraint( 5, 6 ) ),
                 asSet( cache.constraintsForRelationshipType( 5 ) ) );
 
         assertEquals(
-                asSet( new MandatoryRelationshipPropertyConstraint( 5, 6 ) ),
+                asSet( new RelationshipPropertyExistenceConstraint( 5, 6 ) ),
                 asSet( cache.constraintsForRelationshipTypeAndProperty( 5, 6 ) ) );
     }
 
@@ -217,7 +217,7 @@ public class SchemaCacheTest
         // Given
         UniquePropertyConstraintRule rule1 = uniquenessConstraintRule( 0, 1, 1, 0 );
         UniquePropertyConstraintRule rule2 = uniquenessConstraintRule( 1, 2, 1, 0 );
-        MandatoryNodePropertyConstraintRule rule3 = mandatoryNodePropertyConstraintRule( 2, 1, 2 );
+        NodePropertyExistenceConstraintRule rule3 = nodePropertyExistenceConstraintRule( 2, 1, 2 );
 
         SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
 
@@ -235,7 +235,7 @@ public class SchemaCacheTest
         // Given
         UniquePropertyConstraintRule rule1 = uniquenessConstraintRule( 0, 1, 1, 0 );
         UniquePropertyConstraintRule rule2 = uniquenessConstraintRule( 1, 2, 1, 0 );
-        MandatoryNodePropertyConstraintRule rule3 = mandatoryNodePropertyConstraintRule( 2, 1, 2 );
+        NodePropertyExistenceConstraintRule rule3 = nodePropertyExistenceConstraintRule( 2, 1, 2 );
 
         SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
 
@@ -250,9 +250,9 @@ public class SchemaCacheTest
     public void shouldListConstraintsForRelationshipType()
     {
         // Given
-        MandatoryRelationshipPropertyConstraintRule rule1 = mandatoryRelPropertyConstraintRule( 0, 1, 1 );
-        MandatoryRelationshipPropertyConstraintRule rule2 = mandatoryRelPropertyConstraintRule( 0, 2, 1 );
-        MandatoryRelationshipPropertyConstraintRule rule3 = mandatoryRelPropertyConstraintRule( 0, 1, 2 );
+        RelationshipPropertyExistenceConstraintRule rule1 = relPropertyExistenceConstraintRule( 0, 1, 1 );
+        RelationshipPropertyExistenceConstraintRule rule2 = relPropertyExistenceConstraintRule( 0, 2, 1 );
+        RelationshipPropertyExistenceConstraintRule rule3 = relPropertyExistenceConstraintRule( 0, 1, 2 );
 
         SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
 
@@ -268,9 +268,9 @@ public class SchemaCacheTest
     public void shouldListConstraintsForRelationshipTypeAndProperty()
     {
         // Given
-        MandatoryRelationshipPropertyConstraintRule rule1 = mandatoryRelPropertyConstraintRule( 0, 1, 1 );
-        MandatoryRelationshipPropertyConstraintRule rule2 = mandatoryRelPropertyConstraintRule( 0, 2, 1 );
-        MandatoryRelationshipPropertyConstraintRule rule3 = mandatoryRelPropertyConstraintRule( 0, 1, 2 );
+        RelationshipPropertyExistenceConstraintRule rule1 = relPropertyExistenceConstraintRule( 0, 1, 1 );
+        RelationshipPropertyExistenceConstraintRule rule2 = relPropertyExistenceConstraintRule( 0, 2, 1 );
+        RelationshipPropertyExistenceConstraintRule rule3 = relPropertyExistenceConstraintRule( 0, 1, 2 );
 
         SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
 

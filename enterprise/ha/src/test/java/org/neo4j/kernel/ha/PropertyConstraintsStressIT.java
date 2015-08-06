@@ -96,8 +96,8 @@ public class PropertyConstraintsStressIT
     {
         return Arrays.asList( new Object[][]{
                 {UNIQUE_PROPERTY_CONSTRAINT_OPS},
-                {MANDATORY_NODE_PROPERTY_CONSTRAINT_OPS},
-                {MANDATORY_REL_PROPERTY_CONSTRAINT_OPS},
+                {NODE_PROPERTY_EXISTENCE_CONSTRAINT_OPS},
+                {REL_PROPERTY_EXISTENCE_CONSTRAINT_OPS},
         } );
     }
 
@@ -450,7 +450,7 @@ public class PropertyConstraintsStressIT
         }
     };
 
-    private static final ConstraintOperations MANDATORY_NODE_PROPERTY_CONSTRAINT_OPS = new ConstraintOperations()
+    private static final ConstraintOperations NODE_PROPERTY_EXISTENCE_CONSTRAINT_OPS = new ConstraintOperations()
     {
         @Override
         public void createEntity( HighlyAvailableGraphDatabase db, String type, String propertyKey, Object value )
@@ -511,11 +511,11 @@ public class PropertyConstraintsStressIT
         @Override
         public String toString()
         {
-            return "MANDATORY_NODE_PROPERTY_CONSTRAINT";
+            return "NODE_PROPERTY_EXISTENCE_CONSTRAINT";
         }
     };
 
-    private static final ConstraintOperations MANDATORY_REL_PROPERTY_CONSTRAINT_OPS = new ConstraintOperations()
+    private static final ConstraintOperations REL_PROPERTY_EXISTENCE_CONSTRAINT_OPS = new ConstraintOperations()
     {
         @Override
         public void createEntity( HighlyAvailableGraphDatabase db, String type, String propertyKey, Object value )
@@ -581,7 +581,7 @@ public class PropertyConstraintsStressIT
         @Override
         public String toString()
         {
-            return "MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT";
+            return "RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT";
         }
     };
 }

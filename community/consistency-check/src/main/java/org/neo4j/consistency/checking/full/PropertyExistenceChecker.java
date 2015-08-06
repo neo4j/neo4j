@@ -35,8 +35,8 @@ import org.neo4j.consistency.checking.OwningRecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
-import org.neo4j.kernel.impl.store.record.MandatoryNodePropertyConstraintRule;
-import org.neo4j.kernel.impl.store.record.MandatoryRelationshipPropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
+import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -50,14 +50,14 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static org.neo4j.consistency.checking.full.NodeLabelReader.getListOfLabels;
 
-public class MandatoryPropertyChecker extends CheckDecorator.Adapter
+public class PropertyExistenceChecker extends CheckDecorator.Adapter
 {
     private static final Class<PropertyConstraintRule> BASE_RULE = PropertyConstraintRule.class;
 
     private final PrimitiveIntObjectMap<int[]> nodes = Primitive.intObjectMap();
     private final PrimitiveIntObjectMap<int[]> relationships = Primitive.intObjectMap();
 
-    public MandatoryPropertyChecker( RecordStore<DynamicRecord> schemaStore )
+    public PropertyExistenceChecker( RecordStore<DynamicRecord> schemaStore )
     {
         SchemaStorage schemaStorage = new SchemaStorage( schemaStore );
         for ( Iterator<PropertyConstraintRule> rules = schemaStorage.schemaRules( BASE_RULE ); safeHasNext( rules ); )
@@ -70,16 +70,16 @@ public class MandatoryPropertyChecker extends CheckDecorator.Adapter
 
             switch ( rule.getKind() )
             {
-            case MANDATORY_NODE_PROPERTY_CONSTRAINT:
+            case NODE_PROPERTY_EXISTENCE_CONSTRAINT:
                 storage = nodes;
-                MandatoryNodePropertyConstraintRule nodeRule = (MandatoryNodePropertyConstraintRule) rule;
+                NodePropertyExistenceConstraintRule nodeRule = (NodePropertyExistenceConstraintRule) rule;
                 labelOrRelType = nodeRule.getLabel();
                 propertyKey = nodeRule.getPropertyKey();
                 break;
 
-            case MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT:
+            case RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT:
                 storage = relationships;
-                MandatoryRelationshipPropertyConstraintRule relRule = (MandatoryRelationshipPropertyConstraintRule) rule;
+                RelationshipPropertyExistenceConstraintRule relRule = (RelationshipPropertyExistenceConstraintRule) rule;
                 labelOrRelType = relRule.getRelationshipType();
                 propertyKey = relRule.getPropertyKey();
                 break;

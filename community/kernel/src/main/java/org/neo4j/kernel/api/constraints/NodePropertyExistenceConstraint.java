@@ -27,11 +27,11 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
-import org.neo4j.kernel.impl.coreapi.schema.MandatoryNodePropertyConstraintDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefinition;
 
-public class MandatoryNodePropertyConstraint extends NodePropertyConstraint
+public class NodePropertyExistenceConstraint extends NodePropertyConstraint
 {
-    public MandatoryNodePropertyConstraint( int labelId, int propertyKeyId )
+    public NodePropertyExistenceConstraint( int labelId, int propertyKeyId )
     {
         super( labelId, propertyKeyId );
     }
@@ -39,20 +39,20 @@ public class MandatoryNodePropertyConstraint extends NodePropertyConstraint
     @Override
     public void added( ChangeVisitor visitor )
     {
-        visitor.visitAddedNodeMandatoryPropertyConstraint( this );
+        visitor.visitAddedNodePropertyExistenceConstraint( this );
     }
 
     @Override
     public void removed( ChangeVisitor visitor )
     {
-        visitor.visitRemovedNodeMandatoryPropertyConstraint( this );
+        visitor.visitRemovedNodePropertyExistenceConstraint( this );
     }
 
     @Override
     public ConstraintDefinition asConstraintDefinition( InternalSchemaActions schemaActions, ReadOperations readOps )
     {
         StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOps );
-        return new MandatoryNodePropertyConstraintDefinition( schemaActions,
+        return new NodePropertyExistenceConstraintDefinition( schemaActions,
                 DynamicLabel.label( lookup.labelGetName( labelId ) ),
                 lookup.propertyKeyGetName( propertyKeyId ) );
     }
@@ -60,7 +60,7 @@ public class MandatoryNodePropertyConstraint extends NodePropertyConstraint
     @Override
     public ConstraintType type()
     {
-        return ConstraintType.MANDATORY_NODE_PROPERTY;
+        return ConstraintType.NODE_PROPERTY_EXISTENCE;
     }
 
     @Override

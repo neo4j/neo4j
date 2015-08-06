@@ -19,36 +19,36 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
-import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintType;
 
 import static java.lang.String.format;
 
-public class MandatoryRelationshipPropertyConstraintDefinition extends RelationshipConstraintDefinition
+public class NodePropertyExistenceConstraintDefinition extends NodeConstraintDefinition
 {
-    public MandatoryRelationshipPropertyConstraintDefinition( InternalSchemaActions actions,
-            RelationshipType relationshipType, String propertyKey )
+    public NodePropertyExistenceConstraintDefinition( InternalSchemaActions actions, Label label, String propertyKey )
     {
-        super( actions, relationshipType, propertyKey );
+        super( actions, label, propertyKey );
     }
 
     @Override
     public void drop()
     {
         assertInUnterminatedTransaction();
-        actions.dropRelationshipPropertyExistenceConstraint( relationshipType, propertyKey );
+        actions.dropNodePropertyExistenceConstraint( label, propertyKey );
     }
 
     @Override
     public ConstraintType getConstraintType()
     {
-        return ConstraintType.MANDATORY_RELATIONSHIP_PROPERTY;
+        assertInUnterminatedTransaction();
+        return ConstraintType.NODE_PROPERTY_EXISTENCE;
     }
 
     @Override
     public String toString()
     {
-        return format( "ON ()-[%1$s:%2$s]-() ASSERT exists(%1$s.%3$s)",
-                relationshipType.name().toLowerCase(), relationshipType.name(), propertyKey );
+        return format( "ON (%1$s:%2$s) ASSERT exists(%1$s.%3$s)",
+                label.name().toLowerCase(), label.name(), propertyKey );
     }
 }

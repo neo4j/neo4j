@@ -1714,7 +1714,7 @@ public class DatabaseActions
             @Override
             public boolean test( ConstraintDefinition item )
             {
-                return item.isConstraintType( ConstraintType.MANDATORY_NODE_PROPERTY ) &&
+                return item.isConstraintType( ConstraintType.NODE_PROPERTY_EXISTENCE ) &&
                        propertyKeysSet.equals( asSet( item.getPropertyKeys() ) );
             }
         };
@@ -1727,7 +1727,7 @@ public class DatabaseActions
             @Override
             public boolean test( ConstraintDefinition item )
             {
-                return item.isConstraintType( ConstraintType.MANDATORY_RELATIONSHIP_PROPERTY ) &&
+                return item.isConstraintType( ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE ) &&
                        propertyKeysSet.equals( asSet( item.getPropertyKeys() ) );
             }
         };
@@ -1754,12 +1754,12 @@ public class DatabaseActions
     public Representation getLabelExistenceConstraints( String labelName )
     {
         return new ListRepresentation( CONSTRAINT_DEFINITION, map( CONSTRAINT_DEF_TO_REPRESENTATION,
-                filteredNodeConstraints( labelName, ConstraintType.MANDATORY_NODE_PROPERTY ) ) );
+                filteredNodeConstraints( labelName, ConstraintType.NODE_PROPERTY_EXISTENCE ) ) );
     }
 
     public Representation getRelationshipTypeExistenceConstraints( String typeName )
     {
         return new ListRepresentation( CONSTRAINT_DEFINITION, map( CONSTRAINT_DEF_TO_REPRESENTATION,
-                filteredRelationshipConstraints( typeName, ConstraintType.MANDATORY_RELATIONSHIP_PROPERTY ) ) );
+                filteredRelationshipConstraints( typeName, ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE ) ) );
     }
 }

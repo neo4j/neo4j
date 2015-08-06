@@ -26,7 +26,7 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v2_3.InternalQueryStatistics
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.kernel.api.constraints.{MandatoryNodePropertyConstraint, MandatoryRelationshipPropertyConstraint, UniquenessConstraint}
+import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class UpdateCountingQueryContextTest extends CypherFunSuite {
@@ -60,11 +60,11 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   when( inner.createUniqueConstraint(anyInt(), anyInt()) )
     .thenReturn(IdempotentResult(mock[UniquenessConstraint]))
 
-  when( inner.createNodeMandatoryConstraint(anyInt(), anyInt()) )
-    .thenReturn(IdempotentResult(mock[MandatoryNodePropertyConstraint]))
+  when( inner.createNodePropertyExistenceConstraint(anyInt(), anyInt()) )
+    .thenReturn(IdempotentResult(mock[NodePropertyExistenceConstraint]))
 
-  when( inner.createRelationshipMandatoryConstraint(anyInt(), anyInt()) )
-    .thenReturn(IdempotentResult(mock[MandatoryRelationshipPropertyConstraint]))
+  when( inner.createRelationshipPropertyExistenceConstraint(anyInt(), anyInt()) )
+    .thenReturn(IdempotentResult(mock[RelationshipPropertyExistenceConstraint]))
 
   when( inner.addIndexRule(anyInt(), anyInt()) )
     .thenReturn(IdempotentResult(mock[IndexDescriptor]))
@@ -160,27 +160,27 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
     context.getStatistics should equal(InternalQueryStatistics(uniqueConstraintsRemoved = 1))
   }
 
-  test("create node mandatory constraint") {
-    context.createNodeMandatoryConstraint(0, 1)
+  test("create node property existence constraint") {
+    context.createNodePropertyExistenceConstraint(0, 1)
 
-    context.getStatistics should equal(InternalQueryStatistics(mandatoryConstraintsAdded = 1))
+    context.getStatistics should equal(InternalQueryStatistics(existenceConstraintsAdded = 1))
   }
 
-  test("drop node mandatory constraint") {
-    context.dropNodeMandatoryConstraint(0, 42)
+  test("drop node property existence constraint") {
+    context.dropNodePropertyExistenceConstraint(0, 42)
 
-    context.getStatistics should equal(InternalQueryStatistics(mandatoryConstraintsRemoved = 1))
+    context.getStatistics should equal(InternalQueryStatistics(existenceConstraintsRemoved = 1))
   }
 
-  test("create rel mandatory constraint") {
-    context.createRelationshipMandatoryConstraint(0, 42)
+  test("create rel property existence constraint") {
+    context.createRelationshipPropertyExistenceConstraint(0, 42)
 
-    context.getStatistics should equal(InternalQueryStatistics(mandatoryConstraintsAdded = 1))
+    context.getStatistics should equal(InternalQueryStatistics(existenceConstraintsAdded = 1))
   }
 
-  test("drop rel mandatory constraint") {
-    context.dropRelationshipMandatoryConstraint(0, 1)
+  test("drop rel property existence constraint") {
+    context.dropRelationshipPropertyExistenceConstraint(0, 1)
 
-    context.getStatistics should equal(InternalQueryStatistics(mandatoryConstraintsRemoved = 1))
+    context.getStatistics should equal(InternalQueryStatistics(existenceConstraintsRemoved = 1))
   }
 }

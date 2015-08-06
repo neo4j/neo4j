@@ -36,8 +36,8 @@ import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -431,27 +431,29 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         }
 
         @Override
-        public void visitAddedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint constraint )
+        public void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint constraint )
         {
-            visitor.visitAddedNodeMandatoryPropertyConstraint( constraint );
+            visitor.visitAddedNodePropertyExistenceConstraint( constraint );
         }
 
         @Override
-        public void visitRemovedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint constraint )
+        public void visitRemovedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint constraint )
         {
-            visitor.visitRemovedNodeMandatoryPropertyConstraint( constraint );
+            visitor.visitRemovedNodePropertyExistenceConstraint( constraint );
         }
 
         @Override
-        public void visitAddedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint constraint )
+        public void visitAddedRelationshipPropertyExistenceConstraint(
+                RelationshipPropertyExistenceConstraint constraint )
         {
-            visitor.visitAddedRelationshipMandatoryPropertyConstraint( constraint );
+            visitor.visitAddedRelationshipPropertyExistenceConstraint( constraint );
         }
 
         @Override
-        public void visitRemovedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint constraint )
+        public void visitRemovedRelationshipPropertyExistenceConstraint(
+                RelationshipPropertyExistenceConstraint constraint )
         {
-            visitor.visitRemovedRelationshipMandatoryPropertyConstraint( constraint );
+            visitor.visitRemovedRelationshipPropertyExistenceConstraint( constraint );
         }
     }
 
@@ -1096,7 +1098,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void constraintDoAdd( MandatoryNodePropertyConstraint constraint )
+    public void constraintDoAdd( NodePropertyExistenceConstraint constraint )
     {
         constraintsChangesDiffSets().add( constraint );
         getOrCreateLabelState( constraint.label() ).getOrCreateConstraintsChanges().add( constraint );
@@ -1104,7 +1106,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void constraintDoAdd( MandatoryRelationshipPropertyConstraint constraint )
+    public void constraintDoAdd( RelationshipPropertyExistenceConstraint constraint )
     {
         constraintsChangesDiffSets().add( constraint );
         relationshipConstraintChangesByType( constraint.relationshipType() ).add( constraint );

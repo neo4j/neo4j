@@ -56,8 +56,8 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.StoreLocker;
-import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
@@ -90,8 +90,8 @@ import org.neo4j.kernel.impl.coreapi.schema.BaseRelationshipConstraintCreator;
 import org.neo4j.kernel.impl.coreapi.schema.IndexCreatorImpl;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
-import org.neo4j.kernel.impl.coreapi.schema.MandatoryNodePropertyConstraintDefinition;
-import org.neo4j.kernel.impl.coreapi.schema.MandatoryRelationshipPropertyConstraintDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -102,8 +102,8 @@ import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
-import org.neo4j.kernel.impl.store.record.MandatoryNodePropertyConstraintRule;
-import org.neo4j.kernel.impl.store.record.MandatoryRelationshipPropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
+import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -442,7 +442,7 @@ public class BatchInserterImpl implements BatchInserter
             case UNIQUENESS_CONSTRAINT:
                 otherPropertyKeyId = ((UniquePropertyConstraintRule) rule).getPropertyKey();
                 break;
-            case MANDATORY_NODE_PROPERTY_CONSTRAINT:
+            case NODE_PROPERTY_EXISTENCE_CONSTRAINT:
                 continue;
             default:
                 throw new IllegalStateException( "Case not handled for " + rule.getKind() );
@@ -455,15 +455,15 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private void validateMandatoryNodePropertyConstraintCanBeCreated( int labelId, int propertyKeyId )
+    private void validateNodePropertyExistenceConstraintCanBeCreated( int labelId, int propertyKeyId )
     {
         for ( SchemaRule rule : schemaCache.schemaRulesForLabel( labelId ) )
         {
-            if ( rule.getKind() == SchemaRule.Kind.MANDATORY_NODE_PROPERTY_CONSTRAINT &&
-                 propertyKeyId == ((MandatoryNodePropertyConstraintRule) rule).getPropertyKey() )
+            if ( rule.getKind() == SchemaRule.Kind.NODE_PROPERTY_EXISTENCE_CONSTRAINT &&
+                 propertyKeyId == ((NodePropertyExistenceConstraintRule) rule).getPropertyKey() )
             {
                 throw new ConstraintViolationException(
-                        "Mandatory node property constraint for given {label;property} already exists" );
+                        "Node property existence constraint for given {label;property} already exists" );
             }
         }
     }
@@ -472,11 +472,11 @@ public class BatchInserterImpl implements BatchInserter
     {
         for ( SchemaRule rule : schemaCache.schemaRulesForRelationshipType( typeId ) )
         {
-            if ( rule.getKind() == SchemaRule.Kind.MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT &&
-                 propertyKeyId == ((MandatoryRelationshipPropertyConstraintRule) rule).getPropertyKey() )
+            if ( rule.getKind() == SchemaRule.Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT &&
+                 propertyKeyId == ((RelationshipPropertyExistenceConstraintRule) rule).getPropertyKey() )
             {
                 throw new ConstraintViolationException(
-                        "Mandatory relationship property constraint for given {type;property} already exists" );
+                        "Relationship property existence constraint for given {type;property} already exists" );
             }
         }
     }
@@ -676,11 +676,11 @@ public class BatchInserterImpl implements BatchInserter
         flushStrategy.forceFlush();
     }
 
-    private void createConstraintRule( MandatoryNodePropertyConstraint constraint )
+    private void createConstraintRule( NodePropertyExistenceConstraint constraint )
     {
         SchemaStore schemaStore = getSchemaStore();
 
-        SchemaRule rule = MandatoryNodePropertyConstraintRule.mandatoryNodePropertyConstraintRule( schemaStore.nextId(),
+        SchemaRule rule = NodePropertyExistenceConstraintRule.nodePropertyExistenceConstraintRule( schemaStore.nextId(),
                 constraint.label(), constraint.propertyKey() );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( rule ) )
@@ -692,11 +692,11 @@ public class BatchInserterImpl implements BatchInserter
         flushStrategy.forceFlush();
     }
 
-    private void createConstraintRule( MandatoryRelationshipPropertyConstraint constraint )
+    private void createConstraintRule( RelationshipPropertyExistenceConstraint constraint )
     {
         SchemaStore schemaStore = getSchemaStore();
 
-        SchemaRule rule = MandatoryRelationshipPropertyConstraintRule.mandatoryRelPropertyConstraintRule(
+        SchemaRule rule = RelationshipPropertyExistenceConstraintRule.relPropertyExistenceConstraintRule(
                 schemaStore.nextId(), constraint.relationshipType(), constraint.propertyKey() );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( rule ) )
@@ -1246,10 +1246,10 @@ public class BatchInserterImpl implements BatchInserter
             int labelId = getOrCreateLabelId( label.name() );
             int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
 
-            validateMandatoryNodePropertyConstraintCanBeCreated( labelId, propertyKeyId );
+            validateNodePropertyExistenceConstraintCanBeCreated( labelId, propertyKeyId );
 
-            createConstraintRule( new MandatoryNodePropertyConstraint( labelId, propertyKeyId ) );
-            return new MandatoryNodePropertyConstraintDefinition( this, label, propertyKey );
+            createConstraintRule( new NodePropertyExistenceConstraint( labelId, propertyKeyId ) );
+            return new NodePropertyExistenceConstraintDefinition( this, label, propertyKey );
         }
 
         @Override
@@ -1261,8 +1261,8 @@ public class BatchInserterImpl implements BatchInserter
 
             validateRelationshipConstraintCanBeCreated( relationshipTypeId, propertyKeyId );
 
-            createConstraintRule( new MandatoryRelationshipPropertyConstraint( relationshipTypeId, propertyKeyId ) );
-            return new MandatoryRelationshipPropertyConstraintDefinition( this, type, propertyKey );
+            createConstraintRule( new RelationshipPropertyExistenceConstraint( relationshipTypeId, propertyKeyId ) );
+            return new RelationshipPropertyExistenceConstraintDefinition( this, type, propertyKey );
         }
 
         @Override

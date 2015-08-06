@@ -38,14 +38,14 @@ public class NodePropertyExistsConstraintCreator extends BaseNodeConstraintCreat
     @Override
     public final ConstraintCreator assertPropertyIsUnique( String propertyKey )
     {
-        throw new UnsupportedOperationException( "You are already creating a mandatory node property constraint." );
+        throw new UnsupportedOperationException( "You are already creating a node property existence constraint." );
     }
 
     @Override
     public final ConstraintCreator assertPropertyExists( String propertyKey )
     {
         throw new UnsupportedOperationException(
-                "You can only create one mandatory node property constraint at a time." );
+                "You can only create one node property existence constraint at a time." );
     }
 
     @Override

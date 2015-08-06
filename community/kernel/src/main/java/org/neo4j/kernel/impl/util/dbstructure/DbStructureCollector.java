@@ -28,8 +28,9 @@ import java.util.Set;
 import org.neo4j.function.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
@@ -43,8 +44,8 @@ public class DbStructureCollector implements DbStructureVisitor
     private final IndexDescriptorMap regularIndices = new IndexDescriptorMap( "regular" );
     private final IndexDescriptorMap uniqueIndices = new IndexDescriptorMap( "unique" );
     private final Set<UniquenessConstraint> uniquenessConstraints = new HashSet<>();
-    private final Set<MandatoryNodePropertyConstraint> mandatoryNodePropertyConstraints = new HashSet<>();
-    private final Set<MandatoryRelationshipPropertyConstraint> mandatoryRelPropertyConstraints = new HashSet<>();
+    private final Set<NodePropertyExistenceConstraint> nodePropertyExistenceConstraints = new HashSet<>();
+    private final Set<RelationshipPropertyExistenceConstraint> relPropertyExistenceConstraints = new HashSet<>();
     private final Map<Integer, Long> nodeCounts = new HashMap<>();
     private final Map<RelSpecifier, Long> relCounts = new HashMap<>();
     private long allNodesCount = -1l;
@@ -100,25 +101,25 @@ public class DbStructureCollector implements DbStructureVisitor
             }
 
             @Override
-            public Iterator<Pair<String,String>> knownMandatoryNodePropertyConstraints()
+            public Iterator<Pair<String,String>> knownNodePropertyExistenceConstraints()
             {
-                return Iterables.map( new Function<MandatoryNodePropertyConstraint,Pair<String,String>>()
+                return Iterables.map( new Function<NodePropertyExistenceConstraint,Pair<String,String>>()
                 {
                     @Override
-                    public Pair<String,String> apply( MandatoryNodePropertyConstraint uniquenessConstraint )
+                    public Pair<String,String> apply( NodePropertyExistenceConstraint uniquenessConstraint )
                             throws RuntimeException
                     {
                         String label = labels.byIdOrFail( uniquenessConstraint.label() );
                         String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.propertyKey() );
                         return Pair.of( label, propertyKey );
                     }
-                }, mandatoryNodePropertyConstraints.iterator() );
+                }, nodePropertyExistenceConstraints.iterator() );
             }
 
             @Override
-            public Iterator<Pair<String,String>> knownMandatoryRelationshipPropertyConstraints()
+            public Iterator<Pair<String,String>> knownRelationshipPropertyExistenceConstraints()
             {
-                return null;
+                return IteratorUtil.emptyIterator();
             }
 
             @Override
@@ -196,23 +197,23 @@ public class DbStructureCollector implements DbStructureVisitor
     }
 
     @Override
-    public void visitMandatoryNodePropertyConstraint( MandatoryNodePropertyConstraint constraint, String userDescription )
+    public void visitNodePropertyExistenceConstraint( NodePropertyExistenceConstraint constraint, String userDescription )
     {
-        if ( !mandatoryNodePropertyConstraints.add( constraint ) )
+        if ( !nodePropertyExistenceConstraints.add( constraint ) )
         {
             throw new IllegalArgumentException(
-                    format( "Duplicated mandatory node property constraint %s for %s", constraint, userDescription )
+                    format( "Duplicated node property existence constraint %s for %s", constraint, userDescription )
             );
         }
     }
 
     @Override
-    public void visitMandatoryRelationshipPropertyConstraint( MandatoryRelationshipPropertyConstraint constraint, String userDescription )
+    public void visitRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint constraint, String userDescription )
     {
-        if ( !mandatoryRelPropertyConstraints.add( constraint ) )
+        if ( !relPropertyExistenceConstraints.add( constraint ) )
         {
             throw new IllegalArgumentException(
-                    format( "Duplicated mandatory relationship property constraint %s for %s",
+                    format( "Duplicated relationship property existence constraint %s for %s",
                             constraint, userDescription )
             );
         }

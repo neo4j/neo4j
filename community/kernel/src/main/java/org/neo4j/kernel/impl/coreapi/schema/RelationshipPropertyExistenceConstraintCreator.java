@@ -25,11 +25,11 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.RelationshipConstraintCreator;
 import org.neo4j.kernel.api.exceptions.KernelException;
 
-public class RelationshipPropertyExistsConstraintCreator extends BaseRelationshipConstraintCreator
+public class RelationshipPropertyExistenceConstraintCreator extends BaseRelationshipConstraintCreator
 {
     protected final String propertyKey;
 
-    RelationshipPropertyExistsConstraintCreator( InternalSchemaActions internalCreator, RelationshipType type,
+    RelationshipPropertyExistenceConstraintCreator( InternalSchemaActions internalCreator, RelationshipType type,
             String propertyKey )
     {
         super( internalCreator, type );
@@ -40,7 +40,7 @@ public class RelationshipPropertyExistsConstraintCreator extends BaseRelationshi
     public final RelationshipConstraintCreator assertPropertyExists( String propertyKey )
     {
         throw new UnsupportedOperationException(
-                "You can only create one mandatory relationship property constraint at a time." );
+                "You can only create one relationship property existence constraint at a time." );
     }
 
     @Override

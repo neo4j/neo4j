@@ -55,18 +55,18 @@ import static org.junit.Assert.fail;
 import static org.junit.runners.Suite.SuiteClasses;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.kernel.impl.api.integrationtest.MandatoryPropertyConstraintVerificationIT.*;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT.*;
 import static org.neo4j.test.ThreadingRule.waitingWhileIn;
 
 @RunWith( Suite.class )
 @SuiteClasses( {
-        MandatoryNodePropertyConstrainVerificationIT.class,
-        MandatoryRelationshipPropertyConstrainVerificationIT.class
+        NodePropertyExistenceExistenceConstrainVerificationIT.class,
+        RelationshipPropertyExistenceExistenceConstrainVerificationIT.class
 } )
-public class MandatoryPropertyConstraintVerificationIT
+public class PropertyExistenceConstraintVerificationIT
 {
-    public static class MandatoryNodePropertyConstrainVerificationIT
-            extends AbstractMandatoryPropertyConstraintVerificationIT
+    public static class NodePropertyExistenceExistenceConstrainVerificationIT
+            extends AbstractPropertyExistenceConstraintVerificationIT
     {
         @Override
         void createConstraint( DatabaseRule db, String label, String property )
@@ -77,7 +77,7 @@ public class MandatoryPropertyConstraintVerificationIT
         @Override
         String constraintCreationMethodName()
         {
-            return "mandatoryNodePropertyConstraintCreate";
+            return "nodePropertyExistenceConstraintCreate";
         }
 
         @Override
@@ -101,8 +101,8 @@ public class MandatoryPropertyConstraintVerificationIT
         }
     }
 
-    public static class MandatoryRelationshipPropertyConstrainVerificationIT
-            extends AbstractMandatoryPropertyConstraintVerificationIT
+    public static class RelationshipPropertyExistenceExistenceConstrainVerificationIT
+            extends AbstractPropertyExistenceConstraintVerificationIT
     {
         @Override
         public void createConstraint( DatabaseRule db, String relType, String property )
@@ -113,7 +113,7 @@ public class MandatoryPropertyConstraintVerificationIT
         @Override
         public String constraintCreationMethodName()
         {
-            return "mandatoryRelationshipPropertyConstraintCreate";
+            return "relationshipPropertyExistenceConstraintCreate";
         }
 
         @Override
@@ -138,7 +138,7 @@ public class MandatoryPropertyConstraintVerificationIT
         }
     }
 
-    public abstract static class AbstractMandatoryPropertyConstraintVerificationIT
+    public abstract static class AbstractPropertyExistenceConstraintVerificationIT
     {
         private static final String KEY = "Foo";
         private static final String PROPERTY = "bar";

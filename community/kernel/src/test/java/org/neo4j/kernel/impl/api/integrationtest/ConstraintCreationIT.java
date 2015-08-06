@@ -44,8 +44,8 @@ import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -85,14 +85,14 @@ import static org.neo4j.kernel.impl.api.integrationtest.ConstraintCreationIT.*;
 
 @RunWith( Suite.class )
 @SuiteClasses( {
-        MandatoryNodePropertyConstraintCreationIT.class,
-        MandatoryRelationshipPropertyConstraintCreationIT.class,
+        NodePropertyExistenceConstraintCreationIT.class,
+        RelationshipPropertyExistenceConstraintCreationIT.class,
         UniquenessConstraintCreationIT.class
 } )
 public class ConstraintCreationIT
 {
-    public static class MandatoryNodePropertyConstraintCreationIT
-            extends AbstractConstraintCreationIT<MandatoryNodePropertyConstraint>
+    public static class NodePropertyExistenceConstraintCreationIT
+            extends AbstractConstraintCreationIT<NodePropertyExistenceConstraint>
     {
         @Override
         int initializeLabelOrRelType( SchemaWriteOperations writeOps, String name ) throws KernelException
@@ -101,10 +101,10 @@ public class ConstraintCreationIT
         }
 
         @Override
-        MandatoryNodePropertyConstraint createConstraint( SchemaWriteOperations writeOps, int type, int property )
+        NodePropertyExistenceConstraint createConstraint( SchemaWriteOperations writeOps, int type, int property )
                 throws Exception
         {
-            return writeOps.mandatoryNodePropertyConstraintCreate( type, property );
+            return writeOps.nodePropertyExistenceConstraintCreate( type, property );
         }
 
         @Override
@@ -114,13 +114,13 @@ public class ConstraintCreationIT
         }
 
         @Override
-        MandatoryNodePropertyConstraint newConstraintObject( int type, int property )
+        NodePropertyExistenceConstraint newConstraintObject( int type, int property )
         {
-            return new MandatoryNodePropertyConstraint( type, property );
+            return new NodePropertyExistenceConstraint( type, property );
         }
 
         @Override
-        void dropConstraint( SchemaWriteOperations writeOps, MandatoryNodePropertyConstraint constraint )
+        void dropConstraint( SchemaWriteOperations writeOps, NodePropertyExistenceConstraint constraint )
                 throws Exception
         {
             writeOps.constraintDrop( constraint );
@@ -145,7 +145,7 @@ public class ConstraintCreationIT
         }
 
         @Test
-        public void shouldNotDropMandatoryPropertyConstraintThatDoesNotExistWhenThereIsAUniquePropertyConstraint()
+        public void shouldNotDropPropertyExistenceConstraintThatDoesNotExistWhenThereIsAUniquePropertyConstraint()
                 throws Exception
         {
             // given
@@ -161,7 +161,7 @@ public class ConstraintCreationIT
             {
                 SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
                 statement.constraintDrop(
-                        new MandatoryNodePropertyConstraint( constraint.label(), constraint.propertyKey() ) );
+                        new NodePropertyExistenceConstraint( constraint.label(), constraint.propertyKey() ) );
 
                 fail( "expected exception" );
             }
@@ -187,8 +187,8 @@ public class ConstraintCreationIT
         }
     }
 
-    public static class MandatoryRelationshipPropertyConstraintCreationIT
-            extends AbstractConstraintCreationIT<MandatoryRelationshipPropertyConstraint>
+    public static class RelationshipPropertyExistenceConstraintCreationIT
+            extends AbstractConstraintCreationIT<RelationshipPropertyExistenceConstraint>
     {
         @Override
         int initializeLabelOrRelType( SchemaWriteOperations writeOps, String name ) throws KernelException
@@ -197,10 +197,10 @@ public class ConstraintCreationIT
         }
 
         @Override
-        MandatoryRelationshipPropertyConstraint createConstraint( SchemaWriteOperations writeOps, int type,
+        RelationshipPropertyExistenceConstraint createConstraint( SchemaWriteOperations writeOps, int type,
                 int property ) throws Exception
         {
-            return writeOps.mandatoryRelationshipPropertyConstraintCreate( type, property );
+            return writeOps.relationshipPropertyExistenceConstraintCreate( type, property );
         }
 
         @Override
@@ -210,13 +210,13 @@ public class ConstraintCreationIT
         }
 
         @Override
-        MandatoryRelationshipPropertyConstraint newConstraintObject( int type, int property )
+        RelationshipPropertyExistenceConstraint newConstraintObject( int type, int property )
         {
-            return new MandatoryRelationshipPropertyConstraint( type, property );
+            return new RelationshipPropertyExistenceConstraint( type, property );
         }
 
         @Override
-        void dropConstraint( SchemaWriteOperations writeOps, MandatoryRelationshipPropertyConstraint constraint )
+        void dropConstraint( SchemaWriteOperations writeOps, RelationshipPropertyExistenceConstraint constraint )
                 throws Exception
         {
             writeOps.constraintDrop( constraint );
@@ -389,14 +389,14 @@ public class ConstraintCreationIT
         }
 
         @Test
-        public void shouldNotDropUniquePropertyConstraintThatDoesNotExistWhenThereIsAMandatoryPropertyConstraint()
+        public void shouldNotDropUniquePropertyConstraintThatDoesNotExistWhenThereIsAPropertyExistenceConstraint()
                 throws Exception
         {
             // given
-            MandatoryNodePropertyConstraint constraint;
+            NodePropertyExistenceConstraint constraint;
             {
                 SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-                constraint = statement.mandatoryNodePropertyConstraintCreate( typeId, propertyKeyId );
+                constraint = statement.nodePropertyExistenceConstraintCreate( typeId, propertyKeyId );
                 commit();
             }
 

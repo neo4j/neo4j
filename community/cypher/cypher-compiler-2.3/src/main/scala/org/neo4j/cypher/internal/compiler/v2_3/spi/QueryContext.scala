@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.spi
 
 import org.neo4j.cypher.internal.compiler.v2_3.InternalQueryStatistics
 import org.neo4j.graphdb._
-import org.neo4j.kernel.api.constraints.{MandatoryNodePropertyConstraint, MandatoryRelationshipPropertyConstraint, UniquenessConstraint}
+import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 /*
@@ -95,13 +95,13 @@ trait QueryContext extends TokenContext {
 
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int)
 
-  def createNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[MandatoryNodePropertyConstraint]
+  def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[NodePropertyExistenceConstraint]
 
-  def dropNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int)
+  def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int)
 
-  def createRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int): IdempotentResult[MandatoryRelationshipPropertyConstraint]
+  def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): IdempotentResult[RelationshipPropertyExistenceConstraint]
 
-  def dropRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int)
+  def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int)
 
   def getOptStatistics: Option[InternalQueryStatistics] = None
 

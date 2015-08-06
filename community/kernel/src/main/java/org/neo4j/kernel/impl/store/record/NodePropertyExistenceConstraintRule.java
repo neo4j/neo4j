@@ -22,35 +22,35 @@ package org.neo4j.kernel.impl.store.record;
 
 import java.nio.ByteBuffer;
 
-import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 
-public class MandatoryNodePropertyConstraintRule extends NodePropertyConstraintRule
+public class NodePropertyExistenceConstraintRule extends NodePropertyConstraintRule
 {
     private final int propertyKeyId;
 
-    public static MandatoryNodePropertyConstraintRule mandatoryNodePropertyConstraintRule( long id, int labelId,
+    public static NodePropertyExistenceConstraintRule nodePropertyExistenceConstraintRule( long id, int labelId,
             int propertyKeyId )
     {
-        return new MandatoryNodePropertyConstraintRule( id, labelId, propertyKeyId );
+        return new NodePropertyExistenceConstraintRule( id, labelId, propertyKeyId );
     }
 
-    public static MandatoryNodePropertyConstraintRule readMandatoryNodePropertyConstraintRule( long id, int labelId,
+    public static NodePropertyExistenceConstraintRule readNodePropertyExistenceConstraintRule( long id, int labelId,
             ByteBuffer buffer )
     {
-        return new MandatoryNodePropertyConstraintRule( id, labelId, readPropertyKey( buffer ) );
+        return new NodePropertyExistenceConstraintRule( id, labelId, readPropertyKey( buffer ) );
     }
 
-    private MandatoryNodePropertyConstraintRule( long id, int labelId, int propertyKeyId )
+    private NodePropertyExistenceConstraintRule( long id, int labelId, int propertyKeyId )
     {
-        super( id, labelId, Kind.MANDATORY_NODE_PROPERTY_CONSTRAINT );
+        super( id, labelId, Kind.NODE_PROPERTY_EXISTENCE_CONSTRAINT );
         this.propertyKeyId = propertyKeyId;
     }
 
     @Override
     public String toString()
     {
-        return "MandatoryNodePropertyConstraintRule[id=" + id + ", label=" + label + ", kind=" + kind +
+        return "NodePropertyExistenceConstraintRule[id=" + id + ", label=" + label + ", kind=" + kind +
                ", propertyKeyId=" + propertyKeyId + "]";
     }
 
@@ -83,7 +83,7 @@ public class MandatoryNodePropertyConstraintRule extends NodePropertyConstraintR
     @Override
     public NodePropertyConstraint toConstraint()
     {
-        return new MandatoryNodePropertyConstraint( getLabel(), getPropertyKey() );
+        return new NodePropertyExistenceConstraint( getLabel(), getPropertyKey() );
     }
 
     @Override
@@ -107,7 +107,7 @@ public class MandatoryNodePropertyConstraintRule extends NodePropertyConstraintR
         {
             return false;
         }
-        return propertyKeyId == ((MandatoryNodePropertyConstraintRule) o).propertyKeyId;
+        return propertyKeyId == ((NodePropertyExistenceConstraintRule) o).propertyKeyId;
 
     }
 

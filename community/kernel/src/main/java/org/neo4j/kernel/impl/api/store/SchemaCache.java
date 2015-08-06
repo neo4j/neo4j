@@ -80,7 +80,7 @@ public class SchemaCache
             @Override
             public boolean test( SchemaRule schemaRule )
             {
-                return schemaRule.getKind() != SchemaRule.Kind.MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT &&
+                return schemaRule.getKind() != SchemaRule.Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT &&
                        schemaRule.getLabel() == label;
             }
         }, schemaRules() );
@@ -93,7 +93,7 @@ public class SchemaCache
             @Override
             public boolean test( SchemaRule schemaRule )
             {
-                return schemaRule.getKind() == SchemaRule.Kind.MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT &&
+                return schemaRule.getKind() == SchemaRule.Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT &&
                        schemaRule.getRelationshipType() == typeId;
             }
         }, schemaRules() );

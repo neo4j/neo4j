@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api;
 
-import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -46,10 +46,10 @@ interface SchemaWrite
     UniquenessConstraint uniquePropertyConstraintCreate( int labelId, int propertyKeyId )
             throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException;
 
-    MandatoryNodePropertyConstraint mandatoryNodePropertyConstraintCreate( int labelId, int propertyKeyId )
+    NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( int labelId, int propertyKeyId )
             throws CreateConstraintFailureException, AlreadyConstrainedException;
 
-    MandatoryRelationshipPropertyConstraint mandatoryRelationshipPropertyConstraintCreate( int relationshipTypeId,
+    RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate( int relationshipTypeId,
             int propertyKeyId ) throws CreateConstraintFailureException, AlreadyConstrainedException;
 
     void constraintDrop( NodePropertyConstraint constraint ) throws DropConstraintFailureException;

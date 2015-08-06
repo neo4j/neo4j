@@ -26,7 +26,7 @@ package org.neo4j.graphdb.schema;
 public enum ConstraintType
 {
     UNIQUENESS,
-    MANDATORY_NODE_PROPERTY,
-    MANDATORY_RELATIONSHIP_PROPERTY,
+    NODE_PROPERTY_EXISTENCE,
+    RELATIONSHIP_PROPERTY_EXISTENCE,
     ;
 }
