@@ -96,6 +96,7 @@ public class UniquePropertyConstraintRule extends NodePropertyConstraintRule
         return buffer.getLong();
     }
 
+    @Override
     public boolean containsPropertyKeyId( int propertyKeyId )
     {
         for ( int keyId : propertyKeyIds )

@@ -171,6 +171,10 @@ public interface ConsistencyReport
         @Documented
         void labelNotInUse( LabelTokenRecord label );
 
+        /** The relationship type token record referenced from the schema is not in use. */
+        @Documented
+        void relationshipTypeNotInUse( RelationshipTypeTokenRecord relationshipType );
+
         /** The property key token record is not in use. */
         @Documented
         void propertyKeyNotInUse( PropertyKeyTokenRecord propertyKey );
@@ -195,7 +199,7 @@ public interface ConsistencyReport
         void duplicateObligation( DynamicRecord record );
 
         /**
-         * This record contains an index rule which has the same content as the index rule contained in the
+         * This record contains a schema rule which has the same content as the schema rule contained in the
          * record given as parameter
          */
         @Documented
