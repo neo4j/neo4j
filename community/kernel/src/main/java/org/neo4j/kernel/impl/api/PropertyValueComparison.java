@@ -42,13 +42,13 @@ public class PropertyValueComparison
     // This compares two values that have the same super type according to that super type's comparator
     // Any values that fall under OTHER, are compared by ObjectUtil.toString
     // NULL is not supported
-    public final static Comparator<Object> COMPARE_VALUES = new PropertyValuesComparator();
+    public final static PropertyValueComparator<Object> COMPARE_VALUES = new AnyPropertyValueComparator();
 
-    public final static Comparator<Number> COMPARE_NUMBERS = new NumberComparator();
+    public final static PropertyValueComparator<Number> COMPARE_NUMBERS = new NumberPropertyValueComparator();
 
-    public final static Comparator<Object> COMPARE_STRINGS = new StringComparator();
+    public final static PropertyValueComparator<Object> COMPARE_STRINGS = new StringPropertyValueComparator();
 
-    public final static Comparator<SuperType> COMPARE_SUPER_TYPE = new SuperTypeComparator();
+    public final static PropertyValueComparator<SuperType> COMPARE_SUPER_TYPE = new PropertyValueSuperTypeComparator();
 
     public enum SuperType
     {
@@ -140,7 +140,7 @@ public class PropertyValueComparison
         }
     }
 
-    private static class PropertyValuesComparator implements Comparator<Object>
+    private static class AnyPropertyValueComparator extends PropertyValueComparator<Object>
     {
         @Override
         public int compare( Object left, Object right )
@@ -176,7 +176,7 @@ public class PropertyValueComparison
         }
     }
 
-    private static class SuperTypeComparator implements Comparator<SuperType>
+    private static class PropertyValueSuperTypeComparator extends PropertyValueComparator<SuperType>
     {
         @Override
         public int compare( SuperType left, SuperType right )
@@ -185,7 +185,7 @@ public class PropertyValueComparison
         }
     }
 
-    private static class NumberComparator implements Comparator<Number>
+    private static class NumberPropertyValueComparator extends PropertyValueComparator<Number>
     {
         @SuppressWarnings("unchecked")
         @Override
@@ -282,7 +282,7 @@ public class PropertyValueComparison
         }
     }
 
-    private static class StringComparator implements Comparator<Object>
+    private static class StringPropertyValueComparator extends PropertyValueComparator<Object>
     {
         @Override
         public int compare( Object left, Object right )
