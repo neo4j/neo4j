@@ -20,6 +20,16 @@
 package org.neo4j.cypher.internal.helpers
 
 trait RandomizedTestSupport {
-  val N: Double  = testRandomizer.nextDouble() * 1E6
+
+  /**
+   * Minimum number of nodes in the database.
+   * This value is needed for correct cardinality estimations.
+   */
+  private val MIN_N = 1500
+
+  /**
+   * Total number of nodes in the database.
+   */
+  val N: Double = testRandomizer.nextDouble() * 1E6 + MIN_N
   println("N: " + N)
 }
