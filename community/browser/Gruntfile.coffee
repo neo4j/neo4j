@@ -277,7 +277,7 @@ module.exports = (grunt) ->
             dot: true
             cwd: "<%= yeoman.app %>"
             dest: "<%= yeoman.dist %>/fonts"
-            src: ["components/**/*.{otf,woff,ttf,svg}"]
+            src: ["components/**/*.{otf,woff,woff2,ttf,svg}"]
         }]
     shell:
       dirListing:
