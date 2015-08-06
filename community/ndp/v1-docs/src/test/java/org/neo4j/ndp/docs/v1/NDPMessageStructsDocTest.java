@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
+import org.neo4j.ndp.messaging.v1.Neo4jPack;
 import org.neo4j.ndp.messaging.v1.RecordingByteChannel;
 import org.neo4j.ndp.messaging.v1.RecordingMessageHandler;
 import org.neo4j.ndp.messaging.v1.util.ArrayByteChannel;
@@ -81,7 +82,7 @@ public class NDPMessageStructsDocTest
         // Then it should get interpreted as the documented message
         RecordingMessageHandler messages = new RecordingMessageHandler();
         PackStreamMessageFormatV1.Reader reader = new PackStreamMessageFormatV1.Reader(
-                new PackStream.Unpacker(
+                new Neo4jPack.Unpacker(
                         new BufferedChannelInput( 128 ).reset( new ArrayByteChannel( ch.getBytes() ) ) ) );
         reader.read( messages );
 

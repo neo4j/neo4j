@@ -19,26 +19,26 @@
  */
 package org.neo4j.ndp.docs.v1;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
+import org.neo4j.ndp.messaging.v1.Neo4jPack;
 import org.neo4j.ndp.messaging.v1.RecordingByteChannel;
 import org.neo4j.ndp.messaging.v1.RecordingMessageHandler;
 import org.neo4j.ndp.messaging.v1.message.Message;
-import org.neo4j.ndp.runtime.internal.Neo4jError;
+import org.neo4j.ndp.runtime.spi.ImmutableRecord;
 import org.neo4j.ndp.transport.socket.ChunkedInput;
 import org.neo4j.packstream.BufferedChannelOutput;
-import org.neo4j.packstream.PackStream;
-import org.neo4j.ndp.runtime.spi.ImmutableRecord;
 
 import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.ndp.transport.socket.Chunker.chunk;
 
@@ -62,8 +62,9 @@ public class DocSerialization
     public static byte[] pack( String value ) throws IOException
     {
         RecordingByteChannel ch = new RecordingByteChannel();
-        PackStream.Packer packer = new PackStream.Packer( new BufferedChannelOutput( ch, 128 ) );
-        PackStreamMessageFormatV1.Writer writer = new PackStreamMessageFormatV1.Writer( packer, PackStreamMessageFormatV1.Writer.NO_OP );
+        Neo4jPack.Packer packer = new Neo4jPack.Packer( new BufferedChannelOutput( ch, 128 ) );
+        PackStreamMessageFormatV1.Writer writer = new PackStreamMessageFormatV1.Writer(
+                packer, PackStreamMessageFormatV1.Writer.NO_OP );
 
         pack( value, packer, writer );
 
@@ -77,7 +78,7 @@ public class DocSerialization
      * @param writer a message writer that delegates to the packer, for packing protocol messages
      * @throws IOException
      */
-    public static void pack( String value, PackStream.Packer packer, PackStreamMessageFormatV1.Writer writer )
+    public static void pack( String value, Neo4jPack.Packer packer, PackStreamMessageFormatV1.Writer writer )
             throws IOException
     {
         // NOTE: This currently has hard-coded handling of specific messages, it did not seem worth the time
@@ -221,7 +222,7 @@ public class DocSerialization
     {
         ChunkedInput input = new ChunkedInput();
         PackStreamMessageFormatV1.Reader reader =
-                new PackStreamMessageFormatV1.Reader( new PackStream.Unpacker(  input ) );
+                new PackStreamMessageFormatV1.Reader( new Neo4jPack.Unpacker( input ) );
         RecordingMessageHandler messages = new RecordingMessageHandler();
 
         ByteBuf buf = Unpooled.wrappedBuffer( data );

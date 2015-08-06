@@ -19,15 +19,54 @@
  */
 package org.neo4j.ndp.messaging.v1.infrastructure;
 
+import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.ndp.messaging.v1.Neo4jPack;
 
 public class ValueRelationship implements Relationship
 {
+    private static final int STRUCT_FIELD_COUNT = 5;
+
+    public static void pack( Neo4jPack.Packer packer, Relationship rel )
+            throws IOException
+    {
+        packer.packStructHeader( STRUCT_FIELD_COUNT, Neo4jPack.RELATIONSHIP );
+        packer.packRelationshipIdentity( rel.getId() );
+        packer.packNodeIdentity( rel.getStartNode().getId() );
+        packer.packNodeIdentity( rel.getEndNode().getId() );
+        packer.pack( rel.getType().name() );
+        packer.packProperties( rel );
+    }
+
+    public static ValueRelationship unpack( Neo4jPack.Unpacker unpacker )
+            throws IOException
+    {
+        assert unpacker.unpackStructHeader() == STRUCT_FIELD_COUNT;
+        assert unpacker.unpackStructSignature() == Neo4jPack.RELATIONSHIP;
+        return unpackFields( unpacker );
+    }
+
+    public static ValueRelationship unpackFields( Neo4jPack.Unpacker unpacker )
+            throws IOException
+    {
+        long relId = unpacker.unpackRelationshipIdentity();
+        long startNodeId = unpacker.unpackNodeIdentity();
+        long endNodeId = unpacker.unpackNodeIdentity();
+        String relTypeName = unpacker.unpackText();
+
+        Map<String, Object> props = unpacker.unpackProperties();
+
+        RelationshipType relType = DynamicRelationshipType.withName( relTypeName );
+
+        return new ValueRelationship( relId, startNodeId, endNodeId, relType, props );
+    }
+
     private final long id;
     private final long startNode;
     private final long endNode;

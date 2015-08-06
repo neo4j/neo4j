@@ -19,6 +19,10 @@
  */
 package org.neo4j.ndp.docs.v1;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -26,16 +30,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.ndp.messaging.v1.MessageFormat;
 import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
+import org.neo4j.ndp.messaging.v1.Neo4jPack;
 import org.neo4j.ndp.messaging.v1.RecordingByteChannel;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueNode;
-import org.neo4j.ndp.messaging.v1.infrastructure.ValuePath;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueRelationship;
 import org.neo4j.ndp.messaging.v1.message.RecordMessage;
 import org.neo4j.ndp.messaging.v1.util.ArrayByteChannel;
@@ -45,14 +45,17 @@ import org.neo4j.packstream.PackStream;
 import org.neo4j.packstream.PackType;
 
 import static java.util.Arrays.asList;
+
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.ndp.docs.v1.DocTable.table;
 import static org.neo4j.ndp.docs.v1.DocsRepository.docs;
 import static org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1.Writer.NO_OP;
+import static org.neo4j.ndp.messaging.v1.example.Paths.PATH_WITH_LENGTH_TWO;
 import static org.neo4j.ndp.runtime.spi.Records.record;
 
 /** This tests that Neo4j value mappings described in the documentation work the way we say they do. */
@@ -83,7 +86,7 @@ public class NDPValueDocTest
         assertThat( serialize( neoValue( type ) ), isPackstreamType( type ) );
     }
 
-    private Matcher<? super byte[]> isPackstreamType( final String packStreamType )
+    public static Matcher<? super byte[]> isPackstreamType( final String packStreamType )
     {
         return new TypeSafeMatcher<byte[]>()
         {
@@ -108,13 +111,13 @@ public class NDPValueDocTest
                         char sig = unpacker.unpackStructSignature();
                         switch ( sig )
                         {
-                        case PackStreamMessageFormatV1.NODE:
+                        case Neo4jPack.NODE:
                             structName = "node";
                             break;
-                        case PackStreamMessageFormatV1.RELATIONSHIP:
+                        case Neo4jPack.RELATIONSHIP:
                             structName = "relationship";
                             break;
-                        case PackStreamMessageFormatV1.PATH:
+                        case Neo4jPack.PATH:
                             structName = "path";
                             break;
                         default:
@@ -179,7 +182,7 @@ public class NDPValueDocTest
         }
         else if ( type.equalsIgnoreCase( "path" ) )
         {
-            return new ValuePath();
+            return PATH_WITH_LENGTH_TWO;
         }
         else if ( type.equalsIgnoreCase( "null" ) )
         {
@@ -200,7 +203,7 @@ public class NDPValueDocTest
         RecordingByteChannel channel = new RecordingByteChannel();
         RecordMessage msg = new RecordMessage( record( neoValue ) );
         MessageFormat.Writer writer = new PackStreamMessageFormatV1.Writer(
-                new PackStream.Packer( new BufferedChannelOutput( channel ) ), NO_OP );
+                new Neo4jPack.Packer( new BufferedChannelOutput( channel ) ), NO_OP );
 
         writer.write( msg ).flush();
 

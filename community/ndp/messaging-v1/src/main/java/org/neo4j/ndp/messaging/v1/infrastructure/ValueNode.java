@@ -19,10 +19,15 @@
  */
 package org.neo4j.ndp.messaging.v1.infrastructure;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -31,14 +36,65 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.ndp.messaging.v1.Neo4jPack;
 
 public class ValueNode implements Node
 {
+    private static final int STRUCT_FIELD_COUNT = 3;
+
+    public static void pack( Neo4jPack.Packer packer, Node node )
+            throws IOException
+    {
+        packer.packStructHeader( STRUCT_FIELD_COUNT, Neo4jPack.NODE );
+        packer.packNodeIdentity( node.getId() );
+        Collection<Label> collectedLabels = Iterables.toList( node.getLabels() );
+        packer.packListHeader( collectedLabels.size() );
+        for ( Label label : collectedLabels )
+        {
+            packer.pack( label.name() );
+        }
+        packer.packProperties( node );
+    }
+
+    public static ValueNode unpack( Neo4jPack.Unpacker unpacker )
+            throws IOException
+    {
+        assert unpacker.unpackStructHeader() == STRUCT_FIELD_COUNT;
+        assert unpacker.unpackStructSignature() == Neo4jPack.NODE;
+        return unpackFields( unpacker );
+    }
+
+    public static ValueNode unpackFields( Neo4jPack.Unpacker unpacker )
+            throws IOException
+    {
+        long id = unpacker.unpackNodeIdentity();
+
+        int numLabels = (int) unpacker.unpackListHeader();
+        List<Label> labels;
+        if ( numLabels > 0 )
+        {
+            labels = new ArrayList<>( numLabels );
+            for ( int i = 0; i < numLabels; i++ )
+            {
+                labels.add( DynamicLabel.label( unpacker.unpackText() ) );
+            }
+        }
+        else
+        {
+            labels = Collections.emptyList();
+        }
+
+        Map<String, Object> props = unpacker.unpackProperties();
+
+        return new ValueNode( id, labels, props );
+    }
+
     private final long id;
-    private final List<Label> labels;
+    private final Collection<Label> labels;
     private final Map<String,Object> props;
 
-    public ValueNode( long id, List<Label> labels, Map<String,Object> props )
+    public ValueNode( long id, Collection<Label> labels, Map<String,Object> props )
     {
         this.id = id;
         this.labels = labels;
@@ -283,4 +339,5 @@ public class ValueNode implements Node
                ", props=" + props +
                '}';
     }
+
 }

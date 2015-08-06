@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.ndp.messaging.v1.MessageFormat;
 import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
+import org.neo4j.ndp.messaging.v1.Neo4jPack;
 import org.neo4j.ndp.messaging.v1.RecordingByteChannel;
 import org.neo4j.ndp.messaging.v1.RecordingMessageHandler;
 import org.neo4j.ndp.messaging.v1.message.FailureMessage;
@@ -41,7 +42,6 @@ import org.neo4j.ndp.messaging.v1.message.RecordMessage;
 import org.neo4j.ndp.messaging.v1.message.SuccessMessage;
 import org.neo4j.packstream.BufferedChannelInput;
 import org.neo4j.packstream.BufferedChannelOutput;
-import org.neo4j.packstream.PackStream;
 import org.neo4j.ndp.runtime.spi.Record;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -185,7 +185,7 @@ public class MessageMatchers
     public static byte[] serialize( Message... messages ) throws IOException
     {
         final RecordingByteChannel rawData = new RecordingByteChannel();
-        final MessageFormat.Writer packer = new PackStreamMessageFormatV1.Writer( new PackStream.Packer( new
+        final MessageFormat.Writer packer = new PackStreamMessageFormatV1.Writer( new Neo4jPack.Packer( new
                 BufferedChannelOutput( rawData )), NO_OP );
 
         for ( Message message : messages )
@@ -247,7 +247,7 @@ public class MessageMatchers
     private static PackStreamMessageFormatV1.Reader reader( byte[] bytes )
     {
         return new PackStreamMessageFormatV1.Reader(
-                    new PackStream.Unpacker( new BufferedChannelInput( 128 ).reset( new ArrayByteChannel( bytes ) ) ) );
+                    new Neo4jPack.Unpacker( new BufferedChannelInput( 128 ).reset( new ArrayByteChannel( bytes ) ) ) );
     }
 
 }

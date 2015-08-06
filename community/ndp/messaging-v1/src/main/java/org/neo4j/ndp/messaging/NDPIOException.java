@@ -27,10 +27,15 @@ public class NDPIOException extends IOException implements Status.HasStatus
 {
     private final Status status;
 
+    public NDPIOException( Status status, String message, Throwable cause )
+    {
+        super(message, cause);
+        this.status = status;
+    }
+
     public NDPIOException( Status status, String message )
     {
-        super(message);
-        this.status = status;
+        this(status, message, null);
     }
 
     @Override

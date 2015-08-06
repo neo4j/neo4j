@@ -19,18 +19,18 @@
  */
 package org.neo4j.ndp.messaging.v1;
 
-import org.junit.Test;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Path;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueNode;
-import org.neo4j.ndp.messaging.v1.infrastructure.ValuePath;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueRelationship;
 import org.neo4j.ndp.messaging.v1.message.AcknowledgeFailureMessage;
 import org.neo4j.ndp.messaging.v1.message.DiscardAllMessage;
@@ -44,14 +44,16 @@ import org.neo4j.ndp.messaging.v1.message.RunMessage;
 import org.neo4j.ndp.messaging.v1.message.SuccessMessage;
 import org.neo4j.packstream.BufferedChannelInput;
 import org.neo4j.packstream.BufferedChannelOutput;
-import org.neo4j.packstream.PackStream;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1.Writer.NO_OP;
+import static org.neo4j.ndp.messaging.v1.example.Paths.ALL_PATHS;
 import static org.neo4j.ndp.runtime.spi.Records.record;
 
 public class MessageFormatTest
@@ -67,7 +69,7 @@ public class MessageFormatTest
         assertSerializes( new FailureMessage( Status.General.UnknownFailure, "Err" ) );
         assertSerializes( new IgnoredMessage() );
         assertSerializes( new AcknowledgeFailureMessage() );
-        assertSerializes( new InitializeMessage("MyClient/1.0") );
+        assertSerializes( new InitializeMessage( "MyClient/1.0" ) );
     }
 
     @Test
@@ -132,16 +134,12 @@ public class MessageFormatTest
     }
 
     @Test
-    public void shouldSerializePath() throws Throwable
+    public void shouldSerializePaths() throws Throwable
     {
-        assertSerializesNeoValue( new ValuePath(
-                new ValueNode( 12l, asList( label( "User" ), label( "Banana" ) ),
-                        map( "name", "Bob", "age", 14 ) ),
-                new ValueRelationship( 1l, 12l, 13l, DynamicRelationshipType.withName( "KNOWS" ),
-                        map( "name", "Bob", "age", 14 ) ),
-                new ValueNode( 13l, asList( label( "User" ), label( "Banana" ) ),
-                        map( "name", "Bob", "age", new int[]{1, 2, 3} ) )
-        ) );
+        for ( Path path : ALL_PATHS )
+        {
+            assertSerializesNeoValue( path );
+        }
     }
 
     private void assertSerializes( Message msg ) throws IOException
@@ -153,9 +151,9 @@ public class MessageFormatTest
     {
         RecordingByteChannel channel = new RecordingByteChannel();
         MessageFormat.Reader reader = new PackStreamMessageFormatV1.Reader(
-                new PackStream.Unpacker( new BufferedChannelInput( 16 ).reset( channel ) ) );
+                new Neo4jPack.Unpacker( new BufferedChannelInput( 16 ).reset( channel ) ) );
         MessageFormat.Writer writer = new PackStreamMessageFormatV1.Writer(
-                new PackStream.Packer( new BufferedChannelOutput( channel ) ), NO_OP );
+                new Neo4jPack.Packer( new BufferedChannelOutput( channel ) ), NO_OP );
 
         writer.write( msg ).flush();
 

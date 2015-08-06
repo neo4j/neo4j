@@ -19,13 +19,16 @@
  */
 package org.neo4j.ndp.messaging.v1.infrastructure;
 
-public class ValueParser
-{
-    private ValueParser(){}
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 
-    public static long parseId( String urn )
-    {
-        String[] split = urn.split( "/" );
-        return Long.parseLong( split[split.length - 1] );
-    }
+public interface UnboundRelationship extends Relationship
+{
+
+    /**
+     * Bind this relationship to a pair of nodes to create a full relationship.
+     *
+     */
+    Relationship bind( Node startNode, Node endNode );
+
 }
