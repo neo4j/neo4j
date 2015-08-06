@@ -34,6 +34,7 @@ o Cypher may now use full index scans to solve queries containing has(n.prop) if
 o DbHits for property lookups reduced to one per lookup
 o Identifiers are properly exposed in nested foreach clauses
 o Better eviction policy for the plan cache
+o Fixes #4673 - index seeks experience nulls from IN
 
 2.2.3
 -----

@@ -67,6 +67,14 @@ o Added ability to skip duplicate nodes, i.e. multiple nodes with the same ID in
   using --bad-tolerance=<max bad entries>. Skipping of bad relationships/nodes can be enabled/disabled
   individually with --skip-duplicate-nodes and --skip-bad-relationships.
 
+2.2.4
+-----
+Cypher:
+o DbHits for property lookups reduced to one per lookup
+o Identifiers are properly exposed in nested foreach clauses
+o Better eviction policy for the plan cache
+o Fixes #4673 - index seeks experience nulls from IN
+
 2.2.3
 -----
 Browser:
