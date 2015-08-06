@@ -119,15 +119,7 @@ public abstract class EigenvectorCentralityBase implements EigenvectorCentrality
             return;
         }
         doneCalculation = true;
-        values = new HashMap<Node,Double>();
-        totalIterations = 0;
-        // generate a random start vector
-        Random random = new Random( System.currentTimeMillis() );
-        for ( Node node : nodeSet )
-        {
-            values.put( node, random.nextDouble() );
-        }
-        normalize( values );
+
         runIterations( maxIterations );
     }
 
@@ -142,25 +134,93 @@ public abstract class EigenvectorCentralityBase implements EigenvectorCentrality
      * @return the number of iterations performed. if this is lower than the
      *         given maxNrIterations the desired precision has been reached.
      */
-    public int runIterations( int maxNrIterations )
+    protected int runIterations( int maxNrIterations )
     {
-        if ( maxNrIterations <= 0 )
-        {
-            return 0;
-        }
-        int localIterations = 0;
-        while ( localIterations < maxNrIterations )
-        {
-            Map<Node,Double> oldValues = values;
-            localIterations += runInternalIteration();
-            if ( timeToStop( oldValues, values ) )
+        while ( true ) {
+            values = new HashMap<Node,Double>();
+            totalIterations = 0;
+
+            // generate a random start vector
+            Random random = new Random( System.currentTimeMillis() );
+            for ( Node node : nodeSet )
             {
-                break;
+                values.put( node, random.nextDouble() );
+            }
+            normalize( values );
+
+            if ( maxNrIterations <= 0 )
+            {
+                return 0;
+            }
+            int localIterations = 0;
+
+            // Do iterations
+            while ( localIterations < maxNrIterations )
+            {
+                Map<Node,Double> oldValues = values;
+                localIterations += runInternalIteration();
+                if ( timeToStop( oldValues, values ) )
+                {
+                    break;
+                }
+            }
+
+            // Check result
+            if ( makeSureValueCorrespondsToMostSignificantEigenvector() )
+            {
+                return localIterations;
+            }
+            else
+            {
+                // Value has not converged to an eigenvector that corresponds to the highest eigenvalue.
+                // Restart calculation.
+            }
+        }
+    }
+
+    private boolean makeSureValueCorrespondsToMostSignificantEigenvector()
+    {
+        int sign = 0;
+        int otherSign = 0;
+        Iterator<Node> iter = nodeSet.iterator();
+        Node next;
+        Double value;
+        while ( iter.hasNext() )
+        {
+            next = iter.next();
+            value = values.get( next );
+            if ( value == null )
+            {
+                values.put( next, 0d );
+                value = 0d;
+            }
+            otherSign = value < - precision ? -1 : value > precision ? 1 : 0;
+            if ( otherSign != 0 )
+            {
+                if ( sign == 0 )
+                {
+                    sign = otherSign;
+                }
+                else
+                {
+                    if ( sign != otherSign )
+                    {
+                        return false;
+                    }
+                }
             }
         }
 
-        changeSignBasedOnFirstNoneZeroValue();
-        return localIterations;
+        // If the first none zero value is negative (possibly the whole vector), negate
+        // the whole vector
+        if ( sign < 0 )
+        {
+            for ( Node node : nodeSet )
+            {
+                values.put( node, -values.get( node ) );
+            }
+        }
+        return true;
     }
 
     /**
@@ -260,41 +320,6 @@ public abstract class EigenvectorCentralityBase implements EigenvectorCentrality
             }
         }
         return true;
-    }
-
-    /**
-     * Search for first none zero value in values and shift sign on all values if negative.
-     * Else do nothing.
-     */
-    protected void changeSignBasedOnFirstNoneZeroValue()
-    {
-        double firstNoneZeroValue = 0;
-        Iterator<Node> iter = nodeSet.iterator();
-        while ( iter.hasNext() )
-        {
-            Node next = iter.next();
-            Double value = values.get( next );
-            if ( value == null )
-            {
-                values.put( next, 0d );
-                value = 0d;
-            }
-            if ( value < -1E-8 || value > 1E-8 )
-            {
-                firstNoneZeroValue = value;
-                break;
-            }
-        }
-
-        // If the first none zero value is negative (possibly the whole vector), negate
-        // the whole vector
-        if ( firstNoneZeroValue < 0 )
-        {
-            for ( Node node : nodeSet )
-            {
-                values.put( node, -values.get( node ) );
-            }
-        }
     }
 
     /**

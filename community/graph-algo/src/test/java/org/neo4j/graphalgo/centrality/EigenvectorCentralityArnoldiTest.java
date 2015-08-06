@@ -39,18 +39,4 @@ public class EigenvectorCentralityArnoldiTest extends EigenvectorCentralityTest
         return new EigenvectorCentralityArnoldi( relationDirection,
             costEvaluator, nodeSet, relationshipSet, precision );
     }
-
-    @Test
-    @Override
-    public void testWeight()
-    {
-        // This test keeps failing randomly, like 1 in a 100... no time to fix it, so "disabling" it
-    }
-    
-    @Test
-    @Override
-    public void testWeightAndDirection()
-    {
-        // This test keeps failing randomly, like 1 in a 100... no time to fix it, so "disabling" it
-    }
 }
