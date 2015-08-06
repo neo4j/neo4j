@@ -19,22 +19,28 @@
  */
 package org.neo4j.ha;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.neo4j.consistency.ConsistencyCheckService;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
@@ -42,6 +48,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 import static org.neo4j.test.TargetDirectory.forTest;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 public class HaCacheIT
@@ -123,6 +130,99 @@ public class HaCacheIT
         {
             manager.shutdown();
         }
+    }
+
+    /*
+     * This test has been introduced to reproduce an inconsistent issue present in 2.2.2 and it can reproduce the
+     * problem at every run.
+     *
+     * The problem details are the following:
+     * - adding a property to the node from a slave
+     * - changing such introduced property from the master
+     * - causes to introduce twice the property key in the property chain
+     *
+     * The original issue in 2.2.2 was caused by a cache poisoning (the cache on the master didn't contain the added
+     * property from the slave) which cannot be reproduced in later versions of the product.
+     *
+     * This test has been added only to make sure we do not regress and introduce this problem once again.
+     */
+    @Test
+    public void duplicatePropertyWhenAddingChangingAPropertyFromSlaveAndMasterRespectively() throws Throwable
+    {
+        File storeDir = root.directory( "ha-cluster" );
+        FileUtils.deleteRecursively( storeDir );
+        ClusterManager clusterManager = new ClusterManager(
+                new ClusterManager.Builder( storeDir ).withProvider( clusterOfSize( 3 ) )
+        );
+
+        clusterManager.start();
+        ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+        cluster.await( allSeesAllAsAvailable() );
+
+        long id = init( cluster.getMaster() );
+        cluster.sync();
+
+        GraphDatabaseService slave = cluster.getAnySlave();
+
+        // when
+        // adding a new property by writing on the slave
+        try ( Transaction tx = slave.beginTx() )
+        {
+            Node node = slave.getNodeById( id );
+            node.setProperty( "1", 1 );
+
+            tx.success();
+        }
+
+        Thread.sleep( 100 );
+
+        // and changing the introduced property on the master
+        GraphDatabaseService master = cluster.getMaster();
+        try ( Transaction tx = master.beginTx() )
+        {
+            Node node = master.getNodeById( id );
+            node.setProperty( "1", 0 );
+            tx.success();
+        }
+
+        clusterManager.stop();
+        clusterManager.shutdown();
+
+        // then there should be no property key duplications in the property chain
+        String masterStoreDir = new File( storeDir, "neo4j.ha/server1" ).getAbsolutePath();
+        ConsistencyCheckService.Result result =
+                new ConsistencyCheckService().runFullConsistencyCheck( masterStoreDir, new Config(),
+                        ProgressMonitorFactory.NONE, StringLogger.SYSTEM_ERR );
+
+        assertTrue( result.isSuccessful() );
+    }
+
+    private long init( GraphDatabaseService db )
+    {
+        // create 2 prop keys before hand and "the node" used in the test
+        long id;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node theNode = db.createNode();
+            id = theNode.getId();
+            for ( int i = 0; i < 1; i++ )
+            {
+                Node node = db.createNode();
+                node.setProperty( "" + i, "" + i );
+            }
+            tx.success();
+        }
+
+
+        // set one property on the node
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.getNodeById( id );
+            node.setProperty( "0", 0 );
+            tx.success();
+        }
+
+        return id;
     }
 
     private String joinLines( Iterable<String> lines )
