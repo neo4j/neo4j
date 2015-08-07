@@ -44,7 +44,7 @@ If you don't plan to build the browser (for example by using -DskipBrowser), the
 * A plain `mvn clean install` will only build the individual jar files. 
 * Test execution is, of course, part of the build.
 * To add execution of integration tests, use: `mvn clean install -DrunITs`.
-* In case you just want the jars, without compiling the tests, this is for you: `mvn clean install -DminimalBuild`.
+* In case you just want the jars, without running tests, this is for you: `mvn clean install -DskipTests`.
 * To skip building the browser module, use `-DskipBrowser` (note that you might not be able to build the server without it).
 * To build everything, including running all tests, producing documentation and assembling product packages, use `mvn clean install -DfullBuild`.
 * To build the documentation see the link:manual/[Neo4j manual].
