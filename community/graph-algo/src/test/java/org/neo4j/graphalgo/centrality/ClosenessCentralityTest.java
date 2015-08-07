@@ -116,4 +116,37 @@ public class ClosenessCentralityTest extends Neo4jAlgoTestCase
         assertCentrality( closenessCentrality, "d", 1.0 / 7 );
         assertCentrality( closenessCentrality, "e", 1.0 / 10 );
     }
+
+    @Test
+    public void isolatedNode()
+    {
+        graph.makeNode( "o" );
+        graph.makeEdgeChain( "a,b,c,a" );
+        ClosenessCentrality<Double> closenessCentrality = getCentralityAlgorithm();
+        Double o = closenessCentrality.getCentrality( graph.getNode( "o" ) );
+        Double a = closenessCentrality.getCentrality( graph.getNode( "a" ) );
+        Double b = closenessCentrality.getCentrality( graph.getNode( "b" ) );
+        Double c = closenessCentrality.getCentrality( graph.getNode( "c" ) );
+
+        assertCentrality( closenessCentrality, "o", 0d );
+        assertCentrality( closenessCentrality, "a", 0.5 );
+        assertCentrality( closenessCentrality, "b", 0.5 );
+        assertCentrality( closenessCentrality, "c", 0.5 );
+    }
+
+    @Test
+    public void isolatedCommunities()
+    {
+        graph.makeEdgeChain( "a,b,c,a" );
+        graph.makeEdgeChain( "d,e,f,d" );
+        ClosenessCentrality<Double> closenessCentrality = getCentralityAlgorithm();
+
+        assertCentrality( closenessCentrality, "a", 0.5 );
+        assertCentrality( closenessCentrality, "b", 0.5 );
+        assertCentrality( closenessCentrality, "c", 0.5 );
+
+        assertCentrality( closenessCentrality, "d", 0.5 );
+        assertCentrality( closenessCentrality, "e", 0.5 );
+        assertCentrality( closenessCentrality, "f", 0.5 );
+    }
 }

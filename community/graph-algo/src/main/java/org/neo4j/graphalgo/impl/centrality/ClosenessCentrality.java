@@ -102,15 +102,20 @@ public class ClosenessCentrality<ShortestPathCostType> extends
         ShortestPathCostType shortestPathSum = null;
         for ( Node targetNode : nodeSet )
         {
+            ShortestPathCostType cost = singleSourceShortestPath
+                    .getCost( targetNode );
+            if ( cost == null )
+            {
+                cost = zeroValue;
+            }
             if ( shortestPathSum == null )
             {
-                shortestPathSum = singleSourceShortestPath.getCost( targetNode );
+                shortestPathSum = cost;
             }
             else
             {
                 shortestPathSum = centralityAccumulator.addCosts(
-                    shortestPathSum, singleSourceShortestPath
-                        .getCost( targetNode ) );
+                    shortestPathSum, cost );
             }
         }
         // TODO: what should the result be when sum is 0 ?
