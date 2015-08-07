@@ -36,6 +36,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
+import org.neo4j.io.fs.StoreFileChannelUnwrapper;
 import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
@@ -163,7 +164,7 @@ public class SingleFilePageSwapper implements PageSwapper
             closeAndCollectExceptions( 0, e );
         }
         hasPositionLock = channels[0].getClass() == StoreFileChannel.class
-                && StoreFileChannel.unwrap( channels[0] ).getClass() == sun.nio.ch.FileChannelImpl.class;
+                && StoreFileChannelUnwrapper.unwrap( channels[0] ).getClass() == sun.nio.ch.FileChannelImpl.class;
     }
 
     private void increaseFileSizeTo( long newFileSize )
@@ -488,7 +489,7 @@ public class SingleFilePageSwapper implements PageSwapper
     private FileChannel unwrappedChannel( long startFilePageId )
     {
         StoreChannel storeChannel = channel( startFilePageId );
-        return StoreFileChannel.unwrap( storeChannel );
+        return StoreFileChannelUnwrapper.unwrap( storeChannel );
     }
 
     private long lockPositionWriteVector(
