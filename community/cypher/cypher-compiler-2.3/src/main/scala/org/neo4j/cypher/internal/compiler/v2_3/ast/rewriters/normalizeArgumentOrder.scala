@@ -33,10 +33,6 @@ case object normalizeArgumentOrder extends Rewriter {
 
   private val instance: Rewriter = Rewriter.lift {
 
-    // turn n.prop IS NOT NULL into has(n.prop)
-    case predicate @ IsNotNull(property @ Property(_, _)) =>
-      Has.asInvocation(property)(predicate.position)
-
     // move id(n) on equals to the left
     case predicate @ Equals(func@FunctionInvocation(_, _, _), _) if func.function.contains(functions.Id) =>
       predicate
@@ -55,9 +51,11 @@ case object normalizeArgumentOrder extends Rewriter {
       val lhsIsProperty = inequality.lhs.isInstanceOf[Property]
       val rhsIsProperty = inequality.rhs.isInstanceOf[Property]
       if (!lhsIsProperty && rhsIsProperty) {
-        inequality.swap
+        inequality.swapped
       } else {
         inequality
       }
   }
 }
+
+

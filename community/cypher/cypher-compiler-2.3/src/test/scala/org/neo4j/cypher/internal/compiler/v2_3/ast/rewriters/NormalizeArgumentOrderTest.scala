@@ -117,13 +117,8 @@ class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTest
     normalizeArgumentOrder(input) should equal(LessThanOrEqual(rhs, lhs)(pos))
   }
 
-  test("a.prop IS NOT NULL rewritten to: has(a.prop)") {
-    val input: Expression = IsNotNull(Property(ident("a"), PropertyKeyName("prop")_)_)_
-    val output: Expression = Has.asInvocation(Property(ident("a"), PropertyKeyName("prop")_)_)(pos)
-
-    normalizeArgumentOrder(input) should equal(output)
-  }
-
   private def id(name: String): FunctionInvocation =
     FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(Identifier(name)(pos)))(pos)
 }
+
+
