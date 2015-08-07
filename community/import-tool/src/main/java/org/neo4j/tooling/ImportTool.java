@@ -414,10 +414,12 @@ public class ImportTool
     {
         return new org.neo4j.unsafe.impl.batchimport.Configuration.Default()
         {
+            private static final int WRITE_BUFFER_SIZE_FOR_TEST = 1024 * 1024 * 8; // 8 MiB
+
             @Override
             public int writeBufferSize()
             {
-                return defaultSettingsSuitableForTests? 1024 * 1024 * 8 : super.writeBufferSize();
+                return defaultSettingsSuitableForTests? WRITE_BUFFER_SIZE_FOR_TEST : super.writeBufferSize();
             }
 
             @Override
