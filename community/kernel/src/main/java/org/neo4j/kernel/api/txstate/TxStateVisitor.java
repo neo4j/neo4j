@@ -23,8 +23,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -68,13 +68,13 @@ public interface TxStateVisitor
 
     void visitRemovedUniquePropertyConstraint( UniquenessConstraint element );
 
-    void visitAddedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint element );
+    void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element );
 
-    void visitRemovedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint element );
+    void visitRemovedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element );
 
-    void visitAddedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint element );
+    void visitAddedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element );
 
-    void visitRemovedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint element );
+    void visitRemovedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element );
 
     void visitCreatedLabelToken( String name, int id );
 
@@ -226,38 +226,39 @@ public interface TxStateVisitor
         }
 
         @Override
-        public void visitAddedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint element )
+        public void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
         {
             if ( next != null )
             {
-                next.visitAddedNodeMandatoryPropertyConstraint( element );
+                next.visitAddedNodePropertyExistenceConstraint( element );
             }
         }
 
         @Override
-        public void visitRemovedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint element )
+        public void visitRemovedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
         {
             if ( next != null )
             {
-                next.visitRemovedNodeMandatoryPropertyConstraint( element );
+                next.visitRemovedNodePropertyExistenceConstraint( element );
             }
         }
 
         @Override
-        public void visitAddedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint element )
+        public void visitAddedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
         {
             if ( next != null )
             {
-                next.visitAddedRelationshipMandatoryPropertyConstraint( element );
+                next.visitAddedRelationshipPropertyExistenceConstraint( element );
             }
         }
 
         @Override
-        public void visitRemovedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint element )
+        public void visitRemovedRelationshipPropertyExistenceConstraint(
+                RelationshipPropertyExistenceConstraint element )
         {
             if ( next != null )
             {
-                next.visitRemovedRelationshipMandatoryPropertyConstraint( element );
+                next.visitRemovedRelationshipPropertyExistenceConstraint( element );
             }
         }
 

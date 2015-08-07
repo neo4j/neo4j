@@ -33,8 +33,8 @@ import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -918,20 +918,20 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public MandatoryNodePropertyConstraint mandatoryNodePropertyConstraintCreate( int labelId, int propertyKeyId )
+    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( int labelId, int propertyKeyId )
             throws CreateConstraintFailureException, AlreadyConstrainedException
     {
         statement.assertOpen();
-        return schemaWrite().mandatoryNodePropertyConstraintCreate( statement, labelId, propertyKeyId );
+        return schemaWrite().nodePropertyExistenceConstraintCreate( statement, labelId, propertyKeyId );
     }
 
     @Override
-    public MandatoryRelationshipPropertyConstraint mandatoryRelationshipPropertyConstraintCreate(
+    public RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate(
             int relTypeId, int propertyKeyId )
             throws CreateConstraintFailureException, AlreadyConstrainedException
     {
         statement.assertOpen();
-        return schemaWrite().mandatoryRelationshipPropertyConstraintCreate( statement, relTypeId, propertyKeyId );
+        return schemaWrite().relationshipPropertyExistenceConstraintCreate( statement, relTypeId, propertyKeyId );
     }
 
     @Override

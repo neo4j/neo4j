@@ -79,7 +79,7 @@ public class FullCheck
         OwnerCheck ownerCheck = new OwnerCheck( checkPropertyOwners );
         CountsBuilderDecorator countsBuilder =
                 new CountsBuilderDecorator( stores.nativeStores().getRawNeoStore().getNodeStore() );
-        MandatoryPropertyChecker mpc = new MandatoryPropertyChecker( stores.nativeStores().getSchemaStore() );
+        PropertyExistenceChecker mpc = new PropertyExistenceChecker( stores.nativeStores().getSchemaStore() );
         CheckDecorator decorator = new CheckDecorator.ChainCheckDecorator( ownerCheck, countsBuilder, mpc );
         DiffRecordAccess records = recordAccess( stores.nativeStores() );
         execute( stores, decorator, records, report );

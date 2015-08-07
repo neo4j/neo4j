@@ -870,7 +870,7 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListMandatoryNodePropertyConstraints() throws Exception
+    public void canListNodePropertyExistenceConstraints() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -879,11 +879,11 @@ public class TestApps extends AbstractShellTest
         finishTx();
 
         // WHEN / THEN
-        executeCommand( "schema ls", "ON \\(person:Person\\) ASSERT person.name IS NOT NULL" );
+        executeCommand( "schema ls", "ON \\(person:Person\\) ASSERT exists\\(person.name\\)" );
     }
 
     @Test
-    public void canListMandatoryRelationshipPropertyConstraints() throws Exception
+    public void canListRelationshipPropertyExistenceConstraints() throws Exception
     {
         // GIVEN
         RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
@@ -892,7 +892,7 @@ public class TestApps extends AbstractShellTest
         finishTx();
 
         // WHEN / THEN
-        executeCommand( "schema ls", "ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT knows.since IS NOT NULL" );
+        executeCommand( "schema ls", "ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT exists\\(knows.since\\)" );
     }
 
     @Test
@@ -909,7 +909,7 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListMandatoryNodePropertyConstraintsByLabel() throws Exception
+    public void canListNodePropertyExistenceConstraintsByLabel() throws Exception
     {
         // GIVEN
         Label label1 = label( "Person" );
@@ -918,11 +918,11 @@ public class TestApps extends AbstractShellTest
         finishTx();
 
         // WHEN / THEN
-        executeCommand( "schema ls -l :Person", "ON \\(person:Person\\) ASSERT person.name IS NOT NULL" );
+        executeCommand( "schema ls -l :Person", "ON \\(person:Person\\) ASSERT exists\\(person.name\\)" );
     }
 
     @Test
-    public void canListMandatoryRelationshipPropertyConstraintsByType() throws Exception
+    public void canListRelationshipPropertyExistenceConstraintsByType() throws Exception
     {
         // GIVEN
         RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
@@ -931,11 +931,11 @@ public class TestApps extends AbstractShellTest
         finishTx();
 
         // WHEN / THEN
-        executeCommand( "schema ls -r :KNOWS", "ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT knows.since IS NOT NULL" );
+        executeCommand( "schema ls -r :KNOWS", "ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT exists\\(knows.since\\)" );
     }
 
     @Test
-    public void canListMandatoryRelationshipPropertyConstraintsByTypeAndProperty() throws Exception
+    public void canListRelationshipPropertyExistenceConstraintsByTypeAndProperty() throws Exception
     {
         // GIVEN
         RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
@@ -944,11 +944,12 @@ public class TestApps extends AbstractShellTest
         finishTx();
 
         // WHEN / THEN
-        executeCommand( "schema ls -r :KNOWS -p since", "ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT knows.since IS NOT NULL" );
+        executeCommand( "schema ls -r :KNOWS -p since",
+                "ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT exists\\(knows.since\\)" );
     }
 
     @Test
-    public void canListBothNodeAndRelationshipMandatoryPropertyConstraints() throws Exception
+    public void canListBothNodeAndRelationshipPropertyExistenceConstraints() throws Exception
     {
         // GIVEN
         Label label = DynamicLabel.label( "Person" );
@@ -965,12 +966,12 @@ public class TestApps extends AbstractShellTest
 
         // THEN
         executeCommand( "schema ls",
-                "ON \\(person:Person\\) ASSERT person.name IS NOT NULL",
-                "ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT knows.since IS NOT NULL" );
+                "ON \\(person:Person\\) ASSERT exists\\(person.name\\)",
+                "ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT exists\\(knows.since\\)" );
     }
 
     @Test
-    public void canListBothNodeAndRelationshipMandatoryPropertyConstraintsByLabelAndType() throws Exception
+    public void canListBothNodeAndRelationshipPropertyExistenceConstraintsByLabelAndType() throws Exception
     {
         // GIVEN
         Label label = DynamicLabel.label( "Person" );
@@ -987,8 +988,8 @@ public class TestApps extends AbstractShellTest
 
         // THEN
         executeCommand( "schema ls -l :Person -r :KNOWS",
-                "ON \\(person:Person\\) ASSERT person.name IS NOT NULL",
-                "ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT knows.since IS NOT NULL" );
+                "ON \\(person:Person\\) ASSERT exists\\(person.name\\)",
+                "ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT exists\\(knows.since\\)" );
     }
 
     @Test
@@ -1017,8 +1018,8 @@ public class TestApps extends AbstractShellTest
                 "  ON :Person\\(name\\) ONLINE \\(for uniqueness constraint\\)",
                 "Constraints",
                 "  ON \\(person:Person\\) ASSERT person.name IS UNIQUE",
-                "  ON \\(person:Person\\) ASSERT person.name IS NOT NULL",
-                "  ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT knows.since IS NOT NULL" );
+                "  ON \\(person:Person\\) ASSERT exists\\(person.name\\)",
+                "  ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT exists\\(knows.since\\)" );
     }
 
     @Test
@@ -1035,7 +1036,7 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListMandatoryNodePropertyConstraintsByLabelAndProperty() throws Exception
+    public void canListNodePropertyExistenceConstraintsByLabelAndProperty() throws Exception
     {
         // GIVEN
         Label label1 = label( "Person" );
@@ -1044,7 +1045,7 @@ public class TestApps extends AbstractShellTest
         finishTx();
 
         // WHEN / THEN
-        executeCommand( "schema ls -l :Person -p name", "ON \\(person:Person\\) ASSERT person.name IS NOT NULL" );
+        executeCommand( "schema ls -l :Person -p name", "ON \\(person:Person\\) ASSERT exists\\(person.name\\)" );
     }
 
     @Test

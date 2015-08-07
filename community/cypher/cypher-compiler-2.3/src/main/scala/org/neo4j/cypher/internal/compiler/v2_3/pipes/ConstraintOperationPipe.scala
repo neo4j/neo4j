@@ -35,10 +35,10 @@ class ConstraintOperationPipe(op: PropertyConstraintOperation, keyToken: KeyToke
     op match {
       case _: CreateUniqueConstraint => state.query.createUniqueConstraint(keyTokenId, propertyKeyId)
       case _: DropUniqueConstraint   => state.query.dropUniqueConstraint(keyTokenId, propertyKeyId)
-      case _: CreateNodeMandatoryPropertyConstraint => state.query.createNodeMandatoryConstraint(keyTokenId, propertyKeyId)
-      case _: DropNodeMandatoryPropertyConstraint => state.query.dropNodeMandatoryConstraint(keyTokenId, propertyKeyId)
-      case _: CreateRelationshipMandatoryPropertyConstraint => state.query.createRelationshipMandatoryConstraint(keyTokenId, propertyKeyId)
-      case _: DropRelationshipMandatoryPropertyConstraint => state.query.dropRelationshipMandatoryConstraint(keyTokenId, propertyKeyId)
+      case _: CreateNodePropertyExistenceConstraint => state.query.createNodePropertyExistenceConstraint(keyTokenId, propertyKeyId)
+      case _: DropNodePropertyExistenceConstraint => state.query.dropNodePropertyExistenceConstraint(keyTokenId, propertyKeyId)
+      case _: CreateRelationshipPropertyExistenceConstraint => state.query.createRelationshipPropertyExistenceConstraint(keyTokenId, propertyKeyId)
+      case _: DropRelationshipPropertyExistenceConstraint => state.query.dropRelationshipPropertyExistenceConstraint(keyTokenId, propertyKeyId)
     }
 
     Iterator.empty

@@ -20,28 +20,38 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
 
-public class MandatoryNodePropertyConstraintVerificationFailedKernelException
-        extends ConstraintVerificationFailedKernelException
+import static java.lang.String.format;
+
+public class NodePropertyExistenceConstraintViolationKernelException extends ConstraintViolationKernelException
 {
-    private final MandatoryNodePropertyConstraint constraint;
+    private final int labelId;
+    private final int propertyKeyId;
     private final long nodeId;
 
-    public MandatoryNodePropertyConstraintVerificationFailedKernelException( MandatoryNodePropertyConstraint constraint,
-            long nodeId )
+    public NodePropertyExistenceConstraintViolationKernelException( int labelId, int propertyKeyId, long nodeId )
     {
-        super( constraint );
-        this.constraint = constraint;
+        super( "Node %d with label %d does not have the property %d", nodeId, labelId, propertyKeyId);
+        this.labelId = labelId;
+        this.propertyKeyId = propertyKeyId;
         this.nodeId = nodeId;
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return String.format( "Node(%s) with label `%s` has no value for property `%s`",
-                nodeId,
-                tokenNameLookup.labelGetName( constraint.label() ),
-                tokenNameLookup.propertyKeyGetName( constraint.propertyKey() ) );
+        return format( "Node %d with label \"%s\" does not have a \"%s\" property", nodeId,
+                tokenNameLookup.labelGetName( labelId ),
+                tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
+    }
+
+    public int labelId()
+    {
+        return labelId;
+    }
+
+    public int propertyKeyId()
+    {
+        return propertyKeyId;
     }
 }

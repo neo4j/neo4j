@@ -56,22 +56,22 @@ final case class DropUniqueConstraint(id: String, label: String, idForProperty: 
   def setQueryText(t: String): DropUniqueConstraint = copy(queryString = QueryString(t))
 }
 
-final case class CreateNodeMandatoryPropertyConstraint(id: String, label: String, idForProperty: String,
+final case class CreateNodePropertyExistenceConstraint(id: String, label: String, idForProperty: String,
                                                        propertyKey: String, queryString: QueryString = QueryString.empty) extends NodePropertyConstraintOperation {
-  def setQueryText(t: String): CreateNodeMandatoryPropertyConstraint = copy(queryString = QueryString(t))
+  def setQueryText(t: String): CreateNodePropertyExistenceConstraint = copy(queryString = QueryString(t))
 }
 
-final case class DropNodeMandatoryPropertyConstraint(id: String, label: String, idForProperty: String, propertyKey: String,
+final case class DropNodePropertyExistenceConstraint(id: String, label: String, idForProperty: String, propertyKey: String,
                                                      queryString: QueryString = QueryString.empty) extends NodePropertyConstraintOperation {
-  def setQueryText(t: String): DropNodeMandatoryPropertyConstraint = copy(queryString = QueryString(t))
+  def setQueryText(t: String): DropNodePropertyExistenceConstraint = copy(queryString = QueryString(t))
 }
 
-final case class CreateRelationshipMandatoryPropertyConstraint(id: String, relType: String, idForProperty: String,
+final case class CreateRelationshipPropertyExistenceConstraint(id: String, relType: String, idForProperty: String,
                                                                propertyKey: String, queryString: QueryString = QueryString.empty) extends RelationshipPropertyConstraintOperation {
-  def setQueryText(t: String): CreateRelationshipMandatoryPropertyConstraint = copy(queryString = QueryString(t))
+  def setQueryText(t: String): CreateRelationshipPropertyExistenceConstraint = copy(queryString = QueryString(t))
 }
 
-final case class DropRelationshipMandatoryPropertyConstraint(id: String, relType: String, idForProperty: String, propertyKey: String,
+final case class DropRelationshipPropertyExistenceConstraint(id: String, relType: String, idForProperty: String, propertyKey: String,
                                                              queryString: QueryString = QueryString.empty) extends RelationshipPropertyConstraintOperation {
-  def setQueryText(t: String): DropRelationshipMandatoryPropertyConstraint = copy(queryString = QueryString(t))
+  def setQueryText(t: String): DropRelationshipPropertyExistenceConstraint = copy(queryString = QueryString(t))
 }

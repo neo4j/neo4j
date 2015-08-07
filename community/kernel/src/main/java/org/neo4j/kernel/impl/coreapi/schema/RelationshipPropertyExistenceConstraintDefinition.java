@@ -24,9 +24,9 @@ import org.neo4j.graphdb.schema.ConstraintType;
 
 import static java.lang.String.format;
 
-public class MandatoryRelationshipPropertyConstraintDefinition extends RelationshipConstraintDefinition
+public class RelationshipPropertyExistenceConstraintDefinition extends RelationshipConstraintDefinition
 {
-    public MandatoryRelationshipPropertyConstraintDefinition( InternalSchemaActions actions,
+    public RelationshipPropertyExistenceConstraintDefinition( InternalSchemaActions actions,
             RelationshipType relationshipType, String propertyKey )
     {
         super( actions, relationshipType, propertyKey );
@@ -42,13 +42,13 @@ public class MandatoryRelationshipPropertyConstraintDefinition extends Relations
     @Override
     public ConstraintType getConstraintType()
     {
-        return ConstraintType.MANDATORY_RELATIONSHIP_PROPERTY;
+        return ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE;
     }
 
     @Override
     public String toString()
     {
-        return format( "ON ()-[%1$s:%2$s]-() ASSERT %1$s.%3$s IS NOT NULL",
+        return format( "ON ()-[%1$s:%2$s]-() ASSERT exists(%1$s.%3$s)",
                 relationshipType.name().toLowerCase(), relationshipType.name(), propertyKey );
     }
 }

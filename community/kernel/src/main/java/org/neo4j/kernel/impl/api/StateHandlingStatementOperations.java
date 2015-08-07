@@ -33,8 +33,8 @@ import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -525,20 +525,20 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public MandatoryNodePropertyConstraint mandatoryNodePropertyConstraintCreate( KernelStatement state, int labelId,
+    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( KernelStatement state, int labelId,
             int propertyKeyId ) throws CreateConstraintFailureException
     {
-        MandatoryNodePropertyConstraint constraint = new MandatoryNodePropertyConstraint( labelId, propertyKeyId );
+        NodePropertyExistenceConstraint constraint = new NodePropertyExistenceConstraint( labelId, propertyKeyId );
         state.txState().constraintDoAdd( constraint );
         return constraint;
     }
 
     @Override
-    public MandatoryRelationshipPropertyConstraint mandatoryRelationshipPropertyConstraintCreate( KernelStatement state,
+    public RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate( KernelStatement state,
             int relTypeId, int propertyKeyId ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
-        MandatoryRelationshipPropertyConstraint constraint =
-                new MandatoryRelationshipPropertyConstraint( relTypeId, propertyKeyId );
+        RelationshipPropertyExistenceConstraint constraint =
+                new RelationshipPropertyExistenceConstraint( relTypeId, propertyKeyId );
         state.txState().constraintDoAdd( constraint );
         return constraint;
     }

@@ -39,8 +39,8 @@ import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.coreapi.schema.MandatoryNodePropertyConstraintDefinition;
-import org.neo4j.kernel.impl.coreapi.schema.MandatoryRelationshipPropertyConstraintDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
@@ -63,13 +63,13 @@ import static org.neo4j.kernel.api.ConstraintHaIT.*;
 
 @RunWith( Suite.class )
 @SuiteClasses( {
-        MandatoryNodePropertyConstraintHaIT.class,
-        MandatoryRelationshipPropertyConstraintHaIT.class,
+        NodePropertyExistenceConstraintHaIT.class,
+        RelationshipPropertyExistenceConstraintHaIT.class,
         UniquenessConstraintHaIT.class
 } )
 public class ConstraintHaIT
 {
-    public static class MandatoryNodePropertyConstraintHaIT extends AbstractConstraintHaIT
+    public static class NodePropertyExistenceConstraintHaIT extends AbstractConstraintHaIT
     {
         @Override
         protected void createConstraint( GraphDatabaseService db, String type, String value )
@@ -113,11 +113,11 @@ public class ConstraintHaIT
         @Override
         protected Class<? extends ConstraintDefinition> constraintDefinitionClass()
         {
-            return MandatoryNodePropertyConstraintDefinition.class;
+            return NodePropertyExistenceConstraintDefinition.class;
         }
     }
 
-    public static class MandatoryRelationshipPropertyConstraintHaIT extends AbstractConstraintHaIT
+    public static class RelationshipPropertyExistenceConstraintHaIT extends AbstractConstraintHaIT
     {
         @Override
         protected void createConstraint( GraphDatabaseService db, String type, String value )
@@ -166,7 +166,7 @@ public class ConstraintHaIT
         @Override
         protected Class<? extends ConstraintDefinition> constraintDefinitionClass()
         {
-            return MandatoryRelationshipPropertyConstraintDefinition.class;
+            return RelationshipPropertyExistenceConstraintDefinition.class;
         }
     }
 
@@ -415,7 +415,7 @@ public class ConstraintHaIT
 
         private static void validateLabelOrRelationshipType( ConstraintDefinition constraint )
         {
-            if ( constraint.isConstraintType( ConstraintType.MANDATORY_RELATIONSHIP_PROPERTY ) )
+            if ( constraint.isConstraintType( ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE ) )
             {
                 assertEquals( TYPE, constraint.getRelationshipType().name() );
             }

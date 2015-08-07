@@ -400,7 +400,7 @@ public class GraphDbHelper
         {
             Iterable<ConstraintDefinition> definitions = filterByConstraintTypeAndPropertyKey(
                     database.getGraph().schema().getConstraints( label( labelName ) ),
-                    ConstraintType.MANDATORY_NODE_PROPERTY, propertyKey );
+                    ConstraintType.NODE_PROPERTY_EXISTENCE, propertyKey );
             tx.success();
             return definitions;
         }
@@ -414,7 +414,7 @@ public class GraphDbHelper
             DynamicRelationshipType type = DynamicRelationshipType.withName( typeName );
             Iterable<ConstraintDefinition> definitions = filterByConstraintTypeAndPropertyKey(
                     database.getGraph().schema().getConstraints( type ),
-                    ConstraintType.MANDATORY_RELATIONSHIP_PROPERTY, propertyKey );
+                    ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE, propertyKey );
             tx.success();
             return definitions;
         }

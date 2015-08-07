@@ -33,7 +33,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api._
-import org.neo4j.kernel.api.constraints.{MandatoryNodePropertyConstraint, MandatoryRelationshipPropertyConstraint, UniquenessConstraint}
+import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.configuration.Config
@@ -417,27 +417,27 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
     statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(labelId, propertyKeyId))
 
-  def createNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[MandatoryNodePropertyConstraint] =
+  def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[NodePropertyExistenceConstraint] =
     try {
-      IdempotentResult(statement.schemaWriteOperations().mandatoryNodePropertyConstraintCreate(labelId, propertyKeyId))
+      IdempotentResult(statement.schemaWriteOperations().nodePropertyExistenceConstraintCreate(labelId, propertyKeyId))
     } catch {
       case existing: AlreadyConstrainedException =>
-        IdempotentResult(existing.constraint().asInstanceOf[MandatoryNodePropertyConstraint], wasCreated = false)
+        IdempotentResult(existing.constraint().asInstanceOf[NodePropertyExistenceConstraint], wasCreated = false)
     }
 
-  def dropNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int) =
-    statement.schemaWriteOperations().constraintDrop(new MandatoryNodePropertyConstraint(labelId, propertyKeyId))
+  def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) =
+    statement.schemaWriteOperations().constraintDrop(new NodePropertyExistenceConstraint(labelId, propertyKeyId))
 
-  def createRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int): IdempotentResult[MandatoryRelationshipPropertyConstraint] =
+  def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): IdempotentResult[RelationshipPropertyExistenceConstraint] =
     try {
-      IdempotentResult(statement.schemaWriteOperations().mandatoryRelationshipPropertyConstraintCreate(relTypeId, propertyKeyId))
+      IdempotentResult(statement.schemaWriteOperations().relationshipPropertyExistenceConstraintCreate(relTypeId, propertyKeyId))
     } catch {
       case existing: AlreadyConstrainedException =>
-        IdempotentResult(existing.constraint().asInstanceOf[MandatoryRelationshipPropertyConstraint], wasCreated = false)
+        IdempotentResult(existing.constraint().asInstanceOf[RelationshipPropertyExistenceConstraint], wasCreated = false)
     }
 
-  def dropRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int) =
-    statement.schemaWriteOperations().constraintDrop(new MandatoryRelationshipPropertyConstraint(relTypeId, propertyKeyId))
+  def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
+    statement.schemaWriteOperations().constraintDrop(new RelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
   override def hasLocalFileAccess: Boolean = graph match {
     case db: GraphDatabaseAPI => db.getDependencyResolver.resolveDependency(classOf[Config]).get(GraphDatabaseSettings.allow_file_urls)

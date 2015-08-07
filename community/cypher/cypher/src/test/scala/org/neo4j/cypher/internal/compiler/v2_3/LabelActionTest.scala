@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenT
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{LabelAction, LabelSetOp}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{IdempotentResult, LockingQueryContext, QueryContext}
 import org.neo4j.graphdb.{Direction, Node, Relationship}
-import org.neo4j.kernel.api.constraints.{MandatoryNodePropertyConstraint, UniquenessConstraint}
+import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class LabelActionTest extends GraphDatabaseFunSuite {
@@ -141,13 +141,13 @@ class SnitchingQueryContext extends QueryContext {
 
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) = ???
 
-  def createNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[MandatoryNodePropertyConstraint] = ???
+  def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[NodePropertyExistenceConstraint] = ???
 
-  def dropNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int) = ???
+  def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) = ???
 
-  def createRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int) = ???
+  def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) = ???
 
-  def dropRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int) = ???
+  def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) = ???
 
   def getLabelId(labelName: String): Int = ???
 

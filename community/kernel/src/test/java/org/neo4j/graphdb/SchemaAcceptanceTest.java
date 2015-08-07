@@ -333,20 +333,20 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldCreateMandatoryNodePropertyConstraint()
+    public void shouldCreateNodePropertyExistenceConstraint()
     {
         // When
-        ConstraintDefinition constraint = createMandatoryNodePropertyConstraint( label, propertyKey );
+        ConstraintDefinition constraint = createNodePropertyExistenceConstraint( label, propertyKey );
 
         // Then
         assertThat( getConstraints( db ), containsOnly( constraint ) );
     }
 
     @Test
-    public void shouldCreateMandatoryRelationshipPropertyConstraint()
+    public void shouldCreateRelationshipPropertyExistenceConstraint()
     {
         // When
-        ConstraintDefinition constraint = createMandatoryRelationshipPropertyConstraint( Types.MY_TYPE , propertyKey );
+        ConstraintDefinition constraint = createRelationshipPropertyExistenceConstraint( Types.MY_TYPE, propertyKey );
 
         // Then
         assertThat( getConstraints( db ), containsOnly( constraint ) );
@@ -357,8 +357,8 @@ public class SchemaAcceptanceTest
     {
         // GIVEN
         ConstraintDefinition constraint1 = createUniquenessConstraint( label, propertyKey );
-        ConstraintDefinition constraint2 = createMandatoryNodePropertyConstraint( label, propertyKey );
-        createMandatoryNodePropertyConstraint( Labels.MY_OTHER_LABEL, propertyKey );
+        ConstraintDefinition constraint2 = createNodePropertyExistenceConstraint( label, propertyKey );
+        createNodePropertyExistenceConstraint( Labels.MY_OTHER_LABEL, propertyKey );
 
         // WHEN THEN
         assertThat( getConstraints( db, label ), containsOnly( constraint1, constraint2 ) );
@@ -368,8 +368,8 @@ public class SchemaAcceptanceTest
     public void shouldListAddedConstraintsByRelationshipType() throws Exception
     {
         // GIVEN
-        ConstraintDefinition constraint1 = createMandatoryRelationshipPropertyConstraint( Types.MY_TYPE, propertyKey );
-        createMandatoryRelationshipPropertyConstraint( Types.MY_OTHER_TYPE, propertyKey );
+        ConstraintDefinition constraint1 = createRelationshipPropertyExistenceConstraint( Types.MY_TYPE, propertyKey );
+        createRelationshipPropertyExistenceConstraint( Types.MY_OTHER_TYPE, propertyKey );
 
         // WHEN THEN
         assertThat( getConstraints( db, Types.MY_TYPE ), containsOnly( constraint1 ) );
@@ -380,8 +380,8 @@ public class SchemaAcceptanceTest
     {
         // GIVEN
         ConstraintDefinition constraint1 = createUniquenessConstraint( label, propertyKey );
-        ConstraintDefinition constraint2 = createMandatoryNodePropertyConstraint( label, propertyKey );
-        ConstraintDefinition constraint3 = createMandatoryRelationshipPropertyConstraint( Types.MY_TYPE, propertyKey );
+        ConstraintDefinition constraint2 = createNodePropertyExistenceConstraint( label, propertyKey );
+        ConstraintDefinition constraint3 = createRelationshipPropertyExistenceConstraint( Types.MY_TYPE, propertyKey );
 
         // WHEN THEN
         assertThat( getConstraints( db ), containsOnly( constraint1, constraint2, constraint3 ) );
@@ -550,7 +550,7 @@ public class SchemaAcceptanceTest
         }
     }
 
-    private ConstraintDefinition createMandatoryNodePropertyConstraint( Label label, String prop )
+    private ConstraintDefinition createNodePropertyExistenceConstraint( Label label, String prop )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -560,7 +560,7 @@ public class SchemaAcceptanceTest
         }
     }
 
-    private ConstraintDefinition createMandatoryRelationshipPropertyConstraint( RelationshipType type, String prop )
+    private ConstraintDefinition createRelationshipPropertyExistenceConstraint( RelationshipType type, String prop )
     {
         try ( Transaction tx = db.beginTx() )
         {

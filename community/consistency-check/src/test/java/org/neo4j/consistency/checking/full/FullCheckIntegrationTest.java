@@ -81,14 +81,14 @@ import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.store.record.MandatoryNodePropertyConstraintRule;
-import org.neo4j.kernel.impl.store.record.MandatoryRelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
+import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
@@ -120,12 +120,12 @@ import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.LabelIdArray.prependNodeId;
 import static org.neo4j.kernel.impl.store.PropertyType.ARRAY;
-import static org.neo4j.kernel.impl.store.record.MandatoryNodePropertyConstraintRule.*;
-import static org.neo4j.kernel.impl.store.record.MandatoryRelationshipPropertyConstraintRule.*;
+import static org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule.*;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREV_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule.*;
 import static org.neo4j.kernel.impl.util.Bits.bits;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -2044,7 +2044,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord recordBefore = new DynamicRecord( id );
                 DynamicRecord recordAfter = recordBefore.clone();
 
-                MandatoryNodePropertyConstraintRule rule = mandatoryNodePropertyConstraintRule( id, labelId,
+                NodePropertyExistenceConstraintRule rule = nodePropertyExistenceConstraintRule( id, labelId,
                         propertyKeyId );
                 Collection<DynamicRecord> records = serializeRule( rule, recordAfter );
 
@@ -2067,7 +2067,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord recordBefore = new DynamicRecord( id );
                 DynamicRecord recordAfter = recordBefore.clone();
 
-                MandatoryRelationshipPropertyConstraintRule rule = mandatoryRelPropertyConstraintRule( id, relTypeId,
+                RelationshipPropertyExistenceConstraintRule rule = relPropertyExistenceConstraintRule( id, relTypeId,
                         propertyKeyId );
                 Collection<DynamicRecord> records = serializeRule( rule, recordAfter );
 

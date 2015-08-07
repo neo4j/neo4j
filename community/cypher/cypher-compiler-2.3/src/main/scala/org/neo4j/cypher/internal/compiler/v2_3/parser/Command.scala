@@ -29,12 +29,12 @@ trait Command extends Parser
 
   def Command: Rule1[ast.Command] = rule(
     CreateUniqueConstraint
-      | CreateNodeMandatoryConstraint
-      | CreateRelMandatoryConstraint
+      | CreateNodePropertyExistenceConstraint
+      | CreateRelationshipPropertyExistenceConstraint
       | CreateIndex
       | DropUniqueConstraint
-      | DropNodeMandatoryConstraint
-      | DropRelMandatoryConstraint
+      | DropNodePropertyExistenceConstraint
+      | DropRelationshipPropertyExistenceConstraint
       | DropIndex
   )
 
@@ -50,34 +50,34 @@ trait Command extends Parser
     group(keyword("CREATE") ~~ UniqueConstraintSyntax) ~~>> (ast.CreateUniquePropertyConstraint(_, _, _))
   }
 
-  def CreateNodeMandatoryConstraint: Rule1[ast.CreateNodeMandatoryPropertyConstraint] = rule {
-    group(keyword("CREATE") ~~ NodeMandatoryConstraintSyntax) ~~>> (ast.CreateNodeMandatoryPropertyConstraint(_, _, _))
+  def CreateNodePropertyExistenceConstraint: Rule1[ast.CreateNodePropertyExistenceConstraint] = rule {
+    group(keyword("CREATE") ~~ NodePropertyExistenceConstraintSyntax) ~~>> (ast.CreateNodePropertyExistenceConstraint(_, _, _))
   }
 
-  def CreateRelMandatoryConstraint: Rule1[ast.CreateRelationshipMandatoryPropertyConstraint] = rule {
-    group(keyword("CREATE") ~~ RelationshipMandatoryConstraintSyntax) ~~>> (ast.CreateRelationshipMandatoryPropertyConstraint(_, _, _))
+  def CreateRelationshipPropertyExistenceConstraint: Rule1[ast.CreateRelationshipPropertyExistenceConstraint] = rule {
+    group(keyword("CREATE") ~~ RelationshipPropertyExistenceConstraintSyntax) ~~>> (ast.CreateRelationshipPropertyExistenceConstraint(_, _, _))
   }
 
   def DropUniqueConstraint: Rule1[ast.DropUniquePropertyConstraint] = rule {
     group(keyword("DROP") ~~ UniqueConstraintSyntax) ~~>> (ast.DropUniquePropertyConstraint(_, _, _))
   }
 
-  def DropNodeMandatoryConstraint: Rule1[ast.DropNodeMandatoryPropertyConstraint] = rule {
-    group(keyword("DROP") ~~ NodeMandatoryConstraintSyntax) ~~>> (ast.DropNodeMandatoryPropertyConstraint(_, _, _))
+  def DropNodePropertyExistenceConstraint: Rule1[ast.DropNodePropertyExistenceConstraint] = rule {
+    group(keyword("DROP") ~~ NodePropertyExistenceConstraintSyntax) ~~>> (ast.DropNodePropertyExistenceConstraint(_, _, _))
   }
 
-  def DropRelMandatoryConstraint: Rule1[ast.DropRelationshipMandatoryPropertyConstraint] = rule {
-    group(keyword("DROP") ~~ RelationshipMandatoryConstraintSyntax) ~~>> (ast.DropRelationshipMandatoryPropertyConstraint(_, _, _))
+  def DropRelationshipPropertyExistenceConstraint: Rule1[ast.DropRelationshipPropertyExistenceConstraint] = rule {
+    group(keyword("DROP") ~~ RelationshipPropertyExistenceConstraintSyntax) ~~>> (ast.DropRelationshipPropertyExistenceConstraint(_, _, _))
   }
 
   private def UniqueConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Identifier ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ PropertyExpression ~~ keyword("IS UNIQUE")
 
-  private def NodeMandatoryConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Identifier ~~ NodeLabel ~~ ")" ~~
-    keyword("ASSERT") ~~ PropertyExpression ~~ keyword("IS NOT NULL")
+  private def NodePropertyExistenceConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Identifier ~~ NodeLabel ~~ ")" ~~
+    keyword("ASSERT EXISTS") ~~ "(" ~~ PropertyExpression ~~ ")"
 
-  private def RelationshipMandatoryConstraintSyntax = keyword("CONSTRAINT ON") ~~ RelationshipPatternSyntax ~~
-    keyword("ASSERT") ~~ PropertyExpression ~~ keyword("IS NOT NULL")
+  private def RelationshipPropertyExistenceConstraintSyntax = keyword("CONSTRAINT ON") ~~ RelationshipPatternSyntax ~~
+    keyword("ASSERT EXISTS") ~~ "(" ~~ PropertyExpression ~~ ")"
 
   private def RelationshipPatternSyntax = rule(
     ("()-[" ~~ Identifier ~~ RelType ~~ "]-()")

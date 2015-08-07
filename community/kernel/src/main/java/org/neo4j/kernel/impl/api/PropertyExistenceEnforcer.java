@@ -26,11 +26,7 @@ import java.util.Set;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Predicate;
-import org.neo4j.function.Predicates;
-import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.cursor.LabelItem;
@@ -38,8 +34,8 @@ import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
-import org.neo4j.kernel.api.exceptions.schema.MandatoryNodePropertyConstraintViolationKernelException;
-import org.neo4j.kernel.api.exceptions.schema.MandatoryRelationshipPropertyConstraintViolationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceConstraintViolationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceConstraintViolationKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.api.txstate.TxStateVisitor;
@@ -49,14 +45,8 @@ import org.neo4j.kernel.impl.api.store.StoreStatement;
 
 import static java.lang.String.format;
 
-public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
+public class PropertyExistenceEnforcer extends TxStateVisitor.Adapter
 {
-    private static final Predicate<NodePropertyConstraint> MANDATORY_NODE_PROPERTY_CONSTRAINT =
-            Predicates.instanceOf( MandatoryNodePropertyConstraint.class );
-
-    private static final Predicate<RelationshipPropertyConstraint> MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT =
-            Predicates.instanceOf( MandatoryRelationshipPropertyConstraint.class );
-
     private final EntityReadOperations readOperations;
     private final StoreReadLayer storeLayer;
     private final StoreStatement storeStatement;
@@ -64,7 +54,7 @@ public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
     private final PrimitiveIntSet labelIds = Primitive.intSet();
     private final PrimitiveIntSet propertyKeyIds = Primitive.intSet();
 
-    public MandatoryPropertyEnforcer( EntityReadOperations operations,
+    public PropertyExistenceEnforcer( EntityReadOperations operations,
             TxStateVisitor next,
             TxStateHolder txStateHolder,
             StoreReadLayer storeLayer,
@@ -127,14 +117,14 @@ public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
                     }
                 }
 
-                // Iterate all constraints and find mandatory constraints that matches labels
+                // Iterate all constraints and find property existence constraints that matches labels
                 propertyKeyIds.clear();
                 Iterator<PropertyConstraint> constraints = storeLayer.constraintsGetAll();
                 while ( constraints.hasNext() )
                 {
                     PropertyConstraint constraint = constraints.next();
-                    if ( constraint instanceof MandatoryNodePropertyConstraint && labelIds.contains(
-                            ((MandatoryNodePropertyConstraint) constraint).label() ) )
+                    if ( constraint instanceof NodePropertyExistenceConstraint && labelIds.contains(
+                            ((NodePropertyExistenceConstraint) constraint).label() ) )
                     {
                         if ( propertyKeyIds.isEmpty() )
                         {
@@ -151,8 +141,8 @@ public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
                         // Check if this node has the mandatory property set
                         if ( !propertyKeyIds.contains( constraint.propertyKey() ) )
                         {
-                            throw new MandatoryNodePropertyConstraintViolationKernelException(
-                                    ((MandatoryNodePropertyConstraint) constraint).label(),
+                            throw new NodePropertyExistenceConstraintViolationKernelException(
+                                    ((NodePropertyExistenceConstraint) constraint).label(),
                                     constraint.propertyKey(), nodeId );
                         }
                     }
@@ -172,7 +162,7 @@ public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
         {
             if ( relationship.next() )
             {
-                // Iterate all constraints and find mandatory constraints that matches relationship type
+                // Iterate all constraints and find property existence constraints that matche relationship type
                 propertyKeyIds.clear();
                 Iterator<RelationshipPropertyConstraint> constraints = storeLayer.constraintsGetForRelationshipType(
                         relationship.get().type() );
@@ -195,7 +185,7 @@ public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
                     // Check if this relationship has the mandatory property set
                     if ( !propertyKeyIds.contains( constraint.propertyKey() ) )
                     {
-                        throw new MandatoryRelationshipPropertyConstraintViolationKernelException(
+                        throw new RelationshipPropertyExistenceConstraintViolationKernelException(
                                 constraint.relationshipType(),
                                 constraint.propertyKey(), id );
                     }

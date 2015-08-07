@@ -20,38 +20,28 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 
-import static java.lang.String.format;
-
-public class MandatoryNodePropertyConstraintViolationKernelException extends ConstraintViolationKernelException
+public class RelationshipPropertyExistenceConstraintVerificationFailedKernelException
+        extends ConstraintVerificationFailedKernelException
 {
-    private final int labelId;
-    private final int propertyKeyId;
-    private final long nodeId;
+    private final RelationshipPropertyExistenceConstraint constraint;
+    private final long relationshipId;
 
-    public MandatoryNodePropertyConstraintViolationKernelException( int labelId, int propertyKeyId, long nodeId )
+    public RelationshipPropertyExistenceConstraintVerificationFailedKernelException(
+            RelationshipPropertyExistenceConstraint constraint, long relationshipId )
     {
-        super( "Node %d with label %d does not have the property %d", nodeId, labelId, propertyKeyId);
-        this.labelId = labelId;
-        this.propertyKeyId = propertyKeyId;
-        this.nodeId = nodeId;
+        super( constraint );
+        this.constraint = constraint;
+        this.relationshipId = relationshipId;
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return format( "Node %d with label \"%s\" does not have a \"%s\" property", nodeId,
-                tokenNameLookup.labelGetName( labelId ),
-                tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
-    }
-
-    public int labelId()
-    {
-        return labelId;
-    }
-
-    public int propertyKeyId()
-    {
-        return propertyKeyId;
+        return String.format( "Relationship(%s) with type `%s` has no value for property `%s`",
+                relationshipId,
+                tokenNameLookup.relationshipTypeGetName( constraint.relationshipType() ),
+                tokenNameLookup.propertyKeyGetName( constraint.propertyKey() ) );
     }
 }

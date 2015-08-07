@@ -21,35 +21,35 @@ package org.neo4j.kernel.impl.store.record;
 
 import java.nio.ByteBuffer;
 
-import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 
-public class MandatoryRelationshipPropertyConstraintRule extends RelationshipPropertyConstraintRule
+public class RelationshipPropertyExistenceConstraintRule extends RelationshipPropertyConstraintRule
 {
     private final int propertyKeyId;
 
-    public static MandatoryRelationshipPropertyConstraintRule mandatoryRelPropertyConstraintRule( long id,
+    public static RelationshipPropertyExistenceConstraintRule relPropertyExistenceConstraintRule( long id,
             int relTypeId, int propertyKeyId )
     {
-        return new MandatoryRelationshipPropertyConstraintRule( id, relTypeId, propertyKeyId );
+        return new RelationshipPropertyExistenceConstraintRule( id, relTypeId, propertyKeyId );
     }
 
-    public static MandatoryRelationshipPropertyConstraintRule readMandatoryRelPropertyConstraintRule( long id,
+    public static RelationshipPropertyExistenceConstraintRule readRelPropertyExistenceConstraintRule( long id,
             int relTypeId, ByteBuffer buffer )
     {
-        return new MandatoryRelationshipPropertyConstraintRule( id, relTypeId, readPropertyKey( buffer ) );
+        return new RelationshipPropertyExistenceConstraintRule( id, relTypeId, readPropertyKey( buffer ) );
     }
 
-    private MandatoryRelationshipPropertyConstraintRule( long id, int relTypeId, int propertyKeyId )
+    private RelationshipPropertyExistenceConstraintRule( long id, int relTypeId, int propertyKeyId )
     {
-        super( id, relTypeId, Kind.MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT );
+        super( id, relTypeId, Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT );
         this.propertyKeyId = propertyKeyId;
     }
 
     @Override
     public String toString()
     {
-        return "MandatoryRelationshipPropertyConstraint" + id + ", relationshipType=" + relationshipType +
+        return "RelationshipPropertyExistenceConstraint" + id + ", relationshipType=" + relationshipType +
                ", kind=" + kind + ", propertyKeyId=" + propertyKeyId + "]";
     }
 
@@ -82,7 +82,7 @@ public class MandatoryRelationshipPropertyConstraintRule extends RelationshipPro
     @Override
     public RelationshipPropertyConstraint toConstraint()
     {
-        return new MandatoryRelationshipPropertyConstraint( getRelationshipType(), getPropertyKey() );
+        return new RelationshipPropertyExistenceConstraint( getRelationshipType(), getPropertyKey() );
     }
 
     @Override
@@ -106,7 +106,7 @@ public class MandatoryRelationshipPropertyConstraintRule extends RelationshipPro
         {
             return false;
         }
-        return propertyKeyId == ((MandatoryRelationshipPropertyConstraintRule) o).propertyKeyId;
+        return propertyKeyId == ((RelationshipPropertyExistenceConstraintRule) o).propertyKeyId;
     }
 
     @Override

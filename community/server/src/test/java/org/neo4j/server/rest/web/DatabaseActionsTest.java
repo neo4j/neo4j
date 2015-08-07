@@ -1450,7 +1450,7 @@ public class DatabaseActionsTest
         Map<?, ?> definition = (Map<?, ?>) serialized.get( 0 );
         assertEquals( labelName, definition.get( "label" ) );
         assertEquals( Collections.singletonList( propertyKey ), definition.get( "property_keys" ) );
-        assertEquals( ConstraintType.MANDATORY_NODE_PROPERTY.name(), definition.get( "type" ) );
+        assertEquals( ConstraintType.NODE_PROPERTY_EXISTENCE.name(), definition.get( "type" ) );
     }
 
     @Test
@@ -1473,7 +1473,7 @@ public class DatabaseActionsTest
         Map<?, ?> definition = (Map<?, ?>) serialized.get( 0 );
         assertEquals( typeName, definition.get( "relationshipType" ) );
         assertEquals( Collections.singletonList( propertyKey ), definition.get( "property_keys" ) );
-        assertEquals( ConstraintType.MANDATORY_RELATIONSHIP_PROPERTY.name(), definition.get( "type" ) );
+        assertEquals( ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE.name(), definition.get( "type" ) );
     }
 
     @Test

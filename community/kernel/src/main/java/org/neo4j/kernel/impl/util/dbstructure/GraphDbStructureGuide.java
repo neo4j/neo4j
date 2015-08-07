@@ -32,8 +32,8 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -179,15 +179,15 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
             {
                 visitor.visitUniqueConstraint( (UniquenessConstraint) constraint, userDescription );
             }
-            else if ( constraint instanceof MandatoryNodePropertyConstraint )
+            else if ( constraint instanceof NodePropertyExistenceConstraint )
             {
-                MandatoryNodePropertyConstraint mandatoryConstraint = (MandatoryNodePropertyConstraint) constraint;
-                visitor.visitMandatoryNodePropertyConstraint( mandatoryConstraint, userDescription );
+                NodePropertyExistenceConstraint existenceConstraint = (NodePropertyExistenceConstraint) constraint;
+                visitor.visitNodePropertyExistenceConstraint( existenceConstraint, userDescription );
             }
-            else if ( constraint instanceof MandatoryRelationshipPropertyConstraint )
+            else if ( constraint instanceof RelationshipPropertyExistenceConstraint )
             {
-                MandatoryRelationshipPropertyConstraint mandatoryConstraint = (MandatoryRelationshipPropertyConstraint) constraint;
-                visitor.visitMandatoryRelationshipPropertyConstraint( mandatoryConstraint, userDescription );
+                RelationshipPropertyExistenceConstraint existenceConstraint = (RelationshipPropertyExistenceConstraint) constraint;
+                visitor.visitRelationshipPropertyExistenceConstraint( existenceConstraint, userDescription );
             }
             else
             {

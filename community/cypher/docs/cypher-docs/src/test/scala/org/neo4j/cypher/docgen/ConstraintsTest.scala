@@ -95,56 +95,56 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
     )
   }
 
-  @Test def create_mandatory_node_property_constraint() {
+  @Test def create_node_property_existence_constraint() {
     testQuery(
-      title = "Create mandatory node property constraint",
+      title = "Create node property existence constraint",
       text = "To create a constraint that makes sure that all nodes with a certain label have a certain property, use the +IS+ +NOT+ +NULL+ syntax.",
-      queryText = "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS NOT NULL",
+      queryText = "CREATE CONSTRAINT ON (book:Book) ASSERT exists(book.isbn)",
       optionalResultExplanation = "",
       assertions = (p) => assertNodeConstraintExist("Book", "isbn")
     )
   }
 
-  @Test def drop_mandatory_node_property_constraint() {
+  @Test def drop_node_property_existence_constraint() {
     generateConsole = false
 
     prepareAndTestQuery(
-      title = "Drop mandatory node property constraint",
+      title = "Drop node property existence constraint",
       text = "By using +DROP+ +CONSTRAINT+, you remove a constraint from the database.",
-      queryText = "DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS NOT NULL",
+      queryText = "DROP CONSTRAINT ON (book:Book) ASSERT exists(book.isbn)",
       optionalResultExplanation = "",
-      prepare = _ => executePreparationQueries(List("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS NOT NULL")),
+      prepare = _ => executePreparationQueries(List("CREATE CONSTRAINT ON (book:Book) ASSERT exists(book.isbn)")),
       assertions = (p) => assertNodeConstraintDoesNotExist("Book", "isbn")
     )
   }
 
-  @Test def play_nice_with_mandatory_node_property_constraint() {
+  @Test def play_nice_with_node_property_existence_constraint() {
     generateConsole = false
 
     prepareAndTestQuery(
-      title = "Create a node that complies with mandatory property constraints",
+      title = "Create a node that complies with property existence constraints",
       text = "Create a `Book` node with an existing `isbn` property.",
       queryText = "CREATE (book:Book {isbn: '1449356265', title: 'Graph Databases'})",
       optionalResultExplanation = "",
-      prepare = _ => executePreparationQueries(List("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS NOT NULL")),
+      prepare = _ => executePreparationQueries(List("CREATE CONSTRAINT ON (book:Book) ASSERT exists(book.isbn)")),
       assertions = (p) => assertNodeConstraintExist("Book", "isbn")
     )
   }
 
-  @Test def break_mandatory_node_property_constraint() {
+  @Test def break_node_property_existence_constraint() {
     generateConsole = false
-    engine.execute("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS NOT NULL")
+    engine.execute("CREATE CONSTRAINT ON (book:Book) ASSERT exists(book.isbn)")
     testFailingQuery[ConstraintValidationException](
-      title = "Create a node that breaks a mandatory property constraint",
+      title = "Create a node that breaks a property existence constraint",
       text = "Create a `Book` node without an `isbn`.",
       queryText = "CREATE (book:Book {title: 'Graph Databases'})",
       optionalResultExplanation = "In this case the node isn't created in the graph."
     )
   }
 
-  @Test def break_mandatory_node_property_constraint_by_removing_property() {
+  @Test def break_node_property_existence_constraint_by_removing_property() {
     generateConsole = false
-    engine.execute("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS NOT NULL")
+    engine.execute("CREATE CONSTRAINT ON (book:Book) ASSERT exists(book.isbn)")
     engine.execute("CREATE (book:Book {isbn: '1449356265', title: 'Graph Databases'})")
     testFailingQuery[ConstraintValidationException](
       title = "Removing a mandatory node property",
@@ -154,70 +154,70 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
     )
   }
 
-  @Test def fail_to_create_mandatory_node_property_constraint() {
+  @Test def fail_to_create_node_property_existence_constraint() {
     generateConsole = false
     engine.execute("CREATE (book:Book {title: 'Graph Databases'})")
 
     testFailingQuery[CypherExecutionException](
-      title = "Failure to create a mandatory node property constraint due to existing node",
+      title = "Failure to create a node property existence constraint due to existing node",
       text = "Create a constraint on the property `isbn` on nodes with the `Book` label when there already exists " +
         " a node without an `isbn`.",
-      queryText = "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS NOT NULL",
+      queryText = "CREATE CONSTRAINT ON (book:Book) ASSERT exists(book.isbn)",
       optionalResultExplanation = "In this case the constraint can't be created because it is violated by existing " +
         "data. We may choose to remove the offending nodes and then re-apply the constraint."
     )
   }
 
-  @Test def create_mandatory_relationship_property_constraint() {
+  @Test def create_relationship_property_existence_constraint() {
     testQuery(
-      title = "Create mandatory relationship property constraint",
+      title = "Create relationship property existence constraint",
       text = "To create a constraint that makes sure that all relationships with a certain type have a certain property, use the +IS+ +NOT+ +NULL+ syntax.",
-      queryText = "CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT like.day IS NOT NULL",
+      queryText = "CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT exists(like.day)",
       optionalResultExplanation = "",
       assertions = (p) => assertRelationshipConstraintExist("LIKED", "day")
     )
   }
 
-  @Test def drop_mandatory_relationship_property_constraint() {
+  @Test def drop_relationship_property_existence_constraint() {
     generateConsole = false
 
     prepareAndTestQuery(
-      title = "Drop mandatory relationship property constraint",
+      title = "Drop relationship property existence constraint",
       text = "By using +DROP+ +CONSTRAINT+, you remove a constraint from the database.",
-      queryText = "DROP CONSTRAINT ON ()-[like:LIKED]-() ASSERT like.day IS NOT NULL",
+      queryText = "DROP CONSTRAINT ON ()-[like:LIKED]-() ASSERT exists(like.day)",
       optionalResultExplanation = "",
-      prepare = _ => executePreparationQueries(List("CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT like.day IS NOT NULL")),
+      prepare = _ => executePreparationQueries(List("CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT exists(like.day)")),
       assertions = (p) => assertRelationshipConstraintDoesNotExist("LIKED", "day")
     )
   }
 
-  @Test def play_nice_with_mandatory_relationship_property_constraint() {
+  @Test def play_nice_with_relationship_property_existence_constraint() {
     generateConsole = false
 
     prepareAndTestQuery(
-      title = "Create a relationship that complies with mandatory property constraints",
+      title = "Create a relationship that complies with property existence constraints",
       text = "Create a `LIKED` relationship with an existing `day` property.",
       queryText = "CREATE (user:User)-[like:LIKED {day: 'yesterday'}]->(book:Book)",
       optionalResultExplanation = "",
-      prepare = _ => executePreparationQueries(List("CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT like.day IS NOT NULL")),
+      prepare = _ => executePreparationQueries(List("CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT exists(like.day)")),
       assertions = (p) => assertRelationshipConstraintExist("LIKED", "day")
     )
   }
 
-  @Test def break_mandatory_relationship_property_constraint() {
+  @Test def break_relationship_property_existence_constraint() {
     generateConsole = false
-    engine.execute("CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT like.day IS NOT NULL")
+    engine.execute("CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT exists(like.day)")
     testFailingQuery[ConstraintValidationException](
-      title = "Create a relationship that breaks a mandatory property constraint",
+      title = "Create a relationship that breaks a property existence constraint",
       text = "Create a `LIKED` relationship without an existing `day` property.",
       queryText = "CREATE (user:User)-[like:LIKED]->(book:Book)",
       optionalResultExplanation = "In this case the relationship isn't created in the graph."
     )
   }
 
-  @Test def break_mandatory_relationship_property_constraint_by_removing_property() {
+  @Test def break_relationship_property_existence_constraint_by_removing_property() {
     generateConsole = false
-    engine.execute("CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT like.day IS NOT NULL")
+    engine.execute("CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT exists(like.day)")
     engine.execute("CREATE (user:User)-[like:LIKED {day: 'today'}]->(book:Book)")
     testFailingQuery[ConstraintValidationException](
       title = "Removing a mandatory relationship property",
@@ -227,15 +227,15 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
     )
   }
 
-  @Test def fail_to_create_mandatory_relationship_property_constraint() {
+  @Test def fail_to_create_relationship_property_existence_constraint() {
     generateConsole = false
     engine.execute("CREATE (user:User)-[like:LIKED]->(book:Book)")
 
     testFailingQuery[CypherExecutionException](
-      title = "Failure to create a mandatory relationship property constraint due to existing relationship",
+      title = "Failure to create a relationship property existence constraint due to existing relationship",
       text = "Create a constraint on the property `day` on relationships with the `LIKED` type when there already " +
         "exists a relationship without an `day`.",
-      queryText = "CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT like.day IS NOT NULL",
+      queryText = "CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT exists(like.day)",
       optionalResultExplanation = "In this case the constraint can't be created because it is violated by existing " +
         "data. We may choose to remove the offending relationships and then re-apply the constraint."
     )

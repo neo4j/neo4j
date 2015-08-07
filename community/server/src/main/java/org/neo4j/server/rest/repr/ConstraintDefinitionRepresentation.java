@@ -42,10 +42,10 @@ public class ConstraintDefinitionRepresentation extends MappingRepresentation
         switch ( constraintDefinition.getConstraintType() )
         {
         case UNIQUENESS:
-        case MANDATORY_NODE_PROPERTY:
+        case NODE_PROPERTY_EXISTENCE:
             serializer.putString( "label", constraintDefinition.getLabel().name() );
             break;
-        case MANDATORY_RELATIONSHIP_PROPERTY:
+        case RELATIONSHIP_PROPERTY_EXISTENCE:
             serializer.putString( "relationshipType", constraintDefinition.getRelationshipType().name() );
             break;
         default:

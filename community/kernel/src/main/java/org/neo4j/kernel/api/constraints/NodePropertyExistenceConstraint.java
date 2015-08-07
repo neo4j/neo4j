@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.api.constraints;
 
 import org.neo4j.graphdb.DynamicLabel;
@@ -26,11 +27,11 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
-import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefinition;
 
-public class UniquenessConstraint extends NodePropertyConstraint
+public class NodePropertyExistenceConstraint extends NodePropertyConstraint
 {
-    public UniquenessConstraint( int labelId, int propertyKeyId )
+    public NodePropertyExistenceConstraint( int labelId, int propertyKeyId )
     {
         super( labelId, propertyKeyId );
     }
@@ -38,20 +39,20 @@ public class UniquenessConstraint extends NodePropertyConstraint
     @Override
     public void added( ChangeVisitor visitor )
     {
-        visitor.visitAddedUniquePropertyConstraint( this );
+        visitor.visitAddedNodePropertyExistenceConstraint( this );
     }
 
     @Override
     public void removed( ChangeVisitor visitor )
     {
-        visitor.visitRemovedUniquePropertyConstraint( this );
+        visitor.visitRemovedNodePropertyExistenceConstraint( this );
     }
 
     @Override
     public ConstraintDefinition asConstraintDefinition( InternalSchemaActions schemaActions, ReadOperations readOps )
     {
         StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOps );
-        return new UniquenessConstraintDefinition( schemaActions,
+        return new NodePropertyExistenceConstraintDefinition( schemaActions,
                 DynamicLabel.label( lookup.labelGetName( labelId ) ),
                 lookup.propertyKeyGetName( propertyKeyId ) );
     }
@@ -59,7 +60,7 @@ public class UniquenessConstraint extends NodePropertyConstraint
     @Override
     public ConstraintType type()
     {
-        return ConstraintType.UNIQUENESS;
+        return ConstraintType.NODE_PROPERTY_EXISTENCE;
     }
 
     @Override
@@ -67,14 +68,14 @@ public class UniquenessConstraint extends NodePropertyConstraint
     {
         String labelName = tokenNameLookup.labelGetName( labelId );
         String boundIdentifier = labelName.toLowerCase();
-        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s.%s IS UNIQUE",
+        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT exists(%s.%s)",
                 boundIdentifier, labelName, boundIdentifier, tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
     }
 
     @Override
     public String toString()
     {
-        return String.format( "CONSTRAINT ON ( n:label[%s] ) ASSERT n.property[%s] IS UNIQUE",
+        return String.format( "CONSTRAINT ON ( n:label[%s] ) ASSERT exists(n.property[%s])",
                 labelId, propertyKeyId );
     }
 }

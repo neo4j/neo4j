@@ -32,14 +32,14 @@ public interface SchemaRule extends RecordSerializable
 
     /**
      * @return id of label to which this schema rule has been attached
-     * @throws IllegalStateException when this rule has kind {@link Kind#MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT}
+     * @throws IllegalStateException when this rule has kind {@link Kind#RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT}
      */
     int getLabel();
 
     /**
      * @return id of relationship type to which this schema rule has been attached
      * @throws IllegalStateException when this rule has kind different from
-     * {@link Kind#MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT}
+     * {@link Kind#RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT}
      */
     int getRelationshipType();
 
@@ -74,20 +74,22 @@ public interface SchemaRule extends RecordSerializable
                 return UniquePropertyConstraintRule.readUniquenessConstraintRule( id, labelId, buffer );
             }
         },
-        MANDATORY_NODE_PROPERTY_CONSTRAINT( 4, MandatoryNodePropertyConstraintRule.class )
+        NODE_PROPERTY_EXISTENCE_CONSTRAINT( 4, NodePropertyExistenceConstraintRule.class )
         {
             @Override
             protected SchemaRule newRule( long id, int labelId, ByteBuffer buffer )
             {
-                return MandatoryNodePropertyConstraintRule.readMandatoryNodePropertyConstraintRule( id, labelId, buffer );
+                return NodePropertyExistenceConstraintRule
+                        .readNodePropertyExistenceConstraintRule( id, labelId, buffer );
             }
         },
-        MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT( 5, MandatoryRelationshipPropertyConstraintRule.class )
+        RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT( 5, RelationshipPropertyExistenceConstraintRule.class )
         {
             @Override
             protected SchemaRule newRule( long id, int labelId, ByteBuffer buffer )
             {
-                return MandatoryRelationshipPropertyConstraintRule.readMandatoryRelPropertyConstraintRule( id, labelId, buffer );
+                return RelationshipPropertyExistenceConstraintRule
+                        .readRelPropertyExistenceConstraintRule( id, labelId, buffer );
             }
         };
 
@@ -141,8 +143,8 @@ public interface SchemaRule extends RecordSerializable
             case 1: return INDEX_RULE;
             case 2: return CONSTRAINT_INDEX_RULE;
             case 3: return UNIQUENESS_CONSTRAINT;
-            case 4: return MANDATORY_NODE_PROPERTY_CONSTRAINT;
-            case 5: return MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT;
+            case 4: return NODE_PROPERTY_EXISTENCE_CONSTRAINT;
+            case 5: return RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT;
             default:
                 throw new MalformedSchemaRuleException( null, "Unknown kind id %d", id );
             }

@@ -37,6 +37,6 @@ public class BaseRelationshipConstraintCreator extends AbstractConstraintCreator
     @Override
     public RelationshipConstraintCreator assertPropertyExists( String propertyKey )
     {
-        return new RelationshipPropertyExistsConstraintCreator( actions, type, propertyKey );
+        return new RelationshipPropertyExistenceConstraintCreator( actions, type, propertyKey );
     }
 }

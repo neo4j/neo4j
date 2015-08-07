@@ -41,17 +41,17 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.api.integrationtest.MandatoryPropertyConstraintValidationIT.*;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintValidationIT.*;
 
 @RunWith( Suite.class )
 @SuiteClasses( {
-        MandatoryNodePropertyConstraintValidationIT.class,
-        MandatoryRelationshipPropertyConstraintValidationIT.class
+        NodePropertyExistenceExistenceConstraintValidationIT.class,
+        RelationshipPropertyExistenceExistenceConstraintValidationIT.class
 } )
-public class MandatoryPropertyConstraintValidationIT
+public class PropertyExistenceConstraintValidationIT
 {
-    public static class MandatoryNodePropertyConstraintValidationIT
-            extends AbstractMandatoryPropertyConstraintValidationIT
+    public static class NodePropertyExistenceExistenceConstraintValidationIT
+            extends AbstractPropertyExistenceConstraintValidationIT
     {
         @Test
         public void shouldAllowNoopLabelUpdate() throws Exception
@@ -76,7 +76,7 @@ public class MandatoryPropertyConstraintValidationIT
             commit();
 
             SchemaWriteOperations schemaWrite = schemaWriteOperationsInNewTransaction();
-            schemaWrite.mandatoryNodePropertyConstraintCreate( label, propertyKey );
+            schemaWrite.nodePropertyExistenceConstraintCreate( label, propertyKey );
             commit();
         }
 
@@ -144,8 +144,8 @@ public class MandatoryPropertyConstraintValidationIT
         }
     }
 
-    public static class MandatoryRelationshipPropertyConstraintValidationIT
-            extends AbstractMandatoryPropertyConstraintValidationIT
+    public static class RelationshipPropertyExistenceExistenceConstraintValidationIT
+            extends AbstractPropertyExistenceConstraintValidationIT
     {
         @Override
         void createConstraint( String key, String property ) throws KernelException
@@ -156,7 +156,7 @@ public class MandatoryPropertyConstraintValidationIT
             commit();
 
             SchemaWriteOperations schemaWrite = schemaWriteOperationsInNewTransaction();
-            schemaWrite.mandatoryRelationshipPropertyConstraintCreate( relTypeId, propertyKeyId );
+            schemaWrite.relationshipPropertyExistenceConstraintCreate( relTypeId, propertyKeyId );
             commit();
         }
 
@@ -230,7 +230,7 @@ public class MandatoryPropertyConstraintValidationIT
         }
     }
 
-    public abstract static class AbstractMandatoryPropertyConstraintValidationIT extends KernelIntegrationTest
+    public abstract static class AbstractPropertyExistenceConstraintValidationIT extends KernelIntegrationTest
     {
         abstract void createConstraint( String key, String property ) throws KernelException;
 
@@ -251,7 +251,7 @@ public class MandatoryPropertyConstraintValidationIT
         abstract int entityCount() throws TransactionFailureException;
 
         @Test
-        public void shouldEnforceMandatoryConstraintWhenCreatingEntityWithoutProperty() throws Exception
+        public void shouldEnforcePropertyExistenceConstraintWhenCreatingEntityWithoutProperty() throws Exception
         {
             // given
             createConstraint( "Type1", "key1" );

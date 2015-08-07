@@ -21,8 +21,8 @@ package org.neo4j.kernel.api.txstate;
 
 import java.util.Map;
 
-import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -89,9 +89,9 @@ public interface TransactionState extends ReadableTxState
 
     void constraintDoAdd( UniquenessConstraint constraint, long indexId );
 
-    void constraintDoAdd( MandatoryNodePropertyConstraint constraint );
+    void constraintDoAdd( NodePropertyExistenceConstraint constraint );
 
-    void constraintDoAdd( MandatoryRelationshipPropertyConstraint constraint );
+    void constraintDoAdd( RelationshipPropertyExistenceConstraint constraint );
 
     void constraintDoDrop( NodePropertyConstraint constraint );
 

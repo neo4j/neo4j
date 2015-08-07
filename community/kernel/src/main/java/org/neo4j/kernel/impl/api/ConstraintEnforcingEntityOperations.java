@@ -28,8 +28,8 @@ import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.ObjectUtil;
 import org.neo4j.helpers.collection.FilteringIterator;
-import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -46,8 +46,8 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.exceptions.schema.MandatoryNodePropertyConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.MandatoryRelationshipPropertyConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -529,7 +529,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public MandatoryNodePropertyConstraint mandatoryNodePropertyConstraintCreate( KernelStatement state, int labelId,
+    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( KernelStatement state, int labelId,
             int propertyKeyId ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
         PrimitiveLongIterator nodes = nodesGetForLabel( state, labelId );
@@ -542,21 +542,21 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
                 {
                     if ( !node.get().hasProperty( propertyKeyId ) )
                     {
-                        MandatoryNodePropertyConstraint constraint = new MandatoryNodePropertyConstraint( labelId,
+                        NodePropertyExistenceConstraint constraint = new NodePropertyExistenceConstraint( labelId,
                                 propertyKeyId );
                         throw new CreateConstraintFailureException( constraint,
-                                new MandatoryNodePropertyConstraintVerificationFailedKernelException( constraint,
+                                new NodePropertyExistenceConstraintVerificationFailedKernelException( constraint,
                                         nodeId ) );
                     }
                 }
             }
         }
 
-        return schemaWriteOperations.mandatoryNodePropertyConstraintCreate( state, labelId, propertyKeyId );
+        return schemaWriteOperations.nodePropertyExistenceConstraintCreate( state, labelId, propertyKeyId );
     }
 
     @Override
-    public MandatoryRelationshipPropertyConstraint mandatoryRelationshipPropertyConstraintCreate( KernelStatement state,
+    public RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate( KernelStatement state,
             int relTypeId, int propertyKeyId ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
         PrimitiveLongIterator relationships = relationshipsGetAll( state );
@@ -569,13 +569,13 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
                 {
                     if ( relationship.get().type() == relTypeId && !relationship.get().hasProperty( propertyKeyId ) )
                     {
-                        MandatoryRelationshipPropertyConstraint constraint = new
-                                MandatoryRelationshipPropertyConstraint(
+                        RelationshipPropertyExistenceConstraint constraint = new
+                                RelationshipPropertyExistenceConstraint(
 
                                 relTypeId,
                                 propertyKeyId );
                         throw new CreateConstraintFailureException( constraint,
-                                new MandatoryRelationshipPropertyConstraintVerificationFailedKernelException(
+                                new RelationshipPropertyExistenceConstraintVerificationFailedKernelException(
                                         constraint,
                                         relationshipId ) );
                     }
@@ -583,7 +583,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             }
         }
 
-        return schemaWriteOperations.mandatoryRelationshipPropertyConstraintCreate( state, relTypeId, propertyKeyId );
+        return schemaWriteOperations.relationshipPropertyExistenceConstraintCreate( state, relTypeId, propertyKeyId );
     }
 
     @Override

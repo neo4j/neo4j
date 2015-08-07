@@ -23,13 +23,13 @@ import org.neo4j.kernel.api.TokenNameLookup;
 
 import static java.lang.String.format;
 
-public class MandatoryRelationshipPropertyConstraintViolationKernelException extends ConstraintViolationKernelException
+public class RelationshipPropertyExistenceConstraintViolationKernelException extends ConstraintViolationKernelException
 {
     private final int relationshipTypeId;
     private final int propertyKeyId;
     private final long relationshipId;
 
-    public MandatoryRelationshipPropertyConstraintViolationKernelException( int relationshipTypeId, int propertyKeyId,
+    public RelationshipPropertyExistenceConstraintViolationKernelException( int relationshipTypeId, int propertyKeyId,
             long relationshipId )
     {
         super( "Relationship %d with type %d does not have the property %d", relationshipId, relationshipTypeId,

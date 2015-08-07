@@ -95,13 +95,13 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.dropUniqueConstraint(labelId, propertyKeyId))
 
-  def createNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.createNodeMandatoryConstraint(labelId, propertyKeyId))
+  def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId))
 
-  def dropNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.dropNodeMandatoryConstraint(labelId, propertyKeyId))
+  def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.dropNodePropertyExistenceConstraint(labelId, propertyKeyId))
 
-  def createRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int) = singleDbHit(inner.createRelationshipMandatoryConstraint(relTypeId, propertyKeyId))
+  def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) = singleDbHit(inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
-  def dropRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int) = singleDbHit(inner.dropRelationshipMandatoryConstraint(relTypeId, propertyKeyId))
+  def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) = singleDbHit(inner.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = inner.withAnyOpenQueryContext(work)
 

@@ -24,9 +24,9 @@ import org.neo4j.graphdb.schema.ConstraintType;
 
 import static java.lang.String.format;
 
-public class MandatoryNodePropertyConstraintDefinition extends NodeConstraintDefinition
+public class NodePropertyExistenceConstraintDefinition extends NodeConstraintDefinition
 {
-    public MandatoryNodePropertyConstraintDefinition( InternalSchemaActions actions, Label label, String propertyKey )
+    public NodePropertyExistenceConstraintDefinition( InternalSchemaActions actions, Label label, String propertyKey )
     {
         super( actions, label, propertyKey );
     }
@@ -42,13 +42,13 @@ public class MandatoryNodePropertyConstraintDefinition extends NodeConstraintDef
     public ConstraintType getConstraintType()
     {
         assertInUnterminatedTransaction();
-        return ConstraintType.MANDATORY_NODE_PROPERTY;
+        return ConstraintType.NODE_PROPERTY_EXISTENCE;
     }
 
     @Override
     public String toString()
     {
-        return format( "ON (%1$s:%2$s) ASSERT %1$s.%3$s IS NOT NULL",
+        return format( "ON (%1$s:%2$s) ASSERT exists(%1$s.%3$s)",
                 label.name().toLowerCase(), label.name(), propertyKey );
     }
 }

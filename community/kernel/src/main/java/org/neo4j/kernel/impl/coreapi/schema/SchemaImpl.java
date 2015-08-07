@@ -40,8 +40,8 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -466,8 +466,8 @@ public class SchemaImpl implements Schema
                 {
                     int labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
                     int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
-                    statement.schemaWriteOperations().mandatoryNodePropertyConstraintCreate( labelId, propertyKeyId );
-                    return new MandatoryNodePropertyConstraintDefinition( this, label, propertyKey );
+                    statement.schemaWriteOperations().nodePropertyExistenceConstraintCreate( labelId, propertyKeyId );
+                    return new NodePropertyExistenceConstraintDefinition( this, label, propertyKey );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException e )
                 {
@@ -499,9 +499,9 @@ public class SchemaImpl implements Schema
                 {
                     int typeId = statement.schemaWriteOperations().relationshipTypeGetOrCreateForName( type.name() );
                     int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
-                    statement.schemaWriteOperations().mandatoryRelationshipPropertyConstraintCreate( typeId,
+                    statement.schemaWriteOperations().relationshipPropertyExistenceConstraintCreate( typeId,
                             propertyKeyId );
-                    return new MandatoryRelationshipPropertyConstraintDefinition( this, type, propertyKey );
+                    return new RelationshipPropertyExistenceConstraintDefinition( this, type, propertyKey );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException e )
                 {
@@ -552,7 +552,7 @@ public class SchemaImpl implements Schema
                 {
                     int labelId = statement.schemaWriteOperations().labelGetForName( label.name() );
                     int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetForName( propertyKey );
-                    NodePropertyConstraint constraint = new MandatoryNodePropertyConstraint( labelId, propertyKeyId );
+                    NodePropertyConstraint constraint = new NodePropertyExistenceConstraint( labelId, propertyKeyId );
                     statement.schemaWriteOperations().constraintDrop( constraint );
                 }
                 catch ( DropConstraintFailureException e )
@@ -576,7 +576,7 @@ public class SchemaImpl implements Schema
                 {
                     int typeId = statement.schemaWriteOperations().relationshipTypeGetForName( type.name() );
                     int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetForName( propertyKey );
-                    RelationshipPropertyConstraint constraint = new MandatoryRelationshipPropertyConstraint( typeId,
+                    RelationshipPropertyConstraint constraint = new RelationshipPropertyExistenceConstraint( typeId,
                             propertyKeyId );
                     statement.schemaWriteOperations().constraintDrop( constraint );
                 }
