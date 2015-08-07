@@ -1,3 +1,8 @@
+2.2.4
+-----
+o Fixed an index recovery issue where an imbalanced amount of write lock acquires compared to releases would make
+  future index updates block indefinitely
+
 2.2.3
 -----
 o Fixes legacy index tx state issue where deleted entities might be visible when querying,

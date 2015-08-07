@@ -1,3 +1,8 @@
+2.2.4
+-----
+o Empty files are now handled gracefully and no longer infinitely loop
+o Multiline fields are now enabled by default
+
 2.2.3
 -----
 o Prints summary in the end of how many entities where imported.

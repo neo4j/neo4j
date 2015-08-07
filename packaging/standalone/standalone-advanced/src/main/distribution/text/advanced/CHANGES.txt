@@ -8,6 +8,24 @@ o Identifiers are properly exposed in nested foreach clauses
 o Better eviction policy for the plan cache
 o Fixes #4673 - index seeks experience nulls from IN
 
+Kernel:
+o Fixes #4910 - TransactionData incorrect when modifying/deleting relationships.
+o Read only transactions no longer trigger Transaction events
+o Log rotation will now always leave at least one logical log in place regardless of prune strategy
+  decisions. This ensures that there are always transactions to serve to slave and incremental backups
+o Lifted the 63 name constraint per transaction for index commands. It is now possible to update more than 63 legacy
+  indexes and/or 63 property names in a single transaction.
+o Fixed a ClassCastException error that manifested under very specific conditions when updating a legacy index.
+o Batch importer will now check all constraints when it shuts down and will report any violations
+
+Lucene Index:
+o Fixed an index recovery issue where an imbalanced amount of write lock acquires compared to releases would make
+  future index updates block indefinitely
+
+Import tool:
+o Empty files are now handled gracefully and no longer infinitely loop
+o Multiline fields are now enabled by default
+
 2.2.3
 -----
 Browser:
