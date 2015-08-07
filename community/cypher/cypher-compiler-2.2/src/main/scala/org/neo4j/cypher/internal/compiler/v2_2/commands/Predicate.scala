@@ -33,7 +33,7 @@ import scala.util.{Failure, Success, Try}
 abstract class Predicate extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = isMatch(ctx).getOrElse(null)
   def isTrue(m: ExecutionContext)(implicit state: QueryState): Boolean = isMatch(m).getOrElse(false)
-  def ++(other: Predicate): Predicate = And.apply(this, other)
+  def ++(other: Predicate): Predicate = Ands(this, other)
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean]
 
   // This is the un-dividable list of predicates. They can all be ANDed
@@ -60,34 +60,39 @@ object And {
   }
 }
 
+object Ands {
+  def apply(a: Predicate, b: Predicate) = (a, b) match {
+    case (True(), other) => other
+    case (other, True()) => other
+    case (_, _)          => new Ands(List(a, b))
+  }
+}
+
 case class Ands(predicates: List[Predicate]) extends Predicate {
 
   assert(predicates.nonEmpty, "Expected predicates to never be empty")
+
+  override def ++(other: Predicate): Predicate = copy(predicates :+ other)
 
   def symbolTableDependencies: Set[String] = predicates.flatMap(_.symbolTableDependencies).toSet
 
   def containsIsNull: Boolean = predicates.exists(_.containsIsNull)
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
-    var result: Option[Option[Boolean]] = None
-    val iter = predicates.iterator
-    while (iter.nonEmpty) {
-      val p = iter.next()
-      val r = p.isMatch(m)
-
-      if(r.nonEmpty && !r.get)
-        return r
-
-      if(result.isEmpty)
-        result = Some(r)
-      else {
-        val stored = result.get
-        if (stored.nonEmpty && stored.get && r.isEmpty)
-          result = Some(None)
+    predicates.foldLeft[Try[Option[Boolean]]](Success(Some(true))) { (previousValue, predicate) =>
+      previousValue match {
+        case Success(Some(false)) => previousValue
+        case _ =>
+          Try(predicate.isMatch(m)) match {
+            case Success(Some(false)) => Success(Some(false))
+            case Success(None) if previousValue.isSuccess => Success(None)
+            case _ => previousValue
+          }
       }
+    } match {
+      case Failure(e) => throw e
+      case Success(option) => option
     }
-
-    result.get
   }
 
   def arguments: Seq[Expression] = predicates
@@ -99,22 +104,7 @@ case class Ands(predicates: List[Predicate]) extends Predicate {
 
 
 class And(val a: Predicate, val b: Predicate) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
-    (Try(a.isMatch(m)), Try(b.isMatch(m))) match {
-      case (Failure(_), Success(Some(false))) => Some(false)
-      case (Success(Some(false)), Failure(_)) => Some(false)
-      case (Failure(e), _)                    => throw e
-      case (_, Failure(e))                    => throw e
-      case (Success(aMatch), Success(bMatch)) => (aMatch, bMatch) match {
-        case (None, None)        => None
-        case (Some(true), None)  => None
-        case (Some(false), None) => Some(false)
-        case (None, Some(true))  => None
-        case (None, Some(false)) => Some(false)
-        case (Some(l), Some(r))  => Some(l && r)
-      }
-    }
-  }
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = Ands(List(a, b)).isMatch(m)
 
   override def atoms: Seq[Predicate] = a.atoms ++ b.atoms
   override def toString: String = "(" + a + " AND " + b + ")"
