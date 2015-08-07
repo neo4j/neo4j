@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
+import org.neo4j.cypher.internal.compiler.v2_3.functions.Has
 
 // TODO: Support n.prop <op> m.prop, perhaps by
 //  either killing this and just looking on both lhs and rhs all over the place or
@@ -32,11 +33,15 @@ case object normalizeArgumentOrder extends Rewriter {
 
   private val instance: Rewriter = Rewriter.lift {
 
+    // turn n.prop IS NOT NULL into has(n.prop)
+    case predicate @ IsNotNull(property @ Property(_, _)) =>
+      Has.asInvocation(property)(predicate.position)
+
     // move id(n) on equals to the left
-    case predicate @ Equals(func@FunctionInvocation(_, _, _), _) if func.function == Some(functions.Id) =>
+    case predicate @ Equals(func@FunctionInvocation(_, _, _), _) if func.function.contains(functions.Id) =>
       predicate
 
-    case predicate @ Equals(lhs, rhs @ FunctionInvocation(_, _, _)) if rhs.function == Some(functions.Id) =>
+    case predicate @ Equals(lhs, rhs @ FunctionInvocation(_, _, _)) if rhs.function.contains(functions.Id) =>
       predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
 
     // move n.prop on equals to the left
