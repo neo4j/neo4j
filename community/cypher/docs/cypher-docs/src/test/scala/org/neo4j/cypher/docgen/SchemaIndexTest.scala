@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.docgen
 
+import java.util.concurrent.TimeUnit
+
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.junit.Test
@@ -138,10 +140,15 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
   }
 
   @Test def use_index_with_like() {
-    // Need to make index preferable in terms of cost
-    executePreparationQueries((0 to 250).map { i =>
-      "CREATE (:Person)"
-    }.toList)
+    executePreparationQueries {
+      val a = (0 to 100).map { i => "CREATE (:Person)" }.toList
+      val b = (0 to 300).map { i => s"CREATE (:Person {name: '$i'})" }.toList
+      a ++ b
+    }
+    db.execute("DROP INDEX ON :Person(name)")
+    db.execute("CREATE INDEX ON :Person(name)")
+    db.inTx { db.schema().awaitIndexesOnline(2, TimeUnit.SECONDS) }
+
     profileQuery(
       title = "Use index with LIKE",
       text =

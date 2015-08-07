@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.docgen
 
+import java.util.concurrent.TimeUnit
+
 import org.junit.Test
 import org.junit.Assert._
 import org.hamcrest.CoreMatchers._
@@ -177,10 +179,15 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
   }
 
   @Test def nodeIndexRangeSeek() {
-    // Need to make index preferable in terms of cost
-    executePreparationQueries((0 to 250).map { i =>
-      "CREATE (:Location)"
-    }.toList)
+    executePreparationQueries {
+      val a = (0 to 100).map { i => "CREATE (:Location)" }.toList
+      val b = (0 to 300).map { i => s"CREATE (:Location {name: '$i'})" }.toList
+      a ++ b
+    }
+    db.execute("DROP INDEX ON :Location(name)")
+    db.execute("CREATE INDEX ON :Location(name)")
+    db.inTx { db.schema().awaitIndexesOnline(2, TimeUnit.SECONDS) }
+
     profileQuery(title = "Node index range seek",
                  text = """
                           |Finds nodes using an index seek where the value of the property matches a given prefix string.
@@ -192,10 +199,15 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
   }
 
   @Test def nodeUniqueIndexRangeSeek() {
-    // Need to make index preferable in terms of cost
-    executePreparationQueries((0 to 250).map { i =>
-      "CREATE (:Team)"
-    }.toList)
+    executePreparationQueries {
+      val a = (0 to 100).map { i => "CREATE (:Team)" }.toList
+      val b = (0 to 300).map { i => s"CREATE (:Team {name: '$i'})" }.toList
+      a ++ b
+    }
+    db.execute("DROP CONSTRAINT ON (team:Team) ASSERT team.name is UNIQUE")
+    db.execute("CREATE CONSTRAINT ON (team:Team) ASSERT team.name is UNIQUE")
+    db.inTx { db.schema().awaitIndexesOnline(2, TimeUnit.SECONDS) }
+
     profileQuery(title = "Node unique index range seek",
                  text = """
                           |Finds nodes using a unique index seek where the value of the property matches a given prefix string.
@@ -571,5 +583,4 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("UNWIND"))
     )
   }
-
 }

@@ -145,7 +145,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     val factor = java.math.BigDecimal.ONE.divide(java.math.BigDecimal.valueOf(prefix.length), 17, RoundingMode.HALF_UP)
       .multiply(java.math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR)).stripTrailingZeros()
     val slack = BigDecimalCombiner.negate(equality).multiply(factor)
-    Selectivity(equality.add(slack).doubleValue())
+    val result = Selectivity(equality.add(slack).doubleValue())
+    result
   }
 
   private def calculateSelectivityForValueRangeSeekable(seekable: InequalityRangeSeekable,
@@ -156,7 +157,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     val equality = java.math.BigDecimal.valueOf(calculateSelectivityForPropertyEquality(name, None, selections, propertyKeyName).factor)
     val factor = java.math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR)
     val slack = BigDecimalCombiner.negate(equality).multiply(factor)
-    Selectivity(equality.add(slack).doubleValue())
+    val result = Selectivity(equality.add(slack).doubleValue())
+    result
   }
 
   private def calculateSelectivityForPropertyExistence(identifier: String,
@@ -175,6 +177,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
         }
     }
 
-    combiner.orTogetherSelectivities(indexPropertyExistsSelectivities).getOrElse(DEFAULT_PROPERTY_SELECTIVITY)
+    val result = combiner.orTogetherSelectivities(indexPropertyExistsSelectivities).getOrElse(DEFAULT_PROPERTY_SELECTIVITY)
+    result
   }
 }

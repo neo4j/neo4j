@@ -48,10 +48,14 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     val london = createLabeledNode(Map("name" -> "London"), "Location")
     createLabeledNode(Map("name" -> "london"), "Location")
     graph.inTx {
-      (1 to 300).foreach { _ =>
+      (1 to 100).foreach { _ =>
         createLabeledNode("Location")
       }
+      (1 to 300).map { i =>
+        createLabeledNode(Map("name" -> i.toString), "Location")
+      }
     }
+
     graph.createIndex("Location", "name")
 
     val query = "MATCH (l:Location) WHERE l.name LIKE 'Lon%' RETURN l"
@@ -129,8 +133,12 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
       createLabeledNode(Map("name" -> "Malmo"), "Location")
       createLabeledNode(Map("name" -> "Loondon"), "Location")
       createLabeledNode(Map("name" -> "Lolndon"), "Location")
-      (1 to 300).foreach { _ =>
+
+      (1 to 100).foreach { _ =>
         createLabeledNode("Location")
+      }
+      (1 to 300).map { i =>
+        createLabeledNode(Map("name" -> i.toString), "Location")
       }
     }
     graph.createIndex("Location", "name")
@@ -144,11 +152,16 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
   }
 
   test("should plan the leaf with the longest prefix if multiple LIKE patterns") {
+
     graph.inTx {
-      (1 to 300).foreach { _ =>
+      (1 to 100).foreach { _ =>
         createLabeledNode("Address")
       }
+      (1 to 300).map { i =>
+        createLabeledNode(Map("prop" -> i.toString), "Address")
+      }
     }
+
     val a1 = createLabeledNode(Map("prop" -> "www123"), "Address")
     val a2 = createLabeledNode(Map("prop" -> "www"), "Address")
     createLabeledNode(Map("prop" -> "ww"), "Address")
@@ -163,11 +176,16 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
   }
 
   test("should plan an IndexRangeSeek for a % string prefix search when index exists") {
+
     graph.inTx {
-      (1 to 300).foreach { _ =>
+      (1 to 100).foreach { _ =>
         createLabeledNode("Address")
       }
+      (1 to 300).map { i =>
+        createLabeledNode(Map("prop" -> i.toString), "Address")
+      }
     }
+
     val a1 = createLabeledNode(Map("prop" -> "www123"), "Address")
     val a2 = createLabeledNode(Map("prop" -> "www"), "Address")
     val a3 = createLabeledNode(Map("prop" -> "ww"), "Address")
@@ -183,10 +201,14 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
   test("should plan an IndexRangeSeek for a _ string prefix search when index exists") {
 
     graph.inTx {
-      (1 to 300).foreach { _ =>
+      (1 to 100).foreach { _ =>
         createLabeledNode("Address")
       }
+      (1 to 300).map { i =>
+        createLabeledNode(Map("prop" -> i.toString), "Address")
+      }
     }
+
     val a1 = createLabeledNode(Map("prop" -> "www123"), "Address")
     val a2 = createLabeledNode(Map("prop" -> "www"), "Address")
     val a3 = createLabeledNode(Map("prop" -> "ww"), "Address")
@@ -203,8 +225,11 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
   test("should plan an IndexRangeSeek for a string search that starts with a prefix when index exists") {
 
     graph.inTx {
-      (1 to 300).foreach { _ =>
+      (1 to 100).foreach { _ =>
         createLabeledNode("Address")
+      }
+      (1 to 300).map { i =>
+        createLabeledNode(Map("prop" -> i.toString), "Address")
       }
     }
     val a1 = createLabeledNode(Map("prop" -> "www123"), "Address")
@@ -224,10 +249,14 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
   test("should plan a UniqueIndexSeek when constraint exists") {
 
     graph.inTx {
-      (1 to 300).foreach { _ =>
+      (1 to 100).foreach { _ =>
         createLabeledNode("Address")
       }
+      (1 to 300).map { i =>
+        createLabeledNode(Map("prop" -> i.toString), "Address")
+      }
     }
+
     val a1 = createLabeledNode(Map("prop" -> "www123"), "Address")
     val a2 = createLabeledNode(Map("prop" -> "www"), "Address")
     val a3 = createLabeledNode(Map("prop" -> "ww"), "Address")
