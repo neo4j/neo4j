@@ -77,8 +77,8 @@ head({coll}), last({coll}), tail({coll})
 ###
 
 +head+ returns the first, +last+ the last element
-of the collection. +tail+ the remainder of the
-collection. All return null for an empty collection.
+of the collection. +tail+ returns all but the first element.
+All return `NULL` for an empty collection.
 
 ###assertion=returns-one parameters=value
 MATCH path=(n)-->(m)
