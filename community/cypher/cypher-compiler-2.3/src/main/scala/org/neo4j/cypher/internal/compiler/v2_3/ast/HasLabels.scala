@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
-case class HasLabels(expression: Expression, labels: Seq[LabelName])(val position: InputPosition) extends Expression with SimpleTyping {
+case class HasLabels(expression: Expression, labels: Seq[LabelName])(val position: InputPosition)
+  extends Expression with SimpleTyping {
 
   protected def possibleTypes = CTBoolean
 

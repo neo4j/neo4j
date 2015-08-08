@@ -29,6 +29,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def ident(name: String): Identifier = Identifier(name)(pos)
 
+  def hasLabels(identifier: String, label: String) =
+    HasLabels(ident(identifier), Seq(LabelName(label)(pos)))(pos)
+
   def propEquality(identifier: String, propKey: String, intValue: Int) = {
     val prop: Expression = Property(ident(identifier), PropertyKeyName(propKey)(pos))(pos)
     val literal: Expression = SignedDecimalIntegerLiteral(intValue.toString)(pos)

@@ -377,7 +377,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans for label scans when a hint is given") {
-    implicit val plan = new given planFor "MATCH (n:Foo:Bar:Baz) USING SCAN n:Bar RETURN n"
+
+    implicit val plan = new given {
+      cost = {
+        case (_: Selection, _) => 20.0
+        case (_: NodeHashJoin, _) => 1000.0
+        case (_: NodeByLabelScan, _) => 20.0
+      }
+    } planFor "MATCH (n:Foo:Bar:Baz) USING SCAN n:Bar RETURN n"
 
     plan.innerPlan should equal(
       Selection(
