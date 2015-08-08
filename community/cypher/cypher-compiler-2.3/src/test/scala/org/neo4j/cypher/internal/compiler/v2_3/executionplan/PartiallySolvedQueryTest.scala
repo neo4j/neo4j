@@ -43,7 +43,7 @@ class PartiallySolvedQueryTest extends CypherFunSuite {
 
   test("deletes and creates should not be compacted together") {
     // Given MATCH (a) WITH a DELETE a WITH a CREATE (:Person)
-    val deleteAction = DeleteEntityAction(Identifier("a"))
+    val deleteAction = DeleteEntityAction(Identifier("a"), forced = false)
     val q3 = Query.start(createNode("a3")).returns()
     val q2 = Query.updates(deleteAction).tail(q3).returns(AllIdentifiers())
     val q1 = Query.matches(SingleNode("a")).tail(q2).returns(AllIdentifiers())
@@ -66,7 +66,7 @@ class PartiallySolvedQueryTest extends CypherFunSuite {
   test("delete followed by merge node should not be compacted together") {
     // MATCH (a) DELETE a MERGE (b:B)
     val q3 = Query.updates(mergeNode("b")).returns()
-    val q2 = Query.updates(DeleteEntityAction(Identifier("a"))).tail(q3).returns(AllIdentifiers())
+    val q2 = Query.updates(DeleteEntityAction(Identifier("a"), forced = false)).tail(q3).returns(AllIdentifiers())
     val q1 = Query.matches(SingleNode("a")).tail(q2).returns(AllIdentifiers())
 
     // When
@@ -76,7 +76,7 @@ class PartiallySolvedQueryTest extends CypherFunSuite {
     psq.updates shouldBe empty
 
     // Second query part contains no merge node
-    psq.tail.get.updates.toList should equal(List(Unsolved(DeleteEntityAction(Identifier("a")))))
+    psq.tail.get.updates.toList should equal(List(Unsolved(DeleteEntityAction(Identifier("a"), forced = false))))
 
     // Third part contains the merge node
     psq.tail.get.tail.get.updates.toList should equal(List(Unsolved(mergeNode("b"))))

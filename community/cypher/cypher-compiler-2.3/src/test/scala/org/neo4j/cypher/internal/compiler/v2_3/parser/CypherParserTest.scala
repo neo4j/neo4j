@@ -1884,7 +1884,7 @@ class CypherParserTest extends CypherFunSuite {
     expectQuery(
       "start a=node(0) with a delete a", {
       val secondQ = Query.
-        updates(DeleteEntityAction(Identifier("a"))).
+        updates(DeleteEntityAction(Identifier("a"), forced = false)).
         returns()
 
       Query.
@@ -1898,7 +1898,7 @@ class CypherParserTest extends CypherFunSuite {
     expectQuery(
       "start a=node(0) delete a", {
       val secondQ = Query.
-        updates(DeleteEntityAction(Identifier("a"))).
+        updates(DeleteEntityAction(Identifier("a"), forced = false)).
         returns()
 
       Query.
@@ -1912,7 +1912,7 @@ class CypherParserTest extends CypherFunSuite {
     expectQuery(
       "start a=node(0) match (a)-[r:REL]->(b) delete r", {
       val secondQ = Query.
-        updates(DeleteEntityAction(Identifier("r"))).
+        updates(DeleteEntityAction(Identifier("r"), forced = false)).
         returns()
 
       Query.
@@ -1927,7 +1927,7 @@ class CypherParserTest extends CypherFunSuite {
     expectQuery(
       "start a=node(0) match p=(a)-[r:REL]->(b) delete p", {
       val secondQ = Query.
-        updates(DeleteEntityAction(Identifier("p"))).
+        updates(DeleteEntityAction(Identifier("p"), forced = false)).
         returns()
 
       Query.

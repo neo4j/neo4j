@@ -232,7 +232,7 @@ case class SetClause(items: Seq[SetItem])(val position: InputPosition) extends U
   def semanticCheck = items.semanticCheck
 }
 
-case class Delete(expressions: Seq[Expression])(val position: InputPosition) extends UpdateClause {
+case class Delete(expressions: Seq[Expression], forced: Boolean)(val position: InputPosition) extends UpdateClause {
   def name = "DELETE"
 
   def semanticCheck =

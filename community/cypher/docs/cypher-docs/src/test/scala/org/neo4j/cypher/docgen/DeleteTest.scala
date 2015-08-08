@@ -22,7 +22,6 @@ package org.neo4j.cypher.docgen
 import org.junit.Test
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.graphdb.DynamicLabel
-import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 
 class DeleteTest extends DocumentingTestBase with QueryStatisticsTestSupport with SoftReset {
@@ -44,26 +43,35 @@ class DeleteTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
       title = "Delete single node",
       text = "To delete a node, use the +DELETE+ clause.",
       queryText = "match (n:Useless) delete n",
-      optionalResultExplanation = "Nothing is returned from this query, except the count of affected nodes.",
+      optionalResultExplanation = "",
       prepare = db => db.inTx(db.createNode(DynamicLabel.label("Useless"))),
       assertions = p => assertStats(p, nodesDeleted = 1))
-  }
-
-  @Test def delete_single_node_with_all_relationships() {
-    testQuery(
-      title = "Delete a node and connected relationships",
-      text = "If you are trying to delete a node with relationships on it, you have to delete these as well.",
-      queryText = "match (n {name: 'Andres'})-[r]-() delete n, r",
-      optionalResultExplanation = "Nothing is returned from this query, except the count of affected nodes.",
-      assertions = (p) => assertStats(p, relationshipsDeleted = 2, nodesDeleted = 1))
   }
 
   @Test def delete_all_nodes_and_all_relationships() {
     testQuery(
       title = "Delete all nodes and relationships",
       text = "This query isn't for deleting large amounts of data, but is nice when playing around with small example data sets.",
-      queryText = "MATCH (n) OPTIONAL MATCH (n)-[r]-() DELETE n,r",
-      optionalResultExplanation = "Nothing is returned from this query, except the count of affected nodes.",
+      queryText = "MATCH (n) DETACH DELETE n",
+      optionalResultExplanation = "",
       assertions = (p) => assertStats(p, relationshipsDeleted = 2, nodesDeleted = 3))
+  }
+
+  @Test def force_delete_a_node() {
+    testQuery(
+      title = "Delete a node with all its relationships",
+      text = "When you want to delete a node and any relationship going to or from it, use +DETACH+ +DELETE+.",
+      queryText = "MATCH (n {name:'Andres'}) DETACH DELETE n",
+      optionalResultExplanation = "",
+      assertions = (p) => assertStats(p, relationshipsDeleted = 2, nodesDeleted = 1))
+  }
+
+  @Test def delete_a_whole_path() {
+    testQuery(
+      title = "Delete a path",
+      text = "Using Cypher, you can find whole paths and delete all nodes and relationships.",
+      queryText = "MATCH p=({name:'Andres'})-[*]->() DETACH DELETE p",
+      optionalResultExplanation = "",
+      assertions = (p) => assertStats(p, relationshipsDeleted = 2, nodesDeleted = 2))
   }
 }

@@ -77,14 +77,14 @@ class UpdateActionBuilderTest extends BuilderTest {
 
   test("does_not_offer_to_solve_done_queries") {
     val q = PartiallySolvedQuery().
-      copy(updates = Seq(Solved(DeleteEntityAction(Identifier("x")))))
+      copy(updates = Seq(Solved(DeleteEntityAction(Identifier("x"), forced = false))))
 
     assertRejects(q)
   }
 
   test("offers_to_solve_queries") {
     val q = PartiallySolvedQuery().
-      copy(updates = Seq(Unsolved(DeleteEntityAction(Identifier("x")))))
+      copy(updates = Seq(Unsolved(DeleteEntityAction(Identifier("x"), forced = false))))
     val pipe = createPipe(nodes = Seq("x"))
 
     val resultPlan = assertAccepts(pipe, q)
@@ -95,7 +95,7 @@ class UpdateActionBuilderTest extends BuilderTest {
 
   test("does_not_offer_to_delete_something_not_yet_there") {
     val q = PartiallySolvedQuery().
-      copy(updates = Seq(Unsolved(DeleteEntityAction(Identifier("x")))))
+      copy(updates = Seq(Unsolved(DeleteEntityAction(Identifier("x"), forced = false))))
 
     assertRejects(q)
   }

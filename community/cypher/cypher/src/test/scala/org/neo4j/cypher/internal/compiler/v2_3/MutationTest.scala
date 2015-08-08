@@ -114,7 +114,7 @@ class MutationTest extends ExecutionEngineFunSuite {
 
   test("throw_exception_if_wrong_stuff_to_delete") {
     val tx = graph.beginTx()
-    val createRel = DeleteEntityAction(Literal("some text"))
+    val createRel = DeleteEntityAction(Literal("some text"), forced = false)
 
     intercept[CypherTypeException](createRel.exec(ExecutionContext.empty, createQueryState))
     tx.close()
@@ -124,7 +124,7 @@ class MutationTest extends ExecutionEngineFunSuite {
     val tx = graph.beginTx()
     val a: Node = createNode()
     val node_id: Long = a.getId
-    val deleteCommand = DeleteEntityAction(getNode("a", a))
+    val deleteCommand = DeleteEntityAction(getNode("a", a), forced = false)
 
     val startPipe = SingleRowPipe()
     val createNodePipe = new ExecuteUpdateCommandsPipe(startPipe, Seq(deleteCommand))

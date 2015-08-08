@@ -34,6 +34,12 @@ class DeleteTest extends RefcardTest with QueryStatisticsTestSupport {
       case "delete" =>
         assertStats(result, nodesCreated = 1, nodesDeleted = 1, relationshipsDeleted = 1)
         assert(result.toList.size === 0)
+      case "detach-delete" =>
+        assertStats(result, nodesCreated = 1, nodesDeleted = 1)
+        assert(result.toList.size === 0)
+      case "delete-all" =>
+        assertStats(result, nodesDeleted = 4, relationshipsDeleted = 3)
+        assert(result.toList.size === 0)
     }
   }
 
@@ -54,12 +60,24 @@ class DeleteTest extends RefcardTest with QueryStatisticsTestSupport {
 
   def text = """
 ###assertion=delete
-START r = relationship(1)
+MATCH ()-[r]->() WHERE id(r) = 1
 CREATE (n)
 
 DELETE n, r
 ###
 
 Delete a node and a relationship.
+
+###assertion=detach-delete
+CREATE (n)
+
+DETACH DELETE n
+###
+Delete a node and all relationships connected to it.
+
+###assertion=delete-all
+MATCH (n) DETACH DELETE n
+###
+Delete all nodes and relationships from the database.
 """
 }
