@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.Converge.iterateUntilConverged
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
@@ -28,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.greedy.GreedyPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.helpers.ThisShouldNotHappenError
 
-case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph], pickBestFactory: LogicalPlanningFunction0[CandidateSelector]) extends PlanTransformer[QueryGraph] {
+case class selectPatternPredicates(pickBestFactory: LogicalPlanningFunction0[CandidateSelector]) extends PlanTransformer[QueryGraph] {
 
   private object candidatesProducer extends CandidateGenerator[GreedyPlanTable] {
     def apply(planTable: GreedyPlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
@@ -128,15 +127,10 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph],
   }
 
   def apply(input: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    val plan = simpleSelection(input, queryGraph)
     val pickBest = pickBestFactory(context)
 
-    def findBestPlanForPatternPredicates(plan: LogicalPlan): LogicalPlan = {
-      val secretPlanTable = GreedyPlanTable.empty + plan
-      val result = candidatesProducer(secretPlanTable, queryGraph)
-      pickBest(result).getOrElse(plan)
-    }
-
-    iterateUntilConverged(findBestPlanForPatternPredicates)(plan)
+    val secretPlanTable = GreedyPlanTable.empty + input
+    val result = candidatesProducer(secretPlanTable, queryGraph)
+    pickBest(result).getOrElse(input)
   }
 }
