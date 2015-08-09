@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import java.util.UUID
+import java.util.{Set, UUID}
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
+
+import scala.collection.mutable
 
 case class QueryState(query: QueryContext,
                       resources: ExternalResource,
@@ -31,13 +33,12 @@ case class QueryState(query: QueryContext,
                       decorator: PipeDecorator,
                       timeReader: TimeReader = new TimeReader,
                       var initialContext: Option[ExecutionContext] = None,
-                      queryId: AnyRef = UUID.randomUUID().toString) {
-
+                      queryId: AnyRef = UUID.randomUUID().toString,
+                      triadicSets: mutable.Map[String, Set[Long]] = new mutable.HashMap[String, Set[Long]]()) {
   private var _pathValueBuilder: PathValueBuilder = null
 
   def clearPathValueBuilder = {
-    if (_pathValueBuilder == null )
-    {
+    if (_pathValueBuilder == null) {
       _pathValueBuilder = new PathValueBuilder()
     }
     _pathValueBuilder.clear()
@@ -60,4 +61,3 @@ object QueryState {
 class TimeReader {
   lazy val getTime = System.currentTimeMillis()
 }
-
