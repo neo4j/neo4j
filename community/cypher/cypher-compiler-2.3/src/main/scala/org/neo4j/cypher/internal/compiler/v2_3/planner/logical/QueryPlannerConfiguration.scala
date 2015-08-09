@@ -28,7 +28,12 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.solveOption
 object QueryPlannerConfiguration {
   val default = QueryPlannerConfiguration(
     pickBestCandidate = pickBestPlanUsingHintsAndCost,
-    applySelections = Selector(Seq(selectPatternPredicates(pickBestPlanUsingHintsAndCost), selectCovered(pickBestPlanUsingHintsAndCost)), pickBestPlanUsingHintsAndCost),
+    applySelections = Selector(
+      Seq(
+        selectPatternPredicates(pickBestPlanUsingHintsAndCost),
+        triadicSelection,
+        selectCovered(pickBestPlanUsingHintsAndCost)),
+      pickBestPlanUsingHintsAndCost),
     projectAllEndpoints = projectEndpoints.all,
     optionalSolvers = Seq(
       applyOptional,

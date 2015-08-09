@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import java.util
 
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherTypeException, ExecutionContext}
 import org.neo4j.graphdb.Node
@@ -43,7 +44,8 @@ case class TriadicBuildPipe(source: Pipe, identifier: String)
   }
 
   override def planDescriptionWithoutCardinality: InternalPlanDescription =
-    PlanDescriptionImpl(this.id, "TriadicBuild", SingleChild(source.planDescription), Seq(), identifiers)
+    PlanDescriptionImpl(this.id, "TriadicBuild", SingleChild(source.planDescription),
+      Seq(KeyNames(Seq(identifier))), identifiers)
 
   override def withEstimatedCardinality(estimated: Double) =
     copy()(Some(estimated))
@@ -73,7 +75,8 @@ case class TriadicProbePipe(source: Pipe, triadicSet: String, identifier: String
   }
 
   override def planDescriptionWithoutCardinality: InternalPlanDescription =
-    PlanDescriptionImpl(this.id, "TriadicProbe", SingleChild(source.planDescription), Seq(), identifiers)
+    PlanDescriptionImpl(this.id, "TriadicProbe", SingleChild(source.planDescription),
+      Seq(KeyNames(Seq(triadicSet, identifier))), identifiers)
 
   override def withEstimatedCardinality(estimated: Double) =
     copy()(Some(estimated))
