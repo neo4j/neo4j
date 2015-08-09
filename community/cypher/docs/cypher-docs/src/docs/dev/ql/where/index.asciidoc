@@ -53,7 +53,7 @@ include::case-insensitive-regular-expressions.asciidoc[]
 
 :leveloffset: 2
 
-== Case-(in)sensitive string pattern matching ==
+== String pattern matching ==
 
 :leveloffset: 3
 
@@ -70,7 +70,7 @@ include::escaping-in-pattern-matching.asciidoc[]
 :leveloffset: 2
 
 [[query-where-patterns]]
-== Using patterns in WHERE ==
+== Using path patterns in WHERE ==
 
 :leveloffset: 3
 

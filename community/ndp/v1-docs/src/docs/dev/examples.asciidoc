@@ -3,9 +3,9 @@
 
 This section contains concrete examples showing how to perform tasks using the full protocol stack.
 
-=== Running a cypher query
+=== Running a Cypher query
 
-This illustrates running a simple cypher query without parameters, and retrieving the results.
+This illustrates running a simple Cypher query without parameters, and retrieving the results.
 
 .Run query
 [source,ndp_exchange]

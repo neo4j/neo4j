@@ -29,7 +29,7 @@
   <fileSets>
     <fileSet>
       <directory>target/upgrade/</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <includes>
         <include>*.txt</include>
       </includes>
