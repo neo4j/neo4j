@@ -186,4 +186,9 @@ public class BreakableFileSystemAbstraction implements FileSystemAbstraction, Fi
         return inner.getOrCreateThirdPartyFileSystem( clazz, creator );
     }
 
+    @Override
+    public void truncate( File path, long size ) throws IOException
+    {
+        inner.truncate( path, size );
+    }
 }

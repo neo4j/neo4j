@@ -146,6 +146,12 @@ public abstract class KeyValueStoreFileFormat
                     "Invalid sizes: keySize=%d, valueSize=%d, format maxSize=%d",
                     keySize, valueSize, maxSize ) );
         }
+
+        if ( fs.fileExists( path ) )
+        {
+            fs.truncate( path, 0 );
+        }
+
         BigEndianByteArrayBuffer key = new BigEndianByteArrayBuffer( new byte[keySize] );
         BigEndianByteArrayBuffer value = new BigEndianByteArrayBuffer( new byte[valueSize] );
         writeFormatSpecifier( value );

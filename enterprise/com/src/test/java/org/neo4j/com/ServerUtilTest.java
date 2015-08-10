@@ -426,5 +426,11 @@ public class ServerUtilTest
         {
             return null;
         }
+
+        @Override
+        public void truncate( File path, long size ) throws IOException
+        {
+
+        }
     }
 }

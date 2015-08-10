@@ -44,7 +44,7 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
         {
         }
     };
-    
+
     public static Runnable callCounter( final AtomicInteger count )
     {
         return new Runnable()
@@ -56,7 +56,7 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
             }
         };
     }
-    
+
     private final boolean fileExists;
     private final IOException cannotCreateStoreDir;
     private final IOException cannotOpenLockFile;
@@ -86,7 +86,7 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
 
         return emptyFileChannel;
     }
-    
+
     private final StoreChannel emptyFileChannel = new AbstractStoreChannel()
     {
         @Override
@@ -153,7 +153,7 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
         {
             onClose.run();
         }
-        
+
         private IOException unsupported()
         {
             return new IOException( "Unsupported" );
@@ -177,7 +177,7 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
     {
         throw new UnsupportedOperationException( "TODO" );
     }
-    
+
     @Override
     public Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException
     {
@@ -191,7 +191,7 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
         {
             throw new IOException( "Unable to create lock file " + fileName );
         }
-        
+
         return SYMBOLIC_FILE_LOCK;
     }
 
@@ -262,7 +262,7 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
     {
         return new File[0];
     }
-    
+
     @Override
     public void moveToDirectory( File file, File toDirectory ) throws IOException
     {
@@ -274,7 +274,7 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
     {
         throw new UnsupportedOperationException( "TODO" );
     }
-    
+
     @Override
     public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
     {
@@ -286,6 +286,12 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
             creator )
     {
         throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void truncate( File path, long size ) throws IOException
+    {
+        throw new UnsupportedOperationException( "TODO" );
     }
 
     private static final FileLock SYMBOLIC_FILE_LOCK = new FileLock()
