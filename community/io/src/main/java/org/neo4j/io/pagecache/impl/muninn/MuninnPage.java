@@ -107,7 +107,7 @@ final class MuninnPage extends StampedLock implements Page
         cachePageHeader |= ~0x7F;
     }
 
-    private void markAsClean()
+    public void markAsClean()
     {
         cachePageHeader &= 0x7F;
     }
@@ -317,21 +317,6 @@ final class MuninnPage extends StampedLock implements Page
         }
     }
 
-    /**
-     * NOTE: This method must be called while holding a pessimistic lock on the page.
-     */
-    public void flush(
-            PageSwapper swapper,
-            long filePageId,
-            FlushEventOpportunity flushOpportunity ) throws IOException
-    {
-        if ( isDirty() && this.swapper == swapper && this.filePageId == filePageId )
-        {
-            // The page is bound to the given swapper and has stuff to flush
-            doFlush( swapper, filePageId, flushOpportunity );
-        }
-    }
-
     private void doFlush(
             PageSwapper swapper,
             long filePageId,
@@ -341,7 +326,7 @@ final class MuninnPage extends StampedLock implements Page
         FlushEvent event = flushOpportunity.beginFlush( filePageId, getCachePageId(), swapper );
         try
         {
-            int bytesWritten = swapper.write( filePageId, this );
+            long bytesWritten = swapper.write( filePageId, this );
             markAsClean();
             event.addBytesWritten( bytesWritten );
             event.done();
@@ -380,7 +365,7 @@ final class MuninnPage extends StampedLock implements Page
         // the file page, so any subsequent thread that finds the page in their
         // translation table will re-do the page fault.
         this.filePageId = filePageId; // Page now considered isLoaded()
-        int bytesRead = swapper.read( filePageId, this );
+        long bytesRead = swapper.read( filePageId, this );
         faultEvent.addBytesRead( bytesRead );
         faultEvent.setCachePageId( getCachePageId() );
         this.swapper = swapper; // Page now considered isBoundTo( swapper, filePageId )
@@ -431,11 +416,6 @@ final class MuninnPage extends StampedLock implements Page
             pointer = memoryManager.allocateAligned( size() );
             UnsafeUtil.setMemory( pointer, size(), MuninnPageCache.ZERO_BYTE );
         }
-    }
-
-    public PageSwapper getSwapper()
-    {
-        return swapper;
     }
 
     public long getFilePageId()

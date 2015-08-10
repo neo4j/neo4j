@@ -17,21 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.store.io;
+package org.neo4j.io.fs;
+
+import java.nio.channels.FileChannel;
 
 /**
- * Able to retrieve stats about I/O.
+ * This class exist to circumvent the encapsulation of the StoreChannel interface and the StoreFileChannel wrapper.
+ * This way, access can be obtained to the underlying FileChannel contained in StoreFileChannels, allowing special
+ * optimisations. Use with care.
  */
-public interface IoTracer
+public final class StoreFileChannelUnwrapper
 {
-    long countBytesWritten();
-
-    public static final IoTracer NONE = new IoTracer()
+    public static FileChannel unwrap( StoreChannel channel )
     {
-        @Override
-        public long countBytesWritten()
-        {
-            return 0;
-        }
-    };
+        return StoreFileChannel.unwrap( channel );
+    }
 }

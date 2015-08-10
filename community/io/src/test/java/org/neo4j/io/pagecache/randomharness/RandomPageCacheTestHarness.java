@@ -398,10 +398,7 @@ public class RandomPageCacheTestHarness
                 }
                 future.get( deadlineMillis - now, TimeUnit.MILLISECONDS );
             }
-            if ( verification != null )
-            {
-                verification.run( cache, this.fs, plan.getFilesTouched() );
-            }
+            runVerificationPhase( cache );
         }
         finally
         {
@@ -416,6 +413,14 @@ public class RandomPageCacheTestHarness
             plan.close();
             cache.close();
             this.fs.shutdown();
+        }
+    }
+
+    private void runVerificationPhase( MuninnPageCache cache ) throws Exception
+    {
+        if ( verification != null )
+        {
+            verification.run( cache, this.fs, plan.getFilesTouched() );
         }
     }
 

@@ -818,8 +818,9 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         int read( Positionable fc, ByteBuffer dst )
         {
             int wanted = dst.limit() - dst.position();
-            int available = min( wanted, (int) (size() - fc.pos()) );
-            if ( available == 0 )
+            long size = size();
+            int available = min( wanted, (int) (size - fc.pos()) );
+            if ( available <= 0 )
             {
                 return -1; // EOF
             }

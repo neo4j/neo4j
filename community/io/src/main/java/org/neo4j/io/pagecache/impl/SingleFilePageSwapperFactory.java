@@ -73,7 +73,7 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
     @Override
     public String implementationName()
     {
-        return "striped";
+        return "single";
     }
 
     @Override

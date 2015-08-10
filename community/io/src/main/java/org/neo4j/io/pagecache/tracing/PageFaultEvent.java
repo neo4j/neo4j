@@ -30,7 +30,7 @@ public interface PageFaultEvent
     PageFaultEvent NULL = new PageFaultEvent()
     {
         @Override
-        public void addBytesRead( int bytes )
+        public void addBytesRead( long bytes )
         {
         }
 
@@ -59,7 +59,7 @@ public interface PageFaultEvent
     /**
      * Add up a number of bytes that has been read from the backing file into the free page being bound.
      */
-    void addBytesRead( int bytes );
+    void addBytesRead( long bytes );
 
     /**
      * The id of the cache page that is being faulted into.

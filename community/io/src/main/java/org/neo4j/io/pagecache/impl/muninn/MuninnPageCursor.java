@@ -250,10 +250,7 @@ abstract class MuninnPageCursor implements PageCursor
 
     protected void assertPagedFileStillMapped()
     {
-        if ( pagedFile.getRefCount() == 0 )
-        {
-            throw new IllegalStateException( "File has been unmapped" );
-        }
+        pagedFile.assertStillMapped();
     }
 
     protected abstract void unpinCurrentPage();

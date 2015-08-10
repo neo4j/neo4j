@@ -17,21 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.store.io;
+package org.neo4j.io.pagecache.impl;
 
-/**
- * Able to retrieve stats about I/O.
- */
-public interface IoTracer
+import java.io.File;
+
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+
+public class SingleFilePageSwapperWithRealFileSystemTest extends SingleFilePageSwapperTest
 {
-    long countBytesWritten();
+    private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
-    public static final IoTracer NONE = new IoTracer()
+    @Override
+    public void tearDown()
     {
-        @Override
-        public long countBytesWritten()
-        {
-            return 0;
-        }
-    };
+        // Do nothing
+    }
+
+    @Override
+    protected File getFile()
+    {
+        return testDir.file( super.getFile().getName() );
+    }
+
+    @Override
+    protected FileSystemAbstraction getFs()
+    {
+        return fs;
+    }
 }

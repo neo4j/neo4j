@@ -94,7 +94,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     private final FlushEvent flushEvent = new FlushEvent()
     {
         @Override
-        public void addBytesWritten( int bytes )
+        public void addBytesWritten( long bytes )
         {
             bytesWritten.getAndAdd( bytes );
         }
@@ -109,6 +109,11 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         public void done( IOException exception )
         {
             done();
+        }
+
+        @Override
+        public void addPagesFlushed( int pageCount )
+        {
         }
     };
 
@@ -174,7 +179,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     private final PageFaultEvent pageFaultEvent = new PageFaultEvent()
     {
         @Override
-        public void addBytesRead( int bytes )
+        public void addBytesRead( long bytes )
         {
             bytesRead.getAndAdd( bytes );
         }

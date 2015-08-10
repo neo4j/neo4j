@@ -101,7 +101,7 @@ public class RecordingPageCacheTracer implements PageCacheTracer
                 return new PageFaultEvent()
                 {
                     @Override
-                    public void addBytesRead( int bytes )
+                    public void addBytesRead( long bytes )
                     {
                     }
 

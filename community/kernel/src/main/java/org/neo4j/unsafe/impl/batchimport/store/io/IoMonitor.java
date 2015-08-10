@@ -47,7 +47,7 @@ public class IoMonitor implements StatsProvider
     {
         startTime = currentTimeMillis();
         endTime = 0;
-        resetPoint = tracer.countBytesWrittem();
+        resetPoint = tracer.countBytesWritten();
     }
 
     public void stop()
@@ -62,7 +62,7 @@ public class IoMonitor implements StatsProvider
 
     public long totalBytesWritten()
     {
-        return tracer.countBytesWrittem() - resetPoint;
+        return tracer.countBytesWritten() - resetPoint;
     }
 
     @Override

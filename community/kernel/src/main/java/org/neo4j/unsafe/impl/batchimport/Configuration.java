@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 
-import static java.lang.Math.max;
 import static java.lang.Math.round;
 
 /**
@@ -37,15 +36,9 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
     String BAD_FILE_NAME = "bad.log";
 
     /**
-     * Memory dedicated to buffering data to be written to each store file.
+     * Memory dedicated to buffering data to be written.
      */
-    int fileChannelBufferSize();
-
-    /**
-     * Some files require a bigger buffer to avoid some performance culprits imposed by the OS.
-     * This is a multiplier for how many times bigger such buffers are compared to {@link #fileChannelBufferSize()}.
-     */
-    int bigFileChannelBufferSizeMultiplier();
+    int writeBufferSize();
 
     /**
      * The number of relationships threshold for considering a node dense.
@@ -53,21 +46,9 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
     int denseNodeThreshold();
 
     /**
-     * Max number of I/O threads doing file write operations. Optimal value for this setting is heavily
-     * dependent on hard drive. A spinning disk is most likely best off with 1, where an SSD may see
-     * better performance with a handful of threads writing to it simultaneously.
-     * This value eats into the cake of {@link #maxNumberOfProcessors()}. The total number of threads
-     * used by the importer at any given time is {@link #maxNumberOfProcessors()}, out of those
-     * a maximum number of I/O threads can be used.
-     *   "Processor" in the context of the batch importer is different from "thread" since when discovering
-     * how many processors are fully in use there's a calculation where one thread takes up 0 < fraction <= 1
-     * of a processor.
-     */
-    int maxNumberOfIoProcessors();
-
-    /**
      * Rough max number of processors (CPU cores) simultaneously used in total by importer at any given time.
-     * This value should be set including {@link #maxNumberOfIoProcessors()} in mind.
+     * This value should be set while taking the necessary IO threads into account; the page cache and the operating
+     * system will require a couple of threads between them, to handle the IO workload the importer generates.
      * Defaults to the value provided by the {@link Runtime#availableProcessors() jvm}. There's a discrete
      * number of threads that needs to be used just to get the very basics of the import working,
      * so for that reason there's no lower bound to this value.
@@ -81,7 +62,7 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
             extends org.neo4j.unsafe.impl.batchimport.staging.Configuration.Default
             implements Configuration
     {
-        private static final int OPTIMAL_FILE_CHANNEL_CHUNK_SIZE = 1024 * 4;
+        private static final int DEFAULT_PAGE_SIZE = 1024 * 8;
 
         @Override
         public int batchSize()
@@ -90,19 +71,16 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         }
 
         @Override
-        public int fileChannelBufferSize()
+        public int writeBufferSize()
         {
             // Do a little calculation here where the goal of the returned value is that if a file channel
             // would be seen as a batch itself (think asynchronous writing) there would be created roughly
             // as many as the other types of batches.
-            return roundToClosest( batchSize() * 40 /*some kind of record size average*/,
-                    OPTIMAL_FILE_CHANNEL_CHUNK_SIZE );
-        }
-
-        @Override
-        public int bigFileChannelBufferSizeMultiplier()
-        {
-            return 50;
+            int averageRecordSize = 40; // Gut-feel estimate
+            int batchesToBuffer = 1000;
+            int maxWriteBufferSize = batchSize() * averageRecordSize * batchesToBuffer;
+            int writeBufferSize = (int) Math.min( maxWriteBufferSize, Runtime.getRuntime().maxMemory() / 5);
+            return roundToClosest( writeBufferSize, DEFAULT_PAGE_SIZE * 30 );
         }
 
         private int roundToClosest( int value, int divisible )
@@ -122,12 +100,6 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         public int denseNodeThreshold()
         {
             return Integer.parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
-        }
-
-        @Override
-        public int maxNumberOfIoProcessors()
-        {
-            return max( 2, Runtime.getRuntime().availableProcessors()/3 );
         }
 
         @Override
@@ -165,27 +137,15 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         }
 
         @Override
-        public int fileChannelBufferSize()
+        public int writeBufferSize()
         {
-            return defaults.fileChannelBufferSize();
-        }
-
-        @Override
-        public int bigFileChannelBufferSizeMultiplier()
-        {
-            return defaults.bigFileChannelBufferSizeMultiplier();
+            return defaults.writeBufferSize();
         }
 
         @Override
         public int denseNodeThreshold()
         {
             return config.get( GraphDatabaseSettings.dense_node_threshold );
-        }
-
-        @Override
-        public int maxNumberOfIoProcessors()
-        {
-            return defaults.maxNumberOfIoProcessors();
         }
 
         @Override

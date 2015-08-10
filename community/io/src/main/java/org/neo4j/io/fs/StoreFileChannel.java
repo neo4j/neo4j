@@ -170,4 +170,10 @@ public class StoreFileChannel implements StoreChannel
     {
         force( false );
     }
+
+    static FileChannel unwrap( StoreChannel channel )
+    {
+        StoreFileChannel sfc = (StoreFileChannel) channel;
+        return sfc.channel;
+    }
 }
