@@ -19,12 +19,10 @@
  */
 package org.neo4j.cypher.docgen
 
-import java.util.concurrent.TimeUnit
-
-import org.junit.Test
-import org.junit.Assert._
 import org.hamcrest.CoreMatchers._
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{UniqueIndexSeekByRange, IndexSeekByRange}
+import org.junit.Assert._
+import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{IndexSeekByRange, UniqueIndexSeekByRange}
 import org.scalatest.Ignore
 
 class QueryPlanTest extends DocumentingTestBase with SoftReset {
@@ -184,9 +182,8 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       val b = (0 to 300).map { i => s"CREATE (:Location {name: '$i'})" }.toList
       a ++ b
     }
-    db.execute("DROP INDEX ON :Location(name)")
-    db.execute("CREATE INDEX ON :Location(name)")
-    db.inTx { db.schema().awaitIndexesOnline(2, TimeUnit.SECONDS) }
+
+    sampleAllIndicesAndWait()
 
     profileQuery(title = "Node index range seek",
                  text = """
@@ -204,9 +201,8 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       val b = (0 to 300).map { i => s"CREATE (:Team {name: '$i'})" }.toList
       a ++ b
     }
-    db.execute("DROP CONSTRAINT ON (team:Team) ASSERT team.name is UNIQUE")
-    db.execute("CREATE CONSTRAINT ON (team:Team) ASSERT team.name is UNIQUE")
-    db.inTx { db.schema().awaitIndexesOnline(2, TimeUnit.SECONDS) }
+
+    sampleAllIndicesAndWait()
 
     profileQuery(title = "Node unique index range seek",
                  text = """

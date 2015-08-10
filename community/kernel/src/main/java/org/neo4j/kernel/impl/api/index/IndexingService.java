@@ -813,4 +813,10 @@ public class IndexingService extends LifecycleAdapter
 
         return concatResourceIterators( snapshots.iterator() );
     }
+
+    // This is currently exposed for use by tests only
+    public IndexSamplingController samplingController()
+    {
+        return samplingController;
+    }
 }

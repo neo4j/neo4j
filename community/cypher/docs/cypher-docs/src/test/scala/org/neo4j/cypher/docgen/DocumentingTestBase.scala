@@ -38,6 +38,8 @@ import org.neo4j.graphdb.index.Index
 import org.neo4j.helpers.Settings
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.impl.api.KernelStatement
+import org.neo4j.kernel.impl.api.index.IndexingService
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
 import org.neo4j.test.{AsciiDocGenerator, GraphDescription, TestGraphDatabaseFactory}
@@ -382,6 +384,14 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     preparationQueries = queries
     preparationQueries.foreach(engine.execute)
   }
+
+  protected def sampleAllIndicesAndWait(mode: IndexSamplingMode = IndexSamplingMode.TRIGGER_REBUILD_ALL, time: Long = 10, unit: TimeUnit = TimeUnit.SECONDS) = {
+    samplingController.sampleIndexes(mode)
+    samplingController.awaitSamplingCompleted(time, unit)
+  }
+
+  protected def samplingController = indexingService.samplingController
+  protected def indexingService = db.getDependencyResolver.resolveDependency(classOf[IndexingService])
 
   protected def assertIsDeleted(pc: PropertyContainer) {
     val nodeManager: ThreadToStatementContextBridge = db.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
