@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import java.util
-
+import org.neo4j.collection.primitive.Primitive
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherTypeException, ExecutionContext}
@@ -30,7 +29,7 @@ case class TriadicBuildPipe(source: Pipe, identifier: String)
                            (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe with NoEffectsPipe {
   override def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
-    val triadicSeen = new util.HashSet[Long]
+    val triadicSeen = Primitive.longSet()
     state.triadicSets.put(identifier, triadicSeen)
     input.map { ctx =>
       ctx(identifier) match {

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
+import org.neo4j.collection.primitive.Primitive
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
@@ -29,12 +30,20 @@ class TriadicProbePipeTest extends CypherFunSuite {
   private implicit val monitor = mock[PipeMonitor]
 
   test("build from input") {
+    // given
     val input = createFakePipeWith(0, 1, 2, 3, 4, 5)
     val pipe = TriadicProbePipe(input, "x", "a")()
     val queryState = QueryStateHelper.empty
-    queryState.triadicSets("x") = Set[Long](2, 3, 4).asJava
+    val set = Primitive.longSet()
+    set.add(2)
+    set.add(3)
+    set.add(4)
+    queryState.triadicSets.update("x", set)
 
+    // when
     val result = pipe.createResults(queryState).map(m => m("a").asInstanceOf[Node].getId).toList
+
+    // then we don't see nodes in the TriadicSet
     result should equal(List(0, 1, 5))
   }
 

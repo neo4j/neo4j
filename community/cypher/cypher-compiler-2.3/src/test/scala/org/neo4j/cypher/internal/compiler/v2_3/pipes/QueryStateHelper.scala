@@ -28,6 +28,6 @@ object QueryStateHelper {
   def emptyWith(query: QueryContext = null, resources: ExternalResource = null,
                 params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullPipeDecorator,
                 initialContext: Option[ExecutionContext] = None) =
-    QueryState(query = query, resources = resources, params = params, decorator = decorator,
+    new QueryState(query = query, resources = resources, params = params, decorator = decorator,
       initialContext = initialContext)
 }

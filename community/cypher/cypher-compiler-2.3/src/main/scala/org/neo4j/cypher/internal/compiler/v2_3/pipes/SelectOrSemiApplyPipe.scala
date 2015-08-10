@@ -36,7 +36,7 @@ case class SelectOrSemiApplyPipe(source: Pipe, inner: Pipe, predicate: Predicate
     input.filter {
       (outerContext) =>
         predicate.isTrue(outerContext)(state) || {
-          val innerState = state.copy(initialContext = Some(outerContext))
+          val innerState = state.withInitialContext(outerContext)
           val innerResults = inner.createResults(innerState)
           if (negated) innerResults.isEmpty else innerResults.nonEmpty
         }

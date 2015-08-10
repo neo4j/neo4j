@@ -34,7 +34,7 @@ import scala.collection.JavaConverters._
 class ContainerIndexTest extends CypherFunSuite {
 
   val qtx = mock[QueryContext]
-  implicit val state = QueryStateHelper.empty.copy(query = qtx)
+  implicit val state = QueryStateHelper.empty.withQueryContext(qtx)
   val ctx = ExecutionContext.empty
   val expectedNull: Any = null
 

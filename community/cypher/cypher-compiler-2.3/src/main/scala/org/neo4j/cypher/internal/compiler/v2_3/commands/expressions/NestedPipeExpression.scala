@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 case class NestedPipeExpression(pipe: Pipe, path: ProjectedPath) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
-    val innerState = state.copy(initialContext = Some(ctx))
-    pipe.createResults(innerState.withDecorator(innerState.decorator.innerDecorator )).map(ctx => path(ctx)).toSeq
+    val innerState = state.withInitialContext(ctx).withDecorator(state.decorator.innerDecorator )
+    pipe.createResults(innerState).map(ctx => path(ctx)).toSeq
   }
 
   def rewrite(f: (Expression) => Expression) = f(this)

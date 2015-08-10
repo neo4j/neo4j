@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
+import org.neo4j.collection.primitive.PrimitiveLongIterable
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
-
-import scala.collection.JavaConverters._
 
 class TriadicBuildPipeTest extends CypherFunSuite {
   private implicit val monitor = mock[PipeMonitor]
@@ -34,7 +33,7 @@ class TriadicBuildPipeTest extends CypherFunSuite {
     val queryState = QueryStateHelper.empty
     pipe.createResults(queryState).map(ctx => ctx("a"))
 
-    queryState.triadicSets("a").asScala should equal(Set(0, 1, 2, 3, 4, 5))
+    asScalaSet(queryState.triadicSets("a")) should equal(Set(0, 1, 2, 3, 4, 5))
   }
 
   test("build from input with doubles") {
@@ -43,7 +42,7 @@ class TriadicBuildPipeTest extends CypherFunSuite {
     val queryState = QueryStateHelper.empty
     pipe.createResults(queryState).map(ctx => ctx("a"))
 
-    queryState.triadicSets("a").asScala should equal(Set(0, 1, 2, 3, 4, 5))
+    asScalaSet(queryState.triadicSets("a")) should equal(Set(0, 1, 2, 3, 4, 5))
   }
 
   test("build ignores nulls") {
@@ -52,7 +51,16 @@ class TriadicBuildPipeTest extends CypherFunSuite {
     val queryState = QueryStateHelper.empty
     pipe.createResults(queryState).map(ctx => ctx("a"))
 
-    queryState.triadicSets("a").asScala should equal(Set(0, 2, 3))
+    asScalaSet(queryState.triadicSets("a")) should equal(Set(0, 2, 3))
+  }
+
+  private def asScalaSet(in: PrimitiveLongIterable):Set[Long] = {
+    val builder = Set.newBuilder[Long]
+    val iter = in.iterator()
+    while (iter.hasNext) {
+      builder += iter.next()
+    }
+    builder.result()
   }
 
   private def createFakePipeWith(count: Any*): FakePipe = {

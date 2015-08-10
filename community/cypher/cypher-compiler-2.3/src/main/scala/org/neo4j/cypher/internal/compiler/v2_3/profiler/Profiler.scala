@@ -51,7 +51,7 @@ class Profiler extends PipeDecorator {
       case _ => new ProfilingQueryContext(state.query, pipe)
     })
 
-    state.copy(query = decoratedContext)
+    state.withQueryContext(decoratedContext)
   }
 
 
