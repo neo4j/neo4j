@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
+import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{ProjectingSelector, CandidateSelector, LogicalPlanningFunction0}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CandidateSelector, LogicalPlanningFunction0}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
-import org.mockito.Matchers._
 
 class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private implicit val planContext = newMockedPlanContext
@@ -56,10 +56,10 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val qg = QueryGraph(selections = selections)
 
     // When
-    val result = selectCovered(pickBestFactory)(LogicalPlan, qg)
+    val result = selectCovered(LogicalPlan, qg)
 
     // Then
-    result should equal(Selection(Seq(predicate), LogicalPlan)(solved))
+    result should equal(Seq(Selection(Seq(predicate), LogicalPlan)(solved)))
   }
 
   test("should not try to solve predicates with unmet dependencies") {
@@ -73,10 +73,10 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val qg = QueryGraph(selections = selections)
 
     // When
-    val result = selectCovered(pickBestFactory)(LogicalPlan, qg)
+    val result = selectCovered(LogicalPlan, qg)
 
     // Then
-    result should equal(Selection(Seq(predicate), LogicalPlan)(solved))
+    result should equal(Seq(Selection(Seq(predicate), LogicalPlan)(solved)))
   }
 
   test("when two predicates not already solved are solvable, they should be applied") {
@@ -95,10 +95,10 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val qg = QueryGraph(selections = selections)
 
     // When
-    val result = selectCovered(pickBestFactory)(LogicalPlan, qg)
+    val result = selectCovered(LogicalPlan, qg)
 
     // Then
-    result should equal(Selection(Seq(predicate1, predicate2), LogicalPlan)(solved))
+    result should equal(Seq(Selection(Seq(predicate1, predicate2), LogicalPlan)(solved)))
   }
 
   test("when a predicate is already solved, it should not be applied again") {
@@ -109,10 +109,10 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val LogicalPlan = newMockedLogicalPlanWithProjections("x").updateSolved(solved)
 
     // When
-    val result = selectCovered(pickBestFactory)(LogicalPlan, qg)
+    val result = selectCovered(LogicalPlan, qg)
 
     // Then
-    result should equal(LogicalPlan)
+    result should equal(Seq())
   }
 
   test("a predicate without all dependencies covered should not be applied ") {
@@ -123,10 +123,10 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val qg = QueryGraph(selections = selections)
 
     // When
-    val result = selectCovered(pickBestFactory)(LogicalPlan, qg)
+    val result = selectCovered(LogicalPlan, qg)
 
     // Then
-    result should equal(LogicalPlan)
+    result should equal(Seq())
   }
 
 }

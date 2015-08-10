@@ -23,25 +23,22 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.{Expression, HasLabels, Ident
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{NodeHashJoin, IdName, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CandidateSelector, LogicalPlanningFunction0, LogicalPlanningContext, PlanTransformer}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 
-case class selectCovered(pickBestFactory: LogicalPlanningFunction0[CandidateSelector]) extends PlanTransformer[QueryGraph] {
-  def apply(plan: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
+case object selectCovered extends CandidateGenerator[LogicalPlan] {
+
+  def apply(plan: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
     val unsolvedPredicates = queryGraph.selections
       .scalarPredicatesGiven(plan.availableSymbols)
       .filterNot(predicate => plan.solved.exists(_.graph.selections.contains(predicate)))
 
     if (unsolvedPredicates.isEmpty)
-      plan
+      Seq()
     else {
       val noJoins = context.logicalPlanProducer.planSelection(unsolvedPredicates, plan)
       val alternatives = produceAlternatives(plan, unsolvedPredicates)
 
-      pickBestFactory(context)(alternatives :+ noJoins).get match {
-        // By recursing, if there are other label predicates, they can also be solved with joins
-        case winner: NodeHashJoin => this.apply(winner, queryGraph)
-        case x => x
-      }
+      alternatives :+ noJoins
     }
   }
 

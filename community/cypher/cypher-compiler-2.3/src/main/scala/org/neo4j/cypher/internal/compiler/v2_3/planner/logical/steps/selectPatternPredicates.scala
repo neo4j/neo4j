@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.greedy.GreedyPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.helpers.ThisShouldNotHappenError
 
-case class selectPatternPredicates(pickBestFactory: LogicalPlanningFunction0[CandidateSelector]) extends PlanTransformer[QueryGraph] {
+case class selectPatternPredicates(pickBestFactory: LogicalPlanningFunction0[CandidateSelector]) extends CandidateGenerator[LogicalPlan] {
 
   private object candidatesProducer extends CandidateGenerator[GreedyPlanTable] {
     def apply(planTable: GreedyPlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
@@ -126,11 +126,11 @@ case class selectPatternPredicates(pickBestFactory: LogicalPlanningFunction0[Can
     (IdName(name), Identifier(name)(patternExpression.position))
   }
 
-  def apply(input: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
+  def apply(input: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
     val pickBest = pickBestFactory(context)
 
     val secretPlanTable = GreedyPlanTable.empty + input
     val result = candidatesProducer(secretPlanTable, queryGraph)
-    pickBest(result).getOrElse(input)
+    pickBest(result).toSeq
   }
 }

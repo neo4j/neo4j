@@ -80,7 +80,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(pickBest)(aPlan, qg)
 
     // Then
-    result should equal(SemiApply(aPlan, inner)(solved))
+    result should equal(Seq(SemiApply(aPlan, inner)(solved)))
   }
 
   test("should introduce anti semi apply for unsolved exclusive negated pattern predicate") {
@@ -113,7 +113,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(pickBest)(aPlan, qg)
 
     // Then
-    result should equal(AntiSemiApply(aPlan, inner)(solved))
+    result should equal(Seq(AntiSemiApply(aPlan, inner)(solved)))
   }
 
   test("should not introduce semi apply for unsolved exclusive pattern predicate when nodes not applicable") {
@@ -144,7 +144,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(pickBest)(bPlan, qg)
 
     // Then
-    result should equal(bPlan)
+    result should equal(Seq.empty)
   }
 
   test("should introduce select or semi apply for unsolved pattern predicates in disjunction with expressions") {
@@ -182,7 +182,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(pickBest)(aPlan, qg)
 
     // Then
-    result should equal(SelectOrSemiApply(aPlan, inner, equals)(solved))
+    result should equal(Seq(SelectOrSemiApply(aPlan, inner, equals)(solved)))
   }
 
   test("should introduce select or anti semi apply for unsolved negated pattern predicates in disjunction with an expression") {
@@ -219,7 +219,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(pickBest)(aPlan, qg)
 
     // Then
-    result should equal(SelectOrAntiSemiApply(aPlan, inner, equals)(solved))
+    result should equal(Seq(SelectOrAntiSemiApply(aPlan, inner, equals)(solved)))
   }
 
   test("should introduce let semi apply and select or semi apply for multiple pattern predicates in or") {
@@ -267,7 +267,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(pickBest)(aPlan, qg)
 
     // Then
-    result should equal(SelectOrSemiApply(LetSemiApply(aPlan, inner, IdName("  FRESHID0"))(solved), inner2, ident("  FRESHID0"))(solved))
+    result should equal(Seq(SelectOrSemiApply(LetSemiApply(aPlan, inner, IdName("  FRESHID0"))(solved), inner2, ident("  FRESHID0"))(solved)))
   }
 
   test("should introduce let semi apply and select or anti semi apply for multiple pattern predicates in or") {
@@ -314,7 +314,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(pickBest)(aPlan, qg)
 
     // Then
-    result should equal(SelectOrAntiSemiApply(LetSemiApply(aPlan, inner, IdName("  FRESHID0"))(solved), inner2, ident("  FRESHID0"))(solved))
+    result should equal(Seq(SelectOrAntiSemiApply(LetSemiApply(aPlan, inner, IdName("  FRESHID0"))(solved), inner2, ident("  FRESHID0"))(solved)))
   }
 
   test("should introduce let anti semi apply and select or semi apply for multiple pattern predicates in or") {
@@ -361,7 +361,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(pickBest)(aPlan, qg)
 
     // Then
-    result should equal(SelectOrSemiApply(LetAntiSemiApply(aPlan, inner, IdName("  FRESHID0"))(solved), inner2, ident("  FRESHID0"))(solved))
+    result should equal(Seq(SelectOrSemiApply(LetAntiSemiApply(aPlan, inner, IdName("  FRESHID0"))(solved), inner2, ident("  FRESHID0"))(solved)))
   }
 
   test("should introduce let select or semi apply and select or anti semi apply for multiple pattern predicates in or") {
@@ -413,7 +413,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(pickBest)(aPlan, qg)
 
     // Then
-    result should equal(SelectOrAntiSemiApply(LetSelectOrSemiApply(aPlan, inner, IdName("  FRESHID0"), equals)(solved), inner2, ident("  FRESHID0"))(solved))
+    result should equal(Seq(SelectOrAntiSemiApply(LetSelectOrSemiApply(aPlan, inner, IdName("  FRESHID0"), equals)(solved), inner2, ident("  FRESHID0"))(solved)))
   }
 
   test("should introduce let anti select or semi apply and select or semi apply for multiple pattern predicates in or") {
@@ -465,6 +465,6 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(pickBest)(aPlan, qg)
 
     // Then
-    result should equal(SelectOrSemiApply(LetSelectOrAntiSemiApply(aPlan, inner, IdName("  FRESHID0"), equals)(solved), inner2, ident("  FRESHID0"))(solved))
+    result should equal(Seq(SelectOrSemiApply(LetSelectOrAntiSemiApply(aPlan, inner, IdName("  FRESHID0"), equals)(solved), inner2, ident("  FRESHID0"))(solved)))
   }
 }

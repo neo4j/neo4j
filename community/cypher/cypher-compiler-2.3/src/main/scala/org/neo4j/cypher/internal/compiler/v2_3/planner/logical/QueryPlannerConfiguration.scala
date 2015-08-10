@@ -29,11 +29,11 @@ object QueryPlannerConfiguration {
   val default = QueryPlannerConfiguration(
     pickBestCandidate = pickBestPlanUsingHintsAndCost,
     applySelections = Selector(
-      Seq(
-        selectPatternPredicates(pickBestPlanUsingHintsAndCost),
-        triadicSelection,
-        selectCovered(pickBestPlanUsingHintsAndCost)),
-      pickBestPlanUsingHintsAndCost),
+      pickBestPlanUsingHintsAndCost,
+      selectPatternPredicates(pickBestPlanUsingHintsAndCost),
+      triadicSelection,
+      selectCovered
+    ),
     projectAllEndpoints = projectEndpoints.all,
     optionalSolvers = Seq(
       applyOptional,

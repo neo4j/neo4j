@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlanningContext, PlanTransformer}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CandidateGenerator, LogicalPlanningContext, PlanTransformer}
 import org.neo4j.graphdb.Direction
 
-object triadicSelection extends PlanTransformer[QueryGraph] {
-  override def apply(in: LogicalPlan, qg: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = in match {
+object triadicSelection extends CandidateGenerator[LogicalPlan] {
+  override def apply(in: LogicalPlan, qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = in match {
     case sel@Selection(predicates,
            exp2@Expand(
              exp1@Expand(lhs, from1, dir1, types1, to1, _, ExpandAll),
@@ -41,9 +41,9 @@ object triadicSelection extends PlanTransformer[QueryGraph] {
           context.logicalPlanProducer.planTriadicProbe(newSelection, to1, to2, predicate)
       }
 
-      newPlan.getOrElse(in)
+      newPlan.toSeq
 
-    case _ => in
+    case _ => Seq.empty
   }
 
   private def matchingPredicateExists(qg: QueryGraph, availableSymbols: Set[IdName], from: String, to: String, types: Seq[RelTypeName], dir: Direction): Option[Expression] =

@@ -35,7 +35,7 @@ class TriadicSelectionTest extends CypherFunSuite with LogicalPlanningTestSuppor
   test("plan passes through") {
     val plan = newMockedLogicalPlan()
 
-    triadicSelection(plan, QueryGraph.empty) should equal(plan)
+    triadicSelection(plan, QueryGraph.empty) should equal(Seq.empty)
   }
 
   test("MATCH (a:X)-->(b)-->(c) WHERE NOT (a)-->(c)") {
@@ -51,7 +51,7 @@ class TriadicSelectionTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val selectionB = Selection(Seq(Not(Equals(Identifier("r1")(pos), Identifier("r2")(pos))(pos))(pos)), expand2B)(solved)
     val triadicProbe = TriadicProbe(selectionB, IdName("b"), IdName("c"))(solved)
 
-    triadicSelection(selection, plannerQuery.lastQueryGraph) should equal(triadicProbe)
+    triadicSelection(selection, plannerQuery.lastQueryGraph) should equal(Seq(triadicProbe))
   }
 
   test("MATCH (a:X)-[:A]->(b)-[:B]->(c) WHERE NOT (a)-->(c) passes through") {
@@ -62,6 +62,6 @@ class TriadicSelectionTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val expand2 = Expand(expand1, IdName("b"), Direction.OUTGOING, Seq(RelTypeName("B")(pos)), IdName("c"), IdName("r2"), ExpandAll)(solved)
     val selection = Selection(Seq(Not(Equals(Identifier("r1")(pos), Identifier("r2")(pos))(pos))(pos)), expand2)(solved)
 
-    triadicSelection(selection, plannerQuery.lastQueryGraph) should equal(selection)
+    triadicSelection(selection, plannerQuery.lastQueryGraph) should equal(Seq.empty)
   }
 }
