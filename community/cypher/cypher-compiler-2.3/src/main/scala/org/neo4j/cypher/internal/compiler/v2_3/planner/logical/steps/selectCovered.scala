@@ -19,19 +19,41 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{Expression, HasLabels, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlanningContext, PlanTransformer}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{NodeHashJoin, IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CandidateSelector, LogicalPlanningFunction0, LogicalPlanningContext, PlanTransformer}
 
-object selectCovered extends PlanTransformer[QueryGraph] {
+case class selectCovered(pickBestFactory: LogicalPlanningFunction0[CandidateSelector]) extends PlanTransformer[QueryGraph] {
   def apply(plan: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val unsolvedPredicates = queryGraph.selections
       .scalarPredicatesGiven(plan.availableSymbols)
       .filterNot(predicate => plan.solved.exists(_.graph.selections.contains(predicate)))
+
     if (unsolvedPredicates.isEmpty)
       plan
     else {
-      context.logicalPlanProducer.planSelection(unsolvedPredicates, plan)
+      val noJoins = context.logicalPlanProducer.planSelection(unsolvedPredicates, plan)
+      val alternatives = produceAlternatives(plan, unsolvedPredicates)
+
+      pickBestFactory(context)(alternatives :+ noJoins).get match {
+        // By recursing, if there are other label predicates, they can also be solved with joins
+        case winner: NodeHashJoin => this.apply(winner, queryGraph)
+        case x => x
+      }
+    }
+  }
+
+  private def produceAlternatives(in: LogicalPlan, predicates: Seq[Expression])(implicit context: LogicalPlanningContext) = {
+    predicates.foldLeft(Seq.empty[LogicalPlan]) {
+      case (acc, s@HasLabels(id: Identifier, Seq(labelName))) =>
+        val labelScan = context.logicalPlanProducer.planNodeByLabelScan(IdName(id.name), LazyLabel(labelName)(context.semanticTable), Seq(s), None, Set.empty)
+        val join = context.logicalPlanProducer.planNodeHashJoin(Set(IdName(id.name)), in, labelScan, Set.empty)
+        acc :+ join
+
+      case (acc, _) => acc
     }
   }
 }
+
