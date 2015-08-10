@@ -27,6 +27,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.impl.store.StoreVersionTrailerUtil;
 
 import static java.util.Objects.requireNonNull;
 
@@ -271,6 +272,10 @@ public abstract class KeyValueStoreFileFormat
             PagedFile file = pages.map( path, pageSize );
             try
             {
+                if ( StoreVersionTrailerUtil.getTrailerOffset( file, fileTrailer() ) == -1 )
+                {
+                    throw new IOException( "Invalid file trailer. Expected trailer not found." );
+                }
                 BigEndianByteArrayBuffer key = new BigEndianByteArrayBuffer( new byte[keySize] );
                 BigEndianByteArrayBuffer value = new BigEndianByteArrayBuffer( new byte[valueSize] );
                 // the first value is the format identifier, pass it along

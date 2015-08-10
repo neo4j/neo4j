@@ -326,7 +326,7 @@ public class KeyValueStoreFileFormatTest
             throws IOException
     {
         assertTrue( fs.fileExists( file ) );
-        try( InputStream stream = fs.openAsInputStream( file ) )
+        try ( InputStream stream = fs.openAsInputStream( file ) )
         {
             // format specifier
             int read;
@@ -342,7 +342,8 @@ public class KeyValueStoreFileFormatTest
             assertEquals( size, read );
             assertArrayEquals( new byte[]{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}, readEntry );
 
-            for ( Map.Entry<String,byte[]> entry : headers.entrySet() )
+
+            for ( int i = 0; i < headers.size(); i++ )
             {
                 read = stream.read( readEntry );
                 assertEquals( size, read );
@@ -350,12 +351,45 @@ public class KeyValueStoreFileFormatTest
 
                 read = stream.read( readEntry );
                 assertEquals( size, read );
-                assertArrayEquals( entry.getValue(), readEntry );
+                headers.containsValue( readEntry );
             }
 
             assertEquals( -1, stream.read() );
         }
+    }
 
+    @Test
+    public void shouldFailToReadFailWithIncorrectTrailer() throws IOException
+    {
+        // when
+        String[] headerNames = {"abc", "xyz"};
+        Format expectedFormat = new Format( headerNames );
+        IncorrectTrailerFormat incorrectTrailerFormat = new IncorrectTrailerFormat( headerNames );
+
+        Map<String,byte[]> headers = new HashMap<>();
+        headers.put( "abc", new byte[]{'h', 'e', 'l', 'l', 'o', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,} );
+        headers.put( "xyz", new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'w', 'o', 'r', 'l', 'd',} );
+        Data data = data(
+                entry( new byte[]{'o', 'n', 'e'}, new byte[]{'a', 'l', 'p', 'h', 'a'} ),
+                entry( new byte[]{'t', 'w', 'o'}, new byte[]{'b', 'e', 't', 'a'} ),
+                entry( new byte[]{'z', 'e', 'd'}, new byte[]{'o', 'm', 'e', 'g', 'a'} ) );
+
+        // then
+        try ( KeyValueStoreFile originalValidFile = incorrectTrailerFormat.create( headers, data ) )
+        {
+            assertEquals( "number of entries", 3, data.index );
+            assertEntries( 3, originalValidFile );
+        }
+
+        try
+        {
+            expectedFormat.open();
+            fail( "It should not be possible to open count store file with incorrect trailer." );
+        }
+        catch ( IOException e )
+        {
+            assertEquals( "Invalid file trailer. Expected trailer not found.", e.getMessage() );
+        }
     }
 
     private static void assertFind( KeyValueStoreFile file, int min, int max, boolean exact, Bytes... expected )
@@ -587,6 +621,20 @@ public class KeyValueStoreFileFormatTest
         protected String fileTrailer()
         {
             return "That's all folks...";
+        }
+    }
+
+    class IncorrectTrailerFormat extends Format {
+
+        public IncorrectTrailerFormat( String... defaultHeaderFields )
+        {
+            super( defaultHeaderFields );
+        }
+
+        @Override
+        protected String fileTrailer()
+        {
+            return "incorrect trailer";
         }
     }
 
