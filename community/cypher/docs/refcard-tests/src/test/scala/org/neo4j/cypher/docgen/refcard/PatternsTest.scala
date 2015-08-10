@@ -31,6 +31,9 @@ class PatternsTest extends RefcardTest with QueryStatisticsTestSupport {
 
   override def assert(name: String, result: InternalExecutionResult) {
     name match {
+      case "returns-one" =>
+        assertStats(result, nodesCreated = 0)
+        assert(result.toList.size === 1)
       case "related" =>
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 1)
@@ -202,6 +205,16 @@ WHERE n1.name = "Alice"
 RETURN p###
 
 Find all shortest paths.
+
+###assertion=returns-one parameters=alice
+MATCH (n:Person {name: {value}})
+RETURN
+
+size((n)-->()-->())
+
+AS fof###
+
+Count the number of rows matching the pattern expression.
 """
 }
 /* confirm this, then add.

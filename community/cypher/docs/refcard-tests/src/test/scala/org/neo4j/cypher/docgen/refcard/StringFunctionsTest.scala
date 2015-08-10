@@ -42,8 +42,8 @@ class StringFunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
 
   override def parameters(name: String): Map[String, Any] =
     name match {
-      case "parameters=value" =>
-        Map("value" -> "Bob")
+      case "parameters=string" =>
+        Map("string" -> "Bob")
       case "parameters=expression" =>
         Map("expression" -> 16)
       case "parameters=replace" =>
@@ -130,5 +130,13 @@ reverse({original})
 ###
 
 Reverse a string.
+
+###assertion=returns-one parameters=string
+RETURN
+
+length({string})
+###
+
+Calculate the number of characters in the string.
 """
 }
