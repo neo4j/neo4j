@@ -124,7 +124,7 @@ Function Install-Neo4jServer
       Write-Error 'Unable to locate Java'
       return
     }
-    
+
     $Name = $Name.Trim()
     if ($DisplayName -eq '') { $DisplayName = $Name }
     
@@ -138,7 +138,7 @@ Function Install-Neo4jServer
 
     if ($result -eq $null)
     {
-      $result = (New-Service -Name $Name -Description $Description -DisplayName $Name -BinaryPathName $binPath -StartupType $StartType)
+      $result = (New-Service -Name $Name -Description $Description -DisplayName $DisplayName -BinaryPathName $binPath -StartupType $StartType)
     }
     
     $thisServer | Set-Neo4jSetting -ConfigurationFile 'neo4j-wrapper.conf' -Name 'wrapper.name' -Value $Name | Out-Null

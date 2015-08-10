@@ -148,7 +148,7 @@ Function Install-Neo4jArbiter
 
     if ($result -eq $null)
     {
-      $result = (New-Service -Name $Name -Description $Description -DisplayName $Name -BinaryPathName $binPath -StartupType $StartType)
+      $result = (New-Service -Name $Name -Description $Description -DisplayName $DisplayName -BinaryPathName $binPath -StartupType $StartType)
     }
     
     $thisServer | Set-Neo4jSetting -ConfigurationFile 'arbiter-wrapper.conf' -Name 'wrapper.name' -Value $Name | Out-Null

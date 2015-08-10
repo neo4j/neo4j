@@ -122,7 +122,7 @@ Function Initialize-Neo4jServer
     [int]$RemoteShellPort = 1337
 
     ,[Parameter(Mandatory=$false)]
-    [ValidateScript({$_ -match [IPAddress]$_ })]  
+    [ValidateScript({$_ -match [IPAddress]$_ })]
     [string]$ListenOnIPAddress = '127.0.0.1'
 
     ,[Parameter(Mandatory=$false)]

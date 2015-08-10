@@ -46,9 +46,9 @@ Application name used when invoking Java
 The name of the starting class when invoking Java
 
 .EXAMPLE
-Get-Java -Neo4jServer $serverObject -ForServer -ExtraClassPath @('C:\Java','Z:\Java')
+Get-Java -Neo4jServer $serverObject -ForServer
 
-Retrieves the Java comamnd line to start the Neo4j server for the instance in $serverObject.  Also includes the paths C:\Java and Z:\Java in the class path.
+Retrieves the Java comamnd line to start the Neo4j server for the instance in $serverObject.
 
 .OUTPUTS
 System.Collections.Hashtable
@@ -61,17 +61,19 @@ Function Get-Java
 {
   [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low',DefaultParameterSetName='Default')]
   param (
-    [Parameter(Mandatory=$true,ValueFromPipeline=$false)]
+    [Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='UtilityInvoke')]
+    [Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerInvoke')]
+    [Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ArbiterInvoke')]
     [PSCustomObject]$Neo4jServer
-    
-    ,[Parameter(Mandatory=$false,ValueFromPipeline=$false)]
-    [string[]]$ExtraClassPath = @()
-    
+        
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerInvoke')]
     [switch]$ForServer
 
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ArbiterInvoke')]
     [switch]$ForArbiter
+
+    ,[Parameter(Mandatory=$false,ValueFromPipeline=$false,ParameterSetName='UtilityInvoke')]
+    [string[]]$ExtraClassPath = @()
 
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='UtilityInvoke')]
     [switch]$ForUtility

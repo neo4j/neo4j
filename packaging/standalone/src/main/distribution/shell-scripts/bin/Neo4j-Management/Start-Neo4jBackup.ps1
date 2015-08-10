@@ -69,19 +69,20 @@ This function is only applicable to Neo4j editions which support Online Backup
 #>
 Function Start-Neo4jBackup
 {
-  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
+  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low',DefaultParameterSetName='ByDefault')]
   param (
     [Parameter(Mandatory=$false,ValueFromPipeline=$true)]
     [object]$Neo4jServer = ''
     
-    ,[Parameter(Mandatory=$false,ValueFromPipeline=$false)]
+    ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ByHost')]
     [Alias('Host')]
-    [string]$UseHost = ''
+    [ValidateScript({$_ -match [IPAddress]$_ })]
+    [string]$UseHost
 
-    ,[Parameter(Mandatory=$false,ValueFromPipeline=$false)]
+    ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ByHost')]
     [Alias('Port')]
-    [ValidateRange(0,65535)]
-    [int]$UsePort = -1
+    [ValidateRange(1,65535)]
+    [int]$UsePort
 
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false)]
     [string]$To = ''
@@ -138,7 +139,7 @@ Function Start-Neo4jBackup
     }
     if (($UseHost -ne '') -and ($UserPort -ne -1))
     {
-      $BackupHost = "$($UseHost):$(UsePort)"
+      $BackupHost = "$($UseHost):$($UsePort)"
       $BackupEnabled = $true
     }
     if (!$BackupEnabled)
@@ -166,14 +167,7 @@ Function Start-Neo4jBackup
       Write-Error 'Unable to locate Java'
       return
     }
-
-    $JavaCMD = Get-Java -BaseDir $thisServer.Home -ExtraClassPath (Join-Path -Path $thisServer.Home -ChildPath 'system\coordinator\lib')  -ErrorAction Stop
-    if ($JavaCMD -eq $null)
-    {
-      Write-Error "Unable to locate Java"
-      return
-    }
-    
+   
     $ShellArgs = $JavaCMD.args
     $ShellArgs += @('-host',"$serverHost")
     $ShellArgs += @('-port',"$serverport")

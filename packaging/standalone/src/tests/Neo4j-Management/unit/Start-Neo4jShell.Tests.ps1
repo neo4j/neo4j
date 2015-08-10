@@ -64,8 +64,7 @@ if ($PSVersionTable.PSVersion -ne '2.0') {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
       Mock Get-Neo4jSetting { }
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
-      Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; }) }
-      Mock Start-Process { Write-Host $ArgumentList -Foreground Yellow }
+      Mock Start-Process { }
       Mock Start-Process -Verifiable -ParameterFilter { 
         ($ArgumentList -join ' ').Contains('-host localhost') -and ($ArgumentList -join ' ').Contains('-port 1337')
       }
@@ -153,7 +152,7 @@ if ($PSVersionTable.PSVersion -ne '2.0') {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
       Mock Get-Neo4jSetting { }
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
-      Mock Start-Process  { Write-Host $Wait -foreground Yellow }
+      Mock Start-Process  { }
       Mock Start-Process -Verifiable -ParameterFilter { (-not $Wait) -and (-not $NoNewWindow) }
       Start-Neo4jShell
 
@@ -166,7 +165,7 @@ if ($PSVersionTable.PSVersion -ne '2.0') {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
       Mock Get-Neo4jSetting { }
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
-      Mock Start-Process  { Write-Host $Wait -foreground Yellow }
+      Mock Start-Process  { }
       Mock Start-Process -Verifiable -ParameterFilter { $Wait -and $NoNewWindow }
       Start-Neo4jShell -Wait
 
