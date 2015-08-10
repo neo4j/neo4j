@@ -19,37 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{Expression, HasLabels, Identifier}
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{NodeHashJoin, IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 
 case object selectCovered extends CandidateGenerator[LogicalPlan] {
 
   def apply(plan: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    val unsolvedPredicates = queryGraph.selections
-      .scalarPredicatesGiven(plan.availableSymbols)
-      .filterNot(predicate => plan.solved.exists(_.graph.selections.contains(predicate)))
-
+    val unsolvedPredicates = queryGraph.selections.unsolvedPredicates(plan)
     if (unsolvedPredicates.isEmpty)
       Seq()
     else {
-      val noJoins = context.logicalPlanProducer.planSelection(unsolvedPredicates, plan)
-      val alternatives = produceAlternatives(plan, unsolvedPredicates)
-
-      alternatives :+ noJoins
-    }
-  }
-
-  private def produceAlternatives(in: LogicalPlan, predicates: Seq[Expression])(implicit context: LogicalPlanningContext) = {
-    predicates.foldLeft(Seq.empty[LogicalPlan]) {
-      case (acc, s@HasLabels(id: Identifier, Seq(labelName))) =>
-        val labelScan = context.logicalPlanProducer.planNodeByLabelScan(IdName(id.name), LazyLabel(labelName)(context.semanticTable), Seq(s), None, Set.empty)
-        val join = context.logicalPlanProducer.planNodeHashJoin(Set(IdName(id.name)), in, labelScan, Set.empty)
-        acc :+ join
-
-      case (acc, _) => acc
+      Seq(context.logicalPlanProducer.planSelection(unsolvedPredicates, plan))
     }
   }
 }

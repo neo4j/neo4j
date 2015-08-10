@@ -19,28 +19,29 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{NodeByLabelScan, NodeHashJoin, Selection}
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
-import scala.annotation.tailrec
 
-case class Selector(pickBestFactory: LogicalPlanningFunction0[CandidateSelector],
-                    planGenerators: CandidateGenerator[LogicalPlan]*) extends PlanTransformer[QueryGraph] {
-  def apply(input: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    val pickBest = pickBestFactory(context)
+class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+  test("should solve labels with joins") {
 
-    @tailrec
-    def selectIt(plan: LogicalPlan): LogicalPlan = {
-      val plans = planGenerators.
-        flatMap(generator => generator(plan, queryGraph))
-
-      pickBest(plans) match {
-        case Some(p) => selectIt(p)
-        case None => plan
+    implicit val plan = new given {
+      cost = {
+        case (_: Selection, _) => 1000.0
+        case (_: NodeHashJoin, _) => 20.0
+        case (_: NodeByLabelScan, _) => 20.0
       }
-    }
+    } planFor "MATCH (n:Foo:Bar:Baz) RETURN n"
 
-    selectIt(input)
+    plan.innerPlan match {
+      case NodeHashJoin(_,
+      NodeHashJoin(_,
+      NodeByLabelScan(_, _, _),
+      NodeByLabelScan(_, _, _)),
+      NodeByLabelScan(_, _, _)) => ()
+      case _ => fail("Not what we expected!")
+    }
   }
 }

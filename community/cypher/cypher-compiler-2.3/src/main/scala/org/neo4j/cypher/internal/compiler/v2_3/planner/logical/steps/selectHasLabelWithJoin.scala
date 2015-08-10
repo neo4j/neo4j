@@ -19,28 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{HasLabels, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CandidateGenerator, LogicalPlanningContext}
 
-import scala.annotation.tailrec
+case object selectHasLabelWithJoin extends CandidateGenerator[LogicalPlan] {
 
-case class Selector(pickBestFactory: LogicalPlanningFunction0[CandidateSelector],
-                    planGenerators: CandidateGenerator[LogicalPlan]*) extends PlanTransformer[QueryGraph] {
-  def apply(input: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    val pickBest = pickBestFactory(context)
-
-    @tailrec
-    def selectIt(plan: LogicalPlan): LogicalPlan = {
-      val plans = planGenerators.
-        flatMap(generator => generator(plan, queryGraph))
-
-      pickBest(plans) match {
-        case Some(p) => selectIt(p)
-        case None => plan
-      }
+  def apply(plan: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] =
+    queryGraph.selections.unsolvedPredicates(plan).collect {
+      case s@HasLabels(id: Identifier, Seq(labelName)) =>
+        val labelScan = context.logicalPlanProducer.planNodeByLabelScan(IdName(id.name), LazyLabel(labelName)(context.semanticTable), Seq(s), None, Set.empty)
+        context.logicalPlanProducer.planNodeHashJoin(Set(IdName(id.name)), plan, labelScan, Set.empty)
     }
 
-    selectIt(input)
-  }
 }

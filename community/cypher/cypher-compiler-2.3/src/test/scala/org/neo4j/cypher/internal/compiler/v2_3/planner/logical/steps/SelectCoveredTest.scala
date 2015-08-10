@@ -19,33 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
-import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CandidateSelector, LogicalPlanningFunction0}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private implicit val planContext = newMockedPlanContext
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
   private implicit val context = newMockedLogicalPlanningContext(planContext)
-  val pickBestFactory = mock[LogicalPlanningFunction0[CandidateSelector]]
 
-  val selector = mock[CandidateSelector]
-  when(selector.apply(any())).thenAnswer(new Answer[Option[LogicalPlan]] {
-    override def answer(invocationOnMock: InvocationOnMock): Option[LogicalPlan] = {
-      val arguments = invocationOnMock.getArguments
-      val apply = arguments.apply(0)
-      val plans = apply.asInstanceOf[Iterable[LogicalPlan]]
-      plans.headOption
-    }
-  })
-
-  when(pickBestFactory.apply(any())).thenReturn(selector)
   test("when a predicate that isn't already solved is solvable it should be applied") {
     // Given
     val predicate = mock[Expression]
@@ -127,28 +111,5 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // Then
     result should equal(Seq())
-  }
-
-}
-
-class SelectCoveredTest2 extends CypherFunSuite with LogicalPlanningTestSupport2 {
-  test("should solve labels with joins") {
-
-    implicit val plan = new given {
-      cost = {
-        case (_: Selection, _) => 1000.0
-        case (_: NodeHashJoin, _) => 20.0
-        case (_: NodeByLabelScan, _) => 20.0
-      }
-    } planFor "MATCH (n:Foo:Bar:Baz) RETURN n"
-
-    plan.innerPlan match {
-      case NodeHashJoin(_,
-      NodeHashJoin(_,
-      NodeByLabelScan(_, _, _),
-      NodeByLabelScan(_, _, _)),
-      NodeByLabelScan(_, _, _)) => ()
-      case _ => fail("Not what we expected!")
-    }
   }
 }
