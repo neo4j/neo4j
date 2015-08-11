@@ -33,7 +33,7 @@ import scala.util.{Failure, Success, Try}
 abstract class Predicate extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = isMatch(ctx).getOrElse(null)
   def isTrue(m: ExecutionContext)(implicit state: QueryState): Boolean = isMatch(m).getOrElse(false)
-  def ++(other: Predicate): Predicate = Ands(this, other)
+  def andWith(other: Predicate): Predicate = Ands(this, other)
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean]
 
   // This is the un-dividable list of predicates. They can all be ANDed
@@ -44,12 +44,12 @@ abstract class Predicate extends Expression {
 
   def andWith(preds: Predicate*): Predicate = { preds match {
     case _ if preds.isEmpty => this
-    case _                  => preds.fold(this)(_ ++ _)
+    case _                  => preds.fold(this)(_ andWith _)
   } }
 }
 
 object Predicate {
-  def fromSeq(in: Seq[Predicate]) = in.reduceOption(_ ++ _).getOrElse(True())
+  def fromSeq(in: Seq[Predicate]) = in.reduceOption(_ andWith _).getOrElse(True())
 }
 
 object And {
@@ -70,7 +70,7 @@ object Ands {
 
 case class Ands(predicates: List[Predicate]) extends CompositeBooleanPredicate {
   def shouldExitWhen = false
-  override def ++(other: Predicate): Predicate = Ands(predicates :+ other)
+  override def andWith(other: Predicate): Predicate = Ands(predicates :+ other)
   def rewrite(f: (Expression) => Expression): Expression = f(Ands(predicates.map(_.rewriteAsPredicate(f))))
 }
 
@@ -114,10 +114,15 @@ case class Or(a: Predicate, b: Predicate) extends Predicate {
 }
 
 abstract class CompositeBooleanPredicate extends Predicate {
+
   def predicates: List[Predicate]
-  def shouldExitWhen: Boolean
+
   assert(predicates.nonEmpty, "Expected predicates to never be empty")
+
+  def shouldExitWhen: Boolean
+
   def symbolTableDependencies: Set[String] = predicates.flatMap(_.symbolTableDependencies).toSet
+
   def containsIsNull: Boolean = predicates.exists(_.containsIsNull)
 
   /**
@@ -130,12 +135,12 @@ abstract class CompositeBooleanPredicate extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
     predicates.foldLeft[Try[Option[Boolean]]](Success(Some(!shouldExitWhen))) { (previousValue, predicate) =>
       previousValue match {
-        // handle short-circuit case, for AND any false result should propage through, while for OR any true should
-        case Success(Some(result)) if (result == shouldExitWhen) => previousValue
+        // if a previous evaluation was true (false) the OR (AND) result is determined
+        case Success(Some(result)) if result == shouldExitWhen => previousValue
         case _ =>
           Try(predicate.isMatch(m)) match {
             // If we get the exit case (false for AND and true for OR) ignore any error cases
-            case Success(Some(result)) if (result == shouldExitWhen) => Success(Some(shouldExitWhen))
+            case Success(Some(result)) if result == shouldExitWhen => Success(Some(shouldExitWhen))
             // Handle null only for non error cases
             case Success(None) if previousValue.isSuccess => Success(None)
             // errors or non-exit cases propagate as normal
@@ -150,6 +155,7 @@ abstract class CompositeBooleanPredicate extends Predicate {
   }
 
   def arguments: Seq[Expression] = predicates
+
   override def atoms: Seq[Predicate] = predicates
 }
 
