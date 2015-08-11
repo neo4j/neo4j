@@ -20,27 +20,29 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure, Variable}
 
-case class AcceptVisitor(produceResultOpName: String, columns: Map[String, CodeGenExpression])
+case class Projection(projectionOpName: String, variables: Map[Variable, CodeGenExpression], action: Instruction)
   extends Instruction {
 
-  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    generator.trace(produceResultOpName) { body =>
-      body.incrementRows()
-      columns.foreach { case (k, v) =>
-        body.setInRow(k, v.generateExpression(body))
-      }
-      body.visitorAccept()
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+    super.init(generator)
+    variables.foreach {
+      case (_, expr) => expr.init(generator)
     }
   }
 
-  override protected def operatorId = Set(produceResultOpName)
-
-  override protected def children = Seq.empty
-
-  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) {
-    columns.values.foreach(_.init(generator))
-    super.init(generator)
+  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+    generator.trace(projectionOpName) { body =>
+      body.incrementRows()
+      variables.foreach {
+        case (variable, expr) => body.projectVariable(variable.name, expr.generateExpression(body))
+      }
+      action.body(body)
+    }
   }
+
+  override protected def operatorId = Set(projectionOpName)
+
+  override protected def children = Seq(action)
 }

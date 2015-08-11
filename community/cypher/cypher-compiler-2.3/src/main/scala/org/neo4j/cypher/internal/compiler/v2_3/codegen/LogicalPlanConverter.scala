@@ -45,8 +45,8 @@ object LogicalPlanConverter {
       case p: CartesianProduct => p.asCodeGenPlan
       case p: Selection => p.asCodeGenPlan
       case p: plans.Limit => p.asCodeGenPlan
-      case produceResult@ProduceResult(_, projection: Projection) =>
-        ProduceProjectionResults(produceResult, projection)
+      case p: ProduceResult => p.asCodeGenPlan
+      case p: plans.Projection => p.asCodeGenPlan
 
       case _ =>
         throw new CantCompileQueryException(s"$logicalPlan is not yet supported")
@@ -64,24 +64,54 @@ object LogicalPlanConverter {
     }
   }
 
-  private case class ProduceProjectionResults(produceResults: ProduceResult, projection: Projection)
-    extends CodeGenPlan {
+  private implicit class ProjectionCodeGen(projection: plans.Projection) {
+    def asCodeGenPlan = new CodeGenPlan {
 
-    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
-      val projectionOpName = context.registerOperator(projection)
-      val produceResultOpName = context.registerOperator(produceResults)
-      val projections = Eagerly.immutableMapValues(projection.expressions,
-        (e: Expression) => ExpressionConverter.createProjection(e)(context))
+      override val logicalPlan = projection
 
-      (None, AcceptVisitor(produceResultOpName, projectionOpName, projections))
+      override def produce(context: CodeGenContext) = {
+        context.pushParent(this)
+        projection.lhs.get.asCodeGenPlan.produce(context)
+      }
+
+      override def consume(context: CodeGenContext, child: CodeGenPlan) = {
+        val projectionOpName = context.registerOperator(projection)
+        val columns = Eagerly.immutableMapValues(projection.expressions,
+          (e:ast.Expression) => ExpressionConverter.createProjection(e)(context))
+        val vars = columns.map {
+          case (name, expr) =>
+            val variable = Variable(context.namer.newVarName(), expr.cypherType(context), expr.nullable(context))
+            context.addVariable(name, variable)
+            variable -> expr
+        }
+        val (methodHandle, action) = context.popParent().consume(context, this)
+        (methodHandle, ir.Projection(projectionOpName, vars, action))
+      }
     }
+  }
 
-    override def produce(context: CodeGenContext) = {
-      context.pushParent(this)
-      projection.lhs.get.asCodeGenPlan.produce(context)
+  private implicit class ProduceResultsCodeGen(produceResults: ProduceResult) {
+    def asCodeGenPlan = new CodeGenPlan {
+
+      override val logicalPlan = produceResults
+
+      override def produce(context: CodeGenContext) = {
+        context.pushParent(this)
+        produceResults.lhs.get.asCodeGenPlan.produce(context)
+      }
+
+      override def consume(context: CodeGenContext, child: CodeGenPlan) = {
+        val produceResultOpName = context.registerOperator(produceResults)
+        val projections = (produceResults.lhs.get match {
+          // if lhs is projection than we can simply load things that it projected
+          case _: plans.Projection => produceResults.columns.map(c => c -> LoadVariable(context.getVariable(c).name))
+          // else we have to evaluate all expressions ourselves
+          case _ => produceResults.columns.map(c => c -> ExpressionConverter.createExpressionForVariable(c)(context))
+        }).toMap
+
+        (None, AcceptVisitor(produceResultOpName, projections))
+      }
     }
-
-    override val logicalPlan: LogicalPlan = produceResults
   }
 
   private implicit class AllNodesScanCodeGen(allNodesScan: AllNodesScan) {
@@ -196,7 +226,7 @@ object LogicalPlanConverter {
 
           val lhsSymbols = nodeHashJoin.left.availableSymbols.map(_.name)
           val nodeNames = nodeHashJoin.nodes.map(_.name)
-          val notNodeSymbols = lhsSymbols intersect context.variableNames() diff nodeNames
+          val notNodeSymbols = lhsSymbols intersect context.variableQueryIdentifiers() diff nodeNames
           val symbols = notNodeSymbols.map(s => s -> context.getVariable(s)).toMap
 
 

@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.{symbols, ast}
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{MethodStructure, CodeGenContext}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.{CTRelationship, CTNode}
+import org.neo4j.cypher.internal.compiler.v2_3.{InternalException, symbols, ast}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, MethodStructure, CodeGenContext}
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 
@@ -81,6 +82,18 @@ object ExpressionConverter {
         RelationshipProjection(context.getVariable(name))
 
       case e => expressionConverter(e, createProjection)
+    }
+  }
+
+  def createExpressionForVariable(variableQueryIdentifier: String)
+                                 (implicit context: CodeGenContext): CodeGenExpression = {
+
+    val variable = context.getVariable(variableQueryIdentifier)
+
+    variable.cypherType match {
+      case CTNode => NodeProjection(variable)
+      case CTRelationship => RelationshipProjection(variable)
+      case _ => throw new InternalException("The compiled runtime only handles identifiers pointing to rels and nodes at this time")
     }
   }
 

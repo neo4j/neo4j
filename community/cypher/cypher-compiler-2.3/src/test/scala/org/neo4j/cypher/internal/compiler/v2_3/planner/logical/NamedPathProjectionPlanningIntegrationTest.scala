@@ -45,17 +45,14 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
     val result = planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a RETURN b").plan
 
     result should equal(
-      Projection(
-        Selection(
-          Seq(Equals(
-            FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, ident("p"))_)_,
-            ident("a")
-          )_),
-          Projection(
-            Expand( NodeByLabelScan("a",  LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING,  Seq.empty, "b", "r")(solved),
-            expressions = Map("a" -> ident("a"), "b" -> ident("b"), "p" -> pathExpr, "r" -> ident("r")))(solved)
-        )(solved),
-        expressions = Map("b" -> ident("b"))
+      Selection(
+        Seq(Equals(
+          FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, ident("p")) _) _,
+          ident("a")
+        ) _),
+        Projection(
+          Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING, Seq.empty, "b", "r")(solved),
+          expressions = Map("a" -> ident("a"), "b" -> ident("b"), "p" -> pathExpr, "r" -> ident("r")))(solved)
       )(solved)
     )
   }
@@ -66,24 +63,21 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
     val result = planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a AND length(p) > 10 RETURN b").plan
 
     result should equal(
-      Projection(
-        Selection(
-          Seq(
-            Equals(
-              FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, ident("p"))_)_,
-              Identifier("a")_
-            )_,
-            GreaterThan(
-              FunctionInvocation(FunctionName("length")_, ident("p"))_,
-              SignedDecimalIntegerLiteral("10")_
-            )_
-          ),
-          Projection(
-            Expand( NodeByLabelScan("a",  LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING,  Seq.empty, "b", "r")(solved),
-            expressions = Map("a" -> ident("a"), "b" -> ident("b"), "p" -> pathExpr, "r" -> ident("r"))
-          )(solved)
-        )(solved),
-        expressions = Map("b" -> Identifier("b") _)
+      Selection(
+        Seq(
+          Equals(
+            FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, ident("p")) _) _,
+            Identifier("a") _
+          ) _,
+          GreaterThan(
+            FunctionInvocation(FunctionName("length") _, ident("p")) _,
+            SignedDecimalIntegerLiteral("10") _
+          ) _
+        ),
+        Projection(
+          Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING, Seq.empty, "b", "r")(solved),
+          expressions = Map("a" -> ident("a"), "b" -> ident("b"), "p" -> pathExpr, "r" -> ident("r"))
+        )(solved)
       )(solved)
     )
   }
