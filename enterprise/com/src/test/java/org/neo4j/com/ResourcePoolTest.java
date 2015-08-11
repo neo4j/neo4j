@@ -36,6 +36,10 @@ import org.neo4j.helpers.FakeClock;
 
 public class ResourcePoolTest
 {
+
+    private static final int TIMEOUT_MILLIS = 100;
+    private static final int TIMEOUT_EXCEED_MILLIS = TIMEOUT_MILLIS + 10;
+
     @Test
     public void shouldNotReuseBrokenInstances() throws Exception
     {
@@ -74,9 +78,9 @@ public class ResourcePoolTest
     {
         FakeClock clock = new FakeClock();
 
-        ResourcePool.CheckStrategy timeStrategy = new ResourcePool.CheckStrategy.TimeoutCheckStrategy( 100, clock );
+        ResourcePool.CheckStrategy timeStrategy = new ResourcePool.CheckStrategy.TimeoutCheckStrategy( TIMEOUT_MILLIS, clock );
 
-        while ( clock.currentTimeMillis() <= 100 )
+        while ( clock.currentTimeMillis() <= TIMEOUT_MILLIS )
         {
             assertFalse( timeStrategy.shouldCheck() );
             clock.forward( 10, TimeUnit.MILLISECONDS );
@@ -127,22 +131,22 @@ public class ResourcePoolTest
     public void shouldUpdateTargetSizeWhenSpikesOccur() throws Exception
     {
         // given
-        final int MIN_SIZE = 5;
-        final int MAX_SIZE = 10;
+        final int poolMinSize = 5;
+        final int poolMaxSize = 10;
 
         StatefulMonitor stateMonitor = new StatefulMonitor();
         FakeClock clock = new FakeClock();
-        final ResourcePool<Something> pool = getResourcePool( stateMonitor, clock, MIN_SIZE );
+        final ResourcePool<Something> pool = getResourcePool( stateMonitor, clock, poolMinSize );
 
         // when
-        List<ResourceHolder> holders = acquireFromPool( pool, MAX_SIZE );
-        clock.forward( 110, TimeUnit.MILLISECONDS );
+        List<ResourceHolder> holders = acquireFromPool( pool, poolMaxSize );
+        exceedTimeout( clock );
         holders.addAll( acquireFromPool( pool, 1 ) ); // Needed to trigger the alarm
 
         // then
-        assertEquals( MAX_SIZE + 1, stateMonitor.currentPeakSize.get() );
+        assertEquals( poolMaxSize + 1, stateMonitor.currentPeakSize.get() );
         // We have not released anything, so targetSize will not be reduced
-        assertEquals( MAX_SIZE + 1, stateMonitor.targetSize.get() ); // + 1 from the acquire
+        assertEquals( poolMaxSize + 1, stateMonitor.targetSize.get() ); // + 1 from the acquire
 
         for ( ResourceHolder holder : holders )
         {
@@ -154,11 +158,11 @@ public class ResourcePoolTest
     public void shouldKeepSmallPeakAndNeverDisposeIfAcquireAndReleaseContinuously() throws Exception
     {
         // given
-        final int MIN_SIZE = 1;
+        final int poolMinSize = 1;
 
         StatefulMonitor stateMonitor = new StatefulMonitor();
         FakeClock clock = new FakeClock();
-        final ResourcePool<Something> pool = getResourcePool( stateMonitor, clock, MIN_SIZE );
+        final ResourcePool<Something> pool = getResourcePool( stateMonitor, clock, poolMinSize );
 
         // when
         for ( int i = 0; i < 200; i++ )
@@ -182,141 +186,139 @@ public class ResourcePoolTest
     public void shouldSlowlyReduceTheNumberOfResourcesInThePoolWhenResourcesAreReleased() throws Exception
     {
         // given
-        final int MIN_SIZE = 50;
-        final int MAX_SIZE = 200;
+        final int poolMinSize = 50;
+        final int poolMaxSize = 200;
 
         StatefulMonitor stateMonitor = new StatefulMonitor();
         FakeClock clock = new FakeClock();
-        final ResourcePool<Something> pool = getResourcePool( stateMonitor, clock, MIN_SIZE );
-        List<ResourceHolder> holders = new LinkedList<ResourceHolder>();
+        final ResourcePool<Something> pool = getResourcePool( stateMonitor, clock, poolMinSize );
 
-        buildAPeakOfAcquiredResourcesAndTriggerAlarmWithSideEffects( MAX_SIZE, clock, pool, holders );
+        acquireResourcesAndExceedTimeout( pool, clock, poolMaxSize );
 
         // when
         // After the peak, stay below MIN_SIZE concurrent usage, using up all already present resources.
-        clock.forward( 110, TimeUnit.MILLISECONDS );
-        for ( int i = 0; i < MAX_SIZE; i++ )
+        exceedTimeout( clock );
+        for ( int i = 0; i < poolMaxSize; i++ )
         {
             acquireFromPool( pool, 1 ).get( 0 ).release();
         }
 
         // then
-
-        // currentPeakSize must have reset from the latest alarm to MIN_SIZE.
-        assertEquals( 1, stateMonitor.currentPeakSize.get() ); // Alarm
-        // targetSize must be set to MIN_SIZE since currentPeakSize was that 2 alarms ago and didn't increase
-        assertEquals( MIN_SIZE, stateMonitor.targetSize.get() );
+        // currentPeakSize must have reset from the latest check to minimum size.
+        assertEquals( 1, stateMonitor.currentPeakSize.get() ); // because of timeout
+        // targetSize must be set to MIN_SIZE since currentPeakSize was that 2 checks ago and didn't increase
+        assertEquals( poolMinSize, stateMonitor.targetSize.get() );
         // Only pooled resources must be used, disposing what is in excess
-        // +1 for the alarm from buildAPeakOfAcquiredResourcesAndTriggerAlarmWithSideEffects
-        assertEquals( MAX_SIZE - MIN_SIZE + 1, stateMonitor.disposed.get() );
+        // +1 that was used to trigger exceed timeout check
+        assertEquals( poolMaxSize - poolMinSize + 1, stateMonitor.disposed.get() );
     }
 
     @Test
-    public void shouldMaintainPoolAtHighWatermarkWhenConcurrentUsagePassesMinSize() throws Exception
+    public void shouldMaintainPoolHigherThenMinSizeWhenPeekUsagePasses() throws Exception
     {
         // given
-        final int MIN_SIZE = 50;
-        final int MAX_SIZE = 200;
-        final int MID_SIZE = 90;
+        final int poolMinSize = 50;
+        final int poolMaxSize = 200;
+        final int afterPeekPoolSize = 90;
 
         StatefulMonitor stateMonitor = new StatefulMonitor();
         FakeClock clock = new FakeClock();
-        final ResourcePool<Something> pool = getResourcePool( stateMonitor, clock, MIN_SIZE );
-        List<ResourceHolder> holders = new LinkedList<ResourceHolder>();
+        final ResourcePool<Something> pool = getResourcePool( stateMonitor, clock, poolMinSize );
 
-        buildAPeakOfAcquiredResourcesAndTriggerAlarmWithSideEffects( MAX_SIZE, clock, pool, holders );
+        acquireResourcesAndExceedTimeout( pool, clock, poolMaxSize );
 
         // when
-        // After the peak, stay at MID_SIZE concurrent usage, using up all already present resources in the process
-        // but also keeping the high watermark above the MIN_SIZE
-        clock.forward( 110, TimeUnit.MILLISECONDS );
+        // After the peak, stay at afterPeekPoolSize concurrent usage, using up all already present resources in the process
+        // but also keeping the high watermark above the minimum size
+        exceedTimeout( clock );
         // Requires some rounds to happen, since there is constant racing between releasing and acquiring which does
         // not always result in reaping of resources, as there is reuse
         for ( int i = 0; i < 10; i++ )
         {
             // The latch is necessary to reduce races between batches
-            CountDownLatch release = new CountDownLatch( MID_SIZE );
-            for ( ResourceHolder holder : acquireFromPool( pool, MID_SIZE ) )
+            CountDownLatch release = new CountDownLatch( afterPeekPoolSize );
+            for ( ResourceHolder holder : acquireFromPool( pool, afterPeekPoolSize ) )
             {
                 holder.release( release );
             }
             release.await();
-            clock.forward( 110, TimeUnit.MILLISECONDS );
+            exceedTimeout( clock );
         }
 
         // then
-        // currentPeakSize should be at MID_SIZE
-        assertEquals( MID_SIZE, stateMonitor.currentPeakSize.get() );
+        // currentPeakSize should be at afterPeekPoolSize
+        assertEquals( afterPeekPoolSize, stateMonitor.currentPeakSize.get() );
         // target size too
-        assertEquals( MID_SIZE, stateMonitor.targetSize.get() );
-        // only the excess from the MAX_SIZE down to mid size must have been disposed
-        // +1 for the alarm from buildAPeakOfAcquiredResourcesAndTriggerAlarmWithSideEffects
-        assertEquals( MAX_SIZE - MID_SIZE + 1, stateMonitor.disposed.get() );
+        assertEquals( afterPeekPoolSize, stateMonitor.targetSize.get() );
+        // only the excess from the maximum size down to after peek usage size must have been disposed
+        // +1 that was used to trigger exceed timeout check
+        assertEquals( poolMaxSize - afterPeekPoolSize + 1, stateMonitor.disposed.get() );
     }
 
     @Test
-    public void shouldReclaimAndRecreateWhenLullBetweenSpikesOccurs() throws Exception
+    public void shouldReclaimAndRecreateWhenUsageGoesDownBetweenSpikes() throws Exception
     {
         // given
-        final int MIN_SIZE = 50;
-        final int BELOW_MIN_SIZE = MIN_SIZE / 5;
-        final int MAX_SIZE = 200;
+        final int poolMinSize = 50;
+        final int bellowPoolMinSize = poolMinSize / 5;
+        final int poolMaxSize = 200;
 
         StatefulMonitor stateMonitor = new StatefulMonitor();
         FakeClock clock = new FakeClock();
-        final ResourcePool<Something> pool = getResourcePool( stateMonitor, clock, MIN_SIZE );
-        List<ResourceHolder> holders = new LinkedList<ResourceHolder>();
+        final ResourcePool<Something> pool = getResourcePool( stateMonitor, clock, poolMinSize );
 
-        buildAPeakOfAcquiredResourcesAndTriggerAlarmWithSideEffects( MAX_SIZE, clock, pool, holders );
+        acquireResourcesAndExceedTimeout( pool, clock, poolMaxSize );
 
         // when
         // After the peak, stay well below concurrent usage, using up all already present resources in the process
-        clock.forward( 110, TimeUnit.MILLISECONDS );
+        exceedTimeout( clock );
         // Requires some rounds to happen, since there is constant racing between releasing and acquiring which does
         // not always result in reaping of resources, as there is reuse
         for ( int i = 0; i < 30; i++ )
         {
             // The latch is necessary to reduce races between batches
-            CountDownLatch release = new CountDownLatch( BELOW_MIN_SIZE );
-            for ( ResourceHolder holder : acquireFromPool( pool, BELOW_MIN_SIZE ) )
+            CountDownLatch release = new CountDownLatch( bellowPoolMinSize );
+            for ( ResourceHolder holder : acquireFromPool( pool, bellowPoolMinSize ) )
             {
                 holder.release( release );
             }
             release.await();
-            clock.forward( 110, TimeUnit.MILLISECONDS );
+            exceedTimeout( clock );
         }
 
         // then
-        // currentPeakSize should be at MIN_SIZE / 5
-        assertEquals( BELOW_MIN_SIZE, stateMonitor.currentPeakSize.get() );
-        // target size should remain at MIN_SIZE
-        assertEquals( MIN_SIZE, stateMonitor.targetSize.get() );
-        // only the excess from the MAX_SIZE down to min size must have been disposed
-        // +1 for the alarm from buildAPeakOfAcquiredResourcesAndTriggerAlarmWithSideEffects
-        assertEquals( MAX_SIZE - MIN_SIZE + 1, stateMonitor.disposed.get() );
+        // currentPeakSize should be at bellowPoolMinSize
+        assertEquals( bellowPoolMinSize, stateMonitor.currentPeakSize.get() );
+        // target size should remain at pool min size
+        assertEquals( poolMinSize, stateMonitor.targetSize.get() );
+        // only the excess from the pool max size down to min size must have been disposed
+        // +1 that was used to trigger initial exceed timeout check
+        assertEquals( poolMaxSize - poolMinSize + 1, stateMonitor.disposed.get() );
 
         stateMonitor.created.set( 0 );
         stateMonitor.disposed.set( 0 );
 
         // when
         // After the lull, recreate a peak
-        buildAPeakOfAcquiredResourcesAndTriggerAlarmWithSideEffects( MAX_SIZE, clock, pool, holders );
+        acquireResourcesAndExceedTimeout( pool, clock, poolMaxSize );
 
         // then
-        assertEquals( MAX_SIZE - MIN_SIZE + 1, stateMonitor.created.get() );
+        assertEquals( poolMaxSize - poolMinSize + 1, stateMonitor.created.get() );
         assertEquals( 0, stateMonitor.disposed.get() );
-
     }
 
-    private void buildAPeakOfAcquiredResourcesAndTriggerAlarmWithSideEffects( int MAX_SIZE, FakeClock clock,
-                                                                              ResourcePool<Something>
-                                                                                      pool,
-                                                                              List<ResourceHolder> holders ) throws
-            InterruptedException
+    private void exceedTimeout( FakeClock clock )
     {
-        holders.addAll( acquireFromPool( pool, MAX_SIZE ) );
+        clock.forward( TIMEOUT_EXCEED_MILLIS, TimeUnit.MILLISECONDS );
+    }
 
-        clock.forward( 110, TimeUnit.MILLISECONDS );
+    private void acquireResourcesAndExceedTimeout( ResourcePool<Something> pool,
+            FakeClock clock, int resourcesToAcquire ) throws InterruptedException
+    {
+        List<ResourceHolder> holders = new LinkedList<>();
+        holders.addAll( acquireFromPool( pool, resourcesToAcquire ) );
+
+        exceedTimeout( clock );
 
         // "Ring the bell" only on acquisition, of course.
         holders.addAll( acquireFromPool( pool, 1 ) );
@@ -327,32 +329,18 @@ public class ResourcePoolTest
         }
     }
 
-    private ResourcePool<Something> getResourcePool( StatefulMonitor stateMonitor,
-                                                     FakeClock clock,
-                                                     int minSize )
+    private ResourcePool<Something> getResourcePool( StatefulMonitor stateMonitor, FakeClock clock, int minSize )
     {
-        return new ResourcePool<Something>( minSize,
-                new ResourcePool.CheckStrategy.TimeoutCheckStrategy( 100, clock ), stateMonitor )
-        {
-            @Override
-            protected Something create()
-            {
-                return new Something();
-            }
-
-            @Override
-            protected boolean isAlive( Something resource )
-            {
-                return !resource.closed;
-            }
-        };
+        ResourcePool.CheckStrategy.TimeoutCheckStrategy timeoutCheckStrategy =
+                new ResourcePool.CheckStrategy.TimeoutCheckStrategy( TIMEOUT_MILLIS, clock );
+        return new SomethingResourcePool( minSize, timeoutCheckStrategy, stateMonitor );
     }
 
-    private List<ResourceHolder> acquireFromPool( final ResourcePool pool, int times ) throws InterruptedException
+    private List<ResourceHolder> acquireFromPool( ResourcePool pool, int resourcesToAcquire ) throws InterruptedException
     {
-        List<ResourceHolder> acquirers = new LinkedList<ResourceHolder>();
-        final CountDownLatch latch = new CountDownLatch( times );
-        for ( int i = 0; i < times; i++ )
+        List<ResourceHolder> acquirers = new LinkedList<>();
+        final CountDownLatch latch = new CountDownLatch( resourcesToAcquire );
+        for ( int i = 0; i < resourcesToAcquire; i++ )
         {
             ResourceHolder holder = new ResourceHolder( pool, latch );
             Thread t = new Thread( holder );
@@ -361,6 +349,26 @@ public class ResourcePoolTest
         }
         latch.await();
         return acquirers;
+    }
+
+    private static class SomethingResourcePool extends ResourcePool<Something>
+    {
+        public SomethingResourcePool( int minSize, CheckStrategy checkStrategy, StatefulMonitor stateMonitor )
+        {
+            super( minSize, checkStrategy, stateMonitor );
+        }
+
+        @Override
+        protected Something create()
+        {
+            return new Something();
+        }
+
+        @Override
+        protected boolean isAlive( Something resource )
+        {
+            return !resource.closed;
+        }
     }
 
     private class ResourceHolder implements Runnable
