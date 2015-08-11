@@ -27,4 +27,6 @@ include::query-using-multiple-index-hints.asciidoc[]
 
 include::hinting-a-label-scan.asciidoc[]
 
-include::hinting-a-join.asciidoc[]
+include::hinting-a-join-on-a-single-node.asciidoc[]
+
+include::hinting-a-join-on-multiple-nodes.asciidoc[]

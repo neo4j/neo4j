@@ -38,8 +38,8 @@ case object RuntimeUnsupportedNotification extends InternalNotification
 
 case class IndexHintUnfulfillableNotification(label: String, propertyKey: String) extends InternalNotification
 
-case class JoinHintUnfulfillableNotification(identified: String) extends InternalNotification
+case class JoinHintUnfulfillableNotification(identified: Seq[String]) extends InternalNotification
 
-case class JoinHintUnsupportedNotification(identified: String) extends InternalNotification
+case class JoinHintUnsupportedNotification(identified: Seq[String]) extends InternalNotification
 
 case class BareNodeSyntaxDeprecatedNotification(position: InputPosition) extends InternalNotification

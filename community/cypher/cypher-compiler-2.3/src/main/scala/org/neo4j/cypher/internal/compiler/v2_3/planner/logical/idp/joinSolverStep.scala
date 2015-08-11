@@ -19,75 +19,84 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.UsingJoinHint
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp.joinSolverStep._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan, NodeHashJoin, PatternRelationship}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan, PatternRelationship}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlanningContext, LogicalPlanningSupport}
+
+object joinSolverStep {
+  val VERBOSE = false
+}
 
 case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
 
+  import LogicalPlanningSupport._
+
   override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan])
                     (implicit context: LogicalPlanningContext): Iterator[LogicalPlan] = {
-    val goalSize = goal.size / 2
 
-    val result: Iterator[Iterator[NodeHashJoin]] =
-      for (
-        leftGoal <- goal.subsets() if leftGoal.size <= goalSize;
-        lhs <- table(leftGoal);
-        leftNodes = lhs.solved.graph.patternNodes -- qg.argumentIds;
-        rightGoal = goal &~ leftGoal; // bit set -- operator
-        rhs <- table(rightGoal);
-        rightNodes = rhs.solved.graph.patternNodes;
-        overlap = leftNodes intersect rightNodes if overlap.nonEmpty
-      ) yield {
-        planJoins(lhs, rhs, overlap, qg)
-      }
-
-    // This should be (and is) lazy
-    result.flatten
-  }
-}
-
-object joinSolverStep {
-
-  def planJoinsOnTopOfExpands(qg: QueryGraph, lhsOpt: Option[LogicalPlan], rhsSet: Set[LogicalPlan])
-                             (implicit context: LogicalPlanningContext): Iterator[LogicalPlan] = {
-    val lhs = lhsOpt.getOrElse {
-      return Iterator.empty
+    if (VERBOSE) {
+      println(s"\n>>>> start solving ${show(goal, goalSymbols(goal, registry))}")
     }
 
-    val joinHintsPresent = qg.hints.exists {
-      case _: UsingJoinHint => true
-      case _ => false
-    }
+    val goalSize = goal.size
+    val arguments = qg.argumentIds
+    val planProducer = context.logicalPlanProducer
+    val builder = Vector.newBuilder[LogicalPlan]
 
-    if (joinHintsPresent) {
-      val result =
-        for {
-          rhs <- rhsSet
-          overlap = lhs.solved.graph.patternNodes intersect rhs.solved.graph.patternNodes
-          if overlap.nonEmpty
-        } yield {
-          planJoins(lhs, rhs, overlap, qg)
+    for (
+      leftSize <- 1.until(goalSize);
+      leftGoal <- goal.subsets(leftSize);
+      rightSize <- 1.until(goalSize);
+      rightGoal <- goal.subsets(rightSize) if (leftGoal != rightGoal) && ((leftGoal | rightGoal) == goal)
+    ) {
+      val optLhs = table(leftGoal)
+      val optRhs = table(rightGoal)
+      if (optLhs.isDefined && optRhs.isDefined) {
+        val lhs = optLhs.get
+        val rhs = optRhs.get
+        val overlappingNodes = computeOverlappingNodes(lhs, rhs, arguments)
+        if (overlappingNodes.nonEmpty) {
+          val overlappingSymbols = computeOverlappingSymbols(lhs, rhs, arguments)
+          if (overlappingSymbols == overlappingNodes) {
+            if (VERBOSE) {
+              println(s"${show(leftGoal, nodes(lhs))} overlap ${show(rightGoal, nodes(rhs))} on ${showNames(overlappingNodes)}")
+            }
+            // This loop is designed to find both LHS and RHS plans, so no need to generate them swapped here
+            val matchingHints = qg.joinHints.filter(_.coveredBy(overlappingNodes))
+            builder += planProducer.planNodeHashJoin(overlappingNodes, lhs, rhs, matchingHints)
+          }
         }
-
-      result.flatten.iterator
-    }
-    else
-      Iterator.empty
-  }
-
-  private def planJoins(lhs: LogicalPlan, rhs: LogicalPlan, overlap: Set[IdName], qg: QueryGraph)
-                       (implicit context: LogicalPlanningContext) = {
-    val hints = qg.hints.collect {
-      case hint@UsingJoinHint(identifier) if overlap contains IdName(identifier.name) => hint
+      }
     }
 
-    Iterator(
-      context.logicalPlanProducer.planNodeHashJoin(overlap, lhs, rhs, hints),
-      context.logicalPlanProducer.planNodeHashJoin(overlap, rhs, lhs, hints)
-    )
+    builder.result().iterator
   }
+
+  private def computeOverlappingNodes(lhs: LogicalPlan, rhs: LogicalPlan, arguments: Set[IdName]): Set[IdName] = {
+    val leftNodes = nodes(lhs)
+    val rightNodes = nodes(rhs)
+    (leftNodes intersect rightNodes) -- arguments
+  }
+
+  private def computeOverlappingSymbols(lhs: LogicalPlan, rhs: LogicalPlan, arguments: Set[IdName]): Set[IdName] = {
+    val leftSymbols = lhs.availableSymbols
+    val rightSymbols = rhs.availableSymbols
+    (leftSymbols intersect rightSymbols) -- arguments
+  }
+
+  private def nodes(plan: LogicalPlan) =
+    plan.solved.graph.patternNodes
+
+  private def show(goal: Goal, symbols: Set[IdName]) =
+    s"${showIds(goal.toSet)}: ${showNames(symbols)}"
+
+  private def goalSymbols(goal: Goal, registry: IdRegistry[PatternRelationship]) =
+    registry.explode(goal).flatMap(_.coveredIds)
+
+  private def showIds(ids: Set[Int]) =
+    ids.toSeq.sorted.mkString("{", ", ", "}")
+
+  private def showNames(ids: Set[IdName]) =
+    ids.map(_.name).toSeq.sorted.mkString("[", ", ", "]")
 }
-

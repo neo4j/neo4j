@@ -69,10 +69,10 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
       // we were unable to plan hash join on some requested nodes
       if (context.useErrorsOverWarnings) {
         val firstJoinHint = hints.head
-        throw new JoinHintException(firstJoinHint.identifier.name, "Unable to plan hash join")
+        throw new JoinHintException(firstJoinHint.identifiers.map(_.name).reduceLeft(_ + ", " + _), "Unable to plan hash join")
       } else {
         hints.foreach { hint =>
-          context.notificationLogger.log(JoinHintUnfulfillableNotification(hint.identifier.name))
+          context.notificationLogger.log(JoinHintUnfulfillableNotification(hint.identifiers.map(_.name).toSeq))
         }
       }
     }

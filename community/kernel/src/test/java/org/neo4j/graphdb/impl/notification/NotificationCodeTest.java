@@ -21,6 +21,8 @@ package org.neo4j.graphdb.impl.notification;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -32,6 +34,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.CARTESIAN_PRODUCT;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.INDEX_HINT_UNFULFILLABLE;
+import static org.neo4j.graphdb.impl.notification.NotificationCode.JOIN_HINT_UNFULFILLABLE;
 
 public class NotificationCodeTest
 {
@@ -45,7 +48,7 @@ public class NotificationCodeTest
         assertThat( notification.getSeverity(), equalTo( SeverityLevel.WARNING ) );
         assertThat( notification.getCode(), equalTo( "Neo.ClientError.Schema.NoSuchIndex" ) );
         assertThat( notification.getPosition(), equalTo( InputPosition.empty ) );
-        assertThat( notification.getDescription(), equalTo( "The hinted index does not exist, please check the schema (hinted index is index on :Person(name))" ) );
+        assertThat( notification.getDescription(), equalTo( "The hinted index does not exist, please check the schema (hinted index is: index on :Person(name))" ) );
     }
 
     @Test
@@ -68,4 +71,21 @@ public class NotificationCodeTest
                                                             "(identifiers are: (n, node2))" ) );
     }
 
+    @Test
+    public void shouldConstructNotificationsFor_JOIN_HINT_UNFULFILLABLE() {
+        List<String> idents = new ArrayList<>();
+        idents.add( "n" );
+        idents.add( "node2" );
+        NotificationDetail identifierDetail = NotificationDetail.Factory.joinKey(idents);
+        Notification notification = JOIN_HINT_UNFULFILLABLE.notification( InputPosition.empty, identifierDetail );
+
+        assertThat( notification.getTitle(), equalTo( "The database was unable to plan a hinted join." ) );
+        assertThat( notification.getSeverity(), equalTo( SeverityLevel.WARNING ) );
+        assertThat( notification.getCode(), equalTo( "Neo.ClientNotification.Statement.JoinHintUnfulfillableWarning" ) );
+        assertThat( notification.getPosition(), equalTo( InputPosition.empty ) );
+        assertThat( notification.getDescription(),
+            equalTo( "The hinted join was not planned. This could happen because no generated plan contained the join key, " +
+                     "please try using a different join key or restructure your query. " +
+                     "(hinted join key identifiers are: n, node2)" ) );
+    }
 }

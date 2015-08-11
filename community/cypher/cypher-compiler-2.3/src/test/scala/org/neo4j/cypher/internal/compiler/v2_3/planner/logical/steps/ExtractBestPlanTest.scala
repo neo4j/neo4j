@@ -37,7 +37,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
 
   private def newIndexHint(): Hint = { UsingIndexHint(ident("a"), LabelName("User")_, ident("name"))_ }
 
-  private def newJoinHint(): Hint = { UsingJoinHint(ident("a"))_ }
+  private def newJoinHint(): Hint = { UsingJoinHint(Seq(ident("a")))_ }
 
   private def newQueryWithIdxHint() = PlannerQuery(
     QueryGraph(
@@ -143,7 +143,8 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       notificationLogger = notificationLogger)
 
     verifyBestPlan(greedyPlanTableWith(getSimpleLogicalPlanWithAandB()).uniquePlan, newQueryWithJoinHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
-    notificationLogger.notifications should contain(JoinHintUnfulfillableNotification("a"))
+    val result = notificationLogger.notifications
+    result should contain(JoinHintUnfulfillableNotification(Array("a")))
   }
 
   test("should succeed when finding plan that contains fulfillable index hint") {
