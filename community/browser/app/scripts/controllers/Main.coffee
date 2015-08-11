@@ -34,7 +34,7 @@ angular.module('neo4jApp.controllers')
       'UsageDataCollectionService'
       'Utils'
       ($scope, $window, Server, Frame, AuthService, ConnectionStatusService, Settings, motdService, UDC, Utils) ->
-        refresh = ->
+        $scope.refresh = ->
           return '' if $scope.unauthorized || $scope.offline
 
           $scope.labels = Server.labels()
@@ -76,7 +76,7 @@ angular.module('neo4jApp.controllers')
             edition: 'community'
             enterpriseEdition: no
 
-        $scope.$on 'db:changed:labels', refresh
+        $scope.$on 'db:changed:labels', $scope.refresh
 
         $scope.today = Date.now()
         $scope.cmdchar = Settings.cmdchar
@@ -87,13 +87,9 @@ angular.module('neo4jApp.controllers')
         $scope.$watch 'offline', (serverIsOffline) ->
           if (serverIsOffline?)
             if not serverIsOffline
-              refresh()
               UDC.ping("connect")
             else
               $scope.errorMessage = motdService.pickRandomlyFromChoiceName('disconnected')
-
-        $scope.$watch 'unauthorized', (isUnauthorized) ->
-          refresh()
 
         $scope.$on 'auth:status_updated', (e, is_connected) ->
           $scope.check()
@@ -125,8 +121,6 @@ angular.module('neo4jApp.controllers')
 
           if val.version then $scope.motd.setCallToActionVersion(val.version)
         , true
-
-        refresh()
     ]
 
   .run([

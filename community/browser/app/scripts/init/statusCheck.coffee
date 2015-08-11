@@ -42,7 +42,7 @@ angular.module('neo4jApp').run([
         (r) ->
           $scope.offline = yes
           $scope.unauthorized = no
-          timer = $timeout($scope.check, Settings.heartbeat * 1000)
+          timer = $timeout($scope.check, 2 * 1000)
           r
       ).then(
         (r) ->
@@ -57,7 +57,7 @@ angular.module('neo4jApp').run([
               else
                 $scope.offline = yes
                 $scope.unauthorized = no
-          )
+          ).then(-> $scope.refresh() )
           r
       )
     $scope.check()
