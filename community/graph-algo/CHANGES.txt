@@ -1,3 +1,7 @@
+2.2.5
+-----
+o Fixes #5086 - path.reverseNodes bug
+
 2.2.3
 -----
 o ShortestPath no longer has the option to find only paths of the supplied exact depth,

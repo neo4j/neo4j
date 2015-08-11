@@ -168,16 +168,16 @@ public final class PathImpl implements Path
 
     public Iterable<Node> nodes()
     {
-        return nodeIterator( start );
+        return nodeIterator( start, relationships() );
     }
     
     @Override
     public Iterable<Node> reverseNodes()
     {
-        return nodeIterator( end );
+        return nodeIterator( end, reverseRelationships() );
     }
 
-    private Iterable<Node> nodeIterator( final Node start )
+    private Iterable<Node> nodeIterator( final Node start, final Iterable<Relationship> relationships )
     {
         return new Iterable<Node>()
         {
@@ -187,6 +187,7 @@ public final class PathImpl implements Path
                 {
                     Node current = start;
                     int index = 0;
+                    Iterator<Relationship> relationshipIterator = relationships.iterator();
 
                     public boolean hasNext()
                     {
@@ -202,7 +203,12 @@ public final class PathImpl implements Path
                         Node next = null;
                         if ( index < path.length )
                         {
-                            next = path[index].getOtherNode( current );
+                            if ( !relationshipIterator.hasNext() )
+                            {
+                                throw new IllegalStateException( String.format( "Number of relationships: %d does not" +
+                                                      " match with path length: %d.", index, path.length ) );
+                            }
+                            next = relationshipIterator.next().getOtherNode( current );
                         }
                         index += 1;
                         try
@@ -231,7 +237,7 @@ public final class PathImpl implements Path
             @Override
             public Iterator<Relationship> iterator()
             {
-                return new ArrayIterator<Relationship>( path );
+                return new ArrayIterator<>( path );
             }
         };
     }
@@ -244,7 +250,7 @@ public final class PathImpl implements Path
             @Override
             public Iterator<Relationship> iterator()
             {
-                return new ReverseArrayIterator<Relationship>( path );
+                return new ReverseArrayIterator<>( path );
             }
         };
     }
