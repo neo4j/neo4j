@@ -273,6 +273,8 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   def nodeGetDegree(node: Long, dir: Direction, relTypeId: Int): Int = statement.readOperations().nodeGetDegree(node, dir, relTypeId)
 
+  override def nodeIsDense(node: Long): Boolean = statement.readOperations().nodeIsDense(node)
+
   private def kernelStatement: KernelStatement =
     txBridge
       .getKernelTransactionBoundToThisThread(true)

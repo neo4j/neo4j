@@ -345,6 +345,16 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
+    public boolean nodeIsDense( long nodeId ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
+        {
+            return node.get().isDense();
+        }
+    }
+
+    @Override
     public PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId ) throws EntityNotFoundException
     {
         statement.assertOpen();

@@ -335,6 +335,12 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
         }
     }
 
+    @Override
+    public boolean isDense()
+    {
+        return nodeRecord.isDense();
+    }
+
     private long nodeDegreeByDirection( RelationshipGroupRecord group, Direction direction )
     {
         long loopCount = countByFirstPrevPointer( group.getFirstLoop() );

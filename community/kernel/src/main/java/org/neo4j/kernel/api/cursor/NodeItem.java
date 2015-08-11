@@ -151,6 +151,8 @@ public interface NodeItem
 
     int degree( Direction direction, int relType );
 
+    boolean isDense();
+
     Cursor<DegreeItem> degrees();
 
     // Helper methods

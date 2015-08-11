@@ -193,6 +193,12 @@ public abstract class TxAbstractNodeCursor
         return new DegreeCursor( relationshipTypes() );
     }
 
+    @Override
+    public boolean isDense()
+    {
+        return cursor.get().isDense();
+    }
+
     private class RelationshipTypeCursor extends GenericCursor<IntSupplier>
     {
         private PrimitiveIntIterator primitiveIntIterator;

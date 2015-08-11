@@ -122,6 +122,8 @@ interface DataRead
 
     int nodeGetDegree( long nodeId, Direction direction ) throws EntityNotFoundException;
 
+    boolean nodeIsDense(long nodeId) throws EntityNotFoundException;
+
     /**
      * Returns all labels set on node with id {@code nodeId}.
      * If the node has no labels an empty {@link Iterable} will be returned.

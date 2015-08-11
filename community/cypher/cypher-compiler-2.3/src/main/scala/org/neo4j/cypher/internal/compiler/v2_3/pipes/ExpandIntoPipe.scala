@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
+import java.util.concurrent.ThreadLocalRandom
+
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsNodes, ReadsRelationships}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
@@ -76,25 +78,39 @@ case class ExpandIntoPipe(source: Pipe,
   /**
    * Finds all relationships connecting fromNode and toNode.
    */
-  private def findRelationships(query: QueryContext, fromNode: Node, toNode: Node, relCache: RelationshipsCache): Iterator[Relationship] = {
-    //check degree and iterate from the node with smaller degree
+  private def findRelationships(query: QueryContext, fromNode: Node, toNode: Node,
+                                relCache: RelationshipsCache): Iterator[Relationship] = {
     val relTypes = types.types(query)
 
-    val fromDegree = getDegree(fromNode, relTypes, dir, query)
-    if (fromDegree == 0) {
-      return Iterator.empty
-    }
+    //if both nodes are dense, start from the one with the lesser degree
+    if (query.nodeIsDense(fromNode.getId) && query.nodeIsDense(toNode.getId)) {
+      //check degree and iterate from the node with smaller degree
+      val fromDegree = getDegree(fromNode, relTypes, dir, query)
+      if (fromDegree == 0) {
+        return Iterator.empty
+      }
 
-    val toDegree = getDegree(toNode, relTypes, dir.reverse, query)
-    if (toDegree == 0) {
-      return Iterator.empty
-    }
+      val toDegree = getDegree(toNode, relTypes, dir.reverse, query)
+      if (toDegree == 0) {
+        return Iterator.empty
+      }
 
-    val (start, end, relationships) = if (fromDegree < toDegree)
-      (fromNode, toNode, query.getRelationshipsForIds(fromNode, dir, relTypes))
+      relIterator(query, fromNode, toNode, fromDegree < toDegree, relTypes, relCache)
+    }
+    // iterate from a non-dense node
+    else if (query.nodeIsDense(toNode.getId))
+      relIterator(query, fromNode, toNode, preserveDirection = true, relTypes, relCache)
+    else if (query.nodeIsDense(fromNode.getId))
+      relIterator(query, fromNode, toNode, preserveDirection = false, relTypes, relCache)
+    //both nodes are non-dense, choose a random starting point
     else
-      (toNode, fromNode, query.getRelationshipsForIds(toNode, dir.reverse(), relTypes))
+      relIterator(query, fromNode, toNode, ThreadLocalRandom.current().nextBoolean(), relTypes, relCache)
+  }
 
+  private def relIterator(query: QueryContext, fromNode: Node,  toNode: Node, preserveDirection: Boolean,
+                          relTypes: Option[Seq[Int]], relCache: RelationshipsCache) = {
+    val (start, localDirection, end) = if(preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reverse(), fromNode)
+    val relationships = query.getRelationshipsForIds(start, localDirection, relTypes)
     new PrefetchingIterator[Relationship] {
       //we do not expect two nodes to have many connecting relationships
       val connectedRelationships = new ArrayBuffer[Relationship](2)
@@ -153,23 +169,17 @@ case class ExpandIntoPipe(source: Pipe,
 
     val table = new mutable.OpenHashMap[(Long, Long), Seq[Relationship]]()
 
+    def get(start: Node, end: Node): Option[Seq[Relationship]] = table.get(key(start, end))
+
     def put(start: Node, end: Node, rels: Seq[Relationship]) = {
       if (table.size < capacity) {
         table.put(key(start, end), rels)
       }
     }
 
-    def recordNoRels(start: Node, end: Node) = {
-      put(start, end, RelationshipsCache.NoRels)
-      put(end, start, RelationshipsCache.NoRels)
-    }
-
-    def get(start: Node, end: Node) = table.get(key(start, end))
-
     @inline
     private def key(start: Node, end: Node) = {
       // if direction is BOTH than we keep the key sorted, otherwise direction is important and we keep key as is
-
       if (dir != Direction.BOTH) (start.getId, end.getId)
       else {
         if (start.getId < end.getId)
@@ -178,11 +188,6 @@ case class ExpandIntoPipe(source: Pipe,
           (end.getId, start.getId)
       }
     }
-  }
-
-  private object RelationshipsCache {
-
-    final val NoRels = Seq.empty[Relationship]
   }
 
 }

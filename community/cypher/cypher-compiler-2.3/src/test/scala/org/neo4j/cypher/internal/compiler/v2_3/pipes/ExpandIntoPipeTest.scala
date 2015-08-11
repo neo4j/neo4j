@@ -41,6 +41,7 @@ class ExpandIntoPipeTest extends CypherFunSuite {
   val relationship3 = newMockedRelationship(3, startNode, endNode3)
   val selfRelationship = newMockedRelationship(4, startNode, startNode)
   val query = mock[QueryContext]
+
   val queryState = QueryStateHelper.emptyWith(query = query)
 
   test("should support expand between two nodes with a relationship") {
