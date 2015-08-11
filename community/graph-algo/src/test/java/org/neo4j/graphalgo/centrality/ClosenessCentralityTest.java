@@ -84,6 +84,13 @@ public class ClosenessCentralityTest extends Neo4jAlgoTestCase
     @Test
     public void testBox()
     {
+        /*
+         * Layout
+         *
+         * (a)-(b)
+         *  |   |
+         * (d)-(c)
+         */
         graph.makeEdgeChain( "a,b,c,d,a" );
         ClosenessCentrality<Double> closenessCentrality = getCentralityAlgorithm();
         assertCentrality( closenessCentrality, "a", 1.0 / 4 );
@@ -95,6 +102,14 @@ public class ClosenessCentralityTest extends Neo4jAlgoTestCase
     @Test
     public void testPlusShape()
     {
+        /*
+         * Layout
+         *     (d)
+         *      |
+         * (a)-(b)-(c)
+         *      |
+         *     (e)
+         */
         graph.makeEdgeChain( "a,b,c" );
         graph.makeEdgeChain( "d,b,e" );
         ClosenessCentrality<Double> closenessCentrality = getCentralityAlgorithm();
@@ -108,6 +123,11 @@ public class ClosenessCentralityTest extends Neo4jAlgoTestCase
     @Test
     public void testChain()
     {
+        /*
+         * Layout
+         *
+         * (a) - (b) - (c) - (d) - (e)
+         */
         graph.makeEdgeChain( "a,b,c,d,e" );
         ClosenessCentrality<Double> closenessCentrality = getCentralityAlgorithm();
         assertCentrality( closenessCentrality, "a", 1.0 / 10 );
@@ -120,6 +140,14 @@ public class ClosenessCentralityTest extends Neo4jAlgoTestCase
     @Test
     public void isolatedNode()
     {
+        /*
+         * Layout
+         *
+         * (o)
+         *
+         * (a) -- (b)
+         *  \-(c)-/
+         */
         graph.makeNode( "o" );
         graph.makeEdgeChain( "a,b,c,a" );
         ClosenessCentrality<Double> closenessCentrality = getCentralityAlgorithm();
@@ -137,6 +165,15 @@ public class ClosenessCentralityTest extends Neo4jAlgoTestCase
     @Test
     public void isolatedCommunities()
     {
+        /*
+         * Layout
+         *
+         *  (a) -- (b)
+         *   \-(c)-/
+         *
+         *  (d) -- (e)
+         *   \-(f)-/
+         */
         graph.makeEdgeChain( "a,b,c,a" );
         graph.makeEdgeChain( "d,e,f,d" );
         ClosenessCentrality<Double> closenessCentrality = getCentralityAlgorithm();
