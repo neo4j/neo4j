@@ -26,7 +26,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.mockfs.LimitedFileSystemGraphDatabase;
+import org.neo4j.test.LimitedFileSystemGraphDatabase;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStore;

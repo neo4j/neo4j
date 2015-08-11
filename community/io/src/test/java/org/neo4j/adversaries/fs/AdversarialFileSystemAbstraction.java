@@ -196,6 +196,14 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
         return (K) fileSystem;
     }
 
+    @Override
+    public void truncate( File path, long size ) throws IOException
+    {
+        adversary.injectFailure( FileNotFoundException.class, IOException.class, IllegalArgumentException.class,
+                SecurityException.class, NullPointerException.class );
+        delegate.truncate( path, size );
+    }
+
     private <K extends ThirdPartyFileSystem> ThirdPartyFileSystem adversarialProxy(
             final ThirdPartyFileSystem fileSystem,
             Class<K> clazz )

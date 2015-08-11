@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
+import org.junit.After;
+import org.junit.Test;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import org.junit.After;
-import org.junit.Test;
+import org.neo4j.helpers.UTF8;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -261,6 +263,12 @@ public class KeyValueWriterTest
         void close() throws IOException
         {
             io();
+        }
+
+        @Override
+        void writeTrailer( String trailer ) throws IOException
+        {
+            write( UTF8.encode( trailer ) );
         }
 
         public void assertData( byte... expected )

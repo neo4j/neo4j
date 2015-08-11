@@ -59,7 +59,7 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
         this.ephemeralFileSystem = ephemeralFileSystem;
         this.sizePerJump = sizePerJump;
     }
-    
+
     @Override
     public StoreChannel open( File fileName, String mode ) throws IOException
     {
@@ -72,18 +72,18 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
                 fileName.getName().equals( "neostore.propertystore.db.strings" ) ||
                 fileName.getName().equals( "neostore.propertystore.db.arrays" ) ||
                 fileName.getName().equals( "neostore.relationshipgroupstore.db" ) )
-        {        
+        {
             return new JumpingFileChannel( channel, recordSizeFor( fileName ) );
         }
         return channel;
     }
-    
+
     @Override
     public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
     {
         return new ChannelOutputStream( open( fileName, "rw" ), append );
     }
-    
+
     @Override
     public InputStream openAsInputStream( File fileName ) throws IOException
     {
@@ -95,7 +95,7 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
     {
         return new InputStreamReader( openAsInputStream( fileName ), encoding );
     }
-    
+
     @Override
     public Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException
     {
@@ -107,7 +107,7 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
     {
         return open( fileName, "rw" );
     }
-    
+
     private int recordSizeFor( File fileName )
     {
         if ( fileName.getName().endsWith( "nodestore.db" ) )
@@ -142,17 +142,17 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
         }
         throw new IllegalArgumentException( fileName.getPath() );
     }
-    
+
     public class JumpingFileChannel extends StoreFileChannel
     {
         private final int recordSize;
-        
+
         public JumpingFileChannel( StoreFileChannel actual, int recordSize )
         {
             super( actual );
             this.recordSize = recordSize;
         }
-        
+
         private long translateIncoming( long position )
         {
             return translateIncoming( position, false );
@@ -174,7 +174,7 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
                 return offsettedRecord*recordSize;
             }
         }
-        
+
         private long translateOutgoing( long offsettedPosition )
         {
             long offsettedRecord = offsettedPosition/recordSize;

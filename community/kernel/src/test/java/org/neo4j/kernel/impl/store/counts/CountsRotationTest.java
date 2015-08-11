@@ -76,6 +76,7 @@ public class CountsRotationTest
         try ( Lifespan life = new Lifespan() )
         {
             CountsTracker store = life.add( createCountsTracker( pageCache ) );
+
             assertEquals( BASE_TX_ID, store.txId() );
             assertEquals( INITIAL_MINOR_VERSION, store.minorVersion() );
             assertEquals( 0, store.totalEntriesStored() );

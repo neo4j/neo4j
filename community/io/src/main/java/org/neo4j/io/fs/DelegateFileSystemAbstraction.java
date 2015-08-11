@@ -28,6 +28,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -273,5 +274,14 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
             thirdPartyFs.put( clazz, otherFs );
         }
         return otherFs;
+    }
+
+    @Override
+    public void truncate( File path, long size ) throws IOException
+    {
+        try ( FileChannel channel = FileChannel.open( path( path ) ) )
+        {
+            channel.truncate( size );
+        }
     }
 }

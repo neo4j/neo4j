@@ -189,4 +189,10 @@ public class DefaultFileSystemAbstraction
         }
         return clazz.cast( fileSystem );
     }
+
+    @Override
+    public void truncate( File path, long size ) throws IOException
+    {
+        FileUtils.truncateFile( path, size );
+    }
 }
