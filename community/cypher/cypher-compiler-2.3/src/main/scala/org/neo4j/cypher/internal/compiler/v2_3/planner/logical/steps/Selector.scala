@@ -20,18 +20,27 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 
-case object selectCovered extends CandidateGenerator[LogicalPlan] {
+import scala.annotation.tailrec
 
-  def apply(plan: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    val unsolvedPredicates = queryGraph.selections.unsolvedPredicates(plan)
-    if (unsolvedPredicates.isEmpty)
-      Seq()
-    else {
-      Seq(context.logicalPlanProducer.planSelection(unsolvedPredicates, plan))
+case class Selector(pickBestFactory: LogicalPlanningFunction0[CandidateSelector],
+                    planGenerators: CandidateGenerator[LogicalPlan]*) extends PlanTransformer[QueryGraph] {
+  def apply(input: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
+    val pickBest = pickBestFactory(context)
+
+    @tailrec
+    def selectIt(plan: LogicalPlan): LogicalPlan = {
+      val plans = planGenerators.
+        flatMap(generator => generator(plan, queryGraph))
+
+      pickBest(plans) match {
+        case Some(p) => selectIt(p)
+        case None => plan
+      }
     }
+
+    selectIt(input)
   }
 }
-

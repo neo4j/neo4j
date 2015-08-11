@@ -49,7 +49,7 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
         val lockingContext = state.query.upgradeToLockingQueryContext
 
         try {
-          executionContext = tryAgain(linksToDo, executionContext, state.copy(query = lockingContext))
+          executionContext = tryAgain(linksToDo, executionContext, state.withQueryContext(lockingContext))
         } finally {
           lockingContext.releaseLocks()
         }

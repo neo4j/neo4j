@@ -44,7 +44,7 @@ class EntityNotFoundException(message: String, cause: Throwable = null) extends 
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.entityNotFoundException(message, this)
 }
 
-class CypherTypeException(message: String, cause: Throwable = null) extends CypherException(cause) {
+class CypherTypeException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.cypherTypeException(message, this)
 }
 

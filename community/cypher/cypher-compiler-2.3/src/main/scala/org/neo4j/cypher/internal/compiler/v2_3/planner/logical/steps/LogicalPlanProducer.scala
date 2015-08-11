@@ -402,6 +402,15 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     Aggregation(left, returnAll.toMap, Map.empty)(left.solved)
   }
 
+  def planTriadicBuild(left: LogicalPlan, id: IdName)(implicit context: LogicalPlanningContext): LogicalPlan =
+    TriadicBuild(left, id)(left.solved)
+
+  def planTriadicProbe(left: LogicalPlan, triadicSet: IdName, id: IdName, predicate: Expression)
+                      (implicit context: LogicalPlanningContext): LogicalPlan = {
+    val solved = left.solved.updateTailOrSelf(_.updateGraph(_.addPredicates(predicate)))
+    TriadicProbe(left, triadicSet, id)(solved)
+  }
+
   private implicit def estimatePlannerQuery(plannerQuery: PlannerQuery)(implicit context: LogicalPlanningContext): PlannerQuery with CardinalityEstimation = {
     val cardinality = cardinalityModel(plannerQuery, context.input, context.semanticTable)
     CardinalityEstimation.lift(plannerQuery, cardinality)

@@ -31,7 +31,7 @@ case class ApplyPipe(source: Pipe, inner: Pipe)(val estimatedCardinality: Option
     input.flatMap {
       (outerContext) =>
         val original = outerContext.clone()
-        val innerState = state.copy(initialContext = Some(outerContext))
+        val innerState = state.withInitialContext(outerContext)
         val innerResults = inner.createResults(innerState)
         innerResults.map { context => context ++ original }
     }

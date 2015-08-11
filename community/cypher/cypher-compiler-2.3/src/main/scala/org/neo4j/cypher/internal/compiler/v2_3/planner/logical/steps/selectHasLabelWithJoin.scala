@@ -19,19 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{HasLabels, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CandidateGenerator, LogicalPlanningContext}
 
-case object selectCovered extends CandidateGenerator[LogicalPlan] {
+case object selectHasLabelWithJoin extends CandidateGenerator[LogicalPlan] {
 
-  def apply(plan: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    val unsolvedPredicates = queryGraph.selections.unsolvedPredicates(plan)
-    if (unsolvedPredicates.isEmpty)
-      Seq()
-    else {
-      Seq(context.logicalPlanProducer.planSelection(unsolvedPredicates, plan))
+  def apply(plan: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] =
+    queryGraph.selections.unsolvedPredicates(plan).collect {
+      case s@HasLabels(id: Identifier, Seq(labelName)) =>
+        val labelScan = context.logicalPlanProducer.planNodeByLabelScan(IdName(id.name), LazyLabel(labelName)(context.semanticTable), Seq(s), None, Set.empty)
+        context.logicalPlanProducer.planNodeHashJoin(Set(IdName(id.name)), plan, labelScan, Set.empty)
     }
-  }
-}
 
+}

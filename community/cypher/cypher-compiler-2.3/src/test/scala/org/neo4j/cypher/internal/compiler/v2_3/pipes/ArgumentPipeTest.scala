@@ -59,5 +59,5 @@ class ArgumentPipeTest extends CypherFunSuite {
   }
 
   def newQueryState(entries: (String, Any)*): QueryState =
-    QueryStateHelper.empty.copy(initialContext = Some(ExecutionContext.from(entries: _*)))
+    QueryStateHelper.empty.withInitialContext(ExecutionContext.from(entries: _*))
 }

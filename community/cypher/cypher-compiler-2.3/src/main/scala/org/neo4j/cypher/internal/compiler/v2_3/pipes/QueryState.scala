@@ -21,23 +21,25 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import java.util.UUID
 
+import org.neo4j.collection.primitive.PrimitiveLongSet
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 
-case class QueryState(query: QueryContext,
-                      resources: ExternalResource,
-                      params: Map[String, Any],
-                      decorator: PipeDecorator,
-                      timeReader: TimeReader = new TimeReader,
-                      var initialContext: Option[ExecutionContext] = None,
-                      queryId: AnyRef = UUID.randomUUID().toString) {
+import scala.collection.mutable
 
+class QueryState(val query: QueryContext,
+                 val resources: ExternalResource,
+                 val params: Map[String, Any],
+                 val decorator: PipeDecorator,
+                 val timeReader: TimeReader = new TimeReader,
+                 var initialContext: Option[ExecutionContext] = None,
+                 val queryId: AnyRef = UUID.randomUUID().toString,
+                 val triadicSets: mutable.Map[String, PrimitiveLongSet] = new mutable.HashMap[String, PrimitiveLongSet]()) {
   private var _pathValueBuilder: PathValueBuilder = null
 
   def clearPathValueBuilder = {
-    if (_pathValueBuilder == null )
-    {
+    if (_pathValueBuilder == null) {
       _pathValueBuilder = new PathValueBuilder()
     }
     _pathValueBuilder.clear()
@@ -50,7 +52,15 @@ case class QueryState(query: QueryContext,
 
   def getStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
-  def withDecorator(decorator: PipeDecorator) = copy(decorator = decorator)
+  def withDecorator(decorator: PipeDecorator) =
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicSets)
+
+  def withInitialContext(initialContext: ExecutionContext) =
+    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), queryId, triadicSets)
+
+  def withQueryContext(query: QueryContext) =
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicSets)
+
 }
 
 object QueryState {
@@ -60,4 +70,3 @@ object QueryState {
 class TimeReader {
   lazy val getTime = System.currentTimeMillis()
 }
-

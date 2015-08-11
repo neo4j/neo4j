@@ -35,30 +35,4 @@ class QueryStateTest extends CypherFunSuite {
     //THEN
     ts1 should equal(ts2)
   }
-
-  test("case_class_copying_should_still_see_same_time") {
-    //GIVEN
-    val state = QueryStateHelper.empty
-
-    //WHEN
-    val ts1 = state.readTimeStamp()
-    Thread.sleep(10)
-    val stateCopy = state.copy(params = Map.empty)
-
-    //THEN
-    ts1 should equal(stateCopy.readTimeStamp())
-  }
-
-  test("if_state_is_copied_and_time_seen_in_one_querystate_it_should_be_reflected_in_copies") {
-    //GIVEN
-    val state = QueryStateHelper.empty
-
-    //WHEN
-    val stateCopy = state.copy(params = Map.empty)
-    val ts1 = state.readTimeStamp()
-    Thread.sleep(10)
-
-    //THEN
-    ts1 should equal(stateCopy.readTimeStamp())
-  }
 }
