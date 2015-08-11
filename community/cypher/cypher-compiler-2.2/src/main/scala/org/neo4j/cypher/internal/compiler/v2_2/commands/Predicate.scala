@@ -68,38 +68,10 @@ object Ands {
   }
 }
 
-case class Ands(predicates: List[Predicate]) extends Predicate {
-
-  assert(predicates.nonEmpty, "Expected predicates to never be empty")
-
-  override def ++(other: Predicate): Predicate = copy(predicates :+ other)
-
-  def symbolTableDependencies: Set[String] = predicates.flatMap(_.symbolTableDependencies).toSet
-
-  def containsIsNull: Boolean = predicates.exists(_.containsIsNull)
-
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
-    predicates.foldLeft[Try[Option[Boolean]]](Success(Some(true))) { (previousValue, predicate) =>
-      previousValue match {
-        case Success(Some(false)) => previousValue
-        case _ =>
-          Try(predicate.isMatch(m)) match {
-            case Success(Some(false)) => Success(Some(false))
-            case Success(None) if previousValue.isSuccess => Success(None)
-            case _ => previousValue
-          }
-      }
-    } match {
-      case Failure(e) => throw e
-      case Success(option) => option
-    }
-  }
-
-  def arguments: Seq[Expression] = predicates
-
+case class Ands(predicates: List[Predicate]) extends CompositeBooleanPredicate {
+  def shouldExitWhen = false
+  override def ++(other: Predicate): Predicate = Ands(predicates :+ other)
   def rewrite(f: (Expression) => Expression): Expression = f(Ands(predicates.map(_.rewriteAsPredicate(f))))
-
-  override def atoms: Seq[Predicate] = predicates
 }
 
 
@@ -124,52 +96,13 @@ class And(val a: Predicate, val b: Predicate) extends Predicate {
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 }
 
-case class Ors(predicates: List[Predicate]) extends Predicate {
-
-  assert(predicates.nonEmpty, "Expected predicates to never be empty")
-
-  def symbolTableDependencies: Set[String] = predicates.flatMap(_.symbolTableDependencies).toSet
-
-  def containsIsNull: Boolean = predicates.exists(_.containsIsNull)
-
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
-
-    var result: Option[Option[Boolean]] = None
-
-    val iter = predicates.iterator
-    while (iter.nonEmpty) {
-      val p = iter.next()
-      val r = p.isMatch(m)
-
-      if(r.nonEmpty && r.get)
-        return r
-
-      if(result.isEmpty)
-        result = Some(r)
-      else {
-        val stored = result.get
-        if (stored.nonEmpty && !stored.get && r.isEmpty)
-          result = Some(None)
-      }
-    }
-
-    result.get
-  }
-
-  def arguments: Seq[Expression] = predicates
-
+case class Ors(predicates: List[Predicate]) extends CompositeBooleanPredicate {
+  def shouldExitWhen = true
   def rewrite(f: (Expression) => Expression): Expression = f(Ors(predicates.map(_.rewriteAsPredicate(f))))
 }
 
 case class Or(a: Predicate, b: Predicate) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = (a.isMatch(m), b.isMatch(m)) match {
-    case (None, None)        => None
-    case (Some(true), None)  => Some(true)
-    case (Some(false), None) => None
-    case (None, Some(true))  => Some(true)
-    case (None, Some(false)) => None
-    case (Some(l), Some(r))  => Some(l || r)
-  }
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = Ors(List(a, b)).isMatch(m)
 
   override def toString: String = "(" + a + " OR " + b + ")"
   def containsIsNull = a.containsIsNull||b.containsIsNull
@@ -178,6 +111,46 @@ case class Or(a: Predicate, b: Predicate) extends Predicate {
   def arguments = Seq(a, b)
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
+}
+
+abstract class CompositeBooleanPredicate extends Predicate {
+  def predicates: List[Predicate]
+  def shouldExitWhen: Boolean
+  assert(predicates.nonEmpty, "Expected predicates to never be empty")
+  def symbolTableDependencies: Set[String] = predicates.flatMap(_.symbolTableDependencies).toSet
+  def containsIsNull: Boolean = predicates.exists(_.containsIsNull)
+
+  /**
+   * This algorithm handles the case where we combine multiple AND or multiple OR groups (CNF or DNF).
+   * As well as performing shortcut evaluation so that a false (for AND) or true (for OR) will exit the
+   * evaluation without performing any further predicate evaluations (including those that could throw
+   * exceptions). Any exception thrown is held until the end (or until the exit state) so that it is
+   * superceded by exit predicates (false for AND and true for OR).
+   */
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
+    predicates.foldLeft[Try[Option[Boolean]]](Success(Some(!shouldExitWhen))) { (previousValue, predicate) =>
+      previousValue match {
+        // handle short-circuit case, for AND any false result should propage through, while for OR any true should
+        case Success(Some(result)) if (result == shouldExitWhen) => previousValue
+        case _ =>
+          Try(predicate.isMatch(m)) match {
+            // If we get the exit case (false for AND and true for OR) ignore any error cases
+            case Success(Some(result)) if (result == shouldExitWhen) => Success(Some(shouldExitWhen))
+            // Handle null only for non error cases
+            case Success(None) if previousValue.isSuccess => Success(None)
+            // errors or non-exit cases propagate as normal
+            case Failure(e) if previousValue.isSuccess => Failure(e)
+            case _ => previousValue
+          }
+      }
+    } match {
+      case Failure(e) => throw e
+      case Success(option) => option
+    }
+  }
+
+  def arguments: Seq[Expression] = predicates
+  override def atoms: Seq[Predicate] = predicates
 }
 
 case class Not(a: Predicate) extends Predicate {
