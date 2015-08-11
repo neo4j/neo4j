@@ -46,13 +46,19 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should not use index seek for empty prefix search using like with %") {
-    (new given {
+    val result = (new given {
       indexOn("Person", "name")
       cost = nodeIndexScanCost
-    } planFor "MATCH (a:Person) WHERE a.name LIKE '%' RETURN a").innerPlan should equal(
+    } planFor "MATCH (a:Person) WHERE a.name LIKE '%' RETURN a").innerPlan
+
+    result should equal(
       Selection(Seq(Like(Property(Identifier("a") _, PropertyKeyName("name") _) _,
                          LikePattern(StringLiteral("%") _)) _),
-                NodeByLabelScan("a", LazyLabel("Person"), Set.empty)(solved)
+        NodeIndexScan(
+          "a",
+          LabelToken("Person", LabelId(0)),
+          PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
+          Set.empty)(solved)
       )(solved))
   }
 

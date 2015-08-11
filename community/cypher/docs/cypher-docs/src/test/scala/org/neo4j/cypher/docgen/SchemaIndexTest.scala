@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.docgen
 
+import java.util.concurrent.TimeUnit
+
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.junit.Test
@@ -28,6 +30,9 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.IndexSeekByRange
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.Planner
 import org.neo4j.cypher.internal.compiler.v2_3.{DPPlannerName, IDPPlannerName, GreedyPlannerName, RulePlannerName}
 import org.neo4j.cypher.internal.helpers.GraphIcing
+import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.impl.api.index.IndexingService
+import org.neo4j.kernel.impl.api.index.sampling.{IndexSamplingMode, IndexSamplingController}
 
 class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSupport with GraphIcing {
 
@@ -138,10 +143,14 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
   }
 
   @Test def use_index_with_like() {
-    // Need to make index preferable in terms of cost
-    executePreparationQueries((0 to 250).map { i =>
-      "CREATE (:Person)"
-    }.toList)
+    executePreparationQueries {
+      val a = (0 to 100).map { i => "CREATE (:Person)" }.toList
+      val b = (0 to 300).map { i => s"CREATE (:Person {name: '$i'})" }.toList
+      a ++ b
+    }
+
+    sampleAllIndicesAndWait()
+
     profileQuery(
       title = "Use index with LIKE",
       text =

@@ -30,7 +30,9 @@ case class CNFNormalizer()(implicit monitor: AstRewritingMonitor) extends Rewrit
     deMorganRewriter(),
     distributeLawsRewriter(),
     flattenBooleanOperators,
-    simplifyPredicates
+    simplifyPredicates,
+    // Redone here since CNF normalization might introduce negated inequalities (which this removes)
+    normalizeSargablePredicates
   )
 }
 

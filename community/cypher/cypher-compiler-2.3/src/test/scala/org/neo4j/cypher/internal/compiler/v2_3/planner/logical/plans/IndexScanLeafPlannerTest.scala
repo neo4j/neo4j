@@ -29,9 +29,16 @@ import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   val idName = IdName("n")
-  val hasLabels: Expression = HasLabels(ident("n"), Seq(LabelName("Awesome") _)) _
+  val hasLabels: Expression = HasLabels(ident("n"), Seq(LabelName("Awesome")_))_
   val property: Expression = Property(ident("n"), PropertyKeyName("prop") _)_
-  val hasPredicate: Expression = FunctionInvocation(FunctionName(functions.Has.name) _, property) _
+
+  val hasPredicate: Expression = FunctionInvocation(FunctionName(functions.Has.name) _, property)_
+  val likePredicate: Expression = Like(property, LikePattern(StringLiteral("%")_), caseInsensitive = false)_
+  val iLikePredicate: Expression = Like(property, LikePattern(StringLiteral("%")_), caseInsensitive = true)_
+  val ltPredicate: Expression = LessThan(property, SignedDecimalIntegerLiteral("12")_)_
+  val neqPredicate: Expression = NotEquals(property, SignedDecimalIntegerLiteral("12")_)_
+  val eqPredicate: Expression = Equals(property, SignedDecimalIntegerLiteral("12")_)_
+  val regexPredicate: Expression = RegexMatch(property, StringLiteral("Johnny")_)_
 
   test("does not plan index scan when no index exist") {
     new given {
@@ -118,6 +125,132 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       resultPlans.map(_.solved.graph) should beLike {
         case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
+      }
+    }
+  }
+
+  test("plans index scans for: n.prop LIKE <pattern>") {
+    new given {
+      new given {
+        qg = queryGraph(likePredicate, hasLabels)
+        indexOn("Awesome", "prop")
+      }.withLogicalPlanningContext { (cfg, ctx) =>
+        // when
+        val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+
+        // then
+        resultPlans should beLike {
+          case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
+            plan.solved should beLike {
+              case PlannerQuery(scanQG, _, _) =>
+                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(hasPredicate, likePredicate)))
+            }
+        }
+      }
+    }
+  }
+
+  test("plans index scans for: n.prop ILIKE <pattern>") {
+    new given {
+      new given {
+        qg = queryGraph(iLikePredicate, hasLabels)
+        indexOn("Awesome", "prop")
+      }.withLogicalPlanningContext { (cfg, ctx) =>
+        // when
+        val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+
+        // then
+        resultPlans should beLike {
+          case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
+            plan.solved should beLike {
+              case PlannerQuery(scanQG, _, _) =>
+                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(hasPredicate, likePredicate)))
+            }
+        }
+      }
+    }
+  }
+
+  test("plans index scans for: n.prop < <value>") {
+    new given {
+      new given {
+        qg = queryGraph(ltPredicate, hasLabels)
+        indexOn("Awesome", "prop")
+      }.withLogicalPlanningContext { (cfg, ctx) =>
+        // when
+        val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+
+        // then
+        resultPlans should beLike {
+          case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
+            plan.solved should beLike {
+              case PlannerQuery(scanQG, _, _) =>
+                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(hasPredicate, ltPredicate)))
+            }
+        }
+      }
+    }
+  }
+
+  test("plans index scans for: n.prop <> <value>") {
+    new given {
+      new given {
+        qg = queryGraph(neqPredicate, hasLabels)
+        indexOn("Awesome", "prop")
+      }.withLogicalPlanningContext { (cfg, ctx) =>
+        // when
+        val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+
+        // then
+        resultPlans should beLike {
+          case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
+            plan.solved should beLike {
+              case PlannerQuery(scanQG, _, _) =>
+                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(hasPredicate, neqPredicate)))
+            }
+        }
+      }
+    }
+  }
+
+  test("plans index scans for: n.prop = <value>") {
+    new given {
+      new given {
+        qg = queryGraph(eqPredicate, hasLabels)
+        indexOn("Awesome", "prop")
+      }.withLogicalPlanningContext { (cfg, ctx) =>
+        // when
+        val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+
+        // then
+        resultPlans should beLike {
+          case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
+            plan.solved should beLike {
+              case PlannerQuery(scanQG, _, _) =>
+                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(hasPredicate, eqPredicate)))
+            }
+        }
+      }
+    }
+  }
+
+  test("plans index scans for: n.prop = <pattern>") {
+    new given {
+      new given {
+        qg = queryGraph(regexPredicate, hasLabels)
+        indexOn("Awesome", "prop")
+      }.withLogicalPlanningContext { (cfg, ctx) =>
+        // when
+        val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+
+        // then
+        resultPlans should beLike {
+          case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
+            plan.solved should beLike {
+              case PlannerQuery(scanQG, _, _) =>
+                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(hasPredicate, regexPredicate)))
+            }
+        }
       }
     }
   }

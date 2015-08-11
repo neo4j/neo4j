@@ -72,6 +72,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
+import org.neo4j.register.Register;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -376,7 +377,8 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.indexSize( descriptor );
+        Register.DoubleLongRegister result = indexService.indexUpdatesAndSize(descriptor);
+        return result.readSecond();
     }
 
     @Override

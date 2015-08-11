@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3
 
 import commands.expressions.{Expression => CommandExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{FunctionName, FunctionInvocation, Expression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import symbols._
 
 object Function {
@@ -126,6 +128,14 @@ abstract class Function extends SemanticChecking {
       None
 
   def asCommandExpression(invocation: ast.FunctionInvocation): CommandExpression
+
+  def asFunctionName(implicit position: InputPosition) = FunctionName(name)(position)
+
+  def asInvocation(argument: ast.Expression, distinct: Boolean = false)(implicit position: InputPosition): FunctionInvocation =
+    FunctionInvocation(asFunctionName, distinct = distinct, IndexedSeq(argument))(position)
+
+  def asInvocation(lhs: ast.Expression, rhs: ast.Expression)(implicit position: InputPosition): FunctionInvocation =
+    FunctionInvocation(asFunctionName, distinct = false, IndexedSeq(lhs, rhs))(position)
 }
 
 

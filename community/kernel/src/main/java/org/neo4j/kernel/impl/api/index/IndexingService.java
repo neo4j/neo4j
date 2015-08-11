@@ -327,14 +327,6 @@ public class IndexingService extends LifecycleAdapter
         return output;
     }
 
-    public long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        final IndexProxy indexProxy = indexMapRef.getOnlineIndexProxy( descriptor );
-        final DoubleLongRegister output = Registers.newDoubleLongRegister();
-        storeView.indexSample( indexProxy.getDescriptor(), output );
-        return output.readSecond();
-    }
-
     public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         final IndexProxy indexProxy = indexMapRef.getOnlineIndexProxy( descriptor );
@@ -820,5 +812,11 @@ public class IndexingService extends LifecycleAdapter
         }
 
         return concatResourceIterators( snapshots.iterator() );
+    }
+
+    // This is currently exposed for use by tests only
+    public IndexSamplingController samplingController()
+    {
+        return samplingController;
     }
 }

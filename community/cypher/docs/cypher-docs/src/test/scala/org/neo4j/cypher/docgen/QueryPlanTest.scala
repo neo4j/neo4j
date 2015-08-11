@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.junit.Test
-import org.junit.Assert._
 import org.hamcrest.CoreMatchers._
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{UniqueIndexSeekByRange, IndexSeekByRange}
+import org.junit.Assert._
+import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{IndexSeekByRange, UniqueIndexSeekByRange}
 import org.scalatest.Ignore
 
 class QueryPlanTest extends DocumentingTestBase with SoftReset {
@@ -177,10 +177,14 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
   }
 
   @Test def nodeIndexRangeSeek() {
-    // Need to make index preferable in terms of cost
-    executePreparationQueries((0 to 250).map { i =>
-      "CREATE (:Location)"
-    }.toList)
+    executePreparationQueries {
+      val a = (0 to 100).map { i => "CREATE (:Location)" }.toList
+      val b = (0 to 300).map { i => s"CREATE (:Location {name: '$i'})" }.toList
+      a ++ b
+    }
+
+    sampleAllIndicesAndWait()
+
     profileQuery(title = "Node index range seek",
                  text = """
                           |Finds nodes using an index seek where the value of the property matches a given prefix string.
@@ -192,10 +196,14 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
   }
 
   @Test def nodeUniqueIndexRangeSeek() {
-    // Need to make index preferable in terms of cost
-    executePreparationQueries((0 to 250).map { i =>
-      "CREATE (:Team)"
-    }.toList)
+    executePreparationQueries {
+      val a = (0 to 100).map { i => "CREATE (:Team)" }.toList
+      val b = (0 to 300).map { i => s"CREATE (:Team {name: '$i'})" }.toList
+      a ++ b
+    }
+
+    sampleAllIndicesAndWait()
+
     profileQuery(title = "Node unique index range seek",
                  text = """
                           |Finds nodes using a unique index seek where the value of the property matches a given prefix string.
@@ -571,5 +579,4 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("UNWIND"))
     )
   }
-
 }

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.index.sampling;
 
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -216,6 +217,11 @@ public class IndexSamplingController
             };
             backgroundSamplingHandle = scheduler.scheduleRecurring( indexSamplingController, samplingRunner, 10, SECONDS );
         }
+    }
+
+    public void awaitSamplingCompleted( long time, TimeUnit unit ) throws InterruptedException
+    {
+        jobTracker.awaitAllJobs( time, unit );
     }
 
     public void stop()
