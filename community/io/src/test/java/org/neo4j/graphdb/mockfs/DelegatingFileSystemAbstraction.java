@@ -73,6 +73,12 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
+    public void truncate( File path, long size ) throws IOException
+    {
+        delegate.truncate( path, size );
+    }
+
+    @Override
     public boolean renameFile( File from, File to ) throws IOException
     {
         return delegate.renameFile( from, to );

@@ -56,7 +56,7 @@ public class JumpingFileSystemAbstraction extends LifecycleAdapter implements Fi
     {
         this.sizePerJump = sizePerJump;
     }
-    
+
     @Override
     public StoreChannel open( File fileName, String mode ) throws IOException
     {
@@ -69,18 +69,18 @@ public class JumpingFileSystemAbstraction extends LifecycleAdapter implements Fi
                 fileName.getName().equals( "neostore.propertystore.db.strings" ) ||
                 fileName.getName().equals( "neostore.propertystore.db.arrays" ) ||
                 fileName.getName().equals( "neostore.relationshipgroupstore.db" ) )
-        {        
+        {
             return new JumpingFileChannel( channel, recordSizeFor( fileName ) );
         }
         return channel;
     }
-    
+
     @Override
     public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
     {
         return new ChannelOutputStream( open( fileName, "rw" ), append );
     }
-    
+
     @Override
     public InputStream openAsInputStream( File fileName ) throws IOException
     {
@@ -92,7 +92,7 @@ public class JumpingFileSystemAbstraction extends LifecycleAdapter implements Fi
     {
         return new InputStreamReader( openAsInputStream( fileName ), encoding );
     }
-    
+
     @Override
     public Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException
     {
@@ -104,43 +104,43 @@ public class JumpingFileSystemAbstraction extends LifecycleAdapter implements Fi
     {
         return open( fileName, "rw" );
     }
-    
+
     @Override
     public boolean fileExists( File fileName )
     {
         return actualFileSystem.fileExists( fileName );
     }
-    
+
     @Override
     public long getFileSize( File fileName )
     {
         return actualFileSystem.getFileSize( fileName );
     }
-    
+
     @Override
     public boolean deleteFile( File fileName )
     {
         return actualFileSystem.deleteFile( fileName );
     }
-    
+
     @Override
     public void deleteRecursively( File directory ) throws IOException
     {
         actualFileSystem.deleteRecursively( directory );
     }
-    
+
     @Override
     public boolean mkdir( File fileName )
     {
         return actualFileSystem.mkdir( fileName );
     }
-    
+
     @Override
     public void mkdirs( File fileName )
     {
         actualFileSystem.mkdirs( fileName );
     }
-    
+
     @Override
     public boolean renameFile( File from, File to ) throws IOException
     {
@@ -152,7 +152,7 @@ public class JumpingFileSystemAbstraction extends LifecycleAdapter implements Fi
     {
         return actualFileSystem.tryLock( fileName, channel );
     }
-    
+
     @Override
     public File[] listFiles( File directory )
     {
@@ -164,31 +164,31 @@ public class JumpingFileSystemAbstraction extends LifecycleAdapter implements Fi
     {
         return actualFileSystem.listFiles( directory, filter );
     }
-    
+
     @Override
     public boolean isDirectory( File file )
     {
         return actualFileSystem.isDirectory( file );
     }
-    
+
     @Override
     public void moveToDirectory( File file, File toDirectory ) throws IOException
     {
         actualFileSystem.moveToDirectory( file, toDirectory );
     }
-    
+
     @Override
     public void copyFile( File from, File to ) throws IOException
     {
         actualFileSystem.copyFile( from, to );
     }
-    
+
     @Override
     public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
     {
         actualFileSystem.copyRecursively( fromDirectory, toDirectory );
     }
-    
+
     private int recordSizeFor( File fileName )
     {
         if ( fileName.getName().endsWith( "nodestore.db" ) )
@@ -223,17 +223,17 @@ public class JumpingFileSystemAbstraction extends LifecycleAdapter implements Fi
         }
         throw new IllegalArgumentException( fileName.getPath() );
     }
-    
+
     public class JumpingFileChannel extends StoreFileChannel
     {
         private final int recordSize;
-        
+
         public JumpingFileChannel( StoreFileChannel actual, int recordSize )
         {
             super( actual );
             this.recordSize = recordSize;
         }
-        
+
         private long translateIncoming( long position )
         {
             return translateIncoming( position, false );
@@ -255,7 +255,7 @@ public class JumpingFileSystemAbstraction extends LifecycleAdapter implements Fi
                 return offsettedRecord*recordSize;
             }
         }
-        
+
         private long translateOutgoing( long offsettedPosition )
         {
             long offsettedRecord = offsettedPosition/recordSize;
@@ -339,6 +339,12 @@ public class JumpingFileSystemAbstraction extends LifecycleAdapter implements Fi
             Class<K> clazz, Function<Class<K>, K> creator )
     {
         return actualFileSystem.getOrCreateThirdPartyFileSystem( clazz, creator );
+    }
+
+    @Override
+    public void truncate( File path, long size ) throws IOException
+    {
+        actualFileSystem.truncate( path, size );
     }
 
     @Override

@@ -569,6 +569,17 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         return clazz.cast( fileSystem );
     }
 
+    @Override
+    public void truncate( File file, long size ) throws IOException
+    {
+        EphemeralFileData data = files.get( file );
+        if ( data == null )
+        {
+            throw new FileNotFoundException( "File " + file + " not found" );
+        }
+        data.truncate( size );
+    }
+
     @SuppressWarnings( "serial" )
     private static class FileStillOpenException extends Exception
     {

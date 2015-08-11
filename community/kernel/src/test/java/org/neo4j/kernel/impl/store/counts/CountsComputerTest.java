@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -36,6 +36,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -56,7 +57,6 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
@@ -75,8 +75,7 @@ public class CountsComputerTest
 
         try ( Lifespan life = new Lifespan() )
         {
-            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
-                    new File( dir, COUNTS_STORE_BASE ) ) );
+            CountsTracker store = life.add( createCountsTracker() );
             // a transaction for creating the label and a transaction for the node
             assertEquals( BASE_TX_ID, store.txId() );
             assertEquals( 0, store.totalEntriesStored() );
@@ -103,8 +102,7 @@ public class CountsComputerTest
 
         try ( Lifespan life = new Lifespan() )
         {
-            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
-                    new File( dir, COUNTS_STORE_BASE ) ) );
+            CountsTracker store = life.add( createCountsTracker() );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.txId() );
             assertEquals( 4, store.totalEntriesStored() );
             assertEquals( 4, get( store, nodeKey( -1 ) ) );
@@ -136,8 +134,7 @@ public class CountsComputerTest
 
         try ( Lifespan life = new Lifespan() )
         {
-            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
-                    new File( dir, COUNTS_STORE_BASE ) ) );
+            CountsTracker store = life.add( createCountsTracker() );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.txId() );
             assertEquals( 3, store.totalEntriesStored() );
             assertEquals( 3, get( store, nodeKey( -1 ) ) );
@@ -169,8 +166,7 @@ public class CountsComputerTest
 
         try ( Lifespan life = new Lifespan() )
         {
-            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
-                    new File( dir, COUNTS_STORE_BASE ) ) );
+            CountsTracker store = life.add( createCountsTracker() );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1, store.txId() );
 //            assertEquals( 11, store.totalRecordsStored() ); // we do not support yet (label,type,label) counts
             assertEquals( 9, store.totalEntriesStored() );
@@ -207,8 +203,7 @@ public class CountsComputerTest
 
         try ( Lifespan life = new Lifespan() )
         {
-            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
-                    new File( dir, COUNTS_STORE_BASE ) ) );
+            CountsTracker store = life.add( createCountsTracker() );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1, store.txId() );
 //            assertEquals( 15, store.totalRecordsStored() ); // we do not support yet (label,type,label) counts
             assertEquals( 13, store.totalEntriesStored() );
@@ -252,8 +247,7 @@ public class CountsComputerTest
 
         try ( Lifespan life = new Lifespan() )
         {
-            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
-                    new File( dir, COUNTS_STORE_BASE ) ) );
+            CountsTracker store = life.add( createCountsTracker() );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1, store.txId() );
             assertEquals( 22, store.totalEntriesStored() );
 //            assertEquals( 30, store.totalRecordsStored() ); // we do not support yet (label,type,label) counts
@@ -289,6 +283,7 @@ public class CountsComputerTest
     private File dir;
     private GraphDatabaseBuilder dbBuilder;
     private PageCache pageCache;
+    private Config emptyConfig;
 
     @Before
     public void setup()
@@ -297,6 +292,7 @@ public class CountsComputerTest
         dir = testDir.directory( "dir" ).getAbsoluteFile();
         dbBuilder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( dir.getPath() );
         pageCache = pcRule.getPageCache( fs );
+        emptyConfig = new Config();
     }
 
     private static final String COUNTS_STORE_BASE = NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
@@ -321,6 +317,12 @@ public class CountsComputerTest
     {
         fs.deleteFile( alphaStoreFile() );
         fs.deleteFile( betaStoreFile() );
+    }
+
+    private CountsTracker createCountsTracker()
+    {
+        return new CountsTracker( StringLogger.DEV_NULL, fs, pageCache, emptyConfig,
+                new File( dir, COUNTS_STORE_BASE ) );
     }
 
     private void rebuildCounts( long lastCommittedTransactionId ) throws IOException

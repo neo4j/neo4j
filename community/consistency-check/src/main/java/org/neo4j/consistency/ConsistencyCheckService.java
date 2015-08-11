@@ -28,6 +28,8 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -101,8 +103,11 @@ public class ConsistencyCheckService
             throws ConsistencyCheckIncompleteException
     {
         Monitors monitors = new Monitors();
+        Config consistencyCheckerConfig = tuningConfiguration.with(
+                MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
+
         StoreFactory factory = new StoreFactory(
-                tuningConfiguration,
+                consistencyCheckerConfig,
                 new DefaultIdGeneratorFactory(),
                 pageCache, fileSystem, logger,
                 monitors
@@ -181,13 +186,13 @@ public class ConsistencyCheckService
         return String.format( "inconsistencies-%s.report", formattedDate );
     }
 
-    public static enum Result
+    public enum Result
     {
         FAILURE( false ), SUCCESS( true );
 
         private final boolean successful;
 
-        private Result( boolean successful )
+        Result( boolean successful )
         {
             this.successful = successful;
         }

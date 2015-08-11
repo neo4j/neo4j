@@ -265,11 +265,7 @@ class KeyValueWriter implements Closeable
 
         abstract void close() throws IOException;
 
-        void writeTrailer( String trailer ) throws IOException
-        {
-            write( UTF8.encode( trailer ) );
-        }
-
+        abstract void writeTrailer( String trailer ) throws IOException;
         static Writer create( FileSystemAbstraction fs, PageCache pages, File path, int pageSize ) throws IOException
         {
             if ( pages == null )
@@ -300,6 +296,12 @@ class KeyValueWriter implements Closeable
         void write( byte[] data ) throws IOException
         {
             out.write( data );
+        }
+
+        @Override
+        void writeTrailer( String trailer ) throws IOException
+        {
+            write( UTF8.encode( trailer ) );
         }
 
         @Override

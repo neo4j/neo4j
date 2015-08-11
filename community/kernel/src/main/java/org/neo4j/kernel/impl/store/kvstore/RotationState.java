@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.util.function.Optionals;
 
 abstract class RotationState<Key> extends ProgressiveState<Key>
 {
-    abstract ProgressiveState<Key> rotate( boolean force, RotationStrategy strategy,
+    abstract ProgressiveState<Key> rotate( boolean force, RotationStrategy strategy, RotationTimerFactory timerFactory,
                                            Consumer<Headers.Builder> headersUpdater )
             throws IOException;
 
@@ -60,14 +60,20 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
             this.threshold = version;
         }
 
-        ActiveState<Key> rotate( boolean force, RotationStrategy strategy, Consumer<Headers.Builder> headersUpdater )
-                throws IOException
+        ActiveState<Key> rotate( boolean force, RotationStrategy strategy, RotationTimerFactory timerFactory,
+                                Consumer<Headers.Builder> headersUpdater ) throws IOException
         {
             if ( !force )
             {
+                RotationTimerFactory.RotationTimer rotationTimer = timerFactory.createTimer();
                 for ( long expected = threshold - preState.store.version(), sleep = 10;
                       preState.applied() < expected; sleep = Math.min( sleep * 2, 100 ) )
                 {
+                    if ( rotationTimer.isTimedOut() )
+                    {
+                        throw new RotationTimeoutException( threshold, preState.store.version(),
+                                rotationTimer.getElapsedTimeMillis());
+                    }
                     try
                     {
                         Thread.sleep( sleep );

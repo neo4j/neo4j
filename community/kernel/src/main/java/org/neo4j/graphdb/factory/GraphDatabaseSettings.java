@@ -146,6 +146,11 @@ public abstract class GraphDatabaseSettings
     @Description( "Port for remote logging using Logback SocketAppender." )
     public static final Setting<Integer> remote_logging_port = setting("remote_logging_port", INTEGER, "4560", port );
 
+    @Description( "Maximum time interval for log rotation to wait for active transaction completion" )
+    @Internal
+    public static final Setting<Long> store_interval_log_rotation_wait_time =
+            setting( "store.interval.log.rotation", DURATION, "10m" );
+
     // Indexing
     @Description("Controls the auto indexing feature for nodes. Setting it to `false` shuts it down, " +
             "while `true` enables it by default for properties "

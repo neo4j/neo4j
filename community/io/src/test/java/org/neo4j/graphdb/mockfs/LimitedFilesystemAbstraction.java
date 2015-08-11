@@ -51,7 +51,7 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
     {
         return new LimitedFileChannel( inner.open( fileName, mode ), this );
     }
-    
+
     @Override
     public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
     {
@@ -69,7 +69,7 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
     {
         return new InputStreamReader( openAsInputStream( fileName ), encoding );
     }
-    
+
     @Override
     public Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException
     {
@@ -106,7 +106,7 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
     {
         return inner.deleteFile( fileName );
     }
-    
+
     @Override
     public void deleteRecursively( File directory ) throws IOException
     {
@@ -118,7 +118,7 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
     {
         return inner.mkdir( fileName );
     }
-    
+
     @Override
     public void mkdirs( File fileName ) throws IOException
     {
@@ -157,25 +157,25 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
     {
         return inner.listFiles( directory, filter );
     }
-    
+
     @Override
     public boolean isDirectory( File file )
     {
         return inner.isDirectory( file );
     }
-    
+
     @Override
     public void moveToDirectory( File file, File toDirectory ) throws IOException
     {
         inner.moveToDirectory( file, toDirectory );
     }
-    
+
     @Override
     public void copyFile( File from, File to ) throws IOException
     {
         inner.copyFile( from, to );
     }
-    
+
     @Override
     public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
     {
@@ -187,5 +187,11 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
             Class<K> clazz, Function<Class<K>, K> creator )
     {
         return inner.getOrCreateThirdPartyFileSystem( clazz, creator );
+    }
+
+    @Override
+    public void truncate( File path, long size ) throws IOException
+    {
+        inner.truncate( path, size );
     }
 }

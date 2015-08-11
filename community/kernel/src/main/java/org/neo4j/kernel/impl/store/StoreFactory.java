@@ -36,6 +36,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.kvstore.State;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -333,7 +334,10 @@ public class StoreFactory
 
     public CountsTracker newCountsStore()
     {
-        return new CountsTracker( stringLogger, fileSystemAbstraction, pageCache, storeFileName( COUNTS_STORE ) );
+        File storeFileName = storeFileName( StoreFactory.COUNTS_STORE );
+        return config.get( GraphDatabaseSettings.read_only ) ?
+               new StillCountsTracker( stringLogger, fileSystemAbstraction, pageCache, config, storeFileName ) :
+               new CountsTracker( stringLogger, fileSystemAbstraction, pageCache, config, storeFileName );
     }
 
     public NeoStore createNeoStore()
@@ -646,5 +650,21 @@ public class StoreFactory
         public static final Setting<Integer> array_block_size = GraphDatabaseSettings.array_block_size;
         public static final Setting<Integer> label_block_size = GraphDatabaseSettings.label_block_size;
         public static final Setting<Integer> dense_node_threshold = GraphDatabaseSettings.dense_node_threshold;
+    }
+
+    @State( State.Strategy.READ_ONLY_CONCURRENT_HASH_MAP )
+    private static class StillCountsTracker extends CountsTracker
+    {
+        public StillCountsTracker( StringLogger logger, FileSystemAbstraction fileSystem, PageCache pageCache,
+                Config config, File baseFile )
+        {
+            super( logger, fileSystem, pageCache, config, baseFile );
+        }
+
+        @Override
+        public long rotate( long txId ) throws IOException
+        {
+            return -1;
+        }
     }
 }
