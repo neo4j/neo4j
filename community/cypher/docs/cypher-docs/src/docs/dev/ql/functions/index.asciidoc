@@ -37,6 +37,12 @@ include::exists.asciidoc[]
 
 Scalar functions return a single value.
 
+[IMPORTANT]
+The `LENGTH` and `SIZE` functions are quite similar, and so it is important to take note of the difference.
+Due to backwards compatibility `LENGTH` currently works on four types: strings, paths, collections and pattern expressions.
+However, for clarity it is recommended to only use `LENGTH` on strings and paths, and use the new `SIZE` function
+on collections and pattern expressions. `LENGTH` on those types may be deprecated in future.
+
 .Graph
 include::includes/cypher-functions-graph.asciidoc[]
 
@@ -47,6 +53,8 @@ include::size.asciidoc[]
 include::size-of-pattern-expression.asciidoc[]
 
 include::length.asciidoc[]
+
+include::length-of-string.asciidoc[]
 
 include::type.asciidoc[]
 

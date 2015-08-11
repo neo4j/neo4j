@@ -156,6 +156,16 @@ class FunctionsTest extends DocumentingTestBase {
       assertions = (p) => assertEquals(2, p.columnAs[Int]("length(p)").toList.head))
   }
 
+  @Test def lengthString() {
+    testThis(
+      title = "LENGTH of string",
+      syntax = "LENGTH( string )",
+      arguments = List("string" -> "An expression that returns a string"),
+      text = """To return or filter on the length of a string, use the `LENGTH()` function.""",
+      queryText = """match (a) where length(a.name) > 6 return length(a.name)""",
+      returns = """The length of the name `Charlie` is returned by the query.""",
+      assertions = (p) => assertEquals(7, p.columnAs[Int]("length(a.name)").toList.head))
+  }
 
   @Test def labels() {
     testThis(
