@@ -64,17 +64,17 @@ public abstract class SubProcess<T, P> implements Serializable
         // Used when no interface is declared
     }
 
-    // by default source and destination for subprocess standard I/O to be the same as those of the current process
-    private static final boolean INHERIT_IO_DEFAULT_VALUE = true;
+    // by default will inherit output destinations for subprocess from current process
+    private static final boolean INHERIT_OUTPUT_DEFAULT_VALUE = true;
 
     private final Class<T> t;
-    private transient boolean inheritIo = INHERIT_IO_DEFAULT_VALUE;
+    private transient boolean inheritOutput = INHERIT_OUTPUT_DEFAULT_VALUE;
     private final transient Predicate<String> classPathFilter;
 
     @SuppressWarnings( { "unchecked", "rawtypes" } )
-    public SubProcess( Predicate<String> classPathFilter, boolean inheritIo )
+    public SubProcess( Predicate<String> classPathFilter, boolean inheritOutput )
     {
-        this.inheritIo = inheritIo;
+        this.inheritOutput = inheritOutput;
         if ( getClass().getSuperclass() != SubProcess.class )
         {
             throw new ClassCastException( SubProcess.class.getName() + " may only be extended one level " );
@@ -119,17 +119,17 @@ public abstract class SubProcess<T, P> implements Serializable
 
     public SubProcess( Predicate<String> classPathFilter )
     {
-        this( classPathFilter, INHERIT_IO_DEFAULT_VALUE );
+        this( classPathFilter, INHERIT_OUTPUT_DEFAULT_VALUE );
     }
 
-    public SubProcess( boolean inheritIo )
+    public SubProcess( boolean inheritOutput )
     {
-        this(null, inheritIo);
+        this(null, inheritOutput );
     }
 
     public SubProcess()
     {
-        this( null, INHERIT_IO_DEFAULT_VALUE );
+        this( null, INHERIT_OUTPUT_DEFAULT_VALUE );
     }
 
     public T start( P parameter, BreakPoint... breakpoints )
@@ -158,21 +158,21 @@ public abstract class SubProcess<T, P> implements Serializable
             {
                 if ( debugger != null )
                 {
-                    process = start(inheritIo, "java", "-ea", "-Xmx1G", debugger.listen(),
+                    process = start( inheritOutput, "java", "-ea", "-Xmx1G", debugger.listen(),
                             "-Djava.awt.headless=true", "-cp",
                             classPath( System.getProperty( "java.class.path" ) ), SubProcess.class.getName(),
                             serialize( callback ) );
                 }
                 else
                 {
-                    process = start(inheritIo, "java", "-ea", "-Xmx1G", "-Djava.awt.headless=true", "-cp",
+                    process = start( inheritOutput, "java", "-ea", "-Xmx1G", "-Djava.awt.headless=true", "-cp",
                             classPath( System.getProperty( "java.class.path" ) ),
                             SubProcess.class.getName(), serialize( callback ) );
                 }
                 pid = getPid( process );
                 // if IO was not inherited by current process we need to pipe error and input stream to corresponding
                 // target streams
-                if (!inheritIo)
+                if (!inheritOutput )
                 {
                     pipe( "[" + toString() + ":" + pid + "] ", process.getErrorStream(), errorStreamTarget() );
                     pipe( "[" + toString() + ":" + pid + "] ", process.getInputStream(), inputStreamTarget() );
@@ -234,12 +234,17 @@ public abstract class SubProcess<T, P> implements Serializable
         return result.toString();
     }
 
-    private static Process start(boolean inheritIo, String... args )
+    private static Process start(boolean inheritOutput, String... args )
     {
         ProcessBuilder builder = new ProcessBuilder( args );
-        if ( inheritIo )
+        if ( inheritOutput )
         {
-            builder.inheritIO();
+            // We can not simply use builder.inheritIO here because
+            // that will also inherit input which will be closed in case of background execution of main process.
+            // Closed input stream will cause immediate exit from a subprocess liveloop.
+            // And we use background execution in scripts and on CI server.
+            builder.redirectError( ProcessBuilder.Redirect.INHERIT )
+                   .redirectOutput( ProcessBuilder.Redirect.INHERIT );
         }
         try
         {
