@@ -612,9 +612,12 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response getAllLabels()
+    public Response getAllLabels( boolean inUse )
     {
-        throw new UnsupportedOperationException( "TODO" );
+        try ( Transaction transaction = graph.beginTx() )
+        {
+            return restfulGraphDatabase.getAllLabels( inUse );
+        }
     }
 
     @Override
