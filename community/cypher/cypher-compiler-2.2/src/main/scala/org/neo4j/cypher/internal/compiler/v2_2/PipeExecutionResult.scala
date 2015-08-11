@@ -28,9 +28,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.helpers.{Eagerly, CollectionSuppo
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
-import org.neo4j.cypher.internal.compiler.v2_2.helpers._
 import org.neo4j.graphdb.QueryExecutionType.{QueryType, profiled, query}
-import org.neo4j.graphdb.ResourceIterator
+import org.neo4j.graphdb.{NotFoundException, ResourceIterator}
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
@@ -59,7 +58,9 @@ class PipeExecutionResult(val result: ResultIterator,
     def next() = makeValueJavaCompatible(getAnyColumn(column, self.next())).asInstanceOf[T]
   }
 
-  def columnAs[T](column: String): Iterator[T] = map { case m => getAnyColumn(column, m).asInstanceOf[T] }
+  def columnAs[T](column: String): Iterator[T] =
+    if (this.columns.contains(column)) map { case m => getAnyColumn(column, m).asInstanceOf[T] }
+    else columnNotFoundException(column, columns)
 
   def javaIterator: ResourceIterator[java.util.Map[String, Any]] = new WrappingResourceIterator[util.Map[String, Any]] {
     def hasNext = self.hasNext
@@ -78,11 +79,11 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def planDescriptionRequested = executionMode == ExplainMode || executionMode == ProfileMode
 
-  private def getAnyColumn[T](column: String, m: Map[String, Any]): Any = {
-    m.getOrElse(column, {
-      throw new EntityNotFoundException("No column named '" + column + "' was found. Found: " + m.keys.mkString("(\"", "\", \"", "\")"))
-    })
-  }
+  private def columnNotFoundException(column: String, expected: Iterable[String]) =
+    throw new NotFoundException("No column named '" + column + "' was found. Found: " + expected.mkString("(\"", "\", \"", "\")"))
+
+  private def getAnyColumn[T](column: String, m: Map[String, Any]): Any =
+    m.getOrElse(column, columnNotFoundException(column, m.keys))
 
   private def makeValueJavaCompatible(value: Any): Any = value match {
     case iter: Seq[_]    => iter.map(makeValueJavaCompatible).asJava
