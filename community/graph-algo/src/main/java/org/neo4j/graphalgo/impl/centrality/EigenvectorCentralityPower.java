@@ -54,11 +54,10 @@ public class EigenvectorCentralityPower extends EigenvectorCentralityBase
 
     public int runInternalIteration()
     {
-        Map<Node, Double> newValues = new HashMap<Node, Double>();
 
         incrementTotalIterations();
 
-        matrixMultiplication( newValues );
+        Map<Node, Double> newValues = processRelationships();
 
         normalize( newValues );
 

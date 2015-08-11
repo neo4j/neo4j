@@ -85,9 +85,8 @@ public class EigenvectorCentralityArnoldi extends EigenvectorCentralityBase
         while ( true )
         {
             incrementTotalIterations();
-            Map<Node,Double> newValues = new HashMap<>();
 
-            matrixMultiplication( newValues );
+            Map<Node, Double> newValues = processRelationships();
 
             // Orthogonalize
             for ( int j = 0; j < localIterations; ++j )

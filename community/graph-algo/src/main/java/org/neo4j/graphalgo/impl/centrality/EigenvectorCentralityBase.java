@@ -230,12 +230,16 @@ public abstract class EigenvectorCentralityBase implements EigenvectorCentrality
     protected abstract int runInternalIteration();
 
     /**
-     * Method that performs matrix-vector multiplication Ax.
-     * Where relationshipSet is A and values is x.
-     * Result is stored in newValues.
+     * Loops over relationships in {@link #relationshipSet} and calls {@link #processRelationship} for each one.
+     *
+     * {@link #relationshipSet} can be viewed as an adjacency matrix, A, and {@link #values} can be viewed as an
+     * arbitrary vector, x. In that case this process simulates a matrix-vector multiplication Ax.
+     *
+     * Result is returned as a {@link Map<Node,Double>}.
      */
-    public void matrixMultiplication( Map<Node,Double> newValues )
+    public Map<Node,Double> processRelationships()
     {
+        Map<Node,Double> newValues = new HashMap<>();
         for ( Relationship relationship : relationshipSet )
         {
             if ( relationDirection.equals( Direction.BOTH )
@@ -249,6 +253,7 @@ public abstract class EigenvectorCentralityBase implements EigenvectorCentrality
                 processRelationship( newValues, relationship, true );
             }
         }
+        return newValues;
     }
 
     /**
