@@ -556,6 +556,7 @@ public class ImportTool
                 args.interpretOption( Options.ARRAY_DELIMITER.key(), Converters.<Character>optional(), DELIMITER_CONVERTER );
         final Character specificQuote =
                 args.interpretOption( Options.QUOTE.key(), Converters.<Character>optional(), Converters.toCharacter() );
+        final boolean multiLineFields = args.getBoolean( Options.MULTILINE_FIELDS.key(), false );
         return new Configuration.Default()
         {
             @Override
@@ -580,6 +581,12 @@ public class ImportTool
                 return specificQuote != null
                         ? specificQuote.charValue()
                         : defaultConfiguration.quotationCharacter();
+            }
+
+            @Override
+            public boolean multilineFields()
+            {
+                return multiLineFields;
             }
 
             @Override

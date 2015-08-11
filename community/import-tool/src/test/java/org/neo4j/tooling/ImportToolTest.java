@@ -44,6 +44,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.FilteringIterator;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.util.Validator;
@@ -56,6 +57,9 @@ import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -63,11 +67,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
-import static java.util.Arrays.asList;
-
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.alwaysTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
@@ -286,11 +285,11 @@ public class ImportToolTest
         try
         {
             importTool(
-                    "--into",          dbRule.getStoreDirAbsolutePath(),
-                    "--nodes",         nodeHeader( config, "MyGroup" ).getAbsolutePath() + MULTI_FILE_DELIMITER +
-                    nodeData( false, config, groupOneNodeIds, alwaysTrue() ).getAbsolutePath(),
-                    "--nodes",         nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
-                    nodeData( false, config, groupTwoNodeIds, alwaysTrue() ).getAbsolutePath() );
+                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--nodes", nodeHeader( config, "MyGroup" ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                               nodeData( false, config, groupOneNodeIds, alwaysTrue() ).getAbsolutePath(),
+                    "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                               nodeData( false, config, groupTwoNodeIds, alwaysTrue() ).getAbsolutePath() );
             fail( "Should have failed" );
         }
         catch ( Exception e )
@@ -609,13 +608,39 @@ public class ImportToolTest
         try
         {
             importTool(
-                    "--into",  dbRule.getStoreDirAbsolutePath(),
+                    "--into", dbRule.getStoreDirAbsolutePath(),
                     "--nodes", data.getAbsolutePath() );
         }
         catch ( Exception e )
         {
             // THEN
             assertExceptionContains( e, "Multi-line", IllegalMultilineFieldException.class );
+        }
+    }
+
+    @Test
+    public void shouldAllowMultilineFieldsWhenEnabled() throws Exception
+    {
+        // GIVEN
+        File data = data( ":ID,name", "1,\"This is a line with\nnewlines in\"" );
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--nodes", data.getAbsolutePath(),
+                "--multiline-fields", "true" );
+
+        // THEN
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        try ( Transaction tx = db.beginTx() )
+        {
+            ResourceIterator<Node> allNodes = GlobalGraphOperations.at( db ).getAllNodes().iterator();
+            Node node = IteratorUtil.single( allNodes );
+            allNodes.close();
+
+            assertEquals( "This is a line with\nnewlines in", node.getProperty( "name" ) );
+
+            tx.success();
         }
     }
 
