@@ -69,37 +69,7 @@ object And {
   }
 }
 
-case class AndedPropertyComparablePredicates(ident: Identifier, prop: Property, comparables: NonEmptyList[ComparablePredicate]) extends Predicate {
-
-  def symbolTableDependencies: Set[String] = comparables.foldLeft(prop.symbolTableDependencies) {
-    case (acc, predicate) => acc ++ predicate.symbolTableDependencies
-  }
-
-  def containsIsNull: Boolean = comparables.exists(_.containsIsNull)
-
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
-    var result: Option[Option[Boolean]] = None
-    val iter = comparables.toIterable.iterator
-    while (iter.nonEmpty) {
-      val p = iter.next()
-      val r = p.isMatch(m)
-
-      if(r.nonEmpty && !r.get)
-        return r
-
-      if(result.isEmpty)
-        result = Some(r)
-      else {
-        val stored = result.get
-        if (stored.nonEmpty && stored.get && r.isEmpty)
-          result = Some(None)
-      }
-    }
-
-    result.get
-  }
-
-  def arguments: Seq[Expression] = comparables.toSeq
+case class AndedPropertyComparablePredicates(ident: Identifier, prop: Property, override val predicates: NonEmptyList[ComparablePredicate]) extends CompositeBooleanPredicate {
 
   // some rewriters change the type of this, and we can't allow that
   private def rewriteIdentifierIfNotTypeChanged(f: (Expression) => Expression) =
@@ -111,7 +81,7 @@ case class AndedPropertyComparablePredicates(ident: Identifier, prop: Property, 
   def rewrite(f: (Expression) => Expression): Expression =
     f(AndedPropertyComparablePredicates(rewriteIdentifierIfNotTypeChanged(f),
       prop.rewrite(f).asInstanceOf[Property],
-      comparables.map(_.rewriteAsPredicate(f).asInstanceOf[ComparablePredicate])))
+      predicates.map(_.rewriteAsPredicate(f).asInstanceOf[ComparablePredicate])))
 
-  override def atoms: Seq[Predicate] = comparables.toSeq
+  override def shouldExitWhen: Boolean = false
 }
