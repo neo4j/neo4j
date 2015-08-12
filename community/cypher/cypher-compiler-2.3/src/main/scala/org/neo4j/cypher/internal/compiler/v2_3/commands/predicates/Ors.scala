@@ -21,19 +21,20 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands.predicates
 
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 
-case class Ors(predicates: List[Predicate]) extends CompositeBooleanPredicate {
+case class Ors(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPredicate {
   def shouldExitWhen = true
   def rewrite(f: (Expression) => Expression): Expression = f(Ors(predicates.map(_.rewriteAsPredicate(f))))
 }
 
 @deprecated("Use Ors (plural) instead")
 case class Or(a: Predicate, b: Predicate) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = Ors(List(a, b)).isMatch(m)
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = Ors(NonEmptyList(a, b)).isMatch(m)
 
-  override def toString: String = "(" + a + " OR " + b + ")"
-  def containsIsNull = a.containsIsNull||b.containsIsNull
+  override def toString: String = s"($a OR $b)"
+  def containsIsNull = a.containsIsNull || b.containsIsNull
   def rewrite(f: (Expression) => Expression) = f(Or(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
 
   def arguments = Seq(a, b)

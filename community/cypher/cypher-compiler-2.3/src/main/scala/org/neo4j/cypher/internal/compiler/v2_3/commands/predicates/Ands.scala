@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Property, I
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 
-case class Ands(predicates: List[Predicate]) extends CompositeBooleanPredicate {
+case class Ands(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPredicate {
   def shouldExitWhen = false
   override def andWith(other: Predicate): Predicate = Ands(predicates :+ other)
   def rewrite(f: (Expression) => Expression): Expression = f(Ands(predicates.map(_.rewriteAsPredicate(f))))
@@ -34,17 +34,17 @@ object Ands {
   def apply(a: Predicate, b: Predicate) = (a, b) match {
     case (True(), other) => other
     case (other, True()) => other
-    case (_, _)          => new Ands(List(a, b))
+    case (_, _)          => new Ands(NonEmptyList(a, b))
   }
 }
 
 @deprecated("Use Ands (plural) instead")
 class And(val a: Predicate, val b: Predicate) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = Ands(List(a, b)).isMatch(m)
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = Ands(NonEmptyList(a, b)).isMatch(m)
 
   override def atoms: Seq[Predicate] = a.atoms ++ b.atoms
-  override def toString: String = "(" + a + " AND " + b + ")"
-  def containsIsNull = a.containsIsNull||b.containsIsNull
+  override def toString: String = s"($a AND $b)"
+  def containsIsNull = a.containsIsNull || b.containsIsNull
   def rewrite(f: (Expression) => Expression) = f(And(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
 
   def arguments = Seq(a, b)
@@ -69,37 +69,9 @@ object And {
   }
 }
 
-case class AndedPropertyComparablePredicates(ident: Identifier, prop: Property, comparables: NonEmptyList[ComparablePredicate]) extends Predicate {
-
-  def symbolTableDependencies: Set[String] = comparables.foldLeft(prop.symbolTableDependencies) {
-    case (acc, predicate) => acc ++ predicate.symbolTableDependencies
-  }
-
-  def containsIsNull: Boolean = comparables.exists(_.containsIsNull)
-
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
-    var result: Option[Option[Boolean]] = None
-    val iter = comparables.toIterable.iterator
-    while (iter.nonEmpty) {
-      val p = iter.next()
-      val r = p.isMatch(m)
-
-      if(r.nonEmpty && !r.get)
-        return r
-
-      if(result.isEmpty)
-        result = Some(r)
-      else {
-        val stored = result.get
-        if (stored.nonEmpty && stored.get && r.isEmpty)
-          result = Some(None)
-      }
-    }
-
-    result.get
-  }
-
-  def arguments: Seq[Expression] = comparables.toSeq
+case class AndedPropertyComparablePredicates(ident: Identifier, prop: Property,
+                                             override val predicates: NonEmptyList[ComparablePredicate])
+  extends CompositeBooleanPredicate {
 
   // some rewriters change the type of this, and we can't allow that
   private def rewriteIdentifierIfNotTypeChanged(f: (Expression) => Expression) =
@@ -111,7 +83,7 @@ case class AndedPropertyComparablePredicates(ident: Identifier, prop: Property, 
   def rewrite(f: (Expression) => Expression): Expression =
     f(AndedPropertyComparablePredicates(rewriteIdentifierIfNotTypeChanged(f),
       prop.rewrite(f).asInstanceOf[Property],
-      comparables.map(_.rewriteAsPredicate(f).asInstanceOf[ComparablePredicate])))
+      predicates.map(_.rewriteAsPredicate(f).asInstanceOf[ComparablePredicate])))
 
-  override def atoms: Seq[Predicate] = comparables.toSeq
+  override def shouldExitWhen: Boolean = false
 }

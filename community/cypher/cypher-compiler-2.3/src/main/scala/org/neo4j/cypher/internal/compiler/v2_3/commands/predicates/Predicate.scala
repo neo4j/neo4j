@@ -53,13 +53,12 @@ object Predicate {
 
 abstract class CompositeBooleanPredicate extends Predicate {
 
-  def predicates: List[Predicate]
-
-  assert(predicates.nonEmpty, "Expected predicates to never be empty")
+  def predicates: NonEmptyList[Predicate]
 
   def shouldExitWhen: Boolean
 
-  def symbolTableDependencies: Set[String] = predicates.flatMap(_.symbolTableDependencies).toSet
+  def symbolTableDependencies: Set[String] =
+    predicates.map(_.symbolTableDependencies).reduceLeft(_ ++ _)
 
   def containsIsNull: Boolean = predicates.exists(_.containsIsNull)
 
@@ -92,9 +91,9 @@ abstract class CompositeBooleanPredicate extends Predicate {
     }
   }
 
-  def arguments: Seq[Expression] = predicates
+  def arguments: Seq[Expression] = predicates.toSeq
 
-  override def atoms: Seq[Predicate] = predicates
+  override def atoms: Seq[Predicate] = predicates.toSeq
 }
 
 case class Not(a: Predicate) extends Predicate {

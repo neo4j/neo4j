@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.UnresolvedRelType
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => commandexpressions, values => commandvalues, predicates}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v2_3.parser.{LikePatternParser, ParsedLikePattern, convertLikePatternToRegex}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -202,11 +203,11 @@ object ExpressionConverters {
   }
 
    implicit class OrsConverter(val e: ast.Ors) extends AnyVal {
-    def asCommandOrs = predicates.Ors(e.exprs.map(_.asCommandPredicate).toList)
+    def asCommandOrs = predicates.Ors(NonEmptyList.from(e.exprs.map(_.asCommandPredicate)))
   }
 
   implicit class AndsConverter(val e: ast.Ands) extends AnyVal {
-    def asCommandAnds = predicates.Ands(e.exprs.map(_.asCommandPredicate).toList)
+    def asCommandAnds = predicates.Ands(NonEmptyList.from(e.exprs.map(_.asCommandPredicate)))
   }
 
   implicit class EqualsConverter(val e: ast.Equals) extends AnyVal {
