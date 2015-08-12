@@ -47,7 +47,7 @@ public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstractio
     {
         return new LimitedFileChannel( super.open( fileName, mode ), this );
     }
-    
+
     @Override
     public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
     {
@@ -65,7 +65,7 @@ public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstractio
     {
         return new InputStreamReader( openAsInputStream( fileName ), encoding );
     }
-    
+
     @Override
     public Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException
     {
@@ -78,7 +78,7 @@ public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstractio
         ensureHasSpace();
         return new LimitedFileChannel( super.create( fileName ), this );
     }
-    
+
     @Override
     public void mkdirs( File fileName ) throws IOException
     {

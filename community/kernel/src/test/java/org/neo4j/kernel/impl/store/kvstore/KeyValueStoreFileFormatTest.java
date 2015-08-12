@@ -19,8 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,12 +33,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -43,7 +45,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFileFormatTest.Data.data;
 import static org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFileFormatTest.DataEntry.entry;
 import static org.neo4j.test.ResourceRule.testPath;
@@ -255,6 +256,139 @@ public class KeyValueStoreFileFormatTest
             assertFind( file, 14, 15, false, new Bytes( 'v', 'a', 'l', 3 ) ); // after the first page
             assertFind( file, 19, 25, false ); // after the second page
             assertFind( file, 18, 25, true, new Bytes( 'v', 'a', 'l', 6 ) ); // last entry of the last page
+        }
+    }
+
+    @Test
+    public void shouldTruncateTheFile() throws Exception
+    {
+        Map<String, String> config = new HashMap<>();
+        config.put( GraphDatabaseSettings.pagecache_memory.name(), "8M" );
+        config.put( GraphDatabaseSettings.mapped_memory_page_size.name(), "128" );
+
+        // given a well written file
+        {
+            Format format = new Format( "one", "two" );
+            Map<String,byte[]> headers = new HashMap<>();
+            headers.put( "one", new byte[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,} );
+            headers.put( "two", new byte[]{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,} );
+
+
+            Data data = data( // two full pages (and nothing more)
+                    // page 0
+                    entry( bytes( 12 ), bytes( 'v', 'a', 'l', 1 ) ),
+                    entry( bytes( 13 ), bytes( 'v', 'a', 'l', 2 ) ),
+                    // page 1
+                    entry( bytes( 15 ), bytes( 'v', 'a', 'l', 3 ) ),
+                    entry( bytes( 16 ), bytes( 'v', 'a', 'l', 4 ) ),
+                    entry( bytes( 17 ), bytes( 'v', 'a', 'l', 5 ) ),
+                    entry( bytes( 18 ), bytes( 'v', 'a', 'l', 6 ) ) );
+
+            try ( KeyValueStoreFile ignored = format.create( config, headers, data ) )
+            {
+            }
+        }
+
+
+        {
+            // when failing on creating the next version of that file
+            Format format = new Format( "three", "four" );
+            Map<String,byte[]> headers = new HashMap<>();
+            headers.put( "three", new byte[]{3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,} );
+            headers.put( "four", new byte[]{4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,} );
+
+            DataProvider data = new DataProvider()
+            {
+                @Override
+                public void close() throws IOException
+                {
+                }
+                @Override
+                public boolean visit( WritableBuffer key, WritableBuffer value ) throws IOException
+                {
+                    throw new IOException( "boom!" );
+                }
+            };
+
+            try ( KeyValueStoreFile ignored = format.create( config, headers, data ) )
+            {
+            }
+            catch ( IOException io )
+            {
+                // then only headers are present in the file and not the old content
+                assertEquals( "boom!", io.getMessage() );
+                assertFormatSpecifierAndHeadersOnly( headers, fs.get(), storeFile.get() );
+            }
+        }
+    }
+
+    private void assertFormatSpecifierAndHeadersOnly( Map<String,byte[]> headers, FileSystemAbstraction fs, File file )
+            throws IOException
+    {
+        assertTrue( fs.fileExists( file ) );
+        try ( InputStream stream = fs.openAsInputStream( file ) )
+        {
+            // format specifier
+            int read;
+            int size = 16;
+            byte[] readEntry = new byte[size];
+            byte[] allZeros = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+            read = stream.read( readEntry );
+            assertEquals( size, read );
+            assertArrayEquals( allZeros, readEntry );
+
+            read = stream.read( readEntry );
+            assertEquals( size, read );
+            assertArrayEquals( new byte[]{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}, readEntry );
+
+
+            for ( int i = 0; i < headers.size(); i++ )
+            {
+                read = stream.read( readEntry );
+                assertEquals( size, read );
+                assertArrayEquals( allZeros, readEntry );
+
+                read = stream.read( readEntry );
+                assertEquals( size, read );
+                headers.containsValue( readEntry );
+            }
+
+            assertEquals( -1, stream.read() );
+        }
+    }
+
+    @Test
+    public void shouldFailToReadFailWithIncorrectTrailer() throws IOException
+    {
+        // when
+        String[] headerNames = {"abc", "xyz"};
+        Format expectedFormat = new Format( headerNames );
+        IncorrectTrailerFormat incorrectTrailerFormat = new IncorrectTrailerFormat( headerNames );
+
+        Map<String,byte[]> headers = new HashMap<>();
+        headers.put( "abc", new byte[]{'h', 'e', 'l', 'l', 'o', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,} );
+        headers.put( "xyz", new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'w', 'o', 'r', 'l', 'd',} );
+        Data data = data(
+                entry( new byte[]{'o', 'n', 'e'}, new byte[]{'a', 'l', 'p', 'h', 'a'} ),
+                entry( new byte[]{'t', 'w', 'o'}, new byte[]{'b', 'e', 't', 'a'} ),
+                entry( new byte[]{'z', 'e', 'd'}, new byte[]{'o', 'm', 'e', 'g', 'a'} ) );
+
+        // then
+        try ( KeyValueStoreFile originalValidFile = incorrectTrailerFormat.create( headers, data ) )
+        {
+            assertEquals( "number of entries", 3, data.index );
+            assertEntries( 3, originalValidFile );
+        }
+
+        try
+        {
+            expectedFormat.open();
+            fail( "It should not be possible to open count store file with incorrect trailer." );
+        }
+        catch ( IOException e )
+        {
+            assertEquals( "Invalid file trailer. Expected trailer not found.", e.getMessage() );
         }
     }
 
@@ -487,6 +621,20 @@ public class KeyValueStoreFileFormatTest
         protected String fileTrailer()
         {
             return "That's all folks...";
+        }
+    }
+
+    class IncorrectTrailerFormat extends Format {
+
+        public IncorrectTrailerFormat( String... defaultHeaderFields )
+        {
+            super( defaultHeaderFields );
+        }
+
+        @Override
+        protected String fileTrailer()
+        {
+            return "incorrect trailer";
         }
     }
 
