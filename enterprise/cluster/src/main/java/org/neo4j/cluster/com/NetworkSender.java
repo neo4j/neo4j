@@ -306,6 +306,7 @@ public class NetworkSender
                             {
                                 msgLog.debug( "Unable to write " + message + " to " + future.getChannel(),
                                         future.getCause() );
+                                closedChannel( future.getChannel() );
                             }
                         }
                     } );
