@@ -30,7 +30,7 @@ object QueryPlannerConfiguration {
     pickBestCandidate = pickBestPlanUsingHintsAndCost,
     applySelections = Selector(pickBestPlanUsingHintsAndCost,
       selectPatternPredicates,
-      triadicSelection,
+      //triadicSelection,
       selectCovered,
       selectHasLabelWithJoin
     ),
