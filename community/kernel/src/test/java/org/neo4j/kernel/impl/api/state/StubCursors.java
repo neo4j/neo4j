@@ -183,6 +183,12 @@ public class StubCursors
             }
 
             @Override
+            public boolean isDense()
+            {
+                throw new UnsupportedOperationException(  );
+            }
+
+            @Override
             public Cursor<DegreeItem> degrees()
             {
                 throw new UnsupportedOperationException();

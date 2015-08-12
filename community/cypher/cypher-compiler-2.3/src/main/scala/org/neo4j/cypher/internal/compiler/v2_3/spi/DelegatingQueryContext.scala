@@ -126,6 +126,8 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
   def nodeGetDegree(node: Long, dir: Direction): Int = singleDbHit(inner.nodeGetDegree(node, dir))
 
   def nodeGetDegree(node: Long, dir: Direction, relTypeId: Int): Int = singleDbHit(inner.nodeGetDegree(node, dir, relTypeId))
+
+  def nodeIsDense(node: Long): Boolean = singleDbHit(inner.nodeIsDense(node))
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

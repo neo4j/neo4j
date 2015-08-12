@@ -121,6 +121,8 @@ trait QueryContext extends TokenContext {
   def nodeGetDegree(node: Long, dir: Direction): Int
 
   def nodeGetDegree(node: Long, dir: Direction, relTypeId: Int): Int
+
+  def nodeIsDense(node: Long): Boolean
 }
 
 trait LockingQueryContext extends QueryContext {
