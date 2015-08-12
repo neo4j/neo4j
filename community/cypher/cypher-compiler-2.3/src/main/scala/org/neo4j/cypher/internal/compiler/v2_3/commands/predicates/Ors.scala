@@ -28,6 +28,7 @@ case class Ors(predicates: List[Predicate]) extends CompositeBooleanPredicate {
   def rewrite(f: (Expression) => Expression): Expression = f(Ors(predicates.map(_.rewriteAsPredicate(f))))
 }
 
+@deprecated("Use Ors (plural) instead")
 case class Or(a: Predicate, b: Predicate) extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = Ors(List(a, b)).isMatch(m)
 
