@@ -92,6 +92,14 @@ class NonEmptyListTest extends CypherFunSuite {
     2 +: NonEmptyList(1) should equal(NonEmptyList(2, 1))
   }
 
+  test("should append single element to NonEmptyLists") {
+    NonEmptyList(1) :+ 2 should equal(NonEmptyList(1, 2))
+  }
+
+  test("should append single element to longer NonEmptyLists") {
+    NonEmptyList(1, 3, 4, 5, 6) :+ 2 should equal(NonEmptyList(1, 3, 4, 5, 6, 2))
+  }
+
   test("Should map and prepend reversed to NonEmptyList") {
     NonEmptyList(2, 3).mapAndPrependReversedTo[Int, Int](_ + 1, NonEmptyList(1)) should equal(NonEmptyList(4, 3, 1))
     NonEmptyList(2, 3).mapAndPrependReversedTo[Int, Int](_ + 1, NonEmptyList(1, 2)) should equal(NonEmptyList(4, 3, 1, 2))
