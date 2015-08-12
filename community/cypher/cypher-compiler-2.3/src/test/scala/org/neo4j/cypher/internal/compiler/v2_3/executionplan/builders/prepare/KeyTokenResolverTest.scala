@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.prepare
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.HasLabel
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken.Resolved
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType, UnresolvedLabel}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PlanBuilder

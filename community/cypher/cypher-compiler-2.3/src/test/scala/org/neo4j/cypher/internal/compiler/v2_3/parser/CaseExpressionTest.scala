@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.parser
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
 import ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => legacy}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, True}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => legacy, predicates}
 import org.parboiled.scala._
 
 class CaseExpressionTest extends ParserTest[ast.Expression, legacy.Expression] with Expressions {
@@ -50,10 +51,10 @@ class CaseExpressionTest extends ParserTest[ast.Expression, legacy.Expression] w
 
   test("generic_cases") {
     parsing("CASE WHEN true THEN 'ONE' END") shouldGive
-      legacy.GenericCase(Seq((commands.True(), legacy.Literal("ONE"))), None)
+      legacy.GenericCase(Seq((True(), legacy.Literal("ONE"))), None)
 
-    val alt1 = (commands.Equals(legacy.Literal(1), legacy.Literal(2)), legacy.Literal("ONE"))
-    val alt2 = (commands.Equals(legacy.Literal(2), legacy.Literal("apa")), legacy.Literal("TWO"))
+    val alt1 = (Equals(legacy.Literal(1), legacy.Literal(2)), legacy.Literal("ONE"))
+    val alt2 = (predicates.Equals(legacy.Literal(2), legacy.Literal("apa")), legacy.Literal("TWO"))
 
     parsing(
       """CASE

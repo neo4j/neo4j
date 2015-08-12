@@ -20,7 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Literal
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+
+import scala.Equals
 
 class SplittingPredicateTest extends CypherFunSuite {
 

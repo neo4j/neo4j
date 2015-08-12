@@ -19,17 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
-import org.mockito.Mockito._
-import org.mockito.Matchers._
 import org.mockito.Matchers
-import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{Node, Direction, Relationship}
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{Not, Predicate, True}
+import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.{Direction, Node, Relationship}
 
 class ExpandAllPipeTest extends CypherFunSuite {
 

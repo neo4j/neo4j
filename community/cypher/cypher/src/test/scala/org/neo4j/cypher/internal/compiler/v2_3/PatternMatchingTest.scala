@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import commands.{HasLabel, RelatedTo}
+import commands.RelatedTo
 import commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.HasLabel
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.UnresolvedLabel
 import executionplan.builders.PatternGraphBuilder
 import symbols._

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.ShortestPathExpression
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.NonEmpty
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.UnresolvedLabel
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.AllReadEffects
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable

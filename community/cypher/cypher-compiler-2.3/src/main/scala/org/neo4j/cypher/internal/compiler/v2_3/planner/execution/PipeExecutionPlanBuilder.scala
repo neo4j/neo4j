@@ -26,8 +26,9 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.PatternConve
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.StatementConverters
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{Expression, Identifier, NodeStartItem, RelTypeName}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.EntityProducerFactory
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{AggregationExpression, Expression => CommandExpression}
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{EntityProducerFactory, Predicate => CommandPredicate, True}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{PipeInfo, PlanFingerprint}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
@@ -119,7 +120,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
           val (keys, exprs) = predicates.unzip
           val commands = exprs.map(buildPredicate)
           val predicate = (context: ExecutionContext, state: QueryState, rel: Relationship) => {
-            keys.zip(commands).forall { case (identifier: Identifier, expr: CommandPredicate) =>
+            keys.zip(commands).forall { case (identifier: Identifier, expr: Predicate) =>
               context(identifier.name) = rel
               val result = expr.isTrue(context)(state)
               context.remove(identifier.name)
@@ -251,10 +252,10 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
       rewrittenExpr.asCommandExpression.rewrite(resolver.resolveExpressions(_, planContext))
     }
 
-    def buildPredicate(expr: ast.Expression): CommandPredicate = {
+    def buildPredicate(expr: ast.Expression): Predicate = {
       val rewrittenExpr: Expression = expr.endoRewrite(buildPipeExpressions)
 
-      rewrittenExpr.asCommandPredicate.rewrite(resolver.resolveExpressions(_, planContext)).asInstanceOf[CommandPredicate]
+      rewrittenExpr.asCommandPredicate.rewrite(resolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
     }
 
     val topLevelPipe = buildPipe(plan)

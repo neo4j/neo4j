@@ -23,9 +23,10 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression => CommandExpression, ProjectedPath, InequalitySeekRangeExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.UnresolvedRelType
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{Predicate => CommandPredicate, expressions => commandexpressions, values => commandvalues, AndedPropertyComparablePredicates}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => commandexpressions, values => commandvalues, predicates}
 import org.neo4j.cypher.internal.compiler.v2_3.parser.{LikePatternParser, ParsedLikePattern, convertLikePatternToRegex}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -92,14 +93,14 @@ object ExpressionConverters {
         throw new ThisShouldNotHappenError("cleishm", s"Unknown expression type during transformation (${expression.getClass})")
     }
 
-    def asCommandPredicate: CommandPredicate = expression match {
-      case e: ast.PatternExpression => commands.NonEmpty(e.asCommandExpression)
-      case e: ast.FilterExpression => commands.NonEmpty(e.asCommandExpression)
-      case e: ast.ExtractExpression => commands.NonEmpty(e.asCommandExpression)
-      case e: ast.ListComprehension => commands.NonEmpty(e.asCommandExpression)
+    def asCommandPredicate: Predicate = expression match {
+      case e: ast.PatternExpression => predicates.NonEmpty(e.asCommandExpression)
+      case e: ast.FilterExpression => predicates.NonEmpty(e.asCommandExpression)
+      case e: ast.ExtractExpression => predicates.NonEmpty(e.asCommandExpression)
+      case e: ast.ListComprehension => predicates.NonEmpty(e.asCommandExpression)
       case e => e.asCommandExpression match {
-        case c: commands.Predicate => c
-        case c => commands.CoercedPredicate(c)
+        case c: Predicate => c
+        case c => predicates.CoercedPredicate(c)
       }
     }
   }
@@ -157,12 +158,12 @@ object ExpressionConverters {
 
   implicit class TrueConverter(val e: ast.True) extends AnyVal {
     def asCommandTrue =
-      commands.True()
+      predicates.True()
   }
 
   implicit class FalseConverter(val e: ast.False) extends AnyVal {
     def asCommandFalse =
-      commands.Not(commands.True())
+      predicates.Not(predicates.True())
   }
 
   implicit class CountStarConverter(val e: ast.CountStar) extends AnyVal {
@@ -182,48 +183,48 @@ object ExpressionConverters {
 
   implicit class OrConverter(val e: ast.Or) extends AnyVal {
     def asCommandOr =
-      commands.Or(e.lhs.asCommandPredicate, e.rhs.asCommandPredicate)
+      predicates.Or(e.lhs.asCommandPredicate, e.rhs.asCommandPredicate)
   }
 
   implicit class XorConverter(val e: ast.Xor) extends AnyVal {
     def asCommandXor =
-      commands.Xor(e.lhs.asCommandPredicate, e.rhs.asCommandPredicate)
+      predicates.Xor(e.lhs.asCommandPredicate, e.rhs.asCommandPredicate)
   }
 
   implicit class AndConverter(val e: ast.And) extends AnyVal {
     def asCommandAnd =
-      commands.And(e.lhs.asCommandPredicate, e.rhs.asCommandPredicate)
+      predicates.And(e.lhs.asCommandPredicate, e.rhs.asCommandPredicate)
   }
 
   implicit class NotConverter(val e: ast.Not) extends AnyVal {
     def asCommandNot =
-      commands.Not(e.rhs.asCommandPredicate)
+      predicates.Not(e.rhs.asCommandPredicate)
   }
 
    implicit class OrsConverter(val e: ast.Ors) extends AnyVal {
-    def asCommandOrs = commands.Ors(e.exprs.map(_.asCommandPredicate).toList)
+    def asCommandOrs = predicates.Ors(e.exprs.map(_.asCommandPredicate).toList)
   }
 
   implicit class AndsConverter(val e: ast.Ands) extends AnyVal {
-    def asCommandAnds = commands.Ands(e.exprs.map(_.asCommandPredicate).toList)
+    def asCommandAnds = predicates.Ands(e.exprs.map(_.asCommandPredicate).toList)
   }
 
   implicit class EqualsConverter(val e: ast.Equals) extends AnyVal {
     def asCommandEquals =
-      commands.Equals(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
+      predicates.Equals(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
   }
 
   implicit class NotEqualsConverter(val e: ast.NotEquals) extends AnyVal {
     def asCommandNotEquals =
-      commands.Not(commands.Equals(e.lhs.asCommandExpression, e.rhs.asCommandExpression))
+      predicates.Not(predicates.Equals(e.lhs.asCommandExpression, e.rhs.asCommandExpression))
   }
 
   implicit class RegexMatchConverter(val e: ast.RegexMatch) extends AnyVal {
     def asCommandRegex = e.rhs.asCommandExpression match {
       case literal: commandexpressions.Literal =>
-        commands.LiteralRegularExpression(e.lhs.asCommandExpression, literal)
+        LiteralRegularExpression(e.lhs.asCommandExpression, literal)
       case command =>
-        commands.RegularExpression(e.lhs.asCommandExpression, command)
+        RegularExpression(e.lhs.asCommandExpression, command)
     }
   }
 
@@ -235,14 +236,14 @@ object ExpressionConverters {
       case commandexpressions.Literal(v) =>
         val pattern = LikePatternParser(v.asInstanceOf[String])
         val literal = StringLiteral(patternToRegex(pattern))(e.position)
-        commands.LiteralLikePattern(
-          commands.LiteralRegularExpression(e.lhs.asCommandExpression, literal.asCommandLiteral),
+        LiteralLikePattern(
+          predicates.LiteralRegularExpression(e.lhs.asCommandExpression, literal.asCommandLiteral),
           pattern,
           e.caseInsensitive
         )
 
       case command =>
-        commands.RegularExpression(e.lhs.asCommandExpression, command)(stringToRegex)
+        predicates.RegularExpression(e.lhs.asCommandExpression, command)(stringToRegex)
     }
 
     private def stringToRegex(s: String): String =
@@ -254,7 +255,7 @@ object ExpressionConverters {
 
   implicit class NotLikeConverter(val e: ast.NotLike) extends AnyVal {
     def asCommandNegatedRegex =
-      commands.Not(ast.Like(e.lhs, e.pattern, e.caseInsensitive)(e.position).asCommandPredicate)
+      predicates.Not(ast.Like(e.lhs, e.pattern, e.caseInsensitive)(e.position).asCommandPredicate)
     }
 
   implicit class InConverter(val e: ast.In) extends AnyVal {
@@ -262,7 +263,7 @@ object ExpressionConverters {
       commands.AnyInCollection(
         e.rhs.asCommandExpression,
         "-_-INNER-_-",
-        commands.Equals(
+        predicates.Equals(
           e.lhs.asCommandExpression,
           commandexpressions.Identifier("-_-INNER-_-")
         )
@@ -271,32 +272,32 @@ object ExpressionConverters {
 
   implicit class IsNullConverter(val e: ast.IsNull) extends AnyVal {
     def asCommandIsNull =
-      commands.IsNull(e.lhs.asCommandExpression)
+      predicates.IsNull(e.lhs.asCommandExpression)
   }
 
   implicit class IsNotNullConverter(val e: ast.IsNotNull) extends AnyVal {
     def asCommandIsNotNull =
-      commands.Not(commands.IsNull(e.lhs.asCommandExpression))
+      predicates.Not(predicates.IsNull(e.lhs.asCommandExpression))
   }
 
   implicit class LessThanConverter(val e: ast.LessThan) extends AnyVal {
     def asCommandLessThan =
-      commands.LessThan(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
+      predicates.LessThan(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
   }
 
   implicit class LessThanOrEqualConverter(val e: ast.LessThanOrEqual) extends AnyVal {
     def asCommandLessThanOrEqual =
-      commands.LessThanOrEqual(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
+      predicates.LessThanOrEqual(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
   }
 
   implicit class GreaterThanConverter(val e: ast.GreaterThan) extends AnyVal {
     def asCommandGreaterThan =
-      commands.GreaterThan(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
+      predicates.GreaterThan(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
   }
 
   implicit class GreaterThanOrEqualConverter(val e: ast.GreaterThanOrEqual) extends AnyVal {
     def asCommandGreaterThanOrEqual =
-      commands.GreaterThanOrEqual(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
+      predicates.GreaterThanOrEqual(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
   }
 
   implicit class AddConverter(val e: ast.Add) extends AnyVal {
@@ -356,8 +357,8 @@ object ExpressionConverters {
 
   implicit class HasLabelsConverter(val e: ast.HasLabels) extends AnyVal {
     def asCommandLabelsPredicate = e.labels.map {
-      l => commands.HasLabel(e.expression.asCommandExpression, commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)): CommandPredicate
-    } reduceLeft { commands.And(_, _) }
+      l => predicates.HasLabel(e.expression.asCommandExpression, commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)): Predicate
+    } reduceLeft { predicates.And(_, _) }
   }
 
   implicit class CollectionConverter(val e: ast.Collection) extends AnyVal {
@@ -386,7 +387,8 @@ object ExpressionConverters {
 
   implicit class FilterConverter(val e: ast.FilterExpression) extends AnyVal {
     def asCommandFilter: commandexpressions.FilterFunction =
-      commandexpressions.FilterFunction(e.expression.asCommandExpression, e.identifier.name, e.innerPredicate.map(_.asCommandPredicate).getOrElse(commands.True()))
+      commandexpressions.FilterFunction(e.expression.asCommandExpression, e.identifier.name, e.innerPredicate.map(_.asCommandPredicate).getOrElse(predicates
+        .True()))
   }
 
   implicit class ExtractConverter(val e: ast.ExtractExpression) extends AnyVal {
@@ -413,22 +415,26 @@ object ExpressionConverters {
 
   implicit class AllIterableConverter(val e: ast.AllIterablePredicate) extends AnyVal {
     def asCommandAllInCollection: commands.AllInCollection =
-      commands.AllInCollection(e.expression.asCommandExpression, e.identifier.name, e.innerPredicate.map(_.asCommandPredicate).getOrElse(commands.True()))
+      commands.AllInCollection(e.expression.asCommandExpression, e.identifier.name, e.innerPredicate.map(_.asCommandPredicate).getOrElse(predicates
+        .True()))
   }
 
   implicit class AnyIterableConverter(val e: ast.AnyIterablePredicate) extends AnyVal {
     def asCommandAnyInCollection: commands.AnyInCollection =
-      commands.AnyInCollection(e.expression.asCommandExpression, e.identifier.name, e.innerPredicate.map(_.asCommandPredicate).getOrElse(commands.True()))
+      commands.AnyInCollection(e.expression.asCommandExpression, e.identifier.name, e.innerPredicate.map(_.asCommandPredicate).getOrElse(predicates
+        .True()))
   }
 
   implicit class NoneIterableConverter(val e: ast.NoneIterablePredicate) extends AnyVal {
     def asCommandNoneInCollection: commands.NoneInCollection =
-      commands.NoneInCollection(e.expression.asCommandExpression, e.identifier.name, e.innerPredicate.map(_.asCommandPredicate).getOrElse(commands.True()))
+      commands.NoneInCollection(e.expression.asCommandExpression, e.identifier.name, e.innerPredicate.map(_.asCommandPredicate).getOrElse(predicates
+        .True()))
   }
 
   implicit class SingleIterableConverter(val e: ast.SingleIterablePredicate) extends AnyVal {
     def asCommandSingleInCollection: commands.SingleInCollection =
-      commands.SingleInCollection(e.expression.asCommandExpression, e.identifier.name, e.innerPredicate.map(_.asCommandPredicate).getOrElse(commands.True()))
+      commands.SingleInCollection(e.expression.asCommandExpression, e.identifier.name, e.innerPredicate.map(_.asCommandPredicate).getOrElse(predicates
+        .True()))
   }
 
   implicit class ReduceConverter(val e: ast.ReduceExpression) extends AnyVal {
@@ -484,6 +490,6 @@ object ExpressionConverters {
 
   implicit class AndedInequalitiesConverter(val e: ast.AndedPropertyInequalities) extends AnyVal {
     def asCommandAndedPropertyComparablePredicates: AndedPropertyComparablePredicates =
-      commands.AndedPropertyComparablePredicates(e.identifier.asCommandIdentifier, e.property.asCommandProperty, e.inequalities.map(_.asCommandComparablePredicate))
+      AndedPropertyComparablePredicates(e.identifier.asCommandIdentifier, e.property.asCommandProperty, e.inequalities.map(_.asCommandComparablePredicate))
   }
 }

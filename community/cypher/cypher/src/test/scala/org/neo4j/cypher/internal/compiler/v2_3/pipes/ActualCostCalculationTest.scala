@@ -22,8 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier, Literal, Property}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, HasLabel}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{UnresolvedLabel, UnresolvedProperty}
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{Equals, HasLabel, SingleQueryExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.SingleQueryExpression
 import org.neo4j.cypher.internal.compiler.v2_3.{LabelId, PropertyKeyId, ast}
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
@@ -32,6 +33,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 
+import scala.Equals
 import scala.collection.mutable
 import scala.util.Random
 

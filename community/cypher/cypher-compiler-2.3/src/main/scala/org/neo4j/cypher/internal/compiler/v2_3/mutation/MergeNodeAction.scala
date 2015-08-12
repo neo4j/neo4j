@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.Predicate
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsNodes, WritesNodes}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.PropertySupport
