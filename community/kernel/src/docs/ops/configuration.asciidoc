@@ -1,5 +1,5 @@
 [[configuration-settings]]
-= Configuration Settings
+= Configuration Settings Reference
 
 On this page you'll find the main configuration settings you can use with Neo4j.
 They can be set in the _conf/neo4j.properties_ file when using the Neo4j Server (see <<server-configuration>>).

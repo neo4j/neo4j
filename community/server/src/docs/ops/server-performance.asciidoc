@@ -38,8 +38,8 @@ Edit the following properties:
 | Property Name             | Meaning
 | wrapper.java.initmemory   | initial heap size (in MB)
 | wrapper.java.maxmemory    | maximum heap size (in MB)
-| wrapper.java.additional.N | additional literal JVM parameter, where N is a number for each
+| wrapper.java.additional   | additional literal JVM parameter
 |====================
 
-For more information on the tuning properties, see <<configuration-jvm>>.
+For more information on the tuning properties, see <<performance-guide>>.
 

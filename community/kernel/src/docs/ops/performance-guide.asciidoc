@@ -1,176 +1,190 @@
-
 [[performance-guide]]
-Performance Guide
-=================
+= Performance Guide =
 
-This is the Neo4j performance guide. It will attempt to give you guidance on how to use Neo4j to achieve maximum performance.
+This is the Neo4j performance guide. It will attempt to give you guidance on how to tune Neo4j to achieve maximum performance.
 
 == Try this first ==
 
-The first thing is to make sure the JVM is running well and not spending too much 
-time in garbage collection. The goal is to have a large enough heap so heavy/peak
-load will not result in so called GC trashing 
-(performance can drop as much as two orders of a magnitude when this happens).
+The first thing to look at, when Neo4j is not performing as expected, is to make sure that your Cypher queries do not do more work than they have to.
+For instance, a query might, unbeknownst to the author, mandate the production of a large cartesian product; or it might perform an expensive label-scan, because a certain label/property combination isn't indexed.
+The <<query-tuning>> chapter has more information on how to investigate Cypher performance issues.
 
-Start the JVM with +-server+ flag and +-Xmx<good sized heap>+ 
-(f.ex. -Xmx512M for 512Mb memory or -Xmx3G for 3Gb memory). Having too large heap 
-may also hurt performance so you may have to try out some different heap sizes. 
-Make sure a parallel/concurrent garbage collector is running (+-XX:+UseG1GC+ works well in most use-cases).
+The second thing to look at, is to make sure that the Neo4j Java process has enough memory to do its work.
+If there is not enough memory to keep the JVM heap resident, then the OS will swap it out to storage.
+When a garbage collection happens, the swapped out heap memory has to be swapped in again, and something else will have to be swapped out.
+This swap-thrashing effect has a dramatic impact on the performance of the database, rendering it practically unusable.
+A well-tuned Neo4j database should not have any swap activity in its steady-state.
 
-Finally make sure that the OS has some memory left to manage proper file system 
-caches. This means, if your server has 8GB of RAM don't use all of that RAM for 
-heap (unless you have turned off memory mapped buffers), but leave a good part of it to the OS. 
-For more information on configuration see <<configuration>>.
+Next, make sure the JVM has enough memory, and not spending too much time in garbage collection.
+The goal is to have a large enough heap so heavy/peak load will not result in so called GC-trashing.
+Performance can drop as much as two orders of a magnitude when GC-thrashing happens.
 
-For Linux specific tweaks, see <<linux-performance-guide>>.
+Start the JVM with `-server` flag and `-Xmx<good sized heap>`, f.ex. `-Xmx512m` for 512 MiB memory or `-Xmx3g` for 3GiB memory.
+Having too large heap may also hurt performance so you may have to try out some different heap sizes.
+Make sure you are using a concurrent garbage collector.
+We find that `-XX:+UseG1GC` works well in most use-cases.
 
-== Neo4j primitives' lifecycle ==
+The next thing to look at, is the file caching memory.
+Neo4j uses its own page cache for the store files, and relies on the operating system for caching the index files.
+Make sure that the `dbms.pagecache.memory` setting (in _neo4j.properties_) is large enough to fit the entire store, if possible.
+But also make sure that you are not allocating so much memory to the JVM and the Neo4j page cache, that there is no memory left for the operating system to cache the Lucene index files.
+For more information on configuration see <<configuration>>
 
-Neo4j manages its primitives (nodes, relationships and properties) 
-different depending on how you use Neo4j. For example if you never get a 
-property from a certain node or relationship that node or relationship will 
-not have its properties loaded into memory. The first time, after loading a node or relationship,
-that any property is accessed all the properties are loaded for that entity. If any of those properties
-contain an array larger than a few elements or a long string such values are loaded
-on demand when requesting them individually. Similarly, relationships of a node will
-only be loaded the first time they are requested for that node.
+== Configuring heap size and GC ==
 
-The Neo4j API specification does not say anything about order regarding 
-relationships so invoking `Node.getRelationships()` 
-may return the relationships in a different order than the previous invocation. 
-This allows us to make even heavier optimizations returning the relationships 
-that are most commonly traversed.
+The size of the JVM heap is an important aspect of the performance of any Java application.
+The heap is separated into an old generation and a young generation.
+New objects are allocated in the young generation, and then later moved to the old generation if they stay live (in use) for long enough.
+When a generation fills up, the garbage collector performs a collection, during which all other threads in the process are paused.
+The young generation is quick to collect since the pause time correlates with the _live set_ of objects, and is independent of the size of the young generation.
+In the old generation, pause times roughly correlates with the size of the heap.
+For this reason, the heap should ideally be sized and tuned such that transaction and query state never makes it to the old generation.
 
-All in all Neo4j has been designed to be very adaptive depending on how it 
-is used. The (unachievable) overall goal is to be able to handle any incoming 
-operation without having to go down and work with the file/disk I/O layer.
+NOTE: When using Neo4j Server, JVM configuration goes into the `conf/neo4j-wrapper.conf` file, see <<server-configuration>>.
 
-== Configuring Neo4j ==
+In server deployments, the heap size is configured with the `wrapper.java.maxmemory` (in MBs) setting in the `neo4j-wrapper.conf` file.
+For embedded, you specify the heap size by giving the `-Xmx???m` command line flag to the `java` process, where the `???` is the maximum heap size in MBs.
+The initial size of the heap is specified by the `wrapper.java.initmemory` setting, or with the `-Xms???m` flag, or chosen heuristically by the JVM itself if left unspecified.
+The JVM will automatically grow the heap as needed, up to the maximum size.
+The growing of the heap requires a full GC cycle, so if you know that you will need all the heap memory, you can set the initial heap size and the maximum heap size to the same value, and avoid the GC pauses that would otherwise be required to grow the heap.
 
-See <<configuration>> and <<configuration-jvm>> for information on how to configure Neo4j and the JVM.
-These settings have a lot of impact on performance.
+.Guidelines for heap size
+[format="csv",width="75%",cols="4",options="header"]
+|======================================================================================================
+Number of entities,RAM size,Heap configuration,Reserved RAM for the OS
+10M,2GB,512MB,~1GB
+100M,8GB+,1-4GB,1-2GB
+1B+,16GB-32GB+,4GB+,1-2GB
+|======================================================================================================
 
-=== Disks, RAM and other tips ===
+The ratio of the size between the old generation and the new generation of the heap, is controlled by the `-XX:NewRatio=N` flag, where `N` is typically between 2 and 8 by default.
+A ratio of 2 means that the old generation size, divided by the new generation size, is equal to 2.
+In other words, two thirds of the heap memory will be dedicated to the old generation.
+A ratio of 3 will dedicate three quarters of the heap to the old generation, and a ratio of 1 will keep the two generations about the same size.
+A ratio of 1 is quite aggressive, but may be necessary if your transactions changes a lot of data.
+Having a large new generation can also be important if you run Cypher queries that needs to keep a lot of data resident, e.g. for sorting big result sets.
 
-As always, as with any persistence solution, performance depends a lot on the 
-persistence media used. Better disks equals better performance. 
+If the new generation is too small, short-lived objects might be moved to the old generation too soon.
+This is called premature promotion, and will slow the database down by increasing the frequency of old generation GC cycles.
+If the new generation is too big, the GC might decide that the old generation does not have enough space to fit all the objects it expects to promote from the new to the old generation.
+This turns new generation GC cycles into old generation GC cycles, again slowing the database down.
+Running more concurrent threads means that more allocations can take place in a given span of time, in turn increasing the pressure on the new generation in particular.
 
-If you have multiple disks or persistence media available it may be a 
-good idea to split the store files and transaction logs across those disks. 
-Having the store files running on disks with low seek time can do wonders for 
-read operations. Today a typical mechanical drive has an average 
-seek time of about 5ms, this can cause a query or traversal to be very slow 
-when the amount of RAM assigned to the page cache is too small.
-A new good SATA enabled SSD has an average seek time of <100 microseconds 
-meaning those scenarios will execute at least 50 times faster. 
+Be aware that configuring a heap size larger than 32 GiBs will disable a feature in the JVM called Compressed OOPs.
+When the heap size is less than 32 GiBs, the JVM can compress object references to only use 32 bits.
+This saves a lot of heap memory, and means that the gains from a larger heap are small or even negative, if you cannot give it at least 64 GiBs.
 
-To avoid hitting disk you need more RAM. On a standard mechanical drive you 
-can handle graphs with a few tens of millions of primitives with 1-2GB of RAM. 
-4-8GB of RAM can handle graphs with hundreds of millions of primitives while you 
-need a good server with 16-32GB to handle billions of primitives. However, if you 
-invest in a good SSD you will be able to handle much larger graphs on less RAM. 
-
-Use tools like +vmstat+ or 
-equivalent to gather information when your application is running. If you have high I/O 
-waits and not that many blocks going out/in to disks when running write/read 
-transactions it's a sign that you need to tweak your Java heap or amount of RAM assigned to the page cache,
-maybe even get more RAM or better disks.
-
-=== Write performance ===
-
-If you are experiencing poor write performance after writing some data 
-(initially fast, then massive slowdown) it may be the operating system that is
-writing out dirty pages from the memory mapped regions of the store files. 
-These regions do not need to be written out to maintain consistency so to 
-achieve highest possible write speed that type of behavior should be avoided.
-
-Another source of writes slowing down can be the transaction size. Many small 
-transactions result in a lot of I/O writes to disc and should be avoided. 
-Too big transactions can result in OutOfMemory errors, since the uncommitted 
-transaction data is held on the Java Heap in memory. For details about transaction 
-management in Neo4j, please see <<transactions>>.
-
-The Neo4j kernel makes use of several store files and a logical log file 
-to store the graph on disk. The store files contain the actual graph and the 
-log contains modifying operations. All writes to the logical log are append-only 
-and when a transaction is committed changes to the logical log will be forced 
-(+fdatasync+) down to disk. The store files are however not flushed to disk and 
-writes to them are not append-only either. They will be written to in a more or
-less random pattern (depending on graph layout) and writes will not be forced to 
-disk until the log is rotated or the Neo4j kernel is shut down.
-
-Since random writes to memory mapped regions for the store files may 
-happen it is very important that the data does not get written out to disk unless 
-needed. Some operating systems have very aggressive settings regarding when to write 
-out these dirty pages to disk. If the OS decides to start writing out dirty pages 
-of these memory mapped regions, write access to disk will stop being sequential and 
-become random. That hurts performance a lot, so to get maximum write performance when 
-using Neo4j make sure the OS is configured not to write out any of the dirty pages 
-caused by writes to the memory mapped regions of the store files. As an example, 
-if the machine has 8GB of RAM and the total size of the store files is 4GB (fully 
-memory mapped) the OS has to be configured to accept at least 50% dirty pages in 
-virtual memory to make sure we do not get random disk writes.
-
-[NOTE]
-Make sure to read <<linux-performance-guide>> as well for more specific information.
-
-=== Second level caching ===
-
-While normally building applications and ``always assume the graph is in memory'', 
-sometimes it is necessary to optimize certain performance critical sections. 
-If this becomes an issue, use a profiler to find these hot spots and then add your own second-level 
-caching. We believe second-level caching should be avoided to greatest extent 
-possible since it will force you to take care of invalidation which sometimes 
-can be hard. But when everything else fails you have to use it so here is an 
-example of how it can be done.
-
-We have some POJO that wrapps a node holding its state. In this particular 
-POJO we have overridden the equals implementation.
-
-[source,java]
-----
-   public boolean equals( Object obj )
-   {
-       return underlyingNode.getProperty( "some_property" ).equals( obj );
-   }
-
-   public int hashCode()
-   {
-       return underlyingNode.getProperty( "some_property" ).hashCode();
-   }
-----
-
-This works fine in most scenarios, but in this particular scenario many instances of that POJO is being worked with in nested loops adding/removing/getting/finding to collection classes.
-Profiling the applications will show that the equals implementation is being called many times and can be viewed as a hot spot.
-Adding second-level caching for the equals override will in this particular scenario increase performance.
-
-[source,java]
-----
-    private Object cachedProperty = null;
-    
-    public boolean equals( Object obj )
-    {
-       if ( cachedProperty == null )
-       {
-           cachedProperty = underlyingNode.getProperty( "some_property" );
-       }
-       return cachedProperty.equals( obj );
-    }
-
-    public int hashCode()
-    {
-       if ( cachedPropety == null )
-       {
-           cachedProperty = underlyingNode.getProperty( "some_property" );
-       }
-       return cachedProperty.hashCode();
-    }
-----
-
-The problem with this is that now we need to invalidate the cached property whenever +some_property+ 
-is changed (may not be a problem in this scenario since the state picked for equals and hash 
-code computation often won't change).
+Neo4j has a number of long-lived objects, that stay around in the old generation, effectively for the lifetime of the Java process.
+To process them efficiently, and without adversely affecting the GC pause time, we recommend using a concurrent garbage collector.
 
 [TIP]
-To sum up, avoid second-level caching if possible and only add it when you really need it.
+The recommended garbage collector to use when running Neo4j in production is the G1 garbage collector.
+G1 is turn on by default in server deployments.
+For embedded deployments, it can be turned on by supplying `-XX:+UseG1GC` as a JVM parameter.
 
+Tuning the specific GC algorithm depends on both the JVM version and the workload.
+It is recommended that you test your GC settings under realistic load for days or weeks.
+Problems like heap fragmentation can take a long time to surface.
+
+== Disks, RAM and other tips ==
+
+As always, as with any persistence solution, performance depends a lot on the persistence media used.
+Better disks equals better performance.
+
+If you have multiple disks or persistence media available it may be a good idea to split the store files and transaction logs across those disks.
+Having the store files running on disks with low seek time can do wonders for read operations.
+Today a typical mechanical drive has an average seek time of about 5ms
+This can cause a query or traversal to be very slow when the amount of RAM assigned to the page cache is too small.
+A new good SATA enabled SSD has an average seek time of <100 microseconds, meaning those scenarios will execute at least 50 times faster.
+However, this is still tens or hundreds of times slower than accessing RAM.
+
+To avoid hitting disk you need more RAM.
+On a standard mechanical drive you can handle graphs with a few tens of millions of primitives with 2-3 GBs of RAM.
+With 8-16 GBs of RAM can handle graphs with hundreds of millions of primitives, and a good server with 16-64 GBs to handle billions of primitives.
+However, if you invest in a good SSD you will be able to handle much larger graphs on less RAM.
+
+Use tools like `dstat` or `vmstat` to gather information when your application is running.
+If the swap or paging numbers are high, then its a sign that the Lucene indexes don't quite fit in memory.
+In this case, queries that do index lookups will have high latencies.
+
+When Neo4j starts up, its page cache is empty and needs to warm up.
+This can take a while, especially for large stores, so it's not uncommon to see a long period with many blocks being read from the drive, and high IO wait times.
+
+Neo4j also flushes its page cache in the background, so it is not uncommon to see a steady trickle of blocks being written to the drive, during steady-state.
+This background flushing only produce a small amount of IO wait, however.
+If the IO wait times are high during steady-state, then it might be a sign that Neo4j is bottle-necked on the random IO performance of the drive.
+The best drives for running Neo4j, are fast SSDs that can take lots of random IOPS.
+
+== Linux file system tuning ==
+
+Databases often produce many small and random reads when querying data, and few sequential writes when committing changes.
+Neo4j is no different in this regard.
+
+By default, most Linux distributions schedules IO requests using the Completely Fair Queuing (CFQ) algorithm, which provides a good balance between throughput and latency.
+The particular IO workload of a database, however, is better served by the Deadline scheduler.
+The Deadline scheduler gives preference to _read_ requests, and processes them as soon as possible.
+This tends to decrease the latency of reads, while the latency of writes goes up.
+Since the writes are usually sequential, their lingering in the IO queue increases the change of overlapping or adjacent write requests being merged together.
+This effectively reduces the number of writes that are sent to the drive.
+
+On Linux, the IO scheduler for a drive, in this case `sda`, can be changed at runtime like this:
+
+[source,shell]
+----
+$ echo 'deadline' > /sys/block/sda/queue/scheduler
+$ cat               /sys/block/sda/queue/scheduler
+noop [deadline] cfq
+----
+
+Another recommended practice is to disable file and directory access time updates.
+This way, the file system won't have to issue writes that update this meta-data, thus improving write performance.
+You do this by setting the `noatime,nodiratime` mount options in your `fstab`, or when you issue your disk mount command.
+
+There may the other tuning options relevant to your specific file system of choice, but make sure that barriers are enabled.
+Barriers prevent certain reorderings of writes.
+They are important for maintaining the integrity of the transaction log, in case a power failure happens.
+
+== Setting the number of open files ==
+
+Linux platforms impose an upper limit on the number of concurrent files a user may have open.
+This number is reported for the current user and session with the `ulimit -n` command:
+
+[source,shell]
+----
+user@localhost:~$ ulimit -n
+1024
+----
+
+The usual default of 1024 is often not enough, especially when many indexes are used or a server installation sees too many connections - network sockets count against that limit as well.
+Users are therefore encouraged to increase that limit to a healthy value of 40000 or more, depending on usage patterns.
+Setting this value via the `ulimit` command is possible only for the root user and that for that session only.
+To set the value system wide you have to follow the instructions for your platform.
+
+What follows is the procedure to set the open file descriptor limit to 40k for user neo4j under Ubuntu 10.04 and later.
+If you opted to run the neo4j service as a different user, change the first field in step 2 accordingly.
+
+1. Become root since all operations that follow require editing protected system files.
++
+[source,shell]
+----
+user@localhost:~$ sudo su -
+Password:
+root@localhost:~$
+----
+2. Edit `/etc/security/limits.conf` and add these two lines:
++
+[source,shell]
+----
+neo4j	soft	nofile	40000
+neo4j	hard	nofile	40000
+----
+3. Edit `/etc/pam.d/su` and uncomment or add the following line:
++
+[source,shell]
+----
+session    required   pam_limits.so
+----
+4. A restart is required for the settings to take effect.
++
+After the above procedure, the neo4j user will have a limit of 40000 simultaneous open files.
+If you continue experiencing exceptions on `Too many open files` or `Could not stat() directory` then you may have to raise that limit further.

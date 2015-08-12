@@ -64,7 +64,7 @@ Contact ZoneAlarm support to get information on how to resolve this.
 * For Debian packages, see the instructions at  http://debian.neo4j.org.
 
 After installation you may have to do some platform specific configuration and performance tuning.
-For that, refer to <<linux-performance-guide>>.
+For that, refer to <<performance-guide>>.
 
 [[unix-console]]
 === Unix Console Application ===

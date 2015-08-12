@@ -5,33 +5,31 @@ Introduction
 To gain good performance, these are the things to look into first:
 
 * Make sure the JVM is not spending too much time performing garbage collection.
-  The goal is to have a large enough heap to make sure that heavy/peak load will not result in so called GC trashing (performance can drop as much as two orders of magnitude when GC trashing happens).
-* Start the JVM with the -server flag and a good sized heap (see <<configuration-jvm>>). Having too large heap may also hurt performance so you may have to try some different heap sizes.
-* Use a parallel/concurrent garbage collector (we found that +-XX:+UseG1GC+ works well in most use-cases).
-* Give the Neo4j page cache as much memory as you can spare.
-  After configuring the JVM heap size, you can leave 2-4GBs for the operating system (assuming the machine is dedicated to running Neo4j), and assign the rest to the Neo4j page cache with the +dbms.pagecache.memory+ setting, unless you know your store will be small enough to fit in less.
+  The goal is to have a large enough heap to make sure that heavy/peak load will not result in so called GC-trashing.
+  Performance can drop as much as two orders of magnitude when GC-trashing happens.
+* Start the JVM with the -server flag and a good sized heap.
+  Having too large heap may also hurt performance so you may have to try some different heap sizes.
+* Use a concurrent garbage collector.
+  We find that +-XX:+UseG1GC+ works well in most use-cases.
+* Give the Neo4j page cache generous amounts of memory.
+  On a dedicated server, there are four big memory allocations you need to balance: the operating system, the Neo4j JVM, the Neo4j page cache and the paging memory for the Lucene indexes.
+** The operating system on a dedicated server can usually make do with 1 to 2 GBs of memory, but the more physical memory the machine has, the more memory the operating system will need.
+** The Neo4j JVM needs enough heap memory for the transaction state and query processing, plus some head-room for the garbage collector.
+   Because the heap memory needs are so workload dependent, it is common to see configurations from 1 GB, up to 32 GBs of heap memory.
+** The Neo4j page cache should preferably have enough memory to keep the entire data set in memory, which is to say, the page cache should be big enough to fit all of the `neostore.*` files that are not `neostore.transaction.db.*` files.
+** Lastly, leave enough memory for the operating system page cache, to fit the contents of the `index` and `schema` directories, since it will impact index lookup performance if the indexes cannot fit in memory.
+
+See the <<performance-guide>> chapter for more information on how to tune Neo4j.
 
 == How to add configuration settings ==
 
+When the database is given no configuration, it will try to use reasonable defaults.
+This is seldom optimal, however, because the database and the JVM have no knowledge about your workload or your performance requirements.
+
+The way you configure Neo4j depend on your mode of deployment; whether you are using the database as an embedded library, or as a server.
+
+Embedded::
 When creating the embedded Neo4j instance it is possible to pass in parameters contained in a map where keys and values are strings, see <<tutorials-java-embedded-setup-config>> for an example.
 
-If no configuration is provided, the Database Kernel will try to determine suitable settings from the information available via the JVM settings and the underlying operating system.
-
-The JVM is configured by passing command line flags when starting the JVM.
-The most important configuration parameters for Neo4j are the ones that control the memory and garbage collector, but some of the parameters for configuring the Just In Time compiler are also of interest.
-
-This is an example of starting up your applications main class using 64-bit server VM mode and a heap space of 1GB:
-
-[source]
-----
-java -d64 -server -Xmx1024m -cp /path/to/neo4j-kernel.jar:/path/to/jta.jar:/path/to/your-application.jar com.example.yourapp.MainClass
-----
-
-Looking at the example above you will also notice one of the most basic command line parameters: the one for specifying the classpath. The classpath is the path in which the JVM searches for your classes. It is usually a list of jar-files. Specifying the classpath is done by specifying the flag +-cp+ (or +-classpath+) and then the value of the classpath. For Neo4j applications this should at least include the path to the Neo4j +neo4j-kernel.jar+ and the Java Transaction API (+jta.jar+) as well as the path where the classes for your application are located.
-
-[TIP]
-On Linux, Unix and Mac OS X each element in the path list are separated by a colon symbol (+:+), on Windows the path elements are separated by a semicolon (+;+).
-
-//You can even look at the [[Performance Guide for a further discussion of Neo4j performance.
-
+Server::
 When using the Neo4j REST server, see <<server-configuration>> for how to add configuration settings for the database to the server.
