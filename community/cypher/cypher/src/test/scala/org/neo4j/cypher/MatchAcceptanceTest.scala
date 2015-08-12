@@ -26,6 +26,14 @@ import scala.collection.JavaConverters._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+  test("should fail if columnAs refers to unknown column") {
+    val n1 = createNode()
+    val n2 = createNode()
+    val r = relate(n1, n2)
+    val result = executeWithAllPlanners("MATCH (n)-[r]->() RETURN n, r")
+    a [NotFoundException] should be thrownBy result.columnAs("m")
+  }
+
   test("combines aggregation and named path") {
     val node1 = createNode("num" -> 1)
     val node2 = createNode("num" -> 2)
