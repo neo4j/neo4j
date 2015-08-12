@@ -201,7 +201,7 @@ public class Clusters
 
         private static String localhost()
         {
-            return "127.0.0.1";
+            return "localhost";
         }
         
         public String getHost()

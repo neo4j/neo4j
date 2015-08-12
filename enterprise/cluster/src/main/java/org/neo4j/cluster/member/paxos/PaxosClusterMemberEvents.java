@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import sun.misc.BASE64Encoder;
+
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
@@ -395,7 +397,9 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
             }
             catch ( Throwable t )
             {
-                log.error( "Could not handle cluster member available message", t );
+
+                log.error( String.format( "Could not handle cluster member available message: %s (%d)",
+                        new BASE64Encoder().encode( payload.getBuf() ), payload.getLen() ), t );
             }
         }
     }
