@@ -29,6 +29,11 @@ o Added new warning mechanism. The first supported warning is generated for quer
   unintended cartesian product
 o Cypher may now use full index scans to solve queries containing has(n.prop) if appropriate
 
+2.2.5
+-----
+o Fixes #4907 - Result.columnAs should throw exception on invalid column name
+o Fixes #4988 - predicate exceptions should be ignored for non-matching rows
+
 2.2.4
 -----
 o DbHits for property lookups reduced to one per lookup
