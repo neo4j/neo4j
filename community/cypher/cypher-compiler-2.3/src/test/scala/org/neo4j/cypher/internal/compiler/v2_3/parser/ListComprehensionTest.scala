@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.parser
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
 import ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.GreaterThan
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => legacy}
 import org.parboiled.scala._
@@ -33,7 +34,7 @@ class ListComprehensionTest extends ParserTest[ast.ListComprehension, legacy.Exp
     val filterCommand = legacy.FilterFunction(
       legacy.Identifier("p"),
       "a",
-      commands.GreaterThan(legacy.Property(legacy.Identifier("a"), PropertyKey("foo")), legacy.Literal(123)))
+      GreaterThan(legacy.Property(legacy.Identifier("a"), PropertyKey("foo")), legacy.Literal(123)))
 
     parsing("[ a in p WHERE a.foo > 123 ]") shouldGive filterCommand
 

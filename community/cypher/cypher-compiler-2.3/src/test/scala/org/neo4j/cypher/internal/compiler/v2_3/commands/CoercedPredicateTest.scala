@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands
 
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Collection, Literal}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{CoercedPredicate, True, Not}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{QueryState, QueryStateHelper}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 

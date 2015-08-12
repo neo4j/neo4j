@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{True, Predicate}
 import org.neo4j.cypher.internal.compiler.v2_3.mutation._
 import expressions.{Expression, AggregationExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.commands

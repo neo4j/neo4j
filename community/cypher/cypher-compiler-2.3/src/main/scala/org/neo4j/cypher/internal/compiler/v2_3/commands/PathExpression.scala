@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{True, Predicate}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.AllReadEffects
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.PatternGraphBuilder
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.UnNamedNameGenerator.isNamed

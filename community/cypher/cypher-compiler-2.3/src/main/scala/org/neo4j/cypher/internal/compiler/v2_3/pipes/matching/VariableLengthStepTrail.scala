@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes.matching
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathImpl
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{Pattern, True}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.Pattern
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.True
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.MutableMaps
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.graphdb.{Direction, Node, PropertyContainer, Relationship}

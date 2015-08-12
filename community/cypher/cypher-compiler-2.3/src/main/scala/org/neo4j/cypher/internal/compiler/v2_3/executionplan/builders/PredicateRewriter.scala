@@ -23,11 +23,14 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import commands._
 import commands.expressions.{Property, Expression, Identifier}
 import commands.values.{KeyToken, UnresolvedProperty}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, HasLabel, True, Predicate}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Namer, RandomNamer, ExecutionPlanInProgress, PlanBuilder}
 import spi.PlanContext
 import collection.Map
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.PipeMonitor
+
+import scala.Equals
 
 class PredicateRewriter(namer: Namer = new RandomNamer) extends PlanBuilder {
 

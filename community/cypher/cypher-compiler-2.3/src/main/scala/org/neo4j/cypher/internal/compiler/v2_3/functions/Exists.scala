@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.NestedPipeExpression
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
 import ExpressionConverters._
 import commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.PropertyExists
 import symbols._
 
 case object Exists extends Function {
@@ -42,7 +43,7 @@ case object Exists extends Function {
   def asCommandExpression(invocation: ast.FunctionInvocation) =
     invocation.arguments(0) match {
       case property: ast.Property =>
-        commands.PropertyExists( property.map.asCommandExpression, PropertyKey( property.propertyKey.name ) )
+        PropertyExists( property.map.asCommandExpression, PropertyKey( property.propertyKey.name ) )
       case expression: ast.PatternExpression =>
         expression.asCommandPredicate
       case expression: NestedPipeExpression =>

@@ -23,13 +23,15 @@ package org.neo4j.cypher.internal.compiler.v2_3.planDescription
 import java.util.Locale
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Property, LengthFunction, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, HasLabel, PropertyExists, Not}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{TokenType, KeyToken}
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{PropertyExists, HasLabel, Equals, Not}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 import org.scalatest.BeforeAndAfterAll
+
+import scala.Equals
 
 class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
 

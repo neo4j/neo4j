@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.Predicate
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.LegacyExpression
 
 case class FilterPipe(source: Pipe, predicate: Predicate)(val estimatedCardinality: Option[Double] = None)

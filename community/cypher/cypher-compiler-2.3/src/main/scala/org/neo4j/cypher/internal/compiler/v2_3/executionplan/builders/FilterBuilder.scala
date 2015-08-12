@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands.True
-import org.neo4j.cypher.internal.compiler.v2_3.commands.Predicate
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{True, Predicate}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{PipeMonitor, FilterPipe, Pipe}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext

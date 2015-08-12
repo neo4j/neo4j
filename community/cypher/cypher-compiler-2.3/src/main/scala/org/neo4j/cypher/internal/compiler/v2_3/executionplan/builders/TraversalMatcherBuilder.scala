@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{IdFunction, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, Predicate}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{BidirectionalTraversalMatcher, MonoDirectionalTraversalMatcher, Trail, TraversalMatcher}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityProducer, PipeMonitor, SingleRowPipe, TraversalMatchPipe}

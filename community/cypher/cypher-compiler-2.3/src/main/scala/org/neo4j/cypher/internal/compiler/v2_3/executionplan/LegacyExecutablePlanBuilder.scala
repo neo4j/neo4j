@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.reattachAliasedExpressions
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.groupInequalityPredicatesForLegacy
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.{DisconnectedShortestPathEndPointsBuilder, _}

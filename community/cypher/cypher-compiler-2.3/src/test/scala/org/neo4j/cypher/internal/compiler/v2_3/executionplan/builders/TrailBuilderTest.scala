@@ -21,11 +21,14 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier, Literal, Property}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, True}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.DynamicRelationshipType.withName
+
+import scala.Equals
 
 class TrailBuilderTest extends CypherFunSuite {
   val A = withName("A")

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
 import expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.True
 import org.neo4j.graphdb.Direction
 import collection.Seq
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._

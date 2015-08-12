@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.Predicate
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._

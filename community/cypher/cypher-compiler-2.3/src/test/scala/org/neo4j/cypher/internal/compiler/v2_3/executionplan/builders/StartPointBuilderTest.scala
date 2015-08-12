@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Equals
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
@@ -30,6 +31,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PartiallySolvedQuer
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.NodeStartPipe
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.kernel.api.index.IndexDescriptor
+
+import scala.Equals
 
 class StartPointBuilderTest extends BuilderTest {
 

@@ -27,6 +27,7 @@ import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.compatibility.WrappedMonitors2_3
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.HasLabel
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.{Label, PropertyKey}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{ReturnItem, _}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlanInProgress, _}

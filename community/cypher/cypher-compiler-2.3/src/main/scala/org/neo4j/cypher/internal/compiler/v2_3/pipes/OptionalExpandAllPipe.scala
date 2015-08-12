@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands.Predicate
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsNodes, ReadsRelationships}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._

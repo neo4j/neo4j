@@ -21,10 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, True, Predicate}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
+
+import scala.Equals
 
 class TrailToStepTest extends CypherFunSuite {
   val A = "A"

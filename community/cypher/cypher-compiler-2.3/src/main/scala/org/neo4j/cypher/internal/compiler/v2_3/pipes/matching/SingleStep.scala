@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes.matching
 import SingleStep.FilteringIterator
 import org.neo4j.cypher.internal.compiler.v2_3._
 import commands._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{True, And, Predicate}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.DynamicIterable
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{LazyTypes, QueryState}
 import org.neo4j.graphdb.{Node, Relationship, Direction}

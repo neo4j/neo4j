@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
 import expressions._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, HasLabel}
 import values.KeyToken
 import values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v2_3._

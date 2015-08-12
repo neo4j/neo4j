@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{Predicate, expressions}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
