@@ -25,13 +25,39 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class RegularExpressionPredicateTest extends CypherFunSuite {
-  test("shouldNotMatchIfTheExpressionEvaluatesToNull") {
+  test("LiteralRegEx: should not match if the lhs expression evaluates to null") {
     val expression = new LiteralRegularExpression(Null(), Literal(".*"))
     expression.isMatch(null)(QueryStateHelper.empty) should equal(None)
   }
 
-  test("shouldNotMatchIfTheExpressionEvaluatesToNull2") {
+  test("RegEx: should not match if the lhs expression evaluates to null") {
     val expression = new RegularExpression(Null(), Literal(".*"))
     expression.isMatch(null)(QueryStateHelper.empty) should equal(None)
+  }
+
+  test("RegEx: should not match if the lhs expression evaluates to something that is not a string"){
+    val expression = new RegularExpression(Literal(5), Literal(".*"))
+    expression.isMatch(null)(QueryStateHelper.empty) should equal(None)
+  }
+
+  test("LiteralRegEx: should not match if the lhs expression evaluates to something that is not a string"){
+    val expression = new LiteralRegularExpression(Literal(5), Literal(".*"))
+    expression.isMatch(null)(QueryStateHelper.empty) should equal(None)
+  }
+
+  test("RegEx: should match pattern to string") {
+    val expression1 = new RegularExpression(Literal("value"), Literal("v[a-z]+"))
+    expression1.isMatch(null)(QueryStateHelper.empty) should equal(Some(true))
+
+    val expression2 = new RegularExpression(Literal("NO-MATCH"), Literal("v[a-z]+"))
+    expression2.isMatch(null)(QueryStateHelper.empty) should equal(Some(false))
+  }
+
+  test("LiteralRegEx: should match pattern to string") {
+    val expression1 = new LiteralRegularExpression(Literal("value"), Literal("v[a-z]+"))
+    expression1.isMatch(null)(QueryStateHelper.empty) should equal(Some(true))
+
+    val expression2 = new LiteralRegularExpression(Literal("NO-MATCH"), Literal("v[a-z]+"))
+    expression2.isMatch(null)(QueryStateHelper.empty) should equal(Some(false))
   }
 }

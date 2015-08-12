@@ -60,6 +60,7 @@ case class ParsedLikePattern(ops: List[LikePatternOp]) {
    }
    ParsedLikePattern(newOps.reverse)
  }
+ override def toString = ops.mkString("\"","","\"")
 }
 
 sealed trait LikePatternOp
@@ -67,11 +68,17 @@ sealed trait LikePatternOp
 sealed trait WildcardLikePatternOp extends LikePatternOp
 
 /** Contains a string that needs quoting for use in regular expression */
-case class MatchText(v: String) extends LikePatternOp
+case class MatchText(text: String) extends LikePatternOp  {
+  override def toString = text
+}
 
 /** Matches a % */
-case object MatchMany extends WildcardLikePatternOp
+case object MatchMany extends WildcardLikePatternOp {
+  override def toString = "%"
+}
 
 /** Matches a _*/
-case object MatchSingle extends WildcardLikePatternOp
+case object MatchSingle extends WildcardLikePatternOp {
+  override def toString = "_"
+}
 

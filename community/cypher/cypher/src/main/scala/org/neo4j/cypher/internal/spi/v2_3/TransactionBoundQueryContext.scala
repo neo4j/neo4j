@@ -252,7 +252,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   }
 
   def indexScan(index: IndexDescriptor) =
-    mapToScala(statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
+    mapToScalaENFXSafe(statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
 
   def uniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
     val nodeId: Long = statement.readOperations().nodeGetFromUniqueIndexSeek(index, value)
