@@ -35,13 +35,16 @@ import java.util.Set;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.test.TargetDirectory.testDirForTest;
 
 @RunWith(Parameterized.class)
@@ -72,7 +75,57 @@ public class RebuildFromLogsTest
         GraphDatabaseAPI rebuilt = db( rebuildPath );
         try
         {
-            new RebuildFromLogs( rebuilt ).applyTransactionsFrom( prototypePath );
+            new RebuildFromLogs( rebuilt ).applyTransactionsFrom( prototypePath, BASE_TX_ID );
+        }
+        finally
+        {
+            rebuilt.shutdown();
+        }
+
+        // then
+        assertEquals( DbRepresentation.of( prototypePath ), DbRepresentation.of( rebuildPath ) );
+    }
+
+    @Test
+    public void shouldRebuildFromLogUpToATx() throws Exception
+    {
+        // given
+        File prototypePath = new File( dir.graphDbDir(), "prototype" );
+        GraphDatabaseAPI prototype = db( prototypePath );
+        long txId;
+        try
+        {
+            for ( Transaction transaction : work )
+            {
+                transaction.applyTo( prototype );
+            }
+        }
+        finally
+        {
+            txId = prototype.getDependencyResolver()
+                    .resolveDependency( NeoStore.class ).getLastCommittedTransactionId();
+            prototype.shutdown();
+        }
+
+        File copy = new File( dir.graphDbDir(), "copy" );
+        FileUtils.copyRecursively( prototypePath, copy );
+        GraphDatabaseAPI db = db( copy );
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+            tx.success();
+        }
+        finally
+        {
+            db.shutdown();
+        }
+
+        // when
+        File rebuildPath = new File( dir.graphDbDir(), "rebuild" );
+        GraphDatabaseAPI rebuilt = db( rebuildPath );
+        try
+        {
+            new RebuildFromLogs( rebuilt ).applyTransactionsFrom( copy, txId );
         }
         finally
         {
