@@ -171,7 +171,7 @@ case class LiteralLikePattern(predicate: LiteralRegularExpression, pattern: Pars
   def isMatch(m: ExecutionContext)(implicit state: QueryState) = predicate.isMatch(m)
   def containsIsNull = predicate.containsIsNull
 
-  def rewrite(f: (Expression) => Expression) = f(copy(predicate = f(predicate).asInstanceOf[LiteralRegularExpression]))
+  def rewrite(f: (Expression) => Expression) = f(copy(predicate = predicate.rewrite(f).asInstanceOf[LiteralRegularExpression]))
 
   def arguments = predicate.arguments
 
