@@ -32,7 +32,7 @@ public class RelationshipPropertyExistenceConstraintViolationKernelException ext
     public RelationshipPropertyExistenceConstraintViolationKernelException( int relationshipTypeId, int propertyKeyId,
             long relationshipId )
     {
-        super( "Relationship %d with type %d does not have the property %d", relationshipId, relationshipTypeId,
+        super( "Relationship %d with type %d must have the property %d", relationshipId, relationshipTypeId,
                 propertyKeyId );
         this.relationshipTypeId = relationshipTypeId;
         this.propertyKeyId = propertyKeyId;
@@ -42,7 +42,7 @@ public class RelationshipPropertyExistenceConstraintViolationKernelException ext
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return format( "Relationship %d with type \"%s\" does not have a \"%s\" property", relationshipId,
+        return format( "Relationship %d with type \"%s\" must have the property \"%s\" due to a constraint", relationshipId,
                 tokenNameLookup.relationshipTypeGetName( relationshipTypeId ),
                 tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
     }
