@@ -43,9 +43,10 @@ object CardinalityCostModel extends CostModel {
          _: AllNodesScan |
          _: DirectedRelationshipByIdSeek |
          _: UndirectedRelationshipByIdSeek |
-         _: ProjectEndpoints |
-         _: NodeByLabelScan
+         _: ProjectEndpoints
     => FAST_STORE
+
+    case _: NodeByLabelScan => FAST_STORE * 1.4
 
     // Filtering on labels and properties
     case Selection(predicates, _) if predicates.exists {
