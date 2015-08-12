@@ -28,11 +28,11 @@ import static java.lang.String.format;
 
 public class BufferingConsoleLogger extends ConsoleLogger
 {
-    private static enum Level
+    private enum Level
     {
         LOG,
         WARN,
-        ERROR;
+        ERROR
     }
 
     private static class LogMessage
@@ -63,11 +63,22 @@ public class BufferingConsoleLogger extends ConsoleLogger
     }
 
     @Override
+    public void warn( String message )
+    {
+        buffer.add( new LogMessage( Level.WARN, message, null ) );
+    }
+
+    @Override
     public void warn( String message, Throwable warning )
     {
         buffer.add( new LogMessage( Level.WARN, message, warning ) );
     }
 
+    @Override
+    public void error( String message )
+    {
+        buffer.add( new LogMessage( Level.ERROR, message, null ) );
+    }
     @Override
     public void error( String message, Throwable error )
     {

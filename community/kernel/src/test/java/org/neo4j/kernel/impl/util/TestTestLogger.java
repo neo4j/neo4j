@@ -33,34 +33,33 @@ import static org.neo4j.kernel.impl.util.TestLogger.LogCall.warn;
  */
 public class TestTestLogger
 {
-
     @Test
     public void shouldPassExactAssertions() throws Exception
     {
         // Given
         TestLogger logger = new TestLogger();
 
-        Throwable cause = new Throwable("This is a throwable!");
+        Throwable cause = new Throwable( "This is a throwable!" );
 
         logger.debug( "Debug" );
         logger.debug( "Debug", cause );
-        logger.info(  "Info" );
-        logger.info(  "Info",  cause );
-        logger.warn(  "Warn" );
-        logger.warn(  "Warn",  cause );
+        logger.info( "Info" );
+        logger.info( "Info", cause );
+        logger.warn( "Warn" );
+        logger.warn( "Warn", cause );
         logger.error( "Error" );
         logger.error( "Error", cause );
 
         // When
         logger.assertExactly(
-            debug( "Debug" ),
-            debug( "Debug", cause ),
-            info( "Info" ),
-            info( "Info", cause ),
-            warn( "Warn" ),
-            warn( "Warn", cause ),
-            error( "Error" ),
-            error( "Error", cause )
+                debug( "Debug" ),
+                debug( "Debug", cause ),
+                info( "Info" ),
+                info( "Info", cause ),
+                warn( "Warn" ),
+                warn( "Warn", cause ),
+                error( "Error" ),
+                error( "Error", cause )
         );
 
         // Then no assertion should have failed
@@ -75,14 +74,18 @@ public class TestTestLogger
         logger.debug( "Debug 2" );
 
         // When
-        try {
+        try
+        {
             logger.assertExactly( debug( "Debug" ) );
-            fail("Should have failed.");
-        } catch(AssertionError e)
+            fail( "Should have failed." );
+        }
+        catch ( AssertionError e )
         {
             // Then
-            assertThat( e.getMessage(), equalTo("Got more log calls than expected. The remaining log calls were: \n" +
-                    "LogCall{ DEBUG, message='Debug 2', cause=null}\n") );
+            assertThat( e.getMessage(), equalTo(
+                    "Got more log calls than expected. The remaining log calls were: \n" +
+                    "LogCall{level=DEBUG, message='Debug 2', cause=null, flush=false, marker=LogMarker{name='no_mark'}}\n"
+            ) );
         }
     }
 
@@ -93,14 +96,18 @@ public class TestTestLogger
         TestLogger logger = new TestLogger();
 
         // When
-        try {
+        try
+        {
             logger.assertExactly( debug( "Debug" ) );
-            fail("Should have failed.");
-        } catch(AssertionError e)
+            fail( "Should have failed." );
+        }
+        catch ( AssertionError e )
         {
             // Then
-            assertThat( e.getMessage(), equalTo("Got fewer log calls than expected. The missing log calls were: \n" +
-                    "LogCall{ DEBUG, message='Debug', cause=null}\n") );
+            assertThat( e.getMessage(), equalTo(
+                    "Got fewer log calls than expected. The missing log calls were: \n" +
+                    "LogCall{level=DEBUG, message='Debug', cause=null, flush=false, marker=LogMarker{name='no_mark'}}\n"
+            ) );
         }
     }
 
@@ -137,11 +144,20 @@ public class TestTestLogger
             logger.assertAtLeastOnce(
                     debug( "Debug 2" ),
                     debug( "Debug 1" ) );
-        } catch(AssertionError e)
+        }
+        catch ( AssertionError e )
         {
-            assertThat( e.getMessage(), equalTo( "These log calls were expected, but never occurred: \n" +
-                    "LogCall{ DEBUG, message='Debug 2', cause=null}\n\nActual log calls were:\nLogCall{ DEBUG, " +
-                    "message='Debug 1', cause=null}\nLogCall{ DEBUG, message='Debug 3', cause=null}\n" ) );
+            assertThat( e.getMessage(), equalTo(
+                    "These log calls were expected, but never occurred: \n"
+                    +
+                    "LogCall{level=DEBUG, message='Debug 2', cause=null, flush=false, marker=LogMarker{name='no_mark'}}\n\n"
+                    +
+                    "Actual log calls were:\n"
+                    +
+                    "LogCall{level=DEBUG, message='Debug 1', cause=null, flush=false, marker=LogMarker{name='no_mark'}}\n"
+                    +
+                    "LogCall{level=DEBUG, message='Debug 3', cause=null, flush=false, marker=LogMarker{name='no_mark'}}\n"
+            ) );
         }
     }
 
@@ -175,10 +191,13 @@ public class TestTestLogger
             logger.assertNoInfos();
             logger.assertNoDebugs();
             fail( "Should have failed" );
-        } catch(AssertionError e)
+        }
+        catch ( AssertionError e )
         {
-            assertThat( e.getMessage(), equalTo( "Expected no messages with level DEBUG. But found: \n" +
-                    "LogCall{ DEBUG, message='Debug', cause=null}\n" ) );
+            assertThat( e.getMessage(), equalTo(
+                    "Expected no messages with level DEBUG. But found: \n" +
+                    "LogCall{level=DEBUG, message='Debug', cause=null, flush=false, marker=LogMarker{name='no_mark'}}\n"
+            ) );
         }
 
         // Info
@@ -189,10 +208,13 @@ public class TestTestLogger
             logger.assertNoWarnings();
             logger.assertNoInfos();
             fail( "Should have failed" );
-        } catch(AssertionError e)
+        }
+        catch ( AssertionError e )
         {
-            assertThat( e.getMessage(), equalTo( "Expected no messages with level INFO. But found: \n" +
-                    "LogCall{ INFO, message='Info', cause=null}\n" ) );
+            assertThat( e.getMessage(), equalTo(
+                    "Expected no messages with level INFO. But found: \n" +
+                    "LogCall{level=INFO, message='Info', cause=null, flush=false, marker=LogMarker{name='no_mark'}}\n" )
+            );
         }
 
         // Warn
@@ -202,10 +224,13 @@ public class TestTestLogger
             logger.assertNoErrors();
             logger.assertNoWarnings();
             fail( "Should have failed" );
-        } catch(AssertionError e)
+        }
+        catch ( AssertionError e )
         {
-            assertThat( e.getMessage(), equalTo( "Expected no messages with level WARN. But found: \n" +
-                    "LogCall{ WARN, message='Warn', cause=null}\n" ) );
+            assertThat( e.getMessage(), equalTo(
+                    "Expected no messages with level WARN. But found: \n" +
+                    "LogCall{level=WARN, message='Warn', cause=null, flush=false, marker=LogMarker{name='no_mark'}}\n" )
+            );
         }
 
         // Errors
@@ -214,10 +239,13 @@ public class TestTestLogger
             logger.error( "Error" );
             logger.assertNoErrors();
             fail( "Should have failed" );
-        } catch(AssertionError e)
+        }
+        catch ( AssertionError e )
         {
-            assertThat( e.getMessage(), equalTo( "Expected no messages with level ERROR. But found: \n" +
-                    "LogCall{ ERROR, message='Error', cause=null}\n" ) );
+            assertThat( e.getMessage(), equalTo(
+                    "Expected no messages with level ERROR. But found: \n" +
+                    "LogCall{level=ERROR, message='Error', cause=null, flush=false, marker=LogMarker{name='no_mark'}}\n"
+            ) );
         }
 
         // All
@@ -225,13 +253,20 @@ public class TestTestLogger
         {
             logger.assertNoLoggingOccurred();
             fail( "Should have failed" );
-        } catch(AssertionError e)
+        }
+        catch ( AssertionError e )
         {
-            assertThat( e.getMessage(), equalTo( "Expected no log messages at all, but got:\n" +
-                    "LogCall{ DEBUG, message='Debug', cause=null}\n" +
-                    "LogCall{ INFO, message='Info', cause=null}\n" +
-                    "LogCall{ WARN, message='Warn', cause=null}\n" +
-                    "LogCall{ ERROR, message='Error', cause=null}\n") );
+            assertThat( e.getMessage(), equalTo(
+                    "Expected no log messages at all, but got:\n"
+                    +
+                    "LogCall{level=DEBUG, message='Debug', cause=null, flush=false, marker=LogMarker{name='no_mark'}}\n"
+                    +
+                    "LogCall{level=INFO, message='Info', cause=null, flush=false, marker=LogMarker{name='no_mark'}}\n"
+                    +
+                    "LogCall{level=WARN, message='Warn', cause=null, flush=false, marker=LogMarker{name='no_mark'}}\n"
+                    +
+                    "LogCall{level=ERROR, message='Error', cause=null, flush=false, marker=LogMarker{name='no_mark'}}\n"
+            ) );
         }
 
         // Specific message
@@ -239,12 +274,15 @@ public class TestTestLogger
         {
             logger.debug( "This is a message." );
             logger.debug( "This is a message." );
-            logger.assertNo(debug("This is a message."));
+            logger.assertNo( debug( "This is a message." ) );
             fail( "Should have failed" );
-        } catch(AssertionError e)
+        }
+        catch ( AssertionError e )
         {
-            assertThat( e.getMessage(), equalTo( "Expected no occurrence of " +
-                    "LogCall{ DEBUG, message='This is a message.', cause=null}, but it was in fact logged 2 times.") );
+            assertThat( e.getMessage(), equalTo(
+                    "Expected no occurrence of " +
+                    "LogCall{level=DEBUG, message='This is a message.', cause=null, flush=false, marker=LogMarker{name='no_mark'}}, " +
+                    "but it was in fact logged 2 times." ) );
         }
     }
 

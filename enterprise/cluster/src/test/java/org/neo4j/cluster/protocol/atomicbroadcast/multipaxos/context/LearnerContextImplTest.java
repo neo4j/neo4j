@@ -19,11 +19,11 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.Test;
 import org.mockito.Matchers;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
@@ -55,7 +55,7 @@ public class LearnerContextImplTest
         ConsoleLogger consoleLogger = new ConsoleLogger( null )
         {
             @Override
-            public void log( String message )
+            public void warn( String message )
             {
                 logs.add( message );
             }

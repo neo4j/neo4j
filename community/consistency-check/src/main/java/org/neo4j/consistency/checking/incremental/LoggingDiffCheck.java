@@ -45,7 +45,7 @@ public class LoggingDiffCheck extends DiffCheck
     {
         if ( !summary.isConsistent() )
         {
-            logger.logMessage( "Inconsistencies found: " + summary );
+            logger.info( "Inconsistencies found: " + summary );
             // TODO: log all changes by the transaction
         }
     }

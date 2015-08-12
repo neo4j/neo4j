@@ -87,6 +87,30 @@ public class DiagnosticsLoggingTest
         }
 
         @Override
+        protected void doDebug( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+        {
+            appendLine( msg );
+        }
+
+        @Override
+        public void info( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+        {
+            appendLine( msg );
+        }
+
+        @Override
+        public void warn( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+        {
+            appendLine( msg );
+        }
+
+        @Override
+        public void error( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+        {
+            appendLine( msg );
+        }
+
+        @Override
         public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
         {
             appendLine( msg );
@@ -98,24 +122,6 @@ public class DiagnosticsLoggingTest
                     appendLine( line );
                 }
             } );
-        }
-
-        @Override
-        public void logMessage( String msg, boolean flush )
-        {
-            appendLine( msg );
-        }
-
-        @Override
-        public void logMessage( String msg, LogMarker marker )
-        {
-            appendLine( msg );
-        }
-
-        @Override
-        public void logMessage( String msg, Throwable cause, boolean flush )
-        {
-            appendLine( msg );
         }
 
         @Override

@@ -19,19 +19,18 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.io.File;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.kernel.impl.util.StringLogger.DEFAULT_NAME;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsJoined;
@@ -42,7 +41,7 @@ import static org.neo4j.test.ha.ClusterManager.masterSeesMembers;
 public class HaLoggingIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule(getClass());
+    public final ClusterRule clusterRule = new ClusterRule( getClass() );
 
     protected ClusterManager.ManagedCluster cluster;
 
@@ -50,9 +49,9 @@ public class HaLoggingIT
     public void setup() throws Exception
     {
         cluster = clusterRule
-                  .provider( clusterWithAdditionalClients( 2, 1 ) )
-                  .availabilityChecks( asList( masterAvailable(), masterSeesMembers( 3 ), allSeesAllAsJoined() ) )
-                  .startCluster();
+                .provider( clusterWithAdditionalClients( 2, 1 ) )
+                .availabilityChecks( asList( masterAvailable(), masterSeesMembers( 3 ), allSeesAllAsJoined() ) )
+                .startCluster();
     }
 
     @Test
@@ -63,7 +62,7 @@ public class HaLoggingIT
         String logMessage = "Just a test for that logging continues as expected";
         HighlyAvailableGraphDatabase db = cluster.getAnySlave();
         StringLogger logger = db.getDependencyResolver().resolveDependency( StringLogger.class );
-        logger.logMessage( logMessage, true );
+        logger.info( logMessage, true );
 
         // WHEN
         // -- the slave switches role to become master, logging continues
@@ -72,7 +71,7 @@ public class HaLoggingIT
         cluster.shutdown( master );
         cluster.await( masterAvailable( master ) );
         cluster.await( masterSeesMembers( 2 ) );
-        logger.logMessage( logMessage, true );
+        logger.info( logMessage, true );
 
         // THEN
         int count = findLoggingLines( db, logMessage );
@@ -83,8 +82,12 @@ public class HaLoggingIT
     {
         int count = 0;
         for ( String line : asIterable( new File( cluster.getStoreDir( db ), DEFAULT_NAME ), "UTF-8" ) )
+        {
             if ( line.endsWith( toLookFor ) )
+            {
                 count++;
+            }
+        }
         return count;
     }
 }

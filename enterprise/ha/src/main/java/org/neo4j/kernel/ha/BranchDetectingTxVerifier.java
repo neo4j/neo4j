@@ -66,7 +66,7 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
         }
         catch ( IOException e )
         {
-            logger.logMessage( "Couldn't verify checksum for " + stringify( txId, checksum ), e );
+            logger.error( "Couldn't verify checksum for " + stringify( txId, checksum ), e );
             throw new BranchedDataException( "Unable to perform a mandatory sanity check due to an IO error.", e );
         }
 

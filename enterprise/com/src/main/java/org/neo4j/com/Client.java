@@ -19,12 +19,6 @@
  */
 package org.neo4j.com;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.TimeUnit;
-
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -36,6 +30,12 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
@@ -49,7 +49,6 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
-
 import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
 import static org.neo4j.com.ResourcePool.DEFAULT_CHECK_INTERVAL;
@@ -141,14 +140,14 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
                 channelFuture.awaitUninterruptibly( 5, TimeUnit.SECONDS );
                 if ( channelFuture.isSuccess() )
                 {
-                    msgLog.logMessage( threadInfo() + "Opened a new channel to " + address, true );
+                    msgLog.info( threadInfo() + "Opened a new channel to " + address, true );
 
                     return new ChannelContext( channelFuture.getChannel(), ChannelBuffers.dynamicBuffer(),
                             ByteBuffer.allocate( 1024 * 1024 ) );
                 }
 
                 String msg = Client.this.getClass().getSimpleName() + " could not connect to " + address;
-                msgLog.logMessage( msg, true );
+                msgLog.info( msg, true );
                 throw new ComException( msg, channelFuture.getCause() );
             }
 
@@ -164,8 +163,8 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
                 Channel channel = context.channel();
                 if ( channel.isConnected() )
                 {
-                    msgLog.logMessage( threadInfo() + "Closing: " + context + ". " +
-                                       "Channel pool size is now " + currentSize(), true );
+                    msgLog.info( threadInfo() + "Closing: " + context + ". " +
+                                 "Channel pool size is now " + currentSize(), true );
                     channel.close();
                 }
             }
@@ -199,7 +198,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         channelPool.close( true );
         bootstrap.releaseExternalResources();
         comExceptionHandler = ComExceptionHandler.NO_OP;
-        msgLog.logMessage( toString() + " shutdown", true );
+        msgLog.info( toString() + " shutdown", true );
     }
 
     protected <R> Response<R> sendRequest( RequestType<T> type, RequestContext context,

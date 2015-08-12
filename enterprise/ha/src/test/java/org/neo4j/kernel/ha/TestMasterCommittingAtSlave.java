@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.ComException;
@@ -56,7 +56,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.kernel.ha.com.master.SlavePriorities.givenOrder;
 import static org.neo4j.kernel.ha.com.master.SlavePriorities.roundRobin;
 
@@ -319,6 +318,30 @@ public class TestMasterCommittingAtSlave
         private final StringBuilder errors = new StringBuilder();
 
         @Override
+        protected void doDebug( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+        {
+            addError( msg );
+        }
+
+        @Override
+        public void info( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+        {
+            addError( msg );
+        }
+
+        @Override
+        public void warn( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+        {
+            addError( msg );
+        }
+
+        @Override
+        public void error( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+        {
+            addError( msg );
+        }
+
+        @Override
         public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
         {
             addError( msg );
@@ -331,24 +354,6 @@ public class TestMasterCommittingAtSlave
                 unexpectedExceptionLogged = true;
             }
             errors.append( errors.length() > 0 ? "," : "" ).append( msg );
-        }
-
-        @Override
-        public void logMessage( String msg, boolean flush )
-        {
-            addError( msg );
-        }
-
-        @Override
-        public void logMessage( String msg, LogMarker marker )
-        {
-            addError( msg );
-        }
-
-        @Override
-        public void logMessage( String msg, Throwable cause, boolean flush )
-        {
-            addError( msg );
         }
 
         @Override

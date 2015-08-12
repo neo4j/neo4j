@@ -33,7 +33,7 @@
     </encoder>
   </appender>
 
-  <logger name="org.neo4j">
+  <logger name="org.neo4j" level="all">
     <appender-ref ref="CONSOLE"/>
   </logger>
 

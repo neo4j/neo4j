@@ -130,7 +130,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             if ( startTime != null )
             {
                 long time = clock.currentTimeMillis() - startTime;
-                logger.logMessage( String.format( "FAILURE %d ms: %s - %s", time, session,
+                logger.error( String.format( "FAILURE %d ms: %s - %s", time, session,
                         query == null ? "<unknown query>" : query ), failure );
             }
         }
@@ -145,7 +145,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                 long time = clock.currentTimeMillis() - startTime;
                 if ( time >= thresholdMillis )
                 {
-                    logger.logMessage( String.format( "SUCCESS %d ms: %s - %s", time, session,
+                    logger.info( String.format( "SUCCESS %d ms: %s - %s", time, session,
                             query == null ? "<unknown query>" : query ) );
                 }
             }

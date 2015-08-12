@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Test;
 import org.mockito.InOrder;
+
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.FakeClock;
@@ -53,7 +53,7 @@ public class QueryLoggerTest
         queryLogger.endSuccess( session );
 
         // then
-        verify( logger ).logMessage( "SUCCESS 11 ms: {the session} - MATCH (n) RETURN n" );
+        verify( logger ).info( "SUCCESS 11 ms: {the session} - MATCH (n) RETURN n" );
     }
 
     @Test
@@ -102,8 +102,8 @@ public class QueryLoggerTest
 
         // then
         InOrder order = inOrder( logger );
-        order.verify( logger ).logMessage( "SUCCESS 15 ms: {session two} - MATCH (b) RETURN b" );
-        order.verify( logger ).logMessage( "SUCCESS 23 ms: {session one} - MATCH (a) RETURN a" );
+        order.verify( logger ).info( "SUCCESS 15 ms: {session two} - MATCH (b) RETURN b" );
+        order.verify( logger ).info( "SUCCESS 23 ms: {session one} - MATCH (a) RETURN a" );
         verifyNoMoreInteractions( logger );
     }
 
@@ -124,7 +124,7 @@ public class QueryLoggerTest
         queryLogger.endFailure( session, failure );
 
         // then
-        verify( logger ).logMessage( "FAILURE 1 ms: {the session} - MATCH (n) RETURN n", failure );
+        verify( logger ).error( "FAILURE 1 ms: {the session} - MATCH (n) RETURN n", failure );
     }
 
     private static QuerySession session( final String data )

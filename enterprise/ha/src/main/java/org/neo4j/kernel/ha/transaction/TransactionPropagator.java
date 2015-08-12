@@ -267,13 +267,13 @@ public class TransactionPropagator implements Lifecycle
             // We did the best we could, have we committed successfully on enough slaves?
             if ( !(successfulReplications >= replicationFactor) )
             {
-                log.logMessage( "Transaction " + txId + " couldn't commit on enough slaves, desired " +
+                log.info( "Transaction " + txId + " couldn't commit on enough slaves, desired " +
                                 replicationFactor + ", but could only commit at " + successfulReplications );
             }
         }
         catch ( Throwable t )
         {
-            log.logMessage( "Unknown error commit master transaction at slave", t );
+            log.error( "Unknown error commit master transaction at slave", t );
         }
         finally
         {

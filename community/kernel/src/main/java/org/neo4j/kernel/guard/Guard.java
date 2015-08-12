@@ -96,7 +96,7 @@ public class Guard
 
             if ( max < opsCount )
             {
-                logger.logMessage( "guard-timeout: node-ops: more than " + max );
+                logger.info( "guard-timeout: node-ops: more than " + max );
                 throw new GuardOperationsCountException( opsCount );
             }
         }
@@ -124,7 +124,7 @@ public class Guard
             if ( valid < currentTimeMillis() )
             {
                 final long overtime = currentTimeMillis() - valid;
-                logger.logMessage( "guard-timeout:" + (valid - start) + "(+" + overtime + ")ms" );
+                logger.info( "guard-timeout:" + (valid - start) + "(+" + overtime + ")ms" );
                 throw new GuardTimeoutException( overtime );
             }
         }

@@ -42,7 +42,7 @@ public class ConsoleLogger
      */
     public void log( String message )
     {
-        realLogger.logMessage( message, CONSOLE_MARK );
+        realLogger.info( message, null, false, CONSOLE_MARK );
     }
 
     /**
@@ -61,7 +61,7 @@ public class ConsoleLogger
      */
     public void warn( String message )
     {
-        log( message );
+        realLogger.warn( message, null, false, CONSOLE_MARK );
     }
 
     /**
@@ -71,7 +71,7 @@ public class ConsoleLogger
      */
     public void warn( String format, Object... parameters )
     {
-        log( format, parameters );
+        warn( String.format( format, parameters ) );
     }
 
     /**
@@ -85,7 +85,7 @@ public class ConsoleLogger
     @Deprecated
     public void warn( String message, Throwable warning )
     {
-        realLogger.logMessage( message, warning, false, CONSOLE_MARK );
+        realLogger.warn( message, warning, false, CONSOLE_MARK );
     }
 
     /**
@@ -94,7 +94,7 @@ public class ConsoleLogger
      */
     public void error( String message )
     {
-        log( message );
+        realLogger.error( message );
     }
 
     /**
@@ -104,7 +104,7 @@ public class ConsoleLogger
      */
     public void error( String format, Object... parameters )
     {
-        log( format, parameters );
+        error( String.format(  format, parameters ) );
     }
 
     /**
@@ -118,7 +118,7 @@ public class ConsoleLogger
     @Deprecated
     public void error( String message, Throwable error )
     {
-        realLogger.logMessage( message, error, true, CONSOLE_MARK );
+        realLogger.error( message, error, true, CONSOLE_MARK );
     }
 
     public static final ConsoleLogger DEV_NULL = new ConsoleLogger( StringLogger.DEV_NULL );

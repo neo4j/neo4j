@@ -68,7 +68,7 @@ public class ProtocolServer implements BindingNotifier
         }
         catch ( Throwable t )
         {
-            msgLog.logMessage( "Failed while adding BindingListener", t );
+            msgLog.error( "Failed while adding BindingListener", t );
         }
     }
 

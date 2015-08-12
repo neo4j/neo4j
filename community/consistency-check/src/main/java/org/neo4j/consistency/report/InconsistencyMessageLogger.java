@@ -93,6 +93,6 @@ public class InconsistencyMessageLogger implements InconsistencyLogger
                 log.append( ' ' ).append( ObjectUtil.toString( arg ) );
             }
         }
-        logger.logMessage( log.toString(), true );
+        logger.info( log.toString(), true );
     }
 }

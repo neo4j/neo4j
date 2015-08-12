@@ -156,7 +156,7 @@ public class ConsistencyCheckService
 
         if ( !summary.isConsistent() )
         {
-            logger.logMessage( String.format( "See '%s' for a detailed consistency report.", reportFile.getPath() ) );
+            logger.info( String.format( "See '%s' for a detailed consistency report.", reportFile.getPath() ) );
             return Result.FAILURE;
         }
 

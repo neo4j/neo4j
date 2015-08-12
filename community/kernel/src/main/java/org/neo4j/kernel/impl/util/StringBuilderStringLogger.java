@@ -33,25 +33,36 @@ public class StringBuilderStringLogger extends StringLogger
     }
 
     @Override
-    public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
+    protected void doDebug( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+    {
+        log( msg, cause, flush, logMarker );
+    }
+
+    @Override
+    public void info( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+    {
+        log( msg, cause, flush, logMarker );
+    }
+
+    @Override
+    public void warn( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+    {
+        log( msg, cause, flush, logMarker );
+    }
+
+    @Override
+    public void error( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+    {
+        log( msg, cause, flush, logMarker );
+    }
+
+    @Override
+    public void logLongMessage( String msg, Visitor<LineLogger,RuntimeException> source, boolean flush )
     {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public void logMessage( String msg, boolean flush )
-    {
-        sb.append( msg ).append( "\n" );
-    }
-
-    @Override
-    public void logMessage( String msg, LogMarker marker )
-    {
-        sb.append( msg ).append( "\n" );
-    }
-
-    @Override
-    public void logMessage( String msg, Throwable cause, boolean flush )
+    private void log( String msg, Throwable ignoredCause, boolean ignoredFlush, LogMarker ignoredLogMarker )
     {
         sb.append( msg ).append( "\n" );
     }
