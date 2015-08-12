@@ -69,6 +69,36 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     result.executionPlanDescription().toString should include("NodeIndexSeekByRange")
   }
 
+  test("should be able to plan index seek for numerical negated greater than or equal") {
+    // Given matches
+    createLabeledNode(Map("prop" -> Double.NegativeInfinity), "Label")
+    createLabeledNode(Map("prop" -> -5), "Label")
+    createLabeledNode(Map("prop" -> 0), "Label")
+    createLabeledNode(Map("prop" -> 5), "Label")
+    createLabeledNode(Map("prop" -> 5.0), "Label")
+
+    // Non-matches
+    createLabeledNode(Map("prop" -> 10), "Label")
+    createLabeledNode(Map("prop" -> 10.0), "Label")
+    createLabeledNode(Map("prop" -> 100), "Label")
+    createLabeledNode(Map("prop" -> Double.PositiveInfinity), "Label")
+    createLabeledNode(Map("prop" -> Double.NaN), "Label")
+
+    (1 to 400).foreach { _ =>
+      createLabeledNode("Label")
+    }
+    graph.createIndex("Label", "prop")
+
+    val query = "MATCH (n:Label) WHERE NOT n.prop >= 10 RETURN n.prop AS prop"
+
+    // When
+    val result = executeWithAllPlanners(query)
+
+    // Then
+    result.columnAs[Number]("prop").asMultiSet should equal(MultiSet(Double.NegativeInfinity, -5, 0, 5, 5.0))
+    result.executionPlanDescription().toString should include("NodeIndexSeekByRange")
+  }
+
   test("should be able to plan index seek for numerical less than or equal") {
     // Given matches
     createLabeledNode(Map("prop" -> Double.NegativeInfinity), "Label")
@@ -90,6 +120,36 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     graph.createIndex("Label", "prop")
 
     val query = "MATCH (n:Label) WHERE n.prop <= 10 RETURN n.prop AS prop"
+
+    // When
+    val result = executeWithAllPlanners(query)
+
+    // Then
+    result.columnAs[Number]("prop").asMultiSet should equal(MultiSet(Double.NegativeInfinity, -5, 0, 5, 5.0, 10, 10.0))
+    result.executionPlanDescription().toString should include("NodeIndexSeekByRange")
+  }
+
+  test("should be able to plan index seek for numerical negated greater than") {
+    // Given matches
+    createLabeledNode(Map("prop" -> Double.NegativeInfinity), "Label")
+    createLabeledNode(Map("prop" -> -5), "Label")
+    createLabeledNode(Map("prop" -> 0), "Label")
+    createLabeledNode(Map("prop" -> 5), "Label")
+    createLabeledNode(Map("prop" -> 5.0), "Label")
+    createLabeledNode(Map("prop" -> 10), "Label")
+    createLabeledNode(Map("prop" -> 10.0), "Label")
+
+    // Non-matches
+    createLabeledNode(Map("prop" -> 100), "Label")
+    createLabeledNode(Map("prop" -> Double.PositiveInfinity), "Label")
+    createLabeledNode(Map("prop" -> Double.NaN), "Label")
+
+    (1 to 400).foreach { _ =>
+      createLabeledNode("Label")
+    }
+    graph.createIndex("Label", "prop")
+
+    val query = "MATCH (n:Label) WHERE NOT n.prop > 10 RETURN n.prop AS prop"
 
     // When
     val result = executeWithAllPlanners(query)
@@ -132,6 +192,39 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     result.executionPlanDescription().toString should include("NodeIndexSeekByRange")
   }
 
+  test("should be able to plan index seek for numerical negated less than or equal") {
+    // Given matches
+    createLabeledNode(Map("prop" -> 10), "Label")
+    createLabeledNode(Map("prop" -> 10.0), "Label")
+    createLabeledNode(Map("prop" -> 100), "Label")
+    createLabeledNode(Map("prop" -> Double.PositiveInfinity), "Label")
+    createLabeledNode(Map("prop" -> Double.NaN), "Label")
+
+    // Non-matches
+    createLabeledNode(Map("prop" -> Double.NegativeInfinity), "Label")
+    createLabeledNode(Map("prop" -> -5), "Label")
+    createLabeledNode(Map("prop" -> 0), "Label")
+    createLabeledNode(Map("prop" -> 5), "Label")
+    createLabeledNode(Map("prop" -> 5.0), "Label")
+
+    (1 to 400).foreach { _ =>
+      createLabeledNode("Label")
+    }
+    graph.createIndex("Label", "prop")
+
+    val query = "MATCH (n:Label) WHERE NOT n.prop <= 5 RETURN n.prop AS prop"
+
+    // When
+    val result = executeWithAllPlannersReplaceNaNs(query)
+
+    // Then
+    val values = result.columnAs[Number]("prop").toSeq
+    values.exists(d => java.lang.Double.isNaN(d.doubleValue())) should be(right = true)
+    val saneValues = values.filter(d => !java.lang.Double.isNaN(d.doubleValue()))
+    saneValues.asMultiSet should equal(MultiSet(10, 10.0, 100, Double.PositiveInfinity))
+    result.executionPlanDescription().toString should include("NodeIndexSeekByRange")
+  }
+
   test("should be able to plan index seek for numerical greater than or equal") {
     // Given matches
     createLabeledNode(Map("prop" -> 5), "Label")
@@ -153,6 +246,39 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     graph.createIndex("Label", "prop")
 
     val query = "MATCH (n:Label) WHERE n.prop >= 5 RETURN n.prop AS prop"
+
+    // When
+    val result = executeWithAllPlannersReplaceNaNs(query)
+
+    // Then
+    val values = result.columnAs[Number]("prop").toSeq
+    values.exists(d => java.lang.Double.isNaN(d.doubleValue())) should be(right = true)
+    val saneValues = values.filter(d => !java.lang.Double.isNaN(d.doubleValue()))
+    saneValues.asMultiSet should equal(MultiSet(5, 5.0, 10, 10.0, 100, Double.PositiveInfinity))
+    result.executionPlanDescription().toString should include("NodeIndexSeekByRange")
+  }
+
+  test("should be able to plan index seek for numerical negated less than") {
+    // Given matches
+    createLabeledNode(Map("prop" -> 5), "Label")
+    createLabeledNode(Map("prop" -> 5.0), "Label")
+    createLabeledNode(Map("prop" -> 10), "Label")
+    createLabeledNode(Map("prop" -> 10.0), "Label")
+    createLabeledNode(Map("prop" -> 100), "Label")
+    createLabeledNode(Map("prop" -> Double.PositiveInfinity), "Label")
+    createLabeledNode(Map("prop" -> Double.NaN), "Label")
+
+    // Non-matches
+    createLabeledNode(Map("prop" -> Double.NegativeInfinity), "Label")
+    createLabeledNode(Map("prop" -> -5), "Label")
+    createLabeledNode(Map("prop" -> 0), "Label")
+
+    (1 to 400).foreach { _ =>
+      createLabeledNode("Label")
+    }
+    graph.createIndex("Label", "prop")
+
+    val query = "MATCH (n:Label) WHERE NOT n.prop < 5 RETURN n.prop AS prop"
 
     // When
     val result = executeWithAllPlannersReplaceNaNs(query)
