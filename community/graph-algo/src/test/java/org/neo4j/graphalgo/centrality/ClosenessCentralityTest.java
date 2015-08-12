@@ -84,6 +84,13 @@ public class ClosenessCentralityTest extends Neo4jAlgoTestCase
     @Test
     public void testBox()
     {
+        /*
+         * Layout
+         *
+         * (a)-(b)
+         *  |   |
+         * (d)-(c)
+         */
         graph.makeEdgeChain( "a,b,c,d,a" );
         ClosenessCentrality<Double> closenessCentrality = getCentralityAlgorithm();
         assertCentrality( closenessCentrality, "a", 1.0 / 4 );
@@ -95,6 +102,14 @@ public class ClosenessCentralityTest extends Neo4jAlgoTestCase
     @Test
     public void testPlusShape()
     {
+        /*
+         * Layout
+         *     (d)
+         *      |
+         * (a)-(b)-(c)
+         *      |
+         *     (e)
+         */
         graph.makeEdgeChain( "a,b,c" );
         graph.makeEdgeChain( "d,b,e" );
         ClosenessCentrality<Double> closenessCentrality = getCentralityAlgorithm();
@@ -108,6 +123,11 @@ public class ClosenessCentralityTest extends Neo4jAlgoTestCase
     @Test
     public void testChain()
     {
+        /*
+         * Layout
+         *
+         * (a) - (b) - (c) - (d) - (e)
+         */
         graph.makeEdgeChain( "a,b,c,d,e" );
         ClosenessCentrality<Double> closenessCentrality = getCentralityAlgorithm();
         assertCentrality( closenessCentrality, "a", 1.0 / 10 );
@@ -115,5 +135,55 @@ public class ClosenessCentralityTest extends Neo4jAlgoTestCase
         assertCentrality( closenessCentrality, "c", 1.0 / 6 );
         assertCentrality( closenessCentrality, "d", 1.0 / 7 );
         assertCentrality( closenessCentrality, "e", 1.0 / 10 );
+    }
+
+    @Test
+    public void isolatedNode()
+    {
+        /*
+         * Layout
+         *
+         * (o)
+         *
+         * (a) -- (b)
+         *  \-(c)-/
+         */
+        graph.makeNode( "o" );
+        graph.makeEdgeChain( "a,b,c,a" );
+        ClosenessCentrality<Double> closenessCentrality = getCentralityAlgorithm();
+        Double o = closenessCentrality.getCentrality( graph.getNode( "o" ) );
+        Double a = closenessCentrality.getCentrality( graph.getNode( "a" ) );
+        Double b = closenessCentrality.getCentrality( graph.getNode( "b" ) );
+        Double c = closenessCentrality.getCentrality( graph.getNode( "c" ) );
+
+        assertCentrality( closenessCentrality, "o", 0d );
+        assertCentrality( closenessCentrality, "a", 0.5 );
+        assertCentrality( closenessCentrality, "b", 0.5 );
+        assertCentrality( closenessCentrality, "c", 0.5 );
+    }
+
+    @Test
+    public void isolatedCommunities()
+    {
+        /*
+         * Layout
+         *
+         *  (a) -- (b)
+         *   \-(c)-/
+         *
+         *  (d) -- (e)
+         *   \-(f)-/
+         */
+        graph.makeEdgeChain( "a,b,c,a" );
+        graph.makeEdgeChain( "d,e,f,d" );
+        ClosenessCentrality<Double> closenessCentrality = getCentralityAlgorithm();
+
+        assertCentrality( closenessCentrality, "a", 0.5 );
+        assertCentrality( closenessCentrality, "b", 0.5 );
+        assertCentrality( closenessCentrality, "c", 0.5 );
+
+        assertCentrality( closenessCentrality, "d", 0.5 );
+        assertCentrality( closenessCentrality, "e", 0.5 );
+        assertCentrality( closenessCentrality, "f", 0.5 );
     }
 }
