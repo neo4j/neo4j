@@ -59,6 +59,9 @@ import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -66,10 +69,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
-import static java.util.Arrays.asList;
 
 import static org.neo4j.function.IntPredicates.alwaysTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
@@ -666,6 +665,32 @@ public class ImportToolTest
         {
             // EXPECT
             assertTrue( suppressOutput.getErrorVoice().containsMessage( message ) );
+        }
+    }
+
+    @Test
+    public void shouldAllowMultilineFieldsWhenEnabled() throws Exception
+    {
+        // GIVEN
+        File data = data( ":ID,name", "1,\"This is a line with\nnewlines in\"" );
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--nodes", data.getAbsolutePath(),
+                "--multiline-fields", "true" );
+
+        // THEN
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        try ( Transaction tx = db.beginTx() )
+        {
+            ResourceIterator<Node> allNodes = GlobalGraphOperations.at( db ).getAllNodes().iterator();
+            Node node = IteratorUtil.single( allNodes );
+            allNodes.close();
+
+            assertEquals( "This is a line with\nnewlines in", node.getProperty( "name" ) );
+
+            tx.success();
         }
     }
 
