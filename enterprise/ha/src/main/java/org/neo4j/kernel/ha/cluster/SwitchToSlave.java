@@ -85,8 +85,6 @@ import org.neo4j.logging.Log;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
-
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.first;
@@ -112,12 +110,15 @@ public class SwitchToSlave
     public interface Monitor
     {
         void switchToSlaveStarted();
+
         void switchToSlaveCompleted( boolean wasSuccessful );
 
         void storeCopyStarted();
+
         void storeCopyCompleted( boolean wasSuccessful );
 
         void catchupStarted();
+
         void catchupCompleted();
     }
 
@@ -212,7 +213,7 @@ public class SwitchToSlave
      * @throws Throwable
      */
     public URI switchToSlave( LifeSupport haCommunicationLife, URI me, URI masterUri,
-                              CancellationRequest cancellationRequest ) throws Throwable
+            CancellationRequest cancellationRequest ) throws Throwable
     {
         URI slaveUri;
         boolean success = false;
@@ -318,8 +319,11 @@ public class SwitchToSlave
         }
     }
 
-    private boolean executeConsistencyChecks( InstanceId myId, TransactionIdStore txIdStore, URI masterUri, StoreId storeId,
-                                              CancellationRequest cancellationRequest ) throws Throwable
+    private boolean executeConsistencyChecks( InstanceId myId,
+            TransactionIdStore txIdStore,
+            URI masterUri,
+            StoreId storeId,
+            CancellationRequest cancellationRequest ) throws Throwable
     {
         LifeSupport consistencyCheckLife = new LifeSupport();
         try
@@ -387,7 +391,9 @@ public class SwitchToSlave
         }
         catch ( MismatchingStoreIdException e )
         {
-            userLog.info( "The store does not represent the same database as master. Will remove and fetch a new one from master" );
+            userLog.info(
+                    "The store does not represent the same database as master. Will remove and fetch a new one from " +
+                            "master" );
             if ( txIdStore.getLastCommittedTransactionId() == BASE_TX_ID )
             {
                 msgLog.warn( "Found and deleting empty store with mismatching store id", e );
@@ -426,9 +432,7 @@ public class SwitchToSlave
 
         Slave slaveImpl = slaveFactory.newInstance();
 
-        SlaveServer server = slaveServerFactory.apply(slaveImpl);
-
-        ;
+        SlaveServer server = slaveServerFactory.apply( slaveImpl );
 
         masterDelegateHandler.setDelegate( master );
 
@@ -472,7 +476,7 @@ public class SwitchToSlave
     }
 
     private void copyStoreFromMaster( final MasterClient masterClient,
-                                      CancellationRequest cancellationRequest ) throws Throwable
+            CancellationRequest cancellationRequest ) throws Throwable
     {
         // This will move the copied db to the graphdb location
         userLog.info( "Copying store from master" );
@@ -528,8 +532,8 @@ public class SwitchToSlave
     }
 
     private void checkDataConsistencyWithMaster( URI availableMasterId, Master master,
-                                                 StoreId storeId,
-                                                 TransactionIdStore transactionIdStore )
+            StoreId storeId,
+            TransactionIdStore transactionIdStore )
     {
         long[] myLastCommittedTxData = transactionIdStore.getLastCommittedTransaction();
         long myLastCommittedTx = myLastCommittedTxData[0];
