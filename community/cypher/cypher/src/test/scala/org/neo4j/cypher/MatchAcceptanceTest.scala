@@ -60,12 +60,22 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs("i").toSet[Node] should equal(Set(child1, child2))
   }
 
-  test("exceptions should be thrown if rows are kept") {
+  test("exceptions should be thrown if rows are kept through AND'd predicates") {
     val root = createLabeledNode(Map("name" -> "x"), "Root")
-    val child = createLabeledNode(Map("id" -> 0), "TextNode")
+    val child = createLabeledNode(Map("id" -> 0), "Child")
     relate(root, child)
 
-    val query = "MATCH (:Root {name:'x'})-->(i:TextNode) WHERE i.id =~ 'te.*' RETURN i"
+    val query = "MATCH (:Root {name:'x'})-->(i:Child) WHERE i.id =~ 'te.*' RETURN i"
+
+    a [CypherTypeException] should be thrownBy executeWithAllPlanners(query)
+  }
+
+  test("exceptions should be thrown if rows are kept through OR'd predicates") {
+    val root = createLabeledNode(Map("name" -> "x"), "Root")
+    val child = createLabeledNode(Map("id" -> 0), "Child")
+    relate(root, child)
+
+    val query = "MATCH (:Root {name:'x'})-->(i) WHERE NOT has(i.id) OR i.id =~ 'te.*' RETURN i"
 
     a [CypherTypeException] should be thrownBy executeWithAllPlanners(query)
   }
