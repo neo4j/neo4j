@@ -1,5 +1,5 @@
 [[import-tool]]
-= Import Tool
+= Import tool
 
 The import tool is used to create a new Neo4j database from data in CSV files.
 
@@ -28,7 +28,7 @@ Data cannot be imported into an existing database using this tool.
 --
 
 [[import-tool-header-format]]
-== CSV file Header format
+== CSV file header format
 
 The header row of each data source specifies how the fields should be interpreted.
 The same delimiter is used for the header row as for the rest of the data.
@@ -72,7 +72,7 @@ END_ID::
   The id of the end node of the relationship to create.
 
 [[import-tool-id-spaces]]
-=== ID Spaces
+=== ID spaces
 
 The import tool assumes that node identifiers are unique across node files.
 If this isn't the case then we can define an `id space`.
@@ -82,7 +82,7 @@ For example, to specify the `Person` id space we would use the field type `ID(Pe
 We also need to reference that id space in our relationships file i.e. `START_ID(Person)` or `END_ID(Person)`.
 
 [[import-tool-usage]]
-== Command Line Usage
+== Command line usage
 
 === Command
 
@@ -94,17 +94,20 @@ Depending on the installation type, the tool is either available globally, or us
 [[import-tool-options]]
 === Options
 
-include::../man/options.adoc[]
+include::options.adoc[]
 
-[[import-tool-basic-example]]
-== Basic Import Tool Example
+[[import-tool-examples]]
+== Import tool examples
 
-Let's look at an example.
+Let's look at a few examples.
 We'll use a data set containing movies, actors and roles.
 
 [TIP]
 While you'll usually want to store your node identifier as a property on the node for looking it up later, it's not mandatory.
 If you don't want the identifier to be persisted then don't specify a property name in the `:ID` field.
+
+[[import-tool-basic-example]]
+=== Basic example
 
 First we'll look at the movies.
 Each movie has an id, which is used to refer to it in other data sources, a title and a year
@@ -152,6 +155,7 @@ Once we've got the database up and running we can add appropriate indexes. (see 
 It is possible to import only nodes using the import tool - just don't specify a relationships file when calling `neo4j-import`.
 If you do this you'll need to create relationships later by another method - the import tool only works for initial graph population.
 
+[[import-tool-configuration-example]]
 === Customizing configuration options
 
 We can customize the configuration options that the import tool uses (see <<import-tool-options>>) if our data doesn't fit the default format.
@@ -236,14 +240,13 @@ Note how the file groups are enclosed in quotation marks in the command:
 include::separate-header-example-command.adoc[]
 ----
 
-[[import-tool-multiple-input-files]]
+[[import-tool-multiple-input-files-example]]
 === Multiple input files
 
 As well as using a separate header file you can also provide multiple nodes or relationships files.
 This may be useful when processing the output from a Hadoop pipeline for example.
-Files within such an input group can be specified with multiple match strings, delimited by +,+, where each match string can be either:
-* exact file name
-* regular expression matching one or more files. Multiple matching files will be sorted according to their characters _and_ their natural number sort order for file names containing numbers.
+Files within such an input group can be specified with multiple match strings, delimited by +,+, where each match string can be either: _the exact file name_ or _a regular expression matching one or more files_.
+Multiple matching files will be sorted according to their characters _and_ their natural number sort order for file names containing numbers.
 
 .movies4-header.csv
 [source]
@@ -307,10 +310,10 @@ include::multiple-input-files.adoc[]
 ----
 
 [[import-tool-types-labels]]
-== Types and Labels
+=== Types and labels
 
-[[import-tool-same-label-for-every-node]]
-=== Using the same label for every node
+[[import-tool-same-label-for-every-node-example]]
+==== Using the same label for every node
 
 If you want to use the same node label(s) for every node in your nodes file you can do this by specifying the appropriate value as an option to `neo4j-import`.
 In this example we'll put the label `Movie` on every node specified in `movies5.csv`:
@@ -325,7 +328,7 @@ include::movies5.csv[]
 There's then no need to specify the `:LABEL` field in the node file if you pass it as a command line option.
 If you do then both the label provided in the file and the one provided on the command line will be added to the node.
 
-And we'll put the labels `Movie` and `Sequel` on the nodes specified in `sequels5.csv`.
+In this case, we'll put the labels `Movie` and `Sequel` on the nodes specified in `sequels5.csv`.
 
 .sequels5.csv
 [source]
@@ -352,8 +355,8 @@ The call to `neo4j-import` would look like this:
 include::same-node-label-everywhere.adoc[]
 ----
 
-[[import-tool-same-relationship-type-for-every-relationship]]
-=== Using the same relationship type for every relationship
+[[import-tool-same-relationship-type-for-every-relationship-example]]
+==== Using the same relationship type for every relationship
 
 If you want to use the same relationship type for every relationship in your relationships file you can do this by
 specifying the appropriate value as an option to `neo4j-import`.
@@ -388,8 +391,8 @@ The call to `neo4j-import` would look like this:
 include::same-relationship-type-everywhere.adoc[]
 ----
 
-[[import-tool-property-types]]
-=== Property Types
+[[import-tool-property-types-example]]
+=== Property types
 
 The type for properties specified in nodes and relationships files is defined in the header row.
 (see <<import-tool-header-format>>)
@@ -423,12 +426,13 @@ include::property-types.adoc[]
 ----
 
 [[import-tool-id-handling]]
-== ID handling
+=== ID handling
 
 Each node processed by `neo4j-import` must provide a unique id.
 We use this id to find the correct nodes when creating relationships.
 
-=== Working with sequential or auto incrementing identifiers
+[[import-tool-sequential-identifiers-example]]
+==== Working with sequential or auto incrementing identifiers
 
 The import tool makes the assumption that identifiers are unique across node files.
 This may not be the case for data sets which use sequential, auto incremented or otherwise colliding identifiers.
@@ -464,17 +468,24 @@ The command line arguments would remain the same as before:
 include::id-spaces.adoc[]
 ----
 
-== Bad input data
+[[import-tool-bad-input-data-example]]
+=== Bad input data
 
 The import tool has a threshold of how many bad entities (nodes/relationships) to tolerate and skip before failing the import.
-By default `1000` bad entities are tolerated. A bad tolerance of `0` will as an example fail the import on the first bad entity.
-There are different types of bad input.
+By default `1000` bad entities are tolerated.
+A bad tolerance of `0` will as an example fail the import on the first bad entity.
+For more information, see the +<<import-tool-option-bad-tolerance, --bad-tolerance>>+ option.
 
-=== Relationships referring to missing nodes
+There are different types of bad input, which we will look into.
+
+[[import-tool-rels-to-missing-nodes-example]]
+==== Relationships referring to missing nodes
 
 Relationships that refer to missing node ids, either for `:START_ID` or `:END_ID` are considered bad relationships. 
-Whether or not such relationships are skipped is controlled with `--skip-bad-relationships` flag which can have values `{true,false}` or no value, which means `true`.
+Whether or not such relationships are skipped is controlled with `--skip-bad-relationships` flag which can have the values `true` or `false` or no value, which means `true`.
 Specifying `false` means that any bad relationship is considered an error and will fail the import.
+For more information, see the +<<import-tool-option-skip-bad-relationships, --skip-bad-relationships>>+ option.
+
 In the following example there is a missing `emil` node referenced in the roles file.
 
 .movies9.csv
@@ -510,11 +521,14 @@ Since there was only one bad relationship the import process will complete succe
 include::bad-relationships-default-not-imported.bad.adoc[]
 ----
 
-=== Multiple nodes with same id within same id space
+[[import-tool-multiple-nodes-same-id-example]]
+==== Multiple nodes with same id within same id space
 
 Nodes that specify `:ID` which has already been specified within the id space are considered bad nodes.
-Whether or not such nodes are skipped is controlled with `--skip-duplicate-nodes` flag which can have values `{true,false}` or no value, which means `true`.
+Whether or not such nodes are skipped is controlled with `--skip-duplicate-nodes` flag which can have the values `true` or `false` or no value, which means `true`.
 Specifying `false` means that any duplicate node is considered an error and will fail the import.
+For more information, see the +<<import-tool-option-skip-duplicate-nodes, --skip-duplicate-nodes>>+ option.
+
 In the following example there is a node id that is specified twice within the same id space.
 
 .actors10.csv
@@ -536,6 +550,7 @@ Since there was only one bad node the import process will complete successfully 
 include::bad-duplicate-nodes-default-not-imported.bad.adoc[]
 ----
 
+[[import-tool-output-and-statistics]]
 == Output and statistics
 
 While an import is running through its different stages, some statistics and figures are printed in the console. 
@@ -549,15 +564,18 @@ As an example:
 `[*>:20,25 MB/s------------------|PREPARE(3)====================|RELATIONSHIP(2)===============] 16M`
 
 Would be interpreted as:
-* `>` data being read, and perhaps parsed, at `20,25 MB/s`, data that is being passed on to...
-* `PREPARE` preparing the data for...
-* `RELATIONSHIP` creating actual relationship records and...
-* `v` writing the relationships to the store. This step isn't visible in this example, because it's so cheap compared to the other sections
+
+* `>` data being read, and perhaps parsed, at `20,25 MB/s`, data that is being passed on to ...
+* `PREPARE` preparing the data for ...
+* `RELATIONSHIP` creating actual relationship records and ...
+* `v` writing the relationships to the store. This step isn't visible in this example, because it's so cheap compared to the other sections.
 
 Observing the section sizes can give hints about where performance can be improved.
 As an example, reading data from input, marked as `>`, being the bottleneck might hint about the disk being slow, or poorly handling simultaneously reading and writing (since often the last section revolves around writing to disk).
 
+[[import-tool-verbose-error-information]]
 == Verbose error information
 
 In some cases if an unexpected error occurs it might be useful to supply the command line option `--stacktrace` to the import (and rerun the import to actually see the additional information).
 This will have the error printed with additional debug information, useful for a developer and issue reporting.
+

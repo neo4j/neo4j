@@ -61,6 +61,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static java.nio.charset.Charset.defaultCharset;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
@@ -120,6 +121,11 @@ public class ImportTool
         MULTILINE_FIELDS( "multiline-fields", org.neo4j.csv.reader.Configuration.DEFAULT.multilineFields(),
                 "<true/false>",
                 "Whether or not fields from input source can span multiple lines, i.e. contain newline characters." ),
+        INPUT_ENCODING( "input-encoding", null,
+                "<character set>",
+                "Character set that input data is encoded in. Provided value must be one out of the available "
+                        + "character sets in the JVM, as provided by Charset#availableCharsets(). "
+                        + "If no input encoding is provided, the default character set of the JVM will be used." ),
         ID_TYPE( "id-type", IdType.STRING,
                 "<id-type>",
                 "One out of " + Arrays.toString( IdType.values() )
@@ -144,13 +150,6 @@ public class ImportTool
                 "Number of bad entries before the import is considered failed. This tolerance threshold is "
                         + "about relationships refering to missing nodes. Format errors in input data are "
                         + "still treated as errors" ),
-
-        INPUT_ENCODING( "input-encoding", null,
-                "<character set>",
-                "Character set that input data is encoded in. Provided value must be one out of the available "
-                        + "character sets in the JVM, as provided by Charset#availableCharsets(). "
-                        + "If no input encoding is provided, the default character set of the JVM will be used." ),
-
         SKIP_BAD_RELATIONSHIPS( "skip-bad-relationships", Boolean.TRUE,
                 "<true/false>",
                 "Whether or not to skip importing relationships that refers to missing node ids, i.e. either "
@@ -205,9 +204,9 @@ public class ImportTool
             {
                 if ( !result.endsWith( "." ) )
                 {
-                    result += ". ";
+                    result += ".";
                 }
-                result += "Default value: " + defaultValue;
+                result += " Default value: " + defaultValue;
             }
             return result;
         }
@@ -217,6 +216,11 @@ public class ImportTool
             String filteredDescription = descriptionWithDefaultValue().replace( availableProcessorsHint(), "" );
             String usageString = (usage.length() > 0) ? " " + usage : "";
             return "*" + argument() + usageString + "*::\n" + filteredDescription + "\n\n";
+        }
+
+        String manualEntry()
+        {
+            return "[[import-tool-option-" + key() + "]]\n" + manPageEntry() + "//^\n\n";
         }
 
         Object defaultValue()

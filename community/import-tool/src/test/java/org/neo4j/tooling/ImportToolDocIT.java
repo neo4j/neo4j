@@ -19,9 +19,8 @@
  */
 package org.neo4j.tooling;
 
-import org.apache.commons.lang3.StringUtils;
-import org.junit.Rule;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -41,21 +40,24 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.impl.util.Charsets;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.ImportTool.Options;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.ArrayUtil.join;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.io.fs.FileUtils.copyFile;
+import static org.neo4j.io.fs.FileUtils.readTextFile;
+import static org.neo4j.io.fs.FileUtils.writeToFile;
 import static org.neo4j.tooling.GlobalGraphOperations.at;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
+
+import org.apache.commons.lang3.StringUtils;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class ImportToolDocIT
 {
@@ -529,11 +531,10 @@ public class ImportToolDocIT
                 "--relationships", roles.getAbsolutePath() );
         importTool( arguments );
         assertTrue( badFile.exists() );
-        // There's a reference in the manual to this file
-        copyFile( badFile, file( "ops", "bad-relationships-default-not-imported.bad.adoc" ) );
 
         // DOCS
         String realDir = movies.getParentFile().getAbsolutePath();
+        printFileWithPathsRemoved( badFile, realDir, "bad-relationships-default-not-imported.bad.adoc" );
         printCommandToFile( arguments, realDir, "bad-relationships-default.adoc" );
 
         // THEN
@@ -562,10 +563,10 @@ public class ImportToolDocIT
                 "--skip-duplicate-nodes" );
         importTool( arguments );
         assertTrue( badFile.exists() );
-        copyFile( badFile, file( "ops", "bad-duplicate-nodes-default-not-imported.bad.adoc" ) );
 
         // DOCS
         String realDir = actors.getParentFile().getAbsolutePath();
+        printFileWithPathsRemoved( badFile, realDir, "bad-duplicate-nodes-default-not-imported.bad.adoc" );
         printCommandToFile( arguments, realDir, "bad-duplicate-nodes-default.adoc" );
 
         // THEN
@@ -687,7 +688,8 @@ public class ImportToolDocIT
         List<String> cleanedArguments = new ArrayList<>();
         for ( String argument : arguments )
         {
-            if ( argument.contains( " " ) || Arrays.asList( new String[] { ";", "|", "'" } ).contains( argument ) )
+            if ( argument.contains( " " ) || argument.contains( "," )
+                    || Arrays.asList( new String[] { ";", "|", "'" } ).contains( argument ) )
             {
                 cleanedArguments.add( '"' + argument + '"' );
             }
@@ -717,6 +719,26 @@ public class ImportToolDocIT
                 out.print( option.manPageEntry() );
             }
         }
+    }
+
+    @Test
+    public void printOptionsForManual() throws Exception
+    {
+        try ( PrintStream out = new PrintStream( file( "ops", "options.adoc" ) ) )
+        {
+            for ( Options option : Options.values() )
+            {
+                out.print( option.manualEntry() );
+            }
+        }
+    }
+
+    private void printFileWithPathsRemoved( File badFile, String realDir, String destinationFileName )
+            throws IOException
+    {
+        String contents = readTextFile( badFile, Charsets.UTF_8 );
+        String cleanedContents = contents.replace( realDir + File.separator, "" );
+        writeToFile( file( "ops", destinationFileName ), cleanedContents, false );
     }
 
     private File file( String section, String name )
