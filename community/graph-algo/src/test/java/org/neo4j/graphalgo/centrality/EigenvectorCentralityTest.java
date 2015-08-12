@@ -20,7 +20,6 @@
 package org.neo4j.graphalgo.centrality;
 
 import common.Neo4jAlgoTestCase;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -34,7 +33,6 @@ import org.neo4j.graphalgo.impl.centrality.EigenvectorCentrality;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.test.RepeatRule;
 
 import static org.junit.Assert.assertEquals;
 
@@ -119,7 +117,7 @@ public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
          *  |v            \v     \
          * (a) -> (b) -> (c) -> (d)
          */
-        Node orphan = graph.makeNode( "o" ); // Degree 0
+        Node orphan = graph.makeNode( "o" );
         Node a = graph.makeNode( "a" );
         Node b = graph.makeNode( "b" );
         Node c = graph.makeNode( "c" );
@@ -138,7 +136,7 @@ public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
         relSet.add( graph.makeEdge( "c", "d" ) );
         relSet.add( graph.makeEdge( "d", "c" ) );
         relSet.add( graph.makeEdge( "c", "a" ) );
-        graph.makeEdge( "a", "o" ); // Edge not included in edge set
+        graph.makeEdge( "a", "o" ); // Edge not included in rel set
 
         EigenvectorCentrality eigenvectorCentrality = getEigenvectorCentrality( Direction.OUTGOING,
                 new CostEvaluator<Double>()
@@ -158,7 +156,7 @@ public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testRun()
+    public void simpleTest()
     {
         /*
          * Layout
@@ -208,6 +206,55 @@ public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
         assertApproximateCentrality( eigenvectorCentrality, "b", 0.523, 0.02 );
         assertApproximateCentrality( eigenvectorCentrality, "c", 0.395, 0.02 );
         assertApproximateCentrality( eigenvectorCentrality, "d", 0.298, 0.02 );
+    }
+
+    @Test
+    public void shouldHandleIsolatedCommunities()
+    {
+        /*
+         * Layout
+         *
+         * (a) -> (b)
+         *
+         *   ___________   _____
+         *  v            \v     \
+         * (c) -> (d) -> (e) -> (f)
+         *
+         */
+
+        Set<Node> nodeSet = new HashSet<>(  );
+        nodeSet.add( graph.makeNode( "a" ) );
+        nodeSet.add( graph.makeNode( "b" ) );
+        nodeSet.add( graph.makeNode( "c" ) );
+        nodeSet.add( graph.makeNode( "d" ) );
+        nodeSet.add( graph.makeNode( "e" ) );
+        nodeSet.add( graph.makeNode( "f" ) );
+
+        Set<Relationship> relSet = new HashSet<>();
+        relSet.add( graph.makeEdge( "a", "b" ) );
+
+        relSet.add( graph.makeEdge( "c", "d" ) );
+        relSet.add( graph.makeEdge( "d", "e" ) );
+        relSet.add( graph.makeEdge( "e", "f" ) );
+        relSet.add( graph.makeEdge( "e", "c" ) );
+        relSet.add( graph.makeEdge( "f", "e" ) );
+
+        EigenvectorCentrality eigenvectorCentrality = getEigenvectorCentrality( Direction.OUTGOING,
+                new CostEvaluator<Double>()
+                {
+                    @Override
+                    public Double getCost( Relationship relationship, Direction direction )
+                    {
+                        return 1d;
+                    }
+                }, nodeSet, relSet, 0.001 );
+
+        assertApproximateCentrality( eigenvectorCentrality, "a", 0d, 0.02 );
+        assertApproximateCentrality( eigenvectorCentrality, "b", 0d, 0.02 );
+        assertApproximateCentrality( eigenvectorCentrality, "c", 0.48, 0.02 );
+        assertApproximateCentrality( eigenvectorCentrality, "d", 0.36, 0.02 );
+        assertApproximateCentrality( eigenvectorCentrality, "e", 0.64, 0.02 );
+        assertApproximateCentrality( eigenvectorCentrality, "f", 0.48, 0.02 );
     }
 
     /**

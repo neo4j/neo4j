@@ -54,23 +54,11 @@ public class EigenvectorCentralityPower extends EigenvectorCentralityBase
 
     public int runInternalIteration()
     {
-        Map<Node, Double> newValues = new HashMap<Node, Double>();
 
         incrementTotalIterations();
-        // "matrix multiplication"
-        for ( Relationship relationship : relationshipSet )
-        {
-            if ( relationDirection.equals( Direction.BOTH )
-                 || relationDirection.equals( Direction.OUTGOING ) )
-            {
-                processRelationship( newValues, relationship, false );
-            }
-            if ( relationDirection.equals( Direction.BOTH )
-                 || relationDirection.equals( Direction.INCOMING ) )
-            {
-                processRelationship( newValues, relationship, true );
-            }
-        }
+
+        Map<Node, Double> newValues = processRelationships();
+
         normalize( newValues );
 
         values = newValues;
