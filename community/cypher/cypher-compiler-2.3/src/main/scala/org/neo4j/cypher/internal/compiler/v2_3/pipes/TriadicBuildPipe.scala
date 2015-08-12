@@ -19,72 +19,90 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import org.neo4j.collection.primitive.Primitive
+import org.neo4j.collection.primitive.{Primitive, PrimitiveLongObjectMap, PrimitiveLongSet}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherTypeException, ExecutionContext}
 import org.neo4j.graphdb.Node
 
-case class TriadicBuildPipe(source: Pipe, identifier: String)
+case class TriadicBuildPipe(sourcePipe: Pipe, source: String, seen: String)
                            (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with RonjaPipe with NoEffectsPipe {
+  extends PipeWithSource(sourcePipe, pipeMonitor) with RonjaPipe with NoEffectsPipe {
   override def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
-    val triadicSeen = Primitive.longSet()
-    state.triadicSets.put(identifier, triadicSeen)
+    val triadicState = Primitive.longObjectMap[PrimitiveLongSet]()
+    state.triadicState.put(seen, triadicState)
     input.map { ctx =>
-      ctx(identifier) match {
+      ctx(seen) match {
         case null =>
         case n: Node =>
-          triadicSeen.add(n.getId)
-        case x => throw new CypherTypeException(s"Expected a node at `$identifier` but got $x")
+          ctx(source) match {
+            case s: Node =>
+              getOrInit(triadicState, s.getId).add(n.getId)
+          }
+        case x => throw new CypherTypeException(s"Expected a node at `$seen` but got $x")
       }
       ctx
     }.toList.toIterator
   }
 
   override def planDescriptionWithoutCardinality: InternalPlanDescription =
-    PlanDescriptionImpl(this.id, "TriadicBuild", SingleChild(source.planDescription),
-      Seq(KeyNames(Seq(identifier))), identifiers)
+    PlanDescriptionImpl(this.id, "TriadicBuild", SingleChild(sourcePipe.planDescription),
+      Seq(KeyNames(Seq(seen))), identifiers)
 
   override def withEstimatedCardinality(estimated: Double) =
     copy()(Some(estimated))
 
   override def symbols =
-    source.symbols
+    sourcePipe.symbols
 
   override def dup(sources: List[Pipe]) = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
+    copy(sourcePipe = head)(estimatedCardinality)
   }
 }
 
-case class TriadicProbePipe(source: Pipe, triadicSet: String, identifier: String)
+case class TriadicProbePipe(sourcePipe: Pipe, source: String, seen: String, target: String)
                            (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with RonjaPipe with NoEffectsPipe {
+  extends PipeWithSource(sourcePipe, pipeMonitor) with RonjaPipe with NoEffectsPipe {
 
   override def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
-    val set = state.triadicSets(triadicSet)
+    val triadicState = state.triadicState(seen)
     input.filter {
       ctx =>
-        ctx(identifier) match {
-          case n: Node => !set.contains(n.getId)
+        ctx(target) match {
+          case n: Node => ctx(source) match {
+            case s: Node =>
+              !triadicState.get(s.getId).contains(n.getId)
+            case _ => false
+          }
           case _ => false
         }
     }
   }
 
   override def planDescriptionWithoutCardinality: InternalPlanDescription =
-    PlanDescriptionImpl(this.id, "TriadicProbe", SingleChild(source.planDescription),
-      Seq(KeyNames(Seq(triadicSet, identifier))), identifiers)
+    PlanDescriptionImpl(this.id, "TriadicProbe", SingleChild(sourcePipe.planDescription),
+      Seq(KeyNames(Seq(seen, target))), identifiers)
 
   override def withEstimatedCardinality(estimated: Double) =
     copy()(Some(estimated))
 
   override def symbols =
-    source.symbols
+    sourcePipe.symbols
 
   override def dup(sources: List[Pipe]) = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
+    copy(sourcePipe = head)(estimatedCardinality)
+  }
+}
+
+object getOrInit {
+  def apply(map: PrimitiveLongObjectMap[PrimitiveLongSet], key: Long): PrimitiveLongSet = {
+    var result = map.get(key)
+    if(result == null) {
+      result = Primitive.longSet()
+      map.put(key, result)
+    }
+    result
   }
 }

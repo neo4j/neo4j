@@ -19,36 +19,36 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import org.neo4j.collection.primitive.Primitive
+import org.neo4j.collection.primitive.{Primitive, PrimitiveLongSet}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
-
-import scala.collection.JavaConverters._
 
 class TriadicProbePipeTest extends CypherFunSuite {
   private implicit val monitor = mock[PipeMonitor]
 
   test("build from input") {
     // given
-    val input = createFakePipeWith(0, 1, 2, 3, 4, 5)
-    val pipe = TriadicProbePipe(input, "x", "a")()
+    val input = createFakePipeWith(0 -> List(1, 2, 3, 4, 5))
+    val pipe = TriadicProbePipe(input, "foo", "x", "a")()
     val queryState = QueryStateHelper.empty
     val set = Primitive.longSet()
     set.add(2)
     set.add(3)
     set.add(4)
-    queryState.triadicSets.update("x", set)
+    val map = Primitive.longObjectMap[PrimitiveLongSet]()
+    map.put(0, set)
+    queryState.triadicState.update("x", map)
 
     // when
     val result = pipe.createResults(queryState).map(m => m("a").asInstanceOf[Node].getId).toList
 
     // then we don't see nodes in the TriadicSet
-    result should equal(List(0, 1, 5))
+    result should equal(List(1, 5))
   }
 
 
-  private def createFakePipeWith(count: Any*): FakePipe = {
+  private def createFakePipeWith(data: (Int, List[Any])*): FakePipe = {
     import org.mockito.Mockito.when
 
     def nodeWithId(id: Long) = {
@@ -57,11 +57,14 @@ class TriadicProbePipeTest extends CypherFunSuite {
       n
     }
 
-    val in = count.map {
-      case i: Int => Map("a" -> nodeWithId(i))
-      case null => Map("a" -> null)
+    val in = data.flatMap {
+      case (x, related) =>
+        related.map {
+          case a: Int => Map("a" -> nodeWithId(a), "foo" -> nodeWithId(x))
+          case null => Map("a" -> null, "foo" -> nodeWithId(x))
+        }
     }
 
-    new FakePipe(in, "x" -> CTNode)
+    new FakePipe(in, "x" -> CTNode, "a" -> CTNode)
   }
 }

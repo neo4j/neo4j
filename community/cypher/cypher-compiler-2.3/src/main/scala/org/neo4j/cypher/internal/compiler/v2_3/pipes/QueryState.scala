@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import java.util.UUID
 
-import org.neo4j.collection.primitive.PrimitiveLongSet
+import org.neo4j.collection.primitive.{PrimitiveLongObjectMap, PrimitiveLongSet}
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
@@ -35,7 +35,7 @@ class QueryState(val query: QueryContext,
                  val timeReader: TimeReader = new TimeReader,
                  var initialContext: Option[ExecutionContext] = None,
                  val queryId: AnyRef = UUID.randomUUID().toString,
-                 val triadicSets: mutable.Map[String, PrimitiveLongSet] = new mutable.HashMap[String, PrimitiveLongSet]()) {
+                 val triadicState: mutable.Map[String, PrimitiveLongObjectMap[PrimitiveLongSet]] = new mutable.HashMap[String, PrimitiveLongObjectMap[PrimitiveLongSet]]()) {
   private var _pathValueBuilder: PathValueBuilder = null
 
   def clearPathValueBuilder = {
@@ -53,13 +53,13 @@ class QueryState(val query: QueryContext,
   def getStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
   def withDecorator(decorator: PipeDecorator) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicSets)
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState)
 
   def withInitialContext(initialContext: ExecutionContext) =
-    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), queryId, triadicSets)
+    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), queryId, triadicState)
 
   def withQueryContext(query: QueryContext) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicSets)
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState)
 
 }
 

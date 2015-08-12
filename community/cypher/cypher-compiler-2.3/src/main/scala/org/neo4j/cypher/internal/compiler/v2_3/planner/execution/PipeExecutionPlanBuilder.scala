@@ -218,13 +218,13 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
           val source = buildPipe(lhs)
           ProduceResultsPipe(source, columns)()
 
-        case TriadicBuild(lhs, id) =>
-          val source = buildPipe(lhs)
-          TriadicBuildPipe(source, id.name)()
+        case TriadicBuild(lhs, source, seen) =>
+          val pipe = buildPipe(lhs)
+          TriadicBuildPipe(pipe, source.name, seen.name)()
 
-        case TriadicProbe(lhs, triadicSet, id) =>
-          val source = buildPipe(lhs)
-          TriadicProbePipe(source, triadicSet.name, id.name)()
+        case TriadicProbe(lhs, source, seen, target) =>
+          val pipe = buildPipe(lhs)
+          TriadicProbePipe(pipe, source.name, seen.name, target.name)()
 
         case x =>
           throw new CantHandleQueryException(x.toString)
