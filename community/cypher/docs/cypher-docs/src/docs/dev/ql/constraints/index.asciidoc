@@ -39,7 +39,7 @@ include::create-a-node-that-complies-with-property-existence-constraints.asciido
 
 include::create-a-node-that-breaks-a-property-existence-constraint.asciidoc[]
 
-include::removing-a-mandatory-node-property.asciidoc[]
+include::removing-an-existence-constrained-node-property.asciidoc[]
 
 include::failure-to-create-a-node-property-existence-constraint-due-to-existing-node.asciidoc[]
 
@@ -51,7 +51,7 @@ include::create-a-relationship-that-complies-with-property-existence-constraints
 
 include::create-a-relationship-that-breaks-a-property-existence-constraint.asciidoc[]
 
-include::removing-a-mandatory-relationship-property.asciidoc[]
+include::removing-an-existence-constrained-relationship-property.asciidoc[]
 
 include::failure-to-create-a-relationship-property-existence-constraint-due-to-existing-relationship.asciidoc[]
 
