@@ -32,7 +32,7 @@ class FilterBuilder extends PlanBuilder {
 
     val onlyDeterministic = !allPatternsSolved(plan)
     val item = q.where.filter(pred => yesOrNo(pred, p, onlyDeterministic))
-    val pred: Predicate = item.map(_.token).reduce(_ ++ _)
+    val pred: Predicate = item.map(_.token).reduce(_ andWith _)
 
     val newPipe = if (pred == True()) {
       p

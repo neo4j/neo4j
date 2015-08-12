@@ -96,7 +96,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
           NodeIndexScanPipe(id, label, propertyKey)()
 
         case Selection(predicates, left) =>
-          FilterPipe(buildPipe(left), predicates.map(buildPredicate).reduce(_ ++ _))()
+          FilterPipe(buildPipe(left), predicates.map(buildPredicate).reduce(_ andWith _))()
 
         case CartesianProduct(left, right) =>
           CartesianProductPipe(buildPipe(left), buildPipe(right))()
@@ -108,11 +108,11 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
           ExpandIntoPipe(buildPipe(left), fromName, relName, toName, dir, LazyTypes(types))()
 
         case OptionalExpand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandAll, predicates) =>
-          val predicate = predicates.map(buildPredicate).reduceOption(_ ++ _).getOrElse(True())
+          val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
           OptionalExpandAllPipe(buildPipe(left), fromName, relName, toName, dir, LazyTypes(types), predicate)()
 
         case OptionalExpand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandInto, predicates) =>
-          val predicate = predicates.map(buildPredicate).reduceOption(_ ++ _).getOrElse(True())
+          val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
           OptionalExpandIntoPipe(buildPipe(left), fromName, relName, toName, dir, LazyTypes(types), predicate)()
 
         case VarExpand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), expansionMode, predicates) =>

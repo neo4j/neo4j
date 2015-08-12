@@ -32,6 +32,60 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     executeWithAllPlanners("match ()-[r]->() where id(r) = 10 return r") should be(empty)
   }
 
+  test("should fail if columnAs refers to unknown column") {
+    val n1 = createNode()
+    val n2 = createNode()
+    val r = relate(n1, n2)
+    val result = executeWithAllPlanners("MATCH (n)-[r]->() RETURN n, r")
+    a[NotFoundException] should be thrownBy result.columnAs("m")
+  }
+
+  test("AND'd predicates that throw exceptions should not matter if other predicates return false") {
+    val root = createLabeledNode(Map("name" -> "x"), "Root")
+    val child1 = createLabeledNode(Map("id" -> "text"), "TextNode")
+    val child2 = createLabeledNode(Map("id" -> 0), "IntNode")
+    relate(root, child1)
+    relate(root, child2)
+
+    val query = "MATCH (:Root {name:'x'})-->(i:TextNode) WHERE i.id =~ 'te.*' RETURN i"
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("i" -> child1)))
+  }
+
+  test("OR'd predicates that throw exceptions should not matter if other predicates return true") {
+    val root = createLabeledNode(Map("name" -> "x"), "Root")
+    val child1 = createLabeledNode(Map("id" -> "text"), "TextNode")
+    val child2 = createLabeledNode(Map("id" -> 0), "IntNode")
+    relate(root, child1)
+    relate(root, child2)
+
+    val query = "MATCH (:Root {name:'x'})-->(i) WHERE has(i.id) OR i.id =~ 'te.*' RETURN i"
+    val result = executeWithAllPlanners(query)
+
+    result.columnAs("i").toSet[Node] should equal(Set(child1, child2))
+  }
+
+  test("exceptions should be thrown if rows are kept through AND'd predicates") {
+    val root = createLabeledNode(Map("name" -> "x"), "Root")
+    val child = createLabeledNode(Map("id" -> 0), "Child")
+    relate(root, child)
+
+    val query = "MATCH (:Root {name:'x'})-->(i:Child) WHERE i.id =~ 'te.*' RETURN i"
+
+    a [CypherTypeException] should be thrownBy executeWithAllPlanners(query)
+  }
+
+  test("exceptions should be thrown if rows are kept through OR'd predicates") {
+    val root = createLabeledNode(Map("name" -> "x"), "Root")
+    val child = createLabeledNode(Map("id" -> 0), "Child")
+    relate(root, child)
+
+    val query = "MATCH (:Root {name:'x'})-->(i) WHERE NOT has(i.id) OR i.id =~ 'te.*' RETURN i"
+
+    a [CypherTypeException] should be thrownBy executeWithAllPlanners(query)
+  }
+
   test("combines aggregation and named path") {
     val node1 = createNode("num" -> 1)
     val node2 = createNode("num" -> 2)
