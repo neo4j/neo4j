@@ -53,7 +53,7 @@ include::case-insensitive-regular-expressions.asciidoc[]
 
 :leveloffset: 2
 
-== String pattern matching ==
+== String pattern matching using LIKE ==
 
 :leveloffset: 3
 
