@@ -138,10 +138,6 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
             propertyStore.updateRecord( propertyRecord );
         }
 
-        // Flush after each batch.
-        // We get vectored, sequential IO when we write with flush, plus it makes future page faulting faster.
-        propertyStore.flush();
-        entityStore.flush();
         monitor.entitiesWritten( records[0].getClass(), records.length-skipped );
         monitor.propertiesWritten( propertyBlockCursor );
     }
