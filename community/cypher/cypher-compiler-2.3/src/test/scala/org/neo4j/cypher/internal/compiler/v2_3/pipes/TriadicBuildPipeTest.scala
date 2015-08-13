@@ -22,7 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 import org.neo4j.collection.primitive.PrimitiveLongIterable
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Node
+import org.neo4j.graphdb._
+import org.neo4j.kernel.impl.core.NodeProxy
+
+import scala.collection.mutable
 
 class TriadicBuildPipeTest extends CypherFunSuite {
   private implicit val monitor = mock[PipeMonitor]
@@ -31,40 +34,57 @@ class TriadicBuildPipeTest extends CypherFunSuite {
     val input = createFakePipeWith(0 -> List(1, 2, 3, 4, 5))
     val pipe = TriadicBuildPipe(input, "x", "a")()
     val queryState = QueryStateHelper.empty
-    pipe.createResults(queryState).map(ctx => ctx("a"))
-
-    asScalaSet(queryState.triadicState("a").get(0)) should equal(Set(1, 2, 3, 4, 5))
+    val ids = new mutable.HashSet[Long]()
+    pipe.createResults(queryState).map(ctx => ctx("a")).foreach { case a: Node =>
+      asScalaSet(queryState.triadicState("a")) should contain(a.getId)
+      ids.add(a.getId)
+    }
+    ids should equal(Set(1, 2, 3, 4, 5))
   }
 
   test("build from input with two different sources") {
     val input = createFakePipeWith(0 -> List(1, 2, 3, 4, 5), 6 -> List(1, 2, 3, 4))
     val pipe = TriadicBuildPipe(input, "x", "a")()
     val queryState = QueryStateHelper.empty
-    pipe.createResults(queryState).map(ctx => ctx("a"))
-
-    asScalaSet(queryState.triadicState("a").get(0)) should equal(Set(1, 2, 3, 4, 5))
-    asScalaSet(queryState.triadicState("a").get(6)) should equal(Set(1, 2, 3, 4))
+    var count = 0
+    pipe.createResults(queryState).map(ctx => ctx("a")).foreach { case a: Node =>
+      val state = queryState.triadicState("a")
+      state.size() should be >= 4
+      state.size() should be <= 5
+      asScalaSet(state) should contain(a.getId)
+      count += 1
+    }
+    count should equal(9)
   }
 
   test("build from input with repeats") {
     val input = createFakePipeWith(0 -> List(1, 2, 3, 4, 5, 1, 2, 3, 4, 5))
     val pipe = TriadicBuildPipe(input, "x", "a")()
     val queryState = QueryStateHelper.empty
-    pipe.createResults(queryState).map(ctx => ctx("a"))
-
-    asScalaSet(queryState.triadicState("a").get(0)) should equal(Set(1, 2, 3, 4, 5))
+    var count = 0
+    pipe.createResults(queryState).map(ctx => ctx("a")).foreach { case a: Node =>
+      val state = queryState.triadicState("a")
+      state.size() should be(5)
+      asScalaSet(state) should contain(a.getId)
+      count += 1
+    }
+    count should equal(10)
   }
 
   test("build ignores nulls") {
     val input = createFakePipeWith(0 -> List(2, 3, null))
     val pipe = TriadicBuildPipe(input, "x", "a")()
     val queryState = QueryStateHelper.empty
-    pipe.createResults(queryState).map(ctx => ctx("a"))
-
-    asScalaSet(queryState.triadicState("a").get(0)) should equal(Set(2, 3))
+    var nulls = 0
+    pipe.createResults(queryState).map(ctx => ctx("a")).foreach {
+      case a: Node =>
+        asScalaSet(queryState.triadicState("a")) should contain(a.getId)
+      case null => nulls += 1
+    }
+    nulls should equal(1)
   }
 
-  private def asScalaSet(in: PrimitiveLongIterable):Set[Long] = {
+  private def asScalaSet(in: PrimitiveLongIterable): Set[Long] = {
     val builder = Set.newBuilder[Long]
     val iter = in.iterator()
     while (iter.hasNext) {
@@ -74,12 +94,8 @@ class TriadicBuildPipeTest extends CypherFunSuite {
   }
 
   private def createFakePipeWith(data: (Int, List[Any])*): FakePipe = {
-    import org.mockito.Mockito.when
-
     def nodeWithId(id: Long) = {
-      val n = mock[Node]
-      when(n.getId).thenReturn(id)
-      n
+      new NodeProxy(null, id)
     }
 
     val in = data.flatMap {

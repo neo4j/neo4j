@@ -19,30 +19,34 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import org.neo4j.collection.primitive.{Primitive, PrimitiveLongObjectMap, PrimitiveLongSet}
+import org.neo4j.collection.primitive.{Primitive, PrimitiveLongSet}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherTypeException, ExecutionContext}
 import org.neo4j.graphdb.Node
 
+import scala.collection.mutable.ListBuffer
+import scala.collection.{AbstractIterator, Iterator}
+
 case class TriadicBuildPipe(sourcePipe: Pipe, source: String, seen: String)
                            (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(sourcePipe, pipeMonitor) with RonjaPipe with NoEffectsPipe {
   override def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
-    val triadicState = Primitive.longObjectMap[PrimitiveLongSet]()
-    state.triadicState.put(seen, triadicState)
-    input.map { ctx =>
-      ctx(seen) match {
-        case null =>
-        case n: Node =>
-          ctx(source) match {
-            case s: Node =>
-              getOrInit(triadicState, s.getId).add(n.getId)
-          }
+    new LazyGroupingIterator[ExecutionContext](input) {
+      override def getKey(row: ExecutionContext) = row(source)
+
+      override def getValue(row: ExecutionContext) = row(seen) match {
+        case n: Node => Some(n.getId)
+        case null => None
         case x => throw new CypherTypeException(s"Expected a node at `$seen` but got $x")
       }
-      ctx
-    }.toList.toIterator
+
+      override def setState(triadicSet: PrimitiveLongSet) = if (triadicSet == null) {
+        state.triadicState.remove(seen)
+      } else {
+        state.triadicState.put(seen, triadicSet)
+      }
+    }
   }
 
   override def planDescriptionWithoutCardinality: InternalPlanDescription =
@@ -66,15 +70,11 @@ case class TriadicProbePipe(sourcePipe: Pipe, source: String, seen: String, targ
   extends PipeWithSource(sourcePipe, pipeMonitor) with RonjaPipe with NoEffectsPipe {
 
   override def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
-    val triadicState = state.triadicState(seen)
     input.filter {
       ctx =>
         ctx(target) match {
-          case n: Node => ctx(source) match {
-            case s: Node =>
-              !triadicState.get(s.getId).contains(n.getId)
-            case _ => false
-          }
+          case n: Node =>
+            !state.triadicState(seen).contains(n.getId)
           case _ => false
         }
     }
@@ -96,13 +96,58 @@ case class TriadicProbePipe(sourcePipe: Pipe, source: String, seen: String, targ
   }
 }
 
-object getOrInit {
-  def apply(map: PrimitiveLongObjectMap[PrimitiveLongSet], key: Long): PrimitiveLongSet = {
-    var result = map.get(key)
-    if(result == null) {
-      result = Primitive.longSet()
-      map.put(key, result)
+abstract class LazyGroupingIterator[ROW >: Null <: AnyRef](val input: Iterator[ROW]) extends AbstractIterator[ROW] {
+  def setState(state: PrimitiveLongSet)
+  def getKey(row: ROW): Any
+  def getValue(row: ROW): Option[Long]
+
+  var current: Iterator[ROW] = null
+  var nextRow: ROW = null
+
+  override def next() = if(hasNext) current.next() else Iterator.empty.next()
+
+  override def hasNext: Boolean = {
+    if (current != null && current.hasNext)
+      true
+    else {
+      val firstRow = if(nextRow != null) {
+        val row = nextRow
+        nextRow = null
+        row
+      } else if(input.hasNext) {
+        input.next()
+      } else null
+      if (firstRow == null) {
+        current = null
+        setState(null)
+        false
+      }
+      else {
+        val buffer = new ListBuffer[ROW]
+        val valueSet = Primitive.longSet()
+        setState(valueSet)
+        buffer += firstRow
+        update(valueSet, firstRow)
+        val key = getKey(firstRow)
+        // N.B. should we rewrite takeWhile to a while-loop?
+        buffer ++= input.takeWhile{ row =>
+          val s = getKey(row)
+          if (s == key) {
+            update(valueSet, row)
+            true
+          } else {
+            nextRow = row
+            false
+          }
+        }
+        current = buffer.iterator
+        true
+      }
     }
-    result
+  }
+
+  def update(triadicSet: PrimitiveLongSet, row: ROW): AnyVal = {
+    for (value <- getValue(row))
+      triadicSet.add(value)
   }
 }

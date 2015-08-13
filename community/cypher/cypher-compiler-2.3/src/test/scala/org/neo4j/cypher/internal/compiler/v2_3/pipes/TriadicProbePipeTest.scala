@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import org.neo4j.collection.primitive.{Primitive, PrimitiveLongSet}
+import org.neo4j.collection.primitive.Primitive
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
@@ -36,9 +36,7 @@ class TriadicProbePipeTest extends CypherFunSuite {
     set.add(2)
     set.add(3)
     set.add(4)
-    val map = Primitive.longObjectMap[PrimitiveLongSet]()
-    map.put(0, set)
-    queryState.triadicState.update("x", map)
+    queryState.triadicState.update("x", set)
 
     // when
     val result = pipe.createResults(queryState).map(m => m("a").asInstanceOf[Node].getId).toList
