@@ -38,9 +38,7 @@ import org.neo4j.test.TestData.Title;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class SecurityRulesDocIT extends ExclusiveServerTestBase
 {
@@ -144,7 +142,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
 
         // then
         assertTrue( NoAccessToDatabaseSecurityRule.wasInvoked() );
-        assertTrue( NoAccessToWebAdminSecurityRule.wasInvoked() );
+        assertTrue(NoAccessToWebAdminSecurityRule.wasInvoked());
     }
 
     @Test
@@ -209,7 +207,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
         gen.get().addTestSourceSnippets( PermanentlyFailingSecurityRuleWithWildcardPath.class,
                 "failingRuleWithWildcardPath" );
 
-        gen.get().setSection( "ops" );
+        gen.get().setSection("ops");
 
         functionalTestHelper = new FunctionalTestHelper( server );
 
@@ -221,7 +219,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
                         + mountPoint + "/more/stuff" )
                 .response();
 
-        assertEquals( 401, clientResponse.getStatus() );
+        assertEquals(401, clientResponse.getStatus());
     }
 
     /**
@@ -254,7 +252,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
         gen.get().addSnippet(
                 "config",
                 "\n[source,properties]\n----\norg.neo4j.server.rest.security_rules=my.rules" +
-                        ".PermanentlyFailingSecurityRuleWithComplexWildcardPath\n----\n" );
+                        ".PermanentlyFailingSecurityRuleWithComplexWildcardPath\n----\n");
         gen.get().addTestSourceSnippets( PermanentlyFailingSecurityRuleWithComplexWildcardPath.class,
                 "failingRuleWithComplexWildcardPath" );
         gen.get().setSection( "ops" );
@@ -270,6 +268,28 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
                 .response();
 
         assertEquals( 401, clientResponse.getStatus() );
+    }
+
+
+    @Test
+    public void should403WhenAuthenticatedButForbidden()
+            throws Exception
+    {
+        server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
+                PermanentlyForbiddenSecurityRule.class.getCanonicalName(),
+                PermanentlyPassingSecurityRule.class.getCanonicalName() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .build();
+        server.start();
+        functionalTestHelper = new FunctionalTestHelper( server );
+
+        JaxRsResponse clientResponse = gen.get()
+                .expectedStatus(403)
+                .expectedType(MediaType.APPLICATION_JSON_TYPE)
+                .get(trimTrailingSlash(functionalTestHelper.baseUri()))
+                .response();
+
+        assertEquals(403, clientResponse.getStatus());
     }
 
     private String trimTrailingSlash( URI uri )

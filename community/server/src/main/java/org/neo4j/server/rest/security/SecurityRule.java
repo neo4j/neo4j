@@ -30,7 +30,7 @@ public interface SecurityRule
     /**
      * @param request The HTTP request currently under consideration.
      * @return <code>true</code> if the rule passes, <code>false</code> if the
-     *         rule fails and the request is to be rejected.
+     *         rule fails and the request is to be rejected with a "401 Unauthorized".
      */
     boolean isAuthorized(HttpServletRequest request);
 
