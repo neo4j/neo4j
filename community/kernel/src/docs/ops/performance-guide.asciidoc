@@ -15,7 +15,7 @@ When a garbage collection happens, the swapped out heap memory has to be swapped
 This swap-thrashing effect has a dramatic impact on the performance of the database, rendering it practically unusable.
 A well-tuned Neo4j database should not have any swap activity in its steady-state.
 
-Next, make sure the JVM has enough memory, and not spending too much time in garbage collection.
+Next, make sure the JVM has enough memory, and isn't spending too much time in garbage collection.
 The goal is to have a large enough heap so heavy/peak load will not result in so called GC-trashing.
 Performance can drop as much as two orders of a magnitude when GC-thrashing happens.
 
@@ -28,7 +28,7 @@ The next thing to look at, is the file caching memory.
 Neo4j uses its own page cache for the store files, and relies on the operating system for caching the index files.
 Make sure that the `dbms.pagecache.memory` setting (in _neo4j.properties_) is large enough to fit the entire store, if possible.
 But also make sure that you are not allocating so much memory to the JVM and the Neo4j page cache, that there is no memory left for the operating system to cache the Lucene index files.
-For more information on configuration see <<configuration>>
+For more information on configuration see <<configuration>>.
 
 == Configuring heap size and GC ==
 
@@ -40,9 +40,9 @@ The young generation is quick to collect since the pause time correlates with th
 In the old generation, pause times roughly correlates with the size of the heap.
 For this reason, the heap should ideally be sized and tuned such that transaction and query state never makes it to the old generation.
 
-NOTE: When using Neo4j Server, JVM configuration goes into the `conf/neo4j-wrapper.conf` file, see <<server-configuration>>.
+NOTE: When using Neo4j Server, JVM configuration goes into the _conf/neo4j-wrapper.conf_ file, see <<server-configuration>>.
 
-In server deployments, the heap size is configured with the `wrapper.java.maxmemory` (in MBs) setting in the `neo4j-wrapper.conf` file.
+In server deployments, the heap size is configured with the `wrapper.java.maxmemory` (in MBs) setting in the _neo4j-wrapper.conf_ file.
 For embedded, you specify the heap size by giving the `-Xmx???m` command line flag to the `java` process, where the `???` is the maximum heap size in MBs.
 The initial size of the heap is specified by the `wrapper.java.initmemory` setting, or with the `-Xms???m` flag, or chosen heuristically by the JVM itself if left unspecified.
 The JVM will automatically grow the heap as needed, up to the maximum size.
@@ -79,7 +79,7 @@ To process them efficiently, and without adversely affecting the GC pause time, 
 
 [TIP]
 The recommended garbage collector to use when running Neo4j in production is the G1 garbage collector.
-G1 is turn on by default in server deployments.
+G1 is turned on by default in server deployments.
 For embedded deployments, it can be turned on by supplying `-XX:+UseG1GC` as a JVM parameter.
 
 Tuning the specific GC algorithm depends on both the JVM version and the workload.
@@ -93,14 +93,14 @@ Better disks equals better performance.
 
 If you have multiple disks or persistence media available it may be a good idea to split the store files and transaction logs across those disks.
 Having the store files running on disks with low seek time can do wonders for read operations.
-Today a typical mechanical drive has an average seek time of about 5ms
+Today a typical mechanical drive has an average seek time of about 5ms.
 This can cause a query or traversal to be very slow when the amount of RAM assigned to the page cache is too small.
-A new good SATA enabled SSD has an average seek time of <100 microseconds, meaning those scenarios will execute at least 50 times faster.
+A new good SATA enabled SSD has an average seek time of less than 100 microseconds, meaning those scenarios will execute at least 50 times faster.
 However, this is still tens or hundreds of times slower than accessing RAM.
 
 To avoid hitting disk you need more RAM.
-On a standard mechanical drive you can handle graphs with a few tens of millions of primitives with 2-3 GBs of RAM.
-With 8-16 GBs of RAM can handle graphs with hundreds of millions of primitives, and a good server with 16-64 GBs to handle billions of primitives.
+On a standard mechanical drive you can handle graphs with a few tens of millions of primitives (nodes, relationships and properties) with 2-3 GBs of RAM.
+A server with 8-16 GBs of RAM can handle graphs with hundreds of millions of primitives, and a good server with 16-64 GBs can handle billions of primitives.
 However, if you invest in a good SSD you will be able to handle much larger graphs on less RAM.
 
 Use tools like `dstat` or `vmstat` to gather information when your application is running.
@@ -111,9 +111,9 @@ When Neo4j starts up, its page cache is empty and needs to warm up.
 This can take a while, especially for large stores, so it's not uncommon to see a long period with many blocks being read from the drive, and high IO wait times.
 
 Neo4j also flushes its page cache in the background, so it is not uncommon to see a steady trickle of blocks being written to the drive, during steady-state.
-This background flushing only produce a small amount of IO wait, however.
+This background flushing only produces a small amount of IO wait, however.
 If the IO wait times are high during steady-state, then it might be a sign that Neo4j is bottle-necked on the random IO performance of the drive.
-The best drives for running Neo4j, are fast SSDs that can take lots of random IOPS.
+The best drives for running Neo4j are fast SSDs that can take lots of random IOPS.
 
 == Linux file system tuning ==
 
@@ -138,9 +138,9 @@ noop [deadline] cfq
 
 Another recommended practice is to disable file and directory access time updates.
 This way, the file system won't have to issue writes that update this meta-data, thus improving write performance.
-You do this by setting the `noatime,nodiratime` mount options in your `fstab`, or when you issue your disk mount command.
+You do this by setting the `noatime,nodiratime` mount options in your _fstab_, or when you issue your disk mount command.
 
-There may the other tuning options relevant to your specific file system of choice, but make sure that barriers are enabled.
+There may be other tuning options relevant to your specific file system of choice, but make sure that barriers are enabled.
 Barriers prevent certain reorderings of writes.
 They are important for maintaining the integrity of the transaction log, in case a power failure happens.
 
@@ -155,7 +155,7 @@ user@localhost:~$ ulimit -n
 1024
 ----
 
-The usual default of 1024 is often not enough, especially when many indexes are used or a server installation sees too many connections - network sockets count against that limit as well.
+The usual default of 1024 is often not enough, especially when many indexes are used or a server installation sees too many connections -- network sockets count against that limit as well.
 Users are therefore encouraged to increase that limit to a healthy value of 40000 or more, depending on usage patterns.
 Setting this value via the `ulimit` command is possible only for the root user and that for that session only.
 To set the value system wide you have to follow the instructions for your platform.
