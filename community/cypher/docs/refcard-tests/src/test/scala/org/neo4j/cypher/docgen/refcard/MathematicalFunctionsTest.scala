@@ -65,7 +65,7 @@ RETURN
 rand()
 ###
 
-A random value. Returns a new value for each call. Also useful for selecting subset or random ordering.
+A random number between 0 and 1. Returns a new value for each call. Also useful for selecting subset or random ordering.
 
 ###assertion=returns-one parameters=expression
 RETURN
