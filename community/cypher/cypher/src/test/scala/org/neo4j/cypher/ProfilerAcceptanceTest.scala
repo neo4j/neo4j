@@ -36,8 +36,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
     val result = profileWithAllPlannersAndRuntimes("MATCH (n) RETURN n")
 
-    assertRows(3)(result)("AllNodesScan", "ProduceResults", "Projection")
-    assertDbHits(0)(result)("ProduceResults", "Projection")
+    assertRows(3)(result)("AllNodesScan", "ProduceResults")
+    assertDbHits(0)(result)("ProduceResults")
     assertDbHits(4)(result)("AllNodesScan")
   }
 
@@ -48,7 +48,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
     val result = profileWithAllPlannersAndRuntimes("MATCH (n) RETURN (n:Foo)")
 
-    assertRows(3)(result)("AllNodesScan", "ProduceResults", "Projection")
+    assertRows(3)(result)("AllNodesScan", "ProduceResults")
     assertDbHits(0)(result)("ProduceResults")
     assertDbHits(3)(result)("Projection")
     assertDbHits(4)(result)("AllNodesScan")
@@ -80,8 +80,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val result = profileWithAllPlannersAndRuntimes("match (n:A)-->(x:B) return *")
 
     //THEN
-    assertRows(1)(result)("ProduceResults", "Projection", "Filter", "Expand(All)", "NodeByLabelScan")
-    assertDbHits(0)(result)("ProduceResults", "Projection")
+    assertRows(1)(result)("ProduceResults", "Filter", "Expand(All)", "NodeByLabelScan")
+    assertDbHits(0)(result)("ProduceResults")
     assertDbHits(1)(result)("Filter")
     assertDbHits(2)(result)("NodeByLabelScan", "Expand(All)")
   }
@@ -203,8 +203,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result.toList
 
     // THEN PASS
-    assertRows(1)(result)("AllNodesScan", "ProduceResults", "Projection")
-    assertDbHits(0)(result)("ProduceResults", "Projection")
+    assertRows(1)(result)("AllNodesScan", "ProduceResults")
+    assertDbHits(0)(result)("ProduceResults")
     assertDbHits(2)(result)("AllNodesScan")
 
     result.executionPlanDescription()

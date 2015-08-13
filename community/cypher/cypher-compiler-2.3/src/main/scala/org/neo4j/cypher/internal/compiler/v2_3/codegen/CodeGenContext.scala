@@ -27,8 +27,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.symbols.CypherType
 
 import scala.collection.mutable
 
-// STATEFUL!
-
 case class Variable(name: String, cypherType: CypherType, nullable: Boolean = false)
 
 class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, Id], val namer: Namer = Namer()) {
@@ -38,13 +36,13 @@ class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, I
   private val parents: mutable.Stack[CodeGenPlan] = mutable.Stack()
   val operatorIds: mutable.Map[Id, String] = mutable.Map()
 
-  def addVariable(name: String, variable: Variable) {
-    variables.put(name, variable)
+  def addVariable(queryIdentifier: String, variable: Variable) {
+    variables.put(queryIdentifier, variable)
   }
 
-  def getVariable(name: String): Variable = variables(name)
+  def getVariable(queryIdentifier: String): Variable = variables(queryIdentifier)
 
-  def variableNames(): Set[String] = variables.keySet.toSet
+  def variableQueryIdentifiers(): Set[String] = variables.keySet.toSet
 
   def addProbeTable(plan: CodeGenPlan, codeThunk: JoinData) {
     probeTables.put(plan, codeThunk)

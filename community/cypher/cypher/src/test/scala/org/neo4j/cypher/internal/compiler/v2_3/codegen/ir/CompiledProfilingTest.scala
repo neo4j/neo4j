@@ -27,15 +27,14 @@ import org.neo4j.cypher.internal.compiler.v2_3.codegen.Variable
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Cardinality
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, plans}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.{ProfileMode, symbols}
 import org.neo4j.function.Supplier
-import org.neo4j.graphdb.{GraphDatabaseService, Node}
 import org.neo4j.kernel.api._
-import org.neo4j.kernel.impl.core.{NodeProxy, NodeManager}
+import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
 import org.neo4j.test.ImpermanentGraphDatabase
 
 class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
@@ -48,7 +47,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val variable = Variable("name", symbols.CTNode)
     val projectNode = expressions.NodeProjection(variable)
     val compiled = compile(Seq(WhileLoop(variable,
-      ScanAllNodes("OP1"), AcceptVisitor("OP2", "X", Map("n" -> projectNode)))),
+      ScanAllNodes("OP1"), AcceptVisitor("OP2", Map("n" -> projectNode)))),
       Seq("n"), Map("OP1" -> id1, "OP2" -> id2, "X" -> new Id()))
 
     val statement = mock[Statement]
@@ -99,8 +98,8 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val lhs = AllNodesScan(IdName("a"), Set.empty)(solved)
     val rhs = AllNodesScan(IdName("a"), Set.empty)(solved)
     val join = NodeHashJoin(Set(IdName("a")), lhs, rhs)(solved)
-    val projection = Projection(join, Map("foo" -> SignedDecimalIntegerLiteral("1")(null)))(solved)
-    val plan = ProduceResult(List("foo"), projection)
+    val projection = plans.Projection(join, Map("foo" -> SignedDecimalIntegerLiteral("1")(null)))(solved)
+    val plan = plans.ProduceResult(List("foo"), projection)
 
     // when
     val result = compileAndExecute(plan, graphDb, mode = ProfileMode)

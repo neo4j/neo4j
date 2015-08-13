@@ -35,7 +35,7 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
       }
     } planFor "MATCH (n:Foo:Bar:Baz) RETURN n"
 
-    plan.innerPlan match {
+    plan.plan match {
       case NodeHashJoin(_,
       NodeHashJoin(_,
       NodeByLabelScan(_, _, _),

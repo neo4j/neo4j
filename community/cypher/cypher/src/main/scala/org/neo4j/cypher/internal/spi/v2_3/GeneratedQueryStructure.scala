@@ -31,8 +31,8 @@ import org.neo4j.codegen._
 import org.neo4j.codegen.source.SourceVisitor
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongObjectMap}
-import org.neo4j.cypher.internal.codegen.{NodeIdWrapper, RelationshipIdWrapper, CompiledExpandUtils, CompiledMathHelper, CompiledConversionUtils}
-import CompiledConversionUtils.CompositeKey
+import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
+import org.neo4j.cypher.internal.codegen.{CompiledConversionUtils, CompiledExpandUtils, CompiledMathHelper, NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.compiler.v2_3.codegen._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{GeneratedQuery, GeneratedQueryExecution, SuccessfulCloseable}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers._
@@ -42,11 +42,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.symbols.CypherType
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherExecutionException, ExecutionMode, ParameterNotFoundException, TaskCloser, symbols}
 import org.neo4j.function.Supplier
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
-import org.neo4j.graphdb.{Direction, GraphDatabaseService, Node, Relationship}
+import org.neo4j.graphdb._
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.kernel.api.properties.Property
 import org.neo4j.kernel.api.{ReadOperations, Statement, StatementTokenNameLookup, TokenNameLookup}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}
@@ -326,7 +325,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
   override def setInRow(column: String, value: Expression) =
     generator.expression(Expression.invoke(resultRow, Methods.set, Expression.constant(column), value))
 
-  override def visitRow() = using(generator.ifStatement(Expression.not(
+  override def visitorAccept() = using(generator.ifStatement(Expression.not(
     Expression.invoke(generator.load("visitor"), Methods.visit, generator.load("row"))))) { body =>
     // NOTE: we are in this if-block if the visitor decided to terminate early (by returning false)
     body.expression(Expression.invoke(body.self(), fields.success))
@@ -657,6 +656,13 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
       inner.assign(local, invoke)
       generator.load(predVar)
     }
+  }
+
+  override def projectVariable(variableName: String, expression: Expression) = {
+    // java.lang.Object is an ok type for result variables because we only put them into result row
+    val resultType = typeRef[Object]
+    val localVariable = generator.declare(resultType, variableName)
+    generator.assign(localVariable, expression)
   }
 
   override def declareFlag(name: String, initialValue: Boolean) = {

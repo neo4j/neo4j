@@ -57,166 +57,145 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans containing semi apply for a single pattern predicate") {
     planFor("MATCH (a) WHERE (a)-[:X]->() RETURN a").plan should equal(
-      Projection(
-        SemiApply(
-          AllNodesScan("a", Set.empty)(solved),
-          Expand(
-            Argument(Set("a"))(solved)(),
-            "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED27", "  UNNAMED20"
-          )(solved)
-        )(solved),
-        Map("a" -> ident("a")))(solved)
+      SemiApply(
+        AllNodesScan("a", Set.empty)(solved),
+        Expand(
+          Argument(Set("a"))(solved)(),
+          "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED27", "  UNNAMED20"
+        )(solved)
+      )(solved)
     )
   }
 
   test("should build plans containing anti semi apply for a single negated pattern predicate") {
     planFor("MATCH (a) WHERE NOT (a)-[:X]->() RETURN a").plan should equal(
-      Projection(
       AntiSemiApply(
         AllNodesScan("a", Set.empty)(solved),
         Expand(
           Argument(Set("a"))(solved)(),
-          "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED31", "  UNNAMED24"
+          "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED31", "  UNNAMED24"
         )(solved)
-      )(solved),
-      Map("a" -> ident("a")))(solved)
+      )(solved)
     )
   }
 
   test("should build plans containing semi apply for two pattern predicates") {
     planFor("MATCH (a) WHERE (a)-[:X]->() AND (a)-[:Y]->() RETURN a").plan should equal(
-      Projection(
       SemiApply(
         SemiApply(
           AllNodesScan("a", Set.empty)(solved),
           Expand(
             Argument(Set("a"))(solved)(),
-            "a", Direction.OUTGOING, Seq(RelTypeName("Y")_), "  UNNAMED44", "  UNNAMED37"
+            "a", Direction.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED44", "  UNNAMED37"
           )(solved)
         )(solved),
         Expand(
           Argument(Set("a"))(solved)(),
-          "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED27", "  UNNAMED20"
+          "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED27", "  UNNAMED20"
         )(solved)
-      )(solved),
-      Map("a" -> ident("a")))(solved)
+      )(solved)
     )
   }
 
   test("should build plans containing select or semi apply for a pattern predicate and an expression") {
     planFor("MATCH (a) WHERE (a)-[:X]->() OR a.prop > 4 RETURN a").plan should equal(
-      Projection(
-        SelectOrSemiApply(
-          AllNodesScan("a", Set.empty)(solved),
-          Expand(
-            Argument(Set("a"))(solved)(),
-            "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED27", "  UNNAMED20"
-          )(solved),
-          GreaterThan(Property(Identifier("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _
+      SelectOrSemiApply(
+        AllNodesScan("a", Set.empty)(solved),
+        Expand(
+          Argument(Set("a"))(solved)(),
+          "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED27", "  UNNAMED20"
         )(solved),
-        Map("a" -> ident("a")))(solved)
+        GreaterThan(Property(Identifier("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _
+      )(solved)
     )
   }
 
   test("should build plans containing select or semi apply for a pattern predicate and multiple expressions") {
     planFor("MATCH (a) WHERE a.prop2 = 9 OR (a)-[:X]->() OR a.prop > 4 RETURN a").plan should equal(
-      Projection(
-        SelectOrSemiApply(
-          AllNodesScan("a", Set.empty)(solved),
-          Expand(
-            Argument(Set("a"))(solved)(),
-            "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED42", "  UNNAMED35"
-          )(solved),
-          Ors(Set(
-            In(Property(Identifier("a") _, PropertyKeyName("prop2") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9") _)) _) _,
-            GreaterThan(Property(Identifier("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _
-          )) _
+      SelectOrSemiApply(
+        AllNodesScan("a", Set.empty)(solved),
+        Expand(
+          Argument(Set("a"))(solved)(),
+          "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED42", "  UNNAMED35"
         )(solved),
-        Map("a" -> ident("a")))(solved)
+        Ors(Set(
+          In(Property(Identifier("a") _, PropertyKeyName("prop2") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9") _)) _) _,
+          GreaterThan(Property(Identifier("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _
+        )) _
+      )(solved)
     )
   }
 
   test("should build plans containing select or anti semi apply for a single negated pattern predicate") {
     planFor("MATCH (a) WHERE a.prop = 9 OR NOT (a)-[:X]->() RETURN a").plan should equal(
-      Projection(
-        SelectOrAntiSemiApply(
-          AllNodesScan("a", Set.empty)(solved),
-          Expand(
-            Argument(Set("a"))(solved)(),
-            "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED45", "  UNNAMED38"
-          )(solved),
-          In(Property(Identifier("a") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9") _)) _) _
+      SelectOrAntiSemiApply(
+        AllNodesScan("a", Set.empty)(solved),
+        Expand(
+          Argument(Set("a"))(solved)(),
+          "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED45", "  UNNAMED38"
         )(solved),
-        Map("a" -> ident("a")))(solved)
+        In(Property(Identifier("a") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9") _)) _) _
+      )(solved)
     )
   }
 
   test("should build plans containing let select or semi apply and select or semi apply for two pattern predicates") {
     planFor("MATCH (a) WHERE a.prop = 9 OR (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a").plan should equal(
-      Projection(
-        SelectOrAntiSemiApply(
-          LetSelectOrSemiApply(
-            AllNodesScan("a", Set.empty)(solved),
-            Expand(
-              Argument(Set("a"))(solved)(),
-              "a", Direction.OUTGOING,  Seq(RelTypeName("Y") _), "  UNNAMED41", "  UNNAMED34"
-            )(solved),
-            "  FRESHID30",
-            In(Property(Identifier("a") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9")_))_)_
-          )(solved),
+      SelectOrAntiSemiApply(
+        LetSelectOrSemiApply(
+          AllNodesScan("a", Set.empty)(solved),
           Expand(
             Argument(Set("a"))(solved)(),
-            "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED61", "  UNNAMED54"
+            "a", Direction.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED41", "  UNNAMED34"
           )(solved),
-          ident("  FRESHID30")
+          "  FRESHID30",
+          In(Property(Identifier("a") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9") _)) _) _
         )(solved),
-        Map("a" -> ident("a"))
+        Expand(
+          Argument(Set("a"))(solved)(),
+          "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED61", "  UNNAMED54"
+        )(solved),
+        ident("  FRESHID30")
       )(solved)
     )
   }
 
   test("should build plans containing let semi apply and select or semi apply for two pattern predicates") {
     planFor("MATCH (a) WHERE (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a").plan should equal(
-      Projection(
-        SelectOrAntiSemiApply(
-          LetSemiApply(
-            AllNodesScan("a", Set.empty)(solved),
-            Expand(
-              Argument(Set("a"))(solved)(),
-              "a", Direction.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED27", "  UNNAMED20"
-            )(solved),
-            "  FRESHID16"
-          )(solved),
+      SelectOrAntiSemiApply(
+        LetSemiApply(
+          AllNodesScan("a", Set.empty)(solved),
           Expand(
             Argument(Set("a"))(solved)(),
-            "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED47", "  UNNAMED40"
+            "a", Direction.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED27", "  UNNAMED20"
           )(solved),
-          ident("  FRESHID16")
+          "  FRESHID16"
         )(solved),
-        Map("a" -> ident("a"))
+        Expand(
+          Argument(Set("a"))(solved)(),
+          "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED47", "  UNNAMED40"
+        )(solved),
+        ident("  FRESHID16")
       )(solved)
     )
   }
 
   test("should build plans containing let anti semi apply and select or semi apply for two pattern predicates") {
     planFor("MATCH (a) WHERE NOT (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a").plan should equal(
-      Projection(
-        SelectOrAntiSemiApply(
-          LetAntiSemiApply(
-            AllNodesScan("a", Set.empty)(solved),
-            Expand(
-              Argument(Set("a"))(solved)(),
-              "a", Direction.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED31", "  UNNAMED24"
-            )(solved),
-            "  FRESHID20"
-          )(solved),
+      SelectOrAntiSemiApply(
+        LetAntiSemiApply(
+          AllNodesScan("a", Set.empty)(solved),
           Expand(
             Argument(Set("a"))(solved)(),
-            "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED51", "  UNNAMED44"
+            "a", Direction.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED31", "  UNNAMED24"
           )(solved),
-          ident("  FRESHID20")
+          "  FRESHID20"
         )(solved),
-        Map("a" -> ident("a"))
+        Expand(
+          Argument(Set("a"))(solved)(),
+          "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED51", "  UNNAMED44"
+        )(solved),
+        ident("  FRESHID20")
       )(solved)
     )
   }

@@ -44,10 +44,10 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
       planContext = newMockedPlanContext
     )
 
-    val startPlan = Projection(newMockedLogicalPlan(), Map("count(*)" -> CountStar()_))(solved)
+    val startPlan = newMockedLogicalPlan()
 
     aggregation(startPlan, projection)(context) should equal(
-      Aggregation(Projection(startPlan, Map.empty)(solved), Map(), aggregatingMap)(solved)
+      Aggregation(startPlan, Map(), aggregatingMap)(solved)
     )
   }
 
@@ -92,7 +92,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = aggregation(projectionPlan, projection)(context)
     // Then
     result should equal(
-      Aggregation(Projection(projectionPlan, groupingKeyMap)(solved), groupingKeyMap, aggregatingMap)(solved)
+      Aggregation(projectionPlan, groupingKeyMap, aggregatingMap)(solved)
     )
   }
 }

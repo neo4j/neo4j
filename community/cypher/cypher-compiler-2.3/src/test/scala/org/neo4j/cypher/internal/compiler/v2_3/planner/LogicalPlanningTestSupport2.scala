@@ -221,10 +221,4 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   implicit def propertyKeyId(label: String)(implicit plan: SemanticPlan): PropertyKeyId =
     plan.semanticTable.resolvedPropertyKeyNames(label)
-
-  implicit class RichPlan(plan: SemanticPlan) {
-    def innerPlan = plan.plan match {
-      case Projection(inner, _) => inner
-    }
-  }
 }

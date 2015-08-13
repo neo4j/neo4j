@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.v2_3.ast
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
@@ -26,7 +27,18 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 object projection {
 
   def apply(plan: LogicalPlan, projectionsMap: Map[String, Expression])(implicit context: LogicalPlanningContext): LogicalPlan = {
+
     val ids = plan.availableSymbols
-    context.logicalPlanProducer.planRegularProjection(plan, projectionsMap)
+
+    val projectAllCoveredIds: Set[(String, Expression)] = ids.map {
+      case IdName(id) => id -> ast.Identifier(id)(null)
+    }
+    val projections: Set[(String, Expression)] = projectionsMap.toSeq.toSet
+
+    if (projections.subsetOf(projectAllCoveredIds) || projections == projectAllCoveredIds)
+      context.logicalPlanProducer.planStarProjection(plan, projectionsMap)
+    else
+      context.logicalPlanProducer.planRegularProjection(plan, projectionsMap)
   }
+
 }

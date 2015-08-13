@@ -45,6 +45,7 @@ case class LongsToListTable(structure: Map[String, CypherType], localMap: Map[St
 trait MethodStructure[E] {
 
   // misc
+  def projectVariable(variableName: String, value: E)
   def declareFlag(name: String, initialValue: Boolean)
   def updateFlag(name: String, newValue: Boolean)
   def declarePredicate(name: String): Unit
@@ -136,6 +137,7 @@ trait MethodStructure[E] {
   def node(nodeIdVar: String): E
   def materializeRelationship(relIdVar: String): E
   def relationship(relIdVar: String): E
-  def visitRow(): Unit
+  /** Feed single row to the given visitor */
+  def visitorAccept(): Unit
   def setInRow(column: String, value: E): Unit
 }

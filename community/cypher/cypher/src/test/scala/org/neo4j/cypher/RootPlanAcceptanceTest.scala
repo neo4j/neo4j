@@ -146,15 +146,14 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
     children.get(0).getName should be("AllNodesScan")
   }
 
-  test("DbHits should should contain proper values in compiled runtime") {
+  test("DbHits should contain proper values in compiled runtime") {
     val description = given("match n return n")
       .withRuntime(CompiledRuntimeName)
       .planDescription
     val children = description.getChildren
     children should have size 1
     description.getArguments.get("DbHits") should equal(0) // ProduceResults has no hits
-    children.get(0).getArguments.get("DbHits") should equal(0) // Projection has no hits
-    children.get(0).getChildren.get(0).getArguments.get("DbHits") should equal(1) // AllNodesScan has 1 hit
+    children.get(0).getArguments.get("DbHits") should equal(1) // AllNodesScan has 1 hit
   }
 
   test("Rows should be properly formatted in compiled runtime") {
@@ -163,15 +162,14 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .planDescription.getArguments.get("Rows") should equal(0)
   }
 
-  test("DbHits should should contain proper values in interpreted runtime") {
+  test("DbHits should contain proper values in interpreted runtime") {
     val description = given("match n return n")
       .withRuntime(InterpretedRuntimeName)
       .planDescription
     val children = description.getChildren
     children should have size 1
     description.getArguments.get("DbHits") should equal(0) // ProduceResults has no hits
-    children.get(0).getArguments.get("DbHits") should equal(0) // Projection has no hits
-    children.get(0).getChildren.get(0).getArguments.get("DbHits") should equal(1) // AllNodesScan has 1 hit
+    children.get(0).getArguments.get("DbHits") should equal(1) // AllNodesScan has 1 hit
   }
 
   test("Rows should be properly formatted in interpreted runtime") {
