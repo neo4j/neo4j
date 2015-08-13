@@ -157,7 +157,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
         val coveredIds = qg.coveredIds
         val predicates = selections.predicates.filter(_.dependencies.subsetOf(coveredIds))
         val arguments = argumentIds
-        val filteredHints = hints.filter(h => coveredIds.contains(IdName(h.identifier.name)))
+        val filteredHints = hints.filter(h => h.identifiers.forall(identifier => coveredIds.contains(IdName(identifier.name))))
         val shortestPaths = shortestPathPatterns.filter {
           p => coveredIds.contains(p.rel.nodes._1) && coveredIds.contains(p.rel.nodes._2)
         }
@@ -171,6 +171,9 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def withoutPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
     copy( patternRelationships = patternRelationships -- patterns )
+
+  def joinHints: Set[UsingJoinHint] =
+    hints.collect { case hint: UsingJoinHint => hint }
 
   private def connectedComponentFor(startNode: IdName, visited: mutable.Set[IdName]): QueryGraph = {
     val queue = mutable.Queue(startNode)

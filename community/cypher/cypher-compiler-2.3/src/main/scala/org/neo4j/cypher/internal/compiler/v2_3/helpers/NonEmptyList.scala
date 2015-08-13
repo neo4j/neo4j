@@ -143,6 +143,9 @@ sealed trait NonEmptyList[+T] {
       case (acc@Some(nel), elem) => if (f(elem)) Some(Fby(elem, nel)) else acc
     }.map(_.reverse)
 
+  final def forall[X >: T](predicate: (X) => Boolean): Boolean =
+    !exists(x => !predicate(x))
+
   @tailrec
   final def exists[X >: T](predicate: (X) => Boolean): Boolean = self match {
     case Last(elem) => predicate(elem)

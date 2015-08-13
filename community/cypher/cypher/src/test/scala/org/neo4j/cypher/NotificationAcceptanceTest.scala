@@ -130,7 +130,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("should warn when join hint is used with RULE planner with EXPLAIN") {
     val result = innerExecute( """CYPHER planner=rule EXPLAIN MATCH (a)-->(b) USING JOIN ON b RETURN a, b""")
 
-    result.notifications should equal(Set(JoinHintUnsupportedNotification("b")))
+    result.notifications should equal(Set(JoinHintUnsupportedNotification(Seq("b"))))
   }
 
   test("should not warn when join hint is used with RULE planner without EXPLAIN") {

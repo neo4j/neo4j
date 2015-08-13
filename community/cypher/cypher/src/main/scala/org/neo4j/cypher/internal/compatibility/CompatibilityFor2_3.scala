@@ -297,10 +297,10 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
       NotificationCode.RUNTIME_UNSUPPORTED.notification(InputPosition.empty)
     case IndexHintUnfulfillableNotification(label, propertyKey) =>
       NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(InputPosition.empty, NotificationDetail.Factory.index(label, propertyKey))
-    case JoinHintUnfulfillableNotification(identifier) =>
-      NotificationCode.JOIN_HINT_UNFULFILLABLE.notification(InputPosition.empty, NotificationDetail.Factory.join(identifier))
-    case JoinHintUnsupportedNotification(identifier) =>
-      NotificationCode.JOIN_HINT_UNSUPPORTED.notification(InputPosition.empty, NotificationDetail.Factory.join(identifier))
+    case JoinHintUnfulfillableNotification(identifiers) =>
+      NotificationCode.JOIN_HINT_UNFULFILLABLE.notification(InputPosition.empty, NotificationDetail.Factory.joinKey(identifiers.asJava))
+    case JoinHintUnsupportedNotification(identifiers) =>
+      NotificationCode.JOIN_HINT_UNSUPPORTED.notification(InputPosition.empty, NotificationDetail.Factory.joinKey(identifiers.asJava))
     case BareNodeSyntaxDeprecatedNotification(pos) =>
       NotificationCode.BARE_NODE_SYNTAX_DEPRECATED.notification(pos.asInputPosition)
   }

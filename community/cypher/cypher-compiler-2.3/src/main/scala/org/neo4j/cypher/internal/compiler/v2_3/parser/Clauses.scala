@@ -112,7 +112,7 @@ trait Clauses extends Parser
 
   private def Hint: Rule1[ast.UsingHint] = rule("USING") (
       group(keyword("USING INDEX") ~~ Identifier ~~ NodeLabel ~~ "(" ~~ Identifier ~~ ")") ~~>> (ast.UsingIndexHint(_, _, _))
-    | group(keyword("USING JOIN ON") ~~ Identifier) ~~>> (ast.UsingJoinHint(_))
+    | group(keyword("USING JOIN ON") ~~ oneOrMore(Identifier, separator = CommaSep)) ~~>> (ast.UsingJoinHint(_))
     | group(keyword("USING SCAN") ~~ Identifier ~~ NodeLabel) ~~>> (ast.UsingScanHint(_, _))
   )
 

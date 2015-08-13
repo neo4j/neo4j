@@ -62,7 +62,7 @@ public enum NotificationCode
     JOIN_HINT_UNFULFILLABLE(
         SeverityLevel.WARNING,
         Status.Statement.JoinHintUnfulfillableWarning,
-        "The hinted hash join was not planned"
+        "The hinted join was not planned. This could happen because no generated plan contained the join key, please try using a different join key or restructure your query."
     ),
     JOIN_HINT_UNSUPPORTED(
         SeverityLevel.WARNING,

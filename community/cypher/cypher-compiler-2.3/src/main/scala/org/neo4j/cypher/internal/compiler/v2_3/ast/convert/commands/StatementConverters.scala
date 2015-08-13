@@ -232,8 +232,8 @@ object StatementConverters {
         Some(commands.SchemaIndex(identifier.name, label.name, property.name, commands.AnyIndex, None))
       case ast.UsingScanHint(identifier, label) =>
         Some(commands.NodeByLabel(identifier.name, label.name))
-      case ast.UsingJoinHint(identifier) =>
-        notifications.log(JoinHintUnsupportedNotification(identifier.name))
+      case ast.UsingJoinHint(identifiers) =>
+        notifications.log(JoinHintUnsupportedNotification(identifiers.map(_.name).toSeq))
         None
     }
   }

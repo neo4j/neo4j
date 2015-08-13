@@ -20,10 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast
 
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 sealed trait Hint extends ASTNode with ASTPhrase with SemanticCheckable {
-  def identifier: Identifier
+  def identifiers: NonEmptyList[Identifier]
 }
 
 trait NodeHint {
@@ -35,8 +37,8 @@ trait RelationshipHint {
 }
 
 object Hint {
-  implicit val byIdentifier =
-    Ordering.by { (hint: Hint) => hint.identifier }(Identifier.byName)
+  implicit val byIdentifier: Ordering[Hint] =
+    Ordering.by { (hint: Hint) => hint.identifiers.head }(Identifier.byName)
 }
 // allowed on match
 
@@ -46,18 +48,31 @@ sealed trait UsingHint extends Hint
 
 sealed trait LegacyIndexHint extends Hint {
   self: StartItem =>
+
+  def identifier: Identifier
+  def identifiers = NonEmptyList(identifier)
 }
 
 case class UsingIndexHint(identifier: Identifier, label: LabelName, property: Identifier)(val position: InputPosition) extends UsingHint with NodeHint {
+  def identifiers = NonEmptyList(identifier)
   def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
 }
 
 case class UsingScanHint(identifier: Identifier, label: LabelName)(val position: InputPosition) extends UsingHint with NodeHint {
+  def identifiers = NonEmptyList(identifier)
   def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
 }
 
-case class UsingJoinHint(identifier: Identifier)(val position: InputPosition) extends UsingHint with NodeHint {
-  def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
+object UsingJoinHint {
+  import NonEmptyList._
+
+  def apply(elts: Seq[Identifier])(pos: InputPosition): UsingJoinHint =
+    UsingJoinHint(elts.toNonEmptyListOption.getOrElse(throw new InternalException("Expected non-empty sequence of identifiers")))(pos)
+}
+
+case class UsingJoinHint(identifiers: NonEmptyList[Identifier])(val position: InputPosition) extends UsingHint with NodeHint {
+  def semanticCheck =
+    identifiers.map { identifier => identifier.ensureDefined chain identifier.expectType(CTNode.covariant) }.reduceLeft(_ chain _)
 }
 
 // start items

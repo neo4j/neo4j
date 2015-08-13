@@ -20,21 +20,32 @@
 package org.neo4j.cypher.docgen
 
 import org.junit.Test
+import org.junit.Assert.assertThat
+import org.hamcrest.Matchers._
 
 class UsingTest extends DocumentingTestBase {
 
   override def graphDescription = List(
-    "Andres:Swedish KNOWS Peter",
+    "Andres:Swede KNOWS Peter",
     "Stefan:German KNOWS Andres",
-    "Emil KNOWS Peter"
+    "Stefan KNOWS Peter",
+    "Emil:Expat KNOWS Peter",
+    "Emil KNOWS Andres",
+    "Emil KNOWS Stefan",
+    "Jim:Brit KNOWS Andres",
+    "Jim KNOWS Peter",
+    "Jim KNOWS Emil",
+    "Jim KNOWS Stefan"
   )
 
-  override val setupConstraintQueries: List[String] = List("CREATE INDEX ON :Swedish(surname)", "CREATE INDEX ON :German(surname)")
+  override val setupConstraintQueries: List[String] = List("CREATE INDEX ON :Swede(surname)", "CREATE INDEX ON :German(surname)")
 
   override val properties = Map(
-    "Andres" -> Map[String, Any]("age" -> 36l, "awesome" -> true, "surname" -> "Taylor"),
-    "Peter" -> Map[String, Any]("age" -> 34l),
-    "Stefan" -> Map[String, Any]("surname" -> "Plantikow")
+    "Andres" -> Map[String, Any]("age" -> 40l, "surname" -> "Taylor"),
+    "Peter" -> Map[String, Any]("age" -> 42l, "surname" -> "Neubauer"),
+    "Stefan" -> Map[String, Any]("age" -> 37l, "surname" -> "Plantikow"),
+    "Emil" -> Map[String, Any]("age" -> 37l, "surname" -> "Eifrem"),
+    "Jim" -> Map[String, Any]("age" -> 39l, "surname" -> "Webber")
   )
 
   def section = "Using"
@@ -43,7 +54,7 @@ class UsingTest extends DocumentingTestBase {
     profileQuery(
       title = "Query using an index hint",
       text = "To query using an index hint, use +USING+ +INDEX+.",
-      queryText = "match (n:Swedish) using index n:Swedish(surname) where n.surname = 'Taylor' return n",
+      queryText = "match (n:Swede) using index n:Swede(surname) where n.surname = 'Taylor' return n",
       assertions = (p) => assert(p.toList === List(Map("n" -> node("Andres"))))
     )
   }
@@ -52,7 +63,7 @@ class UsingTest extends DocumentingTestBase {
     profileQuery(
       title = "Query using multiple index hints",
       text = "To query using multiple index hints, use +USING+ +INDEX+.",
-      queryText = "match (m:German)-->(n:Swedish) using index m:German(surname) using index n:Swedish(surname) where m.surname = 'Plantikow' and n.surname = 'Taylor' return m",
+      queryText = "match (m:German)-->(n:Swede) using index m:German(surname) using index n:Swede(surname) where m.surname = 'Plantikow' and n.surname = 'Taylor' return m",
       assertions = (p) => assert(p.toList === List(Map("m" -> node("Stefan"))))
     )
   }
@@ -68,10 +79,26 @@ class UsingTest extends DocumentingTestBase {
 
   @Test def query_forcing_join() {
     profileQuery(
-      title = "Hinting a join",
+      title = "Hinting a join on a single node",
       text = "To force the query planner to produce plans with joins in them, use +USING+ +JOIN+.",
       queryText = "match (andres {name:'Andres'})-->(x)<--(emil {name: 'Emil'}) using join on x return x",
       assertions = (p) => assert(p.toList === List(Map("x" -> node("Peter"))))
+    )
+  }
+
+  @Test def query_forcing_join_using_multiple_nodes() {
+    profileQuery(
+      title = "Hinting a join on multiple nodes",
+      text = "To force the query planner to produce plans with joins in them, use +USING+ +JOIN+.",
+      queryText = "match (andres {name:'Andres'})-[r1]->(x)<-[r2]-(y)-[r3]-(andres) using join on x, y return x, y",
+      assertions = (p) => {
+        assertThat(p.executionPlanDescription().toString, containsString("NodeHashJoin"))
+        assert(p.toSet === Set(
+          Map("x" -> node("Peter"), "y" -> node("Emil")),
+          Map("x" -> node("Peter"), "y" -> node("Jim")),
+          Map("x" -> node("Peter"), "y" -> node("Stefan"))
+        ))
+      }
     )
   }
 }
