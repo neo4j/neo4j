@@ -17,7 +17,52 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+<#
+.SYNOPSIS
+Starts a Neo4j Arbiter instance
 
+.DESCRIPTION
+Starts a Neo4j Arbiter instance either as a java console application or Windows Service
+
+.PARAMETER Neo4jServer
+An object representing a Neo4j Server.  Either an empty string (path determined by Get-Neo4jHome), a string (path to Neo4j installation) or a valid Neo4j Server object
+
+.PARAMETER Console
+Start the Neo4j Arbiter instance as a java console application
+
+.PARAMETER ServiceName
+The name of the Neo4j Arbiter Windows Service.  If no name is specified, the name is determined from the Neo4j Configuration files (default)
+
+.PARAMETER Wait
+Wait for the java console application to finish execution
+
+.PARAMETER PassThru
+Pass through the Neo4j Server object instead of the result of the start operation
+
+.EXAMPLE
+'C:\Neo4j\neo4j-enterprise' | Start-Neo4jArbiter
+
+Start the Neo4j Arbiter Windows Service for the Neo4j installation at 'C:\Neo4j\neo4j-enterprise'
+
+.EXAMPLE
+'C:\Neo4j\neo4j-enterprise' | Start-Neo4jArbiter -Console -Wait
+
+Start the Neo4j Arbiter for the Neo4j installation at 'C:\Neo4j\neo4j-enterprise' and wait for the execution to complete
+
+.OUTPUTS
+System.Management.Automation.PSCustomObject
+Neo4j Server object
+
+System.Int
+Process ExitCode for the console application
+
+System.ServiceProcess.ServiceController
+Windows Service object
+
+.NOTES
+This function is only applicable to Neo4j editions which support HA
+
+#>
 Function Start-Neo4jArbiter
 {
   [cmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Medium',DefaultParameterSetName='WindowsService')]
@@ -28,7 +73,7 @@ Function Start-Neo4jArbiter
     ,[Parameter(Mandatory=$true,ParameterSetName='Console')]
     [switch]$Console
 
-    ,[Parameter(Mandatory=$false)]
+    ,[Parameter(Mandatory=$false,ParameterSetName='Console')]
     [switch]$Wait
 
     ,[Parameter(Mandatory=$false)]

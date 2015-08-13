@@ -17,22 +17,63 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+<#
+.SYNOPSIS
+Retrieves information about Java on the local machine to start Neo4j programs
 
+.DESCRIPTION
+Retrieves information about Java on the local machine to start Neo4j services and utilites, tailored to the type of Neo4j edition
+
+.PARAMETER Neo4jServer
+The Neo4j Server Object
+
+.PARAMETER ExtraClassPath
+Additional paths to be added the Java Class Path
+
+.PARAMETER ForServer
+Retrieve the Java command line to start a Neo4j Server
+
+.PARAMETER ForArbiter
+Retrieve the Java command line to start a Neo4j Arbiter
+
+.PARAMETER ForUtility
+Retrieve the Java command line to start a Neo4j utility such as Neo4j Shell.
+
+.PARAMETER AppName
+Application name used when invoking Java
+
+.PARAMETER StartingClass
+The name of the starting class when invoking Java
+
+.EXAMPLE
+Get-Java -Neo4jServer $serverObject -ForServer
+
+Retrieves the Java comamnd line to start the Neo4j server for the instance in $serverObject.
+
+.OUTPUTS
+System.Collections.Hashtable
+
+.NOTES
+This function is private to the powershell module
+
+#>
 Function Get-Java
 {
   [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low',DefaultParameterSetName='Default')]
   param (
-    [Parameter(Mandatory=$true,ValueFromPipeline=$false)]
+    [Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='UtilityInvoke')]
+    [Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerInvoke')]
+    [Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ArbiterInvoke')]
     [PSCustomObject]$Neo4jServer
-    
-    ,[Parameter(Mandatory=$false,ValueFromPipeline=$false)]
-    [string[]]$ExtraClassPath = @()
-    
+        
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerInvoke')]
     [switch]$ForServer
 
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ArbiterInvoke')]
     [switch]$ForArbiter
+
+    ,[Parameter(Mandatory=$false,ValueFromPipeline=$false,ParameterSetName='UtilityInvoke')]
+    [string[]]$ExtraClassPath = @()
 
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='UtilityInvoke')]
     [switch]$ForUtility

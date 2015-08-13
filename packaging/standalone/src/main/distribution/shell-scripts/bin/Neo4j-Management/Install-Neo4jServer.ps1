@@ -17,7 +17,54 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+<#
+.SYNOPSIS
+Install a Neo4j Server Windows Service
 
+.DESCRIPTION
+Install a Neo4j Server Windows Service
+
+.PARAMETER Neo4jServer
+An object representing a Neo4j Server.  Either an empty string (path determined by Get-Neo4jHome), a string (path to Neo4j installation) or a valid Neo4j Server object
+
+.PARAMETER Name
+The name of the Neo4j Server service.  If no name is specified the default of Neo4j-Server is used
+
+.PARAMETER DisplayName
+The name of the Neo4j Server service displayed in Service Manager.  If no name is specified the default of service name is used
+
+.PARAMETER Description
+The description of the Neo4j Server service.  If no name is specified the default of 'Neo4j Graph Database' is used
+
+.PARAMETER StartType
+The Start Type of the Windows Service.  Valid strings are Manual, Automatic and Disabled.  Automatic is the default
+
+.PARAMETER SucceedIfAlreadyExists
+Do not raise an error if the service already exists
+
+.PARAMETER PassThru
+Pass through the Neo4j Server object instead of the Neo4j Setting Object
+
+.EXAMPLE
+'C:\Neo4j\neo4j-enterprise' | Install-Neo4jServer -Name Neo4jServer2
+Install the Neo4j Server Windows Service for the Neo4j installation at 'C:\Neo4j\neo4j-enterprise', with the name Neo4jServer2
+
+.EXAMPLE
+'C:\Neo4j\neo4j-enterprise' | Install-Neo4jServer -PassThru | Start-Neo4jServer
+
+Install the Neo4j Windows Windows Service for the Neo4j installation at 'C:\Neo4j\neo4j-enterprise' and then start the service
+
+.OUTPUTS
+System.Management.Automation.PSCustomObject
+Neo4j Setting object for the service name
+
+System.Management.Automation.PSCustomObject
+Neo4j Server object (-PassThru)
+
+.LINK
+Start-Neo4jServer
+
+#>
 Function Install-Neo4jServer
 {
   [cmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Medium')]
@@ -77,7 +124,7 @@ Function Install-Neo4jServer
       Write-Error 'Unable to locate Java'
       return
     }
-    
+
     $Name = $Name.Trim()
     if ($DisplayName -eq '') { $DisplayName = $Name }
     
@@ -91,7 +138,7 @@ Function Install-Neo4jServer
 
     if ($result -eq $null)
     {
-      $result = (New-Service -Name $Name -Description $Description -DisplayName $Name -BinaryPathName $binPath -StartupType $StartType)
+      $result = (New-Service -Name $Name -Description $Description -DisplayName $DisplayName -BinaryPathName $binPath -StartupType $StartType)
     }
     
     $thisServer | Set-Neo4jSetting -ConfigurationFile 'neo4j-wrapper.conf' -Name 'wrapper.name' -Value $Name | Out-Null

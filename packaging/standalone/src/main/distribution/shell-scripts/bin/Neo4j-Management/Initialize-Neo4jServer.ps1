@@ -18,10 +18,10 @@
 
 
 <#
-.Synopsis
+.SYNOPSIS
 Initializes a Neo4j installation with common settings
 
-.Synopsis
+.DESCRIPTION
 Initializes a Neo4j installation with common settings such as HTTP port number.
 
 .PARAMETER Neo4jServer
@@ -67,23 +67,29 @@ e.g. 127.0.0.1:6000 or 10.1.2.3:6000-6009
 If a port range is specified, Neo4j will attempt to listen on the next free port number, starting at the lowest.
 This only applicable to Enterprise Neo4j Servers and will raise an error on Community servers
  
-
-.Example
+.EXAMPLE
 'C:\Neo4j\neo4j-community' | Initialize-Neo4jServer -HTTPPort 8000
 
 Set the HTTP port to 8000 and use all other defaults for the Neo4j installation at C:\Neo4j\neo4j-community
 
-.Example
+.EXAMPLE
 Get-Neo4jServer 'C:\Neo4j\neo4j-community' | Initialize-Neo4jServer -HTTPPort 8000 -EnableRemoteShell -RemoteShellPort 40000
 
 Set the HTTP port to 8000, use the Remote Shell on port 40000 and use all other defaults for the Neo4j installation at C:\Neo4j\neo4j-community
 
-.Example
+.EXAMPLE
 Initialize-Neo4jServer -Neo4jHome 'C:\Neo4j\neo4j-enterprise' -EnableHTTPS -OnlineBackupServer 127.0.0.1:5690
 
 Enable HTTPS on the default port and the backup server on localhost port 5690 for the Neo4j installation at C:\Neo4j\neo4j-enterprise
 
-.Link
+.OUTPUTS
+System.Management.Automation.PSCustomObject[]
+Multiple Neo4j Setting objects
+
+System.Management.Automation.PSCustomObject
+Neo4j Server object (-PassThru)
+
+.LINK
 Get-Neo4jServer
 
 #>
@@ -116,7 +122,7 @@ Function Initialize-Neo4jServer
     [int]$RemoteShellPort = 1337
 
     ,[Parameter(Mandatory=$false)]
-    [ValidateScript({$_ -match [IPAddress]$_ })]  
+    [ValidateScript({$_ -match [IPAddress]$_ })]
     [string]$ListenOnIPAddress = '127.0.0.1'
 
     ,[Parameter(Mandatory=$false)]

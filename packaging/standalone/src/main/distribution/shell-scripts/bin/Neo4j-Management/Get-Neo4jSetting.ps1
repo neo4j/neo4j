@@ -18,6 +18,59 @@
 
 
 
+<#
+.SYNOPSIS
+Retrieves properties about a Neo4j installation
+
+.DESCRIPTION
+Retrieves properties about a Neo4j installation
+
+.PARAMETER Neo4jServer
+An object representing a Neo4j Server.  Either an empty string (path determined by Get-Neo4jHome), a string (path to Neo4j installation) or a valid Neo4j Server object
+
+.PARAMETER ConfigurationFile
+The name of the configuration file or files to parse.  If not specified the default set of all configuration files are used.  Do not use the full path, just the filename, the path is relative to '[Neo4jHome]\conf'
+
+.PARAMETER Name
+The name of the property to retrieve.  If not specified, all properties are returned.
+
+.EXAMPLE
+Get-Neo4jServer -Neo4jHome 'C:\Neo4j'
+
+Retrieves information about the Neo4j installation at C:\Neo4j
+
+.EXAMPLE
+Get-Neo4jSetting | Format-Table
+
+Retrieves all settings for the Neo4j installation as determined by Get-Neo4jHome and display as a table
+
+.EXAMPLE
+'C:\Neo4j' | Get-Neo4jSetting -Name 'httpport'
+
+Retrieves all settings with the name 'httpport' from the Neo4j installation at 'C:\Neo4j'
+
+.EXAMPLE
+'C:\Neo4j' | Get-Neo4jSetting -Name 'httpport' -ConfigurationFile @('neo4j.properties','neo4j-server.properties')
+
+Retrieves all settings with the name 'httpport' from the Neo4j installation at 'C:\Neo4j' in configuration files called 'neo4j.properties' or 'neo4j-server.properties'
+
+.OUTPUTS
+System.Management.Automation.PSCustomObject
+This is a Neo4j Setting Object
+Properties;
+'Name' : Name of the property
+'Value' : Value of the property.  Multivalue properties are string arrays (string[])
+'ConfigurationFile' : Name of the configuration file where the setting is defined
+'IsDefault' : Whether this setting is a default value (Reserved for future use)
+'Neo4jHome' : Path to the Neo4j installation
+
+.LINK
+Get-Neo4jHome  
+
+.LINK
+Get-Neo4jServer 
+
+#>
 Function Get-Neo4jSetting
 {
   [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
@@ -26,6 +79,7 @@ Function Get-Neo4jSetting
     [object]$Neo4jServer = ''
 
     ,[Parameter(Mandatory=$false)]
+
     [string[]]$ConfigurationFile = $null
 
     ,[Parameter(Mandatory=$false)]
@@ -91,7 +145,6 @@ Function Get-Neo4jSetting
           }
 
           Write-Output (New-Object -TypeName PSCustomObject -Property $properties)
-          $ConfiguredSettings = $ConfiguredSettings + "|$($filename);$($_.Name)"
         }
       }
     }
