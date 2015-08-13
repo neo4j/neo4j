@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb;
 
+import java.util.Map;
+
 /**
  * Defines a common API for handling properties on both {@link Node nodes} and
  * {@link Relationship relationships}.
@@ -126,4 +128,19 @@ public interface PropertyContainer
      */
     // TODO: figure out concurrency semantics
     Iterable<String> getPropertyKeys();
+
+    /**
+     * Returns specified existing properties.
+     *
+     * @param keys the property keys to return
+     * @return specified properties on this property container
+     */
+    Map<String, Object> getProperties( String... keys );
+
+    /**
+     * Returns all existing properties.
+     *
+     * @return all properties on this property container
+     */
+    Map<String, Object> getAllProperties();
 }

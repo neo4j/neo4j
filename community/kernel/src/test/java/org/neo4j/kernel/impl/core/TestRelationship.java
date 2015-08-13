@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+
+import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -41,6 +42,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -433,7 +435,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         // test remove property
         assertEquals( int1, rel1.removeProperty( key1 ) );
         assertEquals( string1, rel2.removeProperty( key1 ) );
-        // test remove of non exsisting property
+        // test remove of non existing property
         try
         {
             if ( rel2.removeProperty( key1 ) != null )
@@ -557,6 +559,16 @@ public class TestRelationship extends AbstractNeo4jTestCase
         assertTrue( rel1.hasProperty( key1 ) );
         assertTrue( rel1.hasProperty( key2 ) );
         assertTrue( rel1.hasProperty( key3 ) );
+
+        Map<String, Object> properties = rel1.getAllProperties();
+        assertTrue( properties.get( key1 ).equals( int1 ) );
+        assertTrue( properties.get( key2 ).equals( int2 ) );
+        assertTrue( properties.get( key3 ).equals( string ) );
+        properties = rel1.getProperties( key1, key2 );
+        assertTrue( properties.get( key1 ).equals( int1 ) );
+        assertTrue( properties.get( key2 ).equals( int2 ) );
+        assertFalse( properties.containsKey( key3 ) );
+
         try
         {
             rel1.removeProperty( key3 );

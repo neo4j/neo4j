@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import java.lang.Thread.State;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Assert;
@@ -326,9 +327,14 @@ public class NodeTest
         keys.next();
         keys.next();
         keys.next();
-        assertTrue( node1.hasProperty( key1 ) );
-        assertTrue( node1.hasProperty( key2 ) );
-        assertTrue( node1.hasProperty( key3 ) );
+        Map<String, Object> properties = node1.getAllProperties();
+        assertTrue( properties.get( key1 ).equals( int1 ) );
+        assertTrue( properties.get( key2 ).equals( int2 ) );
+        assertTrue( properties.get( key3 ).equals( string ) );
+        properties = node1.getProperties( key1, key2 );
+        assertTrue( properties.get( key1 ).equals( int1 ) );
+        assertTrue( properties.get( key2 ).equals( int2 ) );
+        assertFalse( properties.containsKey( key3 ) );
         try
         {
             node1.removeProperty( key3 );
