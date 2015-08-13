@@ -21,9 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier, Literal, Property}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, HasLabel, Predicate}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{UnresolvedLabel, UnresolvedProperty}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlanInProgress, Namer, PlanBuilder}
 import org.neo4j.graphdb.Direction
+
+import scala.Equals
 
 class PredicateRewriterTest extends BuilderTest {
 

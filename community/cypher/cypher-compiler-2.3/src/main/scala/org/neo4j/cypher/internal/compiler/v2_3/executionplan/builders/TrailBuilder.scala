@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching._

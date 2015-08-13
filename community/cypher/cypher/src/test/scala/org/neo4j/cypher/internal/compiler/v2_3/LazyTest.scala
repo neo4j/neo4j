@@ -30,7 +30,7 @@ import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongCollections
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier, Literal}
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{GreaterThan, True}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{GreaterThan, True}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument

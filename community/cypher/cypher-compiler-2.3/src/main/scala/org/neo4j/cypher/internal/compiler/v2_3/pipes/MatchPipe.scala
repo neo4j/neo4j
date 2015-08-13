@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.AllReadEffects
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{MatchingContext, PatternGraph}
 

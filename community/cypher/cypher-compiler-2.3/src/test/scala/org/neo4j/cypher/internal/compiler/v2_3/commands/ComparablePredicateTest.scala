@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates._
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherOrdering, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryStateHelper

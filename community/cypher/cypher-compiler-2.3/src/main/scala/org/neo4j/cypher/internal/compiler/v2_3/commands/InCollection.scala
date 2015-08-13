@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import expressions.{Closure, Expression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
 import pipes.QueryState
 import collection.Seq

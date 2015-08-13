@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{True, Not, Ors, Predicate}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
@@ -51,7 +53,7 @@ class OrsTest extends CypherFunSuite {
     ors(nullPredicate, T).isMatch(ctx) should equal(Some(true))
   }
 
-  private def ors(predicates: Predicate*) = Ors(predicates.toList)
+  private def ors(predicate: Predicate, predicates: Predicate*) = Ors(NonEmptyList(predicate, predicates: _*))
   private def T = True()
   private def F = Not(True())
 }

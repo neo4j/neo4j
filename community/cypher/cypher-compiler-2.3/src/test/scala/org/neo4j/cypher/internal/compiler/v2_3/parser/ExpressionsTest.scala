@@ -22,8 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.parser
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
 import ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, True}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => legacy}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => legacy, predicates}
 
 class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with Expressions {
   implicit val parserToTest = Expression
@@ -50,10 +51,10 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
 
   test("generic_cases") {
     parsing("CASE WHEN true THEN 'ONE' END") shouldGive
-      legacy.GenericCase(Seq((commands.True(), legacy.Literal("ONE"))), None)
+      legacy.GenericCase(Seq((True(), legacy.Literal("ONE"))), None)
 
-    val alt1 = (commands.Equals(legacy.Literal(1), legacy.Literal(2)), legacy.Literal("ONE"))
-    val alt2 = (commands.Equals(legacy.Literal(2), legacy.Literal("apa")), legacy.Literal("TWO"))
+    val alt1 = (Equals(legacy.Literal(1), legacy.Literal(2)), legacy.Literal("ONE"))
+    val alt2 = (predicates.Equals(legacy.Literal(2), legacy.Literal("apa")), legacy.Literal("TWO"))
 
     parsing(
       """CASE
@@ -72,7 +73,7 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
   }
 
   test("list_comprehension") {
-    val predicate = commands.Equals(legacy.Property(legacy.Identifier("x"), PropertyKey("prop")), legacy.Literal(42))
+    val predicate = predicates.Equals(legacy.Property(legacy.Identifier("x"), PropertyKey("prop")), legacy.Literal(42))
     val mapExpression = legacy.Property(legacy.Identifier("x"), PropertyKey("name"))
 
     parsing("[x in collection WHERE x.prop = 42 | x.name]") shouldGive

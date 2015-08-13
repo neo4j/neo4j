@@ -19,11 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.helpers
 
+import org.neo4j.cypher.internal.compiler.v2_3.InternalException
+
 import scala.annotation.tailrec
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable
 
 object NonEmptyList {
+
+  def from[T](input: Iterable[T]): NonEmptyList[T] =
+    from(input.iterator)
+
+  def from[T](input: Iterator[T]): NonEmptyList[T] =
+    input.asNonEmptyListOption.getOrElse(
+      throw new InternalException("Attempt to construct empty non-empty list ")
+    )
 
   def apply[T](first: T, tail: T*): NonEmptyList[T] =
     loop(Last(first), tail.iterator).reverse
@@ -56,6 +66,9 @@ object NonEmptyList {
 
     def toNonEmptyListOption: Option[NonEmptyList[T]] =
       iterable.iterator.asNonEmptyListOption
+
+    def toNonEmptyList: NonEmptyList[T] =
+      toNonEmptyListOption.getOrElse(throw new InternalException("Attempt to construct empty non-empty list "))
   }
 
   implicit class VectorConverter[T](vector: Vector[T]) {
@@ -104,6 +117,9 @@ sealed trait NonEmptyList[+T] {
   def +:[X >: T](elem: X): NonEmptyList[X] =
     Fby(elem, self)
 
+  final def :+[X >: T](elem: X): NonEmptyList[X] =
+    (elem +: self.reverse).reverse
+
   final def ++:[X >: T](iterable: Iterable[X]): NonEmptyList[X] =
     self.++:(iterable.iterator)
 
@@ -122,7 +138,7 @@ sealed trait NonEmptyList[+T] {
   }
 
   final def filter[X >: T](f: X => Boolean): Option[NonEmptyList[T]] =
-    foldLeft[Option[NonEmptyList[T]], T](None) {
+    foldLeft[Option[NonEmptyList[T]]](None) {
       case (None, elem) => if (f(elem)) Some(Last(elem)) else None
       case (acc@Some(nel), elem) => if (f(elem)) Some(Fby(elem, nel)) else acc
     }.map(_.reverse)
@@ -160,7 +176,7 @@ sealed trait NonEmptyList[+T] {
     case Last(elem) => f(elem).reverse
   }
 
-  final def foldLeft[A, X >: T](acc0: A)(f: (A, X) => A): A =
+  final def foldLeft[A](acc0: A)(f: (A, T) => A): A =
     foldLeftLoop(acc0, f)
 
   final def reduceLeft[X >: T](f: (X, X) => X): X = self match {

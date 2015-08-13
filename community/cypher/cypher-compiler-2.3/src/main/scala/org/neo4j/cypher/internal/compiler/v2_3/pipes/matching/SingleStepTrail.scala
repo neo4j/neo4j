@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes.matching
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import commands._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
 import symbols._
 import org.neo4j.graphdb.{PropertyContainer, Direction}
 

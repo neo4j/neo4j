@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
 import expressions.{ParameterExpression, Literal, Expression, AggregationExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{True, Predicate}
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.UpdateAction
 
 case class QueryBuilder(

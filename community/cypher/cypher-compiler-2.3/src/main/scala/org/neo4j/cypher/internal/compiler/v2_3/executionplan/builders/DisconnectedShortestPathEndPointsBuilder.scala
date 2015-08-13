@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{Predicate, ShortestPath}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.ShortestPath
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.PipeMonitor
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, HasLabel}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{PartiallySolvedQuery, PlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
@@ -30,10 +31,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.mutation.MergeNodeAction
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlanInProgress
 import org.neo4j.cypher.internal.compiler.v2_3.commands.SchemaIndex
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.PlainMergeNodeProducer
-import org.neo4j.cypher.internal.compiler.v2_3.commands.HasLabel
-import org.neo4j.cypher.internal.compiler.v2_3.commands.Equals
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.PipeMonitor
+
+import scala.Equals
 
 /*
 This builder is concerned with finding queries that use MERGE, and finds a way to try to find matching nodes

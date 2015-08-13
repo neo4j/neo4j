@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
-import org.neo4j.cypher.internal.compiler.v2_3.commands.True
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.True
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{ExpanderStep, SingleStep, VarLengthStep}
 import org.neo4j.graphdb.Direction
 

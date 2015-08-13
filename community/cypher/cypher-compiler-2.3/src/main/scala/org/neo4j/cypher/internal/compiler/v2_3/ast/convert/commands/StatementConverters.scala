@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.PatternConverters._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{True, And, Predicate}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => commandexpressions, values => commandvalues, _}
 import org.neo4j.cypher.internal.compiler.v2_3.notification.JoinHintUnsupportedNotification
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -171,8 +172,8 @@ object StatementConverters {
     def addToQueryBuilder(builder: commands.QueryBuilder) = {
       val wherePredicate = (builder.where, clause.where) match {
         case (p, None)                  => p
-        case (commands.True(), Some(w)) => w.expression.asCommandPredicate
-        case (p, Some(w))               => commands.And(p, w.expression.asCommandPredicate)
+        case (True(), Some(w)) => w.expression.asCommandPredicate
+        case (p, Some(w))               => And(p, w.expression.asCommandPredicate)
       }
       builder.startItems(builder.startItems ++ startItems: _*).where(wherePredicate)
     }
@@ -210,10 +211,10 @@ object StatementConverters {
       val matches = builder.matching ++ clause.pattern.asLegacyPatterns
       val namedPaths = builder.namedPaths ++ clause.pattern.asLegacyNamedPaths
       val indexHints: Seq[StartItem with Hint] = builder.using ++ clause.hints.flatMap(_.asCommandStartHint(notifications))
-      val wherePredicate: commands.Predicate = (builder.where, clause.where) match {
+      val wherePredicate: Predicate = (builder.where, clause.where) match {
         case (p, None)                  => p
-        case (commands.True(), Some(w)) => w.expression.asCommandPredicate
-        case (p, Some(w))               => commands.And(p, w.expression.asCommandPredicate)
+        case (True(), Some(w)) => w.expression.asCommandPredicate
+        case (p, Some(w))               => predicates.And(p, w.expression.asCommandPredicate)
       }
 
       builder.
