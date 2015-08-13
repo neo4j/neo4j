@@ -2,6 +2,7 @@
 -----
 o Fixes #4907 - Result.columnAs should throw exception on invalid column name
 o Fixes #4988 - predicate exceptions should be ignored for non-matching rows
+o Fixes #5114 - lower case exponent e unsupported
 
 2.2.4
 -----
