@@ -21,6 +21,7 @@ package org.neo4j.server.plugins;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -88,13 +89,9 @@ public class GraphCloner extends ServerPlugin
 
     private void cloneProperties( Relationship oldRelationship, Relationship newRelationship )
     {
-        Iterator<String> keys = oldRelationship.getPropertyKeys()
-                .iterator();
-
-        while ( keys.hasNext() )
+        for ( Map.Entry<String, Object> property : oldRelationship.getAllProperties().entrySet() )
         {
-            String key = keys.next();
-            newRelationship.setProperty( key, oldRelationship.getProperty( key ) );
+            newRelationship.setProperty( property.getKey(), property.getValue() );
         }
     }
 
@@ -128,9 +125,9 @@ public class GraphCloner extends ServerPlugin
     private Node cloneNodeData( GraphDatabaseService graphDb, Node node )
     {
         Node newNode = graphDb.createNode();
-        for ( String key : node.getPropertyKeys() )
+        for ( Map.Entry<String, Object> property : node.getAllProperties().entrySet() )
         {
-            newNode.setProperty( key, node.getProperty( key ) );
+            newNode.setProperty( property.getKey(), property.getValue() );
         }
         return newNode;
     }

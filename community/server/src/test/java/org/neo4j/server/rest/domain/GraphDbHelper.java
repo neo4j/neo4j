@@ -21,7 +21,6 @@ package org.neo4j.server.rest.domain;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -77,11 +76,7 @@ public class GraphDbHelper
         try (Transaction tx = database.getGraph().beginTx())
         {
             Node node = database.getGraph().getNodeById( nodeId );
-            Map<String, Object> allProperties = new HashMap<>();
-            for ( String propertyKey : node.getPropertyKeys() )
-            {
-                allProperties.put( propertyKey, node.getProperty( propertyKey ) );
-            }
+            Map<String, Object> allProperties = node.getAllProperties();
             tx.success();
             return allProperties;
         }
@@ -179,11 +174,7 @@ public class GraphDbHelper
         try ( Transaction tx = database.getGraph().beginTx() )
         {
             Relationship relationship = database.getGraph().getRelationshipById( relationshipId );
-            Map<String, Object> allProperties = new HashMap<>();
-            for ( String propertyKey : relationship.getPropertyKeys() )
-            {
-                allProperties.put( propertyKey, relationship.getProperty( propertyKey ) );
-            }
+            Map<String, Object> allProperties = relationship.getAllProperties();
             tx.success();
             return allProperties;
         }

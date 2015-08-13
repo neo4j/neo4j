@@ -82,4 +82,9 @@ public class Properties implements Answer<Object>, Iterable<String>
     {
         return properties.keySet().iterator();
     }
+
+    public SortedMap<String, Object> getProperties()
+    {
+        return properties;
+    }
 }

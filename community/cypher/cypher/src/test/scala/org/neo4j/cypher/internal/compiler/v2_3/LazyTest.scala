@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3
 
 import java.lang.{Iterable => JIterable}
+import java.util
 import java.util.{Iterator => JIterator}
 
 import org.junit.Assert._
@@ -375,6 +376,10 @@ class MonitoredNode(inner: Node, monitor: () => Unit) extends Node {
   def removeProperty(key: String): AnyRef = null
 
   def getPropertyKeys: JIterable[String] = null
+
+  def getProperties( keys: String* ): util.Map[String, AnyRef] = null
+
+  def getAllProperties: util.Map[String, AnyRef] = null
 
   override def toString = "°" + inner.toString + "°"
 

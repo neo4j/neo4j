@@ -64,17 +64,15 @@ public class ValueUnboundRelationship implements UnboundRelationship
         return new ValueUnboundRelationship( relId, relType, props );
     }
 
-    public static ValueUnboundRelationship unbind( Relationship relationship ) {
-        Map<String, Object> props = new HashMap<>();
-        for(String key: relationship.getPropertyKeys()) {
-            props.put( key, relationship.getProperty( key ) );
-        }
+    public static ValueUnboundRelationship unbind( Relationship relationship )
+    {
+        Map<String, Object> props = relationship.getAllProperties();
         return new ValueUnboundRelationship( relationship.getId(), relationship.getType(), props );
     }
 
     private final long id;
     private final RelationshipType type;
-    private final Map<String,Object> props;
+    private final Map<String, Object> props;
 
     public ValueUnboundRelationship( long id, RelationshipType type, Map<String, Object> props )
     {
@@ -92,6 +90,26 @@ public class ValueUnboundRelationship implements UnboundRelationship
     public Iterable<String> getPropertyKeys()
     {
         return props.keySet();
+    }
+
+    @Override
+    public Map<String, Object> getProperties( String... names )
+    {
+        Map<String, Object> selectedProperties = new HashMap<>();
+        for ( String name : names )
+        {
+            if ( props.containsKey( name ) )
+            {
+                selectedProperties.put( name, props.get( name ) );
+            }
+        }
+        return selectedProperties;
+    }
+
+    @Override
+    public Map<String, Object> getAllProperties()
+    {
+        return props;
     }
 
     @Override

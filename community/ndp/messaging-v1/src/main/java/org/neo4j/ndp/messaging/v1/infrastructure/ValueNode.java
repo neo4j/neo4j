@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -123,6 +124,26 @@ public class ValueNode implements Node
     public Iterable<String> getPropertyKeys()
     {
         return props.keySet();
+    }
+
+    @Override
+    public Map<String, Object> getProperties( String... keys )
+    {
+        Map<String, Object> selected = new HashMap<>();
+        for ( String key : keys )
+        {
+            if ( props.containsKey( key ) )
+            {
+                selected.put( key, props.get( key ) );
+            }
+        }
+        return selected;
+    }
+
+    @Override
+    public Map<String, Object> getAllProperties()
+    {
+        return props;
     }
 
     @Override

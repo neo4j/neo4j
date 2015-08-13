@@ -20,6 +20,7 @@
 package org.neo4j.ndp.messaging.v1.infrastructure;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -104,6 +105,26 @@ public class ValueRelationship implements Relationship
     public Iterable<String> getPropertyKeys()
     {
         return props.keySet();
+    }
+
+    @Override
+    public Map<String, Object> getProperties( String... keys )
+    {
+        Map<String, Object> selected = new HashMap<>();
+        for ( String key : keys )
+        {
+            if ( props.containsKey( key ) )
+            {
+                selected.put( key, props.get( key ) );
+            }
+        }
+        return selected;
+    }
+
+    @Override
+    public Map<String, Object> getAllProperties()
+    {
+        return props;
     }
 
     @Override

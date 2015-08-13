@@ -19,13 +19,6 @@
  */
 package org.neo4j.server.rest.repr;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -33,7 +26,16 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.PropertyContainer;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 
 public class PropertiesRepresentationTest
 {
@@ -106,6 +108,7 @@ public class PropertiesRepresentationTest
     {
         PropertyContainer container = mock( PropertyContainer.class );
         when( container.getPropertyKeys() ).thenReturn( values.keySet() );
+        when( container.getAllProperties() ).thenReturn( values );
         for ( Map.Entry<String, Object> entry : values.entrySet() )
         {
             when( container.getProperty( entry.getKey(), null ) ).thenReturn( entry.getValue() );

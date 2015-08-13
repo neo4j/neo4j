@@ -125,9 +125,10 @@ class GraphExtractionWriter implements ResultDataContentWriter
         out.writeObjectFieldStart( "properties" );
         try
         {
-            for ( String key : container.getPropertyKeys() )
+            for ( Map.Entry<String, Object> property : container.getAllProperties().entrySet() )
             {
-                out.writeObjectField( key, container.getProperty( key ) );
+                out.writeObjectField( property.getKey(), property.getValue() );
+
             }
         }
         finally
