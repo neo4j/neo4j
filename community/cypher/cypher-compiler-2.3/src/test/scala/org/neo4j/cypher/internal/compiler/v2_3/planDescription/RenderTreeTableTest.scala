@@ -31,8 +31,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 import org.scalatest.BeforeAndAfterAll
 
-import scala.Equals
-
 class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
 
   private val defaultLocale = Locale.getDefault

@@ -24,8 +24,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.symbols.CTNumber
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Literal, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
-import scala.Equals
-
 class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
   test("should only write let = true for the one that matches when the expression is false") {

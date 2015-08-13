@@ -27,8 +27,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 
-import scala.Equals
-
 class ExpanderStepReversalTest extends CypherFunSuite {
   val A = "A"
   val B = "B"

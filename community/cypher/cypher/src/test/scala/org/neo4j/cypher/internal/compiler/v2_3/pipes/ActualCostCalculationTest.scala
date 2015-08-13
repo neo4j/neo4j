@@ -33,7 +33,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 
-import scala.Equals
 import scala.collection.mutable
 import scala.util.Random
 

@@ -10,7 +10,7 @@
   </check>
   <check class="org.scalastyle.scalariform.IllegalImportsChecker" enabled="true" level="error">
     <parameters>
-      <parameter name="illegalImports">scala.Some,scala.Int,scala.Long,scala.Double,org.junit.Test</parameter>
+      <parameter name="illegalImports">scala.Some,scala.Equals,scala.Int,scala.Long,scala.Double,org.junit.Test</parameter>
     </parameters>
   </check>
 </scalastyle>

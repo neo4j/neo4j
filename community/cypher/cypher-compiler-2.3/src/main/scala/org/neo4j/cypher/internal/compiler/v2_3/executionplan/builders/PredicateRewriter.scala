@@ -30,8 +30,6 @@ import collection.Map
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.PipeMonitor
 
-import scala.Equals
-
 class PredicateRewriter(namer: Namer = new RandomNamer) extends PlanBuilder {
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): Boolean = {

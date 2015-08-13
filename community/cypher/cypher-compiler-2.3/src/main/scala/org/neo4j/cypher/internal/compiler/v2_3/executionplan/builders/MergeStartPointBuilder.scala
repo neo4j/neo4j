@@ -34,8 +34,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.mutation.PlainMergeNodeProducer
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.PipeMonitor
 
-import scala.Equals
-
 /*
 This builder is concerned with finding queries that use MERGE, and finds a way to try to find matching nodes
  */

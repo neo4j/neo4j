@@ -28,8 +28,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.DynamicRelationshipType.withName
 
-import scala.Equals
-
 class TrailBuilderTest extends CypherFunSuite {
   val A = withName("A")
   val B = withName("B")
