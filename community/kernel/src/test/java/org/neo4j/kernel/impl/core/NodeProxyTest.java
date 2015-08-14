@@ -19,12 +19,15 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
+
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -36,18 +39,12 @@ import static org.junit.Assert.fail;
 
 public class NodeProxyTest
 {
-    public final
+    private static final RelationshipType TYPE = DynamicRelationshipType.withName( "TYPE" );
+    private static final Label LABEL = DynamicLabel.label( "LABEL" );
+    private static final String PROPERTY_KEY = "PROPERTY_KEY";
+
     @Rule
-    DatabaseRule dbRule = new ImpermanentDatabaseRule();
-    private final String PROPERTY_KEY = "PROPERTY_KEY";
-    private GraphDatabaseService db;
-
-    @Before
-    public void init()
-    {
-        db = dbRule.getGraphDatabaseService();
-
-    }
+    public final DatabaseRule db = new ImpermanentDatabaseRule();
 
     @Test
     public void shouldThrowHumaneExceptionsWhenPropertyDoesNotExistOnNode() throws Exception
@@ -146,6 +143,106 @@ public class NodeProxyTest
         {
             node.delete(); // should throw NotFoundException as this node is already deleted
             tx.success();
+        }
+    }
+
+    @Test
+    public void shouldThrowWhenSettingPropertyOnADeletedNode()
+    {
+        // Given
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode( LABEL ).setProperty( PROPERTY_KEY, "foo" );
+            tx.success();
+        }
+
+        long nodeId = -1;
+        try ( Transaction ignored = db.beginTx() )
+        {
+            // When
+            Node node = db.findNode( LABEL, PROPERTY_KEY, "foo" );
+            nodeId = node.getId();
+            node.delete();
+            node.setProperty( PROPERTY_KEY, "bar" );
+            fail( "Setting property on a deleted node should not work" );
+        }
+        catch ( NotFoundException e )
+        {
+            // Then
+            // exception is thrown - expected
+        }
+    }
+
+    @Test
+    public void shouldThrowWhenSettingPropertyOnANodeDeletedInSameTx()
+    {
+        long nodeId = -1;
+        try ( Transaction ignored = db.beginTx() )
+        {
+            // Given
+            db.createNode( LABEL ).setProperty( PROPERTY_KEY, "foo" );
+
+            // When
+            Node node = db.findNode( LABEL, PROPERTY_KEY, "foo" );
+            nodeId = node.getId();
+            node.delete();
+            node.setProperty( PROPERTY_KEY, "bar" );
+            fail( "Setting property on a deleted node should not work" );
+        }
+        catch ( NotFoundException e )
+        {
+            // Then
+            // exception is thrown - expected
+        }
+    }
+
+    @Test
+    public void shouldThrowWhenAddingRelationshipToADeletedNode()
+    {
+        // Given
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode( LABEL ).setProperty( PROPERTY_KEY, "foo" );
+            tx.success();
+        }
+
+        long nodeId = -1;
+        try ( Transaction ignored = db.beginTx() )
+        {
+            // When
+            Node node = db.findNode( LABEL, PROPERTY_KEY, "foo" );
+            nodeId = node.getId();
+            node.delete();
+            node.createRelationshipTo( db.createNode(), TYPE );
+            fail( "Adding relationship to a deleted node should not work" );
+        }
+        catch ( NotFoundException e )
+        {
+            // Then
+            // exception is thrown - expected
+        }
+    }
+
+    @Test
+    public void shouldThrowWhenAddingRelationshipToANodeDeletedInSameTx()
+    {
+        long nodeId = -1;
+        try ( Transaction ignored = db.beginTx() )
+        {
+            // Given
+            db.createNode( LABEL ).setProperty( PROPERTY_KEY, "foo" );
+
+            // When
+            Node node = db.findNode( LABEL, PROPERTY_KEY, "foo" );
+            nodeId = node.getId();
+            node.delete();
+            node.createRelationshipTo( db.createNode(), TYPE );
+            fail( "Adding relationship to a deleted node should not work" );
+        }
+        catch ( NotFoundException e )
+        {
+            // Then
+            // exception is thrown - expected
         }
     }
 
