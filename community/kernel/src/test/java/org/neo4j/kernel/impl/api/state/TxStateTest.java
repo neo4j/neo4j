@@ -1173,6 +1173,23 @@ public class TxStateTest
     }
 
     @Test
+    public void shouldVisitDeletedNode() throws Exception
+    {
+        // GIVEN
+        state.nodeDoDelete( 42 );
+
+        // WHEN
+        state.accept( new TxStateVisitor.Adapter()
+        {
+            @Override
+            public void visitDeletedNode( long id )
+            {
+                assertEquals( "Wrong deleted node id", 42, id );
+            }
+        } );
+    }
+
+    @Test
     public void shouldNotChangeRecordForCreatedAndDeletedRelationship() throws Exception
     {
         // GIVEN

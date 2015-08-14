@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.state;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -36,11 +35,11 @@ import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.LabelItem;
 import org.neo4j.kernel.api.cursor.NodeItem;
@@ -152,12 +151,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
     // Tracks added and removed relationships, not modified relationships
     private RelationshipDiffSets<Long> relationships;
-
-    // This is temporary. It is needed until we've removed nodes and rels from the global cache, to tell
-    // that they were created and then deleted in the same tx. This is here just to set a save point to
-    // get a large set of changes in, and is meant to be removed in the coming days in a follow-up commit.
-    private final Set<Long> nodesDeletedInTx = new HashSet<>();
-    private final Set<Long> relationshipsDeletedInTx = new HashSet<>();
 
     private Map<UniquenessConstraint, Long> createdConstraintIndexesByConstraint;
 
@@ -603,10 +596,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public void nodeDoDelete( long nodeId )
     {
-        if ( nodes().remove( nodeId ) )
-        {
-            nodesDeletedInTx.add( nodeId );
-        }
+        nodes().remove( nodeId );
 
         if ( nodeStatesMap != null )
         {
@@ -648,9 +638,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public boolean nodeIsDeletedInThisTx( long nodeId )
     {
-        return addedAndRemovedNodes().isRemoved( nodeId )
-                // Temporary until we've stopped adding nodes to the global cache during tx.
-                || nodesDeletedInTx.contains( nodeId );
+        return addedAndRemovedNodes().isRemoved( nodeId );
     }
 
     @Override
@@ -662,10 +650,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public void relationshipDoDelete( long id, int type, long startNodeId, long endNodeId )
     {
-        if ( relationships().remove( id ) )
-        {
-            relationshipsDeletedInTx.add( id );
-        }
+        relationships().remove( id );
 
         if ( startNodeId == endNodeId )
         {
@@ -705,9 +690,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public boolean relationshipIsDeletedInThisTx( long relationshipId )
     {
-        return addedAndRemovedRelationships().isRemoved( relationshipId )
-                // Temporary until we stop adding rels to the global cache during tx
-                || relationshipsDeletedInTx.contains( relationshipId );
+        return addedAndRemovedRelationships().isRemoved( relationshipId );
     }
 
     @Override
