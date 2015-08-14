@@ -87,36 +87,20 @@ public class LifecycleManagingDatabase implements Database
     @Override
     public void start() throws Throwable
     {
-        try
-        {
-            this.graph = dbFactory.newGraphDatabase( config, dependencies );
-            isRunning = true;
-            log.info( "Successfully started database" );
-        }
-        catch ( Exception e )
-        {
-            log.error( "Failed to start database.", e );
-            throw e;
-        }
+        this.graph = dbFactory.newGraphDatabase( config, dependencies );
+        isRunning = true;
+        log.info( "Successfully started database" );
     }
 
     @Override
     public void stop() throws Throwable
     {
-        try
+        if ( graph != null )
         {
-            if ( graph != null )
-            {
-                graph.shutdown();
-                isRunning = false;
-                graph = null;
-                log.info( "Successfully stopped database" );
-            }
-        }
-        catch ( Exception e )
-        {
-            log.error( "Database did not stop cleanly. Reason [%s]", e.getMessage() );
-            throw e;
+            graph.shutdown();
+            isRunning = false;
+            graph = null;
+            log.info( "Successfully stopped database" );
         }
     }
 

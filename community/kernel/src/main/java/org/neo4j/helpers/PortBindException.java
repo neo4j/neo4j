@@ -17,13 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package org.neo4j.helpers;
 
-public class UpgradeNotAllowedByDatabaseModeException extends UpgradeNotAllowedException
+import java.net.BindException;
+
+/**
+ * A bind exception that includes which port we failed to bind to. Whenever possible, catch and rethrow bind exceptions as this, to make it possible to
+ * sort out which address it is that is in use.
+ */
+public class PortBindException extends BindException
 {
-    public UpgradeNotAllowedByDatabaseModeException()
+    public PortBindException( HostnamePort address, BindException original )
     {
-        super( "Cannot perform upgrade when database is started in 'HA' mode. Please restart the database in " +
-                "stand-alone mode to safely upgrade the database files." );
+        super( String.format("Address %s is already in use, cannot bind to it.", address) );
+        setStackTrace( original.getStackTrace() );
     }
 }
