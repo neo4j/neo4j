@@ -117,7 +117,7 @@ public class CacheSmallStoresRecordAccessTest
         @SuppressWarnings("unchecked")
         DirectReferenceMatcher( T record )
         {
-            super( (Class) DirectRecordReference.class );
+            super( DirectRecordReference.class );
             this.record = record;
         }
 

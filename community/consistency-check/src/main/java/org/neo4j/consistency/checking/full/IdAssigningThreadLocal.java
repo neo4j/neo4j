@@ -19,29 +19,29 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.helpers.progress.Completion;
-
-public enum TaskExecutionOrder
+/**
+ * A {@link ThreadLocal} which additionally assigns a zero-based id to each thread-local value created in
+ * {@link #initialValue(int)}.
+ */
+public abstract class IdAssigningThreadLocal<T> extends ThreadLocal<T>
 {
-    SINGLE_THREADED,
-    MULTI_PASS;
+    private final AtomicInteger id = new AtomicInteger();
 
-    void execute( List<StoppableRunnable> tasks, Completion completion ) throws ConsistencyCheckIncompleteException
+    @Override
+    protected final T initialValue()
     {
-        try
-        {
-            for ( StoppableRunnable task : tasks )
-            {
-                task.run();
-            }
-            completion.await( 0, TimeUnit.SECONDS );
-        }
-        catch ( Exception e )
-        {
-            throw new ConsistencyCheckIncompleteException( e );
-        }
+        return initialValue( id.getAndIncrement() );
+    }
+
+    protected abstract T initialValue( int id );
+
+    /**
+     * Resets the id counter so that the next call to {@link #initialValue(int)} will get {@code 0}.
+     */
+    public void resetId()
+    {
+        id.set( 0 );
     }
 }

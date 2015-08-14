@@ -21,7 +21,6 @@ package org.neo4j.consistency;
 
 import java.io.File;
 
-import org.neo4j.consistency.checking.full.TaskExecutionOrder;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -32,7 +31,6 @@ import static org.neo4j.helpers.Settings.NO_DEFAULT;
 import static org.neo4j.helpers.Settings.PATH;
 import static org.neo4j.helpers.Settings.TRUE;
 import static org.neo4j.helpers.Settings.basePath;
-import static org.neo4j.helpers.Settings.options;
 import static org.neo4j.helpers.Settings.setting;
 
 /**
@@ -56,10 +54,6 @@ public class ConsistencyCheckSettings
 
     @Description( "Perform checks between nodes, relationships, properties, types and tokens." )
     public static final Setting<Boolean> consistency_check_graph = setting( "consistency_check_graph", BOOLEAN, TRUE );
-
-    @Description( "Execution order of store cross-checks to be used when running consistency check" )
-    public static final Setting<TaskExecutionOrder> consistency_check_execution_order =
-            setting( "consistency_check_execution_order", options( TaskExecutionOrder.class ), TaskExecutionOrder.MULTI_PASS.name() );
 
     @SuppressWarnings("unchecked")
     @Description("File name for inconsistencies log file. If not specified, logs to a file in the store directory.")

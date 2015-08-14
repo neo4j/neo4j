@@ -33,7 +33,7 @@ public class PropertyKeyTokenRecordCheckTest extends
 {
     public PropertyKeyTokenRecordCheckTest()
     {
-        super( new PropertyKeyTokenRecordCheck(), ConsistencyReport.PropertyKeyTokenConsistencyReport.class );
+        super( new PropertyKeyTokenRecordCheck(), ConsistencyReport.PropertyKeyTokenConsistencyReport.class, new int[0] );
     }
 
     @Test

@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 
 import static org.neo4j.helpers.Exceptions.withMessage;
+import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
 import static org.neo4j.kernel.impl.store.NeoStore.DEFAULT_NAME;
@@ -246,6 +247,20 @@ public enum StoreFile
         return Iterables.iterable( values() );
     }
 
+    public static void fileOperation( FileOperation operation, FileSystemAbstraction fs, File fromDirectory,
+            File toDirectory, StoreFile... files ) throws IOException
+    {
+        fileOperation( operation, fs, fromDirectory, toDirectory, storeFiles( files ), false, false );
+    }
+
+    public static void fileOperation( FileOperation operation, FileSystemAbstraction fs, File fromDirectory,
+            File toDirectory, Iterable<StoreFile> files,
+            boolean allowSkipNonExistentFiles, boolean allowOverwriteTarget ) throws IOException
+    {
+        fileOperation( operation, fs, fromDirectory, toDirectory, files, allowSkipNonExistentFiles,
+                allowOverwriteTarget, StoreFileType.values() );
+    }
+
     /**
      * Performs a file operation on a database's store files from one directory
      * to another. Remember that in the case of {@link FileOperation#MOVE moving files}, the way that's done is to
@@ -321,5 +336,14 @@ public enum StoreFile
             throw withMessage( e, e.getMessage() + " | " + "size:" + fileSize + ", trailer:" + trailer.length +
                     " for " + targetStoreFileName );
         }
+    }
+
+    /**
+     * Merely here as convenience since java generics is acting up in many cases, so this is nicer for
+     * inlining such a call into {@link #fileOperation(FileOperation, FileSystemAbstraction, File, File, Iterable, boolean, boolean, StoreFileType...)}
+     */
+    public static Iterable<StoreFile> storeFiles( StoreFile... files )
+    {
+        return iterable( files );
     }
 }

@@ -19,11 +19,11 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
-import org.junit.Test;
 
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.report.ConsistencyReport;

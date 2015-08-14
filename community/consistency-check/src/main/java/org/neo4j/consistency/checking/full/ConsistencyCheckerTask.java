@@ -19,7 +19,24 @@
  */
 package org.neo4j.consistency.checking.full;
 
-public interface StoppableRunnable extends Runnable
+import org.neo4j.consistency.statistics.Statistics;
+
+abstract class ConsistencyCheckerTask implements Runnable
 {
-    void stopScanning();
+    protected final String name;
+    protected final Statistics statistics;
+    protected final int numberOfThreads;
+    protected volatile boolean continueScanning = true;
+
+    protected ConsistencyCheckerTask( String name, Statistics statistics, int threads )
+    {
+        this.name = name;
+        this.statistics = statistics;
+        this.numberOfThreads = threads;
+    }
+
+    public void stopScanning()
+    {
+        continueScanning = false;
+    }
 }

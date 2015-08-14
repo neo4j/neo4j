@@ -28,6 +28,7 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
+import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -77,6 +78,15 @@ public class NodeLabelReader
         {
             copyToSet( nodeLabels.get( null ), labels );
         }
+
+        return labels;
+    }
+
+    public static <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport> Set<Long> getListOfLabels(
+            long labelField )
+    {
+        final Set<Long> labels = new HashSet<>();
+        copyToSet( InlineNodeLabels.parseInlined(labelField), labels );
 
         return labels;
     }

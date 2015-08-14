@@ -256,7 +256,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         return (int) (id * getEffectiveRecordSize() % storeFile.pageSize());
     }
 
-    protected int recordsPerPage()
+    public int getRecordsPerPage()
     {
         return storeFile.pageSize() / getEffectiveRecordSize();
     }
@@ -381,7 +381,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             {
                 try ( PageCursor cursor = storeFile.io( 0, PagedFile.PF_EXCLUSIVE_LOCK | PF_READ_AHEAD ) )
                 {
-                    defraggedCount = rebuildIdGeneratorSlow( cursor, recordsPerPage(), blockSize,
+                    defraggedCount = rebuildIdGeneratorSlow( cursor, getRecordsPerPage(), blockSize,
                             foundHighId );
                 }
             }
@@ -637,7 +637,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         try ( PageCursor cursor = storeFile.io( 0, PF_SHARED_LOCK ) )
         {
             long nextPageId = storeFile.getLastPageId();
-            int recordsPerPage = recordsPerPage();
+            int recordsPerPage = getRecordsPerPage();
             int recordSize = getRecordSize();
             while ( nextPageId >= 0 && cursor.next( nextPageId ) )
             {

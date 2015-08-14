@@ -38,18 +38,19 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+import static java.util.Arrays.asList;
 
 public class NodeRecordCheckTest
         extends RecordCheckTestBase<NodeRecord, ConsistencyReport.NodeConsistencyReport, NodeRecordCheck>
 {
     public NodeRecordCheckTest()
     {
-        super( new NodeRecordCheck(), ConsistencyReport.NodeConsistencyReport.class );
+        super( new NodeRecordCheck(), ConsistencyReport.NodeConsistencyReport.class, new int[0] );
     }
 
     @Test

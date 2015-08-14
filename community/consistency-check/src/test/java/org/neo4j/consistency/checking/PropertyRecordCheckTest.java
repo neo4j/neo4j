@@ -39,7 +39,7 @@ public class PropertyRecordCheckTest
 {
     public PropertyRecordCheckTest()
     {
-        super( new PropertyRecordCheck(), ConsistencyReport.PropertyConsistencyReport.class );
+        super( new PropertyRecordCheck(), ConsistencyReport.PropertyConsistencyReport.class, new int[0] );
     }
 
     @Test

@@ -27,6 +27,11 @@ import java.util.Date;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
+import org.neo4j.consistency.statistics.AccessStatistics;
+import org.neo4j.consistency.statistics.AccessStatsKeepingStoreAccess;
+import org.neo4j.consistency.statistics.DefaultCounts;
+import org.neo4j.consistency.statistics.Statistics;
+import org.neo4j.consistency.statistics.VerboseStatistics;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -67,9 +72,10 @@ public class ConsistencyCheckService
     }
 
     public Result runFullConsistencyCheck( String storeDir,
-                                                  Config tuningConfiguration,
-                                                  ProgressMonitorFactory progressFactory,
-                                           StringLogger logger ) throws ConsistencyCheckIncompleteException
+            Config tuningConfiguration,
+            ProgressMonitorFactory progressFactory,
+            StringLogger logger,
+            boolean verbose ) throws ConsistencyCheckIncompleteException
     {
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         tuningConfiguration = configForStoreDir( tuningConfiguration, new File( storeDir ) );
@@ -80,7 +86,7 @@ public class ConsistencyCheckService
         try
         {
             return runFullConsistencyCheck(
-                    storeDir, tuningConfiguration, progressFactory, logger, fileSystem, pageCache );
+                    storeDir, tuningConfiguration, progressFactory, logger, fileSystem, pageCache, verbose );
         }
         finally
         {
@@ -95,17 +101,17 @@ public class ConsistencyCheckService
         }
     }
 
-    public Result runFullConsistencyCheck( String storeDir, Config tuningConfiguration,
-                                           ProgressMonitorFactory progressFactory,
-                                           StringLogger logger,
-                                           FileSystemAbstraction fileSystem,
-                                           PageCache pageCache )
+    public Result runFullConsistencyCheck( String storeDir,
+            Config tuningConfiguration,
+            ProgressMonitorFactory progressFactory,
+            StringLogger logger,
+            FileSystemAbstraction fileSystem,
+            PageCache pageCache, boolean verbose )
             throws ConsistencyCheckIncompleteException
     {
         Monitors monitors = new Monitors();
         Config consistencyCheckerConfig = tuningConfiguration.with(
                 MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
-
         StoreFactory factory = new StoreFactory(
                 consistencyCheckerConfig,
                 new DefaultIdGeneratorFactory(),
@@ -120,18 +126,32 @@ public class ConsistencyCheckService
         try ( NeoStore neoStore = factory.newNeoStore( false ) )
         {
             neoStore.makeStoreOk();
-            StoreAccess store = new StoreAccess( neoStore );
             LabelScanStore labelScanStore = null;
             try
             {
-
                 labelScanStore = new LuceneLabelScanStoreBuilder(
-                        storeDir, store.getRawNeoStore(), fileSystem, logger ).build();
+                        storeDir, neoStore, fileSystem, logger ).build();
                 SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
                         DirectoryFactory.PERSISTENT,
                         tuningConfiguration );
-                DirectStoreAccess stores = new DirectStoreAccess( store, labelScanStore, indexes );
-                FullCheck check = new FullCheck( tuningConfiguration, progressFactory );
+
+                int numberOfThreads = defaultConsistencyCheckThreadsNumber();
+                Statistics statistics;
+                StoreAccess storeAccess;
+                AccessStatistics stats = new AccessStatistics();
+                if ( verbose )
+                {
+                    statistics = new VerboseStatistics( stats, new DefaultCounts( numberOfThreads ), logger );
+                    storeAccess = new AccessStatsKeepingStoreAccess( neoStore, stats );
+                }
+                else
+                {
+                    statistics = Statistics.NONE;
+                    storeAccess = new StoreAccess( neoStore );
+                }
+                storeAccess.initialize();
+                DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes );
+                FullCheck check = new FullCheck( tuningConfiguration, progressFactory, statistics, numberOfThreads );
                 summary = check.execute( stores, StringLogger.tee( logger, report ) );
             }
             finally
@@ -159,7 +179,6 @@ public class ConsistencyCheckService
             logger.info( String.format( "See '%s' for a detailed consistency report.", reportFile.getPath() ) );
             return Result.FAILURE;
         }
-
         return Result.SUCCESS;
     }
 
@@ -201,5 +220,10 @@ public class ConsistencyCheckService
         {
             return this.successful;
         }
+    }
+
+    public static int defaultConsistencyCheckThreadsNumber()
+    {
+        return Runtime.getRuntime().availableProcessors() - 1;
     }
 }

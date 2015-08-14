@@ -50,7 +50,7 @@ public abstract class DynamicRecordCheckTest
 
     private DynamicRecordCheckTest( DynamicRecordCheck check, int blockSize )
     {
-        super( check, ConsistencyReport.DynamicConsistencyReport.class );
+        super( check, ConsistencyReport.DynamicConsistencyReport.class, new int[0] );
         this.blockSize = blockSize;
     }
 

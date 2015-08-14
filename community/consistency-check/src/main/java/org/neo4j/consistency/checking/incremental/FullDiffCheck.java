@@ -23,6 +23,7 @@ import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
+import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.store.DiffStore;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -58,6 +59,7 @@ public class FullDiffCheck extends DiffCheck
 
         SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, tuningConfiguration );
         DirectStoreAccess stores = new DirectStoreAccess( diffs, labelScanStore, indexes );
-        return new FullCheck( tuningConfiguration, ProgressMonitorFactory.NONE ).execute( stores, logger );
+        return new FullCheck( tuningConfiguration, ProgressMonitorFactory.NONE, Statistics.NONE, 1 ).execute(
+                stores, logger );
     }
 }

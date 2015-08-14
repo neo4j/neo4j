@@ -20,9 +20,14 @@
 package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.NeoStoreConsistencyReport;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 
-class NeoStoreCheck extends PrimitiveRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport>
+class NeoStoreCheck extends PrimitiveRecordCheck<NeoStoreRecord,ConsistencyReport.NeoStoreConsistencyReport>
 {
+    NeoStoreCheck( boolean firstProperty, RecordField<NeoStoreRecord,NeoStoreConsistencyReport>...fields )
+    {
+        super( firstProperty, fields );
+    }
     // nothing added over PrimitiveRecordCheck
 }

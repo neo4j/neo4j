@@ -44,7 +44,7 @@ public class SchemaRecordCheckTest
     public SchemaRecordCheckTest()
     {
         super( new SchemaRecordCheck( configureSchemaStore() ),
-                ConsistencyReport.SchemaConsistencyReport.class );
+                ConsistencyReport.SchemaConsistencyReport.class, new int[0] );
     }
 
     public static SchemaStorage configureSchemaStore()

@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
+import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
 import static org.junit.Assert.assertEquals;
@@ -33,13 +34,14 @@ public class PendingReferenceCheckTest
 {
     // given
     {
+        DiffRecordAccess records = mock( DiffRecordAccess.class );
         @SuppressWarnings("unchecked")
         ConsistencyReporter.ReportHandler handler =
                 new ConsistencyReporter.ReportHandler(
                         mock( InconsistencyReport.class ),
                         mock( ConsistencyReporter.ProxyFactory.class ),
                         RecordType.PROPERTY,
-                        new PropertyRecord( 0 ) );
+                        records, new PropertyRecord( 0 ) );
         this.referenceCheck = new PendingReferenceCheck<>( handler, mock( ComparativeRecordChecker.class ) );
     }
 

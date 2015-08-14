@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.store;
 
+import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.report.PendingReferenceCheck;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -30,9 +31,9 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 public class DirectDiffRecordAccess extends DirectRecordAccess implements DiffRecordAccess
 {
-    public DirectDiffRecordAccess( DiffStore access )
+    public DirectDiffRecordAccess( DiffStore access, CacheAccess cacheAccess )
     {
-        super( access );
+        super( access, cacheAccess );
     }
 
     @Override
@@ -102,7 +103,7 @@ public class DirectDiffRecordAccess extends DirectRecordAccess implements DiffRe
     }
 
     @Override
-    <RECORD extends AbstractBaseRecord> RecordReference<RECORD> referenceTo( RecordStore<RECORD> store, long id )
+    <RECORD extends AbstractBaseRecord> DirectRecordReference<RECORD> referenceTo( RecordStore<RECORD> store, long id )
     {
         return new DirectDiffRecordReference<>( store.forceGetRecord( id ), store.forceGetRaw( id ), this  );
     }

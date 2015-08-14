@@ -20,7 +20,10 @@
 package org.neo4j.consistency.checking;
 
 import java.util.Arrays;
+import java.util.Iterator;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
@@ -65,10 +68,17 @@ public abstract class PrimitiveRecordCheck
             };
 
     @SafeVarargs
-    PrimitiveRecordCheck( RecordField<RECORD, REPORT>... fields )
+    PrimitiveRecordCheck( boolean firstProperty, RecordField<RECORD,REPORT>... fields )
     {
-        this.fields = Arrays.copyOf( fields, fields.length + 1 );
-        this.fields[fields.length] = new FirstProperty();
+        if ( firstProperty )
+        {
+            this.fields = Arrays.copyOf( fields, fields.length + 1 );
+            this.fields[fields.length] = new FirstProperty();
+        }
+        else
+        {
+            this.fields = Arrays.copyOf( fields, fields.length );
+        }
     }
 
     private class FirstProperty
@@ -80,7 +90,39 @@ public abstract class PrimitiveRecordCheck
         {
             if ( !Record.NO_NEXT_PROPERTY.is( record.getNextProp() ) )
             {
-                engine.comparativeCheck( records.property( record.getNextProp() ), this );
+                // Check the whole chain here instead of scattered during multiple checks.
+                // This type of check obviously favors chains with good locality, performance-wise.
+                Iterator<PropertyRecord> props = records.rawPropertyChain( record.getNextProp() );
+                PropertyRecord firstProp = props.next();
+                if ( !Record.NO_PREVIOUS_PROPERTY.is( firstProp.getPrevProp() ) )
+                {
+                    engine.report().propertyNotFirstInChain( firstProp );
+                }
+                PrimitiveIntSet keys = Primitive.intSet();
+                checkChainItem( firstProp, engine, keys );
+                while ( props.hasNext() )
+                {
+                    checkChainItem( props.next(), engine, keys );
+                }
+            }
+        }
+
+        private void checkChainItem( PropertyRecord property, CheckerEngine<RECORD,REPORT> engine,
+                PrimitiveIntSet keys )
+        {
+            if ( !property.inUse() )
+            {
+                engine.report().propertyNotInUse( property );
+            }
+            else
+            {
+                for ( int key : ChainCheck.keys( property ) )
+                {
+                    if ( !keys.add( key ) )
+                    {
+                        engine.report().propertyKeyNotUniqueInChain();
+                    }
+                }
             }
         }
 

@@ -19,6 +19,10 @@
  */
 package org.neo4j.consistency.store;
 
+import java.util.Iterator;
+
+import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.checking.full.MultiPassStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -123,6 +127,12 @@ public class DelegatingRecordAccess implements DiffRecordAccess
     }
 
     @Override
+    public Iterator<PropertyRecord> rawPropertyChain( long firstId )
+    {
+        return delegate.rawPropertyChain( firstId );
+    }
+
+    @Override
     public RecordReference<RelationshipTypeTokenRecord> relationshipType( int id )
     {
         return delegate.relationshipType( id );
@@ -192,5 +202,17 @@ public class DelegatingRecordAccess implements DiffRecordAccess
     public RelationshipGroupRecord changedRelationshipGroup( long id )
     {
         return delegate.changedRelationshipGroup( id );
+    }
+
+    @Override
+    public boolean shouldSkip( long id, MultiPassStore store )
+    {
+        return delegate.shouldSkip( id, store );
+    }
+
+    @Override
+    public CacheAccess cacheAccess()
+    {
+        return delegate.cacheAccess();
     }
 }

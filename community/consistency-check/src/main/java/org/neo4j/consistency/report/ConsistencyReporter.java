@@ -32,6 +32,7 @@ import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
+import org.neo4j.consistency.store.DirectRecordReference;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
@@ -49,6 +50,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Exceptions.withCause;
 
@@ -95,7 +97,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     private <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
     void dispatch( RecordType type, ProxyFactory<REPORT> factory, RECORD record, RecordCheck<RECORD, REPORT> checker )
     {
-        ReportInvocationHandler<RECORD,REPORT> handler = new ReportHandler<>( report, factory, type, record );
+        ReportInvocationHandler<RECORD,REPORT> handler = new ReportHandler<>( report, factory, type, records, record );
         try
         {
             checker.check( record, handler, records );
@@ -111,7 +113,8 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     void dispatchChange( RecordType type, ProxyFactory<REPORT> factory, RECORD oldRecord, RECORD newRecord,
                          RecordCheck<RECORD, REPORT> checker )
     {
-        ReportInvocationHandler<RECORD,REPORT> handler = new DiffReportHandler<>( report, factory, type, oldRecord, newRecord );
+        ReportInvocationHandler<RECORD,REPORT> handler = new DiffReportHandler<>( report, factory, type, records,
+                oldRecord, newRecord );
         try
         {
             checker.checkChange( oldRecord, newRecord, handler, records );
@@ -152,7 +155,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         ((ReportInvocationHandler) engine ).updateSummary();
     }
 
-    private static abstract class ReportInvocationHandler
+    public static abstract class ReportInvocationHandler
             <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
             implements CheckerEngine<RECORD, REPORT>, InvocationHandler
     {
@@ -160,12 +163,15 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         private final ProxyFactory<REPORT> factory;
         final RecordType type;
         private short errors = 0, warnings = 0, references = 1/*this*/;
+        private final DiffRecordAccess records;
 
-        private ReportInvocationHandler( InconsistencyReport report, ProxyFactory<REPORT> factory, RecordType type )
+        private ReportInvocationHandler( InconsistencyReport report, ProxyFactory<REPORT> factory, RecordType type,
+               DiffRecordAccess records )
         {
             this.report = report;
             this.factory = factory;
             this.type = type;
+            this.records = records;
         }
 
         synchronized void updateSummary()
@@ -238,14 +244,41 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             if ( method.getAnnotation( ConsistencyReport.Warning.class ) == null )
             {
                 errors++;
+                args = getRealRecords( args );
                 logError( message, args );
             }
             else
             {
                 warnings++;
+                args = getRealRecords( args );
                 logWarning( message, args );
             }
             return null;
+        }
+
+        private Object[] getRealRecords( Object[] args )
+        {
+            if ( args == null )
+            {
+                return args;
+            }
+            for ( int i = 0; i < args.length; i++ )
+            {
+                if ( args[i] instanceof AbstractBaseRecord && !((AbstractBaseRecord) args[i]).isReal() )
+                {   // get the real record
+                    if ( args[i] instanceof NodeRecord )
+                    {
+                        args[i] = ((DirectRecordReference<NodeRecord>) records.node(
+                                ((NodeRecord) args[i]).getId() )).record();
+                    }
+                    else if ( args[i] instanceof RelationshipRecord )
+                    {
+                        args[i] = ((DirectRecordReference<RelationshipRecord>) records.relationship(
+                                ((RelationshipRecord) args[i]).getId() )).record();
+                    }
+                }
+            }
+            return args;
         }
 
         protected abstract void logError( String message, Object[] args );
@@ -260,16 +293,16 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
                                           RecordAccess records );
     }
 
-    static class ReportHandler
+    public static class ReportHandler
             <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
             extends ReportInvocationHandler<RECORD,REPORT>
     {
         private final AbstractBaseRecord record;
 
-        ReportHandler( InconsistencyReport report, ProxyFactory<REPORT> factory, RecordType type,
-                       AbstractBaseRecord record )
+        public ReportHandler( InconsistencyReport report, ProxyFactory<REPORT> factory, RecordType type,
+                DiffRecordAccess records, AbstractBaseRecord record )
         {
-            super( report, factory, type );
+            super( report, factory, type, records );
             this.record = record;
         }
 
@@ -318,9 +351,10 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
 
         private DiffReportHandler( InconsistencyReport report, ProxyFactory<REPORT> factory,
                                    RecordType type,
+                                   DiffRecordAccess records,
                                    AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord )
         {
-            super( report, factory, type );
+            super( report, factory, type, records );
             this.oldRecord = oldRecord;
             this.newRecord = newRecord;
         }
@@ -530,7 +564,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         dispatch( RecordType.COUNTS, COUNTS_REPORT, countsEntry, checker );
     }
 
-    static class ProxyFactory<T>
+    public static class ProxyFactory<T>
     {
         private Constructor<? extends T> constructor;
 

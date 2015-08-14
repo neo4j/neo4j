@@ -121,6 +121,22 @@ public class StoreFactory
         this.pageCache = pageCache;
     }
 
+    /**
+     * Creates a {@link StoreFactory} with all the same services, but all calls to creating or opening stores
+     * will use that directory instead.
+     */
+    public StoreFactory forDirectory( File directory )
+    {
+        Config newConfig = configForStoreDir( new Config( config.getParams() ), directory );
+        return new StoreFactory( newConfig, idGeneratorFactory,
+                pageCache, fileSystemAbstraction, stringLogger, monitors );
+    }
+
+    public File getStoreDirectory()
+    {
+        return neoStoreFileName.getAbsoluteFile().getParentFile();
+    }
+
     public static String buildTypeDescriptorAndVersion( String typeDescriptor )
     {
         return typeDescriptor + " " + CommonAbstractStore.ALL_STORES_VERSION;
@@ -243,10 +259,11 @@ public class StoreFactory
     }
 
     @SuppressWarnings( "deprecation" )
-    private PropertyStore newPropertyStore( File propertyStringStore, File propertyArrayStore, File propertyStore,
-                                            File propertyKeysStore )
+    protected PropertyStore newPropertyStore( File propertyStringStore, File propertyArrayStore, File propertyStore,
+            File propertyKeysStore )
     {
-        PropertyKeyTokenStore propertyKeyTokenStore = newPropertyKeyTokenStore( propertyKeysStore );
+        PropertyKeyTokenStore propertyKeyTokenStore = propertyKeysStore == null ?
+                null : newPropertyKeyTokenStore( propertyKeysStore );
         DynamicStringStore stringPropertyStore = newDynamicStringStore( propertyStringStore, IdType.STRING_BLOCK );
         DynamicArrayStore arrayPropertyStore = newDynamicArrayStore( propertyArrayStore, IdType.ARRAY_BLOCK );
         return new PropertyStore( propertyStore, config, idGeneratorFactory,
@@ -426,20 +443,28 @@ public class StoreFactory
                 buildTypeDescriptorAndVersion( RelationshipStore.TYPE_DESCRIPTOR ) );
     }
 
+    public void createPropertyStore()
+    {
+        createPropertyStore( true );
+    }
+
     /**
      * Creates a new property store contained in <CODE>fileName</CODE> If
      * filename is <CODE>null</CODE> or the file already exists an
      * <CODE>IOException</CODE> is thrown.
      */
     @SuppressWarnings( "deprecation" )
-    public void createPropertyStore()
+    public void createPropertyStore( boolean createKeyTokenStore )
     {
         createEmptyStore( storeFileName( PROPERTY_STORE_NAME ),
                 buildTypeDescriptorAndVersion( PropertyStore.TYPE_DESCRIPTOR ) );
         int stringStoreBlockSize = config.get( Configuration.string_block_size );
         int arrayStoreBlockSize = config.get( Configuration.array_block_size );
 
-        createPropertyKeyTokenStore();
+        if ( createKeyTokenStore )
+        {
+            createPropertyKeyTokenStore();
+        }
         createDynamicStringStore( storeFileName( PROPERTY_STRINGS_STORE_NAME ), stringStoreBlockSize,
                 IdType.STRING_BLOCK );
         createDynamicArrayStore( storeFileName( PROPERTY_ARRAYS_STORE_NAME ), arrayStoreBlockSize );

@@ -42,6 +42,7 @@ public class ConsistencyCheckTool
     private static final String RECOVERY = "recovery";
     private static final String CONFIG = "config";
     private static final String PROP_OWNER = "propowner";
+    private static final String VERBOSE = "v";
 
     static interface ExitHandle
     {
@@ -94,9 +95,10 @@ public class ConsistencyCheckTool
 
     void run( String... args ) throws ToolFailureException
     {
-        Args arguments = Args.withFlags( RECOVERY, PROP_OWNER ).parse( args );
+        Args arguments = Args.withFlags( RECOVERY, PROP_OWNER, VERBOSE ).parse( args );
         String storeDir = determineStoreDirectory( arguments );
         Config tuningConfiguration = readTuningConfiguration( storeDir, arguments );
+        boolean verbose = determineVerbose( arguments );
 
         attemptRecoveryOrCheckStateOfLogicalLogs( arguments, storeDir );
 
@@ -104,7 +106,7 @@ public class ConsistencyCheckTool
         try
         {
             consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
-                    ProgressMonitorFactory.textual( System.err ), logger );
+                    ProgressMonitorFactory.textual( System.err ), logger, verbose );
         }
         catch ( ConsistencyCheckIncompleteException e )
         {
@@ -114,6 +116,11 @@ public class ConsistencyCheckTool
         {
             logger.flush();
         }
+    }
+
+    private boolean determineVerbose( Args arguments )
+    {
+        return arguments.getBoolean( VERBOSE, false, true );
     }
 
     private void attemptRecoveryOrCheckStateOfLogicalLogs( Args arguments, String storeDir )
@@ -184,11 +191,13 @@ public class ConsistencyCheckTool
     private String usage()
     {
         return lines(
-                Args.jarUsage( getClass(), "[-propowner] [-recovery] [-config <neo4j.properties>] <storedir>" ),
-                "WHERE:   <storedir>         is the path to the store to check",
+                Args.jarUsage( getClass(), "[-propowner] [-recovery] [-v] [-config <neo4j.properties>] <storedir>" ),
+                "WHERE:   -propowner         also check property owner consistency (more time consuming)",
                 "         -recovery          to perform recovery on the store before checking",
-                "         <neo4j.properties> is the location of an optional properties file",
-                "                            containing tuning parameters for the consistency check"
+                "         -v                 produce execution output",
+                "         -config <filename> is the location of an optional properties file",
+                "                            containing tuning parameters for the consistency check",
+                "         <storedir>         is the path to the store to check"
         );
     }
 

@@ -19,18 +19,28 @@
  */
 package org.neo4j.consistency.store;
 
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
+import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.checking.cache.CacheAction;
+import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
+import org.neo4j.consistency.checking.full.MultiPassStore;
+import org.neo4j.consistency.checking.full.Stage;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.PendingReferenceCheck;
+import org.neo4j.consistency.statistics.Counts;
+import org.neo4j.helpers.ArrayUtil;
+import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -39,17 +49,18 @@ import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-
-import static java.util.Collections.singletonMap;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
-public class RecordAccessStub implements RecordAccess, DiffRecordAccess
+import static java.util.Collections.singletonMap;
+
+public class RecordAccessStub implements DiffRecordAccess
 {
     public static final int SCHEMA_RECORD_TYPE = 255;
 
@@ -180,6 +191,36 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
     private final Map<Long, Delta<DynamicRecord>> propertyKeyNames = new HashMap<>();
     private final Map<Long, Delta<RelationshipGroupRecord>> relationshipGroups = new HashMap<>();
     private Delta<NeoStoreRecord> graph;
+    private final CacheAccess cacheAccess = new DefaultCacheAccess( Counts.NONE, 1 );
+    private final MultiPassStore[] storesToCheck;
+
+    public RecordAccessStub()
+    {
+        this( Stage.SEQUENTIAL_FORWARD, MultiPassStore.values() );
+    }
+
+    public RecordAccessStub( Stage stage, MultiPassStore... storesToCheck )
+    {
+        this.storesToCheck = storesToCheck;
+        if ( stage.getCacheSlotSizes().length > 0 )
+        {
+            cacheAccess.setCacheSlotSizes( stage.getCacheSlotSizes() );
+        }
+    }
+
+    public void populateCache()
+    {
+        CacheAction action = new CacheAction.CacheNextRel( cacheAccess,
+                new IterableWrapper<NodeRecord,Delta<NodeRecord>>( nodes.values() )
+        {
+            @Override
+            protected NodeRecord underlyingObjectToObject( Delta<NodeRecord> node )
+            {
+                return node.newRecord;
+            }
+        } );
+        action.processCache();
+    }
 
     private static class Delta<R extends AbstractBaseRecord>
     {
@@ -434,6 +475,27 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
     }
 
     @Override
+    public Iterator<PropertyRecord> rawPropertyChain( final long firstId )
+    {
+        return new PrefetchingIterator<PropertyRecord>()
+        {
+            private long next = firstId;
+
+            @Override
+            protected PropertyRecord fetchNextOrNull()
+            {
+                if ( Record.NO_NEXT_PROPERTY.is( next ) )
+                {
+                    return null;
+                }
+                PropertyRecord record = reference( properties, next, Version.LATEST ).record();
+                next = record.getNextProp();
+                return record;
+            }
+        };
+    }
+
+    @Override
     public RecordReference<RelationshipTypeTokenRecord> relationshipType( int id )
     {
         return reference( relationshipTypeTokens, id, Version.LATEST );
@@ -563,5 +625,17 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
     public RelationshipGroupRecord changedRelationshipGroup( long id )
     {
         return record( relationshipGroups, id, Version.NEW );
+    }
+
+    @Override
+    public boolean shouldSkip( long id, MultiPassStore store )
+    {
+        return !ArrayUtil.contains( storesToCheck, store );
+    }
+
+    @Override
+    public CacheAccess cacheAccess()
+    {
+        return cacheAccess;
     }
 }

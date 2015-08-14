@@ -21,6 +21,7 @@ package org.neo4j.consistency.checking.incremental;
 
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.SchemaRecordCheck;
+import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.report.InconsistencyMessageLogger;
@@ -48,7 +49,7 @@ public class IncrementalDiffCheck extends DiffCheck
     public ConsistencySummaryStatistics execute( DiffStore diffs )
     {
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
-        ConsistencyReporter reporter = new ConsistencyReporter( new DirectDiffRecordAccess( diffs ),
+        ConsistencyReporter reporter = new ConsistencyReporter( new DirectDiffRecordAccess( diffs, CacheAccess.EMPTY ),
                 new InconsistencyReport( new InconsistencyMessageLogger( logger ), summary ) );
         StoreProcessor processor = new StoreProcessor( reporter );
         diffs.applyToAll( processor );
@@ -64,7 +65,6 @@ public class IncrementalDiffCheck extends DiffCheck
         return summary;
     }
 
-    @SuppressWarnings("unchecked")
     private void performFullCheckOfSchemaStore( DiffStore diffs, ConsistencyReporter reporter )
     {
         SchemaRecordCheck schemaChecker = new SchemaRecordCheck( new RuleReader( diffs.getSchemaStore() ) );

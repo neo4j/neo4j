@@ -19,92 +19,105 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.checking.cache.CacheAction;
+import org.neo4j.consistency.checking.cache.CacheProcessor;
+import org.neo4j.consistency.statistics.Statistics;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static java.lang.String.format;
 
-class StoreProcessorTask<R extends AbstractBaseRecord> implements StoppableRunnable
+public class StoreProcessorTask<R extends AbstractBaseRecord> extends ConsistencyCheckerTask
 {
     private final RecordStore<R> store;
-    private final StoreProcessor[] processors;
-    private final ProgressListener[] progressListeners;
+    private final StoreProcessor processor;
+    private final ProgressListener progressListener;
+    private final StoreAccess storeAccess;
+    private final CacheAccess cacheAccess;
 
-
-    StoreProcessorTask( RecordStore<R> store,
-                        ProgressMonitorFactory.MultiPartBuilder builder,
-                        TaskExecutionOrder order, StoreProcessor singlePassProcessor,
-                        StoreProcessor... multiPassProcessors )
+    StoreProcessorTask( String name, Statistics statistics, int threads, RecordStore<R> store, StoreAccess storeAccess,
+            String builderPrefix, ProgressMonitorFactory.MultiPartBuilder builder, CacheAccess cacheAccess,
+            StoreProcessor processor )
     {
-        this( store, "", builder, order, singlePassProcessor, multiPassProcessors );
-    }
-
-    StoreProcessorTask( RecordStore<R> store, String builderPrefix,
-                        ProgressMonitorFactory.MultiPartBuilder builder,
-                        TaskExecutionOrder order, StoreProcessor singlePassProcessor,
-                        StoreProcessor... multiPassProcessors )
-    {
+        super( name, statistics, threads );
         this.store = store;
-        String storeFileName = store.getStorageFileName().getName();
-
-        String sanitizedBuilderPrefix = builderPrefix == null ? "" : builderPrefix;
-
-        if ( order == TaskExecutionOrder.MULTI_PASS )
-        {
-            this.processors = multiPassProcessors;
-            this.progressListeners = new ProgressListener[multiPassProcessors.length];
-            for ( int i = 0; i < multiPassProcessors.length; i++ )
-            {
-                String partName = indexedPartName( storeFileName, sanitizedBuilderPrefix, i );
-                progressListeners[i] = builder.progressForPart( partName, store.getHighId() );
-            }
-        }
-        else
-        {
-            this.processors = new StoreProcessor[]{singlePassProcessor};
-            String partName = partName( storeFileName, sanitizedBuilderPrefix );
-            this.progressListeners = new ProgressListener[]{
-                    builder.progressForPart( partName, store.getHighId() )};
-        }
+        this.storeAccess = storeAccess;
+        this.cacheAccess = cacheAccess;
+        this.processor = processor;
+        this.progressListener = builder.progressForPart( name +
+                indexedPartName( store.getStorageFileName().getName(), builderPrefix ), store.getHighId() );
     }
 
-    private String partName( String storeFileName, String builderPrefix )
+    private String indexedPartName( String storeFileName, String prefix )
     {
-        return builderPrefix.length() == 0 ? storeFileName : format("%s_run_%s", storeFileName, builderPrefix );
+        return prefix.length() != 0 ? "_" : format( "%s_pass_%s", storeFileName, prefix );
     }
 
-    private String indexedPartName( String storeFileName, String prefix, int i )
-    {
-        if ( prefix.length() != 0 )
-        {
-            prefix += "_";
-        }
-        return format( "%s_pass_%s%d", storeFileName, prefix, i );
-    }
-
-    @SuppressWarnings("unchecked")
     @Override
+    @SuppressWarnings( "unchecked" )
     public void run()
     {
-        for ( int i = 0; i < processors.length; i++ )
+        statistics.reset();
+        beforeProcessing( processor );
+        try
         {
-            StoreProcessor processor = processors[i];
-            beforeProcessing(processor);
-            try
+            if ( processor.getStage().getCacheSlotSizes().length > 0 )
             {
-                processor.applyFiltered( store, progressListeners[i] );
+                cacheAccess.setCacheSlotSizes( processor.getStage().getCacheSlotSizes() );
             }
-            catch ( Throwable e )
+            cacheAccess.setForward( processor.getStage().isForward() );
+
+            if ( processor instanceof CacheProcessor )
             {
-                progressListeners[i].failed( e );
+                CacheAction action = ((CacheProcessor)processor).action();
+                action.processCache();
             }
-            finally
+            else
             {
-                afterProcessing(processor);
+                if ( processor.getStage().isParallel() )
+                {
+                    Distributor distributor = null;
+                    if ( processor.getStage() == CheckStage.Stage1_NS_PropsLabels )
+                    {
+                        distributor = new Distributor<NodeRecord>( storeAccess.getNodeStore().getHighId(), numberOfThreads );
+                    }
+                    else if ( processor.getStage() == CheckStage.Stage8_PS_Props )
+                    {
+                        distributor = new Distributor<PropertyRecord>(
+                                storeAccess.getPropertyStore().getHighId(), numberOfThreads );
+                    }
+                    else
+                    {
+                        distributor = new Distributor<RelationshipRecord>(
+                                storeAccess.getRelationshipStore().getHighId(), numberOfThreads );
+                    }
+                    processor.applyFilteredParallel( store, distributor, progressListener );
+                }
+                else
+                {
+                    processor.applyFiltered( store, progressListener );
+                }
             }
+            cacheAccess.setForward( true );
         }
+        catch ( Throwable e )
+        {
+            progressListener.failed( e );
+            throw Exceptions.launderedException( e );
+        }
+        finally
+        {
+            afterProcessing( processor );
+        }
+        statistics.print( name );
     }
 
     protected void beforeProcessing( StoreProcessor processor )
@@ -118,9 +131,9 @@ class StoreProcessorTask<R extends AbstractBaseRecord> implements StoppableRunna
     }
 
     @Override
-    public void stopScanning()
+    public String toString()
     {
-        processors[0].stop();
+        return getClass().getSimpleName() + "[" + name + " @ " + processor.getStage() + ", " +
+                store + ":" + store.getHighId() + "]";
     }
-
 }

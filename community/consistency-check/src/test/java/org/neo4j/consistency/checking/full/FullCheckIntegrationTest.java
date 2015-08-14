@@ -24,10 +24,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.model.Statement;
 
 import java.io.IOException;
@@ -91,9 +87,12 @@ import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import static java.util.Arrays.asList;
+
+import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
 import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
@@ -118,21 +117,8 @@ import static org.neo4j.kernel.impl.util.Bits.bits;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
 
-@RunWith( Parameterized.class )
 public class FullCheckIntegrationTest
 {
-    @Parameter
-    public TaskExecutionOrder taskExecutionOrder;
-
-    @Parameters( name = "execution_order={0}" )
-    public static Iterable<Object[]> taskExecutions()
-    {
-        return Arrays.asList( new Object[][]{
-                {TaskExecutionOrder.SINGLE_THREADED},
-                {TaskExecutionOrder.MULTI_PASS}
-        } );
-    }
-
     @Test
     public void shouldCheckConsistencyOfAConsistentStore() throws Exception
     {
@@ -679,7 +665,7 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                tx.create( new RelationshipRecord( next.relationship(), 1, 2, 0 ) );
+                tx.create( inUse( new RelationshipRecord( next.relationship(), 1, 2, 0 ) ) );
             }
         } );
 
@@ -693,6 +679,35 @@ public class FullCheckIntegrationTest
     }
 
     @Test
+    public void shouldReportRelationshipOtherNodeInconsistencies() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                long node1 = next.node();
+                long node2 = next.node();
+                long rel = next.relationship();
+                tx.create( inUse( new RelationshipRecord( rel, node1, node2, 0 ) ) );
+                tx.create( inUse( new NodeRecord( node1, false, rel + 1, -1 ) ) );
+                tx.create( inUse( new NodeRecord( node2, false, rel + 2, -1 ) ) );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.RELATIONSHIP, 2 )
+                   .verify( RecordType.NODE, 2 )
+                   .verify( RecordType.COUNTS, 2 )
+                   .andThatsAllFolks();
+    }
+
+    @Test
     public void shouldReportPropertyInconsistencies() throws Exception
     {
         // given
@@ -702,11 +717,17 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
+                NodeRecord node = new NodeRecord( next.node() );
                 PropertyRecord property = new PropertyRecord( next.property() );
-                property.setPrevProp( next.property() );
+                node.setNextProp( property.getId() );
+
+                // Mess up the prev/next pointers a bit
+                property.setNextProp( 1_000 );
+
                 PropertyBlock block = new PropertyBlock();
                 block.setSingleBlock( 1 | (((long) PropertyType.INT.intValue()) << 24) | (666 << 28) );
                 property.addPropertyBlock( block );
+                tx.create( node );
                 tx.create( property );
             }
         } );
@@ -716,6 +737,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.PROPERTY, 2 )
+                   .verify( RecordType.NODE, 1 )
                    .andThatsAllFolks();
     }
 
@@ -955,7 +977,7 @@ public class FullCheckIntegrationTest
         access.getRelationshipTypeNameStore().updateRecord( record );
 
         // when
-        ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );
+        ConsistencySummaryStatistics stats = check();
 
         // then
         on( stats ).verify( RecordType.RELATIONSHIP_TYPE_NAME, 1 )
@@ -983,7 +1005,7 @@ public class FullCheckIntegrationTest
         access.getPropertyKeyNameStore().updateRecord( record );
 
         // when
-        ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );
+        ConsistencySummaryStatistics stats = check();
 
         // then
         on( stats ).verify( RecordType.PROPERTY_KEY_NAME, 1 )
@@ -1002,7 +1024,7 @@ public class FullCheckIntegrationTest
         relTypeStore.updateRecord( record );
 
         // when
-        ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );
+        ConsistencySummaryStatistics stats = check();
 
         // then
         access.close();
@@ -1021,7 +1043,7 @@ public class FullCheckIntegrationTest
         access.getLabelTokenStore().updateRecord( record );
 
         // when
-        ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );
+        ConsistencySummaryStatistics stats = check();
 
         // then
         on( stats ).verify( RecordType.LABEL, 1 )
@@ -1049,7 +1071,7 @@ public class FullCheckIntegrationTest
         access.getPropertyKeyNameStore().updateRecord( record );
 
         // when
-        ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );
+        ConsistencySummaryStatistics stats = check();
 
         // then
         on( stats ).verify( RecordType.PROPERTY_KEY, 1 )
@@ -1575,8 +1597,9 @@ public class FullCheckIntegrationTest
 
     private ConsistencySummaryStatistics check( DirectStoreAccess stores ) throws ConsistencyCheckIncompleteException
     {
-        Config config = config( taskExecutionOrder );
-        FullCheck checker = new FullCheck( config, ProgressMonitorFactory.NONE );
+        Config config = config();
+        FullCheck checker = new FullCheck( config, ProgressMonitorFactory.NONE, fixture.getAccessStatistics(),
+                defaultConsistencyCheckThreadsNumber() );
         return checker.execute( stores, StringLogger.wrap( log ) );
     }
 

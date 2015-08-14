@@ -30,6 +30,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class StoreAssertions
@@ -52,7 +53,8 @@ public class StoreAssertions
                         dir.getAbsolutePath(),
                         configuration,
                         ProgressMonitorFactory.NONE,
-                        StringLogger.SYSTEM_ERR
+                        StringLogger.SYSTEM_ERR,
+                        false
                 );
 
         assertTrue( result.isSuccessful() );

@@ -20,16 +20,20 @@
 package org.neo4j.consistency.checking.full;
 
 import org.junit.Test;
+
+import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 
-import static java.util.Arrays.asList;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import static java.util.Arrays.asList;
 
 public class RecordScannerTest
 {
@@ -49,7 +53,8 @@ public class RecordScannerTest
         @SuppressWarnings("unchecked")
         RecordProcessor<Integer> recordProcessor = mock( RecordProcessor.class );
 
-        RecordScanner scanner = new RecordScanner<>( store, "our test task", progressBuilder, recordProcessor );
+        RecordScanner scanner = new RecordScanner<>( "our test task", Statistics.NONE, 1, store, progressBuilder,
+                recordProcessor, Stage.SEQUENTIAL_FORWARD, CacheAccess.EMPTY );
 
         // when
         scanner.run();

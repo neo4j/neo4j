@@ -65,7 +65,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 
-import static java.lang.String.format;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.doAnswer;
@@ -73,6 +72,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+
+import static java.lang.String.format;
+
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 
 @RunWith(Suite.class)
@@ -88,9 +90,10 @@ public class ConsistencyReporterTest
             // given
             ConsistencySummaryStatistics summary = mock( ConsistencySummaryStatistics.class );
             @SuppressWarnings("unchecked")
+            DiffRecordAccess records = mock( DiffRecordAccess.class );
             ConsistencyReporter.ReportHandler handler = new ConsistencyReporter.ReportHandler(
                     new InconsistencyReport( mock( InconsistencyLogger.class ), summary ),
-                    mock( ConsistencyReporter.ProxyFactory.class ), RecordType.PROPERTY, new PropertyRecord( 0 ) );
+                    mock( ConsistencyReporter.ProxyFactory.class ), RecordType.PROPERTY, records, new PropertyRecord( 0 ) );
 
             // when
             handler.updateSummary();
@@ -106,9 +109,10 @@ public class ConsistencyReporterTest
         {
             // given
             ConsistencySummaryStatistics summary = mock( ConsistencySummaryStatistics.class );
+            DiffRecordAccess records = mock( DiffRecordAccess.class );
             ConsistencyReporter.ReportHandler handler = new ConsistencyReporter.ReportHandler(
                     new InconsistencyReport( mock( InconsistencyLogger.class ), summary ),
-                    mock( ConsistencyReporter.ProxyFactory.class ), RecordType.PROPERTY, new PropertyRecord( 0 ) );
+                    mock( ConsistencyReporter.ProxyFactory.class ), RecordType.PROPERTY, records, new PropertyRecord( 0 ) );
 
             RecordReference<PropertyRecord> reference = mock( RecordReference.class );
             ComparativeRecordChecker<PropertyRecord, PropertyRecord, ConsistencyReport.PropertyConsistencyReport>

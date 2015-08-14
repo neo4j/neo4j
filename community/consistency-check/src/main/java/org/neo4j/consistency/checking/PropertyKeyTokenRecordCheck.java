@@ -25,7 +25,7 @@ import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 
-class PropertyKeyTokenRecordCheck
+public class PropertyKeyTokenRecordCheck
         extends TokenRecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport>
 {
     @Override
