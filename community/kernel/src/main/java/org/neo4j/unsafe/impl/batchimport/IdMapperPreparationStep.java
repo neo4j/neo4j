@@ -28,7 +28,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.Step;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 /**
- * Preparation of an {@link IdMapper}, {@link IdMapper#prepare(InputIterable, ProgressListener)}
+ * Preparation of an {@link IdMapper}, {@link IdMapper#prepare(InputIterable, Collector, ProgressListener)}
  * under running as a normal {@link Step} so that normal execution monitoring can be applied.
  * Useful since preparing an {@link IdMapper} can take a significant amount of time.
  */

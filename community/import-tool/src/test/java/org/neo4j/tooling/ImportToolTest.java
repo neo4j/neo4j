@@ -82,6 +82,18 @@ import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 
 public class ImportToolTest
 {
+
+    private static final int RELATIONSHIP_COUNT = 10_000;
+    private static final int NODE_COUNT = 100;
+
+    @Rule
+    public final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
+    @Rule
+    public final RandomRule random = new RandomRule();
+    @Rule
+    public final Mute mute = Mute.mute( Mute.System.values() );
+    private int dataIndex;
+
     @Test
     public void shouldImportWithAsManyDefaultsAsAvailable() throws Exception
     {
@@ -1062,13 +1074,4 @@ public class ImportToolTest
     {
         ImportTool.main( arguments, true );
     }
-
-    private static final int RELATIONSHIP_COUNT = 10_000;
-    private static final int NODE_COUNT = 100;
-
-    @Rule
-    public final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
-    public final @Rule RandomRule random = new RandomRule();
-    public final @Rule Mute mute = Mute.mute( Mute.System.values() );
-    private int dataIndex;
 }
