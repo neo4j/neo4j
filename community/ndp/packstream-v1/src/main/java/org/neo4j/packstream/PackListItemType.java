@@ -165,7 +165,7 @@ public class PackListItemType
                 case MAP_MARKER:
                     return MAP;
                 default:
-                    throw new IllegalArgumentException( "Illegal subtype marker " + marker );
+                    throw new IllegalArgumentException( "Illegal list item type marker " + marker );
             }
         }
     }

@@ -109,7 +109,7 @@ public class DocSerialization
             else
             {
                 String[] values = value.substring( 1, value.length() - 1 ).split( "," );
-                packer.packListHeader( values.length, PackListItemType.TEXT );
+                packer.packListHeader( values.length, PackListItemType.ANY );
                 for ( String s : values )
                 {
                     pack( s, packer, writer );
