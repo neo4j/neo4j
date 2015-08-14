@@ -94,10 +94,9 @@ class LuceneIndexAccessorReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator rangeSeekByNumber( Number lower, boolean includeLower,
-                                                    Number upper, boolean includeUpper )
+    public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
     {
-        return query( documentLogic.newRangeSeekByNumberQuery( lower, includeLower, upper, includeUpper ) );
+        return query( documentLogic.newInclusiveNumericRangeSeekQuery( lower, upper ) );
     }
 
     @Override

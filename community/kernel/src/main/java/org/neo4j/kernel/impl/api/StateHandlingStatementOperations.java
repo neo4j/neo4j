@@ -26,6 +26,7 @@ import java.util.Map;
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntStack;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Predicate;
@@ -82,6 +83,7 @@ import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
+import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
 
@@ -91,6 +93,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_NUMBERS;
 
 public class StateHandlingStatementOperations implements
         KeyReadOperations,
@@ -267,9 +270,10 @@ public class StateHandlingStatementOperations implements
 
     {
         // TODO Filter this properly
-        return statement.getStoreStatement().acquireIteratorNodeCursor(
-                storeLayer.nodesGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper,
-                        includeUpper ) );
+        return COMPARE_NUMBERS.isEmptyRange( lower, includeLower, upper, includeUpper ) ? Cursors.<NodeItem>empty() :
+               statement.getStoreStatement().acquireIteratorNodeCursor(
+                       storeLayer.nodesGetFromInclusiveNumericIndexRangeSeek( statement, index, lower, upper
+                       ) );
     }
 
     @Override
@@ -761,10 +765,13 @@ public class StateHandlingStatementOperations implements
             Number upper, boolean includeUpper ) throws IndexNotFoundKernelException
 
     {
-        PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexRangeSeekByNumber( state, index, lower,
-                includeLower, upper, includeUpper );
+        PrimitiveLongIterator committed = COMPARE_NUMBERS.isEmptyRange( lower, includeLower, upper, includeUpper )
+                ? PrimitiveLongCollections.emptyIterator()
+                : storeLayer.nodesGetFromInclusiveNumericIndexRangeSeek( state, index, lower, upper );
+        PrimitiveLongIterator exactMatches = filterExactRangeMatches( state, index, committed, lower, includeLower,
+                upper, includeUpper );
         return filterIndexStateChangesForRangeSeekByNumber( state, index, lower, includeLower, upper, includeUpper,
-                committed );
+                exactMatches );
     }
 
     @Override
@@ -799,6 +806,13 @@ public class StateHandlingStatementOperations implements
             Object value, PrimitiveLongIterator committed )
     {
         return LookupFilter.exactIndexMatches( this, state, committed, index.getPropertyKeyId(), value );
+    }
+
+    private PrimitiveLongIterator filterExactRangeMatches( final KernelStatement state, IndexDescriptor index,
+            PrimitiveLongIterator committed, Number lower, boolean includeLower, Number upper, boolean includeUpper )
+    {
+        return LookupFilter.exactRangeMatches( this, state, committed, index.getPropertyKeyId(), lower, includeLower,
+                upper, includeUpper );
     }
 
     private PrimitiveLongIterator filterIndexStateChangesForScanOrSeek( KernelStatement state, IndexDescriptor index,

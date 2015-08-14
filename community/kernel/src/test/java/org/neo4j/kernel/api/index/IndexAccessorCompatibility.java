@@ -82,15 +82,13 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
                 NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, 10.0, new long[]{1000} ),
                 NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, 100.0, new long[]{1000} ) ) );
 
-        assertThat( getAllNodesFromIndexSeekByNumber( 0, true, 10, false ), equalTo( asList( 2L, 3L ) ) );
-        assertThat( getAllNodesFromIndexSeekByNumber( 10, true, null, false ), equalTo( asList( 4L, 5L ) ) );
-        assertThat( getAllNodesFromIndexSeekByNumber( 10, false, null, true ), equalTo( singletonList( 5L ) ) );
-        assertThat( getAllNodesFromIndexSeekByNumber( 100, false, 0, true ), equalTo( EMPTY_LIST ) );
-        assertThat( getAllNodesFromIndexSeekByNumber( null, false, 5.5, false ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( getAllNodesFromIndexSeekByNumber( null, true, 5.5, true ), equalTo( asList( 1L, 2L, 3L ) ) );
-        assertThat( getAllNodesFromIndexSeekByNumber( null, true, null, true ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
-        assertThat( getAllNodesFromIndexSeekByNumber( -5, false, 0, true ), equalTo( singletonList( 2L ) ) );
-        assertThat( getAllNodesFromIndexSeekByNumber( -5, false, 5.5, false ), equalTo( singletonList( 2L ) ) );
+        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( 0, 10 ), equalTo( asList( 2L, 3L, 4L ) ) );
+        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( 10, null ), equalTo( asList( 4L, 5L ) ) );
+        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( 100, 0 ), equalTo( EMPTY_LIST ) );
+        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( null, 5.5 ), equalTo( asList( 1L, 2L, 3L ) ) );
+        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( null, null ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -5, 0 ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -5, 5.5 ), equalTo( asList( 1L, 2L, 3L ) ) );
     }
 
     @Test
@@ -153,12 +151,12 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         }
     }
 
-    protected List<Long> getAllNodesFromIndexSeekByNumber( Number lower, boolean includeLower, Number upper, boolean includeUpper ) throws IOException
+    protected List<Long> getAllNodesFromInclusiveIndexSeekByNumber( Number lower, Number upper ) throws IOException
     {
         try ( IndexReader reader = accessor.newReader() )
         {
             List<Long> list = new LinkedList<>();
-            for ( PrimitiveLongIterator iterator = reader.rangeSeekByNumber( lower, includeLower, upper, includeUpper ); iterator.hasNext(); )
+            for ( PrimitiveLongIterator iterator = reader.rangeSeekByNumberInclusive( lower, upper ); iterator.hasNext(); )
             {
                 list.add( iterator.next() );
             }

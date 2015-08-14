@@ -221,8 +221,7 @@ public class NodeCorrectlyIndexedCheckTest
                 }
 
                 @Override
-                public PrimitiveLongIterator rangeSeekByNumber( Number lower, boolean includeLower,
-                                                                Number upper, boolean includeUpper )
+                public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
                 {
                     throw new UnsupportedOperationException();
                 }
