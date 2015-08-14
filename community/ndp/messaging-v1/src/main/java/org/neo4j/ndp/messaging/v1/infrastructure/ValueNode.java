@@ -38,6 +38,7 @@ import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.ndp.messaging.v1.Neo4jPack;
+import org.neo4j.packstream.PackListType;
 
 public class ValueNode implements Node
 {
@@ -46,10 +47,10 @@ public class ValueNode implements Node
     public static void pack( Neo4jPack.Packer packer, Node node )
             throws IOException
     {
-        packer.packStructHeader( STRUCT_FIELD_COUNT, Neo4jPack.NODE );
+        packer.packStructHeader( STRUCT_FIELD_COUNT, Neo4jPack.StructType.NODE.signature() );
         packer.packNodeIdentity( node.getId() );
         Collection<Label> collectedLabels = Iterables.toList( node.getLabels() );
-        packer.packListHeader( collectedLabels.size() );
+        packer.packListHeader( collectedLabels.size(), PackListType.TEXT );
         for ( Label label : collectedLabels )
         {
             packer.pack( label.name() );
@@ -61,7 +62,7 @@ public class ValueNode implements Node
             throws IOException
     {
         assert unpacker.unpackStructHeader() == STRUCT_FIELD_COUNT;
-        assert unpacker.unpackStructSignature() == Neo4jPack.NODE;
+        assert unpacker.unpackStructSignature() == Neo4jPack.StructType.NODE.signature();
         return unpackFields( unpacker );
     }
 
@@ -71,6 +72,8 @@ public class ValueNode implements Node
         long id = unpacker.unpackNodeIdentity();
 
         int numLabels = (int) unpacker.unpackListHeader();
+        PackListType type = unpacker.unpackListType();
+        assert type == PackListType.TEXT;
         List<Label> labels;
         if ( numLabels > 0 )
         {

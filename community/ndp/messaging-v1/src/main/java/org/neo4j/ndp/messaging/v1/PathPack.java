@@ -33,6 +33,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueNode;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValuePath;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueUnboundRelationship;
+import org.neo4j.packstream.PackListType;
 
 public class PathPack
 {
@@ -57,7 +58,7 @@ public class PathPack
                 nodes.putIfAbsent( node.getId(), nodes.size() );
             }
             int size = nodes.size();
-            packer.packListHeader( size );
+            packer.packListHeader( size, Neo4jPack.StructType.NODE );
             if ( size > 0 )
             {
                 Iterator<Node> iterator = path.nodes().iterator();
@@ -87,7 +88,7 @@ public class PathPack
                 relationships.putIfAbsent( rel.getId(), relationships.size() + 1 );
             }
             int size = relationships.size();
-            packer.packListHeader( size );
+            packer.packListHeader( size, Neo4jPack.StructType.UNBOUND_RELATIONSHIP );
             if ( size > 0 )
             {
                 Iterator<Relationship> iterator = path.relationships().iterator();
@@ -109,13 +110,13 @@ public class PathPack
 
         public void pack( Neo4jPack.Packer packer, Path path ) throws IOException
         {
-            packer.packStructHeader( 3, Neo4jPack.PATH );
+            packer.packStructHeader( 3, Neo4jPack.StructType.PATH.signature() );
 
             packNodes( packer, path );
             packRelationships( packer, path );
 
             Node node = null;
-            packer.packListHeader( 2 * path.length() );
+            packer.packListHeader( 2 * path.length(), PackListType.INTEGER );
             int i = 0;
             for ( PropertyContainer entity : path )
             {
@@ -153,8 +154,10 @@ public class PathPack
         public ValuePath unpack( Neo4jPack.Unpacker unpacker )
                 throws IOException
         {
-            assert unpacker.unpackStructHeader() == STRUCT_FIELD_COUNT;
-            assert unpacker.unpackStructSignature() == Neo4jPack.PATH;
+            long structSize = unpacker.unpackStructHeader();
+            assert structSize == STRUCT_FIELD_COUNT;
+            byte structSignature = unpacker.unpackStructSignature();
+            assert structSignature == Neo4jPack.StructType.PATH.signature();
             return unpackFields( unpacker );
         }
 
@@ -170,6 +173,8 @@ public class PathPack
                 throws IOException
         {
             int count = (int) unpacker.unpackListHeader();
+            PackListType type = unpacker.unpackListType();
+            assert type == PackListType.struct( Neo4jPack.StructType.NODE );
             if ( count > 0 )
             {
                 List<Node> items = new ArrayList<>( count );
@@ -189,6 +194,8 @@ public class PathPack
                 throws IOException
         {
             int count = (int) unpacker.unpackListHeader();
+            PackListType type = unpacker.unpackListType();
+            assert type == PackListType.struct( Neo4jPack.StructType.UNBOUND_RELATIONSHIP );
             if ( count > 0 )
             {
                 List<Relationship> items = new ArrayList<>( count );
@@ -208,6 +215,8 @@ public class PathPack
                 throws IOException
         {
             int count = (int) unpacker.unpackListHeader();
+            PackListType type = unpacker.unpackListType();
+            assert type == PackListType.INTEGER;
             if ( count > 0 )
             {
                 List<Integer> items = new ArrayList<>( count );

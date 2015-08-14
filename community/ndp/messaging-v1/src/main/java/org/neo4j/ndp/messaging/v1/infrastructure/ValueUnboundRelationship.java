@@ -37,7 +37,7 @@ public class ValueUnboundRelationship implements UnboundRelationship
     public static void pack( Neo4jPack.Packer packer, Relationship rel )
             throws IOException
     {
-        packer.packStructHeader( STRUCT_FIELD_COUNT, Neo4jPack.UNBOUND_RELATIONSHIP );
+        packer.packStructHeader( STRUCT_FIELD_COUNT, Neo4jPack.StructType.UNBOUND_RELATIONSHIP.signature() );
         packer.packRelationshipIdentity( rel.getId() );
         packer.pack( rel.getType().name() );
         packer.packProperties( rel );
@@ -47,7 +47,7 @@ public class ValueUnboundRelationship implements UnboundRelationship
             throws IOException
     {
         assert unpacker.unpackStructHeader() == STRUCT_FIELD_COUNT;
-        assert unpacker.unpackStructSignature() == Neo4jPack.UNBOUND_RELATIONSHIP;
+        assert unpacker.unpackStructSignature() == Neo4jPack.StructType.UNBOUND_RELATIONSHIP.signature();
         return unpackFields( unpacker );
     }
 

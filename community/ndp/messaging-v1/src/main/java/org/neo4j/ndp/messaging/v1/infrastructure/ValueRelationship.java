@@ -36,7 +36,7 @@ public class ValueRelationship implements Relationship
     public static void pack( Neo4jPack.Packer packer, Relationship rel )
             throws IOException
     {
-        packer.packStructHeader( STRUCT_FIELD_COUNT, Neo4jPack.RELATIONSHIP );
+        packer.packStructHeader( STRUCT_FIELD_COUNT, Neo4jPack.StructType.RELATIONSHIP.signature() );
         packer.packRelationshipIdentity( rel.getId() );
         packer.packNodeIdentity( rel.getStartNode().getId() );
         packer.packNodeIdentity( rel.getEndNode().getId() );
@@ -48,7 +48,7 @@ public class ValueRelationship implements Relationship
             throws IOException
     {
         assert unpacker.unpackStructHeader() == STRUCT_FIELD_COUNT;
-        assert unpacker.unpackStructSignature() == Neo4jPack.RELATIONSHIP;
+        assert unpacker.unpackStructSignature() == Neo4jPack.StructType.RELATIONSHIP.signature();
         return unpackFields( unpacker );
     }
 

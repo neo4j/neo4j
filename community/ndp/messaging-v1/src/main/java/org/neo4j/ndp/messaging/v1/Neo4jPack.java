@@ -34,12 +34,18 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.ndp.messaging.NDPIOException;
+import org.neo4j.ndp.messaging.v1.infrastructure.UnboundRelationship;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueNode;
+import org.neo4j.ndp.messaging.v1.infrastructure.ValuePath;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueRelationship;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueUnboundRelationship;
+import org.neo4j.packstream.ObjectPacker;
+import org.neo4j.packstream.ObjectUnpacker;
 import org.neo4j.packstream.PackInput;
+import org.neo4j.packstream.PackListType;
 import org.neo4j.packstream.PackOutput;
 import org.neo4j.packstream.PackStream;
+import org.neo4j.packstream.PackStructType;
 import org.neo4j.packstream.PackType;
 
 /**
@@ -48,14 +54,76 @@ import org.neo4j.packstream.PackType;
  */
 public class Neo4jPack
 {
-    public static final Map<String, Object> EMPTY_PROPERTY_MAP = new HashMap<>();
+    public static final Map<String, Object> EMPTY_STRING_OBJECT_MAP = new HashMap<>();
 
-    public static final byte NODE = 'N';
-    public static final byte RELATIONSHIP = 'R';
-    public static final byte UNBOUND_RELATIONSHIP = 'r';
-    public static final byte PATH = 'P';
+    public enum StructType implements PackStructType
+    {
+        NODE('N', ValueNode.class),
+        RELATIONSHIP('R', ValueRelationship.class),
+        UNBOUND_RELATIONSHIP('r', ValueUnboundRelationship.class),
+        PATH('P', ValuePath.class);
 
-    public static class Packer extends PackStream.Packer
+        public static StructType fromClass( Class type )
+        {
+            if ( Node.class.isAssignableFrom( type ) )
+            {
+                return NODE;
+            }
+            else if ( Relationship.class.isAssignableFrom( type ) )
+            {
+                return RELATIONSHIP;
+            }
+            else if ( UnboundRelationship.class.isAssignableFrom( type ) )
+            {
+                return UNBOUND_RELATIONSHIP;
+            }
+            else if ( Path.class.isAssignableFrom( type ) )
+            {
+                return PATH;
+            }
+            else
+            {
+                throw new IllegalArgumentException(
+                        "The class " + type.getName() + " does not have a Neo4jPack equivalent" );
+            }
+        }
+
+        public static StructType fromSignature( byte signature )
+        {
+            if ( signature == NODE.signature ) { return NODE; }
+            else if ( signature == RELATIONSHIP.signature ) { return RELATIONSHIP; }
+            else if ( signature == UNBOUND_RELATIONSHIP.signature ) { return UNBOUND_RELATIONSHIP; }
+            else if ( signature == PATH.signature ) { return PATH; }
+            else
+            {
+                throw new IllegalArgumentException( "Illegal type signature '" + signature + "'" );
+            }
+        }
+
+        private final byte signature;
+        private final Class instanceClass;
+
+        StructType( char signature, Class instanceClass )
+        {
+            this.signature = (byte) signature;
+            this.instanceClass = instanceClass;
+        }
+
+        @Override
+        public byte signature()
+        {
+            return signature;
+        }
+
+        @Override
+        public Class instanceClass()
+        {
+            return instanceClass;
+        }
+
+    }
+
+    public static class Packer extends PackStream.Packer implements ObjectPacker
     {
         private IdentityPack.Packer identityPacker = new IdentityPack.Packer();
         private PathPack.Packer pathPacker = new PathPack.Packer();
@@ -65,13 +133,13 @@ public class Neo4jPack
             super( output );
         }
 
+        @Override
         public void pack( Object obj ) throws IOException
         {
             // Note: below uses instanceof for quick implementation, this should be swapped over
-            // to a dedicated
-            // visitable type that the serializer can simply visit. This would create explicit
-            // contract for what can
-            // be serialized and allow performant method dispatch rather than if branching.
+            // to a dedicated visitable type that the serializer can simply visit. This would
+            // create explicit contract for what can be serialized and allow performant method
+            // dispatch rather than if branching.
             if ( obj == null )
             {
                 packNull();
@@ -107,7 +175,7 @@ public class Neo4jPack
             else if ( obj instanceof Collection )
             {
                 List list = (List) obj;
-                packListHeader( list.size() );
+                packListHeader( list.size(), PackListType.ANY );
                 for ( Object item : list )
                 {
                     pack( item );
@@ -121,7 +189,7 @@ public class Neo4jPack
             else if ( obj instanceof short[] )
             {
                 short[] array = (short[]) obj;
-                packListHeader( array.length );
+                packListHeader( array.length, PackListType.INTEGER );
                 for ( short item : array )
                 {
                     pack( item );
@@ -130,7 +198,7 @@ public class Neo4jPack
             else if ( obj instanceof int[] )
             {
                 int[] array = (int[]) obj;
-                packListHeader( array.length );
+                packListHeader( array.length, PackListType.INTEGER );
                 for ( int item : array )
                 {
                     pack( item );
@@ -139,7 +207,7 @@ public class Neo4jPack
             else if ( obj instanceof long[] )
             {
                 long[] array = (long[]) obj;
-                packListHeader( array.length );
+                packListHeader( array.length, PackListType.INTEGER );
                 for ( long item : array )
                 {
                     pack( item );
@@ -148,7 +216,7 @@ public class Neo4jPack
             else if ( obj instanceof float[] )
             {
                 float[] array = (float[]) obj;
-                packListHeader( array.length );
+                packListHeader( array.length, PackListType.FLOAT );
                 for ( float item : array )
                 {
                     pack( item );
@@ -157,7 +225,7 @@ public class Neo4jPack
             else if ( obj instanceof double[] )
             {
                 double[] array = (double[]) obj;
-                packListHeader( array.length );
+                packListHeader( array.length, PackListType.FLOAT );
                 for ( double item : array )
                 {
                     pack( item );
@@ -166,7 +234,7 @@ public class Neo4jPack
             else if ( obj instanceof boolean[] )
             {
                 boolean[] array = (boolean[]) obj;
-                packListHeader( array.length );
+                packListHeader( array.length, PackListType.BOOLEAN );
                 for ( boolean item : array )
                 {
                     pack( item );
@@ -175,7 +243,7 @@ public class Neo4jPack
             else if ( obj.getClass().isArray() )
             {
                 Object[] array = (Object[]) obj;
-                packListHeader( array.length );
+                packListHeader( array.length, PackListType.ANY );
                 for ( Object item : array )
                 {
                     pack( item );
@@ -200,7 +268,7 @@ public class Neo4jPack
             }
         }
 
-        public void packRawMap( Map<String, Object> map ) throws IOException
+        public void packMap( Map<String, Object> map ) throws IOException
         {
             packMapHeader( map.size() );
             if ( map.size() > 0 )
@@ -236,7 +304,7 @@ public class Neo4jPack
 
     }
 
-    public static class Unpacker extends PackStream.Unpacker
+    public static class Unpacker extends PackStream.Unpacker implements ObjectUnpacker
     {
         private IdentityPack.Unpacker identityUnpacker = new IdentityPack.Unpacker();
         private PathPack.Unpacker pathUnpacker = new PathPack.Unpacker();
@@ -246,78 +314,42 @@ public class Neo4jPack
             super( input );
         }
 
+        @Override
         public Object unpack() throws IOException
         {
             PackType valType = peekNextType();
             switch ( valType )
             {
-                case TEXT:
-                    return unpackText();
-                case INTEGER:
-                    return unpackLong();
-                case FLOAT:
-                    return unpackDouble();
-                case BOOLEAN:
-                    return unpackBoolean();
                 case NULL:
                     // still need to move past the null value
                     unpackNull();
                     return null;
+                case BOOLEAN:
+                    return unpackBoolean();
+                case INTEGER:
+                    return unpackLong();
+                case FLOAT:
+                    return unpackDouble();
+                case TEXT:
+                    return unpackText();
                 case LIST:
-                {
-                    int size = (int) unpackListHeader();
-                    if ( size == 0 )
-                    {
-                        return Collections.EMPTY_LIST;
-                    }
-                    ArrayList<Object> vals = new ArrayList<>( size );
-                    for ( int j = 0; j < size; j++ )
-                    {
-                        vals.add( unpack() );
-                    }
-                    return vals;
-                }
+                    return unpackList();
                 case MAP:
-                {
-                    int size = (int) unpackMapHeader();
-                    if ( size == 0 )
-                    {
-                        return Collections.EMPTY_MAP;
-                    }
-                    Map<String, Object> map = new HashMap<>( size, 1 );
-                    for ( int j = 0; j < size; j++ )
-                    {
-                        String key = unpackText();
-                        Object val = unpack();
-                        map.put( key, val );
-                    }
-                    return map;
-                }
+                    return unpackMap();
                 case STRUCT:
                 {
                     unpackStructHeader();
-                    char signature = unpackStructSignature();
-                    switch ( signature )
+                    StructType type = StructType.fromSignature( unpackStructSignature() );
+                    switch ( type )
                     {
                         case NODE:
-                        {
                             return ValueNode.unpackFields( this );
-                        }
                         case RELATIONSHIP:
-                        {
                             return ValueRelationship.unpackFields( this );
-                        }
                         case UNBOUND_RELATIONSHIP:
-                        {
                             return ValueUnboundRelationship.unpackFields( this );
-                        }
                         case PATH:
-                        {
                             return pathUnpacker.unpackFields( this );
-                        }
-                        default:
-                            throw new NDPIOException( Status.Request.InvalidFormat,
-                                    "Unknown struct type: " + signature );
                     }
                 }
                 default:
@@ -326,7 +358,43 @@ public class Neo4jPack
             }
         }
 
-        public Map<String, Object> unpackRawMap() throws IOException
+        public Object unpackList() throws IOException
+        {
+            int size = (int) unpackListHeader();
+            PackListType subtype = unpackListType();
+            Class instanceClass;
+            if ( subtype.isStruct() )
+            {
+                instanceClass = StructType.fromSignature( subtype.marker() ).instanceClass();
+            }
+            else
+            {
+                instanceClass = subtype.instanceClass();
+            }
+            return unpackListItems( size, instanceClass );
+        }
+
+        private <T> List<T> unpackListItems( int size, Class<T> type ) throws IOException
+        {
+            List<T> items = new ArrayList<>( size );
+            for ( int i = 0; i < size; i++ )
+            {
+                Object unpacked = unpack();
+                try
+                {
+                    items.add( type.cast( unpacked ) );
+                }
+                catch ( ClassCastException e )
+                {
+                    throw new PackStream.TypeError(
+                            "Cannot cast " + unpacked.getClass().getName() + " value " +
+                                    unpacked.toString() + " to " + type.getName() );
+                }
+            }
+            return items;
+        }
+
+        public Map<String, Object> unpackMap() throws IOException
         {
             int size = (int) unpackMapHeader();
             if ( size == 0 )
@@ -358,7 +426,7 @@ public class Neo4jPack
             }
             else
             {
-                map = EMPTY_PROPERTY_MAP;
+                map = EMPTY_STRING_OBJECT_MAP;
             }
             return map;
         }

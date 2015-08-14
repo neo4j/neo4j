@@ -19,21 +19,25 @@
  */
 package org.neo4j.packstream;
 
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.Test;
+
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 
@@ -405,7 +409,7 @@ public class PackStreamTest
 
         // When
         PackStream.Packer packer = machine.packer();
-        packer.packListHeader( 3 );
+        packer.packListHeader( 3, PackListType.INTEGER );
         packer.pack( 12 );
         packer.pack( 13 );
         packer.pack( 14 );
@@ -414,6 +418,7 @@ public class PackStreamTest
 
         // Then
         assertThat( unpacker.unpackListHeader(), equalTo( 3L ) );
+        assertThat( unpacker.unpackListType(), equalTo( PackListType.INTEGER ) );
 
         assertThat( unpacker.unpackLong(), equalTo( 12L ) );
         assertThat( unpacker.unpackLong(), equalTo( 13L ) );
@@ -428,7 +433,7 @@ public class PackStreamTest
 
         // When
         PackStream.Packer packer = machine.packer();
-        packer.packListHeader( 3 );
+        packer.packListHeader( 3, PackListType.INTEGER );
         packer.pack( 12 );
         packer.pack( 13 );
         packer.pack( 14 );
@@ -437,36 +442,391 @@ public class PackStreamTest
 
         // Then
         assertThat( unpacker.unpackListHeader(), equalTo( 3L ) );
+        assertThat( unpacker.unpackListType(), equalTo( PackListType.INTEGER ) );
 
         assertThat( unpacker.unpackLong(), equalTo( 12L ) );
         assertThat( unpacker.unpackLong(), equalTo( 13L ) );
         assertThat( unpacker.unpackLong(), equalTo( 14L ) );
     }
 
+    private <T> void testCanPackAndUnpackList( Machine machine,
+                                               PackStream.Packer packer,
+                                               PackStream.Unpacker unpacker,
+                                               List<T> list,
+                                               ObjectPacker itemPacker,
+                                               ObjectUnpacker itemUnpacker ) throws Throwable
+    {
+        // Given
+        int listSize = list.size();
+        assertThat( listSize, greaterThan( 0 ) );  // otherwise we can't ascertain type information
+        PackListType listType = null;
+
+        // When
+        for ( T item : list )
+        {
+            if ( listType == null )  // have we packed the list type yet?
+            {
+                listType = PackListType.fromClass( item.getClass() );
+                packer.packListHeader( listSize, listType );
+                packer.flush();
+            }
+            itemPacker.pack( item );
+            packer.flush();
+        }
+
+        ByteArrayInputStream input = new ByteArrayInputStream( machine.output() );
+        unpacker.reset( new BufferedChannelInput( 16 ).reset( Channels.newChannel( input ) ) );
+
+        // Then
+        assertThat( unpacker.unpackListHeader(), equalTo( (long) listSize ) );
+        assertThat( unpacker.unpackListType(), equalTo( listType ) );
+
+        for ( Object item : list )
+        {
+            assertThat( itemUnpacker.unpack(), equalTo( item ) );
+        }
+
+    }
+
+    @Test
+    public void testCanPackAndUnpackListOfAny() throws Throwable
+    {
+        final Machine machine = new Machine();
+        final PackStream.Packer packer = machine.packer();
+        final PackStream.Unpacker unpacker = new PackStream.Unpacker();
+        testCanPackAndUnpackList( machine, packer, unpacker,
+                asList( "one", 2, 3.0 ),
+                new ObjectPacker()
+                {
+                    @Override
+                    public void pack( Object obj ) throws IOException
+                    {
+                        if ( obj instanceof String )
+                        {
+                            packer.pack( (String) obj );
+                        }
+                        else if ( obj instanceof Integer )
+                        {
+                            packer.pack( (int) obj );
+                        }
+                        else if ( obj instanceof Double )
+                        {
+                            packer.pack( (double) obj );
+                        }
+                        else
+                        {
+                            assert false;
+                        }
+                    }
+
+                },
+                new ObjectUnpacker()
+                {
+                    int sequence = 0;
+
+                    @Override
+                    public Object unpack() throws IOException
+                    {
+                        try
+                        {
+                            switch ( sequence )
+                            {
+                                case 0:
+                                    return unpacker.unpackText();
+                                case 1:
+                                    return unpacker.unpackInteger();
+                                case 2:
+                                    return unpacker.unpackDouble();
+                                default:
+                                    throw new RuntimeException( "This should never happen" );
+                            }
+                        }
+                        finally
+                        {
+                            sequence += 1;
+                        }
+                    }
+
+                } );
+    }
+
+    @Test
+    public void testCanPackAndUnpackListOfBoolean() throws Throwable
+    {
+        final Machine machine = new Machine();
+        final PackStream.Packer packer = machine.packer();
+        final PackStream.Unpacker unpacker = new PackStream.Unpacker();
+        testCanPackAndUnpackList( machine, packer, unpacker,
+                asList( true, false, true, true, false ),
+                new ObjectPacker()
+                {
+                    @Override
+                    public void pack( Object obj ) throws IOException
+                    {
+                        packer.pack( (boolean) obj );
+                    }
+
+                },
+                new ObjectUnpacker()
+                {
+                    @Override
+                    public Object unpack() throws IOException
+                    {
+                        return unpacker.unpackBoolean();
+                    }
+
+                } );
+    }
+
+    @Test
+    public void testCanPackAndUnpackListOfInteger() throws Throwable
+    {
+        final Machine machine = new Machine();
+        final PackStream.Packer packer = machine.packer();
+        final PackStream.Unpacker unpacker = new PackStream.Unpacker();
+        testCanPackAndUnpackList( machine, packer, unpacker,
+                asList( 1, 2, 3 ),
+                new ObjectPacker()
+                {
+                    @Override
+                    public void pack( Object obj ) throws IOException
+                    {
+                        packer.pack( (int) obj );
+                    }
+
+                },
+                new ObjectUnpacker()
+                {
+                    @Override
+                    public Object unpack() throws IOException
+                    {
+                        return unpacker.unpackInteger();
+                    }
+
+                } );
+    }
+
+    @Test
+    public void testCanPackAndUnpackListOfFloat() throws Throwable
+    {
+        final Machine machine = new Machine();
+        final PackStream.Packer packer = machine.packer();
+        final PackStream.Unpacker unpacker = new PackStream.Unpacker();
+        testCanPackAndUnpackList( machine, packer, unpacker,
+                asList( 1.1, 2.2, 3.141592653589 ),
+                new ObjectPacker()
+                {
+                    @Override
+                    public void pack( Object obj ) throws IOException
+                    {
+                        packer.pack( (double) obj );
+                    }
+
+                },
+                new ObjectUnpacker()
+                {
+                    @Override
+                    public Object unpack() throws IOException
+                    {
+                        return unpacker.unpackDouble();
+                    }
+
+                } );
+    }
+
     @Test
     public void testCanPackAndUnpackListOfText() throws Throwable
     {
-        // Given
-        Machine machine = new Machine();
+        final Machine machine = new Machine();
+        final PackStream.Packer packer = machine.packer();
+        final PackStream.Unpacker unpacker = new PackStream.Unpacker();
+        testCanPackAndUnpackList( machine, packer, unpacker,
+                asList( "eins", "zwei", "drei", "vier", "fünf" ),
+                new ObjectPacker()
+                {
+                    @Override
+                    public void pack( Object obj ) throws IOException
+                    {
+                        packer.pack( (String) obj );
+                    }
 
-        // When
-        PackStream.Packer packer = machine.packer();
-        packer.packListHeader( 3 );
-        packer.flush();
-        packer.pack( "eins" );
-        packer.flush();
-        packer.pack( "zwei" );
-        packer.flush();
-        packer.pack( "drei" );
-        packer.flush();
-        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
+                },
+                new ObjectUnpacker()
+                {
+                    @Override
+                    public Object unpack() throws IOException
+                    {
+                        return unpacker.unpackText();
+                    }
 
-        // Then
-        assertThat( unpacker.unpackListHeader(), equalTo( 3L ) );
+                } );
+    }
 
-        assertThat( unpacker.unpackText(), equalTo( "eins" ) );
-        assertThat( unpacker.unpackText(), equalTo( "zwei" ) );
-        assertThat( unpacker.unpackText(), equalTo( "drei" ) );
+    @Test
+    public void testCanPackAndUnpackListOfListOfInteger() throws Throwable
+    {
+        final Machine machine = new Machine();
+        final PackStream.Packer packer = machine.packer();
+        final PackStream.Unpacker unpacker = new PackStream.Unpacker();
+        testCanPackAndUnpackList( machine, packer, unpacker,
+                asList( asList( 1, 2, 3 ), asList( 4, 5, 6 ), asList( 7, 8, 9 ) ),
+                new ObjectPacker()
+                {
+                    @Override
+                    public void pack( Object obj ) throws IOException
+                    {
+                        List list = (List) obj;
+                        packer.packListHeader( list.size(), PackListType.INTEGER );
+                        for ( Object item : list )
+                        {
+                            packer.pack( (int) item );
+                        }
+                    }
+
+                },
+                new ObjectUnpacker()
+                {
+                    @Override
+                    public Object unpack() throws IOException
+                    {
+                        int listSize = (int) unpacker.unpackListHeader();
+                        PackListType listType = unpacker.unpackListType();
+                        assertThat( listType, equalTo( PackListType.INTEGER ) );
+                        List<Integer> list = new ArrayList<>( listSize );
+                        for ( int i = 0; i < listSize; i++ )
+                        {
+                            list.add( unpacker.unpackInteger() );
+                        }
+                        return list;
+                    }
+
+                } );
+    }
+
+    @Test
+    public void testCanPackAndUnpackListOfListOfFloat() throws Throwable
+    {
+        final Machine machine = new Machine();
+        final PackStream.Packer packer = machine.packer();
+        final PackStream.Unpacker unpacker = new PackStream.Unpacker();
+        testCanPackAndUnpackList( machine, packer, unpacker,
+                asList( asList( 1.1, 2.2, 3.3 ), asList( 4.4, 5.5, 6.6 ), asList( 7.7, 8.8, 9.9 ) ),
+                new ObjectPacker()
+                {
+                    @Override
+                    public void pack( Object obj ) throws IOException
+                    {
+                        List list = (List) obj;
+                        packer.packListHeader( list.size(), PackListType.FLOAT );
+                        for ( Object item : list )
+                        {
+                            packer.pack( (double) item );
+                        }
+                    }
+
+                },
+                new ObjectUnpacker()
+                {
+                    @Override
+                    public Object unpack() throws IOException
+                    {
+                        int listSize = (int) unpacker.unpackListHeader();
+                        PackListType listType = unpacker.unpackListType();
+                        assertThat( listType, equalTo( PackListType.FLOAT ) );
+                        List<Double> list = new ArrayList<>( listSize );
+                        for ( int i = 0; i < listSize; i++ )
+                        {
+                            list.add( unpacker.unpackDouble() );
+                        }
+                        return list;
+                    }
+
+                } );
+    }
+
+    @Test
+    public void testCanPackAndUnpackListOfListOfText() throws Throwable
+    {
+        final Machine machine = new Machine();
+        final PackStream.Packer packer = machine.packer();
+        final PackStream.Unpacker unpacker = new PackStream.Unpacker();
+        testCanPackAndUnpackList( machine, packer, unpacker,
+                asList( asList( "eins", "zwei", "drei" ),
+                        asList( "vier", "fünf", "sechs" ),
+                        asList( "sieben", "acht", "neun" ) ),
+                new ObjectPacker()
+                {
+                    @Override
+                    public void pack( Object obj ) throws IOException
+                    {
+                        List list = (List) obj;
+                        packer.packListHeader( list.size(), PackListType.TEXT );
+                        for ( Object item : list )
+                        {
+                            packer.pack( (String) item );
+                        }
+                    }
+
+                },
+                new ObjectUnpacker()
+                {
+                    @Override
+                    public Object unpack() throws IOException
+                    {
+                        int listSize = (int) unpacker.unpackListHeader();
+                        PackListType listType = unpacker.unpackListType();
+                        assertThat( listType, equalTo( PackListType.TEXT ) );
+                        List<String> list = new ArrayList<>( listSize );
+                        for ( int i = 0; i < listSize; i++ )
+                        {
+                            list.add( unpacker.unpackText() );
+                        }
+                        return list;
+                    }
+
+                } );
+    }
+
+    @Test
+    public void testCanPackAndUnpackListOfMap() throws Throwable
+    {
+        final Machine machine = new Machine();
+        final PackStream.Packer packer = machine.packer();
+        final PackStream.Unpacker unpacker = new PackStream.Unpacker();
+        testCanPackAndUnpackList( machine, packer, unpacker,
+                asList( asMap( "one", 1, "two", 2 ), asMap( "three", 3, "four", 4 ) ),
+                new ObjectPacker()
+                {
+                    @Override
+                    public void pack( Object obj ) throws IOException
+                    {
+                        Map map = (Map) obj;
+                        packer.packMapHeader( map.size() );
+                        for ( Object key : map.keySet() )
+                        {
+                            packer.pack( (String) key );
+                            packer.pack( (int) map.get(key) );
+                        }
+                    }
+
+                },
+                new ObjectUnpacker()
+                {
+                    @Override
+                    public Object unpack() throws IOException
+                    {
+                        long size = unpacker.unpackMapHeader();
+                        Map<String, Object> map = new LinkedHashMap<>( (int) size );
+                        for ( long i = 0; i < size; i++ )
+                        {
+                            String key = unpacker.unpackText();
+                            Integer value = unpacker.unpackInteger();
+                            map.put( key, value );
+                        }
+                        return map;
+                    }
+
+                } );
     }
 
     @Test
@@ -505,7 +865,7 @@ public class PackStreamTest
         PackStream.Packer packer = machine.packer();
         packer.packStructHeader( 3, (byte)'N' );
         packer.pack( 12 );
-        packer.packListHeader( 2 );
+        packer.packListHeader( 2, PackListType.TEXT );
         packer.pack( "Person" );
         packer.pack( "Employee" );
         packer.packMapHeader( 2 );
@@ -518,11 +878,12 @@ public class PackStreamTest
 
         // Then
         assertThat( unpacker.unpackStructHeader(), equalTo( 3L ) );
-        assertThat( unpacker.unpackStructSignature(), equalTo( 'N' ) );
+        assertThat( unpacker.unpackStructSignature(), equalTo( (byte) 'N' ) );
 
         assertThat( unpacker.unpackLong(), equalTo( 12L ) );
 
         assertThat( unpacker.unpackListHeader(), equalTo( 2L ) );
+        assertThat( unpacker.unpackListType(), equalTo( PackListType.TEXT ) );
         assertThat( unpacker.unpackText(), equalTo( "Person" ) );
         assertThat( unpacker.unpackText(), equalTo( "Employee" ) );
 
@@ -543,7 +904,7 @@ public class PackStreamTest
         PackStream.Packer packer = machine.packer();
         packer.packStructHeader( 3,  (byte)'N' );
         packer.pack( 12 );
-        packer.packListHeader( 2 );
+        packer.packListHeader( 2, PackListType.TEXT );
         packer.pack( "Person" );
         packer.pack( "Employee" );
         packer.packMapHeader( 2 );
@@ -559,7 +920,7 @@ public class PackStreamTest
                 PackStream.TINY_STRUCT | 3,
                 'N',
                 12,
-                PackStream.TINY_LIST | 2,
+                PackStream.TINY_LIST | 2, PackListType.TEXT.marker(),
                 PackStream.TINY_TEXT | 6, 'P', 'e', 'r', 's', 'o', 'n',
                 PackStream.TINY_TEXT | 8, 'E', 'm', 'p', 'l', 'o', 'y', 'e', 'e',
                 PackStream.TINY_MAP | 2,
@@ -576,11 +937,11 @@ public class PackStreamTest
         // Given
         Machine machine = new Machine();
         PackStream.Packer packer = machine.packer();
-        packer.packListHeader( 4 );
+        packer.packListHeader( 4, PackListType.INTEGER );
         packer.pack( 1 );
         packer.pack( 2 );
         packer.pack( 3 );
-        packer.packListHeader( 2 );
+        packer.packListHeader( 2, PackListType.INTEGER );
         packer.pack( 4 );
         packer.pack( 5 );
         packer.flush();
@@ -590,17 +951,21 @@ public class PackStreamTest
 
         // Then I can do streaming unpacking
         long size = unpacker.unpackListHeader();
+        PackListType type = unpacker.unpackListType();
         long a = unpacker.unpackLong();
         long b = unpacker.unpackLong();
         long c = unpacker.unpackLong();
 
         long innerSize = unpacker.unpackListHeader();
+        PackListType innerType = unpacker.unpackListType();
         long d = unpacker.unpackLong();
         long e = unpacker.unpackLong();
 
         // And all the values should be sane
         assertEquals( 4, size );
+        assertEquals( PackListType.INTEGER, type );
         assertEquals( 2, innerSize );
+        assertEquals( PackListType.INTEGER, innerType );
         assertEquals( 1, a );
         assertEquals( 2, b );
         assertEquals( 3, c );
@@ -614,11 +979,11 @@ public class PackStreamTest
         // Given
         Machine machine = new Machine();
         PackStream.Packer packer = machine.packer();
-        packer.packStructHeader( 4,  (byte)'~' );
+        packer.packStructHeader( 4,  (byte) '~' );
         packer.pack( 1 );
         packer.pack( 2 );
         packer.pack( 3 );
-        packer.packListHeader( 2 );
+        packer.packListHeader( 2, PackListType.INTEGER );
         packer.pack( 4 );
         packer.pack( 5 );
         packer.flush();
@@ -628,19 +993,21 @@ public class PackStreamTest
 
         // Then I can do streaming unpacking
         long size = unpacker.unpackStructHeader();
-        char signature = unpacker.unpackStructSignature();
+        byte signature = unpacker.unpackStructSignature();
         long a = unpacker.unpackLong();
         long b = unpacker.unpackLong();
         long c = unpacker.unpackLong();
 
         long innerSize = unpacker.unpackListHeader();
+        PackListType type = unpacker.unpackListType();
         long d = unpacker.unpackLong();
         long e = unpacker.unpackLong();
 
         // And all the values should be sane
         assertEquals( 4, size );
-        assertEquals( '~', signature );
+        assertEquals( (byte) '~', signature );
         assertEquals( 2, innerSize );
+        assertEquals( PackListType.INTEGER, type );
         assertEquals( 1, a );
         assertEquals( 2, b );
         assertEquals( 3, c );
@@ -658,7 +1025,7 @@ public class PackStreamTest
         packer.pack( "name" );
         packer.pack( "Bob" );
         packer.pack( "cat_ages" );
-        packer.packListHeader( 2 );
+        packer.packListHeader( 2, PackListType.ANY );
         packer.pack( 4.3 );
         packer.pack( true );
         packer.flush();
@@ -673,12 +1040,14 @@ public class PackStreamTest
         String k2 = unpacker.unpackText();
 
         long innerSize = unpacker.unpackListHeader();
+        PackListType type = unpacker.unpackListType();
         double d = unpacker.unpackDouble();
         boolean e = unpacker.unpackBoolean();
 
         // And all the values should be sane
         assertEquals( 2, size );
         assertEquals( 2, innerSize );
+        assertEquals( PackListType.ANY, type );
         assertEquals( "name", k1 );
         assertEquals( "Bob", v1 );
         assertEquals( "cat_ages", k2 );
@@ -761,7 +1130,7 @@ public class PackStreamTest
         else if ( value instanceof List )
         {
             List list = (List) value;
-            packer.packListHeader( list.size() );
+            packer.packListHeader( list.size(), PackListType.ANY );
             for ( Object o : list )
             {
                 doTheThing( packer, o );

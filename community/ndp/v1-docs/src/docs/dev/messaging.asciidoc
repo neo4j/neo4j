@@ -223,7 +223,7 @@ RecordMessage (signature=0x71) {
 ----
 Value: RECORD [1,2,3]
 
-B1 71 93 01  02 03
+B1 71 93 C0  01 02 03
 ----
 
 ==== SUCCESS
@@ -243,8 +243,8 @@ SuccessMessage (signature=0x70) {
 ----
 Value: SUCCESS {fields:["name", "age"]}
 
-B1 70 A1 86  66 69 65 6C  64 73 92 84  6E 61 6D 65
-83 61 67 65
+B1 70 A1 86  66 69 65 6C  64 73 92 C0  84 6E 61 6D
+65 83 61 67  65
 ----
 
 ==== FAILURE

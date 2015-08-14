@@ -25,8 +25,10 @@ import java.util.Map;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.ndp.messaging.NDPIOException;
 import org.neo4j.ndp.messaging.v1.message.Message;
+import org.neo4j.packstream.PackListType;
 import org.neo4j.packstream.PackStream;
 import org.neo4j.ndp.runtime.spi.Record;
+import org.neo4j.packstream.PackType;
 
 import static org.neo4j.ndp.runtime.internal.Neo4jError.codeFromString;
 import static org.neo4j.ndp.runtime.spi.Records.record;
@@ -108,7 +110,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         {
             packer.packStructHeader( 2, MessageTypes.MSG_RUN );
             packer.pack( statement );
-            packer.packRawMap( params );
+            packer.packMap( params );
             onMessageComplete.onMessageComplete();
         }
 
@@ -141,7 +143,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         {
             Object[] fields = item.fields();
             packer.packStructHeader( 1, MessageTypes.MSG_RECORD );
-            packer.packListHeader( fields.length );
+            packer.packListHeader( fields.length, PackListType.ANY );
             for ( Object field : fields )
             {
                 packer.pack( field );
@@ -154,7 +156,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 throws IOException
         {
             packer.packStructHeader( 1, MessageTypes.MSG_SUCCESS );
-            packer.packRawMap( metadata );
+            packer.packMap( metadata );
             onMessageComplete.onMessageComplete();
         }
 
@@ -282,14 +284,14 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private <E extends Exception> void unpackSuccessMessage( MessageHandler<E> output )
                 throws E, IOException
         {
-            Map<String,Object> map = unpacker.unpackRawMap();
+            Map<String,Object> map = unpacker.unpackMap();
             output.handleSuccessMessage( map );
         }
 
         private <E extends Exception> void unpackFailureMessage( MessageHandler<E> output )
                 throws E, IOException
         {
-            Map<String,Object> map = unpacker.unpackRawMap();
+            Map<String,Object> map = unpacker.unpackMap();
 
             String codeStr = map.containsKey( "code" ) ?
                     (String) map.get( "code" ) :
@@ -312,6 +314,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 throws E, IOException
         {
             long length = unpacker.unpackListHeader();
+            PackListType type = unpacker.unpackListType();
+            assert type == PackListType.ANY;
             final Object[] fields = new Object[(int) length];
             for ( int i = 0; i < length; i++ )
             {
@@ -324,7 +328,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 throws E, IOException
         {
             String statement = unpacker.unpackText();
-            Map<String,Object> params = unpacker.unpackRawMap();
+            Map<String,Object> params = unpacker.unpackMap();
             output.handleRunMessage( statement, params );
         }
 
