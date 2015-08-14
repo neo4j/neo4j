@@ -63,9 +63,11 @@ public class PackListItemType
     private static final Map<Byte, PackListItemType> STRUCT = new HashMap<>( 0x80 );
     static
     {
-        for ( int i = 0x00; i < 0x80; i++ )
+        // Slightly odd loop construct but not possible to loop until Byte.MAX_VALUE
+        // explicitly thanks to Java's wrap-around which means b < Byte.MAX_VALUE is
+        // always true.
+        for ( byte b = 0x00; b >= 0x00; b++ )
         {
-            byte b = (byte) i;
             STRUCT.put( b, new PackListItemType( b, null ) );
         }
     }
