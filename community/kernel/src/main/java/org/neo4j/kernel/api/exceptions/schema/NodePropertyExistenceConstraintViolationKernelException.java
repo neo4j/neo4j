@@ -31,7 +31,7 @@ public class NodePropertyExistenceConstraintViolationKernelException extends Con
 
     public NodePropertyExistenceConstraintViolationKernelException( int labelId, int propertyKeyId, long nodeId )
     {
-        super( "Node %d with label %d does not have the property %d", nodeId, labelId, propertyKeyId);
+        super( "Node %d with label %d must have the property %d", nodeId, labelId, propertyKeyId);
         this.labelId = labelId;
         this.propertyKeyId = propertyKeyId;
         this.nodeId = nodeId;
@@ -40,7 +40,7 @@ public class NodePropertyExistenceConstraintViolationKernelException extends Con
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return format( "Node %d with label \"%s\" does not have a \"%s\" property", nodeId,
+        return format( "Node %d with label \"%s\" must have the property \"%s\" due to a constraint", nodeId,
                 tokenNameLookup.labelGetName( labelId ),
                 tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
     }

@@ -136,7 +136,7 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
     engine.execute("CREATE CONSTRAINT ON (book:Book) ASSERT exists(book.isbn)")
     testFailingQuery[ConstraintValidationException](
       title = "Create a node that breaks a property existence constraint",
-      text = "Create a `Book` node without an `isbn`.",
+      text = "Trying to create a `Book` node without an `isbn` property, given a property existence constraint on `:Book(isbn)`.",
       queryText = "CREATE (book:Book {title: 'Graph Databases'})",
       optionalResultExplanation = "In this case the node isn't created in the graph."
     )
@@ -147,8 +147,8 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
     engine.execute("CREATE CONSTRAINT ON (book:Book) ASSERT exists(book.isbn)")
     engine.execute("CREATE (book:Book {isbn: '1449356265', title: 'Graph Databases'})")
     testFailingQuery[ConstraintValidationException](
-      title = "Removing a mandatory node property",
-      text = "Trying to remove property `isbn` from an existing book.",
+      title = "Removing an existence constrained node property",
+      text = "Trying to remove property `isbn` from an existing node `book`, given a property existence constraint on `:Book(isbn)`.",
       queryText = "MATCH (book:Book {title: 'Graph Databases'}) REMOVE book.isbn",
       optionalResultExplanation = "In this case the property is not removed."
     )
@@ -209,7 +209,7 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
     engine.execute("CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT exists(like.day)")
     testFailingQuery[ConstraintValidationException](
       title = "Create a relationship that breaks a property existence constraint",
-      text = "Create a `LIKED` relationship without an existing `day` property.",
+      text = "Trying to create a `LIKED` relationship without a `day` property, given a property existence constraint `:LIKED(day)`.",
       queryText = "CREATE (user:User)-[like:LIKED]->(book:Book)",
       optionalResultExplanation = "In this case the relationship isn't created in the graph."
     )
@@ -220,8 +220,8 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
     engine.execute("CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT exists(like.day)")
     engine.execute("CREATE (user:User)-[like:LIKED {day: 'today'}]->(book:Book)")
     testFailingQuery[ConstraintValidationException](
-      title = "Removing a mandatory relationship property",
-      text = "Trying to remove property `day` from an existing like.",
+      title = "Removing an existence constrained relationship property",
+      text = "Trying to remove property `day` from an existing relationship `like` of type `LIKED`, given a property existence constraint `:LIKED(day)`.",
       queryText = "MATCH (user:User)-[like:LIKED]->(book:Book) REMOVE like.day",
       optionalResultExplanation = "In this case the property is not removed."
     )

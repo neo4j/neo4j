@@ -1495,8 +1495,8 @@ public class BatchInsertTest
         catch ( ConstraintViolationException e )
         {
             assertEquals(
-                    e.getMessage(),
-                    "Node 0 with label \"" + label.name() + "\" does not have a \"" + propertyKey + "\" property"
+                    "Node 0 with label \"" + label.name() + "\" must have the property \"" + propertyKey + "\" due to a constraint",
+                    e.getMessage()
             );
         }
         finally
@@ -1541,8 +1541,8 @@ public class BatchInsertTest
         catch ( ConstraintViolationException e )
         {
             assertEquals(
-                    e.getMessage(),
-                    "Relationship 0 with type \"" + type.name() + "\" does not have a \"" + propertyKey + "\" property"
+                    "Relationship 0 with type \"" + type.name() + "\" must have the property \"" + propertyKey + "\" due to a constraint",
+                    e.getMessage()
             );
         }
         finally
