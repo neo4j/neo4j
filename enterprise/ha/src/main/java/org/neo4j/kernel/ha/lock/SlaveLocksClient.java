@@ -136,8 +136,7 @@ class SlaveLocksClient implements Locks.Client
         }
     }
 
-    private long[] incrementAndRemoveAlreadyTakenLocks(
-            Map<Long, AtomicInteger> takenLocks,
+    private long[] incrementAndRemoveAlreadyTakenLocks( Map<Long,AtomicInteger> takenLocks,
             long[] resourceIds )
     {
         ArrayList<Long> untakenIds = new ArrayList<>();
@@ -178,16 +177,16 @@ class SlaveLocksClient implements Locks.Client
     @Override
     public void releaseShared( Locks.ResourceType resourceType, long... resourceIds )
     {
-        Map<Long, AtomicInteger> lockMap = getLockMap( sharedLocks, resourceType );
+        Map<Long,AtomicInteger> lockMap = getLockMap( sharedLocks, resourceType );
         for ( long resourceId : resourceIds )
         {
             AtomicInteger counter = lockMap.get( resourceId );
-            if(counter == null)
+            if ( counter == null )
             {
                 throw new IllegalStateException( this + " cannot release lock it does not hold: EXCLUSIVE " +
-                        resourceType + "[" + resourceId + "]" );
+                                                 resourceType + "[" + resourceId + "]" );
             }
-            if(counter.decrementAndGet() == 0)
+            if ( counter.decrementAndGet() == 0 )
             {
                 lockMap.remove( resourceId );
                 client.releaseShared( resourceType, resourceId );
@@ -198,16 +197,16 @@ class SlaveLocksClient implements Locks.Client
     @Override
     public void releaseExclusive( Locks.ResourceType resourceType, long... resourceIds )
     {
-        Map<Long, AtomicInteger> lockMap = getLockMap( exclusiveLocks, resourceType );
+        Map<Long,AtomicInteger> lockMap = getLockMap( exclusiveLocks, resourceType );
         for ( long resourceId : resourceIds )
         {
             AtomicInteger counter = lockMap.get( resourceId );
-            if(counter == null)
+            if ( counter == null )
             {
                 throw new IllegalStateException( this + " cannot release lock it does not hold: EXCLUSIVE " +
-                        resourceType + "[" + resourceId + "]" );
+                                                 resourceType + "[" + resourceId + "]" );
             }
-            if(counter.decrementAndGet() == 0)
+            if ( counter.decrementAndGet() == 0 )
             {
                 lockMap.remove( resourceId );
                 client.releaseExclusive( resourceType, resourceId );
@@ -234,6 +233,7 @@ class SlaveLocksClient implements Locks.Client
     {
         sharedLocks.clear();
         exclusiveLocks.clear();
+        client.releaseAll();
         if ( initialized )
         {
             try ( Response<Void> ignored = master.endLockSession( newRequestContextFor( client ), true ) )
@@ -242,21 +242,12 @@ class SlaveLocksClient implements Locks.Client
             }
             initialized = false;
         }
-        client.releaseAll();
     }
 
     @Override
     public void close()
     {
-        sharedLocks.clear();
-        exclusiveLocks.clear();
-        if ( initialized )
-        {
-            try ( Response<Void> ignored = master.endLockSession( newRequestContextFor( client ), true ) )
-            {
-                // Lock session is closed on master at this point
-            }
-        }
+        releaseAll();
         client.close();
     }
 
