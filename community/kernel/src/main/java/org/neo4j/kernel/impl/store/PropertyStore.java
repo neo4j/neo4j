@@ -619,7 +619,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
         }
     }
 
-    private static void setSingleBlockValue( PropertyBlock block, int keyId, PropertyType type, long longValue )
+    public static void setSingleBlockValue( PropertyBlock block, int keyId, PropertyType type, long longValue )
     {
         block.setSingleBlock( singleBlockLongValue( keyId, type, longValue ) );
     }

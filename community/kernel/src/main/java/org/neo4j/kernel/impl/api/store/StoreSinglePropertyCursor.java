@@ -29,13 +29,12 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 public class StoreSinglePropertyCursor extends StorePropertyCursor
 {
     private int propertyKeyId;
-    private Consumer<StoreSinglePropertyCursor> instanceCache;
 
     public StoreSinglePropertyCursor( PropertyStore propertyStore,
             Consumer<StoreSinglePropertyCursor> instanceCache )
     {
+        //noinspection unchecked
         super( propertyStore, (Consumer) instanceCache );
-        this.instanceCache = instanceCache;
     }
 
     public StoreSinglePropertyCursor init( long firstPropertyId, int propertyKeyId )
@@ -67,12 +66,5 @@ public class StoreSinglePropertyCursor extends StorePropertyCursor
         {
             this.propertyKeyId = StatementConstants.NO_SUCH_PROPERTY_KEY;
         }
-    }
-
-    @Override
-    public void close()
-    {
-        super.close();
-        instanceCache.accept( this );
     }
 }

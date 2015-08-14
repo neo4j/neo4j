@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import java.nio.channels.WritableByteChannel;
 import java.util.Arrays;
 import java.util.List;
 
@@ -390,7 +389,7 @@ public class StubCursors
 
     public static Cursor<PropertyItem> asPropertyCursor( final DefinedProperty... properties )
     {
-        return Cursors.<PropertyItem>cursor( Iterables.map( new Function<DefinedProperty, PropertyItem>()
+        return Cursors.cursor( Iterables.map( new Function<DefinedProperty, PropertyItem>()
         {
             @Override
             public PropertyItem apply( final DefinedProperty property )
@@ -407,36 +406,6 @@ public class StubCursors
                     public Object value()
                     {
                         return property.value();
-                    }
-
-                    @Override
-                    public boolean booleanValue()
-                    {
-                        return ((Boolean) value());
-                    }
-
-                    @Override
-                    public long longValue()
-                    {
-                        return ((Number) value()).longValue();
-                    }
-
-                    @Override
-                    public double doubleValue()
-                    {
-                        return ((Number) value()).doubleValue();
-                    }
-
-                    @Override
-                    public String stringValue()
-                    {
-                        return value().toString();
-                    }
-
-                    @Override
-                    public void byteArray( WritableByteChannel channel )
-                    {
-
                     }
                 };
             }

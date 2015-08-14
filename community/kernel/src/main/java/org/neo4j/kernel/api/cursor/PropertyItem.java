@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.cursor;
 
-import java.nio.channels.WritableByteChannel;
-
 /**
  * Property item returned from property cursors
  */
@@ -35,34 +33,4 @@ public interface PropertyItem
      * @return the value of the current property.
      */
     Object value();
-
-    /**
-     * @return the boolean value of the current property
-     * @throws IllegalStateException if current property is not a boolean
-     */
-    boolean booleanValue();
-
-    /**
-     * @return the integer value of the current property
-     * @throws IllegalStateException if current property is not an integer number
-     */
-    long longValue();
-
-    /**
-     * @return the real value of the current property
-     * @throws IllegalStateException if current property is not a real number
-     */
-    double doubleValue();
-
-    /**
-     * @return the string value of the current property
-     */
-    String stringValue();
-
-    /**
-     * The byte array data of the current value.
-     *
-     * @param channel to write the data into
-     */
-    void byteArray( WritableByteChannel channel );
 }
