@@ -19,6 +19,11 @@
  */
 package org.neo4j.server.rest.web;
 
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -33,11 +38,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -65,11 +66,12 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.EntityOutputFormat;
 
 import static java.lang.Long.parseLong;
-
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -77,7 +79,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.kernel.api.exceptions.Status.Request;
 import static org.neo4j.kernel.api.exceptions.Status.Request.InvalidFormat;
 import static org.neo4j.kernel.api.exceptions.Status.Schema;
@@ -220,7 +221,7 @@ public class RestfulGraphDatabaseTest
                 .get( "Location" )
                 .get( 0 ) );
 
-        checkContentTypeCharsetUtf8(response);
+        checkContentTypeCharsetUtf8( response );
         String json = entityAsString( response );
 
         Map<String, Object> map = JsonHelper.jsonToMap( json );
@@ -360,7 +361,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.getAllNodeProperties( nodeId );
         assertEquals( 200, response.getStatus() );
 
-        checkContentTypeCharsetUtf8(response);
+        checkContentTypeCharsetUtf8( response );
     }
 
     @Test
@@ -480,7 +481,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.getNodeProperty( nodeId, "foo" );
         assertEquals( 200, response.getStatus() );
 
-        checkContentTypeCharsetUtf8(response);
+        checkContentTypeCharsetUtf8( response );
     }
 
     @Test
@@ -501,7 +502,7 @@ public class RestfulGraphDatabaseTest
         long startNode = helper.createNode();
         long endNode = helper.createNode();
         Response response = service.createRelationship( startNode, "{\"to\" : \"" + BASE_URI + endNode
-                + "\", \"type\" : \"LOVES\"}" );
+                                                                   + "\", \"type\" : \"LOVES\"}" );
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getMetadata()
                 .get( "Location" )
@@ -534,7 +535,7 @@ public class RestfulGraphDatabaseTest
         assertNotNull( map );
         assertTrue( map.containsKey( "self" ) );
 
-        checkContentTypeCharsetUtf8(response);
+        checkContentTypeCharsetUtf8( response );
 
         @SuppressWarnings("unchecked") Map<String, Object> data = (Map<String, Object>) map.get( "data" );
 
@@ -670,7 +671,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.getRelationship( relationshipId );
         assertEquals( 200, response.getStatus() );
 
-        checkContentTypeCharsetUtf8(response);
+        checkContentTypeCharsetUtf8( response );
     }
 
     @Test
@@ -691,7 +692,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.getAllRelationshipProperties( relationshipId );
         assertEquals( 200, response.getStatus() );
 
-        checkContentTypeCharsetUtf8(response);
+        checkContentTypeCharsetUtf8( response );
 
         Map<String, Object> readProperties = JsonHelper.jsonToMap( entityAsString( response ) );
         assertEquals( properties, readProperties );
@@ -712,7 +713,7 @@ public class RestfulGraphDatabaseTest
         assertEquals( 200, response.getStatus() );
         assertEquals( "some-value", JsonHelper.readJson( entityAsString( response ) ) );
 
-        checkContentTypeCharsetUtf8(response);
+        checkContentTypeCharsetUtf8( response );
     }
 
     @Test
@@ -814,7 +815,7 @@ public class RestfulGraphDatabaseTest
         assertEquals( 200, response.getStatus() );
         verifyRelReps( 0, entityAsString( response ) );
 
-        checkContentTypeCharsetUtf8(response);
+        checkContentTypeCharsetUtf8( response );
     }
 
     @Test
@@ -1034,7 +1035,7 @@ public class RestfulGraphDatabaseTest
         assertNotNull( map.get( "relationship_index" ) );
         assertNotNull( map.get( "batch" ) );
 
-        checkContentTypeCharsetUtf8(response);
+        checkContentTypeCharsetUtf8( response );
     }
 
     @Test
@@ -1131,7 +1132,7 @@ public class RestfulGraphDatabaseTest
         postBody.put( "key", "mykey" );
         postBody.put( "value", "my/key" );
         postBody.put( "uri", node.toString() );
-        postBody.put( "properties", new HashMap<String, Object>() );
+        postBody.put( "properties", new HashMap<String,Object>() );
 
         Response response = service.addToNodeIndex( "unique-nodes", "", "",
                 JsonHelper.createJsonFrom( postBody ) );
@@ -1411,7 +1412,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.getNodeFromIndexUri( indexName, key, value, nodeId );
         assertEquals( 200, response.getStatus() );
 
-        checkContentTypeCharsetUtf8(response);
+        checkContentTypeCharsetUtf8( response );
         assertNull( response.getMetadata()
                 .get( "Location" ) );
         Map<String, Object> map = JsonHelper.jsonToMap( entityAsString( response ) );
@@ -1484,7 +1485,9 @@ public class RestfulGraphDatabaseTest
                 .next();
         // query for the first letter with which the nodes were indexed.
         Response response = service.getIndexedNodesByQuery( matrixers.nodeIndexName, indexedKeyValue.getKey() + ":"
-                + indexedKeyValue.getValue().substring( 0, 1 ) + "*",
+                                                                                     +
+                                                                                     indexedKeyValue.getValue().substring( 0, 1 ) +
+                                                                                     "*",
                 "" /*default ordering*/ );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         Collection<?> items = (Collection<?>) JsonHelper.readJson( entityAsString( response ) );
@@ -1574,7 +1577,7 @@ public class RestfulGraphDatabaseTest
             assertThat( indexedUri, containsString( key ) );
             assertThat( indexedUri, containsString( value ) );
             assertTrue( indexedUri.endsWith( Long.toString( relationshipId1 ) )
-                    || indexedUri.endsWith( Long.toString( relationshipId2 ) ) );
+                        || indexedUri.endsWith( Long.toString( relationshipId2 ) ) );
             counter++;
         }
         assertEquals( 2, counter );
@@ -1666,7 +1669,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.getIndexedNodes( indexName, "fooo", "baaar" );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
 
-        checkContentTypeCharsetUtf8(response);
+        checkContentTypeCharsetUtf8( response );
 
         String entity = entityAsString( response );
         Object parsedJson = JsonHelper.readJson( entity );
@@ -1972,6 +1975,42 @@ public class RestfulGraphDatabaseTest
                     "myAutoIndexedProperty", "value" );
             assertEquals( 1, indexResult.size() );
         }
+    }
+
+    @Test
+    public void shouldReturnAllLabelsPresentInTheDatabase() throws JsonParseException
+    {
+        // given
+        helper.createNode( DynamicLabel.label( "ALIVE" ) );
+        long nodeId = helper.createNode( DynamicLabel.label( "DEAD" ) );
+        helper.deleteNode( nodeId );
+
+        // when
+        Response response = service.getAllLabels( false );
+
+        // then
+        assertEquals( 200, response.getStatus() );
+
+        List<String> labels = entityAsList( response );
+        assertThat( labels, hasItem( "DEAD" ) );
+    }
+
+    @Test
+    public void shouldReturnAllLabelsInUseInTheDatabase() throws JsonParseException
+    {
+        // given
+        helper.createNode( DynamicLabel.label( "ALIVE" ) );
+        long nodeId = helper.createNode( DynamicLabel.label( "DEAD" ) );
+        helper.deleteNode( nodeId );
+
+        // when
+        Response response = service.getAllLabels( true );
+
+        // then
+        assertEquals( 200, response.getStatus() );
+
+        List<String> labels = entityAsList( response );
+        assertThat( labels, not( hasItem( "DEAD" ) ) );
     }
 
     @SuppressWarnings("unchecked")

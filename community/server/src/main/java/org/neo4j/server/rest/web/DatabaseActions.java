@@ -49,6 +49,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
@@ -121,7 +122,6 @@ public class DatabaseActions
     private final LeaseManager leases;
 
     private final TraversalDescriptionBuilder traversalDescriptionBuilder;
-    private final boolean enableScriptSandboxing;
     private final PropertySettingStrategy propertySetter;
 
     public static class Provider extends InjectableProvider<DatabaseActions>
@@ -155,7 +155,6 @@ public class DatabaseActions
     {
         this.leases = leaseManager;
         this.graphDb = graphDatabaseAPI;
-        this.enableScriptSandboxing = enableScriptSandboxing;
         this.traversalDescriptionBuilder = new TraversalDescriptionBuilder( enableScriptSandboxing );
         this.propertySetter = new PropertySettingStrategy( graphDb );
     }
@@ -1457,16 +1456,18 @@ public class DatabaseActions
         return new ListRepresentation( RepresentationType.NODE, nodeRepresentations );
     }
 
-    public ListRepresentation getAllLabels()
+    public ListRepresentation getAllLabels( boolean inUse )
     {
-        Collection<ValueRepresentation> labelNames = asSet( map( new Function<Label, ValueRepresentation>()
+        GlobalGraphOperations operations = GlobalGraphOperations.at( graphDb );
+        ResourceIterable<Label> labels = inUse ? operations.getAllLabelsInUse() : operations.getAllLabels();
+        Collection<ValueRepresentation> labelNames = asSet( map( new Function<Label,ValueRepresentation>()
         {
             @Override
             public ValueRepresentation apply( Label label )
             {
                 return ValueRepresentation.string( label.name() );
             }
-        }, GlobalGraphOperations.at( graphDb ).getAllLabels() ) );
+        }, labels ) );
 
 
         return new ListRepresentation( RepresentationType.STRING, labelNames );

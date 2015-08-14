@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.rest.web;
 
+import org.junit.Test;
+
 import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.Response;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -34,7 +34,6 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class DatabaseMetadataServiceTest
@@ -43,12 +42,19 @@ public class DatabaseMetadataServiceTest
     public void shouldAdvertiseRelationshipTypesThatCurrentlyExistInTheDatabase() throws Throwable
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
+        long relId;
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
             node.createRelationshipTo( db.createNode(), withName( "a" ) );
             node.createRelationshipTo( db.createNode(), withName( "b" ) );
-            node.createRelationshipTo( db.createNode(), withName( "c" ) );
+            relId = node.createRelationshipTo( db.createNode(), withName( "c" ) ).getId();
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.getRelationshipById( relId ).delete();
             tx.success();
         }
 
@@ -57,12 +63,47 @@ public class DatabaseMetadataServiceTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Response response = service.getRelationshipTypes();
+            Response response = service.getRelationshipTypes( false );
 
             assertEquals( 200, response.getStatus() );
             List<Map<String,Object>> jsonList = JsonHelper.jsonToList( response.getEntity()
                     .toString() );
             assertEquals( 3, jsonList.size() );
+        }
+        database.stop();
+    }
+
+    @Test
+    public void shouldAdvertiseRelationshipTypesThatCurrentlyInUseInTheDatabase() throws Throwable
+    {
+        GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
+        long relId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            node.createRelationshipTo( db.createNode(), withName( "a" ) );
+            node.createRelationshipTo( db.createNode(), withName( "b" ) );
+            relId = node.createRelationshipTo( db.createNode(), withName( "c" ) ).getId();
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.getRelationshipById( relId ).delete();
+            tx.success();
+        }
+
+        Database database = new WrappedDatabase( db );
+        DatabaseMetadataService service = new DatabaseMetadataService( database );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Response response = service.getRelationshipTypes( true );
+
+            assertEquals( 200, response.getStatus() );
+            List<Map<String,Object>> jsonList = JsonHelper.jsonToList( response.getEntity()
+                    .toString() );
+            assertEquals( 2, jsonList.size() );
         }
         database.stop();
     }

@@ -552,9 +552,9 @@ public class RestfulGraphDatabase
 
     @GET
     @Path( PATH_LABELS )
-    public Response getAllLabels( )
+    public Response getAllLabels( @QueryParam( "in_use" ) @DefaultValue( "true" ) boolean inUse )
     {
-        return output.ok( actions.getAllLabels() );
+        return output.ok( actions.getAllLabels( inUse ) );
     }
 
     // Property keys
@@ -571,8 +571,7 @@ public class RestfulGraphDatabase
     @SuppressWarnings("unchecked")
     @POST
     @Path(PATH_NODE_RELATIONSHIPS)
-    public Response createRelationship(
-                                        @PathParam("nodeId") long startNodeId, String body )
+    public Response createRelationship( @PathParam("nodeId") long startNodeId, String body )
     {
         final Map<String, Object> data;
         final long endNodeId;
@@ -631,8 +630,7 @@ public class RestfulGraphDatabase
 
     @DELETE
     @Path(PATH_RELATIONSHIP)
-    public Response deleteRelationship(
-                                        @PathParam("relationshipId") long relationshipId )
+    public Response deleteRelationship( @PathParam("relationshipId") long relationshipId )
     {
         try
         {
