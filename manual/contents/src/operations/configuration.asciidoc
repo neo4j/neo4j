@@ -23,18 +23,12 @@ include::{importdir}/neo4j-server-docs-jar/ops/server-performance.asciidoc[]
 
 include::{importdir}/neo4j-kernel-docs-jar/ops/performance-guide.asciidoc[]
 
-include::{importdir}/neo4j-kernel-docs-jar/ops/configuration.asciidoc[]
-
 include::{importdir}/neo4j-kernel-docs-jar/ops/logical-logs.asciidoc[]
 
-include::{importdir}/neo4j-kernel-docs-jar/ops/jvm.asciidoc[]
-
-include::{importdir}/neo4j-kernel-docs-jar/ops/short-strings.asciidoc[]
-
-include::{importdir}/neo4j-kernel-docs-jar/ops/short-arrays.asciidoc[]
+include::{importdir}/neo4j-kernel-docs-jar/ops/property-compression.asciidoc[]
 
 include::{importdir}/neo4j-kernel-docs-jar/ops/io-examples.asciidoc[]
 
-include::{importdir}/neo4j-kernel-docs-jar/ops/linux-performance.asciidoc[]
+include::{importdir}/neo4j-kernel-docs-jar/ops/configuration.asciidoc[]
 
 

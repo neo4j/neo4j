@@ -131,18 +131,17 @@ and take over new requests.
 
 Neo4j relies on Java's Non-blocking I/O subsystem for all file handling.
 Furthermore, while the storage file layout is optimized for interconnected data, Neo4j does not require raw devices.
-Thus, filesizes are only limited by the underlying operating system's capacity to handle large files.
+Thus, file sizes are only limited by the underlying operating system's capacity to handle large files.
 Physically, there is no built-in limit of the file handling capacity in Neo4j.
 
-Neo4j tries to memory-map as much of the underlying store files as possible.
-If the available RAM is not sufficient to keep all data in RAM, Neo4j will use buffers in some cases, reallocating the memory-mapped high-performance I/O windows to the regions with the most I/O activity dynamically.
+Neo4j has a built-in page cache, that will cache the contents of the storage files.
+If there is not enough RAM to keep the storage files resident, then Neo4j will page parts of the files in and out as necessary, while keeping the most popular parts of the files resident at all times.
 Thus, ACID speed degrades gracefully as RAM becomes the limiting factor.
 
 [[capabilities-read-speed]]
 === Read speed ===
 
-Enterprises want to optimize the use of hardware to deliver the maximum business value 
-from available resources.
+Enterprises want to optimize the use of hardware to deliver the maximum business value from available resources.
 Neo4j's approach to reading data provides the best possible usage of all available hardware resources.
 Neo4j does not block or lock any read operations; thus, there is no danger for deadlocks in read operations and no need for read transactions.
 With a threaded read access to the database, queries can be run simultaneously on as many processors as may be available.
