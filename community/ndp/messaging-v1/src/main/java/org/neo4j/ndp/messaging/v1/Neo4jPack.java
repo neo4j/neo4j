@@ -42,10 +42,9 @@ import org.neo4j.ndp.messaging.v1.infrastructure.ValueUnboundRelationship;
 import org.neo4j.packstream.ObjectPacker;
 import org.neo4j.packstream.ObjectUnpacker;
 import org.neo4j.packstream.PackInput;
-import org.neo4j.packstream.PackListType;
+import org.neo4j.packstream.PackListItemType;
 import org.neo4j.packstream.PackOutput;
 import org.neo4j.packstream.PackStream;
-import org.neo4j.packstream.PackStructType;
 import org.neo4j.packstream.PackType;
 
 /**
@@ -56,13 +55,29 @@ public class Neo4jPack
 {
     public static final Map<String, Object> EMPTY_STRING_OBJECT_MAP = new HashMap<>();
 
-    public enum StructType implements PackStructType
+    /**
+     * Enumeration of Neo4j-specific structure descriptors. The following
+     * structures are implemented:
+     *
+     * - Node
+     * - Relationship
+     * - UnboundRelationship
+     * - Path
+     *
+     */
+    public enum StructType implements PackStream.StructType
     {
         NODE('N', ValueNode.class),
         RELATIONSHIP('R', ValueRelationship.class),
         UNBOUND_RELATIONSHIP('r', ValueUnboundRelationship.class),
         PATH('P', ValuePath.class);
 
+        /**
+         * Select a structure based on a Java class.
+         *
+         * @param type the class to use for selection
+         * @return the associated structure descriptor
+         */
         public static StructType fromClass( Class type )
         {
             if ( Node.class.isAssignableFrom( type ) )
@@ -88,16 +103,22 @@ public class Neo4jPack
             }
         }
 
+        /**
+         * Select a structure based on a signature byte.
+         *
+         * @param signature the signature to use for selection
+         * @return the associated structure descriptor
+         */
         public static StructType fromSignature( byte signature )
         {
-            if ( signature == NODE.signature ) { return NODE; }
-            else if ( signature == RELATIONSHIP.signature ) { return RELATIONSHIP; }
-            else if ( signature == UNBOUND_RELATIONSHIP.signature ) { return UNBOUND_RELATIONSHIP; }
-            else if ( signature == PATH.signature ) { return PATH; }
-            else
+            for ( StructType type : StructType.values() )
             {
-                throw new IllegalArgumentException( "Illegal type signature '" + signature + "'" );
+                if ( type.signature == signature )
+                {
+                    return type;
+                }
             }
+            throw new IllegalArgumentException( "Illegal type signature '" + signature + "'" );
         }
 
         private final byte signature;
@@ -175,7 +196,7 @@ public class Neo4jPack
             else if ( obj instanceof Collection )
             {
                 List list = (List) obj;
-                packListHeader( list.size(), PackListType.ANY );
+                packListHeader( list.size(), PackListItemType.ANY );
                 for ( Object item : list )
                 {
                     pack( item );
@@ -189,7 +210,7 @@ public class Neo4jPack
             else if ( obj instanceof short[] )
             {
                 short[] array = (short[]) obj;
-                packListHeader( array.length, PackListType.INTEGER );
+                packListHeader( array.length, PackListItemType.INTEGER );
                 for ( short item : array )
                 {
                     pack( item );
@@ -198,7 +219,7 @@ public class Neo4jPack
             else if ( obj instanceof int[] )
             {
                 int[] array = (int[]) obj;
-                packListHeader( array.length, PackListType.INTEGER );
+                packListHeader( array.length, PackListItemType.INTEGER );
                 for ( int item : array )
                 {
                     pack( item );
@@ -207,7 +228,7 @@ public class Neo4jPack
             else if ( obj instanceof long[] )
             {
                 long[] array = (long[]) obj;
-                packListHeader( array.length, PackListType.INTEGER );
+                packListHeader( array.length, PackListItemType.INTEGER );
                 for ( long item : array )
                 {
                     pack( item );
@@ -216,7 +237,7 @@ public class Neo4jPack
             else if ( obj instanceof float[] )
             {
                 float[] array = (float[]) obj;
-                packListHeader( array.length, PackListType.FLOAT );
+                packListHeader( array.length, PackListItemType.FLOAT );
                 for ( float item : array )
                 {
                     pack( item );
@@ -225,7 +246,7 @@ public class Neo4jPack
             else if ( obj instanceof double[] )
             {
                 double[] array = (double[]) obj;
-                packListHeader( array.length, PackListType.FLOAT );
+                packListHeader( array.length, PackListItemType.FLOAT );
                 for ( double item : array )
                 {
                     pack( item );
@@ -234,7 +255,7 @@ public class Neo4jPack
             else if ( obj instanceof boolean[] )
             {
                 boolean[] array = (boolean[]) obj;
-                packListHeader( array.length, PackListType.BOOLEAN );
+                packListHeader( array.length, PackListItemType.BOOLEAN );
                 for ( boolean item : array )
                 {
                     pack( item );
@@ -243,7 +264,7 @@ public class Neo4jPack
             else if ( obj.getClass().isArray() )
             {
                 Object[] array = (Object[]) obj;
-                packListHeader( array.length, PackListType.ANY );
+                packListHeader( array.length, PackListItemType.ANY );
                 for ( Object item : array )
                 {
                     pack( item );
@@ -339,7 +360,8 @@ public class Neo4jPack
                 case STRUCT:
                 {
                     unpackStructHeader();
-                    StructType type = StructType.fromSignature( unpackStructSignature() );
+                    StructType type = StructType.fromSignature(
+                            unpackStructSignature() );
                     switch ( type )
                     {
                         case NODE:
@@ -361,15 +383,15 @@ public class Neo4jPack
         public Object unpackList() throws IOException
         {
             int size = (int) unpackListHeader();
-            PackListType subtype = unpackListType();
+            PackListItemType itemType = unpackListItemType();
             Class instanceClass;
-            if ( subtype.isStruct() )
+            if ( itemType.isStruct() )
             {
-                instanceClass = StructType.fromSignature( subtype.marker() ).instanceClass();
+                instanceClass = StructType.fromSignature( itemType.markerByte() ).instanceClass();
             }
             else
             {
-                instanceClass = subtype.instanceClass();
+                instanceClass = itemType.instanceClass();
             }
             return unpackListItems( size, instanceClass );
         }

@@ -101,7 +101,7 @@ public class NDPValueDocTest
                     unpacker.unpackStructHeader();
                     unpacker.unpackStructSignature();
                     unpacker.unpackListHeader();
-                    unpacker.unpackListType();
+                    unpacker.unpackListItemType();
 
                     PackType type = unpacker.peekNextType();
                     if ( type.name().equalsIgnoreCase( "struct" ) )

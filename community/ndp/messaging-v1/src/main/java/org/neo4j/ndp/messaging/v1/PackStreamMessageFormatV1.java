@@ -24,11 +24,19 @@ import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.ndp.messaging.NDPIOException;
+import org.neo4j.ndp.messaging.v1.message.AcknowledgeFailureMessage;
+import org.neo4j.ndp.messaging.v1.message.DiscardAllMessage;
+import org.neo4j.ndp.messaging.v1.message.FailureMessage;
+import org.neo4j.ndp.messaging.v1.message.IgnoredMessage;
+import org.neo4j.ndp.messaging.v1.message.InitializeMessage;
 import org.neo4j.ndp.messaging.v1.message.Message;
-import org.neo4j.packstream.PackListType;
-import org.neo4j.packstream.PackStream;
+import org.neo4j.ndp.messaging.v1.message.PullAllMessage;
+import org.neo4j.ndp.messaging.v1.message.RecordMessage;
+import org.neo4j.ndp.messaging.v1.message.RunMessage;
+import org.neo4j.ndp.messaging.v1.message.SuccessMessage;
 import org.neo4j.ndp.runtime.spi.Record;
-import org.neo4j.packstream.PackType;
+import org.neo4j.packstream.PackListItemType;
+import org.neo4j.packstream.PackStream;
 
 import static org.neo4j.ndp.runtime.internal.Neo4jError.codeFromString;
 import static org.neo4j.ndp.runtime.spi.Records.record;
@@ -43,34 +51,52 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         return VERSION;
     }
 
-    public interface MessageTypes
+    public enum MessageType implements PackStream.StructType
     {
-        byte MSG_INITIALIZE = 0x01;
-        byte MSG_ACK_FAILURE = 0x0F;
-        byte MSG_RUN = 0x10;
-        byte MSG_DISCARD_ALL = 0x2F;
-        byte MSG_PULL_ALL = 0x3F;
+        INITIALIZE((byte) 0x01, InitializeMessage.class),
+        ACK_FAILURE((byte) 0x0F, AcknowledgeFailureMessage.class),
+        RUN((byte) 0x10, RunMessage.class),
+        DISCARD_ALL((byte) 0x2F, DiscardAllMessage.class),
+        PULL_ALL((byte) 0x3F, PullAllMessage.class),
 
-        byte MSG_RECORD = 0x71;
-        byte MSG_SUCCESS = 0x70;
-        byte MSG_IGNORED = 0x7E;
-        byte MSG_FAILURE = 0x7F;
-    }
+        RECORD((byte) 0x71, RecordMessage.class),
+        SUCCESS((byte) 0x70, SuccessMessage.class),
+        IGNORED((byte) 0x7E, IgnoredMessage.class),
+        FAILURE((byte) 0x7F, FailureMessage.class);
 
-    static String messageTypeName( int type )
-    {
-        switch( type )
+        public static MessageType fromSignature( byte signature )
         {
-        case MessageTypes.MSG_ACK_FAILURE: return "MSG_ACK_FAILURE";
-        case MessageTypes.MSG_RUN:         return "MSG_RUN";
-        case MessageTypes.MSG_DISCARD_ALL: return "MSG_DISCARD_ALL";
-        case MessageTypes.MSG_PULL_ALL:    return "MSG_PULL_ALL";
-        case MessageTypes.MSG_RECORD:      return "MSG_RECORD";
-        case MessageTypes.MSG_SUCCESS:     return "MSG_SUCCESS";
-        case MessageTypes.MSG_IGNORED:     return "MSG_IGNORED";
-        case MessageTypes.MSG_FAILURE:     return "MSG_FAILURE";
-        default: return "0x" + Integer.toHexString(type);
+            for ( MessageType type : MessageType.values() )
+            {
+                if ( type.signature == signature )
+                {
+                    return type;
+                }
+            }
+            throw new IllegalArgumentException( "Illegal type signature '" + signature + "'" );
         }
+
+        private final byte signature;
+        private final Class instanceClass;
+
+        MessageType( byte signature, Class instanceClass )
+        {
+            this.signature = signature;
+            this.instanceClass = instanceClass;
+        }
+
+        @Override
+        public byte signature()
+        {
+            return signature;
+        }
+
+        @Override
+        public Class instanceClass()
+        {
+            return instanceClass;
+        }
+
     }
 
     public static class Writer implements MessageFormat.Writer
@@ -108,7 +134,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         public void handleRunMessage( String statement, Map<String,Object> params )
                 throws IOException
         {
-            packer.packStructHeader( 2, MessageTypes.MSG_RUN );
+            packer.packStructHeader( 2, MessageType.RUN );
             packer.pack( statement );
             packer.packMap( params );
             onMessageComplete.onMessageComplete();
@@ -118,7 +144,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         public void handlePullAllMessage()
                 throws IOException
         {
-            packer.packStructHeader( 0, MessageTypes.MSG_PULL_ALL );
+            packer.packStructHeader( 0, MessageType.PULL_ALL );
             onMessageComplete.onMessageComplete();
         }
 
@@ -126,14 +152,14 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         public void handleDiscardAllMessage()
                 throws IOException
         {
-            packer.packStructHeader( 0, MessageTypes.MSG_DISCARD_ALL );
+            packer.packStructHeader( 0, MessageType.DISCARD_ALL );
             onMessageComplete.onMessageComplete();
         }
 
         @Override
         public void handleAckFailureMessage() throws IOException
         {
-            packer.packStructHeader( 0, MessageTypes.MSG_ACK_FAILURE );
+            packer.packStructHeader( 0, MessageType.ACK_FAILURE );
             onMessageComplete.onMessageComplete();
         }
 
@@ -142,8 +168,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 throws IOException
         {
             Object[] fields = item.fields();
-            packer.packStructHeader( 1, MessageTypes.MSG_RECORD );
-            packer.packListHeader( fields.length, PackListType.ANY );
+            packer.packStructHeader( 1, MessageType.RECORD );
+            packer.packListHeader( fields.length, PackListItemType.ANY );
             for ( Object field : fields )
             {
                 packer.pack( field );
@@ -155,7 +181,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         public void handleSuccessMessage( Map<String,Object> metadata )
                 throws IOException
         {
-            packer.packStructHeader( 1, MessageTypes.MSG_SUCCESS );
+            packer.packStructHeader( 1, MessageType.SUCCESS );
             packer.packMap( metadata );
             onMessageComplete.onMessageComplete();
         }
@@ -164,7 +190,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         public void handleFailureMessage( Status status, String message )
                 throws IOException
         {
-            packer.packStructHeader( 1, MessageTypes.MSG_FAILURE );
+            packer.packStructHeader( 1, MessageType.FAILURE );
             packer.packMapHeader( 2 );
 
             packer.pack( "code" );
@@ -179,14 +205,14 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         @Override
         public void handleIgnoredMessage() throws IOException
         {
-            packer.packStructHeader( 0, MessageTypes.MSG_IGNORED );
+            packer.packStructHeader( 0, MessageType.IGNORED );
             onMessageComplete.onMessageComplete();
         }
 
         @Override
         public void handleInitializeMessage( String clientName ) throws IOException
         {
-            packer.packStructHeader( 1, MessageTypes.MSG_INITIALIZE );
+            packer.packStructHeader( 1, MessageType.INITIALIZE );
             packer.pack( clientName );
             onMessageComplete.onMessageComplete();
         }
@@ -220,57 +246,55 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         @Override
         public <E extends Exception> void read( MessageHandler<E> output ) throws IOException, E
         {
+            unpacker.unpackStructHeader();
+            byte signature = unpacker.unpackStructSignature();
+            MessageType type;
             try
             {
-                unpacker.unpackStructHeader();
-                int type = (int) unpacker.unpackLong();
-
-                try
+                type = MessageType.fromSignature( signature );
+            }
+            catch ( IllegalArgumentException e )
+            {
+                throw new NDPIOException( Status.Request.Invalid,
+                        "0x" + Integer.toHexString( signature ) +
+                                " is not a valid message type." );
+            }
+            try {
+                switch ( type )
                 {
-                    switch ( type )
-                    {
-                    case MessageTypes.MSG_RUN:
-                        unpackRunMessage( output );
-                        break;
-                    case MessageTypes.MSG_DISCARD_ALL:
-                        unpackDiscardAllMessage( output );
-                        break;
-                    case MessageTypes.MSG_PULL_ALL:
-                        unpackPullAllMessage( output );
-                        break;
-                    case MessageTypes.MSG_RECORD:
-                        unpackRecordMessage( output );
-                        break;
-                    case MessageTypes.MSG_SUCCESS:
-                        unpackSuccessMessage( output );
-                        break;
-                    case MessageTypes.MSG_FAILURE:
-                        unpackFailureMessage( output );
-                        break;
-                    case MessageTypes.MSG_ACK_FAILURE:
-                        unpackAckFailureMessage( output );
-                        break;
-                    case MessageTypes.MSG_IGNORED:
-                        unpackIgnoredMessage( output );
-                        break;
-                    case MessageTypes.MSG_INITIALIZE:
-                        unpackInitializeMessage( output );
-                        break;
-                    default:
-                        throw new NDPIOException( Status.Request.Invalid,
-                                "0x" + Integer.toHexString(type) + " is not a valid message type." );
-                    }
-                }
-                catch( PackStream.PackStreamException e )
-                {
-                    throw new NDPIOException( Status.Request.InvalidFormat,
-                            "Unable to read " + messageTypeName (type) + " message. " +
-                            "Error was: " + e.getMessage(), e );
+                case RUN:
+                    unpackRunMessage( output );
+                    break;
+                case DISCARD_ALL:
+                    unpackDiscardAllMessage( output );
+                    break;
+                case PULL_ALL:
+                    unpackPullAllMessage( output );
+                    break;
+                case RECORD:
+                    unpackRecordMessage( output );
+                    break;
+                case SUCCESS:
+                    unpackSuccessMessage( output );
+                    break;
+                case FAILURE:
+                    unpackFailureMessage( output );
+                    break;
+                case ACK_FAILURE:
+                    unpackAckFailureMessage( output );
+                    break;
+                case IGNORED:
+                    unpackIgnoredMessage( output );
+                    break;
+                case INITIALIZE:
+                    unpackInitializeMessage( output );
+                    break;
                 }
             }
             catch( PackStream.PackStreamException e )
             {
-                throw new NDPIOException( Status.Request.InvalidFormat, "Unable to read message type. " +
+                throw new NDPIOException( Status.Request.InvalidFormat,
+                        "Unable to read " + type.name() + " message. " +
                         "Error was: " + e.getMessage(), e );
             }
         }
@@ -314,8 +338,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 throws E, IOException
         {
             long length = unpacker.unpackListHeader();
-            PackListType type = unpacker.unpackListType();
-            assert type == PackListType.ANY;
+            PackListItemType type = unpacker.unpackListItemType();
+            assert type == PackListItemType.ANY;
             final Object[] fields = new Object[(int) length];
             for ( int i = 0; i < length; i++ )
             {

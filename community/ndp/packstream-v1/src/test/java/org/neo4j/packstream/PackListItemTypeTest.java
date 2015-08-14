@@ -27,17 +27,17 @@ import org.junit.Test;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class PackListTypeTest
+public class PackListItemTypeTest
 {
 
     @Test
     public void javaObjectClassMapsToPackStreamAny() throws Throwable
     {
         // Given
-        PackListType type = PackListType.fromClass( Object.class );
+        PackListItemType type = PackListItemType.fromClass( Object.class );
 
         // Then
-        assertThat( type, equalTo( PackListType.ANY ) );
+        assertThat( type, equalTo( PackListItemType.ANY ) );
 
     }
 
@@ -45,10 +45,10 @@ public class PackListTypeTest
     public void javaBooleanClassMapsToPackStreamBoolean() throws Throwable
     {
         // Given
-        PackListType type = PackListType.fromClass( Boolean.class );
+        PackListItemType type = PackListItemType.fromClass( Boolean.class );
 
         // Then
-        assertThat( type, equalTo( PackListType.BOOLEAN ) );
+        assertThat( type, equalTo( PackListItemType.BOOLEAN ) );
 
     }
 
@@ -56,10 +56,10 @@ public class PackListTypeTest
     public void javaShortClassMapsToPackStreamInteger() throws Throwable
     {
         // Given
-        PackListType type = PackListType.fromClass( Short.class );
+        PackListItemType type = PackListItemType.fromClass( Short.class );
 
         // Then
-        assertThat( type, equalTo( PackListType.INTEGER ) );
+        assertThat( type, equalTo( PackListItemType.INTEGER ) );
 
     }
 
@@ -67,10 +67,10 @@ public class PackListTypeTest
     public void javaIntegerClassMapsToPackStreamInteger() throws Throwable
     {
         // Given
-        PackListType type = PackListType.fromClass( Integer.class );
+        PackListItemType type = PackListItemType.fromClass( Integer.class );
 
         // Then
-        assertThat( type, equalTo( PackListType.INTEGER ) );
+        assertThat( type, equalTo( PackListItemType.INTEGER ) );
 
     }
 
@@ -78,10 +78,10 @@ public class PackListTypeTest
     public void javaLongClassMapsToPackStreamInteger() throws Throwable
     {
         // Given
-        PackListType type = PackListType.fromClass( Long.class );
+        PackListItemType type = PackListItemType.fromClass( Long.class );
 
         // Then
-        assertThat( type, equalTo( PackListType.INTEGER ) );
+        assertThat( type, equalTo( PackListItemType.INTEGER ) );
 
     }
 
@@ -89,10 +89,21 @@ public class PackListTypeTest
     public void javaDoubleClassMapsToPackStreamFloat() throws Throwable
     {
         // Given
-        PackListType type = PackListType.fromClass( Double.class );
+        PackListItemType type = PackListItemType.fromClass( Double.class );
 
         // Then
-        assertThat( type, equalTo( PackListType.FLOAT ) );
+        assertThat( type, equalTo( PackListItemType.FLOAT ) );
+
+    }
+
+    @Test
+    public void javaByteArrayClassMapsToPackStreamText() throws Throwable
+    {
+        // Given
+        PackListItemType type = PackListItemType.fromClass( byte[].class );
+
+        // Then
+        assertThat( type, equalTo( PackListItemType.BYTES ) );
 
     }
 
@@ -100,10 +111,10 @@ public class PackListTypeTest
     public void javaStringClassMapsToPackStreamText() throws Throwable
     {
         // Given
-        PackListType type = PackListType.fromClass( String.class );
+        PackListItemType type = PackListItemType.fromClass( String.class );
 
         // Then
-        assertThat( type, equalTo( PackListType.TEXT ) );
+        assertThat( type, equalTo( PackListItemType.TEXT ) );
 
     }
 
@@ -111,10 +122,10 @@ public class PackListTypeTest
     public void javaListClassMapsToPackStreamList() throws Throwable
     {
         // Given
-        PackListType type = PackListType.fromClass( List.class );
+        PackListItemType type = PackListItemType.fromClass( List.class );
 
         // Then
-        assertThat( type, equalTo( PackListType.LIST ) );
+        assertThat( type, equalTo( PackListItemType.LIST ) );
 
     }
 
@@ -122,10 +133,10 @@ public class PackListTypeTest
     public void javaMapClassMapsToPackStreamMap() throws Throwable
     {
         // Given
-        PackListType type = PackListType.fromClass( Map.class );
+        PackListItemType type = PackListItemType.fromClass( Map.class );
 
         // Then
-        assertThat( type, equalTo( PackListType.MAP ) );
+        assertThat( type, equalTo( PackListItemType.MAP ) );
 
     }
 

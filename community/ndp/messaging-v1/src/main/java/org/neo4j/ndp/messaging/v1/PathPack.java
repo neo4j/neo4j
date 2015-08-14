@@ -33,7 +33,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueNode;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValuePath;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueUnboundRelationship;
-import org.neo4j.packstream.PackListType;
+import org.neo4j.packstream.PackListItemType;
 
 public class PathPack
 {
@@ -110,13 +110,13 @@ public class PathPack
 
         public void pack( Neo4jPack.Packer packer, Path path ) throws IOException
         {
-            packer.packStructHeader( 3, Neo4jPack.StructType.PATH.signature() );
+            packer.packStructHeader( 3, Neo4jPack.StructType.PATH );
 
             packNodes( packer, path );
             packRelationships( packer, path );
 
             Node node = null;
-            packer.packListHeader( 2 * path.length(), PackListType.INTEGER );
+            packer.packListHeader( 2 * path.length(), PackListItemType.INTEGER );
             int i = 0;
             for ( PropertyContainer entity : path )
             {
@@ -173,8 +173,8 @@ public class PathPack
                 throws IOException
         {
             int count = (int) unpacker.unpackListHeader();
-            PackListType type = unpacker.unpackListType();
-            assert type == PackListType.struct( Neo4jPack.StructType.NODE );
+            PackListItemType type = unpacker.unpackListItemType();
+            assert type == PackListItemType.struct( Neo4jPack.StructType.NODE );
             if ( count > 0 )
             {
                 List<Node> items = new ArrayList<>( count );
@@ -194,8 +194,8 @@ public class PathPack
                 throws IOException
         {
             int count = (int) unpacker.unpackListHeader();
-            PackListType type = unpacker.unpackListType();
-            assert type == PackListType.struct( Neo4jPack.StructType.UNBOUND_RELATIONSHIP );
+            PackListItemType type = unpacker.unpackListItemType();
+            assert type == PackListItemType.struct( Neo4jPack.StructType.UNBOUND_RELATIONSHIP );
             if ( count > 0 )
             {
                 List<Relationship> items = new ArrayList<>( count );
@@ -215,8 +215,8 @@ public class PathPack
                 throws IOException
         {
             int count = (int) unpacker.unpackListHeader();
-            PackListType type = unpacker.unpackListType();
-            assert type == PackListType.INTEGER;
+            PackListItemType type = unpacker.unpackListItemType();
+            assert type == PackListItemType.INTEGER;
             if ( count > 0 )
             {
                 List<Integer> items = new ArrayList<>( count );

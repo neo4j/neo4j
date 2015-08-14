@@ -163,6 +163,28 @@ public class PackStream
     {
     }
 
+    /**
+     * Implemented by application-specific structures.
+     */
+    public interface StructType
+    {
+
+        /**
+         * The signature byte for this structure.
+         *
+         * @return signature byte
+         */
+        byte signature();
+
+        /**
+         * The Java class generally instantiated when hydrating this structure.
+         *
+         * @return class for instantiation.
+         */
+        Class instanceClass();
+
+    }
+
     public static class Packer
     {
         private PackOutput out;
@@ -403,7 +425,7 @@ public class PackStream
             }
         }
 
-        public void packListHeader( int size, PackListType type ) throws IOException
+        public void packListHeader( int size, PackListItemType type ) throws IOException
         {
             if ( size < 0x10 )
             {
@@ -421,12 +443,12 @@ public class PackStream
             {
                 out.writeByte( LIST_32 ).writeInt( size );
             }
-            out.writeByte( type.marker() );
+            out.writeByte( type.markerByte() );
         }
 
-        public void packListHeader( int size, PackStructType structType ) throws IOException
+        public void packListHeader( int size, StructType structType ) throws IOException
         {
-            packListHeader( size, PackListType.struct( structType ) );
+            packListHeader( size, PackListItemType.struct( structType ) );
         }
 
         public void packMapHeader( int size ) throws IOException
@@ -467,6 +489,11 @@ public class PackStream
             {
                 throw new Overflow( "Structures cannot have more than " + Short.MAX_VALUE + " fields" );
             }
+        }
+
+        public void packStructHeader( int size, StructType type ) throws IOException
+        {
+            packStructHeader( size, type.signature() );
         }
 
     }
@@ -543,9 +570,9 @@ public class PackStream
             }
         }
 
-        public PackListType unpackListType() throws IOException
+        public PackListItemType unpackListItemType() throws IOException
         {
-            return PackListType.fromMarker( in.readByte() );
+            return PackListItemType.fromMarkerByte( in.readByte() );
         }
 
         public long unpackMapHeader() throws IOException

@@ -34,8 +34,7 @@ import org.neo4j.ndp.messaging.v1.infrastructure.ValueNode;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValuePath;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueRelationship;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueUnboundRelationship;
-import org.neo4j.packstream.PackListType;
-import org.neo4j.packstream.PackStructType;
+import org.neo4j.packstream.PackListItemType;
 import org.neo4j.packstream.PackedInputArray;
 import org.neo4j.packstream.PackedOutputArray;
 
@@ -140,7 +139,7 @@ public class NDPValueStructsDocTest
         }
         else if ( type.startsWith( "List<Text>" ) )
         {
-            packer.packListHeader( 2, PackListType.TEXT );
+            packer.packListHeader( 2, PackListItemType.TEXT );
             packer.pack( "Banana" );
             packer.pack( "Person" );
         }
@@ -158,7 +157,7 @@ public class NDPValueStructsDocTest
         }
         else if ( type.startsWith( "List<Integer>" ) )
         {
-            packer.packListHeader( 2, PackListType.INTEGER );
+            packer.packListHeader( 2, PackListItemType.INTEGER );
             packer.pack( 1 );
             packer.pack( 1 );
         }

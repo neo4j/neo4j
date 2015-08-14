@@ -26,7 +26,7 @@ import java.util.Map;
 /**
  * PackStream list types provide a representative marker byte for each valid PackStream
  * type, specifically for use with lists. PackStream's regular way of denoting type combines type
- * detail with other information, such as scale. Therefore, there is not a precise one-to-one
+ * detail with other information, such as scale. Therefore, there is no precise one-to-one
  * mapping between type and marker byte values elsewhere.
  *
  * The values chosen more subtype marker bytes however do deliberately overlap with the main set
@@ -49,7 +49,7 @@ import java.util.Map;
  *     STRUCT -> STRUCT_8 (00-7F)
  *
  */
-public class PackListType
+public class PackListItemType
 {
     private static final byte ANY_MARKER = PackStream.NULL;
     private static final byte BOOLEAN_MARKER = PackStream.TRUE;
@@ -60,26 +60,26 @@ public class PackListType
     private static final byte LIST_MARKER = PackStream.LIST_8;
     private static final byte MAP_MARKER = PackStream.MAP_8;
 
-    private static final Map<Byte, PackListType> STRUCT = new HashMap<>( 0x80 );
+    private static final Map<Byte, PackListItemType> STRUCT = new HashMap<>( 0x80 );
     static
     {
         for ( int i = 0x00; i < 0x80; i++ )
         {
             byte b = (byte) i;
-            STRUCT.put( b, new PackListType( b, null ) );
+            STRUCT.put( b, new PackListItemType( b, null ) );
         }
     }
 
-    public static final PackListType ANY = new PackListType( ANY_MARKER, Object.class );
-    public static final PackListType BOOLEAN = new PackListType( BOOLEAN_MARKER, Boolean.class );
-    public static final PackListType INTEGER = new PackListType( INTEGER_MARKER, Long.class );
-    public static final PackListType FLOAT = new PackListType( FLOAT_MARKER, Double.class );
-    public static final PackListType BYTES = new PackListType( BYTES_MARKER, byte[].class );
-    public static final PackListType TEXT = new PackListType( TEXT_MARKER, String.class );
-    public static final PackListType LIST = new PackListType( LIST_MARKER, List.class );
-    public static final PackListType MAP = new PackListType( MAP_MARKER, Map.class );
+    public static final PackListItemType ANY = new PackListItemType( ANY_MARKER, Object.class );
+    public static final PackListItemType BOOLEAN = new PackListItemType( BOOLEAN_MARKER, Boolean.class );
+    public static final PackListItemType INTEGER = new PackListItemType( INTEGER_MARKER, Long.class );
+    public static final PackListItemType FLOAT = new PackListItemType( FLOAT_MARKER, Double.class );
+    public static final PackListItemType BYTES = new PackListItemType( BYTES_MARKER, byte[].class );
+    public static final PackListItemType TEXT = new PackListItemType( TEXT_MARKER, String.class );
+    public static final PackListItemType LIST = new PackListItemType( LIST_MARKER, List.class );
+    public static final PackListItemType MAP = new PackListItemType( MAP_MARKER, Map.class );
 
-    public static PackListType struct( byte signature )
+    public static PackListItemType struct( byte signature )
     {
         if ( signature >= 0x00 )
         {
@@ -92,12 +92,12 @@ public class PackListType
         }
     }
 
-    public static PackListType struct( PackStructType type )
+    public static PackListItemType struct( PackStream.StructType type )
     {
         return struct( type.signature() );
     }
 
-    public static PackListType fromClass( Class type )
+    public static PackListItemType fromClass( Class type )
     {
         if ( type == Object.class )
         {
@@ -114,6 +114,10 @@ public class PackListType
         else if ( type == Float.class || type == Double.class )
         {
             return FLOAT;
+        }
+        else if ( type == byte[].class )
+        {
+            return BYTES;
         }
         else if ( type == String.class )
         {
@@ -134,11 +138,11 @@ public class PackListType
         }
     }
 
-    public static PackListType fromMarker( byte marker )
+    public static PackListItemType fromMarkerByte( byte marker )
     {
         if ( marker >= 0x00 )
         {
-            return PackListType.struct( marker );
+            return PackListItemType.struct( marker );
         }
         else
         {
@@ -166,18 +170,18 @@ public class PackListType
         }
     }
 
-    private final byte marker;
+    private final byte markerByte;
     private final Class instanceClass;
 
-    private PackListType( byte marker, Class instanceClass )
+    private PackListItemType( byte markerByte, Class instanceClass )
     {
-        this.marker = marker;
+        this.markerByte = markerByte;
         this.instanceClass = instanceClass;
     }
 
-    public byte marker()
+    public byte markerByte()
     {
-        return marker;
+        return markerByte;
     }
 
     public Class instanceClass()
@@ -187,7 +191,7 @@ public class PackListType
 
     public boolean isStruct()
     {
-        return marker >= 0x00;
+        return markerByte >= 0x00;
     }
 
 }

@@ -19,9 +19,6 @@
  */
 package org.neo4j.packstream;
 
-import java.util.List;
-import java.util.Map;
-
 /**
  * These are the primitive types that PackStream can represent. They map to the non-graph
  * primitives of the Neo4j type system. Graph primitives and rich composite types are represented
@@ -29,8 +26,6 @@ import java.util.Map;
  */
 public enum PackType
 {
-    /** Any type of value (used for typed lists) */
-    ANY,
     /** The absence of a value */
     NULL,
     /** You know what this is */

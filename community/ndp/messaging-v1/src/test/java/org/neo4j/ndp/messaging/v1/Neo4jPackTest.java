@@ -34,10 +34,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.packstream.BufferedChannelInput;
 import org.neo4j.packstream.BufferedChannelOutput;
-import org.neo4j.packstream.ObjectPacker;
-import org.neo4j.packstream.ObjectUnpacker;
-import org.neo4j.packstream.PackListType;
-import org.neo4j.packstream.PackStream;
+import org.neo4j.packstream.PackListItemType;
 import org.neo4j.packstream.PackedInputArray;
 import org.neo4j.packstream.PackedOutputArray;
 
@@ -144,18 +141,6 @@ public class Neo4jPackTest
             this.packer = new Neo4jPack.Packer( new BufferedChannelOutput( this.writable ) );
         }
 
-        public Machine( int bufferSize )
-        {
-            this.output = new ByteArrayOutputStream();
-            this.writable = Channels.newChannel( this.output );
-            this.packer = new Neo4jPack.Packer( new BufferedChannelOutput( this.writable, bufferSize ) );
-        }
-
-        public void reset()
-        {
-            output.reset();
-        }
-
         public byte[] output()
         {
             return output.toByteArray();
@@ -178,14 +163,15 @@ public class Neo4jPackTest
         List<T> list = asList(items);
         int listSize = list.size();
         assertThat( listSize, greaterThan( 0 ) );  // otherwise we can't ascertain type information
-        PackListType listType = null;
+        PackListItemType listType = null;
 
         // When
         for ( T item : list )
         {
             if ( listType == null )  // have we packed the list type yet?
             {
-                listType = PackListType.struct( Neo4jPack.StructType.fromClass( item.getClass() ) );
+                listType = PackListItemType.struct( Neo4jPack.StructType.fromClass( item
+                        .getClass() ) );
                 packer.packListHeader( listSize, listType );
                 packer.flush();
             }
@@ -201,7 +187,7 @@ public class Neo4jPackTest
 
         // Then
         assertThat( unpacker.unpackListHeader(), equalTo( (long) listSize ) );
-        assertThat( unpacker.unpackListType(), equalTo( listType ) );
+        assertThat( unpacker.unpackListItemType(), equalTo( listType ) );
 
         for ( Object item : list )
         {
