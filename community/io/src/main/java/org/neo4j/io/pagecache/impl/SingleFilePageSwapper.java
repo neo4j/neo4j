@@ -81,7 +81,7 @@ public class SingleFilePageSwapper implements PageSwapper
             UnsafeUtil.getFieldOffset( SingleFilePageSwapper.class, "fileSize" );
 
     private static final ThreadLocal<ByteBuffer> proxyCache = new ThreadLocal<>();
-    private static final MethodHandle positionLockGetter = null;//getPositionLockGetter();
+    private static final MethodHandle positionLockGetter = getPositionLockGetter();
 
     private static MethodHandle getPositionLockGetter()
     {
@@ -472,7 +472,10 @@ public class SingleFilePageSwapper implements PageSwapper
         increaseFileSizeTo( fileOffset + (filePageSize * length) );
         FileChannel channel = unwrappedChannel( startFilePageId );
         ByteBuffer[] srcs = convertToByteBuffers( pages, arrayOffset, length );
-        return lockPositionWriteVector( startFilePageId, channel, fileOffset, srcs );
+        long expectedWritten = ((long) srcs.length) * filePageSize;
+        long written = lockPositionWriteVector( startFilePageId, channel, fileOffset, srcs );
+        assert expectedWritten == written : "Written less data than expected " + expectedWritten + " != " + written ;
+        return written;
     }
 
     private ByteBuffer[] convertToByteBuffers( Page[] pages, int arrayOffset, int length ) throws Exception
@@ -500,7 +503,19 @@ public class SingleFilePageSwapper implements PageSwapper
             synchronized ( positionLock( channel ) )
             {
                 channel.position( fileOffset );
-                return channel.write( srcs );
+
+                /*
+                 * So the problem here is that calling channel.write( ByteBuffer[] ) sometimes doesn't work as expected
+                 * and writes less data than what is asked to write into the file. Changing the code by calling
+                 * channel.write( ByteBuffer ) in a loop looks like it is working in the expected way.
+                 */
+                long written = 0;
+                for ( ByteBuffer src : srcs )
+                {
+                    written += channel.write( src );
+                }
+
+                return written;
             }
         }
         catch ( ClosedChannelException e )
