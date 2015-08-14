@@ -19,29 +19,26 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import org.neo4j.consistency.statistics.Statistics;
+import org.neo4j.helpers.progress.ProgressMonitorFactory.MultiPartBuilder;
+import org.neo4j.kernel.api.direct.BoundedIterable;
 
-import org.neo4j.helpers.progress.Completion;
-
-public enum TaskExecutionOrder
+public class SequentialRecordScanner<RECORD> extends RecordScanner<RECORD>
 {
-    SINGLE_THREADED,
-    MULTI_PASS;
-
-    void execute( List<StoppableRunnable> tasks, Completion completion ) throws ConsistencyCheckIncompleteException
+    public SequentialRecordScanner( String name, Statistics statistics, int threads, BoundedIterable<RECORD> store,
+            MultiPartBuilder builder, RecordProcessor<RECORD> processor,
+            IterableStore... warmUpStores )
     {
-        try
+        super( name, statistics, threads, store, builder, processor, warmUpStores );
+    }
+
+    @Override
+    protected void scan()
+    {
+        for ( RECORD record : store )
         {
-            for ( StoppableRunnable task : tasks )
-            {
-                task.run();
-            }
-            completion.await( 0, TimeUnit.SECONDS );
-        }
-        catch ( Exception e )
-        {
-            throw new ConsistencyCheckIncompleteException( e );
+            processor.process( record );
+            progress.add( 1 );
         }
     }
 }

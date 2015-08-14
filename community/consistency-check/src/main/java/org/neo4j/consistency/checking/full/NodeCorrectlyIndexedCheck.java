@@ -35,6 +35,12 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 
+/*
+ * This is superseded by PropertyAndNode2LabelIndex.java that is a superset of
+ * logic in this file with the addition of logic to check Properties.
+ * This is being done to avoid repeated reading of property chains.
+ * In the new CC this file is not being used. Retained for review only.
+ */
 public class NodeCorrectlyIndexedCheck implements RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport>
 {
     private final IndexAccessors indexes;

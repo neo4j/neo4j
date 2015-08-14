@@ -33,7 +33,7 @@ public class RelationshipTypeTokenRecordCheckTest extends
 {
     public RelationshipTypeTokenRecordCheckTest()
     {
-        super( new RelationshipTypeTokenRecordCheck(), ConsistencyReport.RelationshipTypeConsistencyReport.class );
+        super( new RelationshipTypeTokenRecordCheck(), ConsistencyReport.RelationshipTypeConsistencyReport.class, new int[0] );
     }
 
     @Test

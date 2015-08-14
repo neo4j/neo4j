@@ -63,6 +63,8 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
 
     int getRecordHeaderSize();
 
+    int getRecordsPerPage();
+
     void close();
 
     void flush();
@@ -77,6 +79,113 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
             return item.inUse();
         }
     };
+
+    class Delegator<R extends AbstractBaseRecord> implements RecordStore<R>
+    {
+        private final RecordStore<R> actual;
+
+        public Delegator( RecordStore<R> actual )
+        {
+            this.actual = actual;
+        }
+
+        @Override
+        public long nextId()
+        {
+            return actual.nextId();
+        }
+
+        @Override
+        public File getStorageFileName()
+        {
+            return actual.getStorageFileName();
+        }
+
+        @Override
+        public long getHighId()
+        {
+            return actual.getHighId();
+        }
+
+        @Override
+        public long getHighestPossibleIdInUse()
+        {
+            return actual.getHighestPossibleIdInUse();
+        }
+
+        @Override
+        public R getRecord( long id )
+        {
+            return actual.getRecord( id );
+        }
+
+        @Override
+        public Collection<R> getRecords( long id )
+        {
+            return actual.getRecords( id );
+        }
+
+        @Override
+        public void updateRecord( R record )
+        {
+            actual.updateRecord( record );
+        }
+
+        @Override
+        public R forceGetRecord( long id )
+        {
+            return actual.forceGetRecord( id );
+        }
+
+        @Override
+        public void forceUpdateRecord( R record )
+        {
+            actual.forceUpdateRecord( record );
+        }
+
+        @Override
+        public <FAILURE extends Exception> void accept(
+                org.neo4j.kernel.impl.store.RecordStore.Processor<FAILURE> processor, R record ) throws FAILURE
+        {
+            actual.accept( processor, record );
+        }
+
+        @Override
+        public int getRecordSize()
+        {
+            return actual.getRecordSize();
+        }
+
+        @Override
+        public int getRecordHeaderSize()
+        {
+            return actual.getRecordHeaderSize();
+        }
+
+        @Override
+        public int getRecordsPerPage()
+        {
+            return actual.getRecordsPerPage();
+        }
+
+        @Override
+        public void close()
+        {
+            actual.close();
+        }
+
+        @Override
+        public int getNumberOfReservedLowIds()
+        {
+            return actual.getNumberOfReservedLowIds();
+        }
+
+        @Override
+        public void flush()
+        {
+            actual.flush();
+        }
+    }
 
     @SuppressWarnings( "unchecked" )
     abstract class Processor<FAILURE extends Exception>
@@ -135,7 +244,7 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
         private <R extends AbstractBaseRecord> void apply( RecordStore<R> store, ProgressListener progressListener,
                 Predicate<? super R>... filters ) throws FAILURE
         {
-            for ( R record : Scanner.scan( store, filters ) )
+            for ( R record : Scanner.scan( store, true, filters ) )
             {
                 if ( shouldStop )
                 {
@@ -155,6 +264,13 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
         public static <R extends AbstractBaseRecord> Iterable<R> scan( final RecordStore<R> store,
                 final Predicate<? super R>... filters )
         {
+            return scan( store, true, filters );
+        }
+
+        @SafeVarargs
+        public static <R extends AbstractBaseRecord> Iterable<R> scan( final RecordStore<R> store,
+                final boolean forward, final Predicate<? super R>... filters )
+        {
             return new Iterable<R>()
             {
                 @Override
@@ -162,7 +278,7 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
                 {
                     return new PrefetchingIterator<R>()
                     {
-                        final PrimitiveLongIterator ids = new StoreIdIterator( store );
+                        final PrimitiveLongIterator ids = new StoreIdIterator( store, forward );
 
                         @Override
                         protected R fetchNextOrNull()

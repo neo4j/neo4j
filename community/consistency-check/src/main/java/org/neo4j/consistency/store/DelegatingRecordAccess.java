@@ -19,6 +19,10 @@
  */
 package org.neo4j.consistency.store;
 
+import java.util.Iterator;
+
+import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.checking.full.MultiPassStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -60,6 +64,12 @@ public class DelegatingRecordAccess implements RecordAccess
     public RecordReference<PropertyRecord> property( long id )
     {
         return delegate.property( id );
+    }
+
+    @Override
+    public Iterator<PropertyRecord> rawPropertyChain( long firstId )
+    {
+        return delegate.rawPropertyChain( firstId );
     }
 
     @Override
@@ -126,5 +136,17 @@ public class DelegatingRecordAccess implements RecordAccess
     public RecordReference<RelationshipGroupRecord> relationshipGroup( long id )
     {
         return delegate.relationshipGroup( id );
+    }
+
+    @Override
+    public boolean shouldCheck( long id, MultiPassStore store )
+    {
+        return delegate.shouldCheck( id, store );
+    }
+
+    @Override
+    public CacheAccess cacheAccess()
+    {
+        return delegate.cacheAccess();
     }
 }

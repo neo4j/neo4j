@@ -19,32 +19,35 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.model.Statement;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
+import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
@@ -72,6 +75,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -101,10 +105,14 @@ import org.neo4j.kernel.impl.util.MutableInteger;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
+import static java.util.Collections.singleton;
+
+import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
 import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
@@ -114,8 +122,8 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
-import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.kernel.api.CountsRead.ANY_LABEL;
+import static org.neo4j.kernel.api.CountsRead.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
@@ -133,7 +141,6 @@ import static org.neo4j.kernel.impl.util.Bits.bits;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
 
-@RunWith( Parameterized.class )
 public class FullCheckIntegrationTest
 {
     private static final SchemaIndexProvider.Descriptor DESCRIPTOR = new SchemaIndexProvider.Descriptor( "lucene", "1.0" );
@@ -145,8 +152,47 @@ public class FullCheckIntegrationTest
     private final ByteArrayOutputStream out = new ByteArrayOutputStream();
     private final List<Long> indexedNodes = new ArrayList<>();
 
-    @Parameter
-    public TaskExecutionOrder taskExecutionOrder;
+    private static final Map<Class<?>,Set<String>> allReports = new HashMap<>();
+
+    @BeforeClass
+    public static void collectAllDifferentInconsistencyTypes()
+    {
+        Class<?> reportClass = ConsistencyReport.class;
+        for ( Class<?> cls : reportClass.getDeclaredClasses() )
+        {
+            for ( Method method : cls.getDeclaredMethods() )
+            {
+                if ( method.getAnnotation( Documented.class ) != null )
+                {
+                    Set<String> types = allReports.get( cls );
+                    if ( types == null )
+                    {
+                        allReports.put( cls, types = new HashSet<>() );
+                    }
+                    types.add( method.getName() );
+                }
+            }
+        }
+    }
+
+    @AfterClass
+    public static void verifyThatWeHaveExercisedAllTypesOfInconsistenciesThatWeHave()
+    {
+        if ( !allReports.isEmpty() )
+        {
+            StringBuilder builder = new StringBuilder( "There are types of inconsistencies not covered by "
+                    + "this integration test, please add tests that tests for:" );
+            for ( Map.Entry<Class<?>,Set<String>> reporter : allReports.entrySet() )
+            {
+                builder.append( format( "%n%s:", reporter.getKey().getSimpleName() ) );
+                for ( String type : reporter.getValue() )
+                {
+                    builder.append( format( "%n  %s", type ) );
+                }
+            }
+            System.err.println( builder.toString() );
+        }
+    }
 
     @Rule
     public final GraphStoreFixture fixture = new GraphStoreFixture()
@@ -214,15 +260,6 @@ public class FullCheckIntegrationTest
             };
         }
     };
-
-    @Parameters( name = "execution_order={0}" )
-    public static Iterable<Object[]> taskExecutions()
-    {
-        return Arrays.asList( new Object[][]{
-                {TaskExecutionOrder.SINGLE_THREADED},
-                {TaskExecutionOrder.MULTI_PASS}
-        } );
-    }
 
     @Test
     public void shouldCheckConsistencyOfAConsistentStore() throws Exception
@@ -870,6 +907,35 @@ public class FullCheckIntegrationTest
     }
 
     @Test
+    public void shouldReportRelationshipOtherNodeInconsistencies() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                long node1 = next.node();
+                long node2 = next.node();
+                long rel = next.relationship();
+                tx.create( inUse( new RelationshipRecord( rel, node1, node2, 0 ) ) );
+                tx.create( inUse( new NodeRecord( node1, false, rel + 1, -1 ) ) );
+                tx.create( inUse( new NodeRecord( node2, false, rel + 2, -1 ) ) );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.RELATIONSHIP, 2 )
+                   .verify( RecordType.NODE, 2 )
+                   .verify( RecordType.COUNTS, 2 )
+                   .andThatsAllFolks();
+    }
+
+    @Test
     public void shouldReportPropertyInconsistencies() throws Exception
     {
         // given
@@ -879,11 +945,17 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
+                NodeRecord node = new NodeRecord( next.node() );
                 PropertyRecord property = new PropertyRecord( next.property() );
-                property.setPrevProp( next.property() );
+                node.setNextProp( property.getId() );
+
+                // Mess up the prev/next pointers a bit
+                property.setNextProp( 1_000 );
+
                 PropertyBlock block = new PropertyBlock();
                 block.setSingleBlock( next.propertyKey() | (((long) PropertyType.INT.intValue()) << 24) | (666L << 28) );
                 property.addPropertyBlock( block );
+                tx.create( node );
                 tx.create( property );
             }
         } );
@@ -893,6 +965,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.PROPERTY, 2 )
+                   .verify( RecordType.NODE, 1 )
                    .andThatsAllFolks();
     }
 
@@ -1127,7 +1200,7 @@ public class FullCheckIntegrationTest
         access.getRelationshipTypeNameStore().updateRecord( record );
 
         // when
-        ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );
+        ConsistencySummaryStatistics stats = check();
 
         // then
         on( stats ).verify( RecordType.RELATIONSHIP_TYPE_NAME, 1 )
@@ -1155,7 +1228,7 @@ public class FullCheckIntegrationTest
         access.getPropertyKeyNameStore().updateRecord( record );
 
         // when
-        ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );
+        ConsistencySummaryStatistics stats = check();
 
         // then
         on( stats ).verify( RecordType.PROPERTY_KEY_NAME, 1 )
@@ -1174,7 +1247,7 @@ public class FullCheckIntegrationTest
         relTypeStore.updateRecord( record );
 
         // when
-        ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );
+        ConsistencySummaryStatistics stats = check();
 
         // then
         access.close();
@@ -1193,7 +1266,7 @@ public class FullCheckIntegrationTest
         access.getLabelTokenStore().updateRecord( record );
 
         // when
-        ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );
+        ConsistencySummaryStatistics stats = check();
 
         // then
         on( stats ).verify( RecordType.LABEL, 1 )
@@ -1221,7 +1294,7 @@ public class FullCheckIntegrationTest
         access.getPropertyKeyNameStore().updateRecord( record );
 
         // when
-        ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );
+        ConsistencySummaryStatistics stats = check();
 
         // then
         on( stats ).verify( RecordType.PROPERTY_KEY, 1 )
@@ -1873,9 +1946,19 @@ public class FullCheckIntegrationTest
 
     private ConsistencySummaryStatistics check( DirectStoreAccess stores ) throws ConsistencyCheckIncompleteException
     {
-        Config config = config( taskExecutionOrder );
-        FullCheck checker = new FullCheck( config, ProgressMonitorFactory.NONE );
-        return checker.execute( stores, FormattedLog.toOutputStream( out ) );
+        Config config = config();
+        FullCheck checker = new FullCheck( config, ProgressMonitorFactory.NONE, fixture.getAccessStatistics(),
+                defaultConsistencyCheckThreadsNumber() );
+        return checker.execute( stores, FormattedLog.toOutputStream( out ), new ConsistencyReporter.Monitor()
+        {
+            @Override
+            public void reported( Class<?> report, String method, String message )
+            {
+                Set<String> types = allReports.get( report );
+                assert types != null;
+                types.remove( method );
+            }
+        } );
     }
 
     protected static RelationshipGroupRecord withRelationships( RelationshipGroupRecord group, long out,

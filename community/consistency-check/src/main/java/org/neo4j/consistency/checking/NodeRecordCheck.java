@@ -23,6 +23,7 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
+import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -35,30 +36,49 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static java.util.Arrays.sort;
 
-class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport>
-{
-    static NodeRecordCheck forSparseNodes()
-    {
-        return new NodeRecordCheck( RelationshipField.NEXT_REL, LabelsField.LABELS );
-    }
+import static org.neo4j.helpers.ArrayUtil.union;
 
-    static NodeRecordCheck forDenseNodes()
+public class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport>
+{
+    @SafeVarargs
+    static NodeRecordCheck forSparseNodes( RecordField<NodeRecord,ConsistencyReport.NodeConsistencyReport>... additional )
     {
-        return new NodeRecordCheck( RelationshipGroupField.NEXT_GROUP, LabelsField.LABELS );
+        RecordField<NodeRecord,ConsistencyReport.NodeConsistencyReport>[] basic =
+                ArrayUtil.<RecordField<NodeRecord,ConsistencyReport.NodeConsistencyReport>>array( LabelsField.LABELS );
+        return new NodeRecordCheck( union( basic, additional ) );
     }
 
     @SafeVarargs
-    private NodeRecordCheck( RecordField<NodeRecord, ConsistencyReport.NodeConsistencyReport>... fields )
+    static NodeRecordCheck forDenseNodes( RecordField<NodeRecord,ConsistencyReport.NodeConsistencyReport>... additional )
+    {
+        RecordField<NodeRecord,ConsistencyReport.NodeConsistencyReport>[] basic =
+                ArrayUtil.<RecordField<NodeRecord,ConsistencyReport.NodeConsistencyReport>>array(
+                        RelationshipGroupField.NEXT_GROUP, LabelsField.LABELS );
+        return new NodeRecordCheck( union( basic, additional ) );
+    }
+
+    public static NodeRecordCheck toCheckNextRel()
+    {
+        return new NodeRecordCheck( RelationshipField.NEXT_REL );
+    }
+
+    public static NodeRecordCheck toCheckNextRelationshipGroup()
+    {
+        return new NodeRecordCheck( RelationshipGroupField.NEXT_GROUP );
+    }
+
+    @SafeVarargs
+	NodeRecordCheck( RecordField<NodeRecord, ConsistencyReport.NodeConsistencyReport>... fields )
     {
         super( fields );
     }
 
-    NodeRecordCheck()
+    public NodeRecordCheck()
     {
-        super( RelationshipField.NEXT_REL, LabelsField.LABELS );
+        this( RelationshipField.NEXT_REL, LabelsField.LABELS );
     }
 
-    private enum RelationshipGroupField implements RecordField<NodeRecord, ConsistencyReport.NodeConsistencyReport>,
+    enum RelationshipGroupField implements RecordField<NodeRecord, ConsistencyReport.NodeConsistencyReport>,
             ComparativeRecordChecker<NodeRecord, RelationshipGroupRecord, ConsistencyReport.NodeConsistencyReport>
     {
         NEXT_GROUP
@@ -98,7 +118,7 @@ class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport
         }
     }
 
-    private enum RelationshipField implements RecordField<NodeRecord, ConsistencyReport.NodeConsistencyReport>,
+    enum RelationshipField implements RecordField<NodeRecord, ConsistencyReport.NodeConsistencyReport>,
             ComparativeRecordChecker<NodeRecord, RelationshipRecord, ConsistencyReport.NodeConsistencyReport>
     {
         NEXT_REL
@@ -162,7 +182,7 @@ class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport
         }
     }
 
-    private enum LabelsField implements RecordField<NodeRecord, ConsistencyReport.NodeConsistencyReport>,
+    enum LabelsField implements RecordField<NodeRecord, ConsistencyReport.NodeConsistencyReport>,
             ComparativeRecordChecker<NodeRecord, LabelTokenRecord, ConsistencyReport.NodeConsistencyReport>
     {
         LABELS
@@ -179,8 +199,7 @@ class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport
                     long firstRecordId = dynamicNodeLabels.getFirstDynamicRecordId();
                     RecordReference<DynamicRecord> firstRecordReference = records.nodeLabels( firstRecordId );
                     engine.comparativeCheck( firstRecordReference,
-                            new LabelChainWalker<NodeRecord, ConsistencyReport.NodeConsistencyReport>(
-                                    new NodeLabelsComparativeRecordChecker() ) );
+                            new LabelChainWalker<>( new NodeLabelsComparativeRecordChecker() ) );
                 }
                 else
                 {

@@ -26,6 +26,7 @@ import java.util.List;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
+import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
@@ -63,6 +64,8 @@ import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.logging.FormattedLog;
 
 import static java.lang.String.format;
+
+import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
@@ -236,7 +239,7 @@ class RebuildFromLogs
     {
         Config tuningConfiguration = new Config( stringMap(),
                 GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
-        new FullCheck( tuningConfiguration, ProgressMonitorFactory.textual( System.err ) )
+        new FullCheck( tuningConfiguration, ProgressMonitorFactory.textual( System.err ), Statistics.NONE, defaultConsistencyCheckThreadsNumber() )
                 .execute( new DirectStoreAccess( stores, dataSource.getLabelScanStore(), dataSource.getDependencyResolver().resolveDependency( SchemaIndexProvider.class ) ),
                         FormattedLog.toOutputStream( System.out ) );
     }

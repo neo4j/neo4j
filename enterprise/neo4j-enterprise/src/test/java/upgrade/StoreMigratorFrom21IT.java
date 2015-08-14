@@ -19,13 +19,13 @@
  */
 package upgrade;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.graphdb.DependencyResolver;
@@ -103,7 +103,7 @@ public class StoreMigratorFrom21IT
         ConsistencyCheckService service = new ConsistencyCheckService();
 
         ConsistencyCheckService.Result result = service.runFullConsistencyCheck(
-                dir.getAbsoluteFile(), new Config(), ProgressMonitorFactory.NONE, NullLogProvider.getInstance() );
+                dir.getAbsoluteFile(), new Config(), ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
         assertTrue( result.isSuccessful() );
 
         database = builder.newGraphDatabase();

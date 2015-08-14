@@ -24,6 +24,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.consistency.checking.CheckDecorator;
+import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -41,7 +42,8 @@ public class StoreProcessorTest
     public void shouldProcessAllTheRecordsInAStore() throws Exception
     {
         // given
-        StoreProcessor processor = new StoreProcessor( CheckDecorator.NONE, mock( ConsistencyReport.Reporter.class ) );
+        StoreProcessor processor = new StoreProcessor( CheckDecorator.NONE,
+                mock( ConsistencyReport.Reporter.class ), Stage.SEQUENTIAL_FORWARD, CacheAccess.EMPTY );
         RecordStore<NodeRecord> recordStore = mock( RecordStore.class );
         when( recordStore.getHighId() ).thenReturn( 3L );
         when( recordStore.forceGetRecord( any( Long.class ) ) ).thenReturn( new NodeRecord( 0, false, 0, 0 ) );
@@ -61,7 +63,8 @@ public class StoreProcessorTest
     public void shouldStopProcessingRecordsWhenSignalledToStop() throws Exception
     {
         // given
-        final StoreProcessor processor = new StoreProcessor( CheckDecorator.NONE, mock( ConsistencyReport.Reporter.class ) );
+        final StoreProcessor processor = new StoreProcessor( CheckDecorator.NONE,
+                mock( ConsistencyReport.Reporter.class ), Stage.SEQUENTIAL_FORWARD, CacheAccess.EMPTY );
         RecordStore<NodeRecord> recordStore = mock( RecordStore.class );
         when( recordStore.getHighId() ).thenReturn( 4L );
         when( recordStore.forceGetRecord( 0L ) ).thenReturn( new NodeRecord( 0, false, 0, 0 ) );

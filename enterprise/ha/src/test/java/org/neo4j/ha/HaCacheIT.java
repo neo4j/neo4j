@@ -192,7 +192,7 @@ public class HaCacheIT
         File masterStoreDir = new File( storeDir, "neo4j.ha/server1" );
         ConsistencyCheckService.Result result =
                 new ConsistencyCheckService().runFullConsistencyCheck( masterStoreDir, new Config(),
-                        ProgressMonitorFactory.NONE, NullLogProvider.getInstance() );
+                        ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
 
         assertTrue( result.isSuccessful() );
     }

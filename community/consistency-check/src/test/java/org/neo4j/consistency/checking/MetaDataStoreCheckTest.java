@@ -21,7 +21,9 @@ package org.neo4j.consistency.checking;
 
 import org.junit.Test;
 
+import org.neo4j.consistency.checking.full.MandatoryProperties;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.function.Functions;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
@@ -33,7 +35,9 @@ public class MetaDataStoreCheckTest
 {
     public MetaDataStoreCheckTest()
     {
-        super( new NeoStoreCheck(), ConsistencyReport.NeoStoreConsistencyReport.class );
+        super( new NeoStoreCheck( new PropertyChain<NeoStoreRecord,ConsistencyReport.NeoStoreConsistencyReport>(
+                Functions.<NeoStoreRecord,MandatoryProperties.Check<NeoStoreRecord,ConsistencyReport.NeoStoreConsistencyReport>>nullFunction() ) ),
+                ConsistencyReport.NeoStoreConsistencyReport.class, new int[0] );
     }
 
     @Test

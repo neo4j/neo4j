@@ -19,11 +19,20 @@
  */
 package org.neo4j.consistency.checking;
 
+import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink;
+import org.neo4j.consistency.checking.full.MultiPassStore;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.store.DirectRecordReference;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+
+import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.NEXT;
+import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.SLOT_PREV_OR_NEXT;
+import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.SLOT_RELATIONSHIP_ID;
+import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.SLOT_SOURCE_OR_TARGET;
 
 enum NodeField implements
         RecordField<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport>,
@@ -188,7 +197,21 @@ enum NodeField implements
         }
         else
         {
-            engine.comparativeCheck( records.node( valueFrom( relationship ) ), this );
+            // build the node record from cached values with only valid fields as id, inUse, and nextRel.
+            NodeRecord node = new NodeRecord(valueFrom( relationship ));
+            CacheAccess.Client client = records.cacheAccess().client();
+            node.setInUse( client.getFromCache( node.getId(), SLOT_SOURCE_OR_TARGET ) != RelationshipLink.SOURCE );
+            node.setNextRel( client.getFromCache( node.getId(), SLOT_RELATIONSHIP_ID ) );
+
+            // We use "created" flag here. Consistency checking code revolves around records and so
+            // even in scenarios where records are built from other sources, f.ex half-and-purpose-built from cache,
+            // this flag is used to signal that the real record needs to be read in order to be used as a general
+            // purpose record.
+            node.setCreated();
+            if ( records.shouldCheck( node.getId(), MultiPassStore.NODES ) )
+            {
+                engine.comparativeCheck( new DirectRecordReference<>( node, records ), this );
+            }
         }
     }
 
@@ -205,8 +228,11 @@ enum NodeField implements
         {
             if ( isFirst( relationship ) )
             {
+                CacheAccess.Client cacheAccess = records.cacheAccess().client();
                 if ( node.getNextRel() != relationship.getId() )
                 {
+                    node = ((DirectRecordReference<NodeRecord>)records.node( node.getId())).record();
+
                     if ( node.isDense() )
                     {
                         // TODO verify that the appropriate group refers back to the relationship
@@ -214,6 +240,13 @@ enum NodeField implements
                     else
                     {
                         noBackReference( engine.report(), node );
+                    }
+                }
+                else
+                {
+                    if ( relationship.getFirstNode() != relationship.getSecondNode() )
+                    {
+                        cacheAccess.putToCacheSingle( node.getId(), SLOT_PREV_OR_NEXT, NEXT );
                     }
                 }
             }

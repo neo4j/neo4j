@@ -299,13 +299,13 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         {
             out.print( record );
             byte[] data = new byte[size];
-            try ( PageCursor pageCursor = store.storeFile.io( id / store.recordsPerPage(), PagedFile.PF_SHARED_LOCK ) )
+            try ( PageCursor pageCursor = store.storeFile.io( id / store.getRecordsPerPage(), PagedFile.PF_SHARED_LOCK ) )
             {
                 if ( pageCursor.next() )
                 {
                     do
                     {
-                        pageCursor.setOffset( (int) (id % store.recordsPerPage() * size) );
+                        pageCursor.setOffset( (int) (id % store.getRecordsPerPage() * size) );
                         pageCursor.getBytes( data );
                     }
                     while ( pageCursor.shouldRetry() );

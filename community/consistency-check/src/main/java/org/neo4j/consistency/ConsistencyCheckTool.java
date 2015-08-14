@@ -48,6 +48,7 @@ public class ConsistencyCheckTool
     private static final String RECOVERY = "recovery";
     private static final String CONFIG = "config";
     private static final String PROP_OWNER = "propowner";
+    private static final String VERBOSE = "v";
 
     interface ExitHandle
     {
@@ -81,7 +82,7 @@ public class ConsistencyCheckTool
     private final GraphDatabaseFactory dbFactory;
     private final PrintStream systemError;
     private final ExitHandle exitHandle;
-    private FileSystemAbstraction fs;
+    private final FileSystemAbstraction fs;
 
     ConsistencyCheckTool( ConsistencyCheckService consistencyCheckService,
             GraphDatabaseFactory dbFactory, FileSystemAbstraction fs, PrintStream systemError, ExitHandle exitHandle )
@@ -95,9 +96,10 @@ public class ConsistencyCheckTool
 
     void run( String... args ) throws ToolFailureException, IOException
     {
-        Args arguments = Args.withFlags( RECOVERY, PROP_OWNER ).parse( args );
+        Args arguments = Args.withFlags( RECOVERY, PROP_OWNER, VERBOSE ).parse( args );
         File storeDir = determineStoreDirectory( arguments );
         Config tuningConfiguration = readTuningConfiguration( arguments );
+        boolean verbose = determineVerbose( arguments );
 
         attemptRecoveryOrCheckStateOfLogicalLogs( arguments, storeDir, tuningConfiguration );
 
@@ -105,12 +107,17 @@ public class ConsistencyCheckTool
         try
         {
             consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
-                    ProgressMonitorFactory.textual( System.err ), logProvider );
+                    ProgressMonitorFactory.textual( System.err ), logProvider, verbose );
         }
         catch ( ConsistencyCheckIncompleteException e )
         {
             throw new ToolFailureException( "Check aborted due to exception", e );
         }
+    }
+
+    private boolean determineVerbose( Args arguments )
+    {
+        return arguments.getBoolean( VERBOSE, false, true );
     }
 
     private void attemptRecoveryOrCheckStateOfLogicalLogs( Args arguments, File storeDir, Config tuningConfiguration )
@@ -181,11 +188,13 @@ public class ConsistencyCheckTool
     private String usage()
     {
         return Strings.joinAsLines(
-                Args.jarUsage( getClass(), "[-propowner] [-recovery] [-config <neo4j.properties>] <storedir>" ),
-                "WHERE:   <storedir>         is the path to the store to check",
+                Args.jarUsage( getClass(), "[-propowner] [-recovery] [-config <neo4j.properties>] [-v] <storedir>" ),
+                "WHERE:   -propowner         also check property owner consistency (more time consuming)",
                 "         -recovery          to perform recovery on the store before checking",
-                "         <neo4j.properties> is the location of an optional properties file",
-                "                            containing tuning parameters for the consistency check"
+                "         -config <filename> is the location of an optional properties file",
+                "                            containing tuning parameters for the consistency check",
+                "         -v                 produce execution output",
+                "         <storedir>         is the path to the store to check"
         );
     }
 

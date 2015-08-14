@@ -21,21 +21,61 @@ package org.neo4j.consistency.checking;
 
 import org.junit.Test;
 
+import org.neo4j.consistency.checking.RelationshipRecordCheck.RelationshipField;
+import org.neo4j.consistency.checking.RelationshipRecordCheck.RelationshipTypeField;
+import org.neo4j.consistency.checking.full.CheckStage;
+import org.neo4j.consistency.checking.full.MandatoryProperties.Check;
+import org.neo4j.consistency.checking.full.MultiPassStore;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.function.Functions;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+import static org.neo4j.consistency.checking.full.MultiPassStore.NODES;
+import static org.neo4j.consistency.checking.full.MultiPassStore.RELATIONSHIPS;
 
 public class RelationshipRecordCheckTest extends
                                          RecordCheckTestBase<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport, RelationshipRecordCheck>
 {
+    private boolean checkSingleDirection;
+
     public RelationshipRecordCheckTest()
     {
-        super( new RelationshipRecordCheck(), ConsistencyReport.RelationshipConsistencyReport.class );
+        super( new RelationshipRecordCheck(
+                RelationshipTypeField.RELATIONSHIP_TYPE, NodeField.SOURCE, RelationshipField.SOURCE_PREV,
+                RelationshipField.SOURCE_NEXT, NodeField.TARGET, RelationshipField.TARGET_PREV,
+                RelationshipField.TARGET_NEXT,
+                new PropertyChain<>(
+                Functions.<RelationshipRecord,Check<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport>>nullFunction() ) ),
+                ConsistencyReport.RelationshipConsistencyReport.class,
+                CheckStage.Stage6_RS_Forward.getCacheSlotSizes(), MultiPassStore.RELATIONSHIPS );
+    }
+
+    private void checkSingleDirection()
+    {
+        this.checkSingleDirection = true;
+    }
+
+    @Override
+    final ConsistencyReport.RelationshipConsistencyReport check( RelationshipRecord record )
+    {
+        // Make sure the cache is properly populated
+        records.populateCache();
+        ConsistencyReport.RelationshipConsistencyReport report = mock( ConsistencyReport.RelationshipConsistencyReport.class );
+        records.cacheAccess().setCacheSlotSizes( CheckStage.Stage6_RS_Forward.getCacheSlotSizes() );
+        super.check( report, record );
+        if ( !checkSingleDirection )
+        {
+            records.cacheAccess().setForward( !records.cacheAccess().isForward() );
+            super.check( report, record );
+        }
+        return report;
     }
 
     @Test
@@ -106,6 +146,7 @@ public class RelationshipRecordCheckTest extends
     public void shouldReportIllegalRelationshipType() throws Exception
     {
         // given
+        checkSingleDirection();
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, NONE ) );
         add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
         add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
@@ -122,6 +163,7 @@ public class RelationshipRecordCheckTest extends
     public void shouldReportRelationshipTypeNotInUse() throws Exception
     {
         // given
+        checkSingleDirection();
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
         RelationshipTypeTokenRecord relationshipType = add( notInUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
@@ -139,6 +181,7 @@ public class RelationshipRecordCheckTest extends
     public void shouldReportIllegalSourceNode() throws Exception
     {
         // given
+        checkSingleDirection();
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, NONE, 1, 4 ) );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
@@ -155,6 +198,8 @@ public class RelationshipRecordCheckTest extends
     public void shouldReportSourceNodeNotInUse() throws Exception
     {
         // given
+        checkSingleDirection();
+        initialize( RELATIONSHIPS, NODES );
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         NodeRecord node = add( notInUse( new NodeRecord( 1, false, NONE, NONE ) ) );
@@ -172,6 +217,7 @@ public class RelationshipRecordCheckTest extends
     public void shouldReportIllegalTargetNode() throws Exception
     {
         // given
+        checkSingleDirection();
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, NONE, 4 ) );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
@@ -188,6 +234,8 @@ public class RelationshipRecordCheckTest extends
     public void shouldReportTargetNodeNotInUse() throws Exception
     {
         // given
+        checkSingleDirection();
+        initialize( RELATIONSHIPS, NODES );
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
@@ -205,6 +253,7 @@ public class RelationshipRecordCheckTest extends
     public void shouldReportPropertyNotInUse() throws Exception
     {
         // given
+        checkSingleDirection();
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         relationship.setNextProp( 11 );
@@ -224,6 +273,7 @@ public class RelationshipRecordCheckTest extends
     public void shouldReportPropertyNotFirstInChain() throws Exception
     {
         // given
+        checkSingleDirection();
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         relationship.setNextProp( 11 );
@@ -244,6 +294,8 @@ public class RelationshipRecordCheckTest extends
     public void shouldReportSourceNodeNotReferencingBackForFirstRelationshipInSourceChain() throws Exception
     {
         // given
+        checkSingleDirection();
+        initialize( RELATIONSHIPS, NODES );
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         NodeRecord source = add( inUse( new NodeRecord( 1, false, 7, NONE ) ) );
@@ -261,6 +313,8 @@ public class RelationshipRecordCheckTest extends
     public void shouldReportTargetNodeNotReferencingBackForFirstRelationshipInTargetChain() throws Exception
     {
         // given
+        checkSingleDirection();
+        initialize( RELATIONSHIPS, NODES );
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
@@ -278,6 +332,8 @@ public class RelationshipRecordCheckTest extends
     public void shouldReportSourceAndTargetNodeNotReferencingBackForFirstRelationshipInChains() throws Exception
     {
         // given
+        checkSingleDirection();
+        initialize( RELATIONSHIPS, NODES );
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         NodeRecord source = add( inUse( new NodeRecord( 1, false, NONE, NONE ) ) );
@@ -296,6 +352,8 @@ public class RelationshipRecordCheckTest extends
     public void shouldReportSourceNodeWithoutChainForRelationshipInTheMiddleOfChain() throws Exception
     {
         // given
+        checkSingleDirection();
+        initialize( RELATIONSHIPS, NODES );
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         NodeRecord source = add( inUse( new NodeRecord( 1, false, NONE, NONE ) ) );
@@ -317,6 +375,8 @@ public class RelationshipRecordCheckTest extends
     public void shouldReportTargetNodeWithoutChainForRelationshipInTheMiddleOfChain() throws Exception
     {
         // given
+        checkSingleDirection();
+        initialize( RELATIONSHIPS, NODES );
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42, 1, 2, 4 ) );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );

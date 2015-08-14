@@ -20,6 +20,7 @@
 package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.store.DirectRecordReference;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -28,7 +29,7 @@ import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
-class PropertyRecordCheck
+public class PropertyRecordCheck
         implements RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport>
 {
     @Override
@@ -50,7 +51,7 @@ class PropertyRecordCheck
         }
     }
 
-    private void checkDataBlock( PropertyBlock block,
+    public static void checkDataBlock( PropertyBlock block,
                                  CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
                                  RecordAccess records )
     {
@@ -92,7 +93,7 @@ class PropertyRecordCheck
         }
     }
 
-    private enum PropertyField implements
+    public static enum PropertyField implements
             RecordField<PropertyRecord, ConsistencyReport.PropertyConsistencyReport>,
             ComparativeRecordChecker<PropertyRecord, PropertyRecord, ConsistencyReport.PropertyConsistencyReport>
     {
@@ -105,19 +106,19 @@ class PropertyRecordCheck
             }
 
             @Override
-            long otherReference( PropertyRecord record )
+            public long otherReference( PropertyRecord record )
             {
                 return record.getNextProp();
             }
 
             @Override
-            void notInUse( ConsistencyReport.PropertyConsistencyReport report, PropertyRecord property )
+            public void notInUse( ConsistencyReport.PropertyConsistencyReport report, PropertyRecord property )
             {
                 report.prevNotInUse( property );
             }
 
             @Override
-            void noBackReference( ConsistencyReport.PropertyConsistencyReport report, PropertyRecord property )
+            public void noBackReference( ConsistencyReport.PropertyConsistencyReport report, PropertyRecord property )
             {
                 report.previousDoesNotReferenceBack( property );
             }
@@ -131,19 +132,19 @@ class PropertyRecordCheck
             }
 
             @Override
-            long otherReference( PropertyRecord record )
+            public long otherReference( PropertyRecord record )
             {
                 return record.getPrevProp();
             }
 
             @Override
-            void notInUse( ConsistencyReport.PropertyConsistencyReport report, PropertyRecord property )
+            public void notInUse( ConsistencyReport.PropertyConsistencyReport report, PropertyRecord property )
             {
                 report.nextNotInUse( property );
             }
 
             @Override
-            void noBackReference( ConsistencyReport.PropertyConsistencyReport report, PropertyRecord property )
+            public void noBackReference( ConsistencyReport.PropertyConsistencyReport report, PropertyRecord property )
             {
                 report.nextDoesNotReferenceBack( property );
             }
@@ -155,7 +156,7 @@ class PropertyRecordCheck
             this.NONE = none;
         }
 
-        abstract long otherReference( PropertyRecord record );
+        public abstract long otherReference( PropertyRecord record );
 
         @Override
         public void checkConsistency( PropertyRecord record,
@@ -164,7 +165,15 @@ class PropertyRecordCheck
         {
             if ( !NONE.is( valueFrom( record ) ) )
             {
-                engine.comparativeCheck( records.property( valueFrom( record ) ), this );
+                PropertyRecord prop = records.cacheAccess().client().getPropertyFromCache( valueFrom( record ) );
+                if ( prop == null )
+                {
+                    engine.comparativeCheck( records.property( valueFrom( record ) ), this );
+                }
+                else
+                {
+                    engine.comparativeCheck( new DirectRecordReference<>( prop, records ), this );
+                }
             }
         }
 
@@ -188,7 +197,7 @@ class PropertyRecordCheck
 
         abstract void notInUse( ConsistencyReport.PropertyConsistencyReport report, PropertyRecord property );
 
-        abstract void noBackReference( ConsistencyReport.PropertyConsistencyReport report, PropertyRecord property );
+        public abstract void noBackReference( ConsistencyReport.PropertyConsistencyReport report, PropertyRecord property );
     }
 
     private static ComparativeRecordChecker<PropertyRecord, PropertyKeyTokenRecord, ConsistencyReport.PropertyConsistencyReport>

@@ -24,18 +24,20 @@ import java.util.Iterator;
 
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.RecordStore.Scanner;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 import static org.neo4j.kernel.impl.store.RecordStore.IN_USE;
-import static org.neo4j.kernel.impl.store.RecordStore.Scanner.scan;
 
 public class IterableStore<RECORD extends AbstractBaseRecord> implements BoundedIterable<RECORD>
 {
     private final RecordStore<RECORD> store;
+    private final boolean forward;
 
-    public IterableStore( RecordStore<RECORD> store )
+    public IterableStore( RecordStore<RECORD> store, boolean forward )
     {
         this.store = store;
+        this.forward = forward;
     }
 
     @Override
@@ -52,6 +54,25 @@ public class IterableStore<RECORD extends AbstractBaseRecord> implements Bounded
     @Override
     public Iterator<RECORD> iterator()
     {
-        return scan( store, IN_USE ).iterator();
+        return Scanner.scan( store, forward, IN_USE ).iterator();
+    }
+
+    public void warmUpCache()
+    {
+        int recordsPerPage = store.getRecordsPerPage();
+        long id = 0;
+        long half = store.getHighId() / 2;
+        while ( id < half )
+        {
+            try
+            {
+                store.getRecord( id );
+            }
+            catch ( Exception e )
+            {
+                // ignore and continue
+            }
+            id += (recordsPerPage-1);
+        }
     }
 }

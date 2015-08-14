@@ -445,6 +445,7 @@ public abstract class ArrayUtil
      * @param <T> the type of the items
      * @return the array version of the vararg argument.
      */
+    @SafeVarargs
     public static <T> T[] array( T... varargs )
     {
         return varargs;

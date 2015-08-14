@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Properties;
 
-import org.neo4j.consistency.checking.full.TaskExecutionOrder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -49,16 +48,17 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
@@ -78,7 +78,7 @@ public class ConsistencyCheckToolTest
 
         // then
         verify( service ).runFullConsistencyCheck( eq( storeDir ), any( Config.class ),
-                any( ProgressMonitorFactory.class ), any( LogProvider.class ) );
+                any( ProgressMonitorFactory.class ), any( LogProvider.class ), anyBoolean() );
     }
 
     @Test
@@ -96,10 +96,8 @@ public class ConsistencyCheckToolTest
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
         verify( service ).runFullConsistencyCheck( eq( storeDir ), config.capture(),
-                any( ProgressMonitorFactory.class ), any( LogProvider.class ) );
+                any( ProgressMonitorFactory.class ), any( LogProvider.class ), anyBoolean() );
         assertFalse( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
-        assertEquals( TaskExecutionOrder.MULTI_PASS,
-                config.getValue().get( ConsistencyCheckSettings.consistency_check_execution_order ) );
     }
 
     @Test
@@ -122,7 +120,7 @@ public class ConsistencyCheckToolTest
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
         verify( service ).runFullConsistencyCheck( eq( storeDir ), config.capture(),
-                any( ProgressMonitorFactory.class ), any( LogProvider.class ) );
+                any( ProgressMonitorFactory.class ), any( LogProvider.class ), anyBoolean() );
         assertTrue( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
     }
 
