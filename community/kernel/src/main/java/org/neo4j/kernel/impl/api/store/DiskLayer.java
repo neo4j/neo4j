@@ -212,15 +212,15 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement statement,
-                                                                     IndexDescriptor index,
-                                                                     Number lower, boolean includeLower,
-                                                                     Number upper, boolean includeUpper )
+    public PrimitiveLongIterator nodesGetFromInclusiveNumericIndexRangeSeek( KernelStatement statement,
+            IndexDescriptor index,
+            Number lower,
+            Number upper )
             throws IndexNotFoundKernelException
 
     {
         IndexReader reader = statement.getIndexReader( index );
-        return reader.rangeSeekByNumber( lower, includeLower, upper, includeUpper );
+        return reader.rangeSeekByNumberInclusive( lower, upper );
     }
 
     @Override

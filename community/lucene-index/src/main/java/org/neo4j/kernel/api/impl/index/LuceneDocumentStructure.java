@@ -231,38 +231,19 @@ public class LuceneDocumentStructure
         throw new IllegalArgumentException( format( "Unable to create query for %s", value ) );
     }
 
-    public TermRangeQuery newRangeSeekByNumberQuery( Number lower, boolean includeLower,
-                                                     Number upper, boolean upperInclusive )
+    /**
+     * Range queries are always inclusive, in order to do exclusive range queries the result must be filtered after the
+     * fact. The reason we can't do inclusive range queries is that longs are coerced to doubles in the index.
+     */
+    public TermRangeQuery newInclusiveNumericRangeSeekQuery( Number lower, Number upper )
     {
-        String chosenLower, chosenUpper;
-        boolean includeChosenLower, includeChosenUpper;
-
-        if ( lower == null )
-        {
-            chosenLower = null;
-            includeChosenLower = true;
-        }
-        else
-        {
-            chosenLower = NumericUtils.doubleToPrefixCoded( lower.doubleValue() );
-            includeChosenLower = includeLower;
-        }
-
-        if ( upper == null )
-        {
-            chosenUpper = null;
-            includeChosenUpper = true;
-        }
-        else
-        {
-            chosenUpper = NumericUtils.doubleToPrefixCoded( upper.doubleValue() );
-            includeChosenUpper = upperInclusive;
-        }
+        String chosenLower = (lower == null) ? null : NumericUtils.doubleToPrefixCoded( lower.doubleValue() );
+        String chosenUpper = (upper == null) ? null : NumericUtils.doubleToPrefixCoded( upper.doubleValue() );
 
         return new TermRangeQuery(
-            ValueEncoding.Number.key(),
-            chosenLower, chosenUpper,
-            includeChosenLower, includeChosenUpper
+                ValueEncoding.Number.key(),
+                chosenLower, chosenUpper,
+                true, true
         );
     }
 

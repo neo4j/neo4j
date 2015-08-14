@@ -27,6 +27,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Function;
 import org.neo4j.function.IntSupplier;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.cursor.DegreeItem;
 import org.neo4j.kernel.api.cursor.LabelItem;
@@ -44,6 +45,16 @@ public class StubCursors
     public static Cursor<NodeItem> asNodeCursor( final long nodeId )
     {
         return asNodeCursor( nodeId, Cursors.<PropertyItem>empty(), Cursors.<LabelItem>empty() );
+    }
+
+    public static Cursor<NodeItem> asNodeCursor( final long... nodeIds)
+    {
+        NodeItem[] nodeItems = new NodeItem[nodeIds.length];
+        for (int i = 0; i < nodeIds.length; i++)
+        {
+            nodeItems[i] = asNode( nodeIds[i] );
+        }
+        return Cursors.cursor( nodeItems);
     }
 
     public static Cursor<NodeItem> asNodeCursor( final long nodeId,
