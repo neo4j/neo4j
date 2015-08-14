@@ -26,8 +26,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{UnresolvedLabel,
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlanInProgress, Namer, PlanBuilder}
 import org.neo4j.graphdb.Direction
 
-import scala.Equals
-
 class PredicateRewriterTest extends BuilderTest {
 
   def builder: PlanBuilder = new PredicateRewriter(new Namer {

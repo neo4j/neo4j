@@ -32,8 +32,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.NodeStartPipe
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.kernel.api.index.IndexDescriptor
 
-import scala.Equals
-
 class StartPointBuilderTest extends BuilderTest {
 
   context = mock[PlanContext]

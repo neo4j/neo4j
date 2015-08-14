@@ -32,8 +32,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.kernel.api.index.IndexDescriptor
 
-import scala.Equals
-
 class NodeFetchStrategyTest extends CypherFunSuite {
   val propertyName = "prop"
   val labelName = "Label"

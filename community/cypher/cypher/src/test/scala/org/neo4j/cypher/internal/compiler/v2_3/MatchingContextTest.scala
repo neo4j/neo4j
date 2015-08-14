@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.MatchingContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.graphdb.Direction
 
-import scala.Equals
 import scala.collection.Map
 
 class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder with QueryStateTestSupport {

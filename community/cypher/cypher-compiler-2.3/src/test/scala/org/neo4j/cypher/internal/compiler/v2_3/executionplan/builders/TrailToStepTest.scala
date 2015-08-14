@@ -27,8 +27,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 
-import scala.Equals
-
 class TrailToStepTest extends CypherFunSuite {
   val A = "A"
   val B = "B"

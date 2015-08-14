@@ -27,8 +27,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.SingleNode
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PartiallySolvedQuery
 
-import scala.Equals
-
 class FilterBuilderTest extends BuilderTest {
 
   val builder = new FilterBuilder

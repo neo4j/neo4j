@@ -24,8 +24,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, Coer
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
-import scala.Equals
-
 class GenericCaseTest extends CypherFunSuite {
 
   test("case_with_single_alternative_works") {
