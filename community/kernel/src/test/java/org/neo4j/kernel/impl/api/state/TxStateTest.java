@@ -19,24 +19,24 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -53,13 +53,12 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
-
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.Pair.of;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.api.properties.Property.booleanProperty;
@@ -1173,6 +1172,51 @@ public class TxStateTest
     }
 
     @Test
+    public void shouldVisitDeletedNode() throws Exception
+    {
+        // Given
+        state.nodeDoDelete( 42 );
+
+        // When
+        state.accept( new TxStateVisitor.Adapter()
+        {
+            @Override
+            public void visitDeletedNode( long id )
+            {
+                // Then
+                assertEquals( "Wrong deleted node id", 42, id );
+            }
+        } );
+    }
+
+    @Test
+    public void shouldReportDeletedNodeIfItWasCreatedAndDeletedInSameTx()
+    {
+        // Given
+        long nodeId = 42;
+
+        // When
+        state.nodeDoCreate( nodeId );
+        state.nodeDoDelete( nodeId );
+
+        // Then
+        assertTrue( state.nodeIsDeletedInThisTx( nodeId ) );
+    }
+
+    @Test
+    public void shouldNotReportDeletedNodeIfItIsNotDeleted()
+    {
+        // Given
+        long nodeId = 42;
+
+        // When
+        state.nodeDoCreate( nodeId );
+
+        // Then
+        assertFalse( state.nodeIsDeletedInThisTx( nodeId ) );
+    }
+
+    @Test
     public void shouldNotChangeRecordForCreatedAndDeletedRelationship() throws Exception
     {
         // GIVEN
@@ -1195,6 +1239,57 @@ public class TxStateTest
                 fail( "Should not delete any relationship" );
             }
         } );
+    }
+
+    @Test
+    public void shouldVisitDeletedRelationship() throws Exception
+    {
+        // Given
+        state.relationshipDoDelete( 42, 2, 3, 4 );
+
+        // When
+        state.accept( new TxStateVisitor.Adapter()
+        {
+            @Override
+            public void visitDeletedRelationship( long id )
+            {
+                // Then
+                assertEquals( "Wrong deleted relationship id", 42, id );
+            }
+        } );
+    }
+
+    @Test
+    public void shouldReportDeletedRelationshipIfItWasCreatedAndDeletedInSameTx()
+    {
+        // Given
+        long startNodeId = 1;
+        long relationshipId = 2;
+        int relationshipType = 3;
+        long endNodeId = 4;
+
+        // When
+        state.relationshipDoCreate( relationshipId, relationshipType, startNodeId, endNodeId );
+        state.relationshipDoDelete( relationshipId, relationshipType, startNodeId, endNodeId );
+
+        // Then
+        assertTrue( state.relationshipIsDeletedInThisTx( relationshipId ) );
+    }
+
+    @Test
+    public void shouldNotReportDeletedRelationshipIfItIsNotDeleted()
+    {
+        // Given
+        long startNodeId = 1;
+        long relationshipId = 2;
+        int relationshipType = 3;
+        long endNodeId = 4;
+
+        // When
+        state.relationshipDoCreate( relationshipId, relationshipType, startNodeId, endNodeId );
+
+        // Then
+        assertFalse( state.relationshipIsDeletedInThisTx( relationshipId ) );
     }
 
     @Test
