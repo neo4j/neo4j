@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CandidateGenerator, LogicalPlanningContext, PlanTransformer}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CandidateGenerator, LogicalPlanningContext}
 import org.neo4j.graphdb.Direction
 
 object triadicSelection extends CandidateGenerator[LogicalPlan] {
@@ -35,10 +35,10 @@ object triadicSelection extends CandidateGenerator[LogicalPlan] {
 
       val newPlan = matchingPredicateExists(qg, in.availableSymbols, from1.name, to2.name, types1, dir1) map {
         predicate =>
-          val triadicBuild = context.logicalPlanProducer.planTriadicBuild(exp1, to1)
+          val triadicBuild = context.logicalPlanProducer.planTriadicBuild(exp1, from1, to1)
           val newExpand2 = Expand(triadicBuild, from2, dir2, types2, to2, rel2, ExpandAll)(exp2.solved)
           val newSelection = context.logicalPlanProducer.planSelection(sel.predicates, newExpand2)
-          context.logicalPlanProducer.planTriadicProbe(newSelection, to1, to2, predicate)
+          context.logicalPlanProducer.planTriadicProbe(newSelection, from1, to1, to2, predicate)
       }
 
       newPlan.toSeq

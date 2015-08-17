@@ -30,7 +30,8 @@ If this query was solved by starting from (a) and expanding out, after expanding
 to (b), a TriadicBuild would be done, which eagerly puts all seen (b) nodes in a Set
 while expanding. After expanding to (c), we can check in the triadic set if the (c) is already seen.
  */
-case class TriadicBuild(left: LogicalPlan, identifier: IdName)(val solved: PlannerQuery with CardinalityEstimation)
+case class TriadicBuild(left: LogicalPlan, source: IdName, seen: IdName)
+                       (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with EagerLogicalPlan with LogicalPlanWithoutExpressions {
   override val lhs = Some(left)
 
@@ -39,7 +40,7 @@ case class TriadicBuild(left: LogicalPlan, identifier: IdName)(val solved: Plann
   override def rhs = None
 }
 
-case class TriadicProbe(left: LogicalPlan, triadicSet:IdName, identifier: IdName)
+case class TriadicProbe(left: LogicalPlan, source: IdName, seen: IdName, target: IdName)
                        (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan with LogicalPlanWithoutExpressions {
   override val lhs = Some(left)

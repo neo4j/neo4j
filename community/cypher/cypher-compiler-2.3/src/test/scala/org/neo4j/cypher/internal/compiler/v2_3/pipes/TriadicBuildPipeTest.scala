@@ -22,39 +22,69 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 import org.neo4j.collection.primitive.PrimitiveLongIterable
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Node
+import org.neo4j.graphdb._
+import org.neo4j.kernel.impl.core.NodeProxy
+
+import scala.collection.mutable
 
 class TriadicBuildPipeTest extends CypherFunSuite {
   private implicit val monitor = mock[PipeMonitor]
 
   test("build from input") {
-    val input = createFakePipeWith(0, 1, 2, 3, 4, 5)
-    val pipe = TriadicBuildPipe(input, "a")()
+    val input = createFakePipeWith(0 -> List(1, 2, 3, 4, 5))
+    val pipe = TriadicBuildPipe(input, "x", "a")()
     val queryState = QueryStateHelper.empty
-    pipe.createResults(queryState).map(ctx => ctx("a"))
-
-    asScalaSet(queryState.triadicSets("a")) should equal(Set(0, 1, 2, 3, 4, 5))
+    val ids = new mutable.HashSet[Long]()
+    pipe.createResults(queryState).map(ctx => ctx("a")).foreach { case a: Node =>
+      asScalaSet(queryState.triadicState("a")) should contain(a.getId)
+      ids.add(a.getId)
+    }
+    ids should equal(Set(1, 2, 3, 4, 5))
   }
 
-  test("build from input with doubles") {
-    val input = createFakePipeWith(0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5)
-    val pipe = TriadicBuildPipe(input, "a")()
+  test("build from input with two different sources") {
+    val input = createFakePipeWith(0 -> List(1, 2, 3, 4, 5), 6 -> List(1, 2, 3, 4))
+    val pipe = TriadicBuildPipe(input, "x", "a")()
     val queryState = QueryStateHelper.empty
-    pipe.createResults(queryState).map(ctx => ctx("a"))
+    var count = 0
+    pipe.createResults(queryState).map(ctx => ctx("a")).foreach { case a: Node =>
+      val state = queryState.triadicState("a")
+      state.size() should be >= 4
+      state.size() should be <= 5
+      asScalaSet(state) should contain(a.getId)
+      count += 1
+    }
+    count should equal(9)
+  }
 
-    asScalaSet(queryState.triadicSets("a")) should equal(Set(0, 1, 2, 3, 4, 5))
+  test("build from input with repeats") {
+    val input = createFakePipeWith(0 -> List(1, 2, 3, 4, 5, 1, 2, 3, 4, 5))
+    val pipe = TriadicBuildPipe(input, "x", "a")()
+    val queryState = QueryStateHelper.empty
+    var count = 0
+    pipe.createResults(queryState).map(ctx => ctx("a")).foreach { case a: Node =>
+      val state = queryState.triadicState("a")
+      state.size() should be(5)
+      asScalaSet(state) should contain(a.getId)
+      count += 1
+    }
+    count should equal(10)
   }
 
   test("build ignores nulls") {
-    val input = createFakePipeWith(0, 2, 3, null)
-    val pipe = TriadicBuildPipe(input, "a")()
+    val input = createFakePipeWith(0 -> List(2, 3, null))
+    val pipe = TriadicBuildPipe(input, "x", "a")()
     val queryState = QueryStateHelper.empty
-    pipe.createResults(queryState).map(ctx => ctx("a"))
-
-    asScalaSet(queryState.triadicSets("a")) should equal(Set(0, 2, 3))
+    var nulls = 0
+    pipe.createResults(queryState).map(ctx => ctx("a")).foreach {
+      case a: Node =>
+        asScalaSet(queryState.triadicState("a")) should contain(a.getId)
+      case null => nulls += 1
+    }
+    nulls should equal(1)
   }
 
-  private def asScalaSet(in: PrimitiveLongIterable):Set[Long] = {
+  private def asScalaSet(in: PrimitiveLongIterable): Set[Long] = {
     val builder = Set.newBuilder[Long]
     val iter = in.iterator()
     while (iter.hasNext) {
@@ -63,20 +93,19 @@ class TriadicBuildPipeTest extends CypherFunSuite {
     builder.result()
   }
 
-  private def createFakePipeWith(count: Any*): FakePipe = {
-    import org.mockito.Mockito.when
-
+  private def createFakePipeWith(data: (Int, List[Any])*): FakePipe = {
     def nodeWithId(id: Long) = {
-      val n = mock[Node]
-      when(n.getId).thenReturn(id)
-      n
+      new NodeProxy(null, id)
     }
 
-    val in = count.map {
-      case i: Int => Map("a" -> nodeWithId(i))
-      case null => Map("a" -> null)
+    val in = data.flatMap {
+      case (x, related) =>
+        related.map {
+          case a: Int => Map("a" -> nodeWithId(a), "x" -> nodeWithId(x))
+          case null => Map("a" -> null, "x" -> nodeWithId(x))
+        }
     }
 
-    new FakePipe(in, "x" -> CTNode)
+    new FakePipe(in, "x" -> CTNode, "a" -> CTNode)
   }
 }

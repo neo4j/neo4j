@@ -46,10 +46,10 @@ class TriadicSelectionTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val expand2 = Expand(expand1, IdName("b"), Direction.OUTGOING, Seq.empty, IdName("c"), IdName("r2"), ExpandAll)(solved)
     val selection = Selection(Seq(Not(Equals(Identifier("r1")(pos), Identifier("r2")(pos))(pos))(pos)), expand2)(solved)
 
-    val triadicBuild = TriadicBuild(expand1, IdName("b"))(solved)
+    val triadicBuild = TriadicBuild(expand1, IdName("a"), IdName("b"))(solved)
     val expand2B = Expand(triadicBuild, IdName("b"), Direction.OUTGOING, Seq.empty, IdName("c"), IdName("r2"), ExpandAll)(solved)
     val selectionB = Selection(Seq(Not(Equals(Identifier("r1")(pos), Identifier("r2")(pos))(pos))(pos)), expand2B)(solved)
-    val triadicProbe = TriadicProbe(selectionB, IdName("b"), IdName("c"))(solved)
+    val triadicProbe = TriadicProbe(selectionB, IdName("a"), IdName("b"), IdName("c"))(solved)
 
     triadicSelection(selection, plannerQuery.lastQueryGraph) should equal(Seq(triadicProbe))
   }
