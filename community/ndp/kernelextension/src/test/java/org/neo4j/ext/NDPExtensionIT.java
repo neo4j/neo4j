@@ -29,7 +29,7 @@ import java.util.Arrays;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.ndp.transport.socket.client.SecureSocketConnection;
+import org.neo4j.bolt.transport.socket.client.SecureSocketConnection;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class NDPExtensionIT
@@ -44,7 +44,7 @@ public class NDPExtensionIT
         // When I run Neo4j with the ndp extension on the class path, and experimental ndp config on
         db = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( tmpDir.getRoot().getAbsolutePath() )
-                .setConfig( NDPKernelExtension.Settings.ndp_enabled, "true" )
+                .setConfig( BoltKernelExtension.Settings.bolt_enabled, "true" )
                 .newGraphDatabase();
 
         // Then
@@ -57,8 +57,8 @@ public class NDPExtensionIT
         // When I run Neo4j with the ndp extension on the class path
         db = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( tmpDir.getRoot().getAbsolutePath() )
-                .setConfig( NDPKernelExtension.Settings.ndp_enabled, "true" )
-                .setConfig( NDPKernelExtension.Settings.ndp_socket_address, "localhost:8776" )
+                .setConfig( BoltKernelExtension.Settings.bolt_enabled, "true" )
+                .setConfig( BoltKernelExtension.Settings.bolt_socket_address, "localhost:8776" )
                 .newGraphDatabase();
 
         // Then
