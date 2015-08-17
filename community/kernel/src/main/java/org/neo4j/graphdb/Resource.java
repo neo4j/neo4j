@@ -26,12 +26,12 @@ package org.neo4j.graphdb;
 public interface Resource extends AutoCloseable
 {
     @Override
-    public void close();
+    void close();
 
     /**
      * Empty resource that doesn't {@link #close() close} anything.
      */
-    public static final Resource EMPTY = new Resource()
+    Resource EMPTY = new Resource()
     {
         @Override
         public void close()

@@ -55,6 +55,11 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
                         lastProcessingTimestamp = currentTimeMillis();
                         process();
                     }
+                    catch ( Throwable e )
+                    {
+                        // we need to update panic state before ending upstream and notifying executor that we completed
+                        issuePanic( e );
+                    }
                     finally
                     {
                         endOfUpstream();
@@ -62,7 +67,16 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
                 }
                 catch ( Throwable e )
                 {
-                    issuePanic( e );
+                    // to avoid cases when we hide original panic problem
+                    // check first if we already in panic state and if so - rethrow original panic cause
+                    if ( !isPanic() )
+                    {
+                        issuePanic( e );
+                    }
+                    else
+                    {
+                        throw e;
+                    }
                 }
             }
         }.start();
@@ -70,13 +84,14 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
     }
 
     /**
-     * Called once and signals the start of this step. Responsible for calling {@link #progress(int)}
+     * Called once and signals the start of this step. Responsible for calling {@link #progress(long)}
      * at least now and then.
      */
     protected abstract void process();
 
     /**
      * Called from {@link #process()}, reports progress so that statistics are updated appropriately.
+     *
      * @param amount number of items processed since last call to this method.
      */
     protected void progress( long amount )

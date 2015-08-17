@@ -48,7 +48,7 @@ public interface TaskExecutor<LOCAL> extends Parallelizable
     void submit( Task<LOCAL> task );
 
     /**
-     * Shuts down this {@link TaskExecutor}, disallowing new tasks to be {@link #submit(Runnable) submitted}.
+     * Shuts down this {@link TaskExecutor}, disallowing new tasks to be {@link #submit(Task) submitted}.
      *
      * @param awaitAllCompleted if {@code true} will wait for all queued or already executing tasks to be
      * executed and completed, before returning from this method.
