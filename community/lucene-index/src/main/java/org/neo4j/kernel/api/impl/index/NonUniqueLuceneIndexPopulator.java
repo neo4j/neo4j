@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.index.IndexableField;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -58,9 +56,8 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     @Override
     public void add( long nodeId, Object propertyValue ) throws IOException, IndexCapacityExceededException
     {
-        IndexableField encodedValue = documentStructure.encodeAsFieldable( propertyValue );
-        sampler.include( encodedValue.stringValue() );
-        writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
+        sampler.include( documentStructure.encodedStringValue( propertyValue ) );
+        writer.addDocument( documentStructure.documentRepresentingProperty( nodeId, propertyValue ) );
     }
 
     @Override
@@ -87,19 +84,19 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
                 {
                     case ADDED:
                         // We don't look at the "before" value, so adding and changing idempotently is done the same way.
-                        IndexableField encodedValue = documentStructure.encodeAsFieldable( update.getValueAfter() );
-                        sampler.include( encodedValue.stringValue() );
+                        String encodedValue = documentStructure.encodedStringValue( update.getValueAfter() );
+                        sampler.include( encodedValue );
                         break;
                     case CHANGED:
                         // We don't look at the "before" value, so adding and changing idempotently is done the same way.
-                        IndexableField encodedValueBefore = documentStructure.encodeAsFieldable( update.getValueBefore() );
-                        sampler.exclude( encodedValueBefore.stringValue() );
-                        IndexableField encodedValueAfter = documentStructure.encodeAsFieldable( update.getValueAfter() );
-                        sampler.include( encodedValueAfter.stringValue() );
+                        String encodedValueBefore = documentStructure.encodedStringValue( update.getValueBefore() );
+                        sampler.exclude( encodedValueBefore );
+                        String encodedValueAfter = documentStructure.encodedStringValue( update.getValueAfter() );
+                        sampler.include( encodedValueAfter );
                         break;
                     case REMOVED:
-                        IndexableField removedValue = documentStructure.encodeAsFieldable( update.getValueBefore() );
-                        sampler.exclude( removedValue.stringValue() );
+                        String removedValue = documentStructure.encodedStringValue( update.getValueBefore() );
+                        sampler.exclude( removedValue );
                         break;
                     default:
                         throw new IllegalStateException( "Unknown update mode " + update.getUpdateMode() );
@@ -144,9 +141,8 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
             case ADDED:
             case CHANGED:
                 // We don't look at the "before" value, so adding and changing idempotently is done the same way.
-                IndexableField encodedValue = documentStructure.encodeAsFieldable( update.getValueAfter() );
                 writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
-                                       documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
+                                       documentStructure.documentRepresentingProperty( nodeId, update.getValueAfter() ) );
                 break;
             case REMOVED:
                 writer.deleteDocuments( documentStructure.newTermForChangeOrRemove( nodeId ) );

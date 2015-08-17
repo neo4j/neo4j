@@ -44,8 +44,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingStringProperty() throws Exception
     {
         // given
-        IndexableField fieldable = documentStructure.encodeAsFieldable( "hello" );
-        Document document = documentStructure.newDocumentRepresentingProperty( 123, fieldable );
+        Document document = documentStructure.documentRepresentingProperty( 123, "hello" );
 
         // then
         assertEquals("123", document.get( NODE_ID_KEY ));
@@ -56,8 +55,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingBoolProperty() throws Exception
     {
         // given
-        IndexableField fieldable = documentStructure.encodeAsFieldable( true );
-        Document document = documentStructure.newDocumentRepresentingProperty( 123, fieldable );
+        Document document = documentStructure.documentRepresentingProperty( 123, true );
 
         // then
         assertEquals("123", document.get( NODE_ID_KEY ));
@@ -68,8 +66,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingNumberProperty() throws Exception
     {
         // given
-        IndexableField fieldable = documentStructure.encodeAsFieldable( 12 );
-        Document document = documentStructure.newDocumentRepresentingProperty( 123, fieldable );
+        Document document = documentStructure.documentRepresentingProperty( 123, 12 );
 
         // then
         assertEquals("123", document.get( NODE_ID_KEY ));
@@ -80,8 +77,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingArrayProperty() throws Exception
     {
         // given
-        IndexableField fieldable = documentStructure.encodeAsFieldable( new Integer[]{1, 2, 3} );
-        Document document = documentStructure.newDocumentRepresentingProperty( 123, fieldable );
+        Document document = documentStructure.documentRepresentingProperty( 123, new Integer[]{1, 2, 3} );
 
         // then
         assertEquals("123", document.get( NODE_ID_KEY ));

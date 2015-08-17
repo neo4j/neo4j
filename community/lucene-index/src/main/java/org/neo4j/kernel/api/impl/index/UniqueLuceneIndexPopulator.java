@@ -117,8 +117,7 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
         else
         {
             currentBatch.put( propertyValue, nodeId );
-            IndexableField encodedValue = documentStructure.encodeAsFieldable( propertyValue );
-            writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
+            writer.addDocument( documentStructure.documentRepresentingProperty( nodeId, propertyValue ) );
             if ( currentBatch.size() >= batchSize )
             {
                 startNewBatch();

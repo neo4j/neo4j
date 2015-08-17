@@ -59,8 +59,6 @@ public class LuceneIndexAccessorReaderTest extends AbstractLuceneIndexAccessorRe
         };
 
         when( searcher.getIndexReader() ).thenReturn( reader );
-        // TODO:
-//        when( reader.terms() ).thenReturn( terms );
     }
 
     @Test

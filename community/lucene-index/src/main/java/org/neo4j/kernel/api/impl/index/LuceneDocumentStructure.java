@@ -33,7 +33,10 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.NumericUtils;
+
+import java.util.EnumMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import org.neo4j.kernel.api.index.ArrayEncoder;
 
@@ -45,127 +48,168 @@ public class LuceneDocumentStructure
 {
     static final String NODE_ID_KEY = "id";
 
-    Document newDocument( long nodeId )
+    private final ThreadLocal<DocWithId> perThreadDocument = new ThreadLocal<DocWithId>()
     {
-        Document document = new Document();
-        document.add( field( NODE_ID_KEY, "" + nodeId, YES ) );
-        document.add( new NumericDocValuesField( NODE_ID_KEY, nodeId ) );
-        return document;
+        @Override
+        protected DocWithId initialValue()
+        {
+            return new DocWithId( NODE_ID_KEY );
+        }
+    };
+
+    DocWithId reuseDocument( long nodeId )
+    {
+        DocWithId doc = perThreadDocument.get();
+        doc.setId( nodeId );
+        return doc;
+    }
+
+    Document reusedDocument( long nodeId )
+    {
+        return reuseDocument( nodeId ).document;
     }
 
     enum ValueEncoding
     {
         Number
-        {
-            @Override
-            String key()
-            {
-                return "number";
-            }
+                {
+                    @Override
+                    String key()
+                    {
+                        return "number";
+                    }
 
-            @Override
-            boolean canEncode( Object value )
-            {
-                return value instanceof Number;
-            }
+                    @Override
+                    boolean canEncode( Object value )
+                    {
+                        return value instanceof Number;
+                    }
 
-            @Override
-            IndexableField encodeField( Object value )
-            {
-                return new DoubleField( key(), ((Number) value).doubleValue(), NO );
-            }
+                    @Override
+                    Field encodeField( Object value )
+                    {
+                        return new DoubleField( key(), ((Number) value).doubleValue(), NO );
+                    }
 
-            @Override
-            NumericRangeQuery<Double> encodeQuery( Object value )
-            {
-                final Double doubleValue = ((Number) value).doubleValue();
-                return NumericRangeQuery.newDoubleRange( key(), doubleValue, doubleValue, true, true );
-            }
-        },
+                    @Override
+                    void setFieldValue( Object value, Field field )
+                    {
+                        field.setDoubleValue( ((Number) value).doubleValue() );
+                    }
+
+                    @Override
+                    NumericRangeQuery<Double> encodeQuery( Object value )
+                    {
+                        final Double doubleValue = ((Number) value).doubleValue();
+                        return NumericRangeQuery.newDoubleRange( key(), doubleValue, doubleValue, true, true );
+                    }
+                },
         Array
-        {
-            @Override
-            String key()
-            {
-                return "array";
-            }
+                {
+                    @Override
+                    String key()
+                    {
+                        return "array";
+                    }
 
-            @Override
-            boolean canEncode( Object value )
-            {
-                return value.getClass().isArray();
-            }
+                    @Override
+                    boolean canEncode( Object value )
+                    {
+                        return value.getClass().isArray();
+                    }
 
-            @Override
-            IndexableField encodeField( Object value )
-            {
-                return field( key(), ArrayEncoder.encode( value ) );
-            }
+                    @Override
+                    Field encodeField( Object value )
+                    {
+                        return field( key(), ArrayEncoder.encode( value ) );
+                    }
 
-            @Override
-            TermQuery encodeQuery( Object value )
-            {
-                return new TermQuery( new Term( key(), ArrayEncoder.encode( value ) ) );
-            }
-        },
+                    @Override
+                    void setFieldValue( Object value, Field field )
+                    {
+                        field.setStringValue( ArrayEncoder.encode( value ) );
+                    }
+
+                    @Override
+                    TermQuery encodeQuery( Object value )
+                    {
+                        return new TermQuery( new Term( key(), ArrayEncoder.encode( value ) ) );
+                    }
+                },
         Bool
-        {
-            @Override
-            String key()
-            {
-                return "bool";
-            }
+                {
+                    @Override
+                    String key()
+                    {
+                        return "bool";
+                    }
 
-            @Override
-            boolean canEncode( Object value )
-            {
-                return value instanceof Boolean;
-            }
+                    @Override
+                    boolean canEncode( Object value )
+                    {
+                        return value instanceof Boolean;
+                    }
 
-            @Override
-            IndexableField encodeField( Object value )
-            {
-                return field( key(), value.toString() );
-            }
+                    @Override
+                    Field encodeField( Object value )
+                    {
+                        return field( key(), value.toString() );
+                    }
 
-            @Override
-            TermQuery encodeQuery( Object value )
-            {
-                return new TermQuery( new Term( key(), value.toString() ) );
-            }
-        },
+                    @Override
+                    void setFieldValue( Object value, Field field )
+                    {
+                        field.setStringValue( value.toString() );
+                    }
+
+                    @Override
+                    TermQuery encodeQuery( Object value )
+                    {
+                        return new TermQuery( new Term( key(), value.toString() ) );
+                    }
+                },
         String
-        {
-            @Override
-            String key()
-            {
-                return "string";
-            }
+                {
+                    @Override
+                    String key()
+                    {
+                        return "string";
+                    }
 
-            @Override
-            boolean canEncode( Object value )
-            {
-                // Any other type can be safely serialised as a string
-                return true;
-            }
+                    @Override
+                    boolean canEncode( Object value )
+                    {
+                        // Any other type can be safely serialised as a string
+                        return true;
+                    }
 
-            @Override
-            IndexableField encodeField( Object value )
-            {
-                return field( key(), value.toString() );
-            }
+                    @Override
+                    Field encodeField( Object value )
+                    {
+                        return field( key(), value.toString() );
+                    }
 
-            @Override
-            TermQuery encodeQuery( Object value )
-            {
-                return new TermQuery( new Term( key(), value.toString() ) );
-            }
-        };
+                    @Override
+                    void setFieldValue( Object value, Field field )
+                    {
+                        field.setStringValue( value.toString() );
+                    }
+
+                    @Override
+                    TermQuery encodeQuery( Object value )
+                    {
+                        return new TermQuery( new Term( key(), value.toString() ) );
+                    }
+                };
 
         abstract String key();
 
         abstract boolean canEncode( Object value );
-        abstract IndexableField encodeField( Object value );
+
+        abstract Field encodeField( Object value );
+
+        abstract void setFieldValue( Object value, Field field );
+
         abstract Query encodeQuery( Object value );
 
         public static ValueEncoding fromKey( String key )
@@ -185,24 +229,29 @@ public class LuceneDocumentStructure
         }
     }
 
-    public Document newDocumentRepresentingProperty( long nodeId, IndexableField encodedValue )
+    public Document documentRepresentingProperty( long nodeId, Object value )
     {
-        Document document = newDocument( nodeId );
-        document.add( encodedValue );
-        return document;
+        DocWithId document = reuseDocument( nodeId );
+        document.setValue( valueEncodingForValue( value ), value );
+        return document.document;
     }
 
-    public IndexableField encodeAsFieldable( Object value )
+    public ValueEncoding valueEncodingForValue( Object value )
     {
         for ( ValueEncoding encoding : ValueEncoding.values() )
         {
             if ( encoding.canEncode( value ) )
             {
-                return encoding.encodeField( value );
+                return encoding;
             }
         }
 
         throw new IllegalStateException( "Unable to encode the value " + value );
+    }
+
+    public String encodedStringValue( Object value )
+    {
+        return valueEncodingForValue( value ).encodeField( value ).stringValue();
     }
 
     private static Field field( String fieldIdentifier, String value )
@@ -236,14 +285,15 @@ public class LuceneDocumentStructure
      * Range queries are always inclusive, in order to do exclusive range queries the result must be filtered after the
      * fact. The reason we can't do inclusive range queries is that longs are coerced to doubles in the index.
      */
-    public NumericRangeQuery<Double> newInclusiveNumericRangeSeekQuery( Number lower, Number upper ) {
+    public NumericRangeQuery<Double> newInclusiveNumericRangeSeekQuery( Number lower, Number upper )
+    {
         Double min = lower != null ? lower.doubleValue() : null;
         Double max = upper != null ? upper.doubleValue() : null;
         return NumericRangeQuery.newDoubleRange( ValueEncoding.Number.key(), min, max, true, true );
     }
 
     public TermRangeQuery newRangeSeekByStringQuery( String lower, boolean includeLower,
-                                                     String upper, boolean upperInclusive )
+            String upper, boolean upperInclusive )
     {
         BytesRef chosenLower = lower != null ? new BytesRef( lower ) : null;
         boolean includeChosenLower = lower == null || includeLower;
@@ -271,5 +321,68 @@ public class LuceneDocumentStructure
     public long getNodeId( Document from )
     {
         return Long.parseLong( from.get( NODE_ID_KEY ) );
+    }
+
+    private static class DocWithId
+    {
+        private final Document document;
+
+        private final String idFieldName;
+        private final Field idField;
+        private final Field idValueField;
+
+        private final Map<ValueEncoding,Field> valueFields = new EnumMap<>( ValueEncoding.class );
+
+        private DocWithId( String idFieldName )
+        {
+            this.idFieldName = idFieldName;
+            idField = new StringField( idFieldName, "", YES );
+            idValueField = new NumericDocValuesField( idFieldName, 0L );
+            document = new Document();
+            document.add( idField );
+            document.add( idValueField );
+        }
+
+        private void setId( long id )
+        {
+            idField.setStringValue( "" + id );
+            idValueField.setLongValue( id );
+        }
+
+        private void setValue( ValueEncoding encoding, Object value )
+        {
+            removeAllValueFields();
+            Field reusableField = getFieldWithValue( encoding, value );
+            document.add( reusableField );
+        }
+
+        private void removeAllValueFields()
+        {
+            Iterator<IndexableField> it = document.getFields().iterator();
+            while ( it.hasNext() )
+            {
+                IndexableField field = it.next();
+                String fieldName = field.name();
+                if ( !fieldName.equals( idFieldName ) )
+                {
+                    it.remove();
+                }
+            }
+        }
+
+        private Field getFieldWithValue( ValueEncoding encoding, Object value )
+        {
+            Field reusableField = valueFields.get( encoding );
+            if ( reusableField == null )
+            {
+                reusableField = encoding.encodeField( value );
+                valueFields.put( encoding, reusableField );
+            }
+            else
+            {
+                encoding.setFieldValue( value, reusableField );
+            }
+            return reusableField;
+        }
     }
 }

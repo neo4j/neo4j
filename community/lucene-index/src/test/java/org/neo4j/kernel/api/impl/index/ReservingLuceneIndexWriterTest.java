@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Version;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -72,7 +71,7 @@ public class ReservingLuceneIndexWriterTest
         // When
         for ( int i = 0; i < toAdd; i++ )
         {
-            indexWriter.addDocument( documentStructure.newDocument( i ) );
+            indexWriter.addDocument( documentStructure.reusedDocument( i ) );
         }
 
         indexWriter.reserveInsertions( toReserve );
@@ -117,7 +116,7 @@ public class ReservingLuceneIndexWriterTest
         indexWriter.reserveInsertions( toAdd );
         for ( int i = 0; i < toAdd; i++ )
         {
-            indexWriter.addDocument( documentStructure.newDocument( i ) );
+            indexWriter.addDocument( documentStructure.reusedDocument( i ) );
         }
 
         try
