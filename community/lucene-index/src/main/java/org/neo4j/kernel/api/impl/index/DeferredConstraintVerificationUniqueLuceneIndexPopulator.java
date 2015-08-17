@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -113,8 +112,7 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
             throws IndexEntryConflictException, IOException, IndexCapacityExceededException
     {
         sampler.increment( 1 );
-        IndexableField encodedValue = documentStructure.encodeAsFieldable( propertyValue );
-        Document doc = documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue );
+        Document doc = documentStructure.documentRepresentingProperty( nodeId, propertyValue );
         writer.addDocument( doc );
     }
 
@@ -194,9 +192,8 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
                         sampler.increment( 1 ); // add new value
 
                         // We don't look at the "before" value, so adding and changing idempotently is done the same way.
-                        IndexableField encodedValue = documentStructure.encodeAsFieldable( update.getValueAfter() );
                         writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
-                                documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
+                                documentStructure.documentRepresentingProperty( nodeId, update.getValueAfter() ) );
                         updatedPropertyValues.add( update.getValueAfter() );
                         break;
                     case CHANGED:
@@ -205,9 +202,8 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
                         // sampler.increment( 1 ); // add new value
 
                         // We don't look at the "before" value, so adding and changing idempotently is done the same way.
-                        IndexableField encodedValueAfter = documentStructure.encodeAsFieldable( update.getValueAfter() );
                         writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
-                                documentStructure.newDocumentRepresentingProperty( nodeId, encodedValueAfter ) );
+                                documentStructure.documentRepresentingProperty( nodeId, update.getValueAfter() ) );
                         updatedPropertyValues.add( update.getValueAfter() );
                         break;
                     case REMOVED:
