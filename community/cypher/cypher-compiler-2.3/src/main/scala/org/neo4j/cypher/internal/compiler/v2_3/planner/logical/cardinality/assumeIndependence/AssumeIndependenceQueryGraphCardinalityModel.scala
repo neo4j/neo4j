@@ -48,9 +48,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
     if (queryGraph.optionalMatches.isEmpty)
       Seq(queryGraph)
     else {
-      (0 to queryGraph.optionalMatches.length)
-        .map(queryGraph.optionalMatches.combinations)
-        .flatten
+      (0 to queryGraph.optionalMatches.length).flatMap(queryGraph.optionalMatches.combinations)
         .map(_.map(_.withoutArguments()))
         .map(_.foldLeft(QueryGraph.empty)(_.withOptionalMatches(Seq.empty) ++ _.withOptionalMatches(Seq.empty)))
         .map(queryGraph.withOptionalMatches(Seq.empty) ++ _)

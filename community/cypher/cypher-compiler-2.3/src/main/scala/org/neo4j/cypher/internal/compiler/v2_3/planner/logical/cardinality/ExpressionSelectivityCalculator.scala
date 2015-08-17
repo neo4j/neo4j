@@ -138,15 +138,20 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
      * p = prefix length
      * f in (0,c) = (1 / p) * c
      * e in [0,1] = selectivity for equality comparison
+     * x in [0,1] = selectivity for property existence
      * s in (0,1) = (1 - e) * f
-     * return e + s in (0,1)
+     * return min(x, e + s in (0,1))
      */
     val equality = java.math.BigDecimal.valueOf(calculateSelectivityForPropertyEquality(identifier, None, selections, propertyKey).factor)
-    val factor = java.math.BigDecimal.ONE.divide(java.math.BigDecimal.valueOf(prefix.length), 17, RoundingMode.HALF_UP)
+    val prefixLength = java.math.BigDecimal.valueOf(prefix.length)
+    val factor = java.math.BigDecimal.ONE.divide(prefixLength, 17, RoundingMode.HALF_UP)
       .multiply(java.math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR)).stripTrailingZeros()
     val slack = BigDecimalCombiner.negate(equality).multiply(factor)
     val result = Selectivity(equality.add(slack).doubleValue())
-    result
+
+    //we know for sure we are no worse than a propertyExistence check
+    val existence = calculateSelectivityForPropertyExistence(identifier,selections, propertyKey)
+    if (existence > Selectivity.ZERO && existence < result) existence else result
   }
 
   private def calculateSelectivityForValueRangeSeekable(seekable: InequalityRangeSeekable,

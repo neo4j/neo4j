@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality
 
 import org.mockito.Mockito
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Selectivity
 import org.neo4j.cypher.internal.compiler.v2_3.{InputPosition, PropertyKeyId, LabelId}
@@ -39,8 +40,8 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     implicit val selections = Selections(Set(Predicate(Set(IdName("n")), HasLabels(ident("n"), Seq(LabelName("Page")_))_)))
 
     val stats = mock[GraphStatistics]
-    Mockito.when(stats.nodesWithLabelCardinality(None)).thenReturn(1000.0)
-    Mockito.when(stats.indexSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity(0.1d)))
+    when(stats.nodesWithLabelCardinality(None)).thenReturn(1000.0)
+    when(stats.indexSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity(0.1d)))
 
     val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
 
@@ -56,8 +57,8 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     implicit val selections = Selections(Set(Predicate(Set(IdName("n")), HasLabels(ident("n"), Seq(LabelName("Page")_))_)))
 
     val stats = mock[GraphStatistics]
-    Mockito.when(stats.nodesWithLabelCardinality(None)).thenReturn(2000.0)
-    Mockito.when(stats.nodesWithLabelCardinality(Some(LabelId(0)))).thenReturn(1000.0)
+    when(stats.nodesWithLabelCardinality(None)).thenReturn(2000.0)
+    when(stats.nodesWithLabelCardinality(Some(LabelId(0)))).thenReturn(1000.0)
     val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
 
     val result = calculator(PartialPredicate[HasLabels](HasLabels(ident("n"), Seq(LabelName("Page")_))_, mock[HasLabels]))
@@ -79,8 +80,8 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     implicit val selections = Selections(Set(n_is_Person, n_gt_3_and_lt_4))
 
     val stats = mock[GraphStatistics]
-    Mockito.when(stats.nodesWithLabelCardinality(None)).thenReturn(2000.0)
-    Mockito.when(stats.nodesWithLabelCardinality(Some(LabelId(0)))).thenReturn(1000.0)
+    when(stats.nodesWithLabelCardinality(None)).thenReturn(2000.0)
+    when(stats.nodesWithLabelCardinality(Some(LabelId(0)))).thenReturn(1000.0)
     val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
 
     val result = calculator(n_gt_3_and_lt_4.expr)
@@ -96,10 +97,11 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     implicit val selections = mock[Selections]
     val label = LabelName("A")(InputPosition.NONE)
     val propKey = PropertyKeyName("prop")(InputPosition.NONE)
-    Mockito.when(selections.labelsOnNode(IdName("a"))).thenReturn(Set(label))
+    when(selections.labelsOnNode(IdName("a"))).thenReturn(Set(label))
 
     val stats = mock[GraphStatistics]
-    Mockito.when(stats.indexSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity(.01)))
+    when(stats.indexSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity(.01)))
+    when(stats.indexPropertyExistsSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity(1)))
     val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
 
     val prefixes = Map(StringLiteral("p%")(InputPosition.NONE)          -> 0.24551328138282763,
@@ -107,6 +109,33 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
                        StringLiteral("p33%")(InputPosition.NONE)        -> 0.2299568541948447,
                        StringLiteral("p5555%")(InputPosition.NONE)      -> 0.22684556875724812,
                        StringLiteral("reallylong%")(InputPosition.NONE) -> 0.22451210467905067)
+
+    prefixes.foreach { entry =>
+      calculator(Like(Property(Identifier("a") _, propKey) _, LikePattern(entry._1)) _) should equal(
+        Selectivity(entry._2))
+    }
+  }
+
+  test("Selectivity should never be worse than corresponding existence selectivity") {
+    implicit val semanticTable = SemanticTable()
+    semanticTable.resolvedLabelIds.put("A", LabelId(0))
+    semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(0))
+
+    implicit val selections = mock[Selections]
+    val label = LabelName("A")(InputPosition.NONE)
+    val propKey = PropertyKeyName("prop")(InputPosition.NONE)
+    when(selections.labelsOnNode(IdName("a"))).thenReturn(Set(label))
+
+    val stats = mock[GraphStatistics]
+    when(stats.indexSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity(0.01)))
+    when(stats.indexPropertyExistsSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity(.23)))
+    val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
+
+    val prefixes = Map(StringLiteral("p%")(InputPosition.NONE)          -> 0.23,
+      StringLiteral("p2%")(InputPosition.NONE)         -> 0.23,
+      StringLiteral("p33%")(InputPosition.NONE)        -> 0.2299568541948447,
+      StringLiteral("p5555%")(InputPosition.NONE)      ->0.22684556875724812,
+      StringLiteral("reallylong%")(InputPosition.NONE) -> 0.22451210467905067)
 
     prefixes.foreach { entry =>
       calculator(Like(Property(Identifier("a") _, propKey) _, LikePattern(entry._1)) _) should equal(
