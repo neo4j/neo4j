@@ -42,7 +42,7 @@ case class ExpandIntoPipe(source: Pipe,
                           relName: String,
                           toName: String,
                           dir: Direction,
-                          types: LazyTypes)(val estimatedCardinality: Option[Double] = None)
+                          lazyTypes: LazyTypes)(val estimatedCardinality: Option[Double] = None)
                          (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
   self =>
@@ -80,10 +80,13 @@ case class ExpandIntoPipe(source: Pipe,
    */
   private def findRelationships(query: QueryContext, fromNode: Node, toNode: Node,
                                 relCache: RelationshipsCache): Iterator[Relationship] = {
-    val relTypes = types.types(query)
+    val relTypes = lazyTypes.types(query)
+
+    val fromNodeIsDense = query.nodeIsDense(fromNode.getId)
+    val toNodeIsDense = query.nodeIsDense(toNode.getId)
 
     //if both nodes are dense, start from the one with the lesser degree
-    if (query.nodeIsDense(fromNode.getId) && query.nodeIsDense(toNode.getId)) {
+    if (fromNodeIsDense && toNodeIsDense) {
       //check degree and iterate from the node with smaller degree
       val fromDegree = getDegree(fromNode, relTypes, dir, query)
       if (fromDegree == 0) {
@@ -98,9 +101,9 @@ case class ExpandIntoPipe(source: Pipe,
       relIterator(query, fromNode, toNode, fromDegree < toDegree, relTypes, relCache)
     }
     // iterate from a non-dense node
-    else if (query.nodeIsDense(toNode.getId))
+    else if (toNodeIsDense)
       relIterator(query, fromNode, toNode, preserveDirection = true, relTypes, relCache)
-    else if (query.nodeIsDense(fromNode.getId))
+    else if (fromNodeIsDense)
       relIterator(query, fromNode, toNode, preserveDirection = false, relTypes, relCache)
     //both nodes are non-dense, choose a random starting point
     else
@@ -140,8 +143,6 @@ case class ExpandIntoPipe(source: Pipe,
     }.getOrElse(query.nodeGetDegree(node.getId, direction))
   }
 
-  def typeNames = types.names
-
   @inline
   private def getRowNode(row: ExecutionContext, col: String): Node = {
     row.getOrElse(col, throw new InternalException(s"Expected to find a node at $col but found nothing")) match {
@@ -152,7 +153,7 @@ case class ExpandIntoPipe(source: Pipe,
   }
 
   def planDescriptionWithoutCardinality =
-    source.planDescription.andThen(this.id, "Expand(Into)", identifiers, ExpandExpression(fromName, relName, typeNames, toName, dir))
+    source.planDescription.andThen(this.id, "Expand(Into)", identifiers, ExpandExpression(fromName, relName, lazyTypes.names, toName, dir))
 
   val symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 
