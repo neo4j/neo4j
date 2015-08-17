@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.junit.Test;
-import org.mockito.Mockito;
-
 import java.util.Set;
 
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;

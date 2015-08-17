@@ -54,7 +54,7 @@ public interface IdMapper extends MemoryStatsVisitor.Home
 
     /**
      * After all mappings have been {@link #put(Object, long, Group)} call this method to prepare for
-     * {@link #get(Object, Group) querying}.
+     * {@link #get(Object, Group)}.
      *
      * @param allIds put earlier, in the event of difficult collisions so that more information have to be read
      * from the input data again, data that normally isn't necessary and hence discarded.
@@ -66,7 +66,7 @@ public interface IdMapper extends MemoryStatsVisitor.Home
     /**
      * Returns an actual node id representing {@code inputId}. For this call to work {@link #prepare(InputIterable, Collector, ProgressListener)} must have
      * been called after all calls to {@link #put(Object, long, Group)} have been made,
-     * if {@link #needsPreparation()} returns {@code true}. Otherwise ids can be retrieved right after
+     * iff {@link #needsPreparation()} returns {@code true}. Otherwise ids can be retrieved right after
      * @link #put(Object, long) being put}
      *
      * @param inputId the input id to get the actual node id for.

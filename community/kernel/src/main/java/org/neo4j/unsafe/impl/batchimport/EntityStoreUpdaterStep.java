@@ -41,7 +41,7 @@ import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 import static java.lang.Math.max;
 
 /**
- * Writes {@link Batch entity batches} to the underlying stores. Also makes final composition of the
+ * Writes {@link RECORD entity batches} to the underlying stores. Also makes final composition of the
  * {@link Batch entities} before writing, such as clumping up {@link PropertyBlock properties} into
  * {@link PropertyRecord property records}.
  *

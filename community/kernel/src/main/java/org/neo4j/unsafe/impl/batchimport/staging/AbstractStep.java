@@ -130,7 +130,7 @@ public abstract class AbstractStep<T> implements Step<T>
 
     protected boolean stillWorking()
     {
-        if ( panic != null )
+        if ( isPanic() )
         {   // There has been a panic, so we'll just stop working
             return false;
         }
@@ -142,6 +142,11 @@ public abstract class AbstractStep<T> implements Step<T>
 
         // We're still working
         return true;
+    }
+
+    protected boolean isPanic()
+    {
+        return panic != null;
     }
 
     @Override
@@ -195,7 +200,7 @@ public abstract class AbstractStep<T> implements Step<T>
 
     protected void assertHealthy()
     {
-        if ( panic != null )
+        if ( isPanic() )
         {
             throw new RuntimeException( "Panic called, so exiting", panic );
         }

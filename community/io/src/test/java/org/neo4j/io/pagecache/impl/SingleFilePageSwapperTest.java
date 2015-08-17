@@ -20,7 +20,6 @@
 package org.neo4j.io.pagecache.impl;
 
 import org.junit.After;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.BufferedReader;

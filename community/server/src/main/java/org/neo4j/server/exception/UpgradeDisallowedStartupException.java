@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.exception;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByDatabaseModeException;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedException;

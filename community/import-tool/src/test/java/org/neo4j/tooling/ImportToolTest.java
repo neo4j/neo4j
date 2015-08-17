@@ -59,9 +59,6 @@ import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
-import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
-import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -69,6 +66,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+import static java.util.Arrays.asList;
 
 import static org.neo4j.function.IntPredicates.alwaysTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
@@ -84,6 +85,17 @@ import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 
 public class ImportToolTest
 {
+    private static final int RELATIONSHIP_COUNT = 10_000;
+    private static final int NODE_COUNT = 100;
+
+    @Rule
+    public final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
+    @Rule
+    public final RandomRule random = new RandomRule();
+    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppress( SuppressOutput.System.values() );
+    private int dataIndex;
+
     @Test
     public void shouldImportWithAsManyDefaultsAsAvailable() throws Exception
     {
@@ -1137,15 +1149,4 @@ public class ImportToolTest
     {
         ImportTool.main( arguments, true );
     }
-
-    private static final int RELATIONSHIP_COUNT = 10_000;
-    private static final int NODE_COUNT = 100;
-
-    @Rule
-    public final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
-    @Rule
-    public final RandomRule random = new RandomRule();
-    @Rule
-    public final SuppressOutput suppressOutput = SuppressOutput.suppress( SuppressOutput.System.values() );
-    private int dataIndex;
 }
