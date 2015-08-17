@@ -142,7 +142,7 @@ public class ServerTest
             }
 
             @Override
-            protected void cleanConversation( RequestContext context )
+            protected void stopConversation( RequestContext context )
             {
             }
         };

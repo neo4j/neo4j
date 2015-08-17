@@ -203,6 +203,12 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
+    public void stop()
+    {
+        throw new UnsupportedOperationException( "Lock client stop is unsupported on slave side." );
+    }
+
+    @Override
     public void close()
     {
         releaseAll();

@@ -304,7 +304,7 @@ public class MasterImplTest
         // When
         master.newLockSession( requestContext );
         master.acquireSharedLock( requestContext, ResourceTypes.NODE, 1L );
-        conversationManager.remove( requestContext );
+        conversationManager.stop( requestContext );
         master.newLockSession( requestContext );
 
         //Then

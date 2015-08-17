@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
+import java.util.Collections;
 import java.util.Set;
 
 import org.neo4j.com.RequestContext;
@@ -32,6 +33,7 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.collection.ConcurrentAccessException;
 import org.neo4j.kernel.impl.util.collection.NoSuchEntryException;
 import org.neo4j.kernel.impl.util.collection.TimedRepository;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.slaveLocksTimeout;
 
@@ -41,12 +43,13 @@ import static org.neo4j.kernel.impl.util.JobScheduler.Groups.slaveLocksTimeout;
  *
  * Used for keeping and monitoring clients {@link Conversation} on master side.
  */
-public class ConversationManager
+public class ConversationManager extends LifecycleAdapter
 {
-    private static final int TX_TIMEOUT_ADDITION = 5 * 1000;
+    private static final int DEFAULT_TX_TIMEOUT_ADDITION = 5 * 1000;
     private static final int UNFINISHED_CONVERSATION_CLEANUP_DELAY = 1_000;
 
     private final int activityCheckIntervalMillis;
+    private final int lockTimeoutAddition;
     private final Config config;
     private final ConversationSPI spi;
     private final Factory<Conversation> conversationFactory =  new Factory<Conversation>()
@@ -61,27 +64,41 @@ public class ConversationManager
     TimedRepository<RequestContext,Conversation> conversations;
     private JobScheduler.JobHandle staleReaperJob;
 
+    /**
+     * Build conversation manager with default values for activity check interval and timeout addition.
+     * @param spi - conversation manager spi
+     * @param config - ha settings
+     */
     public ConversationManager( ConversationSPI spi, Config config )
     {
-        this( spi, config, UNFINISHED_CONVERSATION_CLEANUP_DELAY );
+        this( spi, config, UNFINISHED_CONVERSATION_CLEANUP_DELAY, DEFAULT_TX_TIMEOUT_ADDITION );
     }
 
-    public ConversationManager( ConversationSPI spi, Config config, int activityCheckIntervalMillis )
+    /**
+     * Build conversation manager
+     * @param spi - conversation manager spi
+     * @param config - ha settings
+     * @param activityCheckIntervalMillis - interval between conversations activity checking
+     * @param lockTimeoutAddition - addition to read timeout used to build conversation timeout
+     */
+    public ConversationManager( ConversationSPI spi, Config config, int activityCheckIntervalMillis, int
+            lockTimeoutAddition )
     {
         this.spi = spi;
         this.config = config;
         this.activityCheckIntervalMillis = activityCheckIntervalMillis;
+        this.lockTimeoutAddition = lockTimeoutAddition;
     }
 
+    @Override
     public void start()
     {
         conversations = createConversationStore();
-
-        staleReaperJob = spi.scheduleRecurringJob( slaveLocksTimeout,
-                activityCheckIntervalMillis,
+        staleReaperJob = spi.scheduleRecurringJob( slaveLocksTimeout, activityCheckIntervalMillis,
                 conversations );
     }
 
+    @Override
     public void stop()
     {
         staleReaperJob.cancel( false );
@@ -110,28 +127,49 @@ public class ConversationManager
 
     public Set<RequestContext> getActiveContexts()
     {
-        return conversations.keys();
+        return conversations != null ? conversations.keys() : Collections.<RequestContext>emptySet() ;
     }
 
-    public void remove( RequestContext context )
+    /**
+     * Stop conversation for specified context.
+     * Conversation will still hold all already acquired locks, but will release all waiters and it will be
+     * impossible to get new locks out of it.
+     * @param context - context for which conversation should be stopped
+     */
+    public void stop( RequestContext context )
     {
-        conversations.remove( context );
+        Conversation conversation = conversations.end( context );
+        if ( conversation != null && conversation.isActive() )
+        {
+            conversation.stop();
+        }
     }
 
     public Conversation acquire()
     {
-        return conversationFactory.newInstance();
+        return getConversationFactory().newInstance();
     }
 
-    private TimedRepository<RequestContext,Conversation> createConversationStore()
+    protected TimedRepository<RequestContext,Conversation> createConversationStore()
     {
-        return new TimedRepository<>( conversationFactory, new Consumer<Conversation>()
+        return new TimedRepository<>( getConversationFactory(), getConversationReaper(),
+                config.get( HaSettings.lock_read_timeout ) + lockTimeoutAddition, Clock.SYSTEM_CLOCK );
+    }
+
+    protected Consumer<Conversation> getConversationReaper()
+    {
+        return new Consumer<Conversation>()
         {
             @Override
             public void accept( Conversation conversation )
             {
                 conversation.close();
             }
-        }, config.get( HaSettings.lock_read_timeout ) + TX_TIMEOUT_ADDITION, Clock.SYSTEM_CLOCK );
+        };
+    }
+
+    protected Factory<Conversation> getConversationFactory()
+    {
+        return conversationFactory;
     }
 }

@@ -51,7 +51,7 @@ public class SlaveServer extends Server<Slave, Void>
     }
 
     @Override
-    protected void cleanConversation( RequestContext context )
+    protected void stopConversation( RequestContext context )
     {
     }
 }

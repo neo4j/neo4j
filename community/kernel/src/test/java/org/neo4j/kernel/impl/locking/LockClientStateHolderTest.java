@@ -52,7 +52,7 @@ public class LockClientStateHolderTest
         LockClientStateHolder lockClientStateHolder = new LockClientStateHolder();
 
         // when
-        lockClientStateHolder.closeClient();
+        lockClientStateHolder.stopClient();
 
         // then
         assertFalse( lockClientStateHolder.hasActiveClients() );
@@ -75,7 +75,7 @@ public class LockClientStateHolderTest
         assertTrue( lockClientStateHolder.hasActiveClients() );
 
         // and when
-        lockClientStateHolder.closeClient();
+        lockClientStateHolder.stopClient();
 
         // expect
         assertTrue( lockClientStateHolder.hasActiveClients() );
@@ -100,23 +100,23 @@ public class LockClientStateHolderTest
         assertTrue(lockClientStateHolder.hasActiveClients());
 
         // and when
-        lockClientStateHolder.closeClient();
+        lockClientStateHolder.stopClient();
 
         // expect
         assertTrue( lockClientStateHolder.hasActiveClients() );
-        assertTrue( lockClientStateHolder.isClosed() );
+        assertTrue( lockClientStateHolder.isStopped() );
 
         // and when
         lockClientStateHolder.reset();
 
         // expect
         assertFalse( lockClientStateHolder.hasActiveClients() );
-        assertFalse( lockClientStateHolder.isClosed() );
+        assertFalse( lockClientStateHolder.isStopped() );
 
         // when
         assertTrue( lockClientStateHolder.incrementActiveClients() );
         assertTrue( lockClientStateHolder.hasActiveClients() );
-        assertFalse( lockClientStateHolder.isClosed() );
+        assertFalse( lockClientStateHolder.isStopped() );
     }
 
 }
