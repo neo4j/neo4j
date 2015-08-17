@@ -24,7 +24,6 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -110,12 +109,14 @@ public class LuceneLabelScanWriter implements LabelScanWriter
 
     private Map<Long/*range*/, Bitmap> readLabelBitMapsInRange( IndexSearcher searcher, long range ) throws IOException
     {
-        Map<Long/*label*/, Bitmap> fields = new HashMap<>();
+        Map<Long/*label*/,Bitmap> fields = new HashMap<>();
         Term documentTerm = format.rangeTerm( range );
-        TopDocs docs = searcher.search( new TermQuery( documentTerm ), 1 );
-        if ( docs != null && docs.totalHits != 0 )
+        TermQuery query = new TermQuery( documentTerm );
+        FirstHitCollector hitCollector = new FirstHitCollector();
+        searcher.search( query, hitCollector );
+        if ( hitCollector.hasMatched() )
         {
-            Document document = searcher.doc( docs.scoreDocs[0].doc );
+            Document document = searcher.doc( hitCollector.getMatchedDoc() );
             for ( IndexableField field : document.getFields() )
             {
                 if ( !format.isRangeField( field ) )
