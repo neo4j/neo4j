@@ -28,6 +28,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.Closeable;
@@ -139,9 +140,10 @@ class LuceneIndexAccessorReader implements IndexReader
         nodeIdAndValueQuery.add( valueQuery, BooleanClause.Occur.MUST );
         try
         {
-            Hits hits = new Hits( searcher, nodeIdAndValueQuery, null );
+            TotalHitCountCollector collector = new TotalHitCountCollector();
+            searcher.search( nodeIdAndValueQuery, collector );
             // A <label,propertyKeyId,nodeId> tuple should only match at most a single propertyValue
-            return hits.length();
+            return collector.getTotalHits();
         }
         catch ( IOException e )
         {
