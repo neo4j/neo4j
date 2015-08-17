@@ -1,7 +1,6 @@
-# Neo4j Data Protocol
+# Bolt
 
-This project contains a high-performance network protocol for Neo4j.
-Tentatively called "Neo4j Data Protocol", NDP.
+This project contains a high-performance network protocol for Neo4j called Bolt.
 
 Architectural overview:
 
