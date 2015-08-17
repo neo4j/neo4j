@@ -138,9 +138,9 @@ public interface JobScheduler extends Lifecycle
         public static final Group checkPoint = new Group( "CheckPoint", POOLED );
 
         /**
-         * Network IO threads for the GAP protocol.
+         * Network IO threads for the Bolt protocol.
          */
-        public static final Group gapNetworkIO = new Group( "GAPNetworkIO", NEW_THREAD );
+        public static final Group boltNetworkIO = new Group( "BoltNetworkIO", NEW_THREAD );
     }
 
     interface JobHandle
