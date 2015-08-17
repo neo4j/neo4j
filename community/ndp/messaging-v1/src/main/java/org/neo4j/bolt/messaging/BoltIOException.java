@@ -23,17 +23,17 @@ import java.io.IOException;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class NDPIOException extends IOException implements Status.HasStatus
+public class BoltIOException extends IOException implements Status.HasStatus
 {
     private final Status status;
 
-    public NDPIOException( Status status, String message, Throwable cause )
+    public BoltIOException( Status status, String message, Throwable cause )
     {
         super(message, cause);
         this.status = status;
     }
 
-    public NDPIOException( Status status, String message )
+    public BoltIOException( Status status, String message )
     {
         this(status, message, null);
     }

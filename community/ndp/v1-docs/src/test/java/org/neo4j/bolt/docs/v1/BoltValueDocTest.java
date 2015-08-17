@@ -60,7 +60,7 @@ import static org.neo4j.bolt.runtime.spi.Records.record;
 
 /** This tests that Neo4j value mappings described in the documentation work the way we say they do. */
 @RunWith( Parameterized.class )
-public class NDPValueDocTest
+public class BoltValueDocTest
 {
     @Parameterized.Parameter( 0 )
     public String type;

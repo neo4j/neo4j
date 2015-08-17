@@ -32,16 +32,16 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.bolt.transport.socket.client.SecureSocketConnection;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-public class NDPExtensionIT
+public class BoltExtensionIT
 {
     @Rule
     public TemporaryFolder tmpDir = new TemporaryFolder();
     private GraphDatabaseService db;
 
     @Test
-    public void shouldLaunchNDP() throws Throwable
+    public void shouldLaunchBolt() throws Throwable
     {
-        // When I run Neo4j with the ndp extension on the class path, and experimental ndp config on
+        // When I run Neo4j with the bolt extension on the class path, and experimental bolt config on
         db = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( tmpDir.getRoot().getAbsolutePath() )
                 .setConfig( BoltKernelExtension.Settings.bolt_enabled, "true" )
@@ -54,7 +54,7 @@ public class NDPExtensionIT
     @Test
     public void shouldBeAbleToSpecifyHostAndPort() throws Throwable
     {
-        // When I run Neo4j with the ndp extension on the class path
+        // When I run Neo4j with the bolt extension on the class path
         db = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( tmpDir.getRoot().getAbsolutePath() )
                 .setConfig( BoltKernelExtension.Settings.bolt_enabled, "true" )

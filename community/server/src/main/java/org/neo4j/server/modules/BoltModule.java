@@ -61,14 +61,14 @@ import static org.neo4j.collection.primitive.Primitive.longObjectMap;
 /**
  * Experimental feature support for Neo4j Data Protocol, must be explicitly enabled to start up.
  */
-public class NDPModule implements ServerModule
+public class BoltModule implements ServerModule
 {
     private final Config config;
     private final DependencyResolver dependencyResolver;
     private final KeyStoreInformation ksi;
     private final LifeSupport life = new LifeSupport();
 
-    public NDPModule( Config config, DependencyResolver dependencyResolver, KeyStoreInformation ksi )
+    public BoltModule( Config config, DependencyResolver dependencyResolver, KeyStoreInformation ksi )
     {
         this.config = config;
         this.dependencyResolver = dependencyResolver;
@@ -94,10 +94,10 @@ public class NDPModule implements ServerModule
             final File certificateFile = config.get( ServerSettings.tls_certificate_file );
             final File keyFile = config.get( ServerSettings.tls_key_file );
 
-            final HostnamePort socketAddress = config.get( ServerSettings.ndp_socket_address );
-            final HostnamePort webSocketAddress = config.get( ServerSettings.ndp_ws_address );
+            final HostnamePort socketAddress = config.get( ServerSettings.bolt_socket_address );
+            final HostnamePort webSocketAddress = config.get( ServerSettings.bolt_ws_address );
 
-            if ( config.get( ServerSettings.ndp_enabled ) )
+            if ( config.get( ServerSettings.bolt_enabled ) )
             {
                 final Sessions sessions = life.add( new ThreadedSessions(
                         life.add( new StandardSessions( api, usageData, logging ) ),
@@ -140,7 +140,7 @@ public class NDPModule implements ServerModule
         SslContext sslCtx = null;
 
         // Configure SSL context if enabled
-        if ( config.get( ServerSettings.ndp_tls_enabled ) )
+        if ( config.get( ServerSettings.bolt_tls_enabled ) )
         {
             KeyManagerFactory keyManager = KeyManagerFactory.getInstance( "SunX509" );
             keyManager.init( ksi.getKeyStore(), ksi.getKeyPassword() );

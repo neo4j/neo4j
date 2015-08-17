@@ -34,7 +34,7 @@ import static org.neo4j.bolt.docs.v1.DocSerializationExample.serialization_examp
 import static org.neo4j.bolt.docs.v1.DocsRepository.docs;
 
 @RunWith( Parameterized.class )
-public class NDPPackStreamDocTest
+public class BoltPackStreamDocTest
 {
     @Parameterized.Parameter( 0 )
     public DocSerializationExample example;

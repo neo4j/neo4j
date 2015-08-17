@@ -42,7 +42,7 @@ import static org.neo4j.bolt.docs.v1.DocSerialization.packAndChunk;
 import static org.neo4j.bolt.docs.v1.DocsRepository.docs;
 
 @RunWith( Parameterized.class )
-public class NDPFullExchangesDocTest
+public class BoltFullExchangesDocTest
 {
     @Rule
     public Neo4jWithSocket neo4j = new Neo4jWithSocket();

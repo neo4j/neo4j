@@ -177,19 +177,19 @@ public interface ServerSettings
     Setting<Boolean> auth_enabled = setting("dbms.security.auth_enabled", BOOLEAN, TRUE);
 
     @Internal
-    @Description("Enable Neo4j Data Protocol")
-    Setting<Boolean> ndp_enabled = setting( "xx.ndp.enabled", BOOLEAN, FALSE );
+    @Description("Enable Bolt")
+    Setting<Boolean> bolt_enabled = setting( "xx.bolt.enabled", BOOLEAN, FALSE );
 
     @Internal
-    @Description("Enable TLS for the Neo4j Data Protocol")
-    Setting<Boolean> ndp_tls_enabled = setting( "xx.ndp.tls.enabled", BOOLEAN, FALSE );
+    @Description("Enable TLS for Bolt")
+    Setting<Boolean> bolt_tls_enabled = setting( "xx.bolt.tls.enabled", BOOLEAN, FALSE );
 
     @Internal
-    @Description("Host and port for the Neo4j Data Protocol")
-    Setting<HostnamePort> ndp_socket_address = setting( "dbms.ndp.address", HOSTNAME_PORT, "localhost:7687" );
+    @Description("Host and port for Bolt")
+    Setting<HostnamePort> bolt_socket_address = setting( "dbms.bolt.address", HOSTNAME_PORT, "localhost:7687" );
 
     @Internal
-    @Description("Host and port for the Neo4j Data Protocol Websocket")
-    Setting<HostnamePort> ndp_ws_address = setting( "dbms.ndp.ws.address", HOSTNAME_PORT, "localhost:7688" );
+    @Description("Host and port for the Bolt Websocket")
+    Setting<HostnamePort> bolt_ws_address = setting( "dbms.bolt.ws.address", HOSTNAME_PORT, "localhost:7688" );
 
 }

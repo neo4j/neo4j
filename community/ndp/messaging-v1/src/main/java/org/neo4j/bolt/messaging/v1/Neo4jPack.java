@@ -33,7 +33,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.bolt.messaging.NDPIOException;
+import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.v1.infrastructure.ValueNode;
 import org.neo4j.bolt.messaging.v1.infrastructure.ValueRelationship;
 import org.neo4j.bolt.messaging.v1.infrastructure.ValueUnboundRelationship;
@@ -195,7 +195,7 @@ public class Neo4jPack
             }
             else
             {
-                throw new NDPIOException( Status.General.UnknownFailure,
+                throw new BoltIOException( Status.General.UnknownFailure,
                         "Unpackable value " + obj + " of type " + obj.getClass().getName() );
             }
         }
@@ -316,12 +316,12 @@ public class Neo4jPack
                             return pathUnpacker.unpackFields( this );
                         }
                         default:
-                            throw new NDPIOException( Status.Request.InvalidFormat,
+                            throw new BoltIOException( Status.Request.InvalidFormat,
                                     "Unknown struct type: " + signature );
                     }
                 }
                 default:
-                    throw new NDPIOException( Status.Request.InvalidFormat,
+                    throw new BoltIOException( Status.Request.InvalidFormat,
                             "Unknown value type: " + valType );
             }
         }

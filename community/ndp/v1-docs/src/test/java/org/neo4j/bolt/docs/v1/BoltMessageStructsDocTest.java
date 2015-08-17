@@ -42,7 +42,7 @@ import static org.neo4j.bolt.docs.v1.DocsRepository.docs;
 
 /** This tests that message data structures look the way we say they do */
 @RunWith( Parameterized.class )
-public class NDPMessageStructsDocTest
+public class BoltMessageStructsDocTest
 {
     @Parameterized.Parameter( 0 )
     public DocStruct struct;

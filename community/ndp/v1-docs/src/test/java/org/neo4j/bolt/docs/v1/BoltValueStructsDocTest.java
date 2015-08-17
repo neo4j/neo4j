@@ -49,7 +49,7 @@ import static org.neo4j.bolt.messaging.v1.example.Relationships.ALICE_KNOWS_BOB;
  * This tests that message data structures look the way we say they do
  */
 @RunWith(Parameterized.class)
-public class NDPValueStructsDocTest
+public class BoltValueStructsDocTest
 {
 
     // This lookup is used to check we hydrate structures to the correct types

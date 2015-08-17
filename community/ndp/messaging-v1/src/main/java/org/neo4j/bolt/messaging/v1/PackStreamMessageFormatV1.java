@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.bolt.messaging.NDPIOException;
+import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.v1.message.Message;
 import org.neo4j.packstream.PackStream;
 import org.neo4j.bolt.runtime.spi.Record;
@@ -255,20 +255,20 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                         unpackInitializeMessage( output );
                         break;
                     default:
-                        throw new NDPIOException( Status.Request.Invalid,
+                        throw new BoltIOException( Status.Request.Invalid,
                                 "0x" + Integer.toHexString(type) + " is not a valid message type." );
                     }
                 }
                 catch( PackStream.PackStreamException e )
                 {
-                    throw new NDPIOException( Status.Request.InvalidFormat,
+                    throw new BoltIOException( Status.Request.InvalidFormat,
                             "Unable to read " + messageTypeName (type) + " message. " +
                             "Error was: " + e.getMessage(), e );
                 }
             }
             catch( PackStream.PackStreamException e )
             {
-                throw new NDPIOException( Status.Request.InvalidFormat, "Unable to read message type. " +
+                throw new BoltIOException( Status.Request.InvalidFormat, "Unable to read message type. " +
                         "Error was: " + e.getMessage(), e );
             }
         }

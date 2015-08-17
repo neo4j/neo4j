@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.bolt.messaging.NDPIOException;
+import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.packstream.PackInput;
 import org.neo4j.packstream.PackStream;
 
@@ -184,7 +184,7 @@ public class ChunkedInput implements PackInput
         ensureChunkAvailable();
         if ( remaining < numBytes )
         {
-            throw new NDPIOException( Status.Request.InvalidFormat, "Unable to deserialize request, message " +
+            throw new BoltIOException( Status.Request.InvalidFormat, "Unable to deserialize request, message " +
                                                                     "boundary found before message ended. This " +
                                                                     "indicates a serialization or framing " +
                                                                     "problem with your client driver." );
@@ -202,7 +202,7 @@ public class ChunkedInput implements PackInput
             }
             else
             {
-                throw new NDPIOException( Status.Request.InvalidFormat, "Unable to deserialize request, message " +
+                throw new BoltIOException( Status.Request.InvalidFormat, "Unable to deserialize request, message " +
                                                                         "boundary found before message ended. This " +
                                                                         "indicates a serialization or framing " +
                                                                         "problem with your client driver." );
