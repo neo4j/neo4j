@@ -478,4 +478,14 @@ return distinct center""")
 
     assertStats(result, nodesCreated = 1)
   }
+
+  test("should be possible to remove nodes created in the same query") {
+    val result = execute(
+      """CREATE (a)-[:FOO]->(b)
+         WITH *
+         MATCH (x)-[r]-(y)
+         DELETE x, r, y""".stripMargin)
+
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, nodesDeleted = 2, relationshipsDeleted = 1)
+  }
 }
