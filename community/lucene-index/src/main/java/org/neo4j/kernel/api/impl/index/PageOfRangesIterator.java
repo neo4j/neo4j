@@ -21,11 +21,8 @@ package org.neo4j.kernel.api.impl.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -39,7 +36,7 @@ class PageOfRangesIterator extends PrefetchingIterator<PrimitiveLongIterator>
     private final BitmapDocumentFormat format;
     private final int rangesPerPage;
     private final int[] labels;
-    private ScoreDoc lastDoc;
+    private LongValuesIterator rangesIterator;
 
     PageOfRangesIterator( BitmapDocumentFormat format, IndexSearcher searcher, int rangesPerPage, Query query,
                           int... labels )
@@ -62,42 +59,51 @@ class PageOfRangesIterator extends PrefetchingIterator<PrimitiveLongIterator>
         {
             return null; // we are done searching with this iterator
         }
+
+        LongValuesIterator ranges = getRanges();
+        int pageSize = Math.min( ranges.remaining(), rangesPerPage );
+        long[] rangeMap = new long[pageSize * 2];
+
+        for ( int i = 0; i < pageSize; i++ )
+        {
+            long range = ranges.next();
+            rangeMap[i * 2] = range;
+            rangeMap[i * 2 + 1] = labeledBitmap( ranges );
+        }
+
+        if ( pageSize < rangesPerPage ) // not a full page => this is the last page (optimization)
+        {
+            searcher = null; // avoid searching again
+        }
+        return new LongPageIterator( new BitmapExtractor( format.bitmapFormat(), rangeMap ) );
+    }
+
+    private LongValuesIterator getRanges() {
+        if ( rangesIterator != null )
+        {
+            return rangesIterator;
+        }
         try
         {
-            TopDocs docs = searcher.searchAfter( lastDoc, query, rangesPerPage );
-            lastDoc = null;
-            int docCount = docs != null ? docs.scoreDocs.length : 0;
-            if ( docCount == 0 )
-            {
-                searcher = null; // avoid searching again
-                return null;
-            }
-            lastDoc = docs.scoreDocs[docCount - 1];
-            long[] rangeMap = new long[docCount * 2];
-            for ( int i = 0; i < docCount; i++ )
-            {
-                Document doc = searcher.doc( docs.scoreDocs[i].doc );
-                rangeMap[i * 2] = format.rangeOf( doc );
-                rangeMap[i * 2 + 1] = labeledBitmap( doc );
-            }
-            if ( docCount < rangesPerPage ) // not a full page => this is the last page (optimization)
-            {
-                searcher = null; // avoid searching again
-            }
-            return new LongPageIterator( new BitmapExtractor( format.bitmapFormat(), rangeMap ) );
+            DocValuesCollector docValuesCollector = new DocValuesCollector();
+            searcher.search( query, docValuesCollector );
+            rangesIterator = new LongValuesIterator(
+                    docValuesCollector.getMatchingDocs(), docValuesCollector.getTotalHits(), BitmapDocumentFormat
+                    .RANGE );
+            return rangesIterator;
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e ); // TODO: something better?
+            throw new RuntimeException( e );
         }
     }
 
-    private long labeledBitmap( Document doc )
+    private long labeledBitmap( DocValuesAccess doc )
     {
         long bitmap = -1;
         for ( int label : labels )
         {
-            bitmap &= format.mapOf( doc, label );
+            bitmap &= doc.getValue( format.label( label ) );
         }
         return bitmap;
     }

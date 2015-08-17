@@ -23,6 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
@@ -43,7 +44,16 @@ public enum BitmapDocumentFormat
         {
             assert (bitmap & 0xFFFFFFFF00000000L) == 0 :
                 "Tried to store a bitmap as int, but which had values outside int limits";
-            return new IntField( label, (int) bitmap, Field.Store.YES );
+            return new NumericDocValuesField( label, bitmap );
+        }
+
+        @Override
+        protected void addLabelFields( Document document, String label, long bitmap )
+        {
+            assert (bitmap & 0xFFFFFFFF00000000L) == 0 :
+                    "Tried to store a bitmap as int, but which had values outside int limits";
+            document.add( new NumericDocValuesField( label, bitmap ) );
+            document.add( new IntField( label, (int) bitmap, Field.Store.YES ) );
         }
     },
     _64( BitmapFormat._64 )
@@ -51,7 +61,14 @@ public enum BitmapDocumentFormat
         @Override
         protected Field createLabelField( String label, long bitmap )
         {
-            return new LongField( label, bitmap, Field.Store.YES );
+            return new NumericDocValuesField( label, bitmap );
+        }
+
+        @Override
+        protected void addLabelFields( Document document, String label, long bitmap )
+        {
+            document.add( new NumericDocValuesField( label, bitmap ) );
+            document.add( new LongField( label, bitmap, Field.Store.YES ) );
         }
     };
 
@@ -96,12 +113,18 @@ public enum BitmapDocumentFormat
 
     public Query rangeQuery( long range )
     {
-        return new TermQuery( new Term( RANGE, Long.toString( range) ) );
+        return new TermQuery( new Term( RANGE, Long.toString( range ) ) );
     }
 
     public IndexableField rangeField( long range )
     {
         return new StringField( RANGE, Long.toString( range ), Field.Store.YES );
+    }
+
+    public void addRangeValuesField( Document doc, long range )
+    {
+        doc.add( rangeField( range ) );
+        doc.add( new NumericDocValuesField( RANGE, range ) );
     }
 
     public IndexableField labelField( long key, long bitmap )
@@ -111,15 +134,17 @@ public enum BitmapDocumentFormat
 
     protected abstract Field createLabelField( String label, long bitmap );
 
-    public void addLabelField( Document document, long label, Bitmap bitmap )
+    protected abstract void addLabelFields( Document document, String label, long bitmap );
+
+    public void addLabelAndSearchFields( Document document, long label, Bitmap bitmap )
     {
-        document.add( labelField( label, bitmap ) );
+        addLabelFields( document, label( label ), bitmap.bitmap() );
         document.add( labelSearchField( label ) );
     }
 
     public IndexableField labelSearchField( long label )
     {
-        return new StringField( LABEL, Long.toString( label ), Field.Store.NO );
+        return new StringField( LABEL, Long.toString( label ), Field.Store.YES );
     }
 
     public IndexableField labelField( long key, Bitmap value )
@@ -147,10 +172,20 @@ public enum BitmapDocumentFormat
         return new Term( RANGE, document.get( RANGE ) );
     }
 
-    public boolean isRangeField( IndexableField field )
+    public boolean isRangeOrLabelField( IndexableField field )
     {
         String fieldName = field.name();
         return RANGE.equals( fieldName ) || LABEL.equals( fieldName );
+    }
+
+    public boolean isRangeField( IndexableField field )
+    {
+        return RANGE.equals( field.name() );
+    }
+
+    public boolean isLabelBitmapField( IndexableField field )
+    {
+        return !isRangeOrLabelField( field );
     }
 
     public Bitmap readBitmap( IndexableField field )

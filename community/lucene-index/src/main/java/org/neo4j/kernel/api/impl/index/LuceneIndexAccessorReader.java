@@ -39,7 +39,6 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.CancellationRequest;
-import org.neo4j.index.impl.lucene.Hits;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncoding;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -221,8 +220,10 @@ class LuceneIndexAccessorReader implements IndexReader
     {
         try
         {
-            Hits hits = new Hits( searcher, query, null );
-            return new HitsPrimitiveLongIterator( hits, documentLogic );
+            DocValuesCollector docValuesCollector = new DocValuesCollector();
+            searcher.search( query, docValuesCollector );
+            return new LongValuesIterator(
+                    docValuesCollector.getMatchingDocs(), docValuesCollector.getTotalHits(), NODE_ID_KEY );
         }
         catch ( IOException e )
         {

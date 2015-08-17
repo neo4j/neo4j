@@ -21,7 +21,10 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.search.CollectionTerminatedException;
+import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.hamcrest.Description;
@@ -29,6 +32,8 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,13 +42,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 
+import org.neo4j.kernel.api.impl.index.bitmaps.Bitmap;
+
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.api.impl.index.PageOfRangesIteratorTest.docs;
 import static org.neo4j.kernel.api.impl.index.PageOfRangesIteratorTest.document;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
@@ -114,10 +122,10 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
     public void shouldUpdateDocumentsForReLabeledNodes() throws Exception
     {
         // given
-        LabelScanStorageStrategy.StorageService storage = storage(
-                document( format.rangeField( 0 ),
-                          format.labelField( 7, 0x70 ) )
-        );
+        Document givenDoc = new Document();
+        format.addRangeValuesField( givenDoc, 0 );
+        format.addLabelFields( givenDoc, "7", 0x70L );
+        LabelScanStorageStrategy.StorageService storage = storage(givenDoc);
 
         LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format, mock( Lock.class ) );
 
@@ -126,11 +134,11 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         writer.close();
 
         // then
-        verify( storage ).updateDocument( eq( format.rangeTerm( 0 ) ),
-                                          match( document( format.rangeField( 0 ),
-                                                           format.labelField( 7, 0x71 ),
-                                                           format.labelField( 8, 0x01 ),
-                                                           format.labelSearchField( 8 ) ) ) );
+        Document thenDoc = new Document();
+        format.addRangeValuesField( thenDoc, 0 );
+        format.addLabelFields( thenDoc, "7", 0x71L );
+        format.addLabelAndSearchFields( thenDoc, 8, new Bitmap( 0x01L ) );
+        verify( storage ).updateDocument( eq( format.rangeTerm( 0 ) ), match( thenDoc ) );
     }
 
     @Test
@@ -212,10 +220,11 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
             writer.close();
 
             // then
+            Document document = new Document();
+            format.addRangeValuesField( document, 0 );
+            format.addLabelAndSearchFields( document, 7, new Bitmap( 1L << i ) );
             verify( storage ).updateDocument( eq( format.rangeTerm( 0 ) ),
-                                              match( document( format.rangeField( 0 ),
-                                                               format.labelField( 7, 1L << i ),
-                                                               format.labelSearchField( 7 ) ) ) );
+                                              match( document ) );
         }
     }
 
@@ -241,6 +250,28 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         when( storage.acquireSearcher() ).thenReturn( searcher );
         for ( int i = 0; i < documents.length; i++ )
         {
+            final int docId = i;
+            doAnswer( new Answer<Void>()
+            {
+                @Override
+                public Void answer( InvocationOnMock invocation ) throws Throwable
+                {
+                    Collector collector = (Collector) invocation.getArguments()[1];
+                    LeafCollector leafCollector = collector.getLeafCollector( null );
+                    try
+                    {
+                        leafCollector.collect( docId );
+                    }
+                    catch ( CollectionTerminatedException swallow )
+                    {
+                        // swallow
+                    }
+                    return null;
+                }
+            } ).when( searcher ).search(
+                    eq( new TermQuery( format.rangeTerm( documents[i] ) ) ),
+                    any( Collector.class )
+            );
             when( searcher.search( new TermQuery( format.rangeTerm( documents[i] ) ), 1 ) )
                     .thenReturn( docs( new ScoreDoc( i, 0.0f ) ) );
             when( searcher.doc( i ) ).thenReturn( documents[i] );

@@ -129,7 +129,7 @@ public abstract class AbstractLuceneIndexAccessorReaderTest<R extends LuceneInde
     public void shouldUseCorrectLuceneQueryForScanQuery() throws Exception
     {
         // Given
-        when( documentLogic.newScanQuery() ).thenReturn( mock( MatchAllDocsQuery.class) );
+        when( documentLogic.newScanQuery() ).thenCallRealMethod();
 
         // When
         accessor.scan();

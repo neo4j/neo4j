@@ -60,7 +60,7 @@ public class LuceneIndexIT
         // When & Then
         try ( ResourceIterator<File> snapshot = accessor.snapshotFiles() )
         {
-            assertThat( asUniqueSetOfNames( snapshot ), equalTo( asSet( "_0.cfs", "segments_1" ) ) );
+            assertThat( asUniqueSetOfNames( snapshot ), equalTo( asSet( "_0.cfe", "_0.cfs", "_0.si", "segments_1" ) ) );
         }
     }
 

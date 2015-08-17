@@ -119,7 +119,7 @@ public class LuceneLabelScanWriter implements LabelScanWriter
             Document document = searcher.doc( hitCollector.getMatchedDoc() );
             for ( IndexableField field : document.getFields() )
             {
-                if ( !format.isRangeField( field ) )
+                if ( !format.isRangeOrLabelField( field ) )
                 {
                     Long label = Long.valueOf( field.name() );
                     fields.put( label, format.readBitmap( field ) );
@@ -140,7 +140,7 @@ public class LuceneLabelScanWriter implements LabelScanWriter
         updateFields( updates, fields );
 
         Document document = new Document();
-        document.add( format.rangeField( currentRange ) );
+        format.addRangeValuesField( document, currentRange );
 
         for ( Map.Entry<Long/*label*/, Bitmap> field : fields.entrySet() )
         {
@@ -148,7 +148,7 @@ public class LuceneLabelScanWriter implements LabelScanWriter
             Bitmap value = field.getValue();
             if ( value.hasContent() )
             {
-                format.addLabelField( document, field.getKey(), value );
+                format.addLabelAndSearchFields( document, field.getKey(), value );
             }
         }
 
@@ -167,7 +167,7 @@ public class LuceneLabelScanWriter implements LabelScanWriter
     {
         for ( IndexableField fieldable : document.getFields() )
         {
-            if ( !format.isRangeField( fieldable ) )
+            if ( !format.isRangeOrLabelField( fieldable ) )
             {
                 return false;
             }
