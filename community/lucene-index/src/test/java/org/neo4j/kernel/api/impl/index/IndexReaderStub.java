@@ -32,13 +32,24 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
+import java.util.Map;
+
+import org.neo4j.function.Function;
 
 public class IndexReaderStub extends LeafReader
 {
 
     private Fields fields;
     private boolean allDeleted;
-    private String[] elements;
+    private String[] elements = new String[0];
+    private Function<String,NumericDocValues> ndvs = new Function<String,NumericDocValues>()
+    {
+        @Override
+        public NumericDocValues apply( String s )
+        {
+            return DocValues.emptyNumeric();
+        }
+    };
 
     private IOException throwOnFields;
 
@@ -51,7 +62,35 @@ public class IndexReaderStub extends LeafReader
     public IndexReaderStub( Fields fields )
     {
         this.fields = fields;
-        this.elements = new String[0];
+    }
+
+    public IndexReaderStub( final NumericDocValues ndv )
+    {
+        this.ndvs = new Function<String,NumericDocValues>()
+        {
+            @Override
+            public NumericDocValues apply( String s )
+            {
+                return ndv;
+            }
+        };
+    }
+
+    public IndexReaderStub( final Map<String, NumericDocValues> ndvs )
+    {
+        this.ndvs = new Function<String,NumericDocValues>()
+        {
+            @Override
+            public NumericDocValues apply( String s )
+            {
+                NumericDocValues dv = ndvs.get( s );
+                if ( dv == null )
+                {
+                    return DocValues.emptyNumeric();
+                }
+                return dv;
+            }
+        };
     }
 
     public void throwOnNextFieldsAccess( IOException throwOnFields )
@@ -91,7 +130,7 @@ public class IndexReaderStub extends LeafReader
     @Override
     public NumericDocValues getNumericDocValues( String field ) throws IOException
     {
-        return DocValues.emptyNumeric();
+        return ndvs.apply( field );
     }
 
     @Override

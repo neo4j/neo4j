@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.index;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
@@ -48,6 +49,7 @@ public class LuceneDocumentStructure
     {
         Document document = new Document();
         document.add( field( NODE_ID_KEY, "" + nodeId, YES ) );
+        document.add( new NumericDocValuesField( NODE_ID_KEY, nodeId ) );
         return document;
     }
 

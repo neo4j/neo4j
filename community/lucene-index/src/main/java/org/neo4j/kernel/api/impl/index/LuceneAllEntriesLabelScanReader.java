@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -82,8 +83,9 @@ public class LuceneAllEntriesLabelScanReader implements AllEntriesLabelScanReade
     {
         List<IndexableField> fields = document.getFields();
 
-        long[] labelIds = new long[fields.size() - 1];
-        Bitmap[] bitmaps = new Bitmap[fields.size() - 1];
+        int expectedLabelFields = fields.size() - 1;
+        long[] scratchLabelIds = new long[expectedLabelFields];
+        Bitmap[] scratchBitmaps = new Bitmap[expectedLabelFields];
 
         int i = 0;
         long rangeId = -1;
@@ -93,14 +95,28 @@ public class LuceneAllEntriesLabelScanReader implements AllEntriesLabelScanReade
             {
                 rangeId = format.rangeOf( field );
             }
-            else
+            else if ( format.isLabelBitmapField( field ) )
             {
-                labelIds[i] = format.labelId( field );
-                bitmaps[i] = format.readBitmap( field );
+                scratchLabelIds[i] = format.labelId( field );
+                scratchBitmaps[i] = format.readBitmap( field );
                 i++;
             }
         }
         assert (rangeId >= 0);
+
+        final long[] labelIds;
+        final Bitmap[] bitmaps;
+        if (i < expectedLabelFields)
+        {
+            labelIds = Arrays.copyOf( scratchLabelIds, i );
+            bitmaps = Arrays.copyOf( scratchBitmaps, i );
+        }
+        else
+        {
+            labelIds = scratchLabelIds;
+            bitmaps = scratchBitmaps;
+        }
+
         return LuceneNodeLabelRange.fromBitmapStructure( id, labelIds, getLongs( bitmaps, rangeId ) );
     }
 
