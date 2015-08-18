@@ -130,9 +130,10 @@ object IndexSeekStrategy extends NodeStrategy {
         val equalityItems: Seq[RatedStartItem] =
           for (equalityPredicate <- equalityPredicates if ctx.getIndexRule(labelPredicate.solution, equalityPredicate.solution).nonEmpty)
             yield {
-              val schemaIndex = SchemaIndex(node, labelPredicate.solution, equalityPredicate.solution, AnyIndex, None)
               val optConstraint = ctx.getUniquenessConstraint(labelPredicate.solution, equalityPredicate.solution)
               val rating = if (optConstraint.isDefined) Single else IndexEquality
+              val indexType = if (optConstraint.isDefined) UniqueIndex else AnyIndex
+              val schemaIndex = SchemaIndex(node, labelPredicate.solution, equalityPredicate.solution, indexType, None)
               RatedStartItem(schemaIndex, rating, solvedPredicates = Seq.empty,
                              newUnsolvedPredicates = equalityPredicate.newUnsolvedPredicate.toSeq)
             }
