@@ -100,6 +100,7 @@ public class BootClassPathRunner extends Runner
                     command.add( argument );
                 }
             }
+            command.add( "-ea" );
             command.add( "-Xbootclasspath/a:" + classpathEntryToBootWith );
             command.add( "-cp" );
             command.add( classpath.toString() );

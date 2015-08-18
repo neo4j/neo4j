@@ -463,7 +463,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test( timeout = 30000 )
+    @Test( timeout = 360000 )
     public void writesFlushedFromPageFileMustBeObservableEvenWhenRacingWithEviction() throws IOException
     {
         PageCache cache = getPageCache( fs, 20, pageCachePageSize, PageCacheTracer.NULL );
@@ -3435,7 +3435,7 @@ public abstract class PageCacheTest<T extends PageCache>
     public void concurrentFlushingMustNotPutInterleavedDataIntoFile() throws Exception
     {
         final RecordFormat recordFormat = new StandardRecordFormat();
-        final int filePageCount = 20_000;
+        final int filePageCount = 2_000;
         RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness();
         harness.setConcurrencyLevel( 16 );
         harness.setUseAdversarialIO( false );
@@ -3444,7 +3444,7 @@ public abstract class PageCacheTest<T extends PageCache>
         harness.setCachePageSize( pageCachePageSize );
         harness.setFilePageSize( pageCachePageSize );
         harness.setInitialMappedFiles( 3 );
-        harness.setCommandCount( 150_000 );
+        harness.setCommandCount( 15_000 );
         harness.setFileSystem( fs );
         harness.disableCommands( Command.MapFile, Command.UnmapFile, Command.ReadRecord );
         harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
@@ -3456,7 +3456,7 @@ public abstract class PageCacheTest<T extends PageCache>
     public void concurrentFlushingWithMischiefMustNotPutInterleavedDataIntoFile() throws Exception
     {
         final RecordFormat recordFormat = new StandardRecordFormat();
-        final int filePageCount = 20_000;
+        final int filePageCount = 2_000;
         RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness();
         harness.setConcurrencyLevel( 16 );
         harness.setUseAdversarialIO( true );
@@ -3468,7 +3468,7 @@ public abstract class PageCacheTest<T extends PageCache>
         harness.setCachePageSize( pageCachePageSize );
         harness.setFilePageSize( pageCachePageSize );
         harness.setInitialMappedFiles( 3 );
-        harness.setCommandCount( 150_000 );
+        harness.setCommandCount( 15_000 );
         harness.setFileSystem( fs );
         harness.disableCommands( Command.MapFile, Command.UnmapFile, Command.ReadRecord );
         harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
@@ -3675,7 +3675,7 @@ public abstract class PageCacheTest<T extends PageCache>
     }
 
     @RepeatRule.Repeat( times = 3000 )
-    @Test( timeout = 60000 )
+    @Test( timeout = 360000 )
     public void pageCacheMustRemainInternallyConsistentWhenGettingRandomFailures() throws Exception
     {
         // NOTE: This test is inherently non-deterministic. This means that every failure must be
