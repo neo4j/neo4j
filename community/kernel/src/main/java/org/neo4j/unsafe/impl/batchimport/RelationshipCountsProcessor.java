@@ -38,11 +38,11 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
     private final LongArray counts;
     private int[] startScratch = new int[20], endScratch = new int[20]; // and grows on demand
     private final CountsAccessor.Updater countsUpdater;
-    private final int anyLabel;
-    private final int anyRelationshipType;
+    private final long anyLabel;
+    private final long anyRelationshipType;
     private final NodeLabelsCache.Client client;
-    private final int itemsPerType;
-    private final int itemsPerStartLabel;
+    private final long itemsPerType;
+    private final long itemsPerStartLabel;
 
     public RelationshipCountsProcessor( NodeLabelsCache nodeLabelCache,
             int highLabelId, int highRelationshipTypeId, CountsAccessor.Updater countsUpdater,
@@ -60,14 +60,14 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
         this.counts = cacheFactory.newLongArray( arrayIndex( highLabelId, highRelationshipTypeId, highLabelId )+1, 0 );
     }
 
-    private int arrayIndex( int startLabel, int relationshipType, int endLabel )
+    private long arrayIndex( long startLabel, long relationshipType, long endLabel )
     {
         return startLabel*itemsPerStartLabel + relationshipType*itemsPerType + endLabel;
     }
 
-    private void increment( int startLabel, int relationshipType, int endLabel )
+    private void increment( long startLabel, long relationshipType, long endLabel )
     {
-        int index = arrayIndex( startLabel, relationshipType, endLabel );
+        long index = arrayIndex( startLabel, relationshipType, endLabel );
         counts.set( index, counts.get( index ) + 1 );
     }
 
