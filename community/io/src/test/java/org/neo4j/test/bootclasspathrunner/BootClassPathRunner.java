@@ -30,11 +30,15 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.net.URL;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class BootClassPathRunner extends Runner
@@ -84,17 +88,27 @@ public class BootClassPathRunner extends Runner
         {
             int port = server.getPort();
             server.export( RMI_RUN_NOTIFIER_NAME, new DelegatingRemoteRunNotifier( notifier ) );
+            RuntimeMXBean runtimeMxBean = ManagementFactory.getRuntimeMXBean();
+            List<String> arguments = runtimeMxBean.getInputArguments();
+
+            List<String> command = new ArrayList<>();
+            command.add( "java" );
+            for ( String argument : arguments )
+            {
+                if ( !argument.startsWith( "-agentlib" ) )
+                {
+                    command.add( argument );
+                }
+            }
+            command.add( "-Xbootclasspath/a:" + classpathEntryToBootWith );
+            command.add( "-cp" );
+            command.add( classpath.toString() );
+            command.add( getClass().getName() );
+            command.add( String.valueOf( port ) );
+            command.add( testClass.getName() );
 
             ProcessBuilder pb = new ProcessBuilder();
-            pb.command(
-                    "java",
-                    "-ea",
-                    "-Xbootclasspath/a:" + classpathEntryToBootWith,
-                    "-cp",
-                    classpath.toString(),
-                    getClass().getName(),
-                    String.valueOf( port ),
-                    testClass.getName() );
+            pb.command( command );
             pb.inheritIO();
             Process process = pb.start();
             process.waitFor();
