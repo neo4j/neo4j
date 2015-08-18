@@ -53,7 +53,7 @@
     <module>embedded-examples</module>
     <module>server-api</module>
     <module>graphviz</module>
-    <module>ndp</module>
+    <module>bolt</module>
     <module>server</module>
     <module>server-examples</module>
     <module>server-plugin-test</module>
