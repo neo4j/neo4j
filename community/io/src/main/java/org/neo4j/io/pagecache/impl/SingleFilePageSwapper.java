@@ -346,7 +346,8 @@ public class SingleFilePageSwapper implements PageSwapper
         long fileOffset = pageIdToPosition( startFilePageId );
         FileChannel channel = unwrappedChannel( startFilePageId );
         ByteBuffer[] srcs = convertToByteBuffers( pages, arrayOffset, length );
-        long bytesRead = lockPositionReadVector( startFilePageId, channel, fileOffset, srcs );
+        long bytesRead = lockPositionReadVector(
+                startFilePageId, channel, fileOffset, srcs );
         if ( bytesRead == -1 )
         {
             for ( Page page : pages )
@@ -381,10 +382,17 @@ public class SingleFilePageSwapper implements PageSwapper
     {
         try
         {
+            long toRead = filePageSize * (long) srcs.length;
+            long read, readTotal = 0;
             synchronized ( positionLock( channel ) )
             {
                 channel.position( fileOffset );
-                return channel.read( srcs );
+                do
+                {
+                    read = channel.read( srcs );
+                }
+                while ( read != -1 && (readTotal += read) < toRead );
+                return readTotal;
             }
         }
         catch ( ClosedChannelException e )
@@ -497,10 +505,17 @@ public class SingleFilePageSwapper implements PageSwapper
     {
         try
         {
+            long toWrite = filePageSize * (long) srcs.length;
+            long bytesWritten = 0;
             synchronized ( positionLock( channel ) )
             {
                 channel.position( fileOffset );
-                return channel.write( srcs );
+                do
+                {
+                    bytesWritten += channel.write( srcs );
+                }
+                while ( bytesWritten < toWrite );
+                return bytesWritten;
             }
         }
         catch ( ClosedChannelException e )

@@ -17,15 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.randomharness;
+package org.neo4j.io.pagecache.impl.muninn;
+
+import org.junit.Rule;
 
 import java.io.File;
-import java.util.Set;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.test.TargetDirectory;
 
-public interface Phase
+public class MuninnPageCacheWithRealFileSystemTest extends MuninnPageCacheTest
 {
-    void run( PageCache pageCache, FileSystemAbstraction fs, Set<File> filesTouched ) throws Exception;
+    @Rule
+    public TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+
+    @Override
+    protected File file( String pathname )
+    {
+        return directory.file( pathname );
+    }
+
+    @Override
+    protected FileSystemAbstraction createFileSystemAbstraction()
+    {
+        return new DefaultFileSystemAbstraction();
+    }
 }
