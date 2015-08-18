@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.predicates
 
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Property, Identifier, Expression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, Identifier, Property}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 
@@ -31,10 +31,10 @@ case class Ands(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPre
 }
 
 object Ands {
-  def apply(a: Predicate, b: Predicate) = (a, b) match {
-    case (True(), other) => other
-    case (other, True()) => other
-    case (_, _)          => new Ands(NonEmptyList(a, b))
+  def apply(predicates: Predicate*) = predicates.filterNot(_ == True()).toList match {
+    case Nil => True()
+    case single :: Nil => single
+    case manyPredicates => new Ands(NonEmptyList.from(manyPredicates))
   }
 }
 

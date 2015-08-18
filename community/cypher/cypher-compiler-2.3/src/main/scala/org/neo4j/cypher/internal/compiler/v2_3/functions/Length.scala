@@ -38,7 +38,7 @@ case object Length extends Function with SimpleTypedFunction {
   )
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =
-    commandexpressions.LengthFunction(invocation.arguments(0).asCommandExpression)
+    commandexpressions.LengthFunction(toCommandExpression(invocation.arguments.head))
 
   override def semanticCheck(ctx: SemanticContext, invocation: FunctionInvocation) =
     super.semanticCheck(ctx, invocation) chain checkForInvalidUsage(ctx, invocation)

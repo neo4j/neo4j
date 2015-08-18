@@ -22,10 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_3.ast
 import org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.AnyInCollection
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Collection, Identifier, Property}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, HasLabel}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{UnresolvedLabel, UnresolvedProperty}
-import org.neo4j.cypher.internal.compiler.v2_3.commands.AnyInCollection
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
@@ -91,7 +92,6 @@ class NodeFetchStrategyTest extends CypherFunSuite {
 
   test("should_select_schema_index_for_prefix_search") {
     object inner extends AstConstructionTestSupport {
-      import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 
       def run(): Unit = {
         //Given
@@ -99,7 +99,7 @@ class NodeFetchStrategyTest extends CypherFunSuite {
         val symbols = new SymbolTable(Map(nodeName -> CTNode))
         val labelPredicate = HasLabel(Identifier(nodeName), UnresolvedLabel(labelName))
         val like: ast.Like = ast.Like(ast.Property(ident(nodeName), ast.PropertyKeyName(propertyName)_)_, ast.LikePattern(ast.StringLiteral("prefix%")_))_
-        val likePredicate = like.asCommandPredicate
+        val likePredicate = toCommandPredicate(like)
 
         val planCtx = mock[PlanContext]
         val indexDescriptor = new IndexDescriptor(0, 0)
@@ -121,8 +121,6 @@ class NodeFetchStrategyTest extends CypherFunSuite {
   test("should select schema index for range queries") {
     object inner extends AstConstructionTestSupport {
 
-      import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
-
       def run(): Unit = {
         //Given
         val nodeName = "n"
@@ -131,7 +129,7 @@ class NodeFetchStrategyTest extends CypherFunSuite {
         val prop: ast.Property = ast.Property(ident("n"), ast.PropertyKeyName("prop") _) _
         val inequality = ast.AndedPropertyInequalities(ident("n"), prop, NonEmptyList(ast.GreaterThan(prop, ast.SignedDecimalIntegerLiteral("42") _) _))
 
-        val likePredicate = inequality.asCommandPredicate
+        val likePredicate = toCommandPredicate(inequality)
 
         val planCtx = mock[PlanContext]
         val indexDescriptor = new IndexDescriptor(0, 0)

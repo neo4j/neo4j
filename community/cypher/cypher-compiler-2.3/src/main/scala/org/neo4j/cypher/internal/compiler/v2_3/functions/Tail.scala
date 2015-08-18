@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.functions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
-import ExpressionConverters._
-import commands.{expressions => commandexpressions}
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => commandexpressions}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 case object Tail extends Function {
   def name = "tail"
@@ -36,7 +36,7 @@ case object Tail extends Function {
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =
   commandexpressions.CollectionSliceExpression(
-    invocation.arguments(0).asCommandExpression,
+    toCommandExpression(invocation.arguments.head),
     Some(commandexpressions.Literal(1)),
     None
   )

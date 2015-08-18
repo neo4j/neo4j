@@ -365,7 +365,7 @@ class CypherParserTest extends CypherFunSuite {
       """start a = node(1) where a.name =~ 'And.*' AnD a.name =~ 'And.*' return a""",
       Query.
         start(NodeById("a", 1)).
-        where(And(LiteralRegularExpression(Property(Identifier("a"), PropertyKey("name")), Literal("And.*")), LiteralRegularExpression(Property(Identifier("a"), PropertyKey("name")), Literal("And.*")))).
+        where(Ands(LiteralRegularExpression(Property(Identifier("a"), PropertyKey("name")), Literal("And.*")), LiteralRegularExpression(Property(Identifier("a"), PropertyKey("name")), Literal("And.*")))).
         returns(ReturnItem(Identifier("a"), "a"))
     )
   }
@@ -413,9 +413,9 @@ class CypherParserTest extends CypherFunSuite {
       "start a = NODE(1) where -35 = a.age AND (a.age > -1.2 AND a.weight=-50) return a",
       Query.
         start(NodeById("a", 1)).
-        where(And(
+        where(Ands(
           Equals(Literal(-35), Property(Identifier("a"), PropertyKey("age"))),
-          And(
+          Ands(
             GreaterThan(Property(Identifier("a"), PropertyKey("age")), Literal(-1.2)),
             Equals(Property(Identifier("a"), PropertyKey("weight")), Literal(-50))
           )
@@ -560,7 +560,7 @@ class CypherParserTest extends CypherFunSuite {
       "start a = NODE(1) where a.name = \"andres\" and a.lastname = \"taylor\" return a.name",
       Query.
         start(NodeById("a", 1)).
-        where(And(
+        where(Ands(
         Equals(Property(Identifier("a"), PropertyKey("name")), Literal("andres")),
         Equals(Property(Identifier("a"), PropertyKey("lastname")), Literal("taylor")))).
         returns(ReturnItem(Property(Identifier("a"), PropertyKey("name")), "a.name")))
@@ -766,10 +766,10 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("n", 1, 2, 3)).
         where(Or(
-        And(
+        Ands(
           Equals(Property(Identifier("n"), PropertyKey("animal")), Literal("monkey")),
           Equals(Property(Identifier("n"), PropertyKey("food")), Literal("banana"))),
-        And(
+        Ands(
           Equals(Property(Identifier("n"), PropertyKey("animal")), Literal("cow")),
           Equals(Property(Identifier("n"), PropertyKey("food")), Literal("grass"))))).
         returns(ReturnItem(Identifier("n"), "n")))
@@ -782,10 +782,10 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("n", 1, 2, 3)).
         where(Xor(
-        And(
+        Ands(
           Equals(Property(Identifier("n"), PropertyKey("animal")), Literal("monkey")),
           Equals(Property(Identifier("n"), PropertyKey("food")), Literal("banana"))),
-        And(
+        Ands(
           Equals(Property(Identifier("n"), PropertyKey("animal")), Literal("cow")),
           Equals(Property(Identifier("n"), PropertyKey("food")), Literal("grass"))))).
         returns(ReturnItem(Identifier("n"), "n")))
@@ -1304,7 +1304,7 @@ class CypherParserTest extends CypherFunSuite {
       """match p = shortestPath( a-[*1..3]->b ) WHERE a.name = 'John' AND b.name = 'Sarah' return p""",
       Query.
         matches(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, false, Some(3), single = true, None)).
-        where(And(
+        where(Ands(
         Equals(Property(Identifier("a"), PropertyKey("name")), Literal("John")),
         Equals(Property(Identifier("b"), PropertyKey("name")), Literal("Sarah"))))
         returns(ReturnItem(Identifier("p"), "p"))
@@ -1684,7 +1684,7 @@ class CypherParserTest extends CypherFunSuite {
         where(
         Or(
           Xor(
-            And(
+            Ands(
               Equals(Property(Identifier("n"), PropertyKey("a")), Literal("x")),
               Equals(Property(Identifier("n"), PropertyKey("b")), Literal("x"))
             ),

@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
+import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{Equals, _}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
-import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers._
 import org.neo4j.cypher.internal.compiler.v2_3.parser.{LikePatternOp, LikePatternParser, MatchText, WildcardLikePatternOp}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{ManySeekArgs, SeekArgs, SingleSeekArg}
@@ -216,7 +216,7 @@ case class SingleSeekableArg(expr: Expression) extends SeekableArgs {
   override def mapValues(f: Expression => Expression) = copy(f(expr))
 
   def asQueryExpression: SingleQueryExpression[Expression] = SingleQueryExpression(expr)
-  def asCommandSeekArgs: SeekArgs = SingleSeekArg(expr.asCommandExpression)
+  def asCommandSeekArgs: SeekArgs = SingleSeekArg(toCommandExpression(expr))
 }
 
 case class ManySeekableArgs(expr: Expression) extends SeekableArgs {
@@ -245,12 +245,12 @@ case class ManySeekableArgs(expr: Expression) extends SeekableArgs {
     case coll: Collection =>
       ZeroOneOrMany(coll.expressions) match {
         case Zero => SeekArgs.empty
-        case One(value) => SingleSeekArg(value.asCommandExpression)
-        case Many(values) => ManySeekArgs(coll.asCommandExpression)
+        case One(value) => SingleSeekArg(toCommandExpression(value))
+        case Many(values) => ManySeekArgs(toCommandExpression(coll))
       }
 
     case _ =>
-      ManySeekArgs(expr.asCommandExpression)
+      ManySeekArgs(toCommandExpression(expr))
   }
 }
 

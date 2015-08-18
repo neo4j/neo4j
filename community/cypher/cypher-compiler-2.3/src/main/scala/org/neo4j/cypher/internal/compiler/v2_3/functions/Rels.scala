@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.functions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
-import ExpressionConverters._
-import commands.{expressions => commandexpressions}
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => commandexpressions}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 case object Rels extends Function with SimpleTypedFunction {
   def name = "rels"
@@ -33,5 +33,5 @@ case object Rels extends Function with SimpleTypedFunction {
   )
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =
-    commandexpressions.RelationshipFunction(invocation.arguments(0).asCommandExpression)
+    commandexpressions.RelationshipFunction(toCommandExpression(invocation.arguments.head))
 }

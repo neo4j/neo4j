@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.PatternConverters._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{True, And, Predicate}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{And, Predicate, True}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => commandexpressions, values => commandvalues, _}
 import org.neo4j.cypher.internal.compiler.v2_3.notification.JoinHintUnsupportedNotification
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -153,7 +153,7 @@ object StatementConverters {
     def addToQueryBuilder(builder: commands.QueryBuilder) = {
       val items: Seq[StartItem] = builder.startItems :+ commands.LoadCSV(
         inner.withHeaders,
-        inner.urlString.asCommandExpression,
+        toCommandExpression(inner.urlString),
         inner.identifier.name,
         inner.fieldTerminator.map(_.value)
       )
@@ -163,7 +163,7 @@ object StatementConverters {
 
   implicit class UnwindConverter(inner: ast.Unwind) {
     def addToQueryBuilder(builder: commands.QueryBuilder) = {
-      val items: Seq[StartItem] = builder.startItems :+ commands.Unwind(inner.expression.asCommandExpression,inner.identifier.name)
+      val items: Seq[StartItem] = builder.startItems :+ commands.Unwind(toCommandExpression(inner.expression),inner.identifier.name)
       builder.startItems(items: _*)
     }
   }
@@ -172,8 +172,8 @@ object StatementConverters {
     def addToQueryBuilder(builder: commands.QueryBuilder) = {
       val wherePredicate = (builder.where, clause.where) match {
         case (p, None)                  => p
-        case (True(), Some(w)) => w.expression.asCommandPredicate
-        case (p, Some(w))               => And(p, w.expression.asCommandPredicate)
+        case (True(), Some(w)) => toCommandPredicate(w.expression)
+        case (p, Some(w))               => And(p, toCommandPredicate(w.expression))
       }
       builder.startItems(builder.startItems ++ startItems: _*).where(wherePredicate)
     }
@@ -186,23 +186,23 @@ object StatementConverters {
       case ast.NodeByIds(identifier, ids) =>
         commands.NodeById(identifier.name, commandexpressions.Literal(ids.map(_.value)))
       case ast.NodeByParameter(identifier, parameter) =>
-        commands.NodeById(identifier.name, parameter.asCommandParameter)
+        commands.NodeById(identifier.name, toCommandParameter(parameter))
       case ast.AllNodes(identifier) =>
         commands.AllNodes(identifier.name)
       case ast.NodeByIdentifiedIndex(identifier, index, key, value) =>
-        commands.NodeByIndex(identifier.name, index.name, commandexpressions.Literal(key.name), value.asCommandExpression)
+        commands.NodeByIndex(identifier.name, index.name, commandexpressions.Literal(key.name), toCommandExpression(value))
       case ast.NodeByIndexQuery(identifier, index, query) =>
-        commands.NodeByIndexQuery(identifier.name, index.name, query.asCommandExpression)
+        commands.NodeByIndexQuery(identifier.name, index.name, toCommandExpression(query))
       case ast.RelationshipByIds(identifier, ids) =>
         commands.RelationshipById(identifier.name, commandexpressions.Literal(ids.map(_.value)))
       case ast.RelationshipByParameter(identifier, parameter) =>
-        commands.RelationshipById(identifier.name, parameter.asCommandParameter)
+        commands.RelationshipById(identifier.name, toCommandParameter(parameter))
       case ast.AllRelationships(identifier) =>
         commands.AllRelationships(identifier.name)
       case ast.RelationshipByIdentifiedIndex(identifier, index, key, value) =>
-        commands.RelationshipByIndex(identifier.name, index.name, commandexpressions.Literal(key.name), value.asCommandExpression)
+        commands.RelationshipByIndex(identifier.name, index.name, commandexpressions.Literal(key.name), toCommandExpression(value))
       case ast.RelationshipByIndexQuery(identifier, index, query) =>
-        commands.RelationshipByIndexQuery(identifier.name, index.name, query.asCommandExpression)
+        commands.RelationshipByIndexQuery(identifier.name, index.name, toCommandExpression(query))
     }
   }
 
@@ -213,8 +213,8 @@ object StatementConverters {
       val indexHints: Seq[StartItem with Hint] = builder.using ++ clause.hints.flatMap(_.asCommandStartHint(notifications))
       val wherePredicate: Predicate = (builder.where, clause.where) match {
         case (p, None)                  => p
-        case (True(), Some(w)) => w.expression.asCommandPredicate
-        case (p, Some(w))               => predicates.And(p, w.expression.asCommandPredicate)
+        case (True(), Some(w))          => toCommandPredicate(w.expression)
+        case (p, Some(w))               => And(p, toCommandPredicate(w.expression))
       }
 
       builder.
@@ -297,25 +297,25 @@ object StatementConverters {
       case c: ast.SetClause =>
         c.items.map {
           case setItem: ast.SetPropertyItem =>
-            mutation.PropertySetAction(setItem.property.asCommandProperty, setItem.expression.asCommandExpression)
+            mutation.PropertySetAction(toCommandProperty(setItem.property), toCommandExpression(setItem.expression))
           case setItem: ast.SetLabelItem =>
-            commands.LabelAction(setItem.expression.asCommandExpression, commands.LabelSetOp, setItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
+            commands.LabelAction(toCommandExpression(setItem.expression), commands.LabelSetOp, setItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
           case setItem: ast.SetExactPropertiesFromMapItem =>
-            mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name), setItem.expression.asCommandExpression, true)
+            mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name), toCommandExpression(setItem.expression), true)
           case setItem: ast.SetIncludingPropertiesFromMapItem =>
-            mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name), setItem.expression.asCommandExpression, false)
+            mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name), toCommandExpression(setItem.expression), false)
         }
       case c: ast.Delete =>
-        c.expressions.map(e => mutation.DeleteEntityAction(e.asCommandExpression))
+        c.expressions.map(e => mutation.DeleteEntityAction(toCommandExpression(e)))
       case c: ast.Remove =>
         c.items.map {
           case remItem: ast.RemoveLabelItem =>
-            commands.LabelAction(remItem.expression.asCommandExpression, commands.LabelRemoveOp, remItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
+            commands.LabelAction(toCommandExpression(remItem.expression), commands.LabelRemoveOp, remItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
           case remItem: ast.RemovePropertyItem =>
-            mutation.DeletePropertyAction(remItem.property.map.asCommandExpression, commandvalues.KeyToken.Unresolved(remItem.property.propertyKey.name, commandvalues.TokenType.PropertyKey))
+            mutation.DeletePropertyAction(toCommandExpression(remItem.property.map), commandvalues.KeyToken.Unresolved(remItem.property.propertyKey.name, commandvalues.TokenType.PropertyKey))
         }
       case c: ast.Foreach =>
-        Seq(mutation.ForeachAction(c.expression.asCommandExpression, c.identifier.name, c.updates.flatMap {
+        Seq(mutation.ForeachAction(toCommandExpression(c.expression), c.identifier.name, c.updates.flatMap {
           case update: ast.UpdateClause => update.updateActions
           case _                        => throw new ThisShouldNotHappenError("cleishm", "a non-update clause in FOREACH didn't fail semantic check")
         }))
@@ -325,7 +325,7 @@ object StatementConverters {
   implicit class WithConverter(val clause: ast.With) extends AnyVal {
     def closeQueryBuilder(builder: commands.QueryBuilder): commands.Query = {
       val builderToClose = clause.where.fold(builder) { w =>
-        val subBuilder = new commands.QueryBuilder().where(w.expression.asCommandPredicate)
+        val subBuilder = new commands.QueryBuilder().where(toCommandPredicate(w.expression))
         val tailQueryBuilder = builder.tail.fold(subBuilder)(t => subBuilder.tail(t))
         builder.tail(tailQueryBuilder.returns(commands.AllIdentifiers()))
       }
@@ -333,7 +333,7 @@ object StatementConverters {
     }
 
     def closeQueryBuilder(close: commands.QueryBuilder => commands.Query, builder: commands.QueryBuilder): commands.Query = {
-      val subBuilder = clause.where.foldLeft(new commands.QueryBuilder())((b, w) => b.where(w.expression.asCommandPredicate))
+      val subBuilder = clause.where.foldLeft(new commands.QueryBuilder())((b, w) => b.where(toCommandPredicate(w.expression)))
       val tailQueryBuilder = builder.tail.fold(subBuilder)(t => subBuilder.tail(t))
       ProjectionClauseConverter(clause).closeQueryBuilder(builder.tail(close(tailQueryBuilder)))
     }
@@ -359,9 +359,9 @@ object StatementConverters {
 
       maybeAllIdentifiers.toSeq ++ clause.returnItems.items.map {
         case ast.AliasedReturnItem(expr, identifier) =>
-          commands.ReturnItem(expr.asCommandExpression, identifier.name)
+          commands.ReturnItem(toCommandExpression(expr), identifier.name)
         case ast.UnaliasedReturnItem(expr, identifier) =>
-          commands.ReturnItem(expr.asCommandExpression, identifier)
+          commands.ReturnItem(toCommandExpression(expr), identifier)
       }
     }
 
@@ -372,21 +372,21 @@ object StatementConverters {
       case integer: ast.UnsignedIntegerLiteral =>
         b.skip(commandexpressions.Literal(integer.value.toInt))
       case expression =>
-        b.skip(expression.asCommandExpression)
+        b.skip(toCommandExpression(expression))
     })
 
     private def addLimit = (b: commands.QueryBuilder) => clause.limit.fold(b)(l => l.expression match {
       case integer: ast.UnsignedIntegerLiteral =>
         b.limit(commandexpressions.Literal(integer.value.toInt))
       case expression =>
-        b.limit(expression.asCommandExpression)
+        b.limit(toCommandExpression(expression))
     })
 
     private def addOrder = (b: commands.QueryBuilder) => clause.orderBy.fold(b)(o => b.orderBy(o.sortItems map {
       case ast.AscSortItem(expression) =>
-        commands.SortItem(expression.asCommandExpression, ascending = true)
+        commands.SortItem(toCommandExpression(expression), ascending = true)
       case ast.DescSortItem(expression) =>
-        commands.SortItem(expression.asCommandExpression, ascending = false)
+        commands.SortItem(toCommandExpression(expression), ascending = false)
     }:_*))
 
     private def extractAggregationExpressions(items: Seq[commands.ReturnColumn]) = {

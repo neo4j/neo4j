@@ -30,7 +30,7 @@ object OtherConverters {
         case ast.AscSortItem(expr) => (expr, true)
         case ast.DescSortItem(expr) => (expr, false)
       }
-      commands.SortItem(expression.asCommandExpression, ascending)
+      commands.SortItem(toCommandExpression(expression), ascending)
     }
   }
 

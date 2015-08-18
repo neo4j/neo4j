@@ -19,18 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.execution.convert
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{Identifier, _}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.ProjectedPath
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.{InputPosition, DummyPosition}
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.ProjectedPath._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.{DummyPosition, InputPosition}
 import org.neo4j.graphdb.Direction
 
 class PathExpressionConversionTest extends CypherFunSuite {
 
-  import ProjectedPath._
-  import ExpressionConverters.PathConverter
 
   val pos = DummyPosition(0)
 
@@ -40,7 +38,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
   test("p = (a)") {
     val expr = PathExpression(NodePathStep(Identifier("a")_, NilPathStep))_
 
-    PathConverter(expr).asCommandProjectedPath should equal(
+    toCommandProjectedPath(expr) should equal(
       ProjectedPath(
         Set("a"),
         singleNodeProjector("a", nilProjector)
@@ -51,7 +49,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
   test("p = (b)<-[r]-(a)") {
     val expr = PathExpression(NodePathStep(Identifier("b")_, SingleRelationshipPathStep(Identifier("r")_, Direction.INCOMING, NilPathStep)))_
 
-    PathConverter(expr).asCommandProjectedPath should equal(
+    toCommandProjectedPath(expr) should equal(
       ProjectedPath(
         Set("r", "b"),
         singleNodeProjector("b",
@@ -64,7 +62,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
   test("p = (a)-[r]->(b)") {
     val expr = PathExpression(NodePathStep(Identifier("a")_, SingleRelationshipPathStep(Identifier("r")_, Direction.OUTGOING, NilPathStep)))_
 
-    PathConverter(expr).asCommandProjectedPath should equal(
+    toCommandProjectedPath(expr) should equal(
       ProjectedPath(
         Set("r", "a"),
         singleNodeProjector("a",
@@ -77,7 +75,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
   test("p = (b)<-[r*1..]-(a)") {
     val expr = PathExpression(NodePathStep(Identifier("b")_, MultiRelationshipPathStep(Identifier("r")_, Direction.INCOMING, NilPathStep)))_
 
-    PathConverter(expr).asCommandProjectedPath should equal(
+    toCommandProjectedPath(expr) should equal(
       ProjectedPath(
         Set("r", "b"),
         singleNodeProjector("b",
@@ -90,7 +88,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
   test("p = (a)-[r*1..]->(b)") {
     val expr = PathExpression(NodePathStep(Identifier("a")_, MultiRelationshipPathStep(Identifier("r")_, Direction.OUTGOING, NilPathStep)))_
 
-    PathConverter(expr).asCommandProjectedPath should equal(
+    toCommandProjectedPath(expr) should equal(
       ProjectedPath(
         Set("r", "a"),
         singleNodeProjector("a",
@@ -108,7 +106,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
       NilPathStep
     ))))_
 
-    PathConverter(expr).asCommandProjectedPath should equal(
+    toCommandProjectedPath(expr) should equal(
       ProjectedPath(
         Set("a", "r1", "r2"),
         singleNodeProjector("a",
@@ -128,7 +126,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
       NilPathStep
     ))))_
 
-    PathConverter(expr).asCommandProjectedPath should equal(
+    toCommandProjectedPath(expr) should equal(
       ProjectedPath(
         Set("a", "r1", "r2"),
         singleNodeProjector("a",
