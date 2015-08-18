@@ -25,11 +25,11 @@ import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 
 public final class FileCountThreshold implements Threshold
 {
-    private final int maxNonEmptyLogs;
+    private final long maxNonEmptyLogs;
 
-    private int nonEmptyLogCount;
+    private long nonEmptyLogCount;
 
-    FileCountThreshold( int maxNonEmptyLogs )
+    FileCountThreshold( long maxNonEmptyLogs )
     {
         this.maxNonEmptyLogs = maxNonEmptyLogs;
     }
