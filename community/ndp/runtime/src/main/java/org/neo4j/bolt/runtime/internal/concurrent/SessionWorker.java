@@ -43,7 +43,7 @@ public class SessionWorker implements Runnable
         }
     };
 
-    private final static int workQueueSize = Integer.getInteger( "org.neo4j.ndp.workQueueSize", 100 );
+    private final static int workQueueSize = Integer.getInteger( "org.neo4j.bolt.workQueueSize", 100 );
 
     private final ArrayBlockingQueue<Consumer<Session>> workQueue = new ArrayBlockingQueue<>( workQueueSize );
     private final Session session;

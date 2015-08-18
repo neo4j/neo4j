@@ -1,4 +1,4 @@
-[[ndp]]
+[[bolt]]
 = Neo4j Data Protocol, Version 1
 
 WARNING: This component is in active development and *will* change.
@@ -7,7 +7,7 @@ NOTE: Byte values within this document are represented in http://en.wikipedia.or
 
 NOTE: Integers and floating point values are transmitted and stored using http://en.wikipedia.org/wiki/Endianness[big-endian] byte order unless otherwise specified.
 
-[[ndp-overview]]
+[[bolt-overview]]
 == Overview
 
 This section describes the Neo4j Data Protocol, version 1.
@@ -20,11 +20,11 @@ The diagram below illustrates a typical interaction including the order of messa
 
 image:typical-interaction.png[]
 
-Starting with version 1, each release of NDP is assigned a unique, integral version number.
+Starting with version 1, each release of Bolt is assigned a unique, integral version number.
 This number and the associated specification refers to every aspect of the protocol except for the handshake, which is unversioned.
 Driver authors should note that subsequent protocol versions are likely to be incompatible and with the exception of the handshake, there is no guarantee that any transport or serialisation code can be shared across versions.
 
-The protocol is divided into two layers -- <<ndp-transport,transport>> and <<ndp-messaging,messaging>>.
+The protocol is divided into two layers -- <<bolt-transport,transport>> and <<bolt-messaging,messaging>>.
 
 include::transport.asciidoc[]
 

@@ -71,7 +71,7 @@ public class BoltValueDocTest
         Collection<Object[]> mappings = new ArrayList<>();
 
         // Load the documented mappings
-        for ( DocTable.Row row : docs().read( "dev/serialization.asciidoc", "#ndp-type-system-mapping", table )
+        for ( DocTable.Row row : docs().read( "dev/serialization.asciidoc", "#bolt-type-system-mapping", table )
                 .get( 0 ) )
         {
             mappings.add( new Object[]{row.get( 0 )} );

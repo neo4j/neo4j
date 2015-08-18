@@ -55,7 +55,7 @@ public class BoltMessageStructsDocTest
         // Load the documented mappings
         for ( DocStruct struct : docs().read(
                 "dev/messaging.asciidoc",
-                "code[data-lang=\"ndp_message_struct\"]",
+                "code[data-lang=\"bolt_message_struct\"]",
                 struct_definition ) )
         {
             mappings.add( new Object[]{struct} );

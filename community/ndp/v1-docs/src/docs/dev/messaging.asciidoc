@@ -1,11 +1,11 @@
-[[ndp-messaging]]
+[[bolt-messaging]]
 == Messaging layer
 
 This section discusses the semantic meaning and layout of protocol messages.
-For details on how Neo4j types are represented in binary form, see <<ndp-serialization,serialization>>.
+For details on how Neo4j types are represented in binary form, see <<bolt-serialization,serialization>>.
 
-Clients may send request messages at any time after a session is <<ndp-message-structs-initialize,initialized>>.
-Clients may <<ndp-messaging-pipelining,pipeline>> requests, sending multiple requests together.
+Clients may send request messages at any time after a session is <<bolt-message-structs-initialize,initialized>>.
+Clients may <<bolt-messaging-pipelining,pipeline>> requests, sending multiple requests together.
 
 Servers must fully respond to each request before the next request is processed and processing of requests within a session must be done in the same order in which the requests.
 
@@ -22,10 +22,10 @@ image:simple-exchange.png[]
 
 === Initialization
 
-Before a session can be used to <<ndp-message-structs-run,run>> queries, it must be <<ndp-message-structs-initialize,initialized>>.
-The `INITIALIZE` message message should be sent by the client as the first message it sends after <<ndp-handshake,negotiating protocol version>>.
+Before a session can be used to <<bolt-message-structs-run,run>> queries, it must be <<bolt-message-structs-initialize,initialized>>.
+The `INITIALIZE` message message should be sent by the client as the first message it sends after <<bolt-handshake,negotiating protocol version>>.
 
-[[ndp-messaging-pipelining]]
+[[bolt-messaging-pipelining]]
 === Pipelining
 
 The client is not required to wait for a response before sending more messages.
@@ -62,16 +62,16 @@ Here, the client optimistically sends a pair of messages. The first of these fai
 Once the client acknowledges the failure, it is then able to resend a corrected RUN message.
 
 
-[[ndp-message-structs]]
+[[bolt-message-structs]]
 === Messages
 
-Protocol messages are represented as <<ndp-packstream-structures,serialized structures>>.
+Protocol messages are represented as <<bolt-packstream-structures,serialized structures>>.
 
-[[ndp-message-structs-initialize]]
+[[bolt-message-structs-initialize]]
 ==== INITIALIZE
 
 The `INITIALIZE` message is a client message used once to initalize the session.
-This message is always the first message the client sends after <<ndp-handshake,negotiating protocol version>>.
+This message is always the first message the client sends after <<bolt-handshake,negotiating protocol version>>.
 Sending any message other than `INITIALIZE` as the first message to the server will result in a `FAILURE` and the
 server closing the connection.
 
@@ -79,7 +79,7 @@ The server will reply with a `SUCCESS` message unless some parameter for initial
 
 All parameters in the `INITIALIZE` message are required.
 
-[source,ndp_message_struct]
+[source,bolt_message_struct]
 ----
 InitializeMessage (signature=0x01) {
     Text clientName
@@ -87,7 +87,7 @@ InitializeMessage (signature=0x01) {
 ----
 
 .Example
-[source,ndp_packstream_type]
+[source,bolt_packstream_type]
 ----
 Value: INITIALIZE "MyClient/1.0"
 
@@ -101,12 +101,12 @@ B1 01 8C 4D  79 43 6C 69  65 6E 74 2F  31 2E 30
 |clientName  |A name and version for the client, if the user has allowed usage data collection, this is used to track popular clients. Example: "MyClient/1.0"
 |=======================
 
-[[ndp-message-structs-run]]
+[[bolt-message-structs-run]]
 ==== RUN
 
 The `RUN` message is a client message used to start a new job on the server. It has the following structure:
 
-[source,ndp_message_struct]
+[source,bolt_message_struct]
 ----
 RunMessage (signature=0x10) {
     Text             statement
@@ -125,7 +125,7 @@ If an unacknowledged failure is pending from a previous exchange, the server wil
 `IGNORED` message and take no further action.
 
 .Example
-[source,ndp_packstream_type]
+[source,bolt_packstream_type]
 ----
 Value: RUN "RETURN 1 AS num" {}
 
@@ -137,7 +137,7 @@ B2 10 8F 52  45 54 55 52  4E 20 31 20  41 53 20 6E  75 6D A0
 The `DISCARD_ALL` message is a client message used to discard all remaining items from the active result
 stream. It has the following structure:
 
-[source,ndp_message_struct]
+[source,bolt_message_struct]
 ----
 DiscardAllMessage (signature=0x2F) {
 }
@@ -149,7 +149,7 @@ If no result stream is currently active, the server will respond with a single `
 If an unacknowledged failure is pending from a previous exchange, the server will immediately respond with a single `IGNORED` message and take no further action.
 
 .Example
-[source,ndp_packstream_type]
+[source,bolt_packstream_type]
 ----
 Value: DISCARD_ALL
 
@@ -161,7 +161,7 @@ B0 7E
 The `PULL_ALL` message is a client message used to retrieve all remaining items from the active result stream.
 It has the following structure:
 
-[source,ndp_message_struct]
+[source,bolt_message_struct]
 ----
 PullAllMessage (signature=0x3F) {
 }
@@ -174,7 +174,7 @@ If an error is encountered, the server must instead send a `FAILURE` message, di
 If an unacknowledged failure is pending from a previous exchange, the server will immediately respond with a single `IGNORED` message and take no further action.
 
 .Example
-[source,ndp_packstream_type]
+[source,bolt_packstream_type]
 ----
 Value: PULL_ALL
 
@@ -186,7 +186,7 @@ B0 3F
 The `ACK_FAILURE` message is a client message used to signal that a client has acknowledged a previous `FAILURE`
 . It has the following structure:
 
-[source,ndp_message_struct]
+[source,bolt_message_struct]
 ----
 AcknowledgeFailureMessage (signature=0x0F) {
 }
@@ -198,7 +198,7 @@ If no such failure state is pending, a FAILURE message will be sent instead.
 An `ACK_FAILURE` will never be ignored by the server.
 
 .Example
-[source,ndp_packstream_type]
+[source,bolt_packstream_type]
 ----
 Value: ACK_FAILURE
 
@@ -211,7 +211,7 @@ The `RECORD` message is a server detail message used to deliver data from the se
 Each record message contains a single List, which in turn contains the fields of the record in order.
 It has the following structure:
 
-[source,ndp_message_struct]
+[source,bolt_message_struct]
 ----
 RecordMessage (signature=0x71) {
     List<Value> fields
@@ -219,7 +219,7 @@ RecordMessage (signature=0x71) {
 ----
 
 .Example
-[source,ndp_packstream_type]
+[source,bolt_packstream_type]
 ----
 Value: RECORD [1,2,3]
 
@@ -231,7 +231,7 @@ B1 71 93 01  02 03
 The `SUCCESS` message is a server summary message used to signal that a corresponding client message has been received and actioned as intended.
 It has the following structure:
 
-[source,ndp_message_struct]
+[source,bolt_message_struct]
 ----
 SuccessMessage (signature=0x70) {
     Map<Text,Value> metadata
@@ -239,7 +239,7 @@ SuccessMessage (signature=0x70) {
 ----
 
 .Example
-[source,ndp_packstream_type]
+[source,bolt_packstream_type]
 ----
 Value: SUCCESS {fields:["name", "age"]}
 
@@ -252,7 +252,7 @@ B1 70 A1 86  66 69 65 6C  64 73 92 84  6E 61 6D 65
 The `FAILURE` message is a server summary message used to signal that a corresponding client message has encountered an error while being processed.
 It has the following structure:
 
-[source,ndp_message_struct]
+[source,bolt_message_struct]
 ----
 FailureMessage (signature=0x7F) {
     Map<Text,Value> metadata
@@ -269,7 +269,7 @@ This is mainly to support user-driven queries, where a database administrator ma
 we do not want a simple spelling mistake to roll it all back.
 
 .Example
-[source,ndp_packstream_type]
+[source,bolt_packstream_type]
 ----
 Value: FAILURE {code:"Neo.ClientError.Statement.InvalidSyntax", message:"Invalid syntax."}
 
@@ -285,7 +285,7 @@ B1 7F A2 84  63 6F 64 65  D0 27 4E 65  6F 2E 43 6C
 The `IGNORED` message is a server summary message used to signal that a corresponding client message has been ignored and not actioned.
 It has the following structure:
 
-[source,ndp_message_struct]
+[source,bolt_message_struct]
 ----
 IgnoredMessage (signature=0x7E) {
     Map<Text,Value>  metadata
@@ -297,7 +297,7 @@ For example, this will occur if the client optimistically sends a group of messa
 Note that the original `PULL_ALL` message was never processed by the server.
 
 .Example
-[source,ndp_packstream_type]
+[source,bolt_packstream_type]
 ----
 Value: IGNORED
 

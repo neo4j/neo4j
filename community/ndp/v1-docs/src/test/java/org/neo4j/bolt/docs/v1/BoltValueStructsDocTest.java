@@ -74,7 +74,7 @@ public class BoltValueStructsDocTest
         // Load the documented mappings
         for ( DocStruct struct : docs().read(
                 "dev/serialization.asciidoc",
-                "code[data-lang=\"ndp_value_struct\"]",
+                "code[data-lang=\"bolt_value_struct\"]",
                 struct_definition ) )
         {
             mappings.add( new Object[]{struct} );

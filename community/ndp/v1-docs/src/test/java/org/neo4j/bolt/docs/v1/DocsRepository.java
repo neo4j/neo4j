@@ -40,7 +40,7 @@ import static org.asciidoctor.OptionsBuilder.options;
 public class DocsRepository
 {
     private final static String SEP = File.separator;
-    private final static File docsDir = findBackwards( "community" + SEP + "ndp" + SEP + "v1-docs" + SEP +
+    private final static File docsDir = findBackwards( "community" + SEP + "bolt" + SEP + "v1-docs" + SEP +
                                                        "src" + SEP + "docs" + SEP, 5 );
 
     private final Asciidoctor asciidoc;
@@ -61,7 +61,7 @@ public class DocsRepository
      *
      * @param fileName is a file name relative to the 'docs' dir of the v1-docs module,
      * for instance 'dev/index.asciidoc'
-     * @param cssSelector is a regular css selector, for instance "code[data-lang=\"ndp-struct\"]"
+     * @param cssSelector is a regular css selector, for instance "code[data-lang=\"bolt-struct\"]"
      * @param parser is something that converts the documentation excerpt to your desired representation
      */
     public <T> List<T> read( String fileName, String cssSelector, Function<Element,T> parser )

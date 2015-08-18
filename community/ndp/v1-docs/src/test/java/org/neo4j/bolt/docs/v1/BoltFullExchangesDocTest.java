@@ -69,7 +69,7 @@ public class BoltFullExchangesDocTest
         HostnamePort wsAddress = new HostnamePort( "localhost:7688" );
         for ( DocExchangeExample ex : docs().read(
                 "dev/transport.asciidoc",
-                "code[data-lang=\"ndp_exchange\"]",
+                "code[data-lang=\"bolt_exchange\"]",
                 exchange_example ) )
         {
             mappings.add( new Object[]{"Socket    - "+ex.name(), ex, new SecureSocketConnection(), socketAddress} );
@@ -78,7 +78,7 @@ public class BoltFullExchangesDocTest
 
         for ( DocExchangeExample ex : docs().read(
                 "dev/examples.asciidoc",
-                "code[data-lang=\"ndp_exchange\"]",
+                "code[data-lang=\"bolt_exchange\"]",
                 exchange_example ) )
         {
             mappings.add( new Object[]{"Socket    - "+ex.name(), ex, new SecureSocketConnection(), socketAddress} );

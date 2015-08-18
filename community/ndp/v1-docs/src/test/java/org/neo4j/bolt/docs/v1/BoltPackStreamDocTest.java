@@ -47,7 +47,7 @@ public class BoltPackStreamDocTest
         // Load the documented mappings
         for ( DocSerializationExample ex : docs().read(
                 "dev/serialization.asciidoc",
-                "code[data-lang=\"ndp_packstream_type\"]",
+                "code[data-lang=\"bolt_packstream_type\"]",
                 serialization_example ) )
         {
             mappings.add( new Object[]{ex} );
@@ -55,7 +55,7 @@ public class BoltPackStreamDocTest
 
         for ( DocSerializationExample ex : docs().read(
                 "dev/messaging.asciidoc",
-                "code[data-lang=\"ndp_packstream_type\"]",
+                "code[data-lang=\"bolt_packstream_type\"]",
                 serialization_example ) )
         {
             mappings.add( new Object[]{ex} );

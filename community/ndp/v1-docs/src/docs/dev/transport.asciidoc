@@ -1,4 +1,4 @@
-[[ndp-transport]]
+[[bolt-transport]]
 == Transport layer
 The protocol supports both regular http://en.wikipedia.org/wiki/Network_socket[socket] and http://en.wikipedia.org/wiki/WebSocket[WebSocket] transport layers for sending and receiving messages.
 The transport layer is versioned along with the rest of the data protocol and is responsible for:
@@ -31,7 +31,7 @@ IMPORTANT: If TLS is enabled, and no certificate has been specified, Neo4j will 
  you do not verify the certificate it is very simple to bypass the encryption. You should either ensure you have a
  valid signed certificate installed with Neo4j or that your implements +trust on first use+.
 
-[[ndp-handshake]]
+[[bolt-handshake]]
 === Handshake
 
 After connecting, a handshake takes place to establish which protocol version should be used for that connection.
@@ -46,7 +46,7 @@ This will always represent the highest-priority protocol version the server supp
 If none of the proposed protocols are supported, the server responds with zero (`00 00 00 00`) and closes the connection.
 
 .Initial handshake
-[source,ndp_exchange]
+[source,bolt_exchange]
 ----
 Client: <connect>
 Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
@@ -58,7 +58,7 @@ Server: 00 00 00 01
 ----
 
 .No supported version
-[source,ndp_exchange]
+[source,bolt_exchange]
 ----
 Client: <connect>
 Client: 00 00 00 06  00 00 00 00  00 00 00 00  00 00 00 00
@@ -83,7 +83,7 @@ A message can be divided across multiple chunks, allowing client and server alik
 Each message ends with two bytes with the value `00 00`, these are not counted towards the chunk length.
 
 .A message in one chunk
-[source,ndp_chunking_example]
+[source,bolt_chunking_example]
 ----
 Chunk size: 16
 Message data: 00 01 02 03  04 05 06 07  08 09 0A 0B  0C 0D 0E 0F
@@ -94,7 +94,7 @@ header |                     Data                       |  Marker
 ----
 
 .A message split in two chunks
-[source,ndp_chunking_example]
+[source,bolt_chunking_example]
 ----
 Chunk size: 16
 Message data: 00 01 02 03  04 05 06 07  08 09 0A 0B  0C 0D 0E 0F  01 02 03 04
@@ -105,7 +105,7 @@ header |                     Data                       |  header |  Data   |  M
 ----
 
 .Two messages
-[source,ndp_chunking_example]
+[source,bolt_chunking_example]
 ----
 Chunk size: 16
 Message 1 data: 00 01 02 03  04 05 06 07  08 09 0A 0B  0C  0D 0E 0F

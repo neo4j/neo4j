@@ -51,7 +51,7 @@ public class BoltTransportChunkingDocTest
         // Load the documented mappings
         for ( DocSerializationExample ex : docs().read(
                 "dev/transport.asciidoc",
-                "code[data-lang=\"ndp_chunking_example\"]",
+                "code[data-lang=\"bolt_chunking_example\"]",
                 serialization_example ) )
         {
             mappings.add( new Object[]{ex} );
