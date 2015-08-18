@@ -156,6 +156,7 @@ import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.lifecycle.Lifecycles;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.kernel.recovery.DefaultRecoverySPI;
@@ -453,6 +454,8 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                 recoveredCount.incrementAndGet();
             }
         } );
+
+        life.add( new Lifecycle.Delegate( Lifecycles.multiple( indexProviders.values() ) ) );
 
         // Upgrade the store before we begin
         upgradeStore( storeDir, storeMigrationProcess, indexProvider );

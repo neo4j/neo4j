@@ -20,12 +20,10 @@
 package org.neo4j.index.lucene;
 
 import org.neo4j.graphdb.index.IndexProviders;
-import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import java.io.File;
@@ -37,8 +35,6 @@ public class LuceneKernelExtension extends LifecycleAdapter
     private final IndexConfigStore indexStore;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final IndexProviders indexProviders;
-    private LuceneDataSource luceneDataSource;
-    private final LifeSupport life = new LifeSupport();
 
     public LuceneKernelExtension( File storeDir, Config config, IndexConfigStore indexStore,
             FileSystemAbstraction fileSystemAbstraction, IndexProviders indexProviders )
@@ -53,10 +49,9 @@ public class LuceneKernelExtension extends LifecycleAdapter
     @Override
     public void init()
     {
-        luceneDataSource = life.add( new LuceneDataSource( storeDir, config, indexStore, fileSystemAbstraction ) );
-        // TODO Don't do this here, do proper life cycle management
-        life.start();
-        LuceneIndexImplementation indexImplementation = new LuceneIndexImplementation( luceneDataSource );
+
+        LuceneIndexImplementation indexImplementation =
+                new LuceneIndexImplementation( storeDir, config, indexStore, fileSystemAbstraction );
         indexProviders.registerIndexProvider( LuceneIndexImplementation.SERVICE_NAME, indexImplementation );
     }
 
@@ -64,7 +59,5 @@ public class LuceneKernelExtension extends LifecycleAdapter
     public void shutdown()
     {
         indexProviders.unregisterIndexProvider( LuceneIndexImplementation.SERVICE_NAME );
-        // TODO Don't do this here, do proper life cycle management
-        life.shutdown();
     }
 }

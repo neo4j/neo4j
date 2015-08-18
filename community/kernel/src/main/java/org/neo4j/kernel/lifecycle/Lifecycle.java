@@ -20,11 +20,11 @@
 package org.neo4j.kernel.lifecycle;
 
 /**
- * Lifecycle interface for kernel components. Init is called first, 
- * followed by start, 
+ * Lifecycle interface for kernel components. Init is called first,
+ * followed by start,
  * and then any number of stop-start sequences,
  * and finally stop and shutdown.
- * 
+ *
  * As a stop-start cycle could be due to change of configuration, please perform anything that depends on config
  * in start().
  *
@@ -38,13 +38,47 @@ public interface Lifecycle
 {
     void init()
         throws Throwable;
-    
+
     void start()
         throws Throwable;
-    
+
     void stop()
         throws Throwable;
-    
+
     void shutdown()
         throws Throwable;
+
+    class Delegate implements Lifecycle
+    {
+        private final Lifecycle delegate;
+
+        public Delegate( Lifecycle delegate )
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void init() throws Throwable
+        {
+            delegate.init();
+        }
+
+        @Override
+        public void start() throws Throwable
+        {
+            delegate.start();
+        }
+
+        @Override
+        public void stop() throws Throwable
+        {
+            delegate.stop();
+        }
+
+        @Override
+        public void shutdown() throws Throwable
+        {
+            delegate.shutdown();
+        }
+    }
 }
