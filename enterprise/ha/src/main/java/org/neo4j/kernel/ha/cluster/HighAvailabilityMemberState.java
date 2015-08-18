@@ -116,8 +116,13 @@ public enum HighAvailabilityMemberState
                 {
                     if ( masterId.equals( context.getMyId() ) )
                     {
+/*
                         throw new RuntimeException( "i (" + context.getMyId() + ") am trying to become a slave but " +
                                 "someone said i am available as master" );
+*/
+                        // While this instance was becoming master another one was elected which creates a seemingly
+                        // out-of-order situation. This is normal!
+                        return this;
                     }
                     if ( masterId.equals( context.getElectedMasterId() ) )
                     {

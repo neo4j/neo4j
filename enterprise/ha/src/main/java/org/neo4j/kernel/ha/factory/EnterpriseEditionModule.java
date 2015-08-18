@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.ha.factory;
 
-import org.jboss.netty.logging.InternalLoggerFactory;
-
 import java.io.File;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -85,6 +85,7 @@ import org.neo4j.kernel.ha.cluster.DefaultConversationSPI;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
 import org.neo4j.kernel.ha.cluster.DefaultMasterImplSPI;
 import org.neo4j.kernel.ha.cluster.HANewSnapshotFunction;
+import org.neo4j.kernel.ha.cluster.HighAvailability;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberContext;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
@@ -370,7 +371,6 @@ public class EnterpriseEditionModule
                 updatePuller, memberStateMachine, serverId,
                 dependencies.provideDependency( TransactionIdStore.class ) ) ) );
 
-
         Factory<Slave> slaveFactory = new Factory<Slave>()
         {
             @Override
@@ -508,16 +508,18 @@ public class EnterpriseEditionModule
 
         // Create HA services
         lockManager = dependencies.satisfyDependency(
-                createLockManager( memberStateMachine, config, masterDelegateInvocationHandler, requestContextFactory,
+                createLockManager( highAvailabilityModeSwitcher, config, masterDelegateInvocationHandler,
+                        requestContextFactory,
                         platformModule.availabilityGuard, logging ) );
 
         propertyKeyTokenHolder = life.add( dependencies.satisfyDependency( new PropertyKeyTokenHolder(
-                createPropertyKeyCreator( config, memberStateMachine, masterDelegateInvocationHandler,
+                createPropertyKeyCreator( config, highAvailabilityModeSwitcher, masterDelegateInvocationHandler,
                         requestContextFactory, kernelProvider ) ) ) );
         labelTokenHolder = life.add( dependencies.satisfyDependency( new LabelTokenHolder( createLabelIdCreator( config,
-                memberStateMachine, masterDelegateInvocationHandler, requestContextFactory, kernelProvider ) ) ) );
+                highAvailabilityModeSwitcher, masterDelegateInvocationHandler, requestContextFactory,
+                kernelProvider ) ) ) );
         relationshipTypeTokenHolder = life.add( dependencies.satisfyDependency( new RelationshipTypeTokenHolder(
-                createRelationshipTypeCreator( config, memberStateMachine, masterDelegateInvocationHandler,
+                createRelationshipTypeCreator( config, highAvailabilityModeSwitcher, masterDelegateInvocationHandler,
                         requestContextFactory, kernelProvider ) ) ) );
 
         life.add( dependencies.satisfyDependency(
@@ -526,7 +528,7 @@ public class EnterpriseEditionModule
 
         commitProcessFactory = createCommitProcessFactory( dependencies, logging, monitors, config, life,
                 clusterClient, members, platformModule.jobScheduler, master, requestContextFactory,
-                memberStateMachine );
+                highAvailabilityModeSwitcher );
 
         headerInformationFactory = createHeaderInformationFactory( memberContext );
 
@@ -580,8 +582,7 @@ public class EnterpriseEditionModule
                                                                ClusterClient clusterClient, ClusterMembers members,
                                                                JobScheduler jobScheduler, final Master master,
                                                                final RequestContextFactory requestContextFactory,
-                                                               final HighAvailabilityMemberStateMachine
-                                                                       memberStateMachine )
+            final HighAvailability memberStateMachine )
     {
         final DelegateInvocationHandler<TransactionCommitProcess> commitProcessDelegate =
                 new DelegateInvocationHandler<>( TransactionCommitProcess.class );
@@ -644,7 +645,7 @@ public class EnterpriseEditionModule
         return idGeneratorFactory;
     }
 
-    protected Locks createLockManager( HighAvailabilityMemberStateMachine memberStateMachine, final Config config,
+    protected Locks createLockManager( HighAvailability memberStateMachine, final Config config,
                                        DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
                                        RequestContextFactory requestContextFactory,
                                        AvailabilityGuard availabilityGuard, final LogService logging )
@@ -666,7 +667,7 @@ public class EnterpriseEditionModule
     }
 
     protected TokenCreator createRelationshipTypeCreator( Config config,
-                                                          HighAvailabilityMemberStateMachine memberStateMachine,
+            HighAvailability memberStateMachine,
                                                           DelegateInvocationHandler<Master>
                                                                   masterDelegateInvocationHandler,
                                                           RequestContextFactory requestContextFactory,
@@ -691,7 +692,7 @@ public class EnterpriseEditionModule
     }
 
     protected TokenCreator createPropertyKeyCreator( Config config,
-                                                     HighAvailabilityMemberStateMachine memberStateMachine,
+            HighAvailability memberStateMachine,
                                                      DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
                                                      RequestContextFactory requestContextFactory,
                                                      Supplier<KernelAPI> kernelProvider )
@@ -712,7 +713,7 @@ public class EnterpriseEditionModule
         }
     }
 
-    protected TokenCreator createLabelIdCreator( Config config, HighAvailabilityMemberStateMachine memberStateMachine,
+    protected TokenCreator createLabelIdCreator( Config config, HighAvailability memberStateMachine,
                                                  DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
                                                  RequestContextFactory requestContextFactory,
                                                  Supplier<KernelAPI> kernelProvider )

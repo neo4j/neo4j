@@ -35,6 +35,7 @@ import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.function.Supplier;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Functions;
+import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.ha.store.HighAvailabilityStoreFailureException;
 import org.neo4j.kernel.ha.store.InconsistentlyUpgradedClusterException;
 import org.neo4j.kernel.ha.store.UnableToCopyStoreFromOldMasterException;
@@ -57,7 +58,8 @@ import static org.neo4j.helpers.Uris.parameter;
  * {@link ClusterMemberAvailability#memberIsAvailable(String, URI, StoreId)} to announce it's new status to the
  * cluster.
  */
-public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListener, BindingListener, Lifecycle
+public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListener, HighAvailability, BindingListener,
+        Lifecycle
 {
 
     public static final String MASTER = "master";
@@ -97,6 +99,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private volatile Future<?> modeSwitcherFuture;
     private volatile HighAvailabilityMemberState currentTargetState;
     private final AtomicBoolean canAskForElections = new AtomicBoolean( true );
+
+    private Iterable<HighAvailabilityMemberListener> memberListeners = Listeners.newListeners();
 
     public HighAvailabilityModeSwitcher( SwitchToSlave switchToSlave,
                                          SwitchToMaster switchToMaster,
@@ -156,6 +160,18 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         switchToMaster.close();
         switchToMaster = null;
         switchToSlave = null;
+    }
+
+    @Override
+    public void addHighAvailabilityMemberListener( HighAvailabilityMemberListener toAdd )
+    {
+        memberListeners = Listeners.addListener( toAdd, memberListeners );
+    }
+
+    @Override
+    public void removeHighAvailabilityMemberListener( HighAvailabilityMemberListener toRemove )
+    {
+        memberListeners = Listeners.removeListener( toRemove, memberListeners );
     }
 
     @Override
@@ -232,10 +248,10 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     clusterMemberAvailability.memberIsUnavailable( SLAVE );
                 }
 
-                switchToMaster();
+                switchToMaster( event );
                 break;
             case TO_SLAVE:
-                switchToSlave();
+                switchToSlave( event );
                 break;
             case PENDING:
                 if ( event.getOldState().equals( HighAvailabilityMemberState.SLAVE ) )
@@ -247,14 +263,14 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     clusterMemberAvailability.memberIsUnavailable( MASTER );
                 }
 
-                switchToPending();
+                switchToPending( event );
                 break;
             default:
                 // do nothing
         }
     }
 
-    private void switchToMaster()
+    private void switchToMaster( final HighAvailabilityMemberChangeEvent event )
     {
         final CancellationHandle cancellationHandle = new CancellationHandle();
         startModeSwitching( new Runnable()
@@ -274,12 +290,23 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     return;
                 }
 
+                Listeners.notifyListeners( memberListeners,
+                        new Listeners.Notification<HighAvailabilityMemberListener>()
+                        {
+                            @Override
+                            public void notify( HighAvailabilityMemberListener listener )
+                            {
+                                listener.masterIsElected( event );
+                            }
+                        } );
+
                 haCommunicationLife.shutdown();
                 haCommunicationLife = new LifeSupport();
 
                 try
                 {
                     masterHaURI = switchToMaster.switchToMaster( haCommunicationLife, me );
+
                     canAskForElections.set( true );
                 }
                 catch ( Throwable e )
@@ -292,7 +319,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         }, cancellationHandle );
     }
 
-    private void switchToSlave()
+    private void switchToSlave( final HighAvailabilityMemberChangeEvent event )
     {
         // Do this with a scheduler, so that if it fails, it can retry later with an exponential backoff with max
         // wait time.
@@ -322,6 +349,16 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
                 try
                 {
+                    Listeners.notifyListeners( memberListeners,
+                            new Listeners.Notification<HighAvailabilityMemberListener>()
+                            {
+                                @Override
+                                public void notify( HighAvailabilityMemberListener listener )
+                                {
+                                    listener.masterIsAvailable( event );
+                                }
+                            } );
+
                     haCommunicationLife.shutdown();
                     haCommunicationLife = new LifeSupport();
 
@@ -339,6 +376,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     else
                     {
                         slaveHaURI = resultingSlaveHaURI;
+
                         canAskForElections.set( true );
                     }
                 }
@@ -385,7 +423,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         }, cancellationHandle );
     }
 
-    private void switchToPending()
+    private void switchToPending( final HighAvailabilityMemberChangeEvent event )
     {
         msgLog.info( "I am %s, moving to pending", instanceId );
 
@@ -396,6 +434,16 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             {
                 haCommunicationLife.shutdown();
                 haCommunicationLife = new LifeSupport();
+
+                Listeners.notifyListeners( memberListeners,
+                        new Listeners.Notification<HighAvailabilityMemberListener>()
+                        {
+                            @Override
+                            public void notify( HighAvailabilityMemberListener listener )
+                            {
+                                listener.instanceStops( event );
+                            }
+                        } );
             }
         }, new CancellationHandle() );
 

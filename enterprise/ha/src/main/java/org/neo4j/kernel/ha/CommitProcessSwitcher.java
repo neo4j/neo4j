@@ -22,7 +22,7 @@ package org.neo4j.kernel.ha;
 import java.net.URI;
 
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
+import org.neo4j.kernel.ha.cluster.HighAvailability;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
@@ -38,7 +38,7 @@ public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommi
                                   Master master,
                                   DelegateInvocationHandler<TransactionCommitProcess> delegate,
                                   RequestContextFactory requestContextFactory,
-                                  HighAvailabilityMemberStateMachine memberStateMachine,
+            HighAvailability memberStateMachine,
                                   NeoStoreInjectedTransactionValidator validator,
                                   TransactionCommitProcess innerCommitProcess )
     {

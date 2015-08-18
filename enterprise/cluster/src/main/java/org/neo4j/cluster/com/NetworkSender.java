@@ -240,7 +240,8 @@ public class NetworkSender
 
     private URI getURI( InetSocketAddress address ) throws URISyntaxException
     {
-        return new URI( CLUSTER_SCHEME + ":/" + address ); // Socket.toString() already prepends a /
+        return new URI(
+                CLUSTER_SCHEME + ":/" + address.getHostName() + ":" + address.getPort() ); // Socket.toString() already prepends a /
     }
 
     private synchronized void send( final Message message )
@@ -307,6 +308,9 @@ public class NetworkSender
                                 msgLog.debug( "Unable to write " + message + " to " + future.getChannel(),
                                         future.getCause() );
                                 closedChannel( future.getChannel() );
+
+                                // Try again
+                                send( message );
                             }
                         }
                     } );
