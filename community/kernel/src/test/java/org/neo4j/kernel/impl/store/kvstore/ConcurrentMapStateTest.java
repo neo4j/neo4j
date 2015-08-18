@@ -26,7 +26,6 @@ import java.util.concurrent.locks.Lock;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -133,52 +132,18 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void shouldFailIfApplyingAVersionUpdateWithAVersionLowerOrEqualToTheInitialVersion() throws Exception
+    public void shouldUseEmptyUpdaterOnVersionLowerOrEqualToTheInitialVersion() throws Exception
     {
         // given
         long initialVersion = 42;
         when( store.version() ).thenReturn( initialVersion );
         ConcurrentMapState<?> state = new ConcurrentMapState<>( store, file );
 
-        try
-        {
-            // when
-            state.updater( initialVersion, lock );
-            fail( "should have thrown" );
-        }
-        catch ( IllegalStateException ex )
-        {
-            // then
-            assertEquals( "Cannot apply update with given version " + initialVersion +
-                          " when base version is " + initialVersion, ex.getMessage() );
-        }
-    }
+        // when
+        EntryUpdater<?> updater = state.updater( initialVersion, lock );
 
-    @Test
-    public void shouldFailIfApplyingAVersionUpdateTwiceWithSameVersion() throws Exception
-    {
-        // given
-        long initialVersion = 42;
-        when( store.version() ).thenReturn( initialVersion );
-        ConcurrentMapState<?> state = new ConcurrentMapState<>( store, file );
-
-        EntryUpdater<?> updater;
-
-        long updateVersion = 45;
-        updater = state.updater( updateVersion, lock );
-        updater.close();
-
-        try
-        {
-            // when
-            state.updater( updateVersion, lock );
-            fail( "should have thrown" );
-        }
-        catch ( IllegalStateException ex )
-        {
-            // then
-            assertEquals( "Cannot apply update with given version " + updateVersion +
-                          " when base version is " + initialVersion, ex.getMessage() );
-        }
+        // expected
+        assertEquals( "Empty updater should be used for version less or equal to initial",
+                EntryUpdater.noUpdates(), updater );
     }
 }
