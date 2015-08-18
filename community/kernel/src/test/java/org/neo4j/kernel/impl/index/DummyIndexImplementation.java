@@ -31,8 +31,9 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class DummyIndexImplementation implements IndexImplementation
+public class DummyIndexImplementation extends LifecycleAdapter implements IndexImplementation
 {
     @Override
     public Map<String, String> fillInDefaults( Map<String, String> config )

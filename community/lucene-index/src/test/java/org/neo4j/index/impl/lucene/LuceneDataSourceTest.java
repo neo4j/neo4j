@@ -19,25 +19,25 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
-
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterAccessor;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.Map;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
+import org.neo4j.kernel.lifecycle.LifeRule;
+import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TargetDirectory.TestDirectory;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
@@ -46,20 +46,15 @@ import static org.junit.Assert.assertTrue;
 
 public class LuceneDataSourceTest
 {
+    public final @Rule LifeRule life = new LifeRule( true );
+    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
     private IndexConfigStore indexStore;
     private LuceneDataSource dataSource;
-    File dbPath = getDbPath();
-
-    private File getDbPath()
-    {
-        return new File("target/var/datasource" + System.currentTimeMillis());
-    }
 
     @Before
     public void setup()
     {
-        dbPath.mkdirs();
-        indexStore = new IndexConfigStore( dbPath, new DefaultFileSystemAbstraction() );
+        indexStore = new IndexConfigStore( directory.directory(), new DefaultFileSystemAbstraction() );
         addIndex( "foo" );
     }
 
@@ -73,30 +68,21 @@ public class LuceneDataSourceTest
         return new IndexIdentifier( IndexEntityType.Node, name );
     }
 
-    @After
-    public void tearDown() throws IOException
-    {
-        dataSource.stop();
-        FileUtils.deleteRecursively( dbPath );
-    }
-
     @Test
-    public void testShouldReturnIndexWriterFromLRUCache() throws InstantiationException
+    public void testShouldReturnIndexWriterFromLRUCache() throws Throwable
     {
         Config config = new Config( config(), GraphDatabaseSettings.class );
-        dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction());
-        dataSource.start();
+        dataSource = life.add( new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() ) );
         IndexIdentifier identifier = identifier( "foo" );
         IndexWriter writer = dataSource.getIndexSearcher( identifier ).getWriter();
         assertSame( writer, dataSource.getIndexSearcher( identifier ).getWriter() );
     }
 
     @Test
-    public void testShouldReturnIndexSearcherFromLRUCache() throws InstantiationException, IOException
+    public void testShouldReturnIndexSearcherFromLRUCache() throws Throwable
     {
         Config config = new Config( config(), GraphDatabaseSettings.class );
-        dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() );
-        dataSource.start();
+        dataSource = life.add( new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() ) );
         IndexIdentifier identifier = identifier( "foo" );
         IndexReference searcher = dataSource.getIndexSearcher( identifier );
         assertSame( searcher, dataSource.getIndexSearcher( identifier ) );
@@ -104,15 +90,14 @@ public class LuceneDataSourceTest
     }
 
     @Test
-    public void testClosesOldestIndexWriterWhenCacheSizeIsExceeded() throws InstantiationException
+    public void testClosesOldestIndexWriterWhenCacheSizeIsExceeded() throws Throwable
     {
         addIndex( "bar" );
         addIndex( "baz" );
         Map<String, String> configMap = config();
         configMap.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
         Config config = new Config( configMap, GraphDatabaseSettings.class );
-        dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() );
-        dataSource.start();
+        dataSource = life.add( new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() ) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
         IndexIdentifier bazIdentifier = identifier( "baz" );
@@ -124,15 +109,14 @@ public class LuceneDataSourceTest
     }
 
     @Test
-    public void testClosesOldestIndexSearcherWhenCacheSizeIsExceeded() throws InstantiationException, IOException
+    public void testClosesOldestIndexSearcherWhenCacheSizeIsExceeded() throws Throwable
     {
         addIndex( "bar" );
         addIndex( "baz" );
         Map<String, String> configMap = config();
         configMap.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
         Config config = new Config( configMap, GraphDatabaseSettings.class );
-        dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() );
-        dataSource.start();
+        dataSource = life.add( new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() ) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
         IndexIdentifier bazIdentifier = identifier( "baz" );
@@ -146,15 +130,14 @@ public class LuceneDataSourceTest
     }
 
     @Test
-    public void testRecreatesSearcherWhenRequestedAgain() throws InstantiationException, IOException
+    public void testRecreatesSearcherWhenRequestedAgain() throws Throwable
     {
         addIndex( "bar" );
         addIndex( "baz" );
         Map<String, String> configMap = config();
         configMap.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
         Config config = new Config( configMap, GraphDatabaseSettings.class );
-        dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() );
-        dataSource.start();
+        dataSource = life.add( new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() ) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
         IndexIdentifier bazIdentifier = identifier( "baz" );
@@ -171,15 +154,14 @@ public class LuceneDataSourceTest
     }
 
     @Test
-    public void testRecreatesWriterWhenRequestedAgainAfterCacheEviction() throws InstantiationException
+    public void testRecreatesWriterWhenRequestedAgainAfterCacheEviction() throws Throwable
     {
         addIndex( "bar" );
         addIndex( "baz" );
         Map<String, String> configMap = config();
         configMap.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
         Config config = new Config( configMap, GraphDatabaseSettings.class );
-        dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() );
-        dataSource.start();
+        dataSource = life.add( new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() ) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
         IndexIdentifier bazIdentifier = identifier( "baz" );
@@ -193,6 +175,6 @@ public class LuceneDataSourceTest
 
     private Map<String, String> config()
     {
-        return MapUtil.stringMap("store_dir", getDbPath().getPath() );
+        return MapUtil.stringMap( "store_dir", directory.directory().getPath() );
     }
 }

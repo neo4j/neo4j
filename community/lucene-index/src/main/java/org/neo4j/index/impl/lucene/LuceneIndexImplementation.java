@@ -31,9 +31,13 @@ import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class LuceneIndexImplementation implements IndexImplementation
+public class LuceneIndexImplementation extends LifecycleAdapter implements IndexImplementation
 {
     static final String KEY_TYPE = "type";
     static final String KEY_ANALYZER = "analyzer";
@@ -50,15 +54,43 @@ public class LuceneIndexImplementation implements IndexImplementation
                     IndexManager.PROVIDER, SERVICE_NAME, KEY_TYPE, "fulltext",
                     KEY_TO_LOWER_CASE, "true" ) );
 
-    public static final int DEFAULT_LAZY_THRESHOLD = 100;
+    private LuceneDataSource dataSource;
+    private final Config config;
+    private final IndexConfigStore indexStore;
+    private final FileSystemAbstraction fileSystemAbstraction;
 
-    private final LuceneDataSource dataSource;
-    final int lazynessThreshold;
-
-    public LuceneIndexImplementation( LuceneDataSource dataSource )
+    public LuceneIndexImplementation( Config config, IndexConfigStore indexStore,
+            FileSystemAbstraction fileSystemAbstraction )
     {
-        this.dataSource = dataSource;
-        this.lazynessThreshold = DEFAULT_LAZY_THRESHOLD;
+        this.config = config;
+        this.indexStore = indexStore;
+        this.fileSystemAbstraction = fileSystemAbstraction;
+    }
+
+    @Override
+    public void init() throws Throwable
+    {
+        this.dataSource = new LuceneDataSource( config, indexStore, fileSystemAbstraction );
+        this.dataSource.init();
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+        this.dataSource.start();
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+        this.dataSource.stop();
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        this.dataSource.shutdown();
+        this.dataSource = null;
     }
 
     @Override
