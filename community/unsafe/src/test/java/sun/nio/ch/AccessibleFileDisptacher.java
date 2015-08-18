@@ -26,6 +26,7 @@ public abstract class AccessibleFileDisptacher extends FileDispatcher
 {
     // FileDispatcher:
     public abstract int force(FileDescriptor fd, boolean metaData) throws IOException;
+    public abstract int force(FileDescriptor fd, boolean metaData, boolean writable) throws IOException;
     public abstract int truncate(FileDescriptor fd, long size) throws IOException;
     public abstract long size(FileDescriptor fd) throws IOException;
     public abstract int lock(FileDescriptor fd, boolean blocking, long pos, long size, boolean shared) throws IOException;

@@ -21,9 +21,49 @@ package sun.nio.ch;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
+import java.lang.reflect.Method;
+
+import org.neo4j.unsafe.impl.internal.dragons.LookupBypass;
 
 public class DelegateFileDispatcher extends AccessibleFileDisptacher
 {
+    private static final MethodHandle forceHandle = getForceHandle();
+
+    private static MethodHandle getForceHandle()
+    {
+        LookupBypass lookup = new LookupBypass();
+        MethodType arg2 = MethodType.methodType( int.class, FileDescriptor.class, boolean.class );
+        MethodType arg3 = MethodType.methodType( int.class, FileDescriptor.class, boolean.class, boolean.class );
+        MethodHandle handle = lookupFileDispatcherHandle( lookup, "force", arg2, false );
+        if ( handle == null )
+        {
+            handle = lookupFileDispatcherHandle( lookup, "force", arg3, true );
+        }
+        return handle;
+    }
+
+    private static MethodHandle lookupFileDispatcherHandle(
+            LookupBypass lookup, String name, MethodType type, boolean throwOnError )
+    {
+        try
+        {
+            Class<FileDispatcher> cls = FileDispatcher.class;
+            Method method = cls.getDeclaredMethod( name, type.parameterArray() );
+            method.setAccessible( true );
+            return lookup.unreflect( method ); // We have to unreflect because we need to setAccessible( true )
+        }
+        catch ( Exception e )
+        {
+            if ( throwOnError )
+            {
+                throw new LinkageError( "No such FileDispatcher method: " + name + " of type " + type );
+            }
+            return null;
+        }
+    }
+
     private final FileDispatcher delegate;
 
     public DelegateFileDispatcher( Object delegate )
@@ -31,9 +71,30 @@ public class DelegateFileDispatcher extends AccessibleFileDisptacher
         this.delegate = (FileDispatcher) delegate;
     }
 
+    // Specific to all platforms other than Oracle JDK 7 on Linux, it seems
     public int force( FileDescriptor fd, boolean metaData ) throws IOException
     {
-        return delegate.force( fd, metaData );
+        try
+        {
+            return (int) forceHandle.invokeExact( delegate, fd, metaData );
+        }
+        catch ( Throwable throwable )
+        {
+            throw new LinkageError( "not linked: FileDispatcher.force(FileDescriptor, boolean)", throwable );
+        }
+    }
+
+    // Specific to Oracle JDK 7 on Linux
+    public int force( FileDescriptor fd, boolean metaData, boolean writable ) throws IOException
+    {
+        try
+        {
+            return (int) forceHandle.invokeExact( delegate, fd, metaData, writable );
+        }
+        catch ( Throwable throwable )
+        {
+            throw new LinkageError( "not linked: FileDispatcher.force(FileDescriptor, boolean, boolean)", throwable );
+        }
     }
 
     public long readv( FileDescriptor fd, long address, int len ) throws IOException
