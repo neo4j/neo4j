@@ -33,7 +33,7 @@ public class SlaveLockManager extends LifecycleAdapter implements Locks
     private final AvailabilityGuard availabilityGuard;
     private final Configuration config;
 
-    public static interface Configuration
+    public interface Configuration
     {
         long getAvailabilityTimeout();
     }

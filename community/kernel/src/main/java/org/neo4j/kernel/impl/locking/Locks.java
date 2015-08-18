@@ -44,7 +44,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public interface Locks extends Lifecycle
 {
-    public abstract class Factory extends Service
+    abstract class Factory extends Service
     {
         public Factory( String key, String... altKeys )
         {
@@ -55,14 +55,14 @@ public interface Locks extends Lifecycle
     }
 
     /** For introspection and debugging. */
-    public interface Visitor
+    interface Visitor
     {
         /** Visit the description of a lock held by at least one client. */
         void visit( ResourceType resourceType, long resourceId, String description, long estimatedWaitTime );
     }
 
     /** Locks are split by resource types. It is up to the implementation to define the contract for these. */
-    public interface ResourceType
+    interface ResourceType
     {
         /** Must be unique among all existing resource types, should preferably be a sequence starting at 0. */
         int typeId();
@@ -71,7 +71,7 @@ public interface Locks extends Lifecycle
         WaitStrategy waitStrategy();
     }
 
-    public interface Client extends AutoCloseable
+    interface Client extends AutoCloseable
     {
         /**
          * Can be grabbed when there are no locks or only share locks on a resource. If the lock cannot be acquired,
