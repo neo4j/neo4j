@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.functions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
-import ExpressionConverters._
-import commands.{expressions => commandexpressions}
-import commands.expressions.{Expression => CommandExpression}
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression => CommandExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => commandexpressions}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 case object PercentileCont extends AggregatingFunction with SimpleTypedFunction {
   def name = "percentileCont"
@@ -34,8 +34,8 @@ case object PercentileCont extends AggregatingFunction with SimpleTypedFunction 
   )
 
   def asCommandExpression(invocation: ast.FunctionInvocation) = {
-    val firstArg = invocation.arguments(0).asCommandExpression
-    val secondArg = invocation.arguments(1).asCommandExpression
+    val firstArg = toCommandExpression(invocation.arguments.head)
+    val secondArg = toCommandExpression(invocation.arguments(1))
 
     val command = commandexpressions.PercentileCont(firstArg, secondArg)
     if (invocation.distinct)

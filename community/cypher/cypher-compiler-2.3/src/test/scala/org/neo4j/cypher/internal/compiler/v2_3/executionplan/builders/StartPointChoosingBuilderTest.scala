@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_3.ast
-import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, HasLabel}
@@ -267,13 +267,12 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
   test("should_pick_any_index_available_for_prefix_search") {
     object inner extends org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport {
-      import ExpressionConverters._
 
       def run() = {
         // Given
         val labelPredicate = HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label))
         val like: ast.Like = ast.Like(ast.Property(ident("n"), ast.PropertyKeyName(property)_)_, ast.LikePattern(ast.StringLiteral("prefix%")_))_
-        val likePredicate = like.asCommandPredicate
+        val likePredicate = toCommandPredicate(like)
 
         val query = newQuery(
           where = Seq(labelPredicate, likePredicate),
@@ -296,14 +295,13 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
   test("should pick any index available for range queries") {
     object inner extends org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport {
-      import ExpressionConverters._
 
       def run() = {
         // Given
         val labelPredicate = HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label))
         val prop: ast.Property = ast.Property(ident("n"), ast.PropertyKeyName("prop") _) _
         val inequality = ast.AndedPropertyInequalities(ident("n"), prop, NonEmptyList(ast.GreaterThan(prop, ast.SignedDecimalIntegerLiteral("42") _) _))
-        val inequalityPredicate = inequality.asCommandPredicate
+        val inequalityPredicate = toCommandPredicate(inequality)
 
         val query = newQuery(
           where = Seq(labelPredicate, inequalityPredicate),

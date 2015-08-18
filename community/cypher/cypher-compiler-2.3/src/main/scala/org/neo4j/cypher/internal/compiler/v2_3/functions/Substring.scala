@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.functions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
-import ExpressionConverters._
-import commands.{expressions => commandexpressions}
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => commandexpressions}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 case object Substring extends Function with SimpleTypedFunction {
   def name = "substring"
@@ -35,8 +35,8 @@ case object Substring extends Function with SimpleTypedFunction {
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =
     commandexpressions.SubstringFunction(
-      invocation.arguments(0).asCommandExpression,
-      invocation.arguments(1).asCommandExpression,
-      invocation.arguments.lift(2).asCommandExpression
+      toCommandExpression(invocation.arguments.head),
+      toCommandExpression(invocation.arguments(1)),
+      toCommandExpression(invocation.arguments.lift(2))
     )
 }

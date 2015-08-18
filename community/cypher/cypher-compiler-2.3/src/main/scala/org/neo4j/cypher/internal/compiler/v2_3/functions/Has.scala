@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.functions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
-import ExpressionConverters._
-import commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.PropertyExists
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 case object Has extends Function {
   def name = "HAS"
@@ -39,7 +39,7 @@ case object Has extends Function {
     } chain invocation.specifyType(CTBoolean)
 
   def asCommandExpression(invocation: ast.FunctionInvocation) = {
-    val property = invocation.arguments(0).asInstanceOf[ast.Property]
-    PropertyExists(property.map.asCommandExpression, PropertyKey(property.propertyKey.name))
+    val property = invocation.arguments.head.asInstanceOf[ast.Property]
+    PropertyExists(toCommandExpression(property.map), PropertyKey(property.propertyKey.name))
   }
 }

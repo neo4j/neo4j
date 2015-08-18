@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.functions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
-import ExpressionConverters._
-import commands.{expressions => commandexpressions}
-import commands.expressions.{Expression => CommandExpression}
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression => CommandExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => commandexpressions}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 case object Trim extends Function with SimpleTypedFunction {
   def name = "trim"
@@ -34,5 +34,5 @@ case object Trim extends Function with SimpleTypedFunction {
   )
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =
-    commandexpressions.TrimFunction(invocation.arguments(0).asCommandExpression)
+    commandexpressions.TrimFunction(toCommandExpression(invocation.arguments.head))
 }
