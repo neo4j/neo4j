@@ -121,6 +121,38 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     result.toList should equal(List(Map("p" -> null, "placeName" -> null)))
   }
 
+  test("should handle comparing large integers") {
+    // Given
+    val person = createLabeledNode(Map("age" -> 5987523281782486379L), "Person")
+
+
+    graph.createIndex("Person", "age")
+
+    // When
+    val result = executeWithCostPlannerOnly(
+      "MATCH (p:Person) USING INDEX p:Person(age) WHERE p.age > 5987523281782486378 RETURN p")
+
+    // Then
+    result.toList should equal(List(Map("p" -> person)))
+    result.executionPlanDescription().toString should include("NodeIndexSeek")
+  }
+
+  test("should handle comparing large integers 2") {
+    // Given
+    val person = createLabeledNode(Map("age" -> 5987523281782486379L), "Person")
+
+
+    graph.createIndex("Person", "age")
+
+    // When
+    val result = executeWithCostPlannerOnly(
+      "MATCH (p:Person) USING INDEX p:Person(age) WHERE p.age > 5987523281782486379 RETURN p")
+
+    // Then
+    result.toList shouldBe empty
+    result.executionPlanDescription().toString should include("NodeIndexSeek")
+  }
+
   private def setUpDatabaseForTests() {
     executeWithRulePlanner(
       """CREATE (architect:Matrix { name:'The Architect' }),

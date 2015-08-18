@@ -58,8 +58,8 @@ public class LookupFilter
     /**
      * used in "normal" operation
      */
-    public static PrimitiveLongIterator exactIndexMatches( final EntityOperations operations,
-            final KernelStatement state, PrimitiveLongIterator indexedNodeIds, int propertyKeyId, Object value )
+    public static PrimitiveLongIterator exactIndexMatches( EntityOperations operations, KernelStatement state,
+            PrimitiveLongIterator indexedNodeIds, int propertyKeyId, Object value )
     {
         if ( isNumberOrArray( value ) )
         {
@@ -67,6 +67,14 @@ public class LookupFilter
                     state, propertyKeyId, value ) );
         }
         return indexedNodeIds;
+    }
+
+    public static PrimitiveLongIterator exactRangeMatches( EntityOperations operations, KernelStatement state,
+            PrimitiveLongIterator indexedNodeIds, int propertyKeyId,
+            Number lower, boolean includeLower, Number upper, boolean includeUpper )
+    {
+        return PrimitiveLongCollections.filter( indexedNodeIds, new NumericRangeMatchPredicate( operations, state,
+                propertyKeyId, lower, includeLower, upper, includeUpper ) );
     }
 
     private static boolean isNumberOrArray( Object value )
@@ -153,6 +161,69 @@ public class LookupFilter
         Property nodeProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
         {
             return lookup.nodeProperty( nodeId, propertyKeyId );
+        }
+    }
+
+    static class NumericRangeMatchPredicate implements LongPredicate
+    {
+        final EntityOperations readOperations;
+        final KernelStatement state;
+        final int propertyKeyId;
+        final Number lower;
+        final boolean includeLower;
+        final Number upper;
+        final boolean includeUpper;
+
+        NumericRangeMatchPredicate( EntityOperations readOperations, KernelStatement state, int propertyKeyId,
+                Number lower, boolean includeLower, Number upper, boolean includeUpper )
+        {
+            this.readOperations = readOperations;
+            this.state = state;
+            this.propertyKeyId = propertyKeyId;
+            this.lower = lower;
+            this.includeLower = includeLower;
+            this.upper = upper;
+            this.includeUpper = includeUpper;
+        }
+
+        @Override
+        public boolean test( long nodeId )
+        {
+            try ( Cursor<NodeItem> node = readOperations.nodeCursor( state, nodeId ) )
+            {
+                return node.next() && inRange( node.get().getProperty( propertyKeyId ) );
+            }
+        }
+
+        boolean inRange( Object value )
+        {
+            if ( value == null )
+            {
+                return false;
+            }
+            if ( !(value instanceof Number) )
+            {
+                throw new IllegalStateException( "Unable to verify range for non-numeric property " +
+                                                 "value: " + value + " for property key: " + propertyKeyId );
+            }
+            Number number = (Number) value;
+            if ( lower != null )
+            {
+                int compare = PropertyValueComparison.COMPARE_NUMBERS.compare( number, lower );
+                if ( compare < 0 || !includeLower && compare == 0 )
+                {
+                    return false;
+                }
+            }
+            if ( upper != null )
+            {
+                int compare = PropertyValueComparison.COMPARE_NUMBERS.compare( number, upper );
+                if ( compare > 0 || !includeUpper && compare == 0 )
+                {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 }

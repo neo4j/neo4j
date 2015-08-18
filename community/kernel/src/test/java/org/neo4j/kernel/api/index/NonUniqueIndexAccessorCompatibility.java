@@ -83,11 +83,11 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
                 NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, 5, new long[]{1000} ),
                 NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, 5, new long[]{1000} ) ) );
 
-        assertThat( getAllNodesFromIndexSeekByNumber( -5, false, 5, false ), equalTo( singletonList( 3L ) ) );
-        assertThat( getAllNodesFromIndexSeekByNumber( -3, false, 0, false ), equalTo( EMPTY_LIST ) );
-        assertThat( getAllNodesFromIndexSeekByNumber( -5, true, 5, false ), equalTo( asList( 1L, 2L, 3L ) ) );
-        assertThat( getAllNodesFromIndexSeekByNumber( -5, false, 5, true ), equalTo( asList( 3L, 4L, 5L ) ) );
-        assertThat( getAllNodesFromIndexSeekByNumber( -5, true, 5, true ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -5, 5 ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -3, -1 ), equalTo( EMPTY_LIST ) );
+        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -5, 4 ), equalTo( asList( 1L, 2L, 3L ) ) );
+        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -4, 5 ), equalTo( asList( 3L, 4L, 5L ) ) );
+        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -5, 5 ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
     }
 
     @Test

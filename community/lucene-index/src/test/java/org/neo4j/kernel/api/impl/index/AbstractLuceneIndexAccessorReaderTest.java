@@ -65,13 +65,13 @@ public abstract class AbstractLuceneIndexAccessorReaderTest<R extends LuceneInde
     public void shouldUseCorrectLuceneQueryForRangeSeekByNumberQuery() throws Exception
     {
         // Given
-        when( documentLogic.newRangeSeekByNumberQuery( 12, true, null, false ) ).thenReturn( mock( TermRangeQuery.class) );
+        when( documentLogic.newInclusiveNumericRangeSeekQuery( 12, null ) ).thenReturn( mock( TermRangeQuery.class ) );
 
         // When
-        accessor.rangeSeekByNumber( 12, true, null, false );
+        accessor.rangeSeekByNumberInclusive( 12, null );
 
         // Then
-        verify( documentLogic ).newRangeSeekByNumberQuery( 12, true, null, false );
+        verify( documentLogic ).newInclusiveNumericRangeSeekQuery( 12, null );
         verifyNoMoreInteractions( documentLogic );
     }
 
