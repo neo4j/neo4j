@@ -278,8 +278,6 @@ SUCH DAMAGE.
 ------------------------------------------------------------------------------
 BSD License
   ASM Core
-  Commons Compiler
-  Janino
   Scala Compiler
   scala-parser-combinators
 ------------------------------------------------------------------------------
