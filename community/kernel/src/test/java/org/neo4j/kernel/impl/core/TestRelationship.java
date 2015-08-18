@@ -569,6 +569,32 @@ public class TestRelationship extends AbstractNeo4jTestCase
         assertTrue( properties.get( key2 ).equals( int2 ) );
         assertFalse( properties.containsKey( key3 ) );
 
+
+        properties = node1.getProperties();
+        assertTrue( properties.isEmpty() );
+
+        try
+        {
+            String[] names = null;
+            node1.getProperties( names );
+            fail();
+        }
+        catch ( NullPointerException e )
+        {
+            // Ok
+        }
+
+        try
+        {
+            String[] names = new String[]{null};
+            node1.getProperties( names );
+            fail();
+        }
+        catch ( NullPointerException e )
+        {
+            // Ok
+        }
+
         try
         {
             rel1.removeProperty( key3 );

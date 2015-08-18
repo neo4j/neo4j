@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,7 +72,9 @@ import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
 
-public class NodeProxy implements Node
+public class NodeProxy
+        extends PropertyContainerProxy
+        implements Node
 {
     public interface NodeActions
     {
@@ -384,6 +387,16 @@ public class NodeProxy implements Node
     @Override
     public Map<String, Object> getProperties( String... keys )
     {
+        if ( keys == null )
+        {
+            throw new NullPointerException( "keys" );
+        }
+
+        if ( keys.length == 0 )
+        {
+            return Collections.emptyMap();
+        }
+
         try ( Statement statement = actions.statement() )
         {
             try ( Cursor<NodeItem> node = statement.readOperations().nodeCursor( nodeId ) )
@@ -396,29 +409,7 @@ public class NodeProxy implements Node
 
                 try ( Cursor<PropertyItem> propertyCursor = node.get().properties() )
                 {
-                    Map<String, Object> properties = new HashMap<>( ((int) (keys.length * 1.3f)) );
-
-                    // Specific properties given
-                    int[] propertyKeys = new int[keys.length];
-                    for ( int i = 0; i < keys.length; i++ )
-                    {
-                        String key = keys[i];
-                        propertyKeys[i] = statement.readOperations().propertyKeyGetForName( key );
-                    }
-
-                    while ( propertyCursor.next() )
-                    {
-                        for ( int i = 0; i < propertyKeys.length; i++ )
-                        {
-                            int propertyKey = propertyKeys[i];
-                            if ( propertyKey == propertyCursor.get().propertyKeyId() )
-                            {
-                                properties.put( keys[i], propertyCursor.get().value() );
-                            }
-                        }
-                    }
-
-                    return properties;
+                    return super.getProperties( statement, propertyCursor, keys );
                 }
             }
         }

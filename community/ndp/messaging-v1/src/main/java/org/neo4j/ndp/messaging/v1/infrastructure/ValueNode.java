@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -40,7 +39,9 @@ import org.neo4j.graphdb.Traverser;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.ndp.messaging.v1.Neo4jPack;
 
-public class ValueNode implements Node
+public class ValueNode
+        extends ValuePropertyContainer
+        implements Node
 {
     private static final int STRUCT_FIELD_COUNT = 3;
 
@@ -93,13 +94,13 @@ public class ValueNode implements Node
 
     private final long id;
     private final Collection<Label> labels;
-    private final Map<String,Object> props;
 
     public ValueNode( long id, Collection<Label> labels, Map<String,Object> props )
     {
+        super( props );
+
         this.id = id;
         this.labels = labels;
-        this.props = props;
     }
 
     @Override
@@ -112,38 +113,6 @@ public class ValueNode implements Node
     public Iterable<Label> getLabels()
     {
         return labels;
-    }
-
-    @Override
-    public Object getProperty( String s )
-    {
-        return props.get( s );
-    }
-
-    @Override
-    public Iterable<String> getPropertyKeys()
-    {
-        return props.keySet();
-    }
-
-    @Override
-    public Map<String, Object> getProperties( String... keys )
-    {
-        Map<String, Object> selected = new HashMap<>();
-        for ( String key : keys )
-        {
-            if ( props.containsKey( key ) )
-            {
-                selected.put( key, props.get( key ) );
-            }
-        }
-        return selected;
-    }
-
-    @Override
-    public Map<String, Object> getAllProperties()
-    {
-        return props;
     }
 
     @Override
@@ -347,7 +316,7 @@ public class ValueNode implements Node
     {
         int result = (int) (id ^ (id >>> 32));
         result = 31 * result + labels.hashCode();
-        result = 31 * result + props.hashCode();
+        result = 31 * result + getAllProperties().hashCode();
         return result;
     }
 
@@ -357,7 +326,7 @@ public class ValueNode implements Node
         return "ValueNode{" +
                "id=" + id +
                ", labels=" + labels +
-               ", props=" + props +
+                ", props=" + getAllProperties() +
                '}';
     }
 

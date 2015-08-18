@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +48,9 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 
-public class RelationshipProxy implements Relationship, RelationshipVisitor<RuntimeException>
+public class RelationshipProxy
+        extends PropertyContainerProxy
+        implements Relationship, RelationshipVisitor<RuntimeException>
 {
     public interface RelationshipActions
     {
@@ -243,6 +246,16 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public Map<String, Object> getProperties( String... keys )
     {
+        if ( keys == null )
+        {
+            throw new NullPointerException( "keys" );
+        }
+
+        if ( keys.length == 0 )
+        {
+            return Collections.emptyMap();
+        }
+
         try ( Statement statement = actions.statement() )
         {
             try ( Cursor<RelationshipItem> relationship = statement.readOperations().relationshipCursor( getId() ) )
@@ -255,29 +268,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
 
                 try ( Cursor<PropertyItem> propertyCursor = relationship.get().properties() )
                 {
-                    Map<String, Object> properties = new HashMap<>( ((int) (keys.length * 1.3f)) );
-
-                    // Specific properties given
-                    int[] propertyKeys = new int[keys.length];
-                    for ( int i = 0; i < keys.length; i++ )
-                    {
-                        String key = keys[i];
-                        propertyKeys[i] = statement.readOperations().propertyKeyGetForName( key );
-                    }
-
-                    while ( propertyCursor.next() )
-                    {
-                        for ( int i = 0; i < propertyKeys.length; i++ )
-                        {
-                            int propertyKey = propertyKeys[i];
-                            if ( propertyKey == propertyCursor.get().propertyKeyId() )
-                            {
-                                properties.put( keys[i], propertyCursor.get().value() );
-                            }
-                        }
-                    }
-
-                    return properties;
+                    return super.getProperties( statement, propertyCursor, keys );
                 }
             }
         }

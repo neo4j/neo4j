@@ -207,7 +207,11 @@ public class GraphPropertiesProxy implements GraphProperties
             for ( String name : names )
             {
                 int propertyKeyId = readOperations.propertyKeyGetForName( name );
-                properties.put( name, readOperations.graphGetProperty( propertyKeyId ) );
+                Object value = readOperations.graphGetProperty( propertyKeyId );
+                if ( value != null )
+                {
+                    properties.put( name, value );
+                }
             }
             return properties;
         }
