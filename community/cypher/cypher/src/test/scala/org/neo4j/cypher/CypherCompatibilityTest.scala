@@ -87,13 +87,13 @@ class CypherCompatibilityTest extends CypherFunSuite {
     }
   }
 
-  //TODO remove interpreted when PROFILE is supported
   test("should handle profile") {
     runWithConfig() {
       (engine: ExecutionEngine) =>
         assertProfiled(engine, "CYPHER 1.9 PROFILE START n=node(*) RETURN n")
         assertProfiled(engine, "CYPHER 2.2 PROFILE MATCH n RETURN n")
         assertProfiled(engine, "CYPHER 2.3 runtime=interpreted PROFILE MATCH n RETURN n")
+        assertProfiled(engine, "CYPHER 2.3 runtime=compiled PROFILE MATCH n RETURN n")
     }
   }
 

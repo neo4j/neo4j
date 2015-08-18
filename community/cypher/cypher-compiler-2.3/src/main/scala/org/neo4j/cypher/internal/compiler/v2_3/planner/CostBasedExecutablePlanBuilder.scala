@@ -69,8 +69,8 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
         }
         runtimeBuilder(logicalPlan, pipeBuildContext, planContext, tracer, rewrittenSemanticTable, planBuilderMonitor,
                       plannerName, inputQuery)
-      case _ =>
-        throw new CantHandleQueryException
+      case x =>
+        throw new CantHandleQueryException(x.toString())
     }
   }
 

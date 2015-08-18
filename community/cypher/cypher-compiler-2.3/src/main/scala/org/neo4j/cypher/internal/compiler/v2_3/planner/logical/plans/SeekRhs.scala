@@ -51,7 +51,7 @@ case class SingleSeekRhs(expr: Expression) extends SeekRhs {
     SingleQueryExpression(expr)
 
   def asCommandSeekArgs: SeekArgs =
-    ManySeekArgs(Collection(Seq(expr))(expr.position).asCommandExpression)
+    ManySeekArgs(toCommandExpression(Collection(Seq(expr))(expr.position)))
 }
 
 case class MultiSeekRhs(expr: Expression) extends SeekRhs {
@@ -69,5 +69,5 @@ case class MultiSeekRhs(expr: Expression) extends SeekRhs {
     ManyQueryExpression(expr)
 
   def asCommandSeekArgs: SeekArgs =
-    ManySeekArgs(expr.asCommandExpression)
+    ManySeekArgs(toCommandExpression(expr))
 }

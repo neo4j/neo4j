@@ -28,5 +28,5 @@ class CantHandleQueryException(message: String = "Internal error - should have u
 
   def status = Status.Statement.ExecutionFailure
 
-  def mapToPublic[T <: Throwable](thrower: MapToPublicExceptions[T]) = throw new CantHandleQueryException(message)
+  def mapToPublic[T <: Throwable](thrower: MapToPublicExceptions[T]) = throw this
 }

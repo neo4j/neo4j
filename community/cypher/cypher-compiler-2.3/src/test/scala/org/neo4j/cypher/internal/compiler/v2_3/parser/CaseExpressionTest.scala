@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.parser
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
-import ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, True}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => legacy, predicates}
 import org.parboiled.scala._
@@ -72,5 +72,5 @@ class CaseExpressionTest extends ParserTest[ast.Expression, legacy.Expression] w
       legacy.GenericCase(Seq(alt1, alt2), Some(legacy.Literal("OTHER")))
   }
 
-  def convert(astNode: ast.Expression): legacy.Expression = astNode.asCommandExpression
+  def convert(astNode: ast.Expression): legacy.Expression = toCommandExpression(astNode)
 }
