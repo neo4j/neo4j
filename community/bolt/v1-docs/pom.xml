@@ -15,7 +15,7 @@
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
-  <artifactId>neo4j-ndp-v1-docs</artifactId>
+  <artifactId>neo4j-bolt-v1-docs</artifactId>
 
   <packaging>jar</packaging>
   <name>Neo4j - Data Protocol Documentation V1</name>
@@ -25,14 +25,14 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-ndp-transport-socket</artifactId>
+      <artifactId>neo4j-bolt-transport-socket</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-ndp-transport-socket</artifactId>
+      <artifactId>neo4j-bolt-transport-socket</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
@@ -40,7 +40,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-ndp-messaging-v1</artifactId>
+      <artifactId>neo4j-bolt-messaging-v1</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
@@ -64,7 +64,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-ndp-runtime</artifactId>
+      <artifactId>neo4j-bolt-runtime</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

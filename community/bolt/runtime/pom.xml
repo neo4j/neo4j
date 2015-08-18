@@ -16,11 +16,11 @@
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
-  <artifactId>neo4j-ndp-runtime</artifactId>
+  <artifactId>neo4j-bolt-runtime</artifactId>
 
   <packaging>jar</packaging>
-  <name>Neo4j - NDP Runtime</name>
-  <description>The core of the Neo4j Data Protocol, this contains the state machine for NDP sessions.</description>
+  <name>Neo4j - Bolt Runtime</name>
+  <description>The core of Neo4j Bolt Protocol, this contains the state machine for Bolt sessions.</description>
 
   <licenses>
     <license>

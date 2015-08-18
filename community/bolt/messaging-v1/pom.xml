@@ -16,22 +16,22 @@
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
-  <artifactId>neo4j-ndp-messaging-v1</artifactId>
+  <artifactId>neo4j-bolt-messaging-v1</artifactId>
 
   <packaging>jar</packaging>
-  <name>Neo4j - NDP Messaging Library V1</name>
-  <description>Serialization code and definition of messages for NDP V1</description>
+  <name>Neo4j - Bolt Messaging Library V1</name>
+  <description>Serialization code and definition of messages for Bolt V1</description>
 
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-ndp-packstream-v1</artifactId>
+      <artifactId>neo4j-bolt-packstream-v1</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-ndp-runtime</artifactId>
+      <artifactId>neo4j-bolt-runtime</artifactId>
       <version>${project.version}</version>
     </dependency>
 

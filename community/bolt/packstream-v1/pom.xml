@@ -13,7 +13,7 @@
 
   <name>Neo4j - PackStream</name>
 
-  <artifactId>neo4j-ndp-packstream-v1</artifactId>
+  <artifactId>neo4j-bolt-packstream-v1</artifactId>
 
   <properties>
     <license-text.header>GPL-3-header.txt</license-text.header>

@@ -59,8 +59,8 @@
     <dbms.security.require_auth>true</dbms.security.require_auth>
 
     <!-- Additional configuration to append to neo4j-server.properties -->
-    <feature-config.ndp></feature-config.ndp>
-    <config.neo4j-server.additional>${feature-config.ndp}</config.neo4j-server.additional>
+    <feature-config.bolt></feature-config.bolt>
+    <config.neo4j-server.additional>${feature-config.bolt}</config.neo4j-server.additional>
 
     <!-- Runtime properties. These are used to bootstrap the server. All other configuration should happen through a configuration file. Each of these should have a sensible default, so that the server can operate without them defined. -->
     <neo4j.home>${project.build.directory}/neo4j</neo4j.home>
@@ -355,14 +355,14 @@ terms of the relevant Commercial Agreement.
       </build>
     </profile>
     <profile>
-      <id>feature-ndp</id>
+      <id>feature-bolt</id>
       <activation>
         <activeByDefault>false</activeByDefault>
-        <property> <name>feature.ndp</name> </property>
+        <property> <name>feature.bolt</name> </property>
       </activation>
       <properties>
-        <feature-config.ndp># Enable Neo4j Data Protocol, for alpha testing and preview
-xx.ndp.enabled=true</feature-config.ndp>
+        <feature-config.bolt># Enable Bolt, for alpha testing and preview
+xx.bolt.enabled=true</feature-config.bolt>
       </properties>
     </profile>
   </profiles>

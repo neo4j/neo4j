@@ -16,10 +16,10 @@
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
-  <artifactId>neo4j-ndp-kernelextension</artifactId>
+  <artifactId>neo4j-bolt-kernelextension</artifactId>
 
   <packaging>jar</packaging>
-  <name>Neo4j - NDP Kernel Extension</name>
+  <name>Neo4j - Bolt Kernel Extension</name>
   <description>Exposes the Neo4j Data Protocol server as a kernel extension.</description>
 
   <licenses>
@@ -45,12 +45,12 @@
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-ndp-transport-socket</artifactId>
+      <artifactId>neo4j-bolt-transport-socket</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-ndp-runtime</artifactId>
+      <artifactId>neo4j-bolt-runtime</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -75,7 +75,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-ndp-transport-socket</artifactId>
+      <artifactId>neo4j-bolt-transport-socket</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

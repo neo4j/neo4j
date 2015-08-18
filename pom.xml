@@ -145,7 +145,7 @@
             <plainTextReport>true</plainTextReport>
             <prependText>${licensing.prepend.text}</prependText>
             <excludedGroups>
-              ^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.browser){1}|(org.neo4j.doc){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1}|(org.neo4j.ndp){1}|(org.neo4j.build){1}|(org.neo4j.examples){1})$
+              ^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.browser){1}|(org.neo4j.doc){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1}|(org.neo4j.bolt){1}|(org.neo4j.build){1}|(org.neo4j.examples){1})$
             </excludedGroups>
             <includedScopes>compile</includedScopes>
           </configuration>
@@ -549,7 +549,7 @@
         <version>3.3.2</version>
       </dependency>
 
-      <!-- Netty is used by three components: Com, Cluster and NDP Socket Transport.
+      <!-- Netty is used by three components: Com, Cluster and Bolt Socket Transport.
            Netty 4 is a significant improvement over Netty 3, in that it introduces
            buffer pooling (among lots of other improvements), and thus we want to move
            to Netty 4 to reduce GC overhead. Netty 4 (io.netty:netty-all) can co-exist

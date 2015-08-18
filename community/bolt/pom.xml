@@ -16,7 +16,7 @@
     <componentversion.skip>true</componentversion.skip>
   </properties>
 
-  <artifactId>neo4j-data-protocol-parent</artifactId>
+  <artifactId>neo4j-bolt-parent</artifactId>
 
   <packaging>pom</packaging>
   <name>Neo4j - Data Protocol Project</name>
