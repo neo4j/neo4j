@@ -128,9 +128,10 @@ object IndexSeekStrategy extends NodeStrategy {
       labelPredicate <- labelPredicates;
       propertyPredicate <- propertyPredicates if ctx.getIndexRule(labelPredicate.solution, propertyPredicate.solution).nonEmpty
     ) yield {
-      val schemaIndex = SchemaIndex(node, labelPredicate.solution, propertyPredicate.solution, AnyIndex, None)
       val optConstraint = ctx.getUniquenessConstraint(labelPredicate.solution, propertyPredicate.solution)
       val rating = if (optConstraint.isDefined) Single else IndexEquality
+      val indexType = if (optConstraint.isDefined) UniqueIndex else AnyIndex
+      val schemaIndex = SchemaIndex(node, labelPredicate.solution, propertyPredicate.solution, indexType, None)
       val predicates = Seq.empty // These are still not solved.
       RatedStartItem(schemaIndex, rating, predicates)
     }
