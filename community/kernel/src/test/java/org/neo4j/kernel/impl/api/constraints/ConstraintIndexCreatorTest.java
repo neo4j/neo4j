@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.constraints;
 
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import org.junit.Test;
 
 import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.KernelAPI;
@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.heuristics.StatisticsData;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.txstate.TransactionState;
