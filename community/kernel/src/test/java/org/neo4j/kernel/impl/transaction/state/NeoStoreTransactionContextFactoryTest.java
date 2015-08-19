@@ -21,7 +21,10 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.locking.Locks;
+
 import static org.junit.Assert.assertNotSame;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.store.NeoStoreMocking.mockNeoStore;
 
 public class NeoStoreTransactionContextFactoryTest
@@ -33,8 +36,8 @@ public class NeoStoreTransactionContextFactoryTest
         NeoStoreTransactionContextFactory supplier = new NeoStoreTransactionContextFactory( mockNeoStore() );
 
         // When
-        NeoStoreTransactionContext context1 = supplier.newInstance();
-        NeoStoreTransactionContext context2 = supplier.newInstance();
+        NeoStoreTransactionContext context1 = supplier.newInstance( mock( Locks.Client.class ) );
+        NeoStoreTransactionContext context2 = supplier.newInstance( mock( Locks.Client.class ) );
 
         // Then
         assertNotSame( context1, context2 );

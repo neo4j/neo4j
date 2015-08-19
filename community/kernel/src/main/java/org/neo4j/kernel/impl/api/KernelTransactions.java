@@ -146,9 +146,8 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
         @Override
         public KernelTransactionImplementation newInstance()
         {
-            NeoStoreTransactionContext context = neoStoreTransactionContextFactory.newInstance();
             Locks.Client locksClient = locks.newClient();
-            context.bind( locksClient );
+            NeoStoreTransactionContext context = neoStoreTransactionContextFactory.newInstance( locksClient );
             TransactionRecordState recordState = new TransactionRecordState(
                     neoStore, integrityValidator, context );
             LegacyIndexTransactionState legacyIndexTransactionState =

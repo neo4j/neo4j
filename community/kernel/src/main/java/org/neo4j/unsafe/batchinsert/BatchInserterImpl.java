@@ -96,15 +96,14 @@ import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstra
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
-import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
+import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
-import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
-import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -115,21 +114,23 @@ import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
@@ -140,7 +141,6 @@ import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
 import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
-import org.neo4j.kernel.impl.transaction.state.RelationshipLocker;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -324,7 +324,7 @@ public class BatchInserterImpl implements BatchInserter
 
         // Record access
         recordAccess = new DirectRecordAccessSet( neoStore );
-        relationshipCreator = new RelationshipCreator( RelationshipLocker.NO_LOCKING,
+        relationshipCreator = new RelationshipCreator( new NoOpClient(),
                 new RelationshipGroupGetter( neoStore.getRelationshipGroupStore() ), neoStore.getDenseNodeThreshold() );
         propertyTraverser = new PropertyTraverser();
         propertyCreator = new PropertyCreator( getPropertyStore(), propertyTraverser );

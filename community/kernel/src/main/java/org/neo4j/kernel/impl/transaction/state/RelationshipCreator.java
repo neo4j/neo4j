@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -30,14 +32,13 @@ import org.neo4j.kernel.impl.util.DirectionWrapper;
 public class RelationshipCreator
 {
     private final RelationshipGroupGetter relGroupGetter;
-    private final RelationshipLocker locker;
+    private final Locks.Client locks;
     private final int denseNodeThreshold;
 
-    public RelationshipCreator( RelationshipLocker locker, RelationshipGroupGetter relGroupGetter,
-            int denseNodeThreshold )
+    public RelationshipCreator( Locks.Client locks, RelationshipGroupGetter relGroupGetter, int denseNodeThreshold )
     {
-        this.locker = locker;
         this.relGroupGetter = relGroupGetter;
+        this.locks = locks;
         this.denseNodeThreshold = denseNodeThreshold;
     }
 
@@ -89,7 +90,7 @@ public class RelationshipCreator
             RelationshipRecord rel = relChange.forReadingLinkage();
             if ( relCount( node.getId(), rel ) >= denseNodeThreshold )
             {
-                locker.getWriteLock( relId );
+                locks.acquireExclusive( ResourceTypes.RELATIONSHIP, relId );
                 // Re-read the record after we've locked it since another transaction might have
                 // changed in the meantime.
                 relChange = relRecords.getOrLoad( relId, null );
@@ -188,7 +189,7 @@ public class RelationshipCreator
             connectRelationshipToDenseNode( node, relRecord, relRecords, relGroupRecords );
             if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {   // Lock and load the next relationship in the chain
-                locker.getWriteLock( relId );
+                locks.acquireExclusive( ResourceTypes.RELATIONSHIP, relId );
                 relRecord = relRecords.getOrLoad( relId, null ).forChangingLinkage();
             }
         }
@@ -200,7 +201,7 @@ public class RelationshipCreator
         long newCount = 1;
         if ( firstRelId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            locker.getWriteLock( firstRelId );
+            locks.acquireExclusive( ResourceTypes.RELATIONSHIP, firstRelId );
             RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null ).forChangingLinkage();
             boolean changed = false;
             if ( firstRel.getFirstNode() == nodeId )

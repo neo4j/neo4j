@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.function.Factory;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.NeoStore;
 
-public class NeoStoreTransactionContextFactory implements Factory<NeoStoreTransactionContext>
+public class NeoStoreTransactionContextFactory
 {
     private final NeoStore neoStore;
 
@@ -31,9 +31,8 @@ public class NeoStoreTransactionContextFactory implements Factory<NeoStoreTransa
         this.neoStore = neoStore;
     }
 
-    @Override
-    public NeoStoreTransactionContext newInstance()
+    public NeoStoreTransactionContext newInstance( Locks.Client locks )
     {
-        return new NeoStoreTransactionContext( neoStore );
+        return new NeoStoreTransactionContext( neoStore, locks );
     }
 }

@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.transaction.state;
 
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.locking.Locks.Client;
@@ -46,22 +44,21 @@ public class NeoStoreTransactionContext
     private final RelationshipDeleter relationshipDeleter;
     private final PropertyCreator propertyCreator;
     private final PropertyDeleter propertyDeleter;
-    private final TransactionalRelationshipLocker locker;
-
     private final RecordAccessSet recordChangeSet;
+
     private final NeoStore neoStore;
 
-    public NeoStoreTransactionContext( NeoStore neoStore )
+    public NeoStoreTransactionContext( NeoStore neoStore, Client locks )
     {
         this.neoStore = neoStore;
-        this.recordChangeSet = new RecordChangeSet( neoStore );
-        locker = new TransactionalRelationshipLocker();
+
+        recordChangeSet = new RecordChangeSet( neoStore );
         RelationshipGroupGetter relGroupGetter = new RelationshipGroupGetter( neoStore.getRelationshipGroupStore() );
         PropertyTraverser propertyTraverser = new PropertyTraverser();
         propertyCreator = new PropertyCreator( neoStore.getPropertyStore(), propertyTraverser );
         propertyDeleter = new PropertyDeleter( neoStore.getPropertyStore(), propertyTraverser );
-        relationshipCreator = new RelationshipCreator( locker, relGroupGetter, neoStore.getDenseNodeThreshold() );
-        relationshipDeleter = new RelationshipDeleter( locker, relGroupGetter, propertyDeleter );
+        relationshipCreator = new RelationshipCreator( locks, relGroupGetter, neoStore.getDenseNodeThreshold() );
+        relationshipDeleter = new RelationshipDeleter( locks, relGroupGetter, propertyDeleter );
     }
 
     public ArrayMap<Integer, DefinedProperty> relationshipDelete( long relId )
@@ -116,11 +113,6 @@ public class NeoStoreTransactionContext
         TokenCreator<RelationshipTypeTokenRecord> creator =
                 new TokenCreator<>( neoStore.getRelationshipTypeTokenStore() );
         creator.createToken( name, id, getRelationshipTypeTokenRecords() );
-    }
-
-    public void bind( Client locksClient )
-    {
-        locker.setLockClient( locksClient );
     }
 
     public void initialize()

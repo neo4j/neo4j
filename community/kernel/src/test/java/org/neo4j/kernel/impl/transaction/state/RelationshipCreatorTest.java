@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -35,6 +35,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
+import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.NoOpClient;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -97,7 +101,7 @@ public class RelationshipCreatorTest
         }
     }
 
-    static class Tracker implements RelationshipLocker, RecordAccessSet
+    static class Tracker extends NoOpClient implements RecordAccessSet
     {
         private final RecordAccessSet delegate;
         private final TrackingRecordAccess<RelationshipRecord, Void> relRecords;
@@ -111,9 +115,11 @@ public class RelationshipCreatorTest
         }
 
         @Override
-        public void getWriteLock( long relId )
+        public void acquireExclusive( Locks.ResourceType resourceType, long resourceId )
+                throws AcquireLockTimeoutException
         {
-            relationshipLocksAcquired.add( relId );
+            assertEquals( ResourceTypes.RELATIONSHIP, resourceType );
+            relationshipLocksAcquired.add( resourceId );
         }
 
         protected void changingRelationship( long relId )

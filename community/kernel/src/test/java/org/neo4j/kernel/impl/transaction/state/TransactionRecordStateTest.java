@@ -77,6 +77,13 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TransactionRecordStateTest
 {
+    @Rule
+    public final CleanupRule cleanup = new CleanupRule();
+    @Rule
+    public final EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
     @Test
     public void shouldDeleteDynamicLabelsForDeletedNode() throws Exception
     {
@@ -125,8 +132,7 @@ public class TransactionRecordStateTest
     {
         // GIVEN
         NeoStore neoStore = newNeoStore( GraphDatabaseSettings.dense_node_threshold.name(), "1" );
-        NeoStoreTransactionContext context = new NeoStoreTransactionContext( neoStore );
-        context.bind( mock( Locks.Client.class ) );
+        NeoStoreTransactionContext context = new NeoStoreTransactionContext( neoStore, mock( Locks.Client.class ) );
         TransactionRecordState recordState =
                 new TransactionRecordState( neoStore, mock( IntegrityValidator.class ), context );
         long nodeId = 0, relId = 1;
@@ -155,8 +161,7 @@ public class TransactionRecordStateTest
     {
         // GIVEN
         NeoStore neoStore = newNeoStore( GraphDatabaseSettings.dense_node_threshold.name(), "1" );
-        NeoStoreTransactionContext context = new NeoStoreTransactionContext( neoStore );
-        context.bind( mock( Locks.Client.class ) );
+        NeoStoreTransactionContext context = new NeoStoreTransactionContext( neoStore, mock( Locks.Client.class ) );
         TransactionRecordState recordState =
                 new TransactionRecordState( neoStore, mock( IntegrityValidator.class ), context );
         long nodeId = 0, relId1 = 1, relId2 = 2, relId3 = 3;
@@ -168,8 +173,7 @@ public class TransactionRecordStateTest
                 LockService.NO_LOCK_SERVICE, new LockGroup(), 1 );
         apply( applier, transaction( recordState ) );
 
-        context = new NeoStoreTransactionContext( neoStore );
-        context.bind( mock( Locks.Client.class ) );
+        context = new NeoStoreTransactionContext( neoStore, mock( Locks.Client.class ) );
         recordState = new TransactionRecordState( neoStore, mock( IntegrityValidator.class ), context );
         recordState.nodeChangeProperty( nodeId, 0, 102 );
         recordState.relCreate( relId3, 0, nodeId, nodeId );
@@ -200,8 +204,7 @@ public class TransactionRecordStateTest
     {
         // GIVEN
         NeoStore neoStore = newNeoStore( GraphDatabaseSettings.dense_node_threshold.name(), "1" );
-        NeoStoreTransactionContext context = new NeoStoreTransactionContext( neoStore );
-        context.bind( mock( Locks.Client.class ) );
+        NeoStoreTransactionContext context = new NeoStoreTransactionContext( neoStore, mock( Locks.Client.class ) );
         TransactionRecordState recordState =
                 new TransactionRecordState( neoStore, mock( IntegrityValidator.class ), context );
         long nodeId1 = 0, nodeId2 = 1, relId1 = 1, relId2 = 2, relId4 = 10;
@@ -215,8 +218,7 @@ public class TransactionRecordStateTest
                 LockService.NO_LOCK_SERVICE, new LockGroup(), 1 );
         apply( applier, transaction( recordState ) );
 
-        context = new NeoStoreTransactionContext( neoStore );
-        context.bind( mock( Locks.Client.class ) );
+        context = new NeoStoreTransactionContext( neoStore, mock( Locks.Client.class ) );
         recordState = new TransactionRecordState( neoStore, mock( IntegrityValidator.class ), context );
         recordState.relDelete( relId4 );
         recordState.nodeDelete( nodeId2 );
@@ -281,7 +283,7 @@ public class TransactionRecordStateTest
     private TransactionRecordState nodeWithDynamicLabelRecord( NeoStore store,
             AtomicLong nodeId, AtomicLong dynamicLabelRecordId )
     {
-        NeoStoreTransactionContext context = new NeoStoreTransactionContext( store );
+        NeoStoreTransactionContext context = new NeoStoreTransactionContext( store, mock( Locks.Client.class ) );
         TransactionRecordState recordState = recordState( store, context );
 
         nodeId.set( store.getNodeStore().nextId() );
@@ -307,7 +309,7 @@ public class TransactionRecordStateTest
 
     private TransactionRecordState deleteNode( NeoStore store, long nodeId )
     {
-        NeoStoreTransactionContext context = new NeoStoreTransactionContext( store );
+        NeoStoreTransactionContext context = new NeoStoreTransactionContext( store, mock( Locks.Client.class ) );
         TransactionRecordState recordState = recordState( store, context );
         recordState.nodeDelete( nodeId );
         return recordState;
@@ -339,8 +341,4 @@ public class TransactionRecordStateTest
         DynamicRecord record = store.getNodeStore().getDynamicLabelStore().forceGetRecord( id );
         assertTrue( inUse == record.inUse() );
     }
-
-    public final @Rule CleanupRule cleanup = new CleanupRule();
-    public final @Rule EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
-    public final @Rule PageCacheRule pageCacheRule = new PageCacheRule();
 }
