@@ -2,10 +2,9 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-        <groupId>org.neo4j</groupId>
-        <artifactId>cypher-parent</artifactId>
-        <version>2.3-SNAPSHOT</version>
-        <relativePath>../..</relativePath>
+    <groupId>org.neo4j.doc</groupId>
+    <artifactId>neo4j-manual</artifactId>
+    <version>2.3-SNAPSHOT</version>
   </parent>
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-cypher-refcard-tests</artifactId>
@@ -22,8 +21,6 @@
     <docs-plugin.skip>false</docs-plugin.skip>
     <attach-docs-phase>prepare-package</attach-docs-phase>
     <remote-csv-upload>http://neo4j.com/docs/${project.version}/cypher-refcard/csv</remote-csv-upload>
-    <scala.version>2.11.7</scala.version>
-    <scala.binary.version>2.11</scala.binary.version>
   </properties>
 
   <licenses>

@@ -17,26 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.coreapi.schema;
+package org.neo4j.kernel.impl.factory;
 
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.schema.RelationshipConstraintCreator;
+import org.neo4j.kernel.SchemaRuleVerifier;
+import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
+import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
+import org.neo4j.kernel.impl.store.record.SchemaRule;
 
-public class BaseRelationshipConstraintCreator extends AbstractConstraintCreator implements RelationshipConstraintCreator
+class CommunitySchemaRuleVerifier implements SchemaRuleVerifier
 {
-    protected final RelationshipType type;
-
-    public BaseRelationshipConstraintCreator( InternalSchemaActions actions, RelationshipType type )
+    @Override
+    public void verify( SchemaRule rule )
     {
-        super( actions );
-        this.type = type;
-
-        assertInUnterminatedTransaction();
+        if ( rule instanceof NodePropertyExistenceConstraintRule ||
+             rule instanceof RelationshipPropertyExistenceConstraintRule )
+        {
+            throw new IllegalStateException(); // todo: message and new exception type
+        }
     }
 
     @Override
-    public RelationshipConstraintCreator assertPropertyExists( String propertyKey )
+    public void assertPropertyConstraintCreationAllowed()
     {
-        return new RelationshipPropertyExistenceConstraintCreator( actions, type, propertyKey );
+        throw new IllegalStateException(); // todo: message and new exception type
     }
 }

@@ -1304,44 +1304,6 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldCreateNodePropertyExistenceConstraint() throws Exception
-    {
-        // GIVEN
-        String labelName = "person", propertyKey = "name";
-
-        // WHEN
-        actions.createNodePropertyExistenceConstraint( labelName, asList( propertyKey ) );
-
-        // THEN
-        try ( Transaction tx = graph.beginTx() )
-        {
-            Iterable<ConstraintDefinition> defs = graphdbHelper.getNodePropertyExistenceConstraints( labelName,
-                    propertyKey );
-            assertEquals( asSet( propertyKey ), asSet( single( defs ).getPropertyKeys() ) );
-            tx.success();
-        }
-    }
-
-    @Test
-    public void shouldCreateRelationshipPropertyExistenceConstraint() throws Exception
-    {
-        // GIVEN
-        String relationshipTypeName = "PROGRAMS", propertyKey = "since";
-
-        // WHEN
-        actions.createRelationshipPropertyExistenceConstraint( relationshipTypeName, asList( propertyKey ) );
-
-        // THEN
-        try ( Transaction tx = graph.beginTx() )
-        {
-            Iterable<ConstraintDefinition> defs = graphdbHelper.getRelationshipPropertyExistenceConstraints(
-                    relationshipTypeName, propertyKey );
-            assertEquals( asSet( propertyKey ), asSet( single( defs ).getPropertyKeys() ) );
-            tx.success();
-        }
-    }
-
-    @Test
     public void shouldDropPropertyUniquenessConstraint() throws Exception
     {
         // GIVEN
@@ -1357,38 +1319,6 @@ public class DatabaseActionsTest
                 asSet( graphdbHelper.getPropertyUniquenessConstraints( labelName, propertyKey ) ).contains( index ) );
     }
 
-    @Test
-    public void shouldDropNodePropertyExistencesConstraint() throws Exception
-    {
-        // GIVEN
-        String labelName = "user", propertyKey = "login";
-        ConstraintDefinition index = graphdbHelper.createNodePropertyExistenceConstraint( labelName,
-                asList( propertyKey ) );
-
-        // WHEN
-        actions.dropNodePropertyExistenceConstraint( labelName, asList( propertyKey ) );
-
-        // THEN
-        assertFalse( "Constraint should have been dropped",
-                asSet( graphdbHelper.getNodePropertyExistenceConstraints( labelName, propertyKey ) ).contains( index ) );
-    }
-
-    @Test
-    public void shouldDropRelationshipPropertyExistencesConstraint() throws Exception
-    {
-        // GIVEN
-        String typeName = "PROGRAMS", propertyKey = "since";
-        ConstraintDefinition index = graphdbHelper.createRelationshipPropertyExistenceConstraint( typeName,
-                asList( propertyKey ) );
-
-        // WHEN
-        actions.dropRelationshipPropertyExistenceConstraint( typeName, asList( propertyKey ) );
-
-        // THEN
-        assertFalse( "Constraint should have been dropped",
-                asSet( graphdbHelper.getRelationshipPropertyExistenceConstraints( typeName, propertyKey ) ).contains( index ) );
-    }
-    
     @Test
     public void dropNonExistentConstraint() throws Exception
     {
@@ -1428,52 +1358,6 @@ public class DatabaseActionsTest
         assertEquals( labelName, definition.get( "label" ) );
         assertEquals( asList( propertyKey ), definition.get( "property_keys" ) );
         assertEquals( ConstraintType.UNIQUENESS.name(), definition.get( "type" ) );
-    }
-
-    @Test
-    public void shouldGetNodePropertyExistenceConstraint() throws Exception
-    {
-        // GIVEN
-        String labelName = "mylabel", propertyKey = "name";
-        graphdbHelper.createNodePropertyExistenceConstraint( labelName, asList( propertyKey ) );
-
-        // WHEN
-        List<Object> serialized;
-        try ( Transaction ignore = graph.beginTx() )
-        {
-            serialized = serialize( actions.getNodePropertyExistenceConstraint( labelName, asList( propertyKey ) ) );
-        }
-
-
-        // THEN
-        assertEquals( 1, serialized.size() );
-        Map<?, ?> definition = (Map<?, ?>) serialized.get( 0 );
-        assertEquals( labelName, definition.get( "label" ) );
-        assertEquals( Collections.singletonList( propertyKey ), definition.get( "property_keys" ) );
-        assertEquals( ConstraintType.NODE_PROPERTY_EXISTENCE.name(), definition.get( "type" ) );
-    }
-
-    @Test
-    public void shouldGetRelationshipPropertyExistenceConstraint() throws Exception
-    {
-        // GIVEN
-        String typeName = "PROGRAMS", propertyKey = "since";
-        graphdbHelper.createRelationshipPropertyExistenceConstraint( typeName, asList( propertyKey ) );
-
-        // WHEN
-        List<Object> serialized;
-        try ( Transaction ignore = graph.beginTx() )
-        {
-            serialized = serialize( actions.getRelationshipPropertyExistenceConstraint( typeName, asList( propertyKey ) ) );
-        }
-
-
-        // THEN
-        assertEquals( 1, serialized.size() );
-        Map<?, ?> definition = (Map<?, ?>) serialized.get( 0 );
-        assertEquals( typeName, definition.get( "relationshipType" ) );
-        assertEquals( Collections.singletonList( propertyKey ), definition.get( "property_keys" ) );
-        assertEquals( ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE.name(), definition.get( "type" ) );
     }
 
     @Test

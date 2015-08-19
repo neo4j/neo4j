@@ -52,7 +52,6 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.RelationshipConstraintCreator;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -972,12 +971,6 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
 
         @Override
         public ConstraintCreator constraintFor( Label label )
-        {
-            throw readOnlyException();
-        }
-
-        @Override
-        public RelationshipConstraintCreator constraintFor( RelationshipType type )
         {
             throw readOnlyException();
         }

@@ -23,6 +23,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelDiagnostics;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.SchemaRuleVerifier;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -59,6 +60,8 @@ public abstract class EditionModule
 
     public UpgradeConfiguration upgradeConfiguration;
 
+    public SchemaRuleVerifier schemaRuleVerifier;
+
     protected void doAfterRecoveryAndStartup( String editionName, DependencyResolver dependencyResolver)
     {
         DiagnosticsManager diagnosticsManager = dependencyResolver.resolveDependency( DiagnosticsManager.class );
@@ -67,8 +70,5 @@ public abstract class EditionModule
         diagnosticsManager.prependProvider( new KernelDiagnostics.Versions( editionName, neoStoreDataSource.get().getStoreId() ) );
         neoStoreDataSource.registerDiagnosticsWith( diagnosticsManager );
         diagnosticsManager.appendProvider( new KernelDiagnostics.StoreFiles( neoStoreDataSource.getStoreDir() ) );
-
     }
-
-
 }

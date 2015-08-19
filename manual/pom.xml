@@ -31,9 +31,15 @@
     <doctools.version>31</doctools.version>
     <attach-docs-phase>none</attach-docs-phase>
     <licensing.phase>none</licensing.phase>
+
+    <scala.version>2.11.7</scala.version>
+    <scala.binary.version>2.11</scala.binary.version>
   </properties>
 
   <modules>
+    <module>cypher-docs</module>
+    <module>graphgist</module>
+    <module>refcard-tests</module>
     <module>javadocs</module>
     <module>refcard</module>
     <module>contents</module>
@@ -55,22 +61,9 @@
   <dependencies>
     <dependency>
       <groupId>org.neo4j.doc</groupId>
-      <artifactId>neo4j-manual-contents</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-javadocs</artifactId>
       <version>${neo4j.version}</version>
       <classifier>javadoc</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.doc</groupId>
-      <artifactId>neo4j-cypher-refcard</artifactId>
-      <version>${neo4j.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -80,6 +73,75 @@
       <scope>provided</scope>
     </dependency>
   </dependencies>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j</artifactId>
+        <version>${neo4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-kernel</artifactId>
+        <version>${neo4j.version}</version>
+        <type>test-jar</type>
+        <scope>compile</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-io</artifactId>
+        <version>${neo4j.version}</version>
+        <type>test-jar</type>
+        <scope>compile</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-graphviz</artifactId>
+        <version>${neo4j.version}</version>
+        <scope>compile</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-cypher</artifactId>
+        <version>${neo4j.version}</version>
+        <type>test-jar</type>
+        <scope>compile</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest_2.11</artifactId>
+        <version>2.2.5</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <artifactId>scala-library</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>scala-reflect</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.scalautils</groupId>
+        <artifactId>scalautils_2.11</artifactId>
+        <version>2.1.7</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <artifactId>scala-library</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>scala-reflect</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <build>
     <plugins>
@@ -606,6 +668,39 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <version>3.2.0</version>
+        <executions>
+          <execution>
+            <id>scala-compile</id>
+            <goals>
+              <goal>add-source</goal>
+              <goal>compile</goal>
+            </goals>
+            <phase>process-resources</phase>
+          </execution>
+          <execution>
+            <id>scala-test-compile</id>
+            <phase>${scala-test-compile-phase}</phase>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <args>
+            <arg>-Xmax-classfile-name</arg>
+            <arg>100</arg>
+            <!-- arg>-deprecation</arg -->
+          </args>
+          <jvmArgs>
+            <jvmArg>-Xms64m</jvmArg>
+            <jvmArg>-Xmx1024m</jvmArg>
+          </jvmArgs>
+        </configuration>
       </plugin>
     </plugins>
   </build>

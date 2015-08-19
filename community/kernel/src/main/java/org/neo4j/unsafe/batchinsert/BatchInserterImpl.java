@@ -43,7 +43,6 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.RelationshipConstraintCreator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
@@ -87,7 +86,6 @@ import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.coreapi.schema.BaseNodeConstraintCreator;
-import org.neo4j.kernel.impl.coreapi.schema.BaseRelationshipConstraintCreator;
 import org.neo4j.kernel.impl.coreapi.schema.IndexCreatorImpl;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
@@ -638,12 +636,6 @@ public class BatchInserterImpl implements BatchInserter
     public ConstraintCreator createDeferredConstraint( Label label )
     {
         return new BaseNodeConstraintCreator( new BatchSchemaActions(), label );
-    }
-
-    @Override
-    public RelationshipConstraintCreator createDeferredConstraint( RelationshipType type )
-    {
-        return new BaseRelationshipConstraintCreator( new BatchSchemaActions(), type );
     }
 
     private void createConstraintRule( UniquenessConstraint constraint )

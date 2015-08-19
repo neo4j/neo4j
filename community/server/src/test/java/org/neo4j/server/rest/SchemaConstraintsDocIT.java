@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
@@ -397,49 +396,6 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Drop node property existence constraint.
-     * Drop node property existence constraint for a label and a property.
-     */
-    @Documented
-    @Test
-    @GraphDescription.Graph( nodes = {} )
-    public void drop_node_property_existence_constraint() throws Exception
-    {
-        data.get();
-
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
-        ConstraintDefinition constraintDefinition = createLabelPropertyExistenceConstraint( labelName, propertyKey );
-        assertThat( getConstraints( graphdb(), label( labelName ) ), containsOnly( constraintDefinition ) );
-
-        gen.get().noGraph().expectedStatus( 204 ).delete( getSchemaConstraintLabelExistencePropertyUri( labelName, propertyKey ) ).entity();
-
-        assertThat( getConstraints( graphdb(), label( labelName ) ), isEmpty() );
-    }
-
-    /**
-     * Drop relationship property existence constraint.
-     * Drop relationship property existence constraint for a relationship type and a property.
-     */
-    @Documented
-    @Test
-    @GraphDescription.Graph( nodes = {} )
-    public void drop_relationship_property_existence_constraint() throws Exception
-    {
-        data.get();
-
-        String typeName = relationshipTypes.newInstance(), propertyKey = properties.newInstance();
-        DynamicRelationshipType type = DynamicRelationshipType.withName( typeName );
-        ConstraintDefinition constraintDefinition = createRelationshipTypePropertyExistenceConstraint( typeName,
-                propertyKey );
-        assertThat( getConstraints( graphdb(), type ), containsOnly( constraintDefinition ) );
-
-        gen.get().noGraph().expectedStatus( 204 ).delete(
-                getSchemaRelationshipConstraintTypeExistencePropertyUri( typeName, propertyKey ) ).entity();
-
-        assertThat( getConstraints( graphdb(), label( typeName ) ), isEmpty() );
-    }
-
-    /**
      * Create an index for a label and property key which already exists.
      */
     @Test
@@ -486,28 +442,16 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         }
     }
 
-    private ConstraintDefinition createLabelPropertyExistenceConstraint( String labelName, String propertyKey )
+    private void createLabelPropertyExistenceConstraint( String labelName, String propertyKey )
     {
-        try ( Transaction tx = graphdb().beginTx() )
-        {
-            ConstraintDefinition constraintDefinition = graphdb().schema().constraintFor( label( labelName ) )
-                    .assertPropertyExists( propertyKey ).create();
-            tx.success();
-            return constraintDefinition;
-        }
+        String query = String.format( "CREATE CONSTRAINT ON (n:%s) ASSERT exists(n.%s)", labelName, propertyKey );
+        graphdb().execute( query );
     }
 
-    private ConstraintDefinition createRelationshipTypePropertyExistenceConstraint( String typeName,
-            String propertyKey )
+    private void createRelationshipTypePropertyExistenceConstraint( String typeName, String propertyKey )
     {
-        try ( Transaction tx = graphdb().beginTx() )
-        {
-            DynamicRelationshipType type = DynamicRelationshipType.withName( typeName );
-            ConstraintDefinition constraintDefinition = graphdb().schema().constraintFor( type )
-                    .assertPropertyExists( propertyKey ).create();
-            tx.success();
-            return constraintDefinition;
-        }
+        String query = String.format( "CREATE CONSTRAINT ON ()-[r:%s]-() ASSERT exists(r.%s)", typeName, propertyKey );
+        graphdb().execute( query );
     }
 
     private final Factory<String> labels =  UniqueStrings.withPrefix( "label" );

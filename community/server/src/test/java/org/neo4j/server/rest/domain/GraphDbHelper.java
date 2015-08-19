@@ -23,8 +23,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.Predicate;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -38,13 +40,16 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.RelationshipConstraintCreator;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
+import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.server.database.Database;
 
+import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
@@ -426,36 +431,22 @@ public class GraphDbHelper
         }
     }
 
-    public ConstraintDefinition createNodePropertyExistenceConstraint( String labelName, List<String> propertyKeys )
+    public ConstraintDefinition createNodePropertyExistenceConstraint( String labelName, String propertyKey )
     {
-        try ( Transaction tx = database.getGraph().beginTx() )
-        {
-            ConstraintCreator creator = database.getGraph().schema().constraintFor( label( labelName ) );
-            for ( String propertyKey : propertyKeys )
-            {
-                creator = creator.assertPropertyExists( propertyKey );
-            }
-            ConstraintDefinition result = creator.create();
-            tx.success();
-            return result;
-        }
+        String query = String.format( "CREATE CONSTRAINT ON (n:%s) ASSERT exists(n.%s)", labelName, propertyKey );
+        database.getGraph().execute( query );
+        awaitIndexes();
+        return new NodePropertyExistenceConstraintDefinition( mock( InternalSchemaActions.class ),
+                DynamicLabel.label( labelName ), propertyKey );
     }
 
-    public ConstraintDefinition createRelationshipPropertyExistenceConstraint( String typeName,
-            List<String> propertyKeys )
+    public ConstraintDefinition createRelationshipPropertyExistenceConstraint( String typeName, String propertyKey )
     {
-        try ( Transaction tx = database.getGraph().beginTx() )
-        {
-            DynamicRelationshipType type = DynamicRelationshipType.withName( typeName );
-            RelationshipConstraintCreator creator = database.getGraph().schema().constraintFor( type );
-            for ( String propertyKey : propertyKeys )
-            {
-                creator = creator.assertPropertyExists( propertyKey );
-            }
-            ConstraintDefinition result = creator.create();
-            tx.success();
-            return result;
-        }
+        String query = String.format( "CREATE CONSTRAINT ON ()-[r:%s]-() ASSERT exists(r.%s)", typeName, propertyKey );
+        database.getGraph().execute( query );
+        awaitIndexes();
+        return new RelationshipPropertyExistenceConstraintDefinition( mock( InternalSchemaActions.class ),
+                DynamicRelationshipType.withName( typeName ), propertyKey );
     }
 
     public long getLabelCount( long nodeId )
@@ -482,5 +473,14 @@ public class GraphDbHelper
                 return false;
             }
         }, definitions );
+    }
+
+    private void awaitIndexes()
+    {
+        try ( Transaction tx = database.getGraph().beginTx() )
+        {
+            database.getGraph().schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            tx.success();
+        }
     }
 }

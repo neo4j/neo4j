@@ -5,19 +5,18 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.Rule;
@@ -28,6 +27,7 @@ import org.junit.runners.Suite;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.neo4j.SchemaHelper;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
@@ -55,7 +55,10 @@ import static org.junit.Assert.fail;
 import static org.junit.runners.Suite.SuiteClasses;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT.*;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT
+        .NodePropertyExistenceExistenceConstrainVerificationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT
+        .RelationshipPropertyExistenceExistenceConstrainVerificationIT;
 import static org.neo4j.test.ThreadingRule.waitingWhileIn;
 
 @RunWith( Suite.class )
@@ -71,7 +74,7 @@ public class PropertyExistenceConstraintVerificationIT
         @Override
         void createConstraint( DatabaseRule db, String label, String property )
         {
-            db.schema().constraintFor( label( label ) ).assertPropertyExists( property ).create();
+            SchemaHelper.createNodePropertyExistenceConstraint( db, label, property );
         }
 
         @Override
@@ -107,7 +110,7 @@ public class PropertyExistenceConstraintVerificationIT
         @Override
         public void createConstraint( DatabaseRule db, String relType, String property )
         {
-            db.schema().constraintFor( withName( relType ) ).assertPropertyExists( property ).create();
+            SchemaHelper.createRelPropertyExistenceConstraint( db, relType, property );
         }
 
         @Override
