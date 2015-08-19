@@ -97,6 +97,7 @@ public class TransactionHandle implements TransactionTerminationHandle
     public void execute( StatementDeserializer statements, ExecutionResultSerializer output, HttpServletRequest request )
     {
         List<Neo4jError> errors = new LinkedList<>();
+        long nanoTime = System.nanoTime();
         try
         {
             output.transactionCommitUri( uriScheme.txCommitUri( id ) );
@@ -110,6 +111,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         finally
         {
             output.errors( errors );
+            output.serverTime( System.nanoTime() - nanoTime );
             output.finish();
         }
     }
@@ -127,6 +129,7 @@ public class TransactionHandle implements TransactionTerminationHandle
     public void commit( StatementDeserializer statements, ExecutionResultSerializer output, boolean pristine, HttpServletRequest request )
     {
         List<Neo4jError> errors = new LinkedList<>();
+        long nanoTime = System.nanoTime();
         try
         {
             try
@@ -165,6 +168,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         finally
         {
             output.errors( errors );
+            output.serverTime( System.nanoTime() - nanoTime );
             output.finish();
         }
     }

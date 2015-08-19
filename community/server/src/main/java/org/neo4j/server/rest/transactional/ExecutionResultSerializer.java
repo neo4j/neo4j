@@ -345,6 +345,20 @@ public class ExecutionResultSerializer
         }
     }
 
+    public void serverTime( long nanos )
+    {
+        try
+        {
+            ensureDocumentOpen();
+            ensureResultsFieldClosed();
+            out.writeNumberField( "serverTimeNanos", nanos );
+        }
+        catch ( IOException e )
+        {
+            loggedIOException( e );
+        }
+    }
+
     /**
      * This method must be called exactly once, and no method must be called after calling this method.
      * This method may not fail.

@@ -101,6 +101,7 @@ public class TransactionHandleTest
         outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
         outputOrder.verify( output ).transactionStatus( anyLong() );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
+        outputOrder.verify( output ).serverTime( anyLong() );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -136,10 +137,11 @@ public class TransactionHandleTest
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
-        outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
+        outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[]) null );
         outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
         outputOrder.verify( output ).transactionStatus( anyLong() );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
+        outputOrder.verify( output ).serverTime( anyLong() );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -185,6 +187,7 @@ public class TransactionHandleTest
         outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
         outputOrder.verify( output ).transactionStatus( anyLong() );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
+        outputOrder.verify( output ).serverTime( anyLong() );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -223,6 +226,7 @@ public class TransactionHandleTest
         outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[]) null );
         outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
+        outputOrder.verify( output ).serverTime( anyLong() );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -261,6 +265,7 @@ public class TransactionHandleTest
         outputOrder.verify( output ).statementResult( result, false, (ResultDataContent[])null );
         outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
+        outputOrder.verify( output ).serverTime( anyLong() );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -325,10 +330,11 @@ public class TransactionHandleTest
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
-        outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
+        outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[]) null );
         outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
         outputOrder.verify( output ).transactionStatus( anyLong() );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
+        outputOrder.verify( output ).serverTime( anyLong() );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -364,6 +370,7 @@ public class TransactionHandleTest
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
         outputOrder.verify( output ).errors( argThat( hasErrors( Status.Statement.ExecutionFailure ) ) );
+        outputOrder.verify( output ).serverTime( anyLong() );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -404,6 +411,7 @@ public class TransactionHandleTest
         outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
         outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
         outputOrder.verify( output ).errors( argThat( hasErrors( Status.Transaction.CouldNotCommit ) ) );
+        outputOrder.verify( output ).serverTime( anyLong() );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -435,6 +443,7 @@ public class TransactionHandleTest
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).errors( argThat( hasErrors( Status.Statement.InvalidSyntax ) ) );
+        outputOrder.verify( output ).serverTime( anyLong() );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -469,6 +478,7 @@ public class TransactionHandleTest
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).errors( argThat( hasErrors( Status.Statement.ExecutionFailure ) ) );
+        outputOrder.verify( output ).serverTime( anyLong() );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
