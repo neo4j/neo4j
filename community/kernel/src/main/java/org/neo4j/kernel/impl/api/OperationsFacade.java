@@ -28,6 +28,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.SchemaRuleVerifier;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.ReadOperations;
@@ -81,11 +82,14 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 {
     final KernelStatement statement;
     private final StatementOperationParts operations;
+    private final SchemaRuleVerifier schemaRuleVerifier;
 
-    OperationsFacade( KernelStatement statement, StatementOperationParts operations )
+    OperationsFacade( KernelStatement statement, StatementOperationParts operations,
+            SchemaRuleVerifier schemaRuleVerifier )
     {
         this.statement = statement;
         this.operations = operations;
+        this.schemaRuleVerifier = schemaRuleVerifier;
     }
 
     final KeyReadOperations tokenRead()
@@ -932,6 +936,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
             throws CreateConstraintFailureException, AlreadyConstrainedException
     {
         statement.assertOpen();
+        schemaRuleVerifier.assertPropertyConstraintCreationAllowed();
         return schemaWrite().nodePropertyExistenceConstraintCreate( statement, labelId, propertyKeyId );
     }
 
@@ -941,6 +946,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
             throws CreateConstraintFailureException, AlreadyConstrainedException
     {
         statement.assertOpen();
+        schemaRuleVerifier.assertPropertyConstraintCreationAllowed();
         return schemaWrite().relationshipPropertyExistenceConstraintCreate( statement, relTypeId, propertyKeyId );
     }
 

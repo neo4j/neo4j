@@ -550,6 +550,8 @@ public class EnterpriseEditionModule
 
         upgradeConfiguration = new HAUpgradeConfiguration();
 
+        schemaRuleVerifier = new EnterpriseSchemaRuleVerifier();
+
         registerRecovery( config.get( GraphDatabaseFacadeFactory.Configuration.editionName ), dependencies, logging );
 
         publishEditionInfo( config, dependencies.resolveDependency( UsageData.class ) );

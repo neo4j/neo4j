@@ -494,7 +494,7 @@ public class PropertyConstraintsStressIT
 
                     try ( Transaction tx = db.beginTx() )
                     {
-                        db.schema().constraintFor( label( type ) ).assertPropertyExists( property ).create();
+                        db.execute( String.format( "CREATE CONSTRAINT ON (n:%s) ASSERT exists(n.%s)", type, property ) );
                         tx.success();
                     }
                     catch ( ConstraintViolationException e )
@@ -564,7 +564,7 @@ public class PropertyConstraintsStressIT
 
                     try ( Transaction tx = db.beginTx() )
                     {
-                        db.schema().constraintFor( withName( type ) ).assertPropertyExists( property ).create();
+                        db.execute( String.format( "CREATE CONSTRAINT ON ()-[r:%s]-() ASSERT exists(r.%s)", type, property ) );
                         tx.success();
                     }
                     catch ( ConstraintViolationException e )

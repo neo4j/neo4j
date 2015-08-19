@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.function.Predicate;
@@ -186,10 +187,10 @@ public class SchemaCache
         indexDescriptors.clear();
     }
 
-    public void load( Iterator<SchemaRule> schemaRuleIterator )
+    public void load( List<SchemaRule> schemaRuleIterator )
     {
         clear();
-        for ( SchemaRule schemaRule : Iterables.toList( schemaRuleIterator ) )
+        for ( SchemaRule schemaRule : schemaRuleIterator )
         {
             addSchemaRule( schemaRule );
         }

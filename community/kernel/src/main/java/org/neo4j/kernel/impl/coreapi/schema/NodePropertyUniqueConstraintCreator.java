@@ -42,12 +42,6 @@ public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreat
     }
 
     @Override
-    public final NodePropertyUniqueConstraintCreator assertPropertyExists( String propertyKey )
-    {
-        throw new UnsupportedOperationException( "You are already creating a unique constraint." );
-    }
-
-    @Override
     public final ConstraintDefinition create()
     {
         assertInUnterminatedTransaction();

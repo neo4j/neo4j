@@ -31,6 +31,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.SchemaRuleVerifier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
@@ -144,6 +145,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final UpdateableSchemaState schemaState;
     private final StatementOperationParts operations;
     private final Pool<KernelTransactionImplementation> pool;
+    private final SchemaRuleVerifier schemaRuleVerifier;
     // State
     private final TransactionRecordState recordState;
     private final CountsRecordState counts = new CountsRecordState();
@@ -191,6 +193,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             StoreReadLayer storeLayer,
             LegacyIndexTransactionState legacyIndexTransactionState,
             Pool<KernelTransactionImplementation> pool,
+            SchemaRuleVerifier schemaRuleVerifier,
             Clock clock,
             TransactionTracer tracer )
     {
@@ -210,6 +213,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.storeLayer = storeLayer;
         this.legacyIndexTransactionState = new CachingLegacyIndexTransactionState( legacyIndexTransactionState );
         this.pool = pool;
+        this.schemaRuleVerifier = schemaRuleVerifier;
         this.clock = clock;
         this.schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
         this.tracer = tracer;
@@ -280,7 +284,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( currentStatement == null )
         {
             currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),
-                    labelScanStore, this, locks, operations, storeStatement );
+                    labelScanStore, this, locks, operations, storeStatement, schemaRuleVerifier );
         }
         currentStatement.acquire();
         return currentStatement;

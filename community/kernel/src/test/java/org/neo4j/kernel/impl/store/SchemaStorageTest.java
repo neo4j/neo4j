@@ -44,10 +44,8 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.SchemaStorage.IndexRuleKind;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
-import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
-import org.neo4j.kernel.impl.store.record.RelationshipPropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.test.EmbeddedDatabaseRule;
@@ -57,11 +55,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule.nodePropertyExistenceConstraintRule;
-import static org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule.relPropertyExistenceConstraintRule;
 import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
 
 public class SchemaStorageTest
@@ -69,7 +64,6 @@ public class SchemaStorageTest
     private static final String LABEL1 = "Label1";
     private static final String LABEL2 = "Label2";
     private static final String TYPE1 = "Type1";
-    private static final String TYPE2 = "Type2";
     private static final String PROP1 = "prop1";
     private static final String PROP2 = "prop2";
 
@@ -160,8 +154,6 @@ public class SchemaStorageTest
         // Given
         createIndex( LABEL2, PROP1 );
         createUniquenessConstraint( LABEL1, PROP1 );
-        createNodePropertyExistenceConstraint( LABEL1, PROP1 );
-        createRelPropertyExistenceConstraint( LABEL1, PROP1 );
 
         // When
         Set<NodePropertyConstraintRule> listedRules = asSet( storage.schemaRulesForNodes(
@@ -171,29 +163,6 @@ public class SchemaStorageTest
         // Then
         Set<NodePropertyConstraintRule> expectedRules = new HashSet<>();
         expectedRules.add( uniquenessConstraintRule( 1, labelId( LABEL1 ), propId( PROP1 ), 0 ) );
-        expectedRules.add( nodePropertyExistenceConstraintRule( 1, labelId( LABEL1 ), propId( PROP1 ) ) );
-
-        assertEquals( expectedRules, listedRules );
-    }
-
-    @Test
-    public void shouldListAllSchemaRulesForRelationships()
-    {
-        // Given
-        createIndex( LABEL1, PROP1 );
-        createRelPropertyExistenceConstraint( TYPE1, PROP1 );
-        createRelPropertyExistenceConstraint( TYPE2, PROP1 );
-        createRelPropertyExistenceConstraint( TYPE1, PROP2 );
-
-        // When
-        Set<RelationshipPropertyConstraintRule> listedRules = asSet( storage.schemaRulesForRelationships(
-                Functions.<RelationshipPropertyConstraintRule>identity(), RelationshipPropertyConstraintRule.class,
-                labelId( LABEL1 ), Predicates.<RelationshipPropertyConstraintRule>alwaysTrue() ) );
-
-        // Then
-        Set<RelationshipPropertyConstraintRule> expectedRules = new HashSet<>();
-        expectedRules.add( relPropertyExistenceConstraintRule( 0, typeId( TYPE1 ), propId( PROP1 ) ) );
-        expectedRules.add( relPropertyExistenceConstraintRule( 1, typeId( TYPE1 ), propId( PROP2 ) ) );
 
         assertEquals( expectedRules, listedRules );
     }
@@ -202,17 +171,16 @@ public class SchemaStorageTest
     public void shouldListSchemaRulesByClass()
     {
         // Given
-        createUniquenessConstraint( LABEL1, PROP1 );
-        createNodePropertyExistenceConstraint( LABEL1, PROP1 );
-        createRelPropertyExistenceConstraint( TYPE1, PROP1 );
+        createIndex( LABEL1, PROP1 );
+        createUniquenessConstraint( LABEL2, PROP1 );
 
         // When
-        Set<RelationshipPropertyConstraintRule> listedRules = asSet(
-                storage.schemaRules( RelationshipPropertyConstraintRule.class ) );
+        Set<UniquePropertyConstraintRule> listedRules = asSet(
+                storage.schemaRules( UniquePropertyConstraintRule.class ) );
 
         // Then
-        Set<RelationshipPropertyConstraintRule> expectedRules = new HashSet<>();
-        expectedRules.add( relPropertyExistenceConstraintRule( 0, typeId( TYPE1 ), propId( PROP1 ) ) );
+        Set<UniquePropertyConstraintRule> expectedRules = new HashSet<>();
+        expectedRules.add( uniquenessConstraintRule( 0, labelId( LABEL2 ), propId( PROP1 ), 0 ) );
 
         assertEquals( expectedRules, listedRules );
     }
@@ -236,44 +204,6 @@ public class SchemaStorageTest
     }
 
     @Test
-    public void shouldReturnCorrectExistenceRuleForLabelAndProperty()
-            throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
-    {
-        // Given
-        createNodePropertyExistenceConstraint( LABEL1, PROP1 );
-        createNodePropertyExistenceConstraint( LABEL2, PROP1 );
-
-        // When
-        NodePropertyExistenceConstraintRule rule =
-                storage.nodePropertyExistenceConstraint( labelId( LABEL1 ), propId( PROP1 ) );
-
-        // Then
-        assertNotNull( rule );
-        assertEquals( labelId( LABEL1 ), rule.getLabel() );
-        assertEquals( propId( PROP1 ), rule.getPropertyKey() );
-        assertEquals( SchemaRule.Kind.NODE_PROPERTY_EXISTENCE_CONSTRAINT, rule.getKind() );
-    }
-
-    @Test
-    public void shouldReturnCorrectExistenceRuleForRelTypeAndProperty()
-            throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
-    {
-        // Given
-        createRelPropertyExistenceConstraint( TYPE1, PROP1 );
-        createRelPropertyExistenceConstraint( TYPE2, PROP1 );
-
-        // When
-        RelationshipPropertyExistenceConstraintRule rule =
-                storage.relationshipPropertyExistenceConstraint( typeId( TYPE1 ), propId( PROP1 ) );
-
-        // Then
-        assertNotNull( rule );
-        assertEquals( typeId( TYPE1 ), rule.getRelationshipType() );
-        assertEquals( propId( PROP1 ), rule.getPropertyKey() );
-        assertEquals( SchemaRule.Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT, rule.getKind() );
-    }
-
-    @Test
     public void shouldThrowExceptionOnNodeRuleNotFound()
             throws DuplicateSchemaRuleException, SchemaRuleNotFoundException
     {
@@ -282,8 +212,9 @@ public class SchemaStorageTest
 
         // EXPECT
         expectedException.expect( EntitySchemaRuleNotFoundException.class );
-        expectedException.expect( new KernelExceptionUserMessageMatcher(tokenNameLookup, "Constraint for label 'Label1' and property" +
-                                                                                         " 'prop1' not found.")  );
+        expectedException.expect(
+                new KernelExceptionUserMessageMatcher( tokenNameLookup, "Constraint for label 'Label1' and property" +
+                                                                        " 'prop1' not found." ) );
 
         // WHEN
         storage.nodePropertyExistenceConstraint( labelId( LABEL1 ), propId( PROP1 ) );
@@ -389,26 +320,6 @@ public class SchemaStorageTest
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( label( labelName ) ).assertPropertyIsUnique( propertyName ).create();
-            tx.success();
-        }
-        awaitIndexes();
-    }
-
-    private void createNodePropertyExistenceConstraint( String labelName, String propertyName )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.schema().constraintFor( label( labelName ) ).assertPropertyExists( propertyName ).create();
-            tx.success();
-        }
-        awaitIndexes();
-    }
-
-    private void createRelPropertyExistenceConstraint( String typeName, String propertyName )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.schema().constraintFor( withName( typeName ) ).assertPropertyExists( propertyName ).create();
             tx.success();
         }
         awaitIndexes();
