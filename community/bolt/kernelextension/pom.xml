@@ -20,7 +20,7 @@
 
   <packaging>jar</packaging>
   <name>Neo4j - Bolt Kernel Extension</name>
-  <description>Exposes the Neo4j Data Protocol server as a kernel extension.</description>
+  <description>Exposes the Neo4j Bolt Protocol server as a kernel extension.</description>
 
   <licenses>
     <license>

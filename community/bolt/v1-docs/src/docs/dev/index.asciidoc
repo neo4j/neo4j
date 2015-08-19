@@ -1,5 +1,5 @@
 [[bolt]]
-= Neo4j Data Protocol, Version 1
+= Neo4j Bolt Protocol, Version 1
 
 WARNING: This component is in active development and *will* change.
 

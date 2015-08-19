@@ -23,7 +23,7 @@ image:simple-exchange.png[]
 === Initialization
 
 Before a session can be used to <<bolt-message-structs-run,run>> queries, it must be <<bolt-message-structs-initialize,initialized>>.
-The `INITIALIZE` message message should be sent by the client as the first message it sends after <<bolt-handshake,negotiating protocol version>>.
+The `INITIALIZE` message should be sent by the client as the first message it sends after <<bolt-handshake,negotiating protocol version>>.
 
 [[bolt-messaging-pipelining]]
 === Pipelining

@@ -1,5 +1,5 @@
 [[bolt-transport]]
-== Transport layer
+== Bolt Transport Layer
 The protocol supports both regular http://en.wikipedia.org/wiki/Network_socket[socket] and http://en.wikipedia.org/wiki/WebSocket[WebSocket] transport layers for sending and receiving messages.
 The transport layer is versioned along with the rest of the data protocol and is responsible for:
 
@@ -34,7 +34,7 @@ IMPORTANT: If TLS is enabled, and no certificate has been specified, Neo4j will 
 [[bolt-handshake]]
 === Handshake
 
-After connecting, a handshake takes place to establish which protocol version should be used for that connection.
+After connecting, a handshake takes place to establish which Bolt protocol version should be used for that connection.
 This handshake is a _version-independent_ mini-protocol which is guaranteed to remain the same, regardless of preferred or available protocol versions.
 
 In the handshake, the client proposes up to four protocol versions it supports, in order of preference.

@@ -1,7 +1,7 @@
 [[bolt-examples]]
 == Examples
 
-This section contains concrete examples showing how to perform tasks using the full protocol stack.
+This section contains concrete examples showing how to perform tasks using the full Bolt protocol stack.
 
 === Running a Cypher query
 

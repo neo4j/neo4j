@@ -1,4 +1,4 @@
-# Bolt
+# Bolt: The Neo4j Binary Protocol
 
 This project contains a high-performance network protocol for Neo4j called Bolt.
 
