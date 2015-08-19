@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl;
 
 import org.junit.After;
 import org.junit.Test;
+import org.junit.internal.AssumptionViolatedException;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -52,7 +53,6 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 import static org.neo4j.test.ByteArrayMatcher.byteArray;
 
 public class SingleFilePageSwapperTest extends PageSwapperTest
@@ -86,6 +86,14 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     protected FileSystemAbstraction getFs()
     {
         return fs;
+    }
+
+    protected void assumeFalse( String message, boolean test )
+    {
+        if ( test )
+        {
+            throw new AssumptionViolatedException( message );
+        }
     }
 
     @Test
@@ -190,7 +198,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     @Test( expected = OverlappingFileLockException.class )
     public void creatingSwapperForFileMustTakeLockOnFile() throws Exception
     {
-        assumeFalse( FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
+        assumeFalse( "No file locking on Windows", FileUtils.OS_IS_WINDOWS );
 
         PageSwapperFactory factory = swapperFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -214,7 +222,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     @Test( expected = FileLockException.class )
     public void creatingSwapperForInternallyLockedFileMustThrow() throws Exception
     {
-        assumeFalse( FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
+        assumeFalse( "No file locking on Windows", FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = swapperFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -233,7 +241,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     @Test( expected = FileLockException.class )
     public void creatingSwapperForExternallyLockedFileMustThrow() throws Exception
     {
-        assumeFalse( FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
+        assumeFalse( "No file locking on Windows", FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = swapperFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -266,7 +274,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     @Test
     public void mustUnlockFileWhenThePageSwapperIsClosed() throws Exception
     {
-        assumeFalse( FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
+        assumeFalse( "No file locking on Windows", FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = swapperFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -286,7 +294,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     @Test( expected = OverlappingFileLockException.class )
     public void fileMustRemainLockedEvenIfChannelIsClosedByStrayInterrupt() throws Exception
     {
-        assumeFalse( FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
+        assumeFalse( "No file locking on Windows", FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = swapperFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -314,7 +322,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     @Test
     public void mustCloseFilesIfTakingFileLockThrows() throws Exception
     {
-        assumeFalse( FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
+        assumeFalse( "No file locking on Windows", FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
 
         final AtomicInteger openFilesCounter = new AtomicInteger();
         PageSwapperFactory factory = swapperFactory();
