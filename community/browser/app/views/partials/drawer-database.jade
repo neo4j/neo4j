@@ -2,7 +2,7 @@
   h4 Neo4j {{ neo4j.version }}
   h5 Node labels
 
-  a.token.token-label(ng-show="labels.length", ng-click="editor.execScript('MATCH n RETURN n LIMIT 25')") *
+  a.token.token-label(ng-show="labels.length", ng-click="editor.execScript('MATCH (n) RETURN n LIMIT 25')") *
   span(ng-repeat='label in labels | orderBy: identity')
     a.token.token-label(ng-click="editor.execScript(substituteToken('MATCH (n:<token>) RETURN n LIMIT 25', label))") {{label}}
 
