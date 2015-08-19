@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextSupplier;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextFactory;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -64,7 +64,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
 {
     // Transaction dependencies
 
-    private final NeoStoreTransactionContextSupplier neoStoreTransactionContextSupplier;
+    private final NeoStoreTransactionContextFactory neoStoreTransactionContextFactory;
     private final NeoStore neoStore;
     private final Locks locks;
     private final IntegrityValidator integrityValidator;
@@ -101,7 +101,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
     private final Set<KernelTransactionImplementation> allTransactions = newSetFromMap(
             new ConcurrentHashMap<KernelTransactionImplementation,Boolean>() );
 
-    public KernelTransactions( NeoStoreTransactionContextSupplier neoStoreTransactionContextSupplier,
+    public KernelTransactions( NeoStoreTransactionContextFactory neoStoreTransactionContextFactory,
                                NeoStore neoStore, Locks locks, IntegrityValidator integrityValidator,
                                ConstraintIndexCreator constraintIndexCreator,
                                IndexingService indexingService, LabelScanStore labelScanStore,
@@ -116,7 +116,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
                                LifeSupport dataSourceLife,
                                Tracers tracers )
     {
-        this.neoStoreTransactionContextSupplier = neoStoreTransactionContextSupplier;
+        this.neoStoreTransactionContextFactory = neoStoreTransactionContextFactory;
         this.neoStore = neoStore;
         this.locks = locks;
         this.integrityValidator = integrityValidator;
@@ -146,7 +146,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
         @Override
         public KernelTransactionImplementation newInstance()
         {
-            NeoStoreTransactionContext context = neoStoreTransactionContextSupplier.acquire();
+            NeoStoreTransactionContext context = neoStoreTransactionContextFactory.newInstance();
             Locks.Client locksClient = locks.newClient();
             context.bind( locksClient );
             TransactionRecordState recordState = new TransactionRecordState(
