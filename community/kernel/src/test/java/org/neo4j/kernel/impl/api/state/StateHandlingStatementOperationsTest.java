@@ -20,12 +20,8 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -33,20 +29,22 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.cursor.LabelItem;
+import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
-import org.neo4j.kernel.impl.api.LookupFilter;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
-import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
+import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 
 import static java.util.Arrays.asList;
@@ -61,11 +59,11 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.kernel.api.properties.Property.intProperty;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
+import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest( { LookupFilter.class })
 public class StateHandlingStatementOperationsTest
 {
     // Note: Most of the behavior of this class is tested in separate classes,
@@ -280,39 +278,61 @@ public class StateHandlingStatementOperationsTest
         assertEquals( asSet( 42L, 43L ), asSet( results ) );
     }
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldConsiderTransactionStateDuringIndexBetweenRangeSeekByNumber() throws Exception
     {
         // Given
+        final int propertyKey = 2;
+        final int inRange = 15;
+        int lower = 10;
+        int upper = 20;
+
         TransactionState txState = mock( TransactionState.class );
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        IndexDescriptor index = new IndexDescriptor( 1, 2 );
-        when( txState.indexUpdatesForRangeSeekByNumber( index, 10, true, 20, false ) ).thenReturn(
+        IndexDescriptor index = new IndexDescriptor( 1, propertyKey );
+        when( txState.indexUpdatesForRangeSeekByNumber( index, lower, true, upper, false ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
                 new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
         );
+        when( txState.augmentSingleNodeCursor( any( Cursor.class ), anyLong() ) ).thenAnswer(
+                new Answer<Cursor<NodeItem>>()
+                {
+                    @Override
+                    public Cursor<NodeItem> answer( InvocationOnMock invocationOnMock ) throws Throwable
+                    {
+                        long nodeId = (long) invocationOnMock.getArguments()[1];
+                        return asNodeCursor( nodeId, asPropertyCursor( intProperty( propertyKey, inRange ) ),
+                                Cursors.<LabelItem>empty() );
+                    }
+                } );
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        PrimitiveLongResourceIterator resourceIterator =
-                IteratorUtil.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null );
-        when( storeReadLayer.nodesGetFromInclusiveNumericIndexRangeSeek( statement, index, 10, 20 ) ).thenReturn(
-                resourceIterator
+        when( storeReadLayer.nodesGetFromInclusiveNumericIndexRangeSeek( statement, index, lower, upper ) ).thenReturn(
+                IteratorUtil.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
         );
         StoreStatement storeStatement = mock( StoreStatement.class );
         when( statement.getStoreStatement() ).thenReturn( storeStatement );
-        when( storeStatement.acquireSingleNodeCursor( anyLong() ) ).
-                thenReturn( asNodeCursor( 43L, 44L, 46L ) );
+        when( storeStatement.acquireSingleNodeCursor( anyLong() ) ).thenAnswer(
+                new Answer<Cursor<NodeItem>>()
+                {
+                    @Override
+                    public Cursor<NodeItem> answer( InvocationOnMock invocationOnMock ) throws Throwable
+                    {
+                        long nodeId = (long) invocationOnMock.getArguments()[0];
+                        return asNodeCursor( nodeId, asPropertyCursor( intProperty( propertyKey, inRange ) ),
+                                Cursors.<LabelItem>empty() );
+                    }
+                } );
 
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
-        PowerMockito.mockStatic( LookupFilter.class );
-        when(LookupFilter
-                .exactRangeMatches( context, statement, resourceIterator, 2, 10, true, 20, false )).thenReturn( resourceIterator );
 
-        PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByNumber( statement, index, 10, true, 20, false );
+        // When
+        PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByNumber( statement, index, lower, true, upper, false );
 
         // Then
         assertEquals( asSet( 42L, 43L ), asSet( results ) );
