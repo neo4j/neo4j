@@ -24,6 +24,8 @@ import org.parboiled.scala._
 
 trait Strings extends Base {
 
+  // For regular strings
+
   protected def StringCharacters(c: Char): Rule1[String] = {
     push(new java.lang.StringBuilder) ~ zeroOrMore(EscapedChar | NormalChar(c)) ~~> (_.toString())
   }
@@ -50,8 +52,26 @@ trait Strings extends Base {
   }
 
   protected def UTF16 = rule { ch('u') ~ group(HexDigit ~ HexDigit ~ HexDigit ~ HexDigit) ~> (java.lang.Integer.parseInt(_, 16)) }
+
   protected def UTF32 = rule { ch('U') ~ group(HexDigit ~ HexDigit ~ HexDigit ~ HexDigit ~ HexDigit ~ HexDigit ~ HexDigit ~ HexDigit) ~> (java.lang.Integer.parseInt(_, 16)) }
+
   private def HexDigit = rule { "0" - "9" | "a" - "f" | "A" - "F" }
+
+  // For interpolated strings
+
+  protected def InStringCharacters: Rule1[String] = {
+    push(new java.lang.StringBuilder) ~ oneOrMore(DoubleDollar | InStringChar) ~~> (_.toString())
+  }
+
+  protected def InStringChar = {
+    !ch('$') ~ ANY ~:% withContext(appendToStringBuilder(_)(_))
+  }
+
+  protected def DoubleDollar = {
+    "$" ~ (
+      ch('$') ~ appendToStringBuilder('$')
+      )
+  }
 
   protected def appendToStringBuilder(c: Any): Context[Any] => Unit = ctx =>
     ctx.getValueStack.peek.asInstanceOf[java.lang.StringBuilder].append(c)

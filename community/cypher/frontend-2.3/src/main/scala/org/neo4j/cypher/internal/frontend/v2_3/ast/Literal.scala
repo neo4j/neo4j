@@ -136,6 +136,10 @@ case class StringLiteral(value: String)(val position: InputPosition) extends Lit
   def asCanonicalStringVal = quoteString(value)
 }
 
+case class InterpolationLiteral(value: String)(val position: InputPosition) extends Literal with Untyped {
+  def asCanonicalStringVal = quoteString(value)
+}
+
 case class Null()(val position: InputPosition) extends Literal with SimpleTyping {
   val value = null
 

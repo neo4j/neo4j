@@ -20,25 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast.conditions
 
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.Condition
-import org.neo4j.cypher.internal.frontend.v2_3.ast.{Match, NodePattern, RelationshipPattern}
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{Expression, Untyped}
 
-case object noUnnamedPatternElementsInMatch extends Condition {
+case object noUntypedExpressions extends Condition {
   def apply(that: Any): Seq[String] = {
-    val into = collectNodesOfType[Match]().apply(that).map(_.pattern)
-    into.flatMap(unnamedNodePatterns) ++ into.flatMap(unnamedRelationshipPatterns)
-  }
-
-  private def unnamedRelationshipPatterns(that: Any): Seq[String] = {
-    collectNodesOfType[RelationshipPattern]().apply(that).collect {
-      case rel@RelationshipPattern(None, _, _, _, _, _) =>
-        s"RelationshipPattern at ${rel.position} is unnamed"
-    }
-  }
-
-  private def unnamedNodePatterns(that: Any): Seq[String] = {
-    collectNodesOfType[NodePattern]().apply(that).collect {
-      case node@NodePattern(None, _, _, _) =>
-        s"NodePattern at ${node.position} is unnamed"
+    val untyped = collectNodesOfType[Expression](include = _.isInstanceOf[Untyped]).apply(that)
+    untyped.map { expr =>
+      s"Found untyped expression at ${expr.position}: $expr"
     }
   }
 

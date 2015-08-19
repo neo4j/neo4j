@@ -17,20 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.ast.conditions
+package org.neo4j.cypher.internal.compiler.v2_3.commands.values
 
-import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.Condition
-import org.neo4j.cypher.internal.frontend.v2_3.Ref
-import org.neo4j.cypher.internal.frontend.v2_3.ast.Identifier
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
 
-case object noReferenceEqualityAmongIdentifiers extends Condition {
-  def apply(that: Any): Seq[String] = {
-    val ids = collectNodesOfType[Identifier]().apply(that).map(Ref[Identifier])
-    ids.groupBy(x => x).collect {
-      case (id, others) if others.size > 1 => s"The instance ${id.value} is used ${others.size} times"
-    }.toSeq
+case class InterpolationValue(parts: NonEmptyList[Either[String, String]]) {
+
+  def interpolate: String = {
+    val builder = new StringBuilder
+    parts.foreach {
+      case Left(string) => builder.append(string)
+      case Right(string) => builder.append(string)
+    }
+    builder.toString()
   }
-
-  override def name: String = productPrefix
 }
-

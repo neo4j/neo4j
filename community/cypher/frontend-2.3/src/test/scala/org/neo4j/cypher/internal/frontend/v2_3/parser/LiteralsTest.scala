@@ -27,6 +27,19 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
   def Expression: Rule1[ast.Expression] = ???
   val t = DummyPosition(0)
 
+  test("should parse interpolated strings") {
+    implicit val parserToTest: Rule1[ast.InterpolationLiteral] = InterpolationLiteral
+
+    parsing("$'string'") shouldGive ast.InterpolationLiteral("string")(t)
+    parsing("$\"string\"") shouldGive ast.InterpolationLiteral("string")(t)
+    parsing("$''") shouldGive ast.InterpolationLiteral("")(t)
+    parsing("$' '") shouldGive ast.InterpolationLiteral(" ")(t)
+    parsing("$'$$'") shouldGive ast.InterpolationLiteral("$$")(t)
+    parsing("$'${thing}'") shouldGive ast.InterpolationLiteral("${thing}")(t)
+    parsing("$'$'") shouldGive ast.InterpolationLiteral("$")(t)
+    parsing("$'${}'") shouldGive ast.InterpolationLiteral("${}")(t)
+  }
+
   test("testIdentifierCanContainASCII") {
     implicit val parserToTest = Identifier
 

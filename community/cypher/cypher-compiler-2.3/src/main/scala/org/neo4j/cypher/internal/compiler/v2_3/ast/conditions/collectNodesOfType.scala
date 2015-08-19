@@ -24,9 +24,10 @@ import org.neo4j.cypher.internal.frontend.v2_3.ast.ASTNode
 
 import scala.reflect.ClassTag
 
-case class collectNodesOfType[T <: ASTNode](implicit tag: ClassTag[T]) extends (Any => Seq[T]) {
+case class collectNodesOfType[T <: ASTNode](include: T => Boolean = (_: T) => true)(implicit tag: ClassTag[T]) extends (Any => Seq[T]) {
+
   def apply(that: Any): Seq[T] = that.fold(Seq.empty[T]) {
-    case node: ASTNode if node.getClass == tag.runtimeClass =>
+    case node: ASTNode if tag.runtimeClass.isAssignableFrom(node.getClass) && include(node.asInstanceOf[T]) =>
       (acc) => acc :+ node.asInstanceOf[T]
   }
 }

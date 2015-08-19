@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.InterpolationValue
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v2_3.ParameterWrongTypeException
@@ -34,10 +35,15 @@ case class ToStringFunction(a: Expression) extends NullInNullOutExpression(a) wi
 
   def rewrite(f: (Expression) => Expression): Expression = f(ToStringFunction(a.rewrite(f)))
 
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = a(m) match {
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = toStringValue(a(m))
+}
+
+object toStringValue extends (Any => String) {
+  def apply(value: Any) = value match {
     case v: Number => v.toString
     case v: String => v
+    case v: InterpolationValue => v.interpolate
     case v =>
-      throw new ParameterWrongTypeException("Expected a String or Number, got: " + v.toString)
+      throw new ParameterWrongTypeException(s"Expected a String or Number, got: $v")
   }
 }

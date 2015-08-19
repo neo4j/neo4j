@@ -42,6 +42,27 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     fNode = createLabeledNode("LABEL")
   }
 
+  // *** TESTS OF INTERPOLATED LIKE PREFIX SEARCHES
+
+  ignore("should work with interpolated strings") {
+    val london = createLabeledNode(Map("name" -> "London"), "Location")
+    createLabeledNode(Map("name" -> "london"), "Location")
+    graph.createIndex("Location", "name")
+
+    val query =
+      """WITH 'Lon' as prefix
+        |MATCH (l:Location)
+        |WHERE l.name LIKE $'${prefix}%'
+        |USING INDEX l:Location(name)
+        |RETURN l
+      """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.executionPlanDescription().toString should include(IndexSeekByRange.name)
+    result.toList should equal(List(Map("l" -> london)))
+  }
+
   // *** TESTS OF PREFIX SEARCH
 
   test("should be case sensitive") {

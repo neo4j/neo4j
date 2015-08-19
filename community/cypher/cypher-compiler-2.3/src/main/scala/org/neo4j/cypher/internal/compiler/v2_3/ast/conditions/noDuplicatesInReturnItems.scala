@@ -23,8 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.Condition
 import org.neo4j.cypher.internal.frontend.v2_3.ast.ReturnItems
 
 case object noDuplicatesInReturnItems extends Condition {
+
   def apply(that: Any): Seq[String] = {
-    val returnItems = collectNodesOfType[ReturnItems].apply(that)
+    val returnItems = collectNodesOfType[ReturnItems]().apply(that)
     returnItems.collect {
       case ris@ReturnItems(_, items) if items.toSet.size != items.size =>
         s"ReturnItems at ${ris.position} contain duplicate return item: $ris"
@@ -33,3 +34,5 @@ case object noDuplicatesInReturnItems extends Condition {
 
   override def name: String = productPrefix
 }
+
+

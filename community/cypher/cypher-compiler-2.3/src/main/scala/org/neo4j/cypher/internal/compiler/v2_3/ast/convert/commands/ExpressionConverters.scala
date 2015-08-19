@@ -282,6 +282,7 @@ object ExpressionConverters {
     case e: PrefixSeekRangeWrapper => commandexpressions.PrefixSeekRangeExpression(e.range)
     case e: InequalitySeekRangeWrapper => InequalitySeekRangeExpression(e.range.mapBounds(toCommandExpression))
     case e: ast.AndedPropertyInequalities => predicates.AndedPropertyComparablePredicates(identifier(e.identifier), toCommandProperty(e.property), e.inequalities.map(inequalityExpression))
+    case e: org.neo4j.cypher.internal.compiler.v2_3.ast.Interpolation => commandexpressions.Interpolation(e.parts.map(toCommandInterpolationPart))
     case _ =>
       throw new InternalException(s"Unknown expression type during transformation (${expression.getClass})")
   }
@@ -296,6 +297,8 @@ object ExpressionConverters {
       case c => predicates.CoercedPredicate(c)
     }
   }
+
+  def toCommandInterpolationPart(part: Either[ast.Expression, String]) = part.left.map(toCommandExpression)
 
   def toCommandParameter(e: ast.Parameter) = commandexpressions.ParameterExpression(e.name)
 

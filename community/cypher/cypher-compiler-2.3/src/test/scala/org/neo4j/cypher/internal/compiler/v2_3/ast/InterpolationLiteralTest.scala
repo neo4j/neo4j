@@ -17,20 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.ast.conditions
+package org.neo4j.cypher.internal.compiler.v2_3.ast
 
-import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.Condition
-import org.neo4j.cypher.internal.frontend.v2_3.Ref
-import org.neo4j.cypher.internal.frontend.v2_3.ast.Identifier
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticState
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{AstConstructionTestSupport, Expression, InterpolationLiteral}
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
-case object noReferenceEqualityAmongIdentifiers extends Condition {
-  def apply(that: Any): Seq[String] = {
-    val ids = collectNodesOfType[Identifier]().apply(that).map(Ref[Identifier])
-    ids.groupBy(x => x).collect {
-      case (id, others) if others.size > 1 => s"The instance ${id.value} is used ${others.size} times"
-    }.toSeq
+class InterpolationLiteralTest extends CypherFunSuite with AstConstructionTestSupport {
+
+  test("is untyped") {
+    val literal = InterpolationLiteral("prefix")(pos)
+    val result = literal.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
+
+    result.errors match {
+      case Seq(error) =>
+        error.msg should be("Must not use untyped ast node InterpolationLiteral during semantic checking")
+    }
   }
-
-  override def name: String = productPrefix
 }
-

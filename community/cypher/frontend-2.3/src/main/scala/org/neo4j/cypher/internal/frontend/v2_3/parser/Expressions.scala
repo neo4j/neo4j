@@ -127,6 +127,7 @@ trait Expressions extends Parser
   private def Expression1: Rule1[ast.Expression] = rule("an expression") (
       NumberLiteral
     | StringLiteral
+    | InterpolationLiteral
     | Parameter
     | keyword("TRUE") ~ push(ast.True()(_))
     | keyword("FALSE") ~ push(ast.False()(_))
@@ -194,3 +195,5 @@ trait Expressions extends Parser
     keyword("WHEN") ~~ Expression ~~ keyword("THEN") ~~ Expression
   }
 }
+
+

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v2_3.ast.{Expression, FunctionInvocati
 
 case object normalizedEqualsArguments extends Condition {
   def apply(that: Any): Seq[String] = {
-    val equals = collectNodesOfType[Equals].apply(that)
+    val equals = collectNodesOfType[Equals]().apply(that)
     equals.collect {
       case eq@Equals(expr, Property(_,_)) if !expr.isInstanceOf[Property] && notIdFunction(expr) =>
         s"Equals at ${eq.position} is not normalized: $eq"

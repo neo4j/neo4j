@@ -148,12 +148,25 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
   }
 }
 
-trait SimpleTyping { self: Expression =>
+trait SimpleTyping {
+  self: Expression =>
+
   protected def possibleTypes: TypeSpec
   def semanticCheck(ctx: SemanticContext): SemanticCheck = specifyType(possibleTypes)
 }
 
-trait FunctionTyping { self: Expression =>
+trait Untyped {
+  self: Expression with Product =>
+
+  def position: InputPosition
+
+  def semanticCheck(ctx: SemanticContext): SemanticCheck =
+    SemanticCheckResult.error(_, SemanticError(s"Must not use untyped ast node ${self.productPrefix} during semantic checking", position))
+}
+
+trait FunctionTyping {
+  self: Expression =>
+
 
   case class Signature(argumentTypes: IndexedSeq[CypherType], outputType: CypherType)
 
@@ -193,15 +206,21 @@ trait FunctionTyping { self: Expression =>
   }
 }
 
-trait PrefixFunctionTyping extends FunctionTyping { self: Expression =>
+trait PrefixFunctionTyping extends FunctionTyping {
+  self: Expression =>
+
   def rhs: Expression
 }
 
-trait PostfixFunctionTyping extends FunctionTyping { self: Expression =>
+trait PostfixFunctionTyping extends FunctionTyping {
+  self: Expression =>
+
   def lhs: Expression
 }
 
-trait InfixFunctionTyping extends FunctionTyping { self: Expression =>
+trait InfixFunctionTyping extends FunctionTyping {
+  self: Expression =>
+
   def lhs: Expression
   def rhs: Expression
 }

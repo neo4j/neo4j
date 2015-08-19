@@ -106,4 +106,8 @@ trait Literals extends Parser
      | ch('"') ~ StringCharacters('"') ~ ch('"')
     ) memoMismatches) suppressSubnodes) ~~>> (ast.StringLiteral(_))
   }
+
+  def InterpolationLiteral: Rule1[ast.InterpolationLiteral] = rule("string interpolation") {
+    ("$" ~ StringLiteral) ~~> (str => ast.InterpolationLiteral(str.value)(str.position))
+  }
 }

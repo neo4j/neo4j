@@ -28,9 +28,9 @@ final case class PreParsedStatement(statement: String, options: Seq[PreParserOpt
 case object CypherPreParser extends Parser with Base {
   def apply(input: String): PreParsedStatement = parseOrThrow(input, None, QueryWithOptions)
 
-  def QueryWithOptions: Rule1[Seq[PreParsedStatement]] =
+  def QueryWithOptions: Rule1[PreParsedStatement] =
     WS ~ AllOptions ~ WS ~ AnySomething ~~>>
-      ( (options: Seq[PreParserOption], text: String) => pos => Seq(PreParsedStatement(text, options, pos)))
+      ( (options: Seq[PreParserOption], text: String) => PreParsedStatement(text, options, _))
 
   def AllOptions: Rule1[Seq[PreParserOption]] = zeroOrMore(AnyCypherOption, WS)
 
