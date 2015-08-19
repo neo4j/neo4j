@@ -223,6 +223,41 @@
             background: none
             border: none
 
+        .view-result-messages
+          max-height: frame-result-height
+          min-height: frame-min-height
+          .messages-holder
+            max-height: (frame-result-height - middlebar-height)
+            min-height: (frame-min-height - middlebar-height)
+            overflow: auto
+            background: #fff
+            pre
+              font-family: mono-font-family
+              font-size: 14px
+              padding: 12px 16px
+              margin: 0
+              border: none
+            h4
+              vertical-align: bottom
+          .cypher-messages
+            padding: 10px 0 10px 0
+            .cypher-message
+              display: inline-block
+              font-weight: bold
+              line-height: 1em
+              text-align: center
+              white-space: nowrap
+              vertical-align: baseline
+              user-select: none
+              font-size: 12px
+              margin-right: 5px
+              padding: 4px 7px 4px 5px
+              border-radius: 3px
+              &.cypher-message-warning
+                background-color: color-warning-on-white
+                color: #FFFFFF
+              &.cypher-message-error
+                background-color: color-error
         .view-result-loading
           .spinner
             height: 40px

@@ -372,8 +372,8 @@ angular.module('neo4jApp')
           #All other queries should be sent through an open transaction
           #so they can be canceled.
           else
-            r = current_transaction.begin().then(
-              (begin_response) ->
+            current_transaction.begin().then(
+              () ->
                 commit_fn()
               ,
               (r) ->

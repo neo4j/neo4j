@@ -37,12 +37,15 @@ angular.module('neo4jApp.controllers')
         $scope.availableModes.push('plan') if resp.table._response.plan
       $scope.availableModes.push('raw') if resp.raw
       $scope.availableModes.push('errors') if resp.errors
+      $scope.availableModes.push('messages') if resp.raw.response.data.notifications
 
       # Initialise tab state from user selected if any
       $scope.tab = $rootScope.stickyTab
 
-      # Always pre-select the plan tab if available
-      if $scope.isAvailable 'plan'
+      # Always pre-select the plan -> errors tab if available
+      if $scope.isAvailable('messages') and $scope.frame.showCypherNotification
+        $scope.tab = 'messages'
+      else if $scope.isAvailable 'plan'
         $scope.tab = 'plan'
       else if $scope.isAvailable 'errors'
         $scope.tab = 'errors'
@@ -68,7 +71,7 @@ angular.module('neo4jApp.controllers')
     $scope.resultStatistics = (frame) ->
       if frame?.response
         updatesMessages = []
-        if frame.response.table?._response?.columns.length
+        if frame.response.table?._response?.columns?.length
           updatesMessages = $scope.updatesStatistics frame
         rowsStatistics = $scope.returnedRowsStatistics frame
         messages = [].concat(updatesMessages, rowsStatistics)
@@ -156,12 +159,12 @@ angular.module('neo4jApp.controllers')
     getTimeString = (frame, messages, context) ->
       timeMessage = " in #{frame.response.responseTime} ms"
       if context is 'updates'
-        if messages.length and !frame.response.table._response.columns.length
+        if messages.length and !frame.response.table._response.columns?.length
           messages.push "statement executed"
           messages[messages.length - 1] += timeMessage
 
       if context is 'returnedRows'
-        if frame.response.table._response.columns.length or (!frame.response.table._response.columns.length and !$scope.getNonZeroStatisticsFields(frame).length)
+        if frame.response.table._response.columns?.length or (!frame.response.table._response.columns?.length and !$scope.getNonZeroStatisticsFields(frame).length)
           messages[messages.length - 1] += timeMessage
       messages
 

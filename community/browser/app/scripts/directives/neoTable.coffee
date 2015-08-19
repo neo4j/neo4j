@@ -54,7 +54,7 @@ angular.module('neo4jApp.directives')
         # (repeat watchers are expensive)
         render = (result) ->
           rows = result.rows()
-          cols = result.columns()
+          cols = result.columns() || []
           return "" unless cols.length
           html  = "<table class='table data'>"
           html += "<thead><tr>"

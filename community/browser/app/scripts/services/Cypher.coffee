@@ -94,14 +94,10 @@ angular.module('neo4jApp.services')
               q.reject({errors: result.errors, raw: raw})
             else
               results = []
-              if result.commit
-                begin_request= result
-                result = {results: [begin_request]}
-              for r in result.results
-                partResult = new CypherResult(r)
-                partResult.raw = raw
-                results.push partResult
-              q.resolve( results[0] ) # TODO: handle multiple...
+              partResult = new CypherResult(result.results[0] || {})
+              partResult.raw = raw
+              results.push partResult
+              q.resolve(results[0])
         ).error(
           (r) ->
             q.reject r
