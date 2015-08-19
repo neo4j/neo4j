@@ -197,18 +197,17 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   private def indexSeekByNumericalRange(index: IndexDescriptor, range: InequalitySeekRange[Number]): scala.Iterator[Node] = {
     val readOps = statement.readOperations()
-    val propertyKeyId = index.getPropertyKeyId
-    val matchingNodes: PrimitiveLongIterator = range match {
+    val matchingNodes: PrimitiveLongIterator = (range match {
 
       case rangeLessThan: RangeLessThan[Number] =>
         rangeLessThan.limit(BY_NUMBER).map { limit =>
           readOps.nodesGetFromIndexRangeSeekByNumber( index, null, false, limit.endPoint, limit.isInclusive )
-        }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
+        }
 
       case rangeGreaterThan: RangeGreaterThan[Number] =>
         rangeGreaterThan.limit(BY_NUMBER).map { limit =>
           readOps.nodesGetFromIndexRangeSeekByNumber( index, limit.endPoint, limit.isInclusive, null, false )
-        }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
+        }
 
       case RangeBetween(rangeGreaterThan, rangeLessThan) =>
         rangeGreaterThan.limit(BY_NUMBER).flatMap { greaterThanLimit =>
@@ -218,9 +217,8 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
               greaterThanLimit.endPoint, greaterThanLimit.isInclusive,
               lessThanLimit.endPoint, lessThanLimit.isInclusive )
           }
-        }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
-    }
-
+        }
+    }).getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
     JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getById)
   }
 

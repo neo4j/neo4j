@@ -69,7 +69,6 @@ import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_NUMBERS;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_STRINGS;
 
 /**
@@ -263,16 +262,14 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement state,
-                                                                     IndexDescriptor index,
-                                                                     Number lower, boolean includeLower,
-                                                                     Number upper, boolean includeUpper )
+    public PrimitiveLongIterator nodesGetFromInclusiveNumericIndexRangeSeek( KernelStatement state,
+            IndexDescriptor index,
+            Number lower,
+            Number upper )
             throws IndexNotFoundKernelException
 
     {
-        return COMPARE_NUMBERS.isEmptyRange( lower, includeLower, upper, includeUpper )
-            ? PrimitiveLongCollections.emptyIterator()
-            : diskLayer.nodesGetFromIndexRangeSeekByNumber( state, index, lower, includeLower, upper, includeUpper );
+        return diskLayer.nodesGetFromInclusiveNumericIndexRangeSeek( state, index, lower, upper );
     }
 
     @Override
