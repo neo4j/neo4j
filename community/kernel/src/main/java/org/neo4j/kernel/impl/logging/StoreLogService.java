@@ -31,6 +31,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.Level;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
@@ -49,6 +50,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         private int internalLogRotationDelay = 0;
         private int maxInternalLogArchives = 0;
         private Consumer<LogProvider> rotationListener = Consumers.noop();
+        private Level level = Level.INFO;
 
         private Builder()
         {
@@ -83,6 +85,12 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
             return this;
         }
 
+        public Builder withLevel( Level level )
+        {
+            this.level = level;
+            return this;
+        }
+
         public StoreLogService inStoreDirectory( FileSystemAbstraction fileSystem, File storeDir ) throws IOException
         {
             return toFile( fileSystem, new File( storeDir, INTERNAL_LOG_NAME ) );
@@ -92,7 +100,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         {
             return new StoreLogService(
                     userLogProvider,
-                    fileSystem, internalLogPath,
+                    fileSystem, internalLogPath, level,
                     internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives, rotationExecutor, rotationListener );
         }
     }
@@ -115,9 +123,15 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
     private final Closeable closeable;
     private final SimpleLogService logService;
 
-    private StoreLogService( LogProvider userLogProvider, FileSystemAbstraction fileSystem, File internalLog,
-            long internalLogRotationThreshold, int internalLogRotationDelay, int maxInternalLogArchives,
-            Executor rotationExecutor, final Consumer<LogProvider> rotationListener ) throws IOException
+    private StoreLogService( LogProvider userLogProvider,
+            FileSystemAbstraction fileSystem,
+            File internalLog,
+            Level level,
+            long internalLogRotationThreshold,
+            int internalLogRotationDelay,
+            int maxInternalLogArchives,
+            Executor rotationExecutor,
+            final Consumer<LogProvider> rotationListener ) throws IOException
     {
         if ( !internalLog.getParentFile().exists() )
         {
@@ -147,7 +161,8 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
                     logProvider.getLog( StoreLogService.class ).info( "Rotated internal log file" );
                 }
             } );
-            internalLogProvider = FormattedLogProvider.withUTCTimeZone().toOutputStream( rotatingSupplier );
+            internalLogProvider = FormattedLogProvider.withUTCTimeZone().withLogLevel( level ).toOutputStream(
+                    rotatingSupplier );
             this.closeable = rotatingSupplier;
         }
         this.logService = new SimpleLogService( userLogProvider, internalLogProvider );

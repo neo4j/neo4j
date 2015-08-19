@@ -33,6 +33,7 @@ import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Obsoleted;
 import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.impl.cache.MonitorGc;
+import org.neo4j.logging.Level;
 
 import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
@@ -116,7 +117,9 @@ public abstract class GraphDatabaseSettings
                   " statistics used to create the plan has changed more than this value, " +
                   "the plan is considered stale and will be replanned. " +
                   "A value of 0 means always replan, and 1 means never replan." )
-    public static Setting<Double> query_statistics_divergence_threshold = setting( "dbms.cypher.statistics_divergence_threshold", DOUBLE, "0.1", min( 0.0 ), max( 1.0 ) );
+    public static Setting<Double> query_statistics_divergence_threshold = setting(
+            "dbms.cypher.statistics_divergence_threshold", DOUBLE, "0.1", min( 0.0 ), max(
+            1.0 ) );
 
     @Description("The minimum lifetime of a query plan before a query is considered for replanning")
     public static Setting<Long> cypher_min_replan_interval = setting( "dbms.cypher.min_replan_interval", DURATION, "1s" );
@@ -142,6 +145,10 @@ public abstract class GraphDatabaseSettings
 
     @Description( "Threshold for rotation of the internal log." )
     public static final Setting<Long> store_internal_log_rotation_threshold = setting("store.internal_log.rotation_threshold", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
+
+    @Description("Log level threshold.")
+    public static final Setting<Level> store_internal_log_level = setting( "store.internal_log.level",
+            options( Level.class ), "INFO" );
 
     @Description( "Maximum time interval for log rotation to wait for active transaction completion" )
     @Internal

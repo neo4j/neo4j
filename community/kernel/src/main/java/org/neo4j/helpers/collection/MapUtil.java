@@ -448,9 +448,9 @@ public abstract class MapUtil
         return true;
     }
 
-    public static <K, V> MapBuilder<K, V> map()
+    public static <K, V> MapBuilder<K, V> entry( K key, V value )
     {
-        return new MapBuilder<K, V>();
+        return new MapBuilder<K, V>().entry( key, value );
     }
 
     public static class MapBuilder<K, V>

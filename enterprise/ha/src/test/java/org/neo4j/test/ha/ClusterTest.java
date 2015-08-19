@@ -43,6 +43,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.helpers.collection.MapUtil.entry;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.fromXml;
 
@@ -59,7 +60,7 @@ public class ClusterTest
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
                 testDirectory.directory(  "testCluster" ),
-                MapUtil.<String, String>map().entry( HaSettings.ha_server.name(), "localhost:6001-6005" ).
+                entry( HaSettings.ha_server.name(), "localhost:6001-6005" ).
                         entry( HaSettings.tx_push_factor.name(), "2" ).create() );
         try
         {

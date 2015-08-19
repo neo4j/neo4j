@@ -59,15 +59,6 @@ public class FormattedLog extends AbstractLog
     static final TimeZone UTC = TimeZone.getTimeZone( "UTC" );
     static final Charset UTF_8 = Charset.forName( "UTF-8" );
 
-    public enum Level
-    {
-        DEBUG,
-        INFO,
-        WARN,
-        ERROR,
-        NONE
-    }
-
     /**
      * A Builder for a {@link FormattedLog}
      */
