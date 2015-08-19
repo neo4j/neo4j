@@ -3,7 +3,6 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
-  Apache Commons Lang
   ConcurrentLinkedHashMap
   parboiled-core
   parboiled-scala

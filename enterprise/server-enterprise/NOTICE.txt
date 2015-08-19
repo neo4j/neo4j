@@ -58,8 +58,6 @@ BSD - Scala License
 
 BSD License
   ASM Core
-  Commons Compiler
-  Janino
   Scala Compiler
   scala-parser-combinators
 

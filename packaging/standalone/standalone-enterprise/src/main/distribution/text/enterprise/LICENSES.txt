@@ -317,10 +317,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ------------------------------------------------------------------------------
 BSD License
   ASM Core
-  Commons Compiler
   D3.js
   Easing Equations (in easing.js)
-  Janino
   JLine
   JQuery Easing Plugin
   Scala Compiler
