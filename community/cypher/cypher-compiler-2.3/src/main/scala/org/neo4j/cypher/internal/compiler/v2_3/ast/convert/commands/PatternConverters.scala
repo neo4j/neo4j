@@ -243,8 +243,8 @@ object PatternConverters {
     private def labels = node.labels.map(t => commandvalues.KeyToken.Unresolved(t.name, commandvalues.TokenType.Label))
 
     def legacyProperties = node.properties match {
-      case Some(m: ast.MapExpression) => m.items.map(p => (p._1.name, p._2.asCommandExpression)).toMap
-      case Some(p: ast.Parameter)     => Map[String, CommandExpression]("*" -> p.asCommandExpression)
+      case Some(m: ast.MapExpression) => m.items.map(p => (p._1.name, toCommandExpression(p._2))).toMap
+      case Some(p: ast.Parameter)     => Map[String, CommandExpression]("*" -> toCommandExpression(p))
       case Some(p)                    => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.position})")
       case None                       => Map[String, CommandExpression]()
     }
@@ -285,8 +285,8 @@ object PatternConverters {
 
     def legacyProperties: Map[String, CommandExpression] = relationship.properties match {
       case None                       => Map.empty[String, CommandExpression]
-      case Some(m: ast.MapExpression) => m.items.map(p => p._1.name -> p._2.asCommandExpression)(collection.breakOut)
-      case Some(p: ast.Parameter)     => Map("*" -> p.asCommandExpression)
+      case Some(m: ast.MapExpression) => m.items.map(p => p._1.name -> toCommandExpression(p._2))(collection.breakOut)
+      case Some(p: ast.Parameter)     => Map("*" -> toCommandExpression(p))
       case Some(p)                    => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.position})")
     }
   }

@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.functions
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.NestedPipeExpression
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
-import ExpressionConverters._
-import commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.PropertyExists
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 case object Exists extends Function {
   def name = "EXISTS"
@@ -41,12 +41,12 @@ case object Exists extends Function {
     } chain invocation.specifyType(CTBoolean)
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =
-    invocation.arguments(0) match {
+    invocation.arguments.head match {
       case property: ast.Property =>
-        PropertyExists( property.map.asCommandExpression, PropertyKey( property.propertyKey.name ) )
+        PropertyExists(toCommandExpression(property.map), PropertyKey(property.propertyKey.name))
       case expression: ast.PatternExpression =>
-        expression.asCommandPredicate
+        toCommandPredicate(expression)
       case expression: NestedPipeExpression =>
-        expression.asCommandPredicate
+        toCommandPredicate(expression)
     }
 }

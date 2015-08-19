@@ -32,5 +32,5 @@ case object Reverse extends Function with SimpleTypedFunction {
   )
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =
-    commandexpressions.ReverseFunction(invocation.arguments(0).asCommandExpression)
+    commandexpressions.ReverseFunction(toCommandExpression(invocation.arguments.head))
 }

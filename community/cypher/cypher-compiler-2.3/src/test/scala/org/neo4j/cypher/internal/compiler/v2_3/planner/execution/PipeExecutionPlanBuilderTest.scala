@@ -92,7 +92,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", ManySeekArgs(astCollection.asCommandExpression))())
+    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", ManySeekArgs(toCommandExpression(astCollection)))())
   }
 
   test("simple relationship by id seek query") {
@@ -118,7 +118,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", ManySeekArgs(astCollection.asCommandExpression), toNode, fromNode)())
+    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", ManySeekArgs(toCommandExpression(astCollection)), toNode, fromNode)())
   }
 
   test("simple undirected relationship by id seek query with multiple values") {
@@ -132,7 +132,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(UndirectedRelationshipByIdSeekPipe("r", ManySeekArgs(astCollection.asCommandExpression), toNode, fromNode)())
+    pipeInfo.pipe should equal(UndirectedRelationshipByIdSeekPipe("r", ManySeekArgs(toCommandExpression(astCollection)), toNode, fromNode)())
   }
 
   test("simple cartesian product") {
