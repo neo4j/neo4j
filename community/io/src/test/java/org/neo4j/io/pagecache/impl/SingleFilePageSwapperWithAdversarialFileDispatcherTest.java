@@ -17,29 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.store.io;
+package org.neo4j.io.pagecache.impl;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
 
-/**
- * Monitors queued jobs, executed jobs and can hence answer if there are any active jobs or not.
- */
-class JobMonitor
+import org.neo4j.adversaries.fs.AdversarialFileChannel;
+import org.neo4j.test.bootclasspathrunner.BootClassPathRunner;
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtilTest;
+
+@BootClassPathRunner.BootEntryOf( UnsafeUtilTest.class )
+@RunWith( BootClassPathRunner.class )
+public class SingleFilePageSwapperWithAdversarialFileDispatcherTest extends SingleFilePageSwapperWithRealFileSystemTest
 {
-    private final AtomicInteger activeCount = new AtomicInteger();
-
-    void jobQueued()
+    @BeforeClass
+    public static void enableAdversarialFileDispatcher()
     {
-        activeCount.incrementAndGet();
+        AdversarialFileChannel.useAdversarialFileDispatcherHack = true;
     }
 
-    void jobExecuted()
+    @AfterClass
+    public static void disableAdversarialFileDispatcher()
     {
-        activeCount.decrementAndGet();
-    }
-
-    boolean hasActiveJobs()
-    {
-        return activeCount.get() > 0;
+        AdversarialFileChannel.useAdversarialFileDispatcherHack = false;
     }
 }

@@ -26,7 +26,7 @@ public interface IoTracer
 {
     long countBytesWritten();
 
-    public static final IoTracer NONE = new IoTracer()
+    IoTracer NONE = new IoTracer()
     {
         @Override
         public long countBytesWritten()

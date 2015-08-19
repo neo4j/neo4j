@@ -17,10 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/**
- * Generic staging framework and generic implementations of such used to execute batches in parallel.
- *
- * @see org.neo4j.unsafe.impl.batchimport.staging.Stage
- * @see org.neo4j.unsafe.impl.batchimport.staging.Step
- */
-package org.neo4j.unsafe.impl.batchimport.staging;
+package org.neo4j.io.pagecache.impl.muninn;
+
+import org.junit.Rule;
+
+import java.io.File;
+
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.test.TargetDirectory;
+
+public class MuninnPageCacheWithRealFileSystemTest extends MuninnPageCacheTest
+{
+    @Rule
+    public TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+
+    @Override
+    protected File file( String pathname )
+    {
+        return directory.file( pathname );
+    }
+
+    @Override
+    protected FileSystemAbstraction createFileSystemAbstraction()
+    {
+        return new DefaultFileSystemAbstraction();
+    }
+}

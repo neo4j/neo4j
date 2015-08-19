@@ -63,7 +63,7 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     public StoreChannel open( File fileName, String mode ) throws IOException
     {
         adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
-        return new AdversarialFileChannel( delegate.open( fileName, mode ), adversary );
+        return AdversarialFileChannel.wrap( delegate.open( fileName, mode ), adversary );
     }
 
     public boolean renameFile( File from, File to ) throws IOException
@@ -81,7 +81,7 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     public StoreChannel create( File fileName ) throws IOException
     {
         adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
-        return new AdversarialFileChannel( delegate.create( fileName ), adversary );
+        return AdversarialFileChannel.wrap( delegate.create( fileName ), adversary );
     }
 
     public boolean mkdir( File fileName )

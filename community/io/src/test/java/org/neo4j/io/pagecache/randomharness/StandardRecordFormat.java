@@ -21,12 +21,15 @@ package org.neo4j.io.pagecache.randomharness;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 
 public class StandardRecordFormat extends RecordFormat
 {
+    private static final Charset CHARSET = Charset.forName( "UTF-8" );
+
     @Override
     public int getRecordSize()
     {
@@ -76,7 +79,8 @@ public class StandardRecordFormat extends RecordFormat
     {
         StandardRecord r = (StandardRecord) record;
         cursor.putByte( r.type );
-        cursor.putByte( r.file.getName().getBytes()[0] );
+        byte[] pathBytes = r.file.getPath().getBytes( CHARSET );
+        cursor.putByte( pathBytes[pathBytes.length - 1] );
         cursor.putShort( r.fill1 );
         cursor.putInt( r.recordId );
         cursor.putLong( r.fill2 );
@@ -130,8 +134,24 @@ public class StandardRecordFormat extends RecordFormat
                    && recordId == record.recordId
                    && fill1 == record.fill1
                    && fill2 == record.fill2
-                   && !(file != null ? !file.equals( record.file ) : record.file != null);
+                   && filesEqual( record );
 
+        }
+
+        private boolean filesEqual( StandardRecord record )
+        {
+            if ( file == record.file )
+            {
+                return true;
+            }
+            if ( file == null || record.file == null )
+            {
+                return false;
+            }
+            // We only look at the last letter of the path, because that's all that we can store in the record.
+            byte[] thisPath = file.getPath().getBytes( CHARSET );
+            byte[] thatPath = record.file.getPath().getBytes( CHARSET );
+            return thisPath[thisPath.length - 1] == thatPath[thatPath.length - 1];
         }
 
         @Override

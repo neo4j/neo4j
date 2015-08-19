@@ -70,7 +70,7 @@ public class RandomPageCacheTestHarness
     private double[] commandProbabilityFactors;
     private long randomSeed;
     private boolean fixedRandomSeed;
-    private EphemeralFileSystemAbstraction fs;
+    private FileSystemAbstraction fs;
     private boolean useAdversarialIO;
     private Plan plan;
     private Phase preparation;
@@ -98,6 +98,7 @@ public class RandomPageCacheTestHarness
             commandProbabilityFactors[command.ordinal()] = command.getDefaultProbabilityFactor();
         }
 
+        fs = new EphemeralFileSystemAbstraction();
         useAdversarialIO = true;
         recordFormat = new StandardRecordFormat();
     }
@@ -261,6 +262,11 @@ public class RandomPageCacheTestHarness
         this.fixedRandomSeed = true;
     }
 
+    public void setFileSystem( FileSystemAbstraction fileSystem )
+    {
+        this.fs = fileSystem;
+    }
+
     /**
      * Write out a textual description of the last run iteration, including the exact plan and what thread
      * executed which command, and the random seed that can be used to recreate that plan for improved repeatability.
@@ -343,7 +349,6 @@ public class RandomPageCacheTestHarness
             randomSeed = ThreadLocalRandom.current().nextLong();
         }
 
-        this.fs = new EphemeralFileSystemAbstraction();
         FileSystemAbstraction fs = this.fs;
         File[] files = buildFileNames();
 
@@ -398,6 +403,7 @@ public class RandomPageCacheTestHarness
                 }
                 future.get( deadlineMillis - now, TimeUnit.MILLISECONDS );
             }
+            adversary.setProbabilityFactor( 0.0 );
             runVerificationPhase( cache );
         }
         finally
@@ -412,7 +418,19 @@ public class RandomPageCacheTestHarness
             executor.awaitTermination( deadlineMillis - now, TimeUnit.MILLISECONDS );
             plan.close();
             cache.close();
-            this.fs.shutdown();
+
+            if ( this.fs instanceof EphemeralFileSystemAbstraction )
+            {
+                ((EphemeralFileSystemAbstraction) this.fs).shutdown();
+                this.fs = new EphemeralFileSystemAbstraction();
+            }
+            else
+            {
+                for ( File file : files )
+                {
+                    file.delete();
+                }
+            }
         }
     }
 
@@ -420,6 +438,7 @@ public class RandomPageCacheTestHarness
     {
         if ( verification != null )
         {
+            cache.flushAndForce(); // Clears any stray evictor exceptions
             verification.run( cache, this.fs, plan.getFilesTouched() );
         }
     }

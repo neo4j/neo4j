@@ -47,7 +47,7 @@ public interface Configuration
         @Override
         public int batchSize()
         {
-            return 10_000;
+            return 20_000;
         }
 
         @Override
