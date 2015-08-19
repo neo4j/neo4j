@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.IOException;
-import java.util.Iterator;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ReferenceManager;
+
+import java.io.IOException;
+import java.util.Iterator;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.direct.BoundedIterable;
@@ -32,10 +31,10 @@ import org.neo4j.kernel.api.direct.BoundedIterable;
 public class LuceneAllDocumentsReader implements BoundedIterable<Document>
 {
     private final IndexSearcher searcher;
-    private final ReferenceManager<IndexSearcher> searcherManager;
+    private final LuceneIndexAccessor.LuceneReferenceManager<IndexSearcher> searcherManager;
 
     public LuceneAllDocumentsReader(
-            ReferenceManager<IndexSearcher> searcherManager )
+            LuceneIndexAccessor.LuceneReferenceManager<IndexSearcher> searcherManager )
     {
         this.searcherManager = searcherManager;
         this.searcher = searcherManager.acquire();
