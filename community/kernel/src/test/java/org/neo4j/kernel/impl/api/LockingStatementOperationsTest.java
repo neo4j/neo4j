@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.Iterator;
 
 import org.neo4j.function.Function;
+import org.neo4j.kernel.SchemaRuleVerifier;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -59,7 +60,7 @@ public class LockingStatementOperationsTest
     private final InOrder order;
     private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
     private final KernelStatement state = new KernelStatement( transaction, null, null, null, locks, null,
-            null );
+            null, mock( SchemaRuleVerifier.class) );
     private final SchemaStateOperations schemaStateOps;
 
     public LockingStatementOperationsTest()

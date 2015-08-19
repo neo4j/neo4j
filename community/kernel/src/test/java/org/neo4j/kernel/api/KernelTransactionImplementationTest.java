@@ -28,6 +28,7 @@ import org.mockito.stubbing.Answer;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.FakeClock;
+import org.neo4j.kernel.SchemaRuleVerifier;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -381,7 +382,7 @@ public class KernelTransactionImplementationTest
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
                 null, null, null, null, null, recordState, null, neoStore, new NoOpClient(),
                 hooks, null, headerInformationFactory, commitProcess, transactionMonitor, readLayer, legacyIndexState,
-                mock( Pool.class ), clock, TransactionTracer.NULL );
+                mock( Pool.class ), mock(SchemaRuleVerifier.class), clock, TransactionTracer.NULL );
         transaction.initialize( 0 );
         return transaction;
     }

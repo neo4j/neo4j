@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers.DynamicIterable
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb._
 import org.mockito.Mockito._
+import org.neo4j.kernel.SchemaRuleVerifier
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.impl.api.{StatementOperationParts, KernelTransactionImplementation, KernelStatement}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
@@ -35,10 +36,11 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   var statement: Statement = null
 
   override def beforeEach() {
-    super.beforeEach ()
+    super.beforeEach()
     graph = new ImpermanentGraphDatabase
     outerTx = mock[Transaction]
-    statement = new KernelStatement( mock[KernelTransactionImplementation], null, null, null, null, null, null )
+    statement = new KernelStatement(mock[KernelTransactionImplementation], null, null, null, null, null, null,
+      mock[SchemaRuleVerifier])
   }
 
   test ("should_mark_transaction_successful_if_successful") {

@@ -59,7 +59,9 @@ import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
-import static org.neo4j.kernel.api.ConstraintHaIT.*;
+import static org.neo4j.kernel.api.ConstraintHaIT.NodePropertyExistenceConstraintHaIT;
+import static org.neo4j.kernel.api.ConstraintHaIT.RelationshipPropertyExistenceConstraintHaIT;
+import static org.neo4j.kernel.api.ConstraintHaIT.UniquenessConstraintHaIT;
 
 @RunWith( Suite.class )
 @SuiteClasses( {
@@ -74,7 +76,7 @@ public class ConstraintHaIT
         @Override
         protected void createConstraint( GraphDatabaseService db, String type, String value )
         {
-            db.schema().constraintFor( label( type ) ).assertPropertyExists( value ).create();
+            db.execute( String.format( "CREATE CONSTRAINT ON (n:%s) ASSERT exists(n.%s)", type, value ) );
         }
 
         @Override
@@ -122,7 +124,7 @@ public class ConstraintHaIT
         @Override
         protected void createConstraint( GraphDatabaseService db, String type, String value )
         {
-            db.schema().constraintFor( withName( type ) ).assertPropertyExists( value ).create();
+            db.execute( String.format( "CREATE CONSTRAINT ON ()-[r:%s]-() ASSERT exists(r.%s)", type, value ) );
         }
 
         @Override

@@ -25,6 +25,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -314,6 +315,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
     private final Map<String,IndexImplementation> indexProviders = new HashMap<>();
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
     private final IndexConfigStore indexConfigStore;
+    private final SchemaRuleVerifier schemaRuleVerifier;
 
     private Dependencies dependencies;
     private LifeSupport life;
@@ -360,6 +362,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             NodeManager nodeManager, Guard guard,
             IndexConfigStore indexConfigStore, CommitProcessFactory commitProcessFactory,
             PageCache pageCache,
+            SchemaRuleVerifier schemaRuleVerifier,
             Monitors monitors,
             Tracers tracers )
     {
@@ -386,6 +389,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         this.nodeManager = nodeManager;
         this.guard = guard;
         this.indexConfigStore = indexConfigStore;
+        this.schemaRuleVerifier = schemaRuleVerifier;
         this.monitors = monitors;
         this.tracers = tracers;
 
@@ -965,8 +969,9 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         final NeoStoreTransactionContextSupplier neoStoreTransactionContextSupplier =
                 new NeoStoreTransactionContextSupplier( neoStore );
 
-        StatementOperationParts statementOperations = buildStatementOperations( storeLayer, legacyPropertyTrackers,
-                constraintIndexCreator, updateableSchemaState, guard, legacyIndexStore );
+        StatementOperationParts statementOperations = dependencies.satisfyDependency( buildStatementOperations(
+                storeLayer, legacyPropertyTrackers, constraintIndexCreator, updateableSchemaState, guard,
+                legacyIndexStore ) );
 
         final TransactionHooks hooks = new TransactionHooks();
         final KernelTransactions kernelTransactions =
@@ -974,8 +979,8 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                         neoStore, locks, integrityValidator, constraintIndexCreator, indexingService, labelScanStore,
                         statementOperations, updateableSchemaState, schemaWriteGuard, schemaIndexProviderMap,
                         transactionHeaderInformationFactory, storeLayer, transactionCommitProcess,
-                        indexConfigStore,
-                        legacyIndexProviderLookup, hooks, transactionMonitor, life, tracers ) );
+                        indexConfigStore, legacyIndexProviderLookup, hooks, schemaRuleVerifier,
+                        transactionMonitor, life, tracers ) );
 
         final Kernel kernel = new Kernel( kernelTransactions, hooks, kernelHealth, transactionMonitor );
 
@@ -1037,7 +1042,12 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
     // Startup sequence done
     private void loadSchemaCache()
     {
-        cacheModule.schemaCache().load( neoStoreModule.neoStore().getSchemaStore().loadAllSchemaRules() );
+        List<SchemaRule> schemaRules = toList( neoStoreModule.neoStore().getSchemaStore().loadAllSchemaRules() );
+        for ( SchemaRule schemaRule : schemaRules )
+        {
+            schemaRuleVerifier.verify( schemaRule );
+        }
+        cacheModule.schemaCache().load( schemaRules );
     }
 
     public NeoStore getNeoStore()
@@ -1058,11 +1068,6 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
     public LabelScanStore getLabelScanStore()
     {
         return indexingModule.labelScanStore();
-    }
-
-    public LockService getLockService()
-    {
-        return lockService;
     }
 
     @Override

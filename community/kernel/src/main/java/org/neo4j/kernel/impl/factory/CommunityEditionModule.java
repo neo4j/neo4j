@@ -112,6 +112,8 @@ public class CommunityEditionModule
 
         upgradeConfiguration = new ConfigMapUpgradeConfiguration( config );
 
+        schemaRuleVerifier = new CommunitySchemaRuleVerifier();
+
         registerRecovery( config.get( GraphDatabaseFacadeFactory.Configuration.editionName), life, deps );
 
         publishEditionInfo( deps.resolveDependency( UsageData.class ) );
