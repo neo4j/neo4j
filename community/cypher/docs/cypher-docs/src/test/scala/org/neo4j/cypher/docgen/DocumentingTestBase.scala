@@ -452,8 +452,6 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
   override def softReset() {
     cleanDatabaseContent(db)
 
-    setupConstraintQueries.foreach(engine.execute)
-
     db.inTx {
       db.schema().awaitIndexesOnline(10, TimeUnit.SECONDS)
 
@@ -462,11 +460,12 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
       val g = new GraphImpl(graphDescription.toArray[String])
       val description = GraphDescription.create(g)
 
-      setupQueries.foreach(engine.execute)
 
       nodeMap = description.create(db).asScala.map {
         case (name, node) => name -> node.getId
       }.toMap
+
+      setupQueries.foreach(engine.execute)
 
       GlobalGraphOperations.at(db).getAllNodes.asScala.foreach((n) => {
         indexProperties(n, nodeIndex)
@@ -478,6 +477,8 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
           seq foreach { case (k, v) => n.setProperty(k, v) }
       }
     }
+
+    setupConstraintQueries.foreach(engine.execute)
   }
 
   private def asNodeMap[T: Manifest](m: Map[String, T]): Map[Node, T] =

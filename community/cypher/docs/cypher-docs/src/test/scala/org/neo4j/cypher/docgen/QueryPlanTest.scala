@@ -31,8 +31,16 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
        CREATE (andres:Person {name:'Andres'})
        CREATE (andreas:Person {name:'Andreas'})
        CREATE (mattias:Person {name:'Mattias'})
-       CREATE (Lovis:Person {name:'Lovis'})
-       CREATE (Pontus:Person {name:'Pontus'})
+       CREATE (lovis:Person {name:'Lovis'})
+       CREATE (pontus:Person {name:'Pontus'})
+       CREATE (max:Person {name:'Max'})
+       CREATE (konstantin:Person {name:'Konstantin'})
+       CREATE (stefan:Person {name:'Stefan'})
+       CREATE (mats:Person {name:'Mats'})
+       CREATE (petra:Person {name:'Petra'})
+       CREATE (craig:Person {name:'Craig'})
+       CREATE (steven:Person {name:'Steven'})
+       CREATE (chris:Person {name:'Chris'})
 
        CREATE (london:Location {name:'London'})
        CREATE (malmo:Location {name:'Malmo'})
@@ -61,6 +69,17 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
        CREATE (andreas)-[:WORKS_IN {duration: 187}]->(london)
        CREATE (andres)-[:WORKS_IN {duration: 150}]->(london)
        CREATE (mattias)-[:WORKS_IN {duration: 230}]->(london)
+       CREATE (lovis)-[:WORKS_IN {duration: 230}]->(sf)
+       CREATE (pontus)-[:WORKS_IN {duration: 230}]->(malmo)
+       CREATE (max)-[:WORKS_IN {duration: 230}]->(newyork)
+       CREATE (konstantin)-[:WORKS_IN {duration: 230}]->(london)
+       CREATE (stefan)-[:WORKS_IN {duration: 230}]->(london)
+       CREATE (stefan)-[:WORKS_IN {duration: 230}]->(berlin)
+       CREATE (mats)-[:WORKS_IN {duration: 230}]->(malmo)
+       CREATE (petra)-[:WORKS_IN {duration: 230}]->(london)
+       CREATE (craig)-[:WORKS_IN {duration: 230}]->(malmo)
+       CREATE (steven)-[:WORKS_IN {duration: 230}]->(malmo)
+       CREATE (chris)-[:WORKS_IN {duration: 230}]->(madrid)
        CREATE (london)-[:IN]->(england)
        CREATE (me)-[:FRIENDS_WITH]->(andres)
        CREATE (andres)-[:FRIENDS_WITH]->(andreas)
@@ -68,6 +87,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
 
   override val setupConstraintQueries = List(
     "CREATE INDEX ON :Location(name)".stripMargin,
+    "CREATE INDEX ON :Person(name)".stripMargin,
     "CREATE CONSTRAINT ON (team:Team) ASSERT team.name is UNIQUE".stripMargin
   )
 
@@ -78,7 +98,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       title = "All Nodes Scan",
       text =
         """Reads all nodes from the node store. The identifier that will contain the nodes is seen in the arguments.
-          |The following query will return all nodes. It's not a good idea to run a query like this on a production database.""".stripMargin,
+          |If your query is using this operator, you are very likely to see performance problems on any non-trivial database.""".stripMargin,
       queryText = """MATCH (n) RETURN n""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("AllNodesScan"))
     )
@@ -89,9 +109,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       title = "Constraint Operation",
       text =
         """Creates a constraint on a (label,property) pair.
-          |The following query will create a unique constraint on the `name` property of nodes with the `Country` label.
-          |This will ensure that we won't end up with duplicate `Country` nodes in our database.
-        """.stripMargin,
+          |The following query will create a unique constraint on the `name` property of nodes with the `Country` label.""".stripMargin,
       queryText = """CREATE CONSTRAINT ON (c:Country) ASSERT c.name is UNIQUE""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("ConstraintOperation"))
     )
@@ -101,9 +119,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(
       title = "Distinct",
       text =
-        """Removes duplicate rows.
-          |The following query will return unique locations that have people working in them
-        """.stripMargin,
+        """Removes duplicate rows from the incoming stream of rows.""".stripMargin,
       queryText = """MATCH (l:Location)<-[:WORKS_IN]-(p:Person) RETURN DISTINCT l""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Distinct"))
     )
@@ -113,9 +129,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(
       title = "Eager Aggregation",
       text =
-        """Eagerly loads resulting sub graphs before starting to emit the aggregated results.
-          |The following query will collect the people who work in every location before returning any rows.
-        """.stripMargin,
+        """Eagerly loads underlying results and stores it in a hash-map, using the grouping keys as the keys for the map.""".stripMargin,
       queryText = """MATCH (l:Location)<-[:WORKS_IN]-(p:Person) RETURN l.name AS location, COLLECT(p.name) AS people""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("EagerAggregation"))
     )
@@ -125,9 +139,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(
       title = "Update Graph",
       text =
-        """Applies updates to the graph.
-          |The following query will create a `Person` node with the name property set to `Alistair`
-        """.stripMargin,
+        """Applies updates to the graph.""".stripMargin,
       queryText = """CREATE (:Person {name: "Alistair"})""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("UpdateGraph"))
     )
@@ -137,9 +149,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(
       title = "Empty Result",
       text =
-        """Represents the fact that a query doesn't return any results.
-          |The following query will create a node but won't return anything.
-        """.stripMargin,
+        """Eagerly loads everything coming in to the EmptyResult operator and discards it.""".stripMargin,
       queryText = """CREATE (:Person)""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("EmptyResult"))
     )
@@ -148,9 +158,8 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
   @Test def nodeByLabelScan() {
     profileQuery(
       title = "Node by label scan",
-      text = """Using the label index, fetches all nodes with a specific label on them.
-                |The following query will return all nodes which have label `Person` where the property `name` has the value "me" via a scan of the `Person` label index.""".stripMargin,
-      queryText = """MATCH (person:Person {name: "me"}) RETURN person""",
+      text = """Using the label index, fetches all nodes with a specific label on them from the node label index.""".stripMargin,
+      queryText = """MATCH (person:Person) RETURN person""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("LabelScan"))
     )
   }
@@ -159,20 +168,9 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(
       title = "Node index seek",
       text = """Finds nodes using an index seek. The node identifier and the index used is shown in the arguments of the operator.
-                |The following query will return all nodes which have label `Location` where the property `name` has the value "Malmo" using the `Location` index.""".stripMargin,
+                |If the index is a unique index, the operator is called NodeUniqueIndexSeek instead.""".stripMargin,
       queryText = """MATCH (location:Location {name: "Malmo"}) RETURN location""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeIndexSeek"))
-    )
-  }
-
-  @Test def nodeByUniqueIndexSeek() {
-    profileQuery(
-      title = "Node unique index seek",
-      text =
-        """Finds nodes using an index seek on a unique index. The node identifier and the index used is shown in the arguments of the operator.
-          |The following query will return all nodes which have the label `Team` where the property `name` has the value "Field" using the `Team` unique index.""".stripMargin,
-      queryText = """MATCH (team:Team {name: "Field"}) RETURN team""".stripMargin,
-      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeUniqueIndexSeek"))
     )
   }
 
@@ -186,44 +184,21 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     sampleAllIndicesAndWait()
 
     profileQuery(title = "Node index range seek",
-                 text = """
-                          |Finds nodes using an index seek where the value of the property matches a given prefix string.
-                          |The following query will return all location nodes which have a name property starting with the text 'Lon'.
-                        """.stripMargin,
+                 text =
+                   """Finds nodes using an index seek where the value of the property matches a given prefix string.
+                     |This operator can be used for +LIKE+ and comparators such as `<`, `>`, `<=` and `>=`""".stripMargin,
                  queryText = "MATCH (l:Location) WHERE l.name LIKE 'Lon%' RETURN l",
                  assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString(IndexSeekByRange.name))
     )
   }
 
-  @Test def nodeUniqueIndexRangeSeek() {
-    executePreparationQueries {
-      val a = (0 to 100).map { i => "CREATE (:Team)" }.toList
-      val b = (0 to 300).map { i => s"CREATE (:Team {name: '$i'})" }.toList
-      a ++ b
-    }
-
-    sampleAllIndicesAndWait()
-
-    profileQuery(title = "Node unique index range seek",
-                 text = """
-                          |Finds nodes using a unique index seek where the value of the property matches a given prefix string.
-                          |The following query will return all location nodes which have a name property starting with the text 'Engineer'.
-                        """.stripMargin,
-                 queryText = "MATCH (t:Team) WHERE t.name LIKE 'Engineer%' RETURN t",
-                 assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString(UniqueIndexSeekByRange.name))
-    )
-  }
-
   @Test def nodeIndexScan() {
-    // Need to make index preferable in terms of cost
     executePreparationQueries((0 to 250).map { i =>
       "CREATE (:Location)"
     }.toList)
     profileQuery(title = "Node index scan",
                  text = """
-                          |Uses an index scan to find all nodes with a particular label having a specified property (e.g. `has(n.prop)`).
-                          |The following query will return all location nodes having a name property.
-                        """.stripMargin,
+                          |An index scan goes through all values stored in an index, and can be used to find all nodes with a particular label having a specified property (e.g. `exists(n.prop)`).""".stripMargin,
                  queryText = "MATCH (l:Location) WHERE has(l.name) RETURN l",
                  assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeIndexScan"))
     )
@@ -233,8 +208,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(
       title = "Node by Id seek",
       text =
-        """Reads one or more nodes by id from the node store.
-          |The following query will return the node which has nodeId `0`.""".stripMargin,
+        """Reads one or more nodes by id from the node store.""".stripMargin,
       queryText = """MATCH (n) WHERE id(n) = 0 RETURN n""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeByIdSeek"))
     )
@@ -244,8 +218,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(
       title = "Projection",
       text =
-        """For each row from its input, projection executes a set of expressions and produces a row with the results of the expressions.
-          |The following query will produce one row with the value "hello".""".stripMargin,
+        """For each row from its input, projection evaluates a set of expressions and produces a row with the results of the expressions.""".stripMargin,
       queryText = """RETURN "hello" AS greeting""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Projection"))
     )
@@ -255,8 +228,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(
       title = "Filter",
       text =
-        """Filters each row coming from the child operator, only passing through rows that evaluate the predicates to `TRUE`.
-          |The following query will look for nodes with the label `Person` and filter those whose name begins with the letter `a`.""".stripMargin,
+        """Filters each row coming from the child operator, only passing through rows that evaluate the predicates to `TRUE`.""".stripMargin,
       queryText = """MATCH (p:Person) WHERE p.name =~ "^a.*" RETURN p""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Filter"))
     )
@@ -266,23 +238,9 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(
       title = "Cartesian Product",
       text =
-        """Produces a cartesian product of the two inputs -- each row coming from the left child will be combined with all the rows from the right child operator.
-          |The following query will produce all combinations of people and teams. With five people and two teams we will see ten combinations. This is analogous to the 'cross join' in SQL which is also defined as a 'cartesian product'.
-        """.stripMargin,
+        """Produces a cartesian product of the two inputs -- each row coming from the left child will be combined with all the rows from the right child operator.""".stripMargin,
       queryText = """MATCH (p:Person), (t:Team) RETURN p, t""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("CartesianProduct"))
-    )
-  }
-
-  @Test def optionalMatch() {
-    profileQuery(
-      title = "Optional",
-      text =
-        """Takes the input from it's child and passes it on. If the input is empty, a single empty row is generated instead.
-          |The following query will find all the people and the location they work in if there is one.
-        """.stripMargin,
-      queryText = """MATCH (p:Person) OPTIONAL MATCH (p)-[:WORKS_IN]->(l) RETURN p, l""",
-      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Optional"))
     )
   }
 
@@ -292,10 +250,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       text =
         """Optional expand traverses relationships from a given node, and makes sure that predicates are evaluated before producing rows.
           |
-          |If no matching relationships are found, a single row with `NULL` for the relationship and end node identifier is produced.
-          |
-          |The following query will find all the people and the location they work in as long as they've worked there for more than 180 days.
-        """.stripMargin,
+          |If no matching relationships are found, a single row with `NULL` for the relationship and end node identifier is produced.""".stripMargin,
       queryText =
         """MATCH (p:Person)
            OPTIONAL MATCH (p)-[works_in:WORKS_IN]->(l) WHERE works_in.duration > 180
@@ -308,10 +263,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(
       title = "Sort",
       text =
-        """Sorts rows by a provided key.
-          |
-          |The following query will find all the people and return them sorted alphabetically by name.
-        """.stripMargin,
+        """Sorts rows by a provided key.""".stripMargin,
       queryText = """MATCH (p:Person) RETURN p ORDER BY p.name""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Sort"))
     )
@@ -321,10 +273,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(
       title = "Top",
       text =
-        """Returns the first 'n' rows sorted by a provided key. The physical operator is called `Top`. Instead of sorting the whole input, only the top X rows are kept.
-          |
-          |The following query will find the first 2 people sorted alphabetically by name.
-        """.stripMargin,
+        """Returns the first 'n' rows sorted by a provided key. The physical operator is called `Top`. Instead of sorting the whole input, only the top X rows are kept.""".stripMargin,
       queryText = """MATCH (p:Person) RETURN p ORDER BY p.name LIMIT 2""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Top"))
     )
@@ -334,10 +283,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(
       title = "Limit",
       text =
-        """Returns the first 'n' rows.
-          |
-          |The following query will return the first 3 people in an arbitrary order.
-        """.stripMargin,
+        """Returns the first 'n' rows from the incoming input.""".stripMargin,
       queryText = """MATCH (p:Person) RETURN p LIMIT 3""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Limit"))
     )
@@ -347,12 +293,19 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(
       title = "Expand All",
       text =
-        """Given a start node, expand will follow relationships coming in or out, depending on the pattern relationship. Can also handle variable length pattern relationships.
-          |
-          |The following query will return my friends of friends.
-        """.stripMargin,
+        """Given a start node, expand-all will follow relationships coming in or out, depending on the pattern relationship. Can also handle variable length pattern relationships.""".stripMargin,
       queryText = """MATCH (p:Person {name: "me"})-[:FRIENDS_WITH]->(fof) RETURN fof""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Expand(All)"))
+    )
+  }
+
+  @Test def expandInto() {
+    profileQuery(
+      title = "Expand Into",
+      text =
+        """When both the start and end node have already been found, expand-into is used to find all connecting relationships between the two nodes.""".stripMargin,
+      queryText = """MATCH (p:Person {name: "me"})-[:FRIENDS_WITH]->(fof)-->(p) RETURN fof""",
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Expand(Into)"))
     )
   }
 
@@ -363,10 +316,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
         """Tests for the existence of a pattern predicate.
           |`SemiApply` takes a row from it's child operator and feeds it to the `Argument` operator on the right hand side of `SemiApply`.
           |If the right hand side operator tree yields at least one row, the row from the left hand side is yielded by the `SemiApply` operator.
-          |This makes `SemiApply` a filtering operator, used mostly for pattern predicates in queries.
-          |
-          |The following query will find all the people who have a friend.
-        """.stripMargin,
+          |This makes `SemiApply` a filtering operator, used mostly for pattern predicates in queries.""".stripMargin,
       queryText =
         """MATCH (other:Person)
            WHERE (other)-[:FRIENDS_WITH]->()
@@ -418,10 +368,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       text =
         """Tests for the existence of a pattern predicate and evaluates a predicate.
           |This operator allows for the mixing of normal predicates and pattern predicates that check for the existing of a pattern.
-          |First the normal expression predicate is evaluated, and only if it returns `FALSE` the costly pattern predicate evaluation is performed.
-          |
-          |The following query will find all the people who have a friend or are older than 25.
-        """.stripMargin,
+          |First the normal expression predicate is evaluated, and only if it returns `FALSE` the costly pattern predicate evaluation is performed.""".stripMargin,
       queryText =
         """MATCH (other:Person)
            WHERE other.age > 25 OR (other)-[:FRIENDS_WITH]->()
@@ -435,10 +382,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       title = "Anti Semi Apply",
       text =
         """Tests for the absence of a pattern predicate.
-          |A pattern predicate that is prepended by `NOT` is solved with `AntiSemiApply`.
-          |
-          |The following query will find all the people who aren't my friend.
-        """.stripMargin,
+          |A pattern predicate that is prepended by `NOT` is solved with `AntiSemiApply`.""".stripMargin,
       queryText =
         """MATCH (me:Person {name: "me"}), (other:Person)
            WHERE NOT (me)-[:FRIENDS_WITH]->(other)
@@ -451,10 +395,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(
       title = "Select Or Anti Semi Apply",
       text =
-        """Tests for the absence of a pattern predicate and evaluates a predicate.
-          |
-          |The following query will find all the people who don't have a friend or are older than 25.
-        """.stripMargin,
+        """Tests for the absence of a pattern predicate and evaluates a predicate.""".stripMargin,
       queryText =
         """MATCH (other:Person)
            WHERE other.age > 25 OR NOT (other)-[:FRIENDS_WITH]->()
@@ -467,10 +408,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(
       title = "Directed Relationship By Id Seek",
       text =
-        """Reads one or more relationships by id from the relationship store. Produces both the relationship and the nodes on either side.
-          |
-          |The following query will find the relationship with id `0` and will return a row for the source node of that relationship.
-        """.stripMargin,
+        """Reads one or more relationships by id from the relationship store. Produces both the relationship and the nodes on either side.""".stripMargin,
       queryText =
         """MATCH (n1)-[r]->()
            WHERE id(r) = 0
@@ -485,10 +423,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       title = "Undirected Relationship By Id Seek",
       text =
         """Reads one or more relationships by id from the relationship store.
-          |For each relationship, two rows are produced with start and end nodes arranged differently.
-          |
-          |The following query will find the relationship with id `1` and will return a row for both the source and destination nodes of that relationship.
-        """.stripMargin,
+          |For each relationship, two rows are produced with start and end nodes arranged differently.""".stripMargin,
       queryText =
         """MATCH (n1)-[r]-()
            WHERE id(r) = 1
@@ -498,14 +433,19 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     )
   }
 
-  @Ignore def nodeHashJoin() {
+  @Test def nodeHashJoin() {
+    executePreparationQueries((0 to 250).map { i =>
+      """MATCH (london:Location {name: 'London'}), (person:Person {name: 'Pontus'})
+        |FOREACH(x in range(0,250) |
+        |  CREATE (person)-[:WORKS_IN]->(london)
+        |)""".stripMargin
+
+    }.toList)
+
     profileQuery(
       title = "Node Hash Join",
       text =
-        """Using a hash table, a node hash join joins the inputs coming from the left with the inputs coming from the right. The join key is specific in the arguments of the operator.
-          |
-          |The following query will find the people who work in London and the country which London belongs to.
-        """.stripMargin,
+        """Using a hash table, a node hash join joins the inputs coming from the left with the inputs coming from the right. The join key is specified in the arguments of the operator.""".stripMargin,
       queryText =
         """MATCH (andreas:Person {name:'Andreas'})-[:WORKS_IN]->(location)<-[:WORKS_IN]-(mattias:Person {name:'Mattis'})
            RETURN location""",
@@ -513,13 +453,27 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     )
   }
 
+  @Test def triadic() {
+    profileQuery(
+      title = "Triadic",
+      text =
+        """Triadic is used to solve triangular queries, such as the very common "find my friend-of-friends that are not already my friend".
+          |It does so by putting all the "friends" in a set, and use that set to check if the friend-of-friends are already connected to me.
+        """.stripMargin,
+      queryText =
+        """MATCH (me:Person)-[:FRIENDS_WITH]-()-[:FRIENDS_WITH]-(other) WHERE NOT (me)-[:FRIENDS_WITH]-(other)
+           RETURN other""",
+      assertions = (p) => {
+        assertThat(p.executionPlanDescription().toString, containsString("Triadic"))
+      }
+    )
+  }
+
   @Test def skip() {
     profileQuery(
       title = "Skip",
       text =
-        """Skips 'n' rows
-          |
-          |The following query will skip the person with the lowest `id` property and return the rest.
+        """Skips 'n' rows from the incoming rows
         """.stripMargin,
       queryText =
         """MATCH (p:Person)
@@ -531,17 +485,13 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     )
   }
 
-  //24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  @Ignore def apply() {
+  @Test def apply() {
     profileQuery(
       title = "Apply",
       text =
         """Apply works by performing a nested loop.
           |Every row being produced on the left hand side of the Apply operator will be fed to the Argument operator on the right hand side, and then Apply will yield the results coming from the RHS.
-          |Apply, being a nested loop, can be seen as a warning that a better plan was not found.
-          |
-          |The following query will return all the people that have at least one friend and the city they work in.
-        """.stripMargin,
+          |Apply, being a nested loop, can be seen as a warning that a better plan was not found.""".stripMargin,
       queryText =
         """MATCH (p:Person)-[:FRIENDS_WITH]->(f)
            WITH p, count(f) as fs
@@ -573,8 +523,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(
       title = "Unwind",
       text =
-        """Takes a collection of values and returns one row per item in the collection.
-          |The following query will return one row for each of the numbers 1 to 5.""".stripMargin,
+        """Takes a collection of values and returns one row per item in the collection.""".stripMargin,
       queryText = """UNWIND range(1,5) as value return value;""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("UNWIND"))
     )
