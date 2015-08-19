@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.predicates
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, Identifier, Literal, Property}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsLabel}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{CastSupport, CollectionSupport, IsCollection, NonEmptyList}
@@ -167,24 +167,26 @@ case class PropertyExists(identifier: Expression, propertyKey: KeyToken) extends
   override def localEffects(symbols: SymbolTable) = Effects.propertyRead(identifier, symbols)(propertyKey.name)
 }
 
-case class LiteralLikePattern(predicate: Predicate, pattern: ParsedLikePattern, caseInsensitive: Boolean = false) extends Predicate {
+case class LiteralLikePattern(predicate: LiteralRegularExpression, pattern: ParsedLikePattern, caseInsensitive: Boolean = false) extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState) = predicate.isMatch(m)
   def containsIsNull = predicate.containsIsNull
 
-  def rewrite(f: (Expression) => Expression) = f(copy(predicate = f(predicate).asInstanceOf[Predicate]))
+  def rewrite(f: (Expression) => Expression) = f(copy(predicate = predicate.rewrite(f).asInstanceOf[LiteralRegularExpression]))
 
   def arguments = predicate.arguments
 
   def symbolTableDependencies = predicate.symbolTableDependencies
+
+  override def toString = s"${predicate.lhsExpr} ${if (caseInsensitive) "ILIKE" else "LIKE"} $pattern"
 }
 
 case class LiteralRegularExpression(lhsExpr: Expression, regexExpr: Literal)(implicit converter: String => String = identity) extends Predicate {
   lazy val pattern = converter(regexExpr.v.asInstanceOf[String]).r.pattern
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState) =
-    Option(lhsExpr(m)).map { lhsValue =>
-      val v = CastSupport.castOrFail[String](lhsValue)
-      pattern.matcher(v).matches()
+    lhsExpr(m) match {
+      case s: String => Some(pattern.matcher(s).matches())
+      case _ => None
     }
 
   def containsIsNull = false
@@ -197,6 +199,8 @@ case class LiteralRegularExpression(lhsExpr: Expression, regexExpr: Literal)(imp
   def arguments = Seq(lhsExpr, regexExpr)
 
   def symbolTableDependencies = lhsExpr.symbolTableDependencies ++ regexExpr.symbolTableDependencies
+
+  override def toString = s"$lhsExpr =~ $regexExpr"
 }
 
 case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)(implicit converter: String => String = identity) extends Predicate {
@@ -206,9 +210,11 @@ case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)(implici
     case (_, null) =>
       None
     case (lhs, rhs)  =>
-      val lhsAsString = CastSupport.castOrFail[String](lhs)
       val rhsAsRegexString = converter(CastSupport.castOrFail[String](rhs))
-      Some(rhsAsRegexString.r.pattern.matcher(lhsAsString).matches())
+      if (!lhs.isInstanceOf[String])
+        None
+      else
+        Some(rhsAsRegexString.r.pattern.matcher(lhs.asInstanceOf[String]).matches())
   }
 
   override def toString: String = lhsExpr.toString() + " ~= /" + regexExpr.toString() + "/"

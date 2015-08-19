@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathImpl
-import org.neo4j.cypher.{CypherTypeException, ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.cypher._
 import org.neo4j.graphdb._
 
 import scala.collection.JavaConverters._
@@ -71,9 +71,9 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val child = createLabeledNode(Map("id" -> 0), "Child")
     relate(root, child)
 
-    val query = "MATCH (:Root {name:'x'})-->(i:Child) WHERE i.id =~ 'te.*' RETURN i"
+    val query = "MATCH (:Root {name:'x'})-->(i:Child) WHERE i.id > 'te' RETURN i"
 
-    a [CypherTypeException] should be thrownBy executeWithAllPlanners(query)
+    a [IncomparableValuesException] should be thrownBy executeWithAllPlanners(query)
   }
 
   test("exceptions should be thrown if rows are kept through OR'd predicates") {
@@ -81,9 +81,9 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val child = createLabeledNode(Map("id" -> 0), "Child")
     relate(root, child)
 
-    val query = "MATCH (:Root {name:'x'})-->(i) WHERE NOT has(i.id) OR i.id =~ 'te.*' RETURN i"
+    val query = "MATCH (:Root {name:'x'})-->(i) WHERE NOT has(i.id) OR i.id > 'te' RETURN i"
 
-    a [CypherTypeException] should be thrownBy executeWithAllPlanners(query)
+    a [IncomparableValuesException] should be thrownBy executeWithAllPlanners(query)
   }
 
   test("combines aggregation and named path") {

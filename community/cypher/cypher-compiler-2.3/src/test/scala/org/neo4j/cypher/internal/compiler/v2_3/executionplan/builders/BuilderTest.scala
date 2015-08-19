@@ -53,7 +53,9 @@ trait BuilderTest extends CypherFunSuite {
   def assertAccepts(p: Pipe, q: PartiallySolvedQuery): ExecutionPlanInProgress = assertAccepts(plan(p, q))
 
   def assertAccepts(planInProgress: ExecutionPlanInProgress): ExecutionPlanInProgress = {
-    withClue("Should be able to build on this")(builder.canWorkWith(planInProgress, context)) should equal(true)
+    withClue("Should be able to build on this."){
+      builder.canWorkWith(planInProgress, context) should equal(true)
+    }
     builder.apply(planInProgress, context)
   }
 
