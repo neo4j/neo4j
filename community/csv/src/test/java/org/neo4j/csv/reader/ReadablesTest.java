@@ -23,8 +23,10 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
@@ -161,21 +163,49 @@ public class ReadablesTest
         // GIVEN
         String text = "abcdefghijklmnop";
 
-        // THEN/WHEN
-        shouldReadableTextFromFileWithBom( Magic.BOM_UTF_32_BE, text );
-        shouldReadableTextFromFileWithBom( Magic.BOM_UTF_32_LE, text );
-        shouldReadableTextFromFileWithBom( Magic.BOM_UTF_16_BE, text );
-        shouldReadableTextFromFileWithBom( Magic.BOM_UTF_16_LE, text );
-        shouldReadableTextFromFileWithBom( Magic.BOM_UTF_8, text );
+        // WHEN/THEN
+        shouldReadTextFromFileWithBom( Magic.BOM_UTF_32_BE, text );
+        shouldReadTextFromFileWithBom( Magic.BOM_UTF_32_LE, text );
+        shouldReadTextFromFileWithBom( Magic.BOM_UTF_16_BE, text );
+        shouldReadTextFromFileWithBom( Magic.BOM_UTF_16_LE, text );
+        shouldReadTextFromFileWithBom( Magic.BOM_UTF_8, text );
     }
 
-    private void shouldReadableTextFromFileWithBom( Magic bom, String text ) throws IOException
+    @Test
+    public void shouldReadTextFromWrappedInputStream() throws Exception
     {
         // GIVEN
-        File file = writeToFile( bom.bytes(), text, bom.encoding() );
+        String text = "abcdefghijklmnop";
+
+        // WHEN
+        File file = writeToFile( text, Charset.defaultCharset() );
 
         // THEN
-        assertReadText( file, text );
+        assertReadTextAsInputStream( file, text );
+    }
+
+    @Test
+    public void shouldSkipBomWhenWrappingInputStream() throws Exception
+    {
+        // GIVEN
+        String text = "abcdefghijklmnop";
+
+        // WHEN/THEN
+        shouldReadTextFromInputStreamWithBom( Magic.BOM_UTF_32_BE, text );
+        shouldReadTextFromInputStreamWithBom( Magic.BOM_UTF_32_LE, text );
+        shouldReadTextFromInputStreamWithBom( Magic.BOM_UTF_16_BE, text );
+        shouldReadTextFromInputStreamWithBom( Magic.BOM_UTF_16_LE, text );
+        shouldReadTextFromInputStreamWithBom( Magic.BOM_UTF_8, text );
+    }
+
+    private void shouldReadTextFromFileWithBom( Magic bom, String text ) throws IOException
+    {
+        assertReadText( writeToFile( bom.bytes(), text, bom.encoding() ), text );
+    }
+
+    private void shouldReadTextFromInputStreamWithBom( Magic bom, String text ) throws IOException
+    {
+        assertReadTextAsInputStream( writeToFile( bom.bytes(), text, bom.encoding() ), text );
     }
 
     private void shouldComplyWithSpecifiedCharset( Charset charset ) throws Exception
@@ -261,7 +291,19 @@ public class ReadablesTest
 
     private void assertReadText( File file, String text ) throws IOException
     {
-        CharReadable readable = Readables.files( Charset.defaultCharset(), file );
+        assertReadText( Readables.files( Charset.defaultCharset(), file ), text );
+    }
+
+    private void assertReadTextAsInputStream( File file, String text ) throws IOException
+    {
+        try ( InputStream stream = new FileInputStream( file ) )
+        {
+            assertReadText( Readables.wrap( stream, file.getPath(), Charset.defaultCharset() ), text );
+        }
+    }
+
+    private void assertReadText( CharReadable readable, String text ) throws IOException
+    {
         SectionedCharBuffer readText = new SectionedCharBuffer( text.toCharArray().length );
         readable.read( readText, readText.front() );
         assertArrayEquals( text.toCharArray(), copyOfRange( readText.array(), readText.pivot(), readText.front() ) );
