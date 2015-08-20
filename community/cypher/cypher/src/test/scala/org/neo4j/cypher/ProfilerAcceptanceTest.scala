@@ -482,6 +482,34 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(4)(result)("Filter")
   }
 
+  test("joins with identical scans") {
+    //given
+    val corp = createLabeledNode("Company")
+    val a1 = createLabeledNode("Artist")
+    val a2 = createLabeledNode("Artist")
+    val c = createLabeledNode("Concert")
+    val v = createLabeledNode("Venue")
+    relate(corp, a1, "SIGNED_WITH")
+    relate(corp, a2, "SIGNED_WITH")
+    relate(a1, c, "PERFORMED_AT")
+    relate(a2, c, "PERFORMED_AT")
+    relate(c, v, "IN")
+
+    //force a plan to have a scan on corp in both the lhs and the rhs of join
+    val query =
+      """MATCH (corp:Company)<-[:SIGNED_WITH]-(a1:Artist)-[:PERFORMED_AT]->(c:Concert)-[:IN]->(v:Venue)
+        |MATCH (corp)<-[:SIGNED_WITH]-(a2:Artist)-[:PERFORMED_AT]->(c)
+        |USING JOIN ON c,corp
+        |RETURN a1, a2, v""".stripMargin
+
+    //when
+    val result = profileWithAllPlannersAndRuntimes(query)
+
+    //then
+    assertDbHits(2)(result)("NodeByLabelScan")
+    assertRows(1)(result)("NodeByLabelScan")
+  }
+
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
       plan => assert(expectedRows === getArgument[Rows](plan).value, s" wrong row count for plan: ${plan.name}")

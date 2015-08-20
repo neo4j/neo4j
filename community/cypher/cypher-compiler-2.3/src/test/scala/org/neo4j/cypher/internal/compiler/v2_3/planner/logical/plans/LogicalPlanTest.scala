@@ -65,4 +65,11 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
 
     metaApply.leafs should equal(Seq(singleRow1, singleRow2, singleRow3, singleRow4))
   }
+
+  test("calling updateSolved on argument should work") {
+    val argument = Argument(Set(IdName("a")))(solved)()
+    val updatedPlannerQuery = CardinalityEstimation.lift(PlannerQuery.empty.updateGraph(_.addPatternNodes(IdName("a"))), 0.0)
+    val newPlan = argument.updateSolved(updatedPlannerQuery)
+    newPlan.solved should equal(updatedPlannerQuery)
+  }
 }

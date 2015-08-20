@@ -64,7 +64,7 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[GreedyPlanTable],
                 acc + (ids -> candidates)
             }
 
-          val best: Iterable[LogicalPlan] = candidatesPerIds.values.map(kit.pickBest(_)).flatten
+          val best: Iterable[LogicalPlan] = candidatesPerIds.values.flatMap(kit.pickBest(_))
 
           //          println(s"best: ${best.map(_.availableSymbols)}")
           val result = best.foldLeft(planTable)(_ + _)
