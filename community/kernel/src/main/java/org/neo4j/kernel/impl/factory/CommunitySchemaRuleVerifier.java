@@ -32,13 +32,13 @@ class CommunitySchemaRuleVerifier implements SchemaRuleVerifier
         if ( rule instanceof NodePropertyExistenceConstraintRule ||
              rule instanceof RelationshipPropertyExistenceConstraintRule )
         {
-            throw new IllegalStateException(); // todo: message and new exception type
+            throw new IllegalStateException("Property existence constraints can only be used on Neo4j enterprise"); // todo: message and new exception type
         }
     }
 
     @Override
     public void assertPropertyConstraintCreationAllowed()
     {
-        throw new IllegalStateException(); // todo: message and new exception type
+        throw new IllegalStateException("Property existence constraints can only be used on Neo4j enterprise"); // todo: message and new exception type
     }
 }
