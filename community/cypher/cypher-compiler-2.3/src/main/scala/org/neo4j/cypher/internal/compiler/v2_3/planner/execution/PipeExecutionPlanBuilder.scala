@@ -219,6 +219,9 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
           val source = buildPipe(lhs)
           ProduceResultsPipe(source, columns)()
 
+        case Triadic(left, sourceId, seenId, targetId, right) =>
+          TriadicPipe(buildPipe(left), sourceId.name, seenId.name, targetId.name, buildPipe(right))()
+
         case TriadicBuild(lhs, source, seen) =>
           val pipe = buildPipe(lhs)
           TriadicBuildPipe(pipe, source.name, seen.name)()

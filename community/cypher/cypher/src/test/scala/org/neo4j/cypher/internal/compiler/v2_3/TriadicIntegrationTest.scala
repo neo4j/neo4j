@@ -44,7 +44,7 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
       Map("l" -> "b", "r" -> "d"),
       Map("l" -> "d", "r" -> "a"),
       Map("l" -> "d", "r" -> "b")))
-    result should use("TriadicProbe")
+    result should use("Triadic")
   }
 
   test("find friendly people") {
@@ -63,7 +63,7 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
       Map("l" -> "c", "r" -> "d"),
       Map("l" -> "e", "r" -> "a"),
       Map("l" -> "e", "r" -> "b")))
-    result should use("TriadicProbe")
+    result should use("Triadic")
   }
 
   test("should not find my friends") {
@@ -76,7 +76,7 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
     val result: InternalExecutionResult = profile(QUERY)
 
     // then
-    result should (use("TriadicProbe") and be(empty))
+    result should (use("Triadic") and be(empty))
   }
 
   def use(operator: String): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {

@@ -36,10 +36,17 @@ object triadicSelection extends CandidateGenerator[LogicalPlan] {
 
       val newPlan = matchingPredicateExists(qg, in.availableSymbols, from1.name, to2.name, types1, dir1) map {
         predicate =>
-          val triadicBuild = context.logicalPlanProducer.planTriadicBuild(exp1, from1, to1)
-          val newExpand2 = Expand(triadicBuild, from2, dir2, types2, to2, rel2, ExpandAll)(exp2.solved)
-          val newSelection = context.logicalPlanProducer.planSelection(sel.predicates, newExpand2)
-          context.logicalPlanProducer.planTriadicProbe(newSelection, from1, to1, to2, predicate)
+          if (false) {
+            val triadicBuild = context.logicalPlanProducer.planTriadicBuild(exp1, from1, to1)
+            val newExpand2 = Expand(triadicBuild, from2, dir2, types2, to2, rel2, ExpandAll)(exp2.solved)
+            val newSelection = context.logicalPlanProducer.planSelection(sel.predicates, newExpand2)
+            context.logicalPlanProducer.planTriadicProbe(newSelection, from1, to1, to2, predicate)
+          } else {
+            val argument = context.logicalPlanProducer.planArgumentRowFrom(exp1)
+            val newExpand2 = Expand(argument, from2, dir2, types2, to2, rel2, ExpandAll)(exp2.solved)
+            val newSelection = context.logicalPlanProducer.planSelection(sel.predicates, newExpand2)
+            context.logicalPlanProducer.planTriadic(exp1, from1, to1, to2, newSelection, predicate)
+          }
       }
 
       newPlan.toSeq
