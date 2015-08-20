@@ -67,5 +67,30 @@ case class QueryStatistics(nodesCreated: Int = 0,
       indexesRemoved > 0 ||
       constraintsAdded > 0 ||
       constraintsRemoved > 0
+
+  override def toString = {
+    val builder = new StringBuilder("\n")
+
+    includeIfNonZero(builder, "Nodes created: ", nodesCreated)
+    includeIfNonZero(builder, "Relationships created: ", relationshipsCreated)
+    includeIfNonZero(builder, "Properties set: ", propertiesSet)
+    includeIfNonZero(builder, "Nodes deleted: ", nodesDeleted)
+    includeIfNonZero(builder, "Relationships deleted: ", relationshipsDeleted)
+    includeIfNonZero(builder, "Labels added: ", labelsAdded)
+    includeIfNonZero(builder, "Labels removed: ", labelsRemoved)
+    includeIfNonZero(builder, "Indexes added: ", indexesAdded)
+    includeIfNonZero(builder, "Indexes removed: ", indexesRemoved)
+    includeIfNonZero(builder, "Constraints added: ", constraintsAdded)
+    includeIfNonZero(builder, "Constraints removed: ", constraintsRemoved)
+
+    val result = builder.toString()
+
+    if (result.isEmpty) "<Nothing happened>" else result
+  }
+
+  private def includeIfNonZero(builder:StringBuilder, message: String, count:Long) = if(count>0) {
+    builder.append(message + count.toString + "\n")
+  }
+
 }
 
