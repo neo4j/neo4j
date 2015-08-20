@@ -32,15 +32,21 @@ import org.neo4j.function.Supplier;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.master.ConversationManager;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.locks.LockSupport.parkNanos;
+
+import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 
 public class SwitchToMaster implements AutoCloseable
@@ -49,6 +55,7 @@ public class SwitchToMaster implements AutoCloseable
     Factory<ConversationManager> conversationManagerFactory;
     Function<ConversationManager, Master> masterFactory;
     BiFunction<Master, ConversationManager, MasterServer> masterServerFactory;
+    private TransactionCounters transactionCounters;
     private Log userLog;
     private HaIdGeneratorFactory idGeneratorFactory;
     private Config config;
@@ -63,12 +70,13 @@ public class SwitchToMaster implements AutoCloseable
             Function<ConversationManager, Master> masterFactory,
             BiFunction<Master, ConversationManager, MasterServer> masterServerFactory,
             DelegateInvocationHandler<Master> masterDelegateHandler, ClusterMemberAvailability clusterMemberAvailability,
-            Supplier<NeoStoreDataSource> dataSourceSupplier)
+            Supplier<NeoStoreDataSource> dataSourceSupplier, TransactionCounters transactionCounters)
     {
         this.logService = logService;
         this.conversationManagerFactory = conversationManagerFactory;
         this.masterFactory = masterFactory;
         this.masterServerFactory = masterServerFactory;
+        this.transactionCounters = transactionCounters;
         this.userLog = logService.getUserLog( getClass() );
         this.idGeneratorFactory = idGeneratorFactory;
         this.config = config;
@@ -88,6 +96,13 @@ public class SwitchToMaster implements AutoCloseable
     public URI switchToMaster( LifeSupport haCommunicationLife, URI me )
     {
         userLog.info( "I am %s, moving to master", myId() );
+
+        // Wait for current transactions to stop first
+        long deadline = SYSTEM_CLOCK.currentTimeMillis() + config.get( HaSettings.state_switch_timeout );
+        while ( transactionCounters.getNumberOfActiveTransactions() > 0 && SYSTEM_CLOCK.currentTimeMillis() < deadline )
+        {
+            parkNanos( MILLISECONDS.toNanos( 10 ) );
+        }
 
         /*
          * Synchronizing on the xaDataSourceManager makes sense if you also look at HaKernelPanicHandler. In
