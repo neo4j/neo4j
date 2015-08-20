@@ -15,4 +15,3 @@ include::delete-single-node.asciidoc[]
 include::delete-a-node-and-connected-relationships.asciidoc[]
 
 include::delete-all-nodes-and-relationships.asciidoc[]
-

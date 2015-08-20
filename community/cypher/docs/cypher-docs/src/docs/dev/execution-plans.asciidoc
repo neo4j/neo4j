@@ -1,7 +1,7 @@
 [[execution-plans]]
 = Execution Plans =
 
-Cypher breaks down the work of executing a query into small pieces called operators.
+Neo4j breaks down the work of executing a query into small pieces called operators.
 Each operator is responsible for a small part of the overall query.
 The operators are connected together in a pattern called a execution plan.
 
@@ -18,8 +18,10 @@ A _database hit_ is an abstract unit of this storage engine work.
 
 See <<how-do-i-profile-a-query>> for how to view the execution plan for your query.
 
-For a deeper understanding of how each operator works, see the relavent section.
+For a deeper understanding of how each operator works, see the relevant section.
 Operators are grouped into high-level categories.
+Please remember that the statistics of the actual database where the queries run on will decide the plan used.
+There is no guarantee that a specific query will always be solved with the same plan.
 
 :leveloffset: 1
 
