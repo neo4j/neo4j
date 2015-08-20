@@ -32,8 +32,10 @@ import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.EnterpriseDatabaseRule;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
@@ -50,6 +52,7 @@ import org.neo4j.test.ThreadingRule;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.runners.Suite.SuiteClasses;
@@ -147,7 +150,7 @@ public class PropertyExistenceConstraintVerificationIT
         private static final String PROPERTY = "bar";
 
         @Rule
-        public final DatabaseRule db = new ImpermanentDatabaseRule();
+        public final DatabaseRule db = new EnterpriseDatabaseRule();
         @Rule
         public final ThreadingRule thread = new ThreadingRule();
 
@@ -160,6 +163,7 @@ public class PropertyExistenceConstraintVerificationIT
         abstract String offenderCreationMethodName();
 
         abstract Class<?> offenderType();
+
 
         @Test
         public void shouldFailToCreateConstraintIfSomeNodeLacksTheMandatoryProperty() throws Exception
@@ -183,15 +187,9 @@ public class PropertyExistenceConstraintVerificationIT
                 fail( "expected exception" );
             }
             // then
-            catch ( ConstraintViolationException e )
+            catch ( QueryExecutionException e )
             {
-                Throwable cause = e.getCause();
-                assertThat( cause, instanceOf( CreateConstraintFailureException.class ) );
-
-                Throwable rootCause = cause.getCause();
-                assertThat( rootCause, instanceOf( ConstraintVerificationFailedKernelException.class ) );
-                assertThat( userMessageOf( (KernelException) rootCause ),
-                        containsString( offenderType().getSimpleName() + "(" + entityId + ")" ) );
+                assertThat( e.getCause().getMessage(), startsWith( "Unable to create CONSTRAINT" ) );
             }
         }
 
@@ -251,8 +249,8 @@ public class PropertyExistenceConstraintVerificationIT
             // then, we either fail to create the constraint,
             catch ( ExecutionException e )
             {
-                assertThat( e.getCause(), instanceOf( ConstraintViolationException.class ) );
-                assertThat( e.getCause().getCause(), instanceOf( CreateConstraintFailureException.class ) );
+                assertThat( e.getCause(), instanceOf( QueryExecutionException.class ) );
+                assertThat( e.getCause().getMessage(), startsWith( "Unable to create CONSTRAINT" ) );
             }
             // or we fail to create the offending node
             catch ( ConstraintViolationException e )
@@ -299,9 +297,11 @@ public class PropertyExistenceConstraintVerificationIT
                 {
                     try ( Transaction tx = db.beginTx() )
                     {
+                        System.out.println("creating constraint");
                         createConstraint( db, KEY, PROPERTY );
                         tx.success();
                     }
+                    System.out.println("constraint created");
                     return null;
                 }
             };
