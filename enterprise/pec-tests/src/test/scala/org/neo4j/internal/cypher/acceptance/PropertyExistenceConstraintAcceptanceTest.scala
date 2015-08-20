@@ -20,8 +20,13 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
-import org.neo4j.cypher.{ConstraintValidationException, CypherExecutionException, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.cypher._
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.exceptions.Status
+import org.neo4j.test.ImpermanentGraphDatabase
+
+import scala.collection.Map
 
 class PropertyExistenceConstraintAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CollectionSupport {
 
