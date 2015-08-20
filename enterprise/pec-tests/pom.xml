@@ -47,19 +47,6 @@
       <plugin>
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
-        <configuration>
-          <scalaVersion>${scala.version}</scalaVersion>
-          <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
-          <args>
-            <arg>-Xmax-classfile-name</arg>
-            <arg>100</arg>
-            <arg>-Xlint</arg>
-          </args>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>net.alchim31.maven</groupId>
-        <artifactId>scala-maven-plugin</artifactId>
         <version>3.2.0</version>
         <executions>
           <execution>
@@ -172,6 +159,19 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.app</groupId>
+      <artifactId>neo4j-server-enterprise</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.app</groupId>
+      <artifactId>neo4j-server-enterprise</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
 
