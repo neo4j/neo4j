@@ -27,6 +27,8 @@ import org.junit.runners.Suite.SuiteClasses;
 import java.util.UUID;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -36,6 +38,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
@@ -252,6 +255,15 @@ public class PropertyExistenceConstraintValidationIT
         abstract void removeProperty( DataWriteOperations writeOps, long entityId, int propertyKey ) throws Exception;
 
         abstract int entityCount() throws TransactionFailureException;
+
+        @Override
+        protected GraphDatabaseService createGraphDatabase( EphemeralFileSystemAbstraction fs )
+        {
+            return new TestEnterpriseGraphDatabaseFactory()
+                    .setFileSystem( fs )
+                    .newImpermanentDatabaseBuilder()
+                    .newGraphDatabase();
+        }
 
         @Test
         public void shouldEnforcePropertyExistenceConstraintWhenCreatingEntityWithoutProperty() throws Exception

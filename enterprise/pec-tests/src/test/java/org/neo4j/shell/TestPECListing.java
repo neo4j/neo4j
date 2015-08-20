@@ -26,11 +26,22 @@ import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 
 public class TestPECListing extends AbstractShellTest
 {
+    @Override
+    protected GraphDatabaseAPI newDb()
+    {
+        return (GraphDatabaseAPI) new TestEnterpriseGraphDatabaseFactory()
+                .setFileSystem( fs.get() )
+                .newImpermanentDatabase();
+    }
+
     @Test
     public void canListNodePropertyExistenceConstraints() throws Exception
     {
