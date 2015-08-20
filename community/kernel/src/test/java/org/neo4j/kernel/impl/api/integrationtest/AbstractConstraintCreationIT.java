@@ -30,6 +30,7 @@ import java.util.Map;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -46,6 +47,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -325,11 +327,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         // given
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( Collections.<ConstraintDefinition>emptyList(), asList( db.schema().getConstraints() ) );
-            assertEquals( Collections.<IndexDefinition,Schema.IndexState>emptyMap(),
-                    indexesWithState( db.schema() ) );
             createOffendingDataInRunningTx( db );
-
             tx.success();
         }
 
@@ -341,9 +339,9 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
             tx.success();
             fail( "expected failure" );
         }
-        catch ( ConstraintViolationException e )
+        catch ( QueryExecutionException e )
         {
-            assertTrue( e.getMessage().startsWith( "Unable to create CONSTRAINT" ) );
+            assertThat( e.getMessage(), startsWith( "Unable to create CONSTRAINT" ) );
         }
 
         // then
@@ -363,11 +361,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         // given
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( Collections.<ConstraintDefinition>emptyList(), asList( db.schema().getConstraints() ) );
-            assertEquals( Collections.<IndexDefinition,Schema.IndexState>emptyMap(),
-                    indexesWithState( db.schema() ) );
             createOffendingDataInRunningTx( db );
-
             tx.success();
         }
 
@@ -379,9 +373,9 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
             tx.success();
             fail( "expected failure" );
         }
-        catch ( ConstraintViolationException e )
+        catch ( QueryExecutionException e )
         {
-            assertTrue( e.getMessage().startsWith( "Unable to create CONSTRAINT" ) );
+            assertThat( e.getMessage(), startsWith( "Unable to create CONSTRAINT" ) );
         }
 
         try ( Transaction tx = db.beginTx() )

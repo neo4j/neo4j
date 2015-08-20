@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.After;
 import org.junit.Before;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.DataWriteOperations;
@@ -114,7 +115,7 @@ public abstract class KernelIntegrationTest
     public void setup()
     {
         fs = new EphemeralFileSystemAbstraction();
-        startDb("soft");
+        startDb();
     }
 
     @After
@@ -124,21 +125,26 @@ public abstract class KernelIntegrationTest
         fs.shutdown();
     }
 
-    protected void startDb(String cacheType)
+    protected void startDb()
     {
-        TestGraphDatabaseBuilder graphDatabaseFactory = (TestGraphDatabaseBuilder) new TestGraphDatabaseFactory().setFileSystem(fs).newImpermanentDatabaseBuilder();
-
-        //noinspection deprecation
-        db = (GraphDatabaseAPI) graphDatabaseFactory.newGraphDatabase();
+        db = (GraphDatabaseAPI) createGraphDatabase( fs );
         kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         statementContextSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 
+    protected GraphDatabaseService createGraphDatabase( EphemeralFileSystemAbstraction fs )
+    {
+        TestGraphDatabaseBuilder graphDatabaseFactory = (TestGraphDatabaseBuilder) new TestGraphDatabaseFactory()
+                .setFileSystem( fs )
+                .newImpermanentDatabaseBuilder();
+        return graphDatabaseFactory.newGraphDatabase();
+    }
+
     protected void dbWithNoCache() throws TransactionFailureException
     {
         stopDb();
-        startDb("none");
+        startDb();
     }
 
     protected void stopDb() throws TransactionFailureException
@@ -153,7 +159,7 @@ public abstract class KernelIntegrationTest
     protected void restartDb() throws TransactionFailureException
     {
         stopDb();
-        startDb("soft");
+        startDb();
     }
 
     protected NeoStore neoStore()

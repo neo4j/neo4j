@@ -13,7 +13,7 @@
   <artifactId>neo4j-javadocs</artifactId>
   <version>2.3-SNAPSHOT</version>
 
-  <name>Neo4j Javadocs</name>
+  <name>Neo4j - Javadocs</name>
   <packaging>pom</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
   <description>A meta package containing the most used Neo4j javadocs.

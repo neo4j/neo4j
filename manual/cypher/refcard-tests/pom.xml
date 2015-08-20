@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.neo4j.doc</groupId>
-    <artifactId>neo4j-manual</artifactId>
+    <artifactId>neo4j-cypher-manual</artifactId>
     <version>2.3-SNAPSHOT</version>
   </parent>
   <groupId>org.neo4j.doc</groupId>
@@ -65,6 +65,22 @@
           <groupId>org.scala-lang</groupId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.scalautils</groupId>
+      <artifactId>scalautils_2.11</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>scala-library</artifactId>
+          <groupId>org.scala-lang</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <!-- neo4j-cypher -->

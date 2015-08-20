@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.Set;
 
 import org.neo4j.SchemaHelper;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
@@ -31,12 +32,19 @@ import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class DiskLayerSchemaWithPECTest extends DiskLayerTest
 {
+    @Override
+    protected GraphDatabaseService createGraphDatabase()
+    {
+        return new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase();
+    }
+
     @Test
     public void shouldListAllConstraints()
     {

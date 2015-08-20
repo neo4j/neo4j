@@ -23,9 +23,11 @@ import org.neo4j.SchemaHelper;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
@@ -33,6 +35,15 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 public class RelationshipPropertyExistenceConstraintCreationIT
         extends AbstractConstraintCreationIT<RelationshipPropertyExistenceConstraint>
 {
+    @Override
+    protected GraphDatabaseService createGraphDatabase( EphemeralFileSystemAbstraction fs )
+    {
+        return new TestEnterpriseGraphDatabaseFactory()
+                .setFileSystem( fs )
+                .newImpermanentDatabaseBuilder()
+                .newGraphDatabase();
+    }
+
     @Override
     int initializeLabelOrRelType( SchemaWriteOperations writeOps, String name ) throws KernelException
     {

@@ -21,6 +21,7 @@ package org.neo4j.server.enterprise;
 
 import java.io.File;
 
+import org.neo4j.graphdb.EnterpriseGraphDatabase;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
@@ -44,13 +45,23 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
 {
     public static final String SINGLE = "SINGLE";
     public static final String HA = "HA";
-    private static final GraphFactory ENTERPRISE_FACTORY = new GraphFactory()
+    public static final String ENTERPRISE = "ENTERPRISE";
+    private static final GraphFactory HA_FACTORY = new GraphFactory()
     {
         @Override
         public GraphDatabaseAPI newGraphDatabase( Config config, Dependencies dependencies )
         {
             File storeDir = config.get( ServerInternalSettings.legacy_db_location );
             return new HighlyAvailableGraphDatabase( storeDir, config.getParams(), dependencies );
+        }
+    };
+    private static final GraphFactory ENTERPRISE_FACTORY = new GraphFactory()
+    {
+        @Override
+        public GraphDatabaseAPI newGraphDatabase( Config config, Dependencies dependencies )
+        {
+            File storeDir = config.get( ServerInternalSettings.legacy_db_location );
+            return new EnterpriseGraphDatabase( storeDir, config.getParams(), dependencies );
         }
     };
 
@@ -61,8 +72,16 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
 
     protected static Database.Factory createDbFactory( Config config )
     {
-        final String mode = config.get( EnterpriseServerSettings.mode ).toUpperCase();
-        return mode.equals( HA ) ? lifecycleManagingDatabase( ENTERPRISE_FACTORY ) : lifecycleManagingDatabase( COMMUNITY_FACTORY );
+        String mode = config.get( EnterpriseServerSettings.mode ).toUpperCase();
+        if ( HA.equals( mode ) )
+        {
+            return lifecycleManagingDatabase( HA_FACTORY );
+        }
+        else if ( ENTERPRISE.equals( mode ) )
+        {
+            return lifecycleManagingDatabase( ENTERPRISE_FACTORY );
+        }
+        return lifecycleManagingDatabase( COMMUNITY_FACTORY );
     }
 
     @SuppressWarnings( "unchecked" )

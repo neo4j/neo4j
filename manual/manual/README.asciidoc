@@ -1,0 +1,39 @@
+= About Neo4j Manual =
+
+The documents use the asciidoc format, see:
+
+* http://www.methods.co.nz/asciidoc/
+* http://powerman.name/doc/asciidoc
+
+== Building the documentation ==
+
+Python is required, as well as graphviz, bash and make.
+
+http://maven.apache.org/[Apache Maven] together with http://www.gnu.org/software/make/[Make] are used to unpack the pieces of the manual and to execute asciidoc on them.
+Note that running parallel jobs with Make (-j option) is not supported.
+
+To build the documentation, use: +
+`mvn clean install` +
+This will produce the manual (in 'target/docbkx/webhelp/').
+Note that when inspecting the result using a `file://` URL the navigation tree won't load in Chrome.
+If you need to see the tree, use a different browser or serve the files from a local webserver.
+
+To build all dependencies of the manual, use the following at the top level of the repository: +
+`mvn clean install -DdocsBuild` +
+
+[NOTE]
+When doing partial builds, note that the `neo4j-manual-contents` module (in _manual/contents_) has to be built as well.
+All the content is collected there; the `neo4j-manual` module (in _manual_) only renders it.
+
+=== With brew on OSX ===
+
+Install libraries
+
+  brew install graphviz libtool
+
+=== With apt-get on Ubuntu ===
+
+  sudo apt-get install graphviz maven make
+
+
+

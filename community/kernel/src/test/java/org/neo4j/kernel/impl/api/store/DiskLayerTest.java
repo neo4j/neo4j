@@ -61,8 +61,8 @@ public class DiskLayerTest
 {
     @SuppressWarnings( "deprecation" )
     protected GraphDatabaseAPI db;
-    protected final Label label1 = label( "first-label" );
-    protected final Label label2 = label( "second-label" );
+    protected final Label label1 = label( "FirstLabel" );
+    protected final Label label2 = label( "SecondLabel" );
     protected final RelationshipType relType1 = DynamicRelationshipType.withName( "type1" );
     protected final RelationshipType relType2 = DynamicRelationshipType.withName( "type2" );
     protected final String propertyKey = "name";
@@ -74,7 +74,7 @@ public class DiskLayerTest
     @Before
     public void before()
     {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        db = (GraphDatabaseAPI) createGraphDatabase();
         DependencyResolver resolver = db.getDependencyResolver();
         IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
         NeoStore neoStore = resolver.resolveDependency( NeoStoreSupplier.class ).get();
@@ -88,6 +88,11 @@ public class DiskLayerTest
         this.state = new KernelStatement( null, new IndexReaderFactory.Caching( indexingService ),
                 resolver.resolveDependency( LabelScanStore.class ), null,
                 null, null, disk.acquireStatement(), mock( SchemaRuleVerifier.class) );
+    }
+
+    protected GraphDatabaseService createGraphDatabase()
+    {
+        return new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @After
