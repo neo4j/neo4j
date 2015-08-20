@@ -19,7 +19,7 @@ For information on High Availability, please refer to <<ha>>.
 == Prerequisites ==
 
 With the exception of our Windows Installer, you'll need a Java Virtual Machine installed on your computer.
-We recommend that you install http://openjdk.java.net/[OpenJDK 7] or http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Java 7].
+We recommend that you install http://openjdk.java.net/[OpenJDK 8 (preferred) or 7] or http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Java 8 (preferred) or 7].
 
 [[windows-install]]
 == Windows ==
@@ -111,7 +111,7 @@ Use the standard OSX system tools to create a service based on the `neo4j` comma
 
 Unlike previous versions, OS X Mavericks does not come with Java pre-installed. You might encounter that the first time you run Neo4j, where OS X will trigger a popup offering you to install Java SE 6.
 
-Java SE 6 is incompatible with Neo4j {neo4j-version}, so we strongly advise you to skip installing Java SE 6 if you have no other uses for it. Instead, for Neo4j {neo4j-version} we recommend you install Java SE 7 from Oracle (http://www.oracle.com/technetwork/java/javase/downloads/index.html) as that is what we support for production use.
+Java SE 6 is incompatible with Neo4j {neo4j-version}, so we strongly advise you to skip installing Java SE 6 if you have no other uses for it. Instead, for Neo4j {neo4j-version} we recommend you install Java SE 8 (preferred) or 7 from Oracle (http://www.oracle.com/technetwork/java/javase/downloads/index.html) as that is what we support for production use.
 
 == Multiple Server instances on one machine ==
 

@@ -2,7 +2,7 @@
 System Requirements
 ===================
 
-Memory constrains graph size, disk I/O constrains read/write performance, as always. 
+Memory constrains graph size, disk I/O constrains read/write performance, as always.
 
 == CPU ==
 
@@ -35,7 +35,9 @@ Recommended::  ext4, ZFS
 
 == Software ==
 
-Java:: http://openjdk.java.net/[OpenJDK 7 or 8] or http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Java 7 or 8]
+Neo4j is Java-based.
+
+Java:: http://openjdk.java.net/[OpenJDK 8 (preferred) or 7] or http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Java 8 (preferred) or 7]
 Operating Systems::  Linux, HP UX, Windows 2012 for production; additionally Windows XP, Mac OS X for development.
 
 [IMPORTANT]
