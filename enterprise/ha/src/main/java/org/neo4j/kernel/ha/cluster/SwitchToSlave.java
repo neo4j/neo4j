@@ -85,10 +85,9 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.first;
+import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
 import static org.neo4j.kernel.ha.cluster.member.ClusterMembers.inRole;
@@ -232,7 +231,12 @@ public class SwitchToSlave
             }
 
             // no exception were thrown and we can proceed
-            slaveUri = startHaCommunication( haCommunicationLife, nioneoDataSource, me, masterUri, myStoreId );
+            slaveUri = startHaCommunication( haCommunicationLife, nioneoDataSource, me, masterUri, myStoreId, cancellationRequest );
+            if ( slaveUri == null )
+            {
+                msgLog.info( "Switch to slave unable to connect." );
+                return null;
+            }
 
             success = true;
             console.log( "ServerId " + myId + ", successfully moved to slave for master " + masterUri );
@@ -370,7 +374,7 @@ public class SwitchToSlave
             StoreId myStoreId = neoDataSource.getStoreId();
 
             ClusterMembers clusterMembers = resolver.resolveDependency( ClusterMembers.class );
-            ClusterMember master = first( filter( inRole( MASTER ), clusterMembers.getMembers() ) );
+            ClusterMember master = single( filter( inRole( MASTER ), clusterMembers.getMembers() ) );
             StoreId masterStoreId = master.getStoreId();
 
             if ( !myStoreId.equals( masterStoreId ) )
@@ -386,13 +390,19 @@ public class SwitchToSlave
     }
 
     private URI startHaCommunication( LifeSupport haCommunicationLife, NeoStoreDataSource neoDataSource,
-            URI me, URI masterUri, StoreId storeId ) throws IllegalArgumentException, InterruptedException
+            URI me, URI masterUri, StoreId storeId, CancellationRequest cancellationRequest )
+            throws IllegalArgumentException, InterruptedException
     {
         MasterClient master = newMasterClient( masterUri, neoDataSource.getStoreId(), haCommunicationLife );
 
         Slave slaveImpl = new SlaveImpl( resolver.resolveDependency( TransactionObligationFulfiller.class ) );
 
         SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logging, byteCounterMonitor, requestMonitor);
+
+        if ( cancellationRequest.cancellationRequested() )
+        {
+            return null;
+        }
 
         masterDelegateHandler.setDelegate( master );
 
@@ -404,7 +414,10 @@ public class SwitchToSlave
          * Take the opportunity to catch up with master, now that we're alone here, right before we
          * drop the availability guard, so that other transactions might start.
          */
-        catchUpWithMaster();
+        if ( !catchUpWithMaster() )
+        {
+            return null;
+        }
 
         URI slaveHaURI = createHaURI( me, server );
         clusterMemberAvailability.memberIsAvailable( HighAvailabilityModeSwitcher.SLAVE, slaveHaURI, storeId );
@@ -412,7 +425,8 @@ public class SwitchToSlave
         return slaveHaURI;
     }
 
-    private void catchUpWithMaster() throws IllegalArgumentException, InterruptedException
+    private boolean catchUpWithMaster()
+            throws IllegalArgumentException, InterruptedException
     {
         monitor.catchupStarted();
         RequestContext catchUpRequestContext = requestContextFactory.newRequestContext();
@@ -421,10 +435,14 @@ public class SwitchToSlave
         // Unpause the update puller, because we know that we are a slave that just started communication with master.
         UpdatePuller updatePuller = resolver.resolveDependency( UpdatePuller.class );
         updatePuller.unpause();
-        updatePuller.await( UpdatePuller.NEXT_TICKET, true );
+        if ( !updatePuller.await( UpdatePuller.NEXT_TICKET, false ) )
+        {
+            return false;
+        }
 
         console.log( "Now caught up with master" );
         monitor.catchupCompleted();
+        return true;
     }
 
     private Server.Configuration serverConfig()
