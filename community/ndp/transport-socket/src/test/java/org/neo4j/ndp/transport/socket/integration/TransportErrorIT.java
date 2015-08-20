@@ -93,7 +93,7 @@ public class TransportErrorIT
         final RecordingByteChannel rawData = new RecordingByteChannel();
         final PackStream.Packer packer = new PackStream.Packer( new BufferedChannelOutput( rawData ) );
 
-        packer.packStructHeader( 2, PackStreamMessageFormatV1.MessageTypes.MSG_RUN );
+        packer.packStructHeader( 2, PackStreamMessageFormatV1.MessageType.RUN );
         packer.pack( "RETURN 1" );
         packer.pack( 1234 ); // Should've been a map
         packer.flush();
@@ -109,7 +109,7 @@ public class TransportErrorIT
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves(
                 msgFailure( Status.Request.InvalidFormat,
-                        "Unable to read MSG_RUN message. Error was: Wrong type received. Expected MAP, received: " +
+                        "Unable to read RUN message. Error was: Wrong type received. Expected MAP, received: " +
                         "INTEGER (0xff)." ) ) );
     }
 
@@ -145,7 +145,7 @@ public class TransportErrorIT
         final BufferedChannelOutput out = new BufferedChannelOutput( rawData );
         final PackStream.Packer packer = new PackStream.Packer( out );
 
-        packer.packStructHeader( 2, PackStreamMessageFormatV1.MessageTypes.MSG_RUN );
+        packer.packStructHeader( 2, PackStreamMessageFormatV1.MessageType.RUN );
         out.writeByte( PackStream.RESERVED_C4 ); // Invalid marker byte
         out.flush();
 
@@ -160,7 +160,7 @@ public class TransportErrorIT
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves(
                 msgFailure(  Status.Request.InvalidFormat,
-                        "Unable to read MSG_RUN message. Error was: Wrong type received. Expected TEXT, received: " +
+                        "Unable to read RUN message. Error was: Wrong type received. Expected TEXT, received: " +
                         "RESERVED (0xff)." ) ) );
     }
 

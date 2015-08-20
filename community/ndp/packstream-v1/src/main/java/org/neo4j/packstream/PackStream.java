@@ -163,6 +163,28 @@ public class PackStream
     {
     }
 
+    /**
+     * Implemented by application-specific structures.
+     */
+    public interface StructType
+    {
+
+        /**
+         * The signature byte for this structure.
+         *
+         * @return signature byte
+         */
+        byte signature();
+
+        /**
+         * The Java class generally instantiated when hydrating this structure.
+         *
+         * @return class for instantiation.
+         */
+        Class instanceClass();
+
+    }
+
     public static class Packer
     {
         private PackOutput out;
@@ -303,7 +325,7 @@ public class PackStream
         {
             if ( z == 0 )
             {
-                packRaw((byte)48);
+                packRaw( (byte) 48 );
             }
             else if ( z < 0 )
             {
@@ -403,7 +425,7 @@ public class PackStream
             }
         }
 
-        public void packListHeader( int size ) throws IOException
+        public void packListHeader( int size, PackListItemType type ) throws IOException
         {
             if ( size < 0x10 )
             {
@@ -421,6 +443,12 @@ public class PackStream
             {
                 out.writeByte( LIST_32 ).writeInt( size );
             }
+            out.writeByte( type.markerByte() );
+        }
+
+        public void packListHeader( int size, StructType structType ) throws IOException
+        {
+            packListHeader( size, PackListItemType.struct( structType ) );
         }
 
         public void packMapHeader( int size ) throws IOException
@@ -463,6 +491,11 @@ public class PackStream
             }
         }
 
+        public void packStructHeader( int size, StructType type ) throws IOException
+        {
+            packStructHeader( size, type.signature() );
+        }
+
     }
 
     public static class Unpacker
@@ -472,6 +505,16 @@ public class PackStream
         private PackInput in;
 
         public Unpacker( PackInput in )
+        {
+            this.in = in;
+        }
+
+        Unpacker()
+        {
+            this.in = new NullPackInput();
+        }
+
+        void reset( PackInput in )
         {
             this.in = in;
         }
@@ -502,9 +545,9 @@ public class PackStream
             }
         }
 
-        public char unpackStructSignature() throws IOException
+        public byte unpackStructSignature() throws IOException
         {
-            return (char) in.readByte();
+            return in.readByte();
         }
 
         public long unpackListHeader() throws IOException
@@ -525,6 +568,11 @@ public class PackStream
             default:
                 throw new Unexpected( PackType.LIST, markerByte);
             }
+        }
+
+        public PackListItemType unpackListItemType() throws IOException
+        {
+            return PackListItemType.fromMarkerByte( in.readByte() );
         }
 
         public long unpackMapHeader() throws IOException
@@ -806,66 +854,7 @@ public class PackStream
         public PackType peekNextType() throws IOException
         {
             final byte markerByte = in.peekByte();
-            return type( markerByte );
-        }
-    }
-
-    private static PackType type( byte markerByte )
-    {
-        final byte markerHighNibble = (byte) (markerByte & 0xF0);
-
-        switch ( markerHighNibble )
-        {
-        case TINY_TEXT:
-            return PackType.TEXT;
-        case TINY_LIST:
-            return PackType.LIST;
-        case TINY_MAP:
-            return PackType.MAP;
-        case TINY_STRUCT:
-            return PackType.STRUCT;
-        }
-
-        if ( markerByte >= MINUS_2_TO_THE_4 )
-        {
-            return PackType.INTEGER;
-        }
-
-        switch ( markerByte )
-        {
-        case NULL:
-            return PackType.NULL;
-        case TRUE:
-        case FALSE:
-            return PackType.BOOLEAN;
-        case FLOAT_64:
-            return PackType.FLOAT;
-        case BYTES_8:
-        case BYTES_16:
-        case BYTES_32:
-            return PackType.BYTES;
-        case TEXT_8:
-        case TEXT_16:
-        case TEXT_32:
-            return PackType.TEXT;
-        case LIST_8:
-        case LIST_16:
-        case LIST_32:
-            return PackType.LIST;
-        case MAP_8:
-        case MAP_16:
-        case MAP_32:
-            return PackType.MAP;
-        case STRUCT_8:
-        case STRUCT_16:
-            return PackType.STRUCT;
-        case INT_8:
-        case INT_16:
-        case INT_32:
-        case INT_64:
-            return PackType.INTEGER;
-        default:
-            return PackType.RESERVED;
+            return PackType.fromMarkerByte( markerByte );
         }
     }
 
@@ -897,7 +886,8 @@ public class PackStream
     {
         public Unexpected( PackType expectedType, byte unexpectedMarkerByte )
         {
-            super( "Wrong type received. Expected " + expectedType + ", received: " + type(unexpectedMarkerByte) + " " +
+            super( "Wrong type received. Expected " + expectedType + ", received: " +
+                    PackType.fromMarkerByte( unexpectedMarkerByte ) + " " +
                    "(" + toHexString( unexpectedMarkerByte ) + ").");
         }
 
@@ -915,4 +905,13 @@ public class PackStream
             return "0x" + s;
         }
     }
+
+    public static class TypeError extends PackStreamException
+    {
+        public TypeError( String message )
+        {
+            super( message );
+        }
+    }
+
 }

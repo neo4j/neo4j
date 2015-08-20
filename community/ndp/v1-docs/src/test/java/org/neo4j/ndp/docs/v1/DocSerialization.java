@@ -36,6 +36,7 @@ import org.neo4j.ndp.messaging.v1.message.Message;
 import org.neo4j.ndp.runtime.spi.ImmutableRecord;
 import org.neo4j.ndp.transport.socket.ChunkedInput;
 import org.neo4j.packstream.BufferedChannelOutput;
+import org.neo4j.packstream.PackListItemType;
 
 import static java.util.Arrays.asList;
 
@@ -103,12 +104,12 @@ public class DocSerialization
         {
             if ( value.equals( "[]" ) )
             {
-                packer.packListHeader( 0 );
+                packer.packListHeader( 0, PackListItemType.ANY );
             }
             else
             {
                 String[] values = value.substring( 1, value.length() - 1 ).split( "," );
-                packer.packListHeader( values.length );
+                packer.packListHeader( values.length, PackListItemType.ANY );
                 for ( String s : values )
                 {
                     pack( s, packer, writer );

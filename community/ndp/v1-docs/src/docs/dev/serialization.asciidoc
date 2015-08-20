@@ -16,7 +16,7 @@ For details on the layout and meaning of specific messages, see <<ndp-messaging,
 |<<ndp-packstream-ints,Integer>>                |64-bit signed integer
 |<<ndp-packstream-floats,Float>>                |64-bit floating point number
 |<<ndp-packstream-text,Text>>                   |Unicode text string
-|<<ndp-packstream-lists,List>>                  |Ordered collection of values
+|<<ndp-packstream-lists,List>>                  |Ordered, typed collection of values
 |<<ndp-packstream-maps,Map>>                    |Unordered, keyed collection of values
 |<<ndp-value-nodestruct,Node>>                  |A node in the graph with optional properties and labels
 |<<ndp-value-relstruct,Relationship>>           |A directed, typed connection between two nodes. Each relationship may have properties and always has an identity
@@ -217,7 +217,7 @@ D0 18 45 6E  20 C3 A5 20  66 6C C3 B6  74 20 C3 B6
 
 [[ndp-packstream-lists]]
 === Lists
-Lists are heterogeneous sequences of values and permit a mixture of types within the same list.
+Lists are sequences of values that can be explicitly typed or that may contain ANY value.
 The size of a list denotes the number of items within that list, not the total packed byte size.
 The markers used to denote a list are described in the table below:
 
@@ -231,13 +231,32 @@ The markers used to denote a list are described in the table below:
 |`0xD6`         |32-bit big-endian unsigned integer          |4 294 967 295 items
 |=======================
 
+Immediately following the marker and any required size detail is a byte that specifies the type of item contained within that list.
+This can be any one of the following:
+
+.List item types
+[cols="^50,^50",options="header",name="packstream-list-item-type-table"]
+|=======================
+|Item Type |Byte Value
+|ANY       |`0xC0`
+|BOOLEAN   |`0xC3`
+|INTEGER   |`0xC8`
+|FLOAT     |`0xC1`
+|TEXT      |`0xD0`
+|LIST      |`0xD4`
+|MAP       |`0xD8`
+|STRUCT    |`0x00`..`0x7F`
+|=======================
+
+Note that lists of structures use the structure signature for the type value.
+
 ==== Tiny Lists & Empty Lists
 For lists containing fewer than 16 items, including empty lists, the marker byte should contain the high-order nibble `1001` followed by a low-order nibble containing the size.
-The items within the list are then serialised in order  immediately after the marker.
+The items within the list are then serialised in order immediately after the type byte.
 
 ==== Regular Lists
 For lists containing 16 items or more, the marker `0xD4`, `0xD5` or `0xD6` should be used, depending on scale.
-This marker is followed by the size and list items, serialized in order.
+This marker is followed by the size, the type byte and the list items, serialized in order.
 
 ==== Examples
 
@@ -246,7 +265,7 @@ This marker is followed by the size and list items, serialized in order.
 ----
 Value: []
 
-90
+90 C0
 ----
 
 .Tiny list
@@ -254,7 +273,7 @@ Value: []
 ----
 Value: [1,2,3]
 
-93 01 02 03
+93 C0 01 02 03
 ----
 
 .Regular list
@@ -262,8 +281,8 @@ Value: [1,2,3]
 ----
 Value: [1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0]
 
-D4 14 01 02  03 04 05 06  07 08 09 00  01 02 03 04
-05 06 07 08  09 00
+D4 14 C0 01  02 03 04 05  06 07 08 09  00 01 02 03
+04 05 06 07  08 09 00
 ----
 
 [[ndp-packstream-maps]]

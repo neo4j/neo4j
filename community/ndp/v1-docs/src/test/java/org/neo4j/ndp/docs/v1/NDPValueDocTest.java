@@ -32,8 +32,8 @@ import org.junit.runners.Parameterized;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.ndp.messaging.v1.MessageFormat;
-import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
 import org.neo4j.ndp.messaging.v1.Neo4jPack;
+import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
 import org.neo4j.ndp.messaging.v1.RecordingByteChannel;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueNode;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueRelationship;
@@ -46,7 +46,6 @@ import org.neo4j.packstream.PackType;
 
 import static java.util.Arrays.asList;
 
-import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -102,27 +101,15 @@ public class NDPValueDocTest
                     unpacker.unpackStructHeader();
                     unpacker.unpackStructSignature();
                     unpacker.unpackListHeader();
+                    unpacker.unpackListItemType();
 
                     PackType type = unpacker.peekNextType();
                     if ( type.name().equalsIgnoreCase( "struct" ) )
                     {
-                        String structName = null;
                         unpacker.unpackStructHeader();
-                        char sig = unpacker.unpackStructSignature();
-                        switch ( sig )
-                        {
-                        case Neo4jPack.NODE:
-                            structName = "node";
-                            break;
-                        case Neo4jPack.RELATIONSHIP:
-                            structName = "relationship";
-                            break;
-                        case Neo4jPack.PATH:
-                            structName = "path";
-                            break;
-                        default:
-                            fail( "Unknown struct type: " + sig );
-                        }
+                        byte sig = unpacker.unpackStructSignature();
+                        Neo4jPack.StructType t = Neo4jPack.StructType.fromSignature( sig );
+                        String structName = t.name().toLowerCase();
                         assertThat( structName, equalTo( packStreamType.toLowerCase() ) );
                     }
                     else

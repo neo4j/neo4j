@@ -40,7 +40,7 @@ public class NDPPackStreamDocTest
     public DocSerializationExample example;
 
     @Parameterized.Parameters( name = "{0}" )
-    public static Collection<Object[]> documentedPackstreamExamples()
+    public static Collection<Object[]> documentedPackStreamExamples()
     {
         Collection<Object[]> mappings = new ArrayList<>();
 
@@ -68,7 +68,7 @@ public class NDPPackStreamDocTest
     public void serializingLeadsToSpecifiedOutput() throws Throwable
     {
         assertThat( "Serialized version of value should match documented data: " + example,
-                normalizedHex( example.serializedData() ),
-                equalTo( normalizedHex( pack( example.attribute( "Value" ) ) ) ) );
+                normalizedHex( pack( example.attribute( "Value" ) ) ),
+                equalTo( normalizedHex( example.serializedData() ) ) );
     }
 }

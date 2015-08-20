@@ -34,6 +34,7 @@ import org.neo4j.ndp.messaging.v1.RecordingMessageHandler;
 import org.neo4j.ndp.messaging.v1.util.ArrayByteChannel;
 import org.neo4j.packstream.BufferedChannelInput;
 import org.neo4j.packstream.BufferedChannelOutput;
+import org.neo4j.packstream.PackListItemType;
 import org.neo4j.packstream.PackStream;
 
 import static org.junit.Assert.assertEquals;
@@ -106,7 +107,7 @@ public class NDPMessageStructsDocTest
         }
         else if ( type.startsWith( "List" ) )
         {
-            packer.packListHeader( 2 );
+            packer.packListHeader( 2, PackListItemType.ANY );
             packer.pack( 1 );
             packer.pack( 2 );
         }

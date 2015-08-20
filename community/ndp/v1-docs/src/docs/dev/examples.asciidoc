@@ -30,8 +30,8 @@ Client: RUN "RETURN 1 AS num" {}
 
 Server: SUCCESS { fields: ['num'] }
 
-  00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75
-  6d 00 00
+  00 10 b1 70  a1 86 66 69  65 6c 64 73  91 c0 83 6e
+  75 6d 00 00
 
 Client: PULL_ALL
 
@@ -39,7 +39,7 @@ Client: PULL_ALL
 
 Server: RECORD [1]
 
-  00 04 b1 71  91 01 00 00
+  00 05 b1 71  91 c0 01 00  00
 
 Server: SUCCESS {}
 
@@ -91,12 +91,12 @@ Client: PULL_ALL
 # Server responses
 Server: SUCCESS { fields: ['num'] }
 
-  00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75
-  6d 00 00
+  00 10 b1 70  a1 86 66 69  65 6c 64 73  91 c0 83 6e
+  75 6d 00 00
 
 Server: RECORD [1]
 
-  00 04 b1 71  91 01 00 00
+  00 05 b1 71  91 c0 01 00  00
 
 Server: SUCCESS {}
 
@@ -104,12 +104,12 @@ Server: SUCCESS {}
 
 Server: SUCCESS { fields: ['num'] }
 
-  00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75
-  6d 00 00
+  00 10 b1 70  a1 86 66 69  65 6c 64 73  91 c0 83 6e
+  75 6d 00 00
 
 Server: RECORD [1]
 
-  00 04 b1 71  91 01 00 00
+  00 05 b1 71  91 c0 01 00  00
 
 Server: SUCCESS {}
 
@@ -192,6 +192,6 @@ Client: RUN "RETURN 1 AS num" {}
 
 Server: SUCCESS { fields: ['num'] }
 
-  00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75
-  6d 00 00
+  00 10 b1 70  a1 86 66 69  65 6c 64 73  91 c0 83 6e
+  75 6d 00 00
 ----

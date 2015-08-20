@@ -34,6 +34,7 @@ import org.neo4j.ndp.messaging.v1.infrastructure.ValueNode;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValuePath;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueRelationship;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueUnboundRelationship;
+import org.neo4j.packstream.PackListItemType;
 import org.neo4j.packstream.PackedInputArray;
 import org.neo4j.packstream.PackedOutputArray;
 
@@ -138,25 +139,25 @@ public class NDPValueStructsDocTest
         }
         else if ( type.startsWith( "List<Text>" ) )
         {
-            packer.packListHeader( 2 );
+            packer.packListHeader( 2, PackListItemType.TEXT );
             packer.pack( "Banana" );
             packer.pack( "Person" );
         }
         else if ( type.startsWith( "List<Node>" ) )
         {
-            packer.packListHeader( 2 );
+            packer.packListHeader( 2, Neo4jPack.StructType.NODE );
             ValueNode.pack( packer, ALICE );
             ValueNode.pack( packer, BOB );
         }
         else if ( type.startsWith( "List<UnboundRelationship>" ) )
         {
-            packer.packListHeader( 1 );
+            packer.packListHeader( 1, Neo4jPack.StructType.UNBOUND_RELATIONSHIP );
             ValueUnboundRelationship.pack( packer,
                     ValueUnboundRelationship.unbind( ALICE_KNOWS_BOB ) );
         }
         else if ( type.startsWith( "List<Integer>" ) )
         {
-            packer.packListHeader( 2 );
+            packer.packListHeader( 2, PackListItemType.INTEGER );
             packer.pack( 1 );
             packer.pack( 1 );
         }
