@@ -199,17 +199,23 @@ public class Predicates
     public static <TYPE> void await( Supplier<TYPE> supplier, Predicate<TYPE> predicate, long timeout, TimeUnit unit )
             throws TimeoutException, InterruptedException
     {
+        await( Suppliers.compose( supplier, predicate ), timeout, unit );
+    }
+
+    public static void await( Supplier<Boolean> condition, long timeout, TimeUnit unit )
+            throws TimeoutException, InterruptedException
+    {
         long sleep = Math.max( unit.toMillis( timeout ) / 100, 1 );
         long deadline = System.currentTimeMillis() + unit.toMillis( timeout );
         do
         {
-            if ( predicate.test( supplier.get() ) )
+            if ( condition.get() )
             {
                 return;
             }
             Thread.sleep( sleep );
         }
         while ( System.currentTimeMillis() < deadline );
-        throw new TimeoutException( "Waited for " + timeout + " " + unit + ", but " + predicate + " was not accepted." );
+        throw new TimeoutException( "Waited for " + timeout + " " + unit + ", but " + condition + " was not accepted." );
     }
 }

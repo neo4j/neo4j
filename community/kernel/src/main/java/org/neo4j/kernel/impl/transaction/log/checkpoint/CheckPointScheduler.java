@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.io.IOException;
 
+import org.neo4j.function.Predicates;
+import org.neo4j.function.Supplier;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -38,6 +40,13 @@ public class CheckPointScheduler extends LifecycleAdapter
         @Override
         public void run()
         {
+            checkPointing = true;
+
+            if ( stopped )
+            {
+                return;
+            }
+
             try
             {
                 checkPointer.checkPointIfNeeded();
@@ -47,6 +56,7 @@ public class CheckPointScheduler extends LifecycleAdapter
                 // no need to reschedule since the check pointer has raised a kernel panic and a shutdown is expected
                 throw new UnderlyingStorageException( e );
             }
+            checkPointing = false;
 
             // reschedule only if it is not stopped
             if ( !stopped )
@@ -57,7 +67,16 @@ public class CheckPointScheduler extends LifecycleAdapter
     };
 
     private volatile JobScheduler.JobHandle handle;
-    private volatile boolean stopped = false;
+    private volatile boolean stopped;
+    private volatile boolean checkPointing;
+    private final Supplier<Boolean> checkPointingCondition = new Supplier<Boolean>()
+    {
+        @Override
+        public Boolean get()
+        {
+            return !checkPointing;
+        }
+    };
 
     public CheckPointScheduler( CheckPointer checkPointer, JobScheduler scheduler, long recurringPeriodMillis )
     {
@@ -80,5 +99,6 @@ public class CheckPointScheduler extends LifecycleAdapter
         {
             handle.cancel( false );
         }
+        Predicates.await( checkPointingCondition, recurringPeriodMillis, MILLISECONDS );
     }
 }
