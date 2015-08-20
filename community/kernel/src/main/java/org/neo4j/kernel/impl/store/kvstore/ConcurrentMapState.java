@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 
@@ -35,6 +36,7 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
     private final File file;
     private final AtomicLong highestAppliedVersion;
     private final AtomicLong appliedChanges;
+    private final AtomicBoolean hasTrackedChanges;
     private final long previousVersion;
 
     ConcurrentMapState( ReadableState<Key> store, File file )
@@ -45,6 +47,7 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
         this.highestAppliedVersion = new AtomicLong( previousVersion );
         this.changes = new ConcurrentHashMap<>();
         this.appliedChanges = new AtomicLong();
+        hasTrackedChanges = new AtomicBoolean();
     }
 
     private ConcurrentMapState( Prototype<Key> prototype, ReadableState<Key> store, File file )
@@ -52,6 +55,7 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
         super( store );
         this.previousVersion = store.version();
         this.file = file;
+        this.hasTrackedChanges = prototype.hasTrackedChanges;
         this.changes = prototype.changes;
         this.highestAppliedVersion = prototype.highestAppliedVersion;
         this.appliedChanges = prototype.appliedChanges;
@@ -71,12 +75,14 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
             return EntryUpdater.noUpdates();
         }
         update( highestAppliedVersion, version );
+        hasTrackedChanges.set( true );
         return new Updater<>( lock, store, changes, appliedChanges );
     }
 
     @Override
     public EntryUpdater<Key> unsafeUpdater( Lock lock )
     {
+        hasTrackedChanges.set( true );
         return new Updater<>( lock, store, changes, null );
     }
 
@@ -214,10 +220,14 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
     {
         final ConcurrentMap<Key, byte[]> changes = new ConcurrentHashMap<>();
         final AtomicLong highestAppliedVersion, appliedChanges = new AtomicLong();
+        final AtomicBoolean hasTrackedChanges;
+        private final long threshold;
 
         Prototype( ConcurrentMapState<Key> state, long version )
         {
             super( state );
+            threshold = version;
+            hasTrackedChanges = new AtomicBoolean();
             this.highestAppliedVersion = new AtomicLong( version );
         }
 
@@ -231,19 +241,28 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
         protected EntryUpdater<Key> updater( long version, Lock lock )
         {
             update( highestAppliedVersion, version );
-            return new Updater<>( lock, store, changes, appliedChanges );
+            if ( version > threshold )
+            {
+                hasTrackedChanges.set( true );
+                return new Updater<>( lock, store, changes, appliedChanges );
+            }
+            else
+            {
+                return new Updater<>( lock, store, changes, null );
+            }
         }
 
         @Override
         protected EntryUpdater<Key> unsafeUpdater( Lock lock )
         {
+            hasTrackedChanges.set( true );
             return new Updater<>( lock, store, changes, null );
         }
 
         @Override
         protected boolean hasChanges()
         {
-            return !changes.isEmpty();
+            return hasTrackedChanges.get() && !changes.isEmpty();
         }
 
         @Override
@@ -296,7 +315,7 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
     @Override
     protected boolean hasChanges()
     {
-        return !changes.isEmpty();
+        return hasTrackedChanges.get() && !changes.isEmpty();
     }
 
     @Override

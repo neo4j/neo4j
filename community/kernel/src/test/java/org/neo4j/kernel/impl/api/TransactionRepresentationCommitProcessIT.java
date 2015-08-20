@@ -23,7 +23,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -34,11 +33,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.Functions;
@@ -149,7 +148,6 @@ public class TransactionRepresentationCommitProcessIT
     @After
     public void tearDown()
     {
-        lifeRule.shutdown();
         neoStore.close();
     }
 
@@ -357,7 +355,7 @@ public class TransactionRepresentationCommitProcessIT
 
         private void randomSleep() throws InterruptedException
         {
-            Thread.sleep( new Random( System.currentTimeMillis() ).nextInt( 50 ) );
+            Thread.sleep( ThreadLocalRandom.current().nextInt( 50 ) );
         }
 
         private PhysicalTransactionRepresentation createPhysicalTransactionRepresentation()
