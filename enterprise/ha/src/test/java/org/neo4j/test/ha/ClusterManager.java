@@ -19,10 +19,6 @@
  */
 package org.neo4j.test.ha;
 
-import ch.qos.logback.classic.LoggerContext;
-import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
-import org.w3c.dom.Document;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -43,11 +39,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
+import java.util.concurrent.TimeoutException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.neo4j.function.Function;
+import org.w3c.dom.Document;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
@@ -61,6 +57,7 @@ import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
+import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -83,6 +80,7 @@ import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -90,11 +88,11 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 
-import static org.junit.Assert.fail;
-
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
+
+import static org.junit.Assert.fail;
 
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
@@ -654,9 +652,9 @@ public class ClusterManager
             {
                 try
                 {
-                    result = untilThen.get();
+                    result = untilThen.get( 60, TimeUnit.SECONDS );
                 }
-                catch ( InterruptedException | ExecutionException e )
+                catch ( InterruptedException | ExecutionException | TimeoutException e )
                 {
                     throw new RuntimeException( e );
                 }

@@ -74,6 +74,8 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
      */
     public void setDelegate( T delegate )
     {
+        assert delegate != null : "Delegate may not be null";
+
         this.delegate = delegate;
         harden();
         concrete.invalidate();
@@ -141,7 +143,7 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
     
     private static class Concrete<T> implements InvocationHandler
     {
-        private volatile T delegate;
+        public volatile T delegate;
         
         void set( T delegate )
         {

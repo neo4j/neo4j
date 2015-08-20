@@ -108,12 +108,15 @@ public class SwitchToSlave
     public interface Monitor
     {
         void switchToSlaveStarted();
+
         void switchToSlaveCompleted( boolean wasSuccessful );
 
         void storeCopyStarted();
+
         void storeCopyCompleted( boolean wasSuccessful );
 
         void catchupStarted();
+
         void catchupCompleted();
     }
 
@@ -144,18 +147,27 @@ public class SwitchToSlave
     private final StoreCopyClient.Monitor storeCopyMonitor;
     private final Monitor monitor;
 
-    public SwitchToSlave( File storeDir, LogService logService, FileSystemAbstraction fileSystemAbstraction,
-            ClusterMembers clusterMembers, Config config, DependencyResolver resolver,
-                          HaIdGeneratorFactory idGeneratorFactory,
-                          DelegateInvocationHandler<Master> masterDelegateHandler,
-                          ClusterMemberAvailability clusterMemberAvailability,
-                          RequestContextFactory requestContextFactory,
-                          Iterable<KernelExtensionFactory<?>> kernelExtensions, MasterClientResolver masterClientResolver,
-                          Monitor monitor,
-                          StoreCopyClient.Monitor storeCopyMonitor,
-                          Supplier<NeoStoreDataSource> neoDataSourceSupplier,
-                          Supplier<TransactionIdStore> transactionIdStoreSupplier,
-                          Factory<Slave> slaveFactory, Function<Slave, SlaveServer> slaveServerFactory, UpdatePuller updatePuller, PageCache pageCache, Monitors monitors )
+    public SwitchToSlave( File storeDir,
+            LogService logService,
+            FileSystemAbstraction fileSystemAbstraction,
+            ClusterMembers clusterMembers,
+            Config config,
+            DependencyResolver resolver,
+            HaIdGeneratorFactory idGeneratorFactory,
+            DelegateInvocationHandler<Master> masterDelegateHandler,
+            ClusterMemberAvailability clusterMemberAvailability,
+            RequestContextFactory requestContextFactory,
+            Iterable<KernelExtensionFactory<?>> kernelExtensions,
+            MasterClientResolver masterClientResolver,
+            Monitor monitor,
+            StoreCopyClient.Monitor storeCopyMonitor,
+            Supplier<NeoStoreDataSource> neoDataSourceSupplier,
+            Supplier<TransactionIdStore> transactionIdStoreSupplier,
+            Factory<Slave> slaveFactory,
+            Function<Slave, SlaveServer> slaveServerFactory,
+            UpdatePuller updatePuller,
+            PageCache pageCache,
+            Monitors monitors )
     {
         this.logService = logService;
         this.fileSystemAbstraction = fileSystemAbstraction;
@@ -196,7 +208,7 @@ public class SwitchToSlave
      * @throws Throwable
      */
     public URI switchToSlave( LifeSupport haCommunicationLife, URI me, URI masterUri,
-                              CancellationRequest cancellationRequest ) throws Throwable
+            CancellationRequest cancellationRequest ) throws Throwable
     {
         URI slaveUri;
         boolean success = false;
@@ -295,8 +307,11 @@ public class SwitchToSlave
         }
     }
 
-    private boolean executeConsistencyChecks( InstanceId myId, TransactionIdStore txIdStore, URI masterUri, StoreId storeId,
-                                              CancellationRequest cancellationRequest ) throws Throwable
+    private boolean executeConsistencyChecks( InstanceId myId,
+            TransactionIdStore txIdStore,
+            URI masterUri,
+            StoreId storeId,
+            CancellationRequest cancellationRequest ) throws Throwable
     {
         LifeSupport consistencyCheckLife = new LifeSupport();
         try
@@ -364,7 +379,9 @@ public class SwitchToSlave
         }
         catch ( MismatchingStoreIdException e )
         {
-            userLog.info( "The store does not represent the same database as master. Will remove and fetch a new one from master" );
+            userLog.info(
+                    "The store does not represent the same database as master. Will remove and fetch a new one from " +
+                            "master" );
             if ( txIdStore.getLastCommittedTransactionId() == BASE_TX_ID )
             {
                 msgLog.warn( "Found and deleting empty store with mismatching store id", e );
@@ -403,9 +420,7 @@ public class SwitchToSlave
 
         Slave slaveImpl = slaveFactory.newInstance();
 
-        SlaveServer server = slaveServerFactory.apply(slaveImpl);
-
-        ;
+        SlaveServer server = slaveServerFactory.apply( slaveImpl );
 
         masterDelegateHandler.setDelegate( master );
 
@@ -432,8 +447,19 @@ public class SwitchToSlave
         userLog.info( "Catching up with master. I'm at %s", catchUpRequestContext );
 
         // Unpause the update puller, because we know that we are a slave that just started communication with master.
-        updatePuller.unpause();
-        updatePuller.await( UpdatePuller.NEXT_TICKET, true );
+        while ( true )
+        {
+            try
+            {
+                updatePuller.unpause();
+                updatePuller.await( UpdatePuller.NEXT_TICKET, true );
+                break;
+            }
+            catch ( IllegalStateException ex )
+            {
+                // Slight chance that it became paused before or during await, just unpause it again
+            }
+        }
 
         userLog.info( "Now caught up with master" );
         monitor.catchupCompleted();
@@ -449,7 +475,7 @@ public class SwitchToSlave
     }
 
     private void copyStoreFromMaster( final MasterClient masterClient,
-                                      CancellationRequest cancellationRequest ) throws Throwable
+            CancellationRequest cancellationRequest ) throws Throwable
     {
         // This will move the copied db to the graphdb location
         userLog.info( "Copying store from master" );
@@ -505,8 +531,8 @@ public class SwitchToSlave
     }
 
     private void checkDataConsistencyWithMaster( URI availableMasterId, Master master,
-                                                 StoreId storeId,
-                                                 TransactionIdStore transactionIdStore )
+            StoreId storeId,
+            TransactionIdStore transactionIdStore )
     {
         long[] myLastCommittedTxData = transactionIdStore.getLastCommittedTransaction();
         long myLastCommittedTx = myLastCommittedTxData[0];

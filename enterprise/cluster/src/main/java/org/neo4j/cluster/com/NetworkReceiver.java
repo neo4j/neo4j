@@ -189,6 +189,7 @@ public class NetworkReceiver
                 else
                 {
                     localAddress = new InetSocketAddress( address, checkPort );
+                    bindingDetected = true;
                 }
 
                 Channel listenChannel = serverBootstrap.bind( localAddress );
@@ -241,10 +242,13 @@ public class NetworkReceiver
     {
         String uri;
 
-        if (address.getAddress().getHostAddress().startsWith( "0" ))
-            uri =  CLUSTER_SCHEME + "://0.0.0.0:"+address.getPort(); // Socket.toString() already prepends a /
+        if ( address.getAddress().getHostAddress().startsWith( "0" ) )
+            uri = CLUSTER_SCHEME + "://0.0.0.0:" + address.getPort(); // Socket.toString() already prepends a /
         else
-            uri = CLUSTER_SCHEME + "://" + address.getAddress().getHostAddress()+":"+address.getPort(); // Socket.toString() already prepends a /
+        {
+            uri = CLUSTER_SCHEME + "://" + address.getAddress().getHostName() + ":" + address.getPort(); // Socket
+        }
+            // .toString() already prepends a /
 
         // Add name if given
         if (config.name() != null)
@@ -340,7 +344,7 @@ public class NetworkReceiver
 
             // Fix FROM header since sender cannot know it's correct IP/hostname
             InetSocketAddress remote = (InetSocketAddress) ctx.getChannel().getRemoteAddress();
-            String remoteAddress = remote.getAddress().getHostAddress();
+            String remoteAddress = remote.getAddress().getHostName();
             URI fromHeader = URI.create( message.getHeader( Message.FROM ) );
             fromHeader = URI.create(fromHeader.getScheme()+"://"+remoteAddress + ":" + fromHeader.getPort());
             message.setHeader( Message.FROM, fromHeader.toASCIIString() );

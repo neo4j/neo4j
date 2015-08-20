@@ -299,11 +299,12 @@ public enum ClusterState
                                     if ( discoveredInstance.getJoiningId().equals( configurationRequested.getJoiningId() ) )
                                     {
                                         // we are done
-                                        StringBuffer errorMessage = new StringBuffer( "Failed to join cluster because I saw two instances with the same ServerId" );
-                                        errorMessage.append( "One is " ).append( discoveredInstance.getJoiningId() );
-                                        errorMessage.append( " The other is " ).append( configurationRequested );
                                         outgoing.offer( internal( ClusterMessage.joinFailure,
-                                                new IllegalStateException( errorMessage.toString() ) ) );
+                                                new IllegalStateException( String.format(
+                                                        "Failed to join cluster because I saw two instances with the " +
+                                                                "same ServerId. " +
+                                                                "One is %s. The other is %s", discoveredInstance,
+                                                        configurationRequested ) ) ) );
                                         return start;
                                     }
                                 }

@@ -32,6 +32,7 @@ import org.neo4j.function.Supplier;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.master.ConversationManager;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterServer;
@@ -125,9 +126,9 @@ public class SwitchToMaster implements AutoCloseable
 
     private URI getMasterUri( URI me, MasterServer masterServer )
     {
-        String hostname = ServerUtil.getHostString( masterServer.getSocketAddress() ).contains( "0.0.0.0" ) ?
+        String hostname = config.get( HaSettings.ha_server ).getHost( ServerUtil.getHostString( masterServer.getSocketAddress() ).contains( "0.0.0.0" ) ?
                             me.getHost() :
-                            ServerUtil.getHostString( masterServer.getSocketAddress() );
+                            ServerUtil.getHostString( masterServer.getSocketAddress() ));
 
         int port = masterServer.getSocketAddress().getPort();
 

@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import java.net.URI;
+
 import org.junit.Before;
 import org.junit.Test;
-
-import java.net.URI;
 
 import org.neo4j.cluster.InstanceId;
 
@@ -30,6 +30,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.PENDING;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.SLAVE;
@@ -223,21 +224,14 @@ public class HighAvailabilityMemberStateTest
     @Test
     public void testToSlaveMasterIsAvailable()
     {
-        // CASE 1: Got MasterIsAvailable for me - should fail, i am currently trying to become slave
-        try
-        {
-            TO_SLAVE.masterIsAvailable( context, myId, SampleUri );
-            fail( "TO_SLAVE to MASTER is not allowed" );
-        }
-        catch( RuntimeException e )
-        {
-            // fantastic
-        }
+        // CASE 1: Got MasterIsAvailable for me - it's ok, election happened during switch
+        HighAvailabilityMemberState newState = TO_SLAVE.masterIsAvailable( context, myId, SampleUri );
+        assertEquals( TO_SLAVE, newState );
 
         // CASE 2: Got MasterIsAvailable for someone else who is already the master - should continue switching
         InstanceId currentMaster = new InstanceId( 2 );
         when( context.getElectedMasterId() ).thenReturn( currentMaster );
-        HighAvailabilityMemberState newState = TO_SLAVE.masterIsAvailable( context, currentMaster, SampleUri );
+        newState = TO_SLAVE.masterIsAvailable( context, currentMaster, SampleUri );
         assertEquals( TO_SLAVE, newState );
 
         // CASE 3: Got MasterIsAvailable for someone else who is not the master - should fail

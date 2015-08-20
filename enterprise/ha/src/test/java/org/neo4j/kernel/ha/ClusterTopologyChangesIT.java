@@ -104,8 +104,6 @@ public class ClusterTopologyChangesIT
     @Test
     public void masterRejoinsAfterFailureAndReelection() throws Throwable
     {
-        System.out.println(repeat.getCount());
-
         // Given
         HighlyAvailableGraphDatabase initialMaster = cluster.getMaster();
 
@@ -172,8 +170,11 @@ public class ClusterTopologyChangesIT
         slave2RepairKit.repair();
 
         // whole cluster looks fine, but slaves have stale value of the epoch if they rejoin the cluster in SLAVE state
-        cluster.await( masterAvailable(  ));
+        cluster.info( "Wait for master" );
+        cluster.await( masterAvailable() );
+        cluster.info( "Wait for slaves" );
         cluster.await( masterSeesSlavesAsAvailable( 2 ) );
+        cluster.info( "Cluster recovered" );
         HighlyAvailableGraphDatabase newMaster = cluster.getMaster();
 
         final HighlyAvailableGraphDatabase newSlave1 = cluster.getAnySlave();
@@ -209,9 +210,16 @@ public class ClusterTopologyChangesIT
         cluster.await( allSeesAllAsAvailable() );
 
         cluster.info( "Assert ok" );
-        assertNotNull( createNodeOn( newMaster ) );
-        assertNotNull( createNodeOn( newSlave1 ) );
-        assertNotNull( createNodeOn( newSlave2 ) );
+        try
+        {
+            assertNotNull( createNodeOn( newMaster ) );
+            assertNotNull( createNodeOn( newSlave1 ) );
+            assertNotNull( createNodeOn( newSlave2 ) );
+        }
+        finally
+        {
+            cluster.info( "Assert finished" );
+        }
     }
 
     @Test

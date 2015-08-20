@@ -19,15 +19,15 @@
  */
 package org.neo4j.test.ha;
 
-import org.junit.rules.ExternalResource;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.rules.ExternalResource;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.config.Setting;
@@ -38,6 +38,7 @@ import org.neo4j.test.ha.ClusterManager.Builder;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
 import static java.util.Arrays.asList;
+
 import static org.neo4j.cluster.ClusterSettings.default_timeout;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -55,6 +56,7 @@ public class ClusterRule extends ExternalResource
     private HighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
     private List<Predicate<ManagedCluster>> availabilityChecks = asList( allSeesAllAsAvailable() );
     private TargetDirectory.TestDirectory testDirectory;
+    private String methodName;
 
     public ClusterRule( Class<?> testClass )
     {
@@ -112,17 +114,15 @@ public class ClusterRule extends ExternalResource
     @Override
     public Statement apply( final Statement base, final Description description )
     {
-        return testDirectory.apply( new Statement()
-        {
-            @Override
-            public void evaluate() throws Throwable
-            {
-                ClusterRule.this.storeDirectory = testDirectory.directory( description.getMethodName() );
-                ClusterRule.super.apply( base, description );
-            }
-        }, description );
+        methodName = description.getMethodName();
+        return testDirectory.apply( super.apply( base, description ), description );
     }
 
+    @Override
+    protected void before() throws Throwable
+    {
+        storeDirectory = testDirectory.directory( methodName );
+    }
 
     @Override
     protected void after()
