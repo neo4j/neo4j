@@ -19,17 +19,19 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
-import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.kernel.api.exceptions.Status
-import org.neo4j.test.ImpermanentGraphDatabase
+import java.nio.file.{Files, Path}
+import java.util
 
-import scala.collection.Map
+import org.neo4j.cypher._
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
+import org.neo4j.graphdb.EnterpriseGraphDatabase
+import org.neo4j.graphdb.factory.{GraphDatabaseFactoryState, GraphDatabaseSettings}
+import org.neo4j.io.fs.FileUtils
+import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.api.exceptions.Status
 
 class PropertyExistenceConstraintAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CollectionSupport {
-
+  var dir: Path = null
   test("node: should enforce constraints on creation") {
     // GIVEN
     execute("create constraint on (node:Label1) assert exists(node.key1)")
@@ -195,6 +197,19 @@ class PropertyExistenceConstraintAcceptanceTest extends ExecutionEngineFunSuite 
 
     // THEN
     numberOfRelationships shouldBe 1
+  }
+
+  override protected def createGraphDatabase(): GraphDatabaseAPI with Snitch = {
+    val config = new util.HashMap[String, String]()
+    config.put(GraphDatabaseSettings.pagecache_memory.name, "8M")
+    dir = Files.createTempDirectory(getClass.getSimpleName)
+    val state = new GraphDatabaseFactoryState()
+    new EnterpriseGraphDatabase(dir.toFile, config, state.databaseDependencies()) with Snitch
+  }
+
+  override protected def stopTest() {
+    super.stopTest()
+    FileUtils.deletePathRecursively(dir)
   }
 
   private def numberOfNodes = executeScalar[Long]("match n return count(n)")

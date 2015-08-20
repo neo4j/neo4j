@@ -33,6 +33,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.SchemaRuleVerifier;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.configuration.Config;
@@ -112,11 +113,16 @@ public class CommunityEditionModule
 
         upgradeConfiguration = new ConfigMapUpgradeConfiguration( config );
 
-        schemaRuleVerifier = new CommunitySchemaRuleVerifier();
+        schemaRuleVerifier = createSchemaRuleVerifier();
 
         registerRecovery( config.get( GraphDatabaseFacadeFactory.Configuration.editionName), life, deps );
 
         publishEditionInfo( deps.resolveDependency( UsageData.class ) );
+    }
+
+    protected SchemaRuleVerifier createSchemaRuleVerifier()
+    {
+        return new CommunitySchemaRuleVerifier();
     }
 
     private void publishEditionInfo( UsageData sysInfo )

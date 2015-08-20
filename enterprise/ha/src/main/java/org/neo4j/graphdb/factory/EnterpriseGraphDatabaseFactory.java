@@ -17,27 +17,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.factory;
+package org.neo4j.graphdb.factory;
 
-import org.neo4j.kernel.SchemaRuleVerifier;
-import org.neo4j.kernel.impl.factory.CommunityEditionModule;
-import org.neo4j.kernel.impl.factory.EditionModule;
-import org.neo4j.kernel.impl.factory.PlatformModule;
+import java.io.File;
+import java.util.Map;
 
-/**
- * This implementation of {@link EditionModule} creates the implementations of services
- * that are specific to the Enterprise edition, without HA
- */
-public class EnterpriseEditionModule extends CommunityEditionModule
+import org.neo4j.graphdb.EnterpriseGraphDatabase;
+import org.neo4j.graphdb.GraphDatabaseService;
+
+public class EnterpriseGraphDatabaseFactory extends GraphDatabaseFactory
 {
-    public EnterpriseEditionModule( PlatformModule platformModule )
-    {
-        super( platformModule );
-    }
-
     @Override
-    protected SchemaRuleVerifier createSchemaRuleVerifier()
+    protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator( final File storeDir,
+            final GraphDatabaseFactoryState state )
     {
-        return new EnterpriseSchemaRuleVerifier();
+        return new GraphDatabaseBuilder.DatabaseCreator()
+        {
+            @Override
+            public GraphDatabaseService newDatabase( Map<String,String> config )
+            {
+                config.put( "ephemeral", "false" );
+
+                return new EnterpriseGraphDatabase( storeDir, config, state.databaseDependencies() );
+            }
+        };
     }
 }
