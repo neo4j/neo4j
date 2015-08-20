@@ -26,8 +26,8 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
-import org.neo4j.kernel.ha.factory.EnterpriseEditionModule;
-import org.neo4j.kernel.ha.factory.EnterpriseFacadeFactory;
+import org.neo4j.kernel.ha.factory.HighlyAvailableEditionModule;
+import org.neo4j.kernel.ha.factory.HighlyAvailableFacadeFactory;
 import org.neo4j.kernel.impl.factory.DataSourceModule;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -43,7 +43,7 @@ import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
  */
 public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
 {
-    private EnterpriseEditionModule enterpriseEditionModule;
+    private HighlyAvailableEditionModule highlyAvailableEditionModule;
 
     public HighlyAvailableGraphDatabase( File storeDir, Map<String,String> params,
                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
@@ -64,29 +64,29 @@ public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
 
     public HighlyAvailableGraphDatabase( File storeDir, Map<String,String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        new EnterpriseFacadeFactory().newFacade( storeDir, params, dependencies, this );
+        new HighlyAvailableFacadeFactory().newFacade( storeDir, params, dependencies, this );
     }
 
     @Override
     public void init( PlatformModule platformModule, EditionModule editionModule, DataSourceModule dataSourceModule )
     {
         super.init( platformModule, editionModule, dataSourceModule );
-        this.enterpriseEditionModule = (EnterpriseEditionModule) editionModule;
+        this.highlyAvailableEditionModule = (HighlyAvailableEditionModule) editionModule;
     }
 
     public HighAvailabilityMemberState getInstanceState()
     {
-        return enterpriseEditionModule.memberStateMachine.getCurrentState();
+        return highlyAvailableEditionModule.memberStateMachine.getCurrentState();
     }
 
     public String role()
     {
-        return enterpriseEditionModule.members.getSelf().getHARole();
+        return highlyAvailableEditionModule.members.getSelf().getHARole();
     }
 
     public boolean isMaster()
     {
-        return enterpriseEditionModule.memberStateMachine.isMaster();
+        return highlyAvailableEditionModule.memberStateMachine.isMaster();
     }
 
     public File getStoreDirectory()
