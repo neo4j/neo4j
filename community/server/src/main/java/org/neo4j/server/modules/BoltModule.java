@@ -118,7 +118,7 @@ public class BoltModule implements ServerModule
                 SslContext sslCtx = createSSLContext(certificateFile, keyFile);
 
                 InternalLoggerFactory.setDefaultFactory( new Netty4LoggerFactory( logging.getInternalLogProvider() ) );
-                life.add( new NettyServer( scheduler.threadFactory( JobScheduler.Groups.gapNetworkIO ), asList(
+                life.add( new NettyServer( scheduler.threadFactory( JobScheduler.Groups.boltNetworkIO ), asList(
                         new SocketTransport( socketAddress, sslCtx, logging.getInternalLogProvider(), availableVersions ),
                         new WebSocketTransport( webSocketAddress, sslCtx, logging.getInternalLogProvider(), availableVersions ) ) ) );
                 internalLog.info( "NDP Server extension loaded." );

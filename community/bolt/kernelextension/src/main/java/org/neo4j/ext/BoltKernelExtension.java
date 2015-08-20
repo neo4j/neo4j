@@ -54,7 +54,7 @@ import static org.neo4j.collection.primitive.Primitive.longObjectMap;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.HOSTNAME_PORT;
 import static org.neo4j.helpers.Settings.setting;
-import static org.neo4j.kernel.impl.util.JobScheduler.Groups.gapNetworkIO;
+import static org.neo4j.kernel.impl.util.JobScheduler.Groups.boltNetworkIO;
 
 /**
  * Wraps Bolt and exposes it as a Kernel Extension.
@@ -131,7 +131,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
             } );
 
             // Start services
-            life.add( new NettyServer( scheduler.threadFactory( gapNetworkIO ), asList(
+            life.add( new NettyServer( scheduler.threadFactory( boltNetworkIO ), asList(
                     new SocketTransport( socketAddress, sslCtx, logging.getInternalLogProvider(), availableVersions ),
                     new WebSocketTransport( webSocketAddress, sslCtx, logging.getInternalLogProvider(), availableVersions ) ) ) );
             log.info( "Bolt Server extension loaded." );

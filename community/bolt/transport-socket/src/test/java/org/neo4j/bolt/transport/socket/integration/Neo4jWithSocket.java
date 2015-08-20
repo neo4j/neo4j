@@ -91,7 +91,7 @@ public class Neo4jWithSocket implements TestRule
                 // Start services
                 socketTransport = new SocketTransport( new HostnamePort( "localhost:7687" ), sslCtx, logging.getUserLogProvider(), availableVersions );
                 wsTransport = new WebSocketTransport( new HostnamePort( "localhost:7688" ), sslCtx, logging.getUserLogProvider(), availableVersions );
-                life.add( new NettyServer( scheduler.threadFactory( JobScheduler.Groups.gapNetworkIO ), asList(
+                life.add( new NettyServer( scheduler.threadFactory( JobScheduler.Groups.boltNetworkIO ), asList(
                         socketTransport,
                         wsTransport )) );
 
