@@ -17,6 +17,8 @@ rem
 rem You should have received a copy of the GNU General Public License
 rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+ECHO WARNING! This batch script has been deprecated. Please use the provided PowerShell scripts instead: http://neo4j.com/docs/stable/powershell.html 1>&2
+
 set serviceName=Neo4j-Server
 set serviceDisplayName=Neo4j-Server
 set serviceStartType=auto
@@ -25,3 +27,4 @@ set mainclass="-DserverMainClass=#{neo4j.mainClass}"
 set configFile="conf\neo4j-wrapper.conf"
 
 call "%~dps0base.bat" %1 %2 %3 %4 %5
+

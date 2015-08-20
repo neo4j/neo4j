@@ -19,6 +19,8 @@ For information regarding Windows, see below.
 
 Use the `neo4j` command to control the Neo4j Server.
 
+For information regarding Windows, see http://neo4j.com/docs/stable/powershell.html.
+
 [[neo4j-installer-manpage-commands]]
 == COMMANDS
 
@@ -27,22 +29,6 @@ Use the `neo4j` command to control the Neo4j Server.
 
 *remove*::
   Uninstalls the system service.
-
-[[neo4j-installer-manpage-usage-windows]]
-== Usage - Windows
-
-To just control the Neo4j Server, use the `Neo4j.bat` command.
-
-*Neo4jInstaller.bat install/remove*
-
-Neo4j can be installed and run as a Windows Service, running without a console
-window. You'll need to run the scripts with Administrator privileges.
-Just use the `Neo4jInstaller.bat` script with the proper argument:
-
-* Neo4jInstaller.bat install - install as a Windows service
-** will install the service
-* Neo4jInstaller.bat remove - remove the Neo4j service
-** will stop and remove the Neo4j service
 
 [[neo4j-installer-manpage-files]]
 == FILES

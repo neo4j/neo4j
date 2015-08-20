@@ -3,6 +3,8 @@ rem
 rem function install
 rem
 
+ECHO WARNING! This batch script has been deprecated. Please use the provided PowerShell scripts instead: http://neo4j.com/docs/stable/powershell.html 1>&2
+
 setlocal ENABLEEXTENSIONS
 
 set serviceName=Neo4j-Server

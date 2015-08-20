@@ -47,8 +47,7 @@ If you see this error simply install Neo4j into a different location.
    * Select the appropriate Zip distribution.
 2. Right-click the downloaded file, click Extract All.
    * Refer to the top-level extracted directory as: +NEO4J_HOME+
-3. Double-click on '%NEO4J_HOME%\bin\Neo4j.bat'
-4. Stop the server by typing Ctrl-C in the console that got opened.
+3. Consult <<powershell>> for how to start or install Neo4j.
 
 [NOTE]
 Some users have reported problems on Windows when using the ZoneAlarm firewall.

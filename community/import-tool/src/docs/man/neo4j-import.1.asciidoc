@@ -15,15 +15,12 @@ neo4j-import - Neo4j Import Tool
 *neo4j-import* is used to create a new Neo4j database from data in CSV files.
 See the chapter "Import Tool" in the Neo4j Manual for details on the CSV file format -- a special kind of header is required.
 
+For information regarding Windows, see http://neo4j.com/docs/stable/powershell.html.
+
 [[neo4j-import-manpage-options]]
 == OPTIONS
 
 include::options.adoc[]
-
-[[neo4j-import-manpage-usage-windows]]
-== Usage - Windows
-
-The *`Neo4jImport.bat`* script is used in the same way.
 
 [[neo4j-import-manpage-examples]]
 == EXAMPLES
