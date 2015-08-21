@@ -39,6 +39,7 @@ class CompileInterpolationsTest extends CypherFunSuite with AstConstructionTestS
       Right("Hello, "), Left(Parameter("name")_), Right("! Would you like to win $"), Left(ident("amount")), Right("?")
     )
     compilingInterpolationLiteral("${prefix}%").produces(Left(ident("prefix")), Right("%"))
+    compilingInterpolationLiteral("${''}").produces(Left(StringLiteral("") _))
   }
 
   test("should fail to compile unbalanced interpolations") {

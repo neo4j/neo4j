@@ -77,7 +77,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("should know not to subtract interpolations") {
     executeAndEnsureError(
       "RETURN $'string' - 13",
-      "Type mismatch: expected Float or Integer but was Interpolation (line 1, column 7 (offset: 6))"
+      "Type mismatch: expected Float or Integer but was String (line 1, column 7 (offset: 6))"
     )
   }
 

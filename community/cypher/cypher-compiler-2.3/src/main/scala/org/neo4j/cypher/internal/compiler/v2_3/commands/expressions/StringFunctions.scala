@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{InterpolationValue, KeyToken}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{CollectionSupport, IsCollection, IsMap}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
@@ -46,6 +46,7 @@ trait StringHelper {
   protected def asString(a: Any): String = a match {
     case null      => null
     case x: String => x
+    case x: InterpolationValue => x.interpolate
     case _         => throw new CypherTypeException("Expected a string value for %s, but got: %s; perhaps you'd like to cast to a string it with str().".format(toString, a.toString))
   }
 
@@ -67,6 +68,7 @@ trait StringHelper {
     case IsMap(m)           => makeString(m, qtx)
     case IsCollection(coll) => coll.map(elem => text(elem, qtx)).mkString("[", ",", "]")
     case x: String          => "\"" + x + "\""
+    case x: InterpolationValue => text(x.interpolate, qtx)
     case v: KeyToken        => v.name
     case Some(x)            => x.toString
     case null               => "<null>"

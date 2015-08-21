@@ -19,16 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands.values
 
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.InterpolatedString
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
 
-case class InterpolationValue(parts: NonEmptyList[Either[String, String]]) {
+case class InterpolationValue(parts: NonEmptyList[InterpolatedString]) {
 
-  def interpolate: String = {
-    val builder = new StringBuilder
-    parts.foreach {
-      case Left(string) => builder.append(string)
-      case Right(string) => builder.append(string)
-    }
-    builder.toString()
-  }
+  def interpolate: String = parts.map(_.value).foldLeft("")(_ + _)
 }
+

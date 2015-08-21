@@ -31,7 +31,7 @@ import scala.collection.mutable
 
 case class Interpolation(parts: NonEmptyList[Either[Expression, String]]) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
-    val partsValues = compile(parts, ctx, state, NonEmptyList.newBuilder[Either[String, String]])
+    val partsValues = compile(parts, ctx, state, NonEmptyList.newBuilder[InterpolatedString])
 
     partsValues.map(InterpolationValue).orNull
   }
@@ -41,8 +41,8 @@ case class Interpolation(parts: NonEmptyList[Either[Expression, String]]) extend
     remaining: NonEmptyList[Either[Expression, String]],
     ctx: ExecutionContext,
     state: QueryState,
-    acc: mutable.Builder[Either[String, String], Option[NonEmptyList[Either[String, String]]]])
-  : Option[NonEmptyList[Either[String, String]]] = {
+    acc: mutable.Builder[InterpolatedString, Option[NonEmptyList[InterpolatedString]]])
+  : Option[NonEmptyList[InterpolatedString]] = {
 
     val stop = remaining.head match {
       case Left(expr) =>
@@ -50,11 +50,11 @@ case class Interpolation(parts: NonEmptyList[Either[Expression, String]]) extend
         if (value == null)
           true
         else {
-          acc += Left(toStringValue(value))
+          acc += InterpolatedExpression(toStringValue(value))
           false
         }
       case Right(string) =>
-        acc += Right(string)
+        acc += InterpolatedLiteral(string)
         false
     }
 
@@ -77,4 +77,12 @@ case class Interpolation(parts: NonEmptyList[Either[Expression, String]]) extend
 
   override def toString = s"Interpolation(${parts.map(_.toString).reduceLeft(_ + ", " + _)}})"
 }
+
+trait InterpolatedString {
+  def value: String
+}
+
+case class InterpolatedExpression(value: String) extends InterpolatedString
+
+case class InterpolatedLiteral(value: String) extends InterpolatedString
 
