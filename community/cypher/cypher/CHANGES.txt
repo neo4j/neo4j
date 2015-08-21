@@ -38,6 +38,7 @@ o Cypher may now use full index scans to solve queries containing has(n.prop) if
 o Fixes #4907 - Result.columnAs should throw exception on invalid column name
 o Fixes #4988 - predicate exceptions should be ignored for non-matching rows
 o Fixes #5114 - lower case exponent e unsupported
+o Fixes #4937 - ORDER BY scope bug
 
 2.2.4
 -----
