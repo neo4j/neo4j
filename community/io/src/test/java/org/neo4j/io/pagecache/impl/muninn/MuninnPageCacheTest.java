@@ -103,11 +103,11 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     @Test
     public void mustEvictCleanPageWithoutFlushing() throws Exception
     {
-        writeInitialDataTo( file( "a" ) );
+        writeInitialDataTo( file );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
 
         MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ) );
-        PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
+        PagedFile pagedFile = pageCache.map( file, 8 );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
         {
@@ -134,11 +134,11 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     @Test
     public void mustFlushDirtyPagesOnEvictingFirstPage() throws Exception
     {
-        writeInitialDataTo( file( "a" ) );
+        writeInitialDataTo( file );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
 
         MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ) );
-        PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
+        PagedFile pagedFile = pageCache.map( file, 8 );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
         {
@@ -152,7 +152,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         assertNotNull( tracer.observe( Evict.class ) );
 
         ByteBuffer buf = ByteBuffer.allocate( 16 );
-        StoreChannel channel = fs.open( file( "a" ), "r" );
+        StoreChannel channel = fs.open( file, "r" );
         channel.read( buf );
         buf.flip();
         assertThat( buf.getLong(), is( 0L ) );
@@ -162,11 +162,11 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     @Test
     public void mustFlushDirtyPagesOnEvictingLastPage() throws Exception
     {
-        writeInitialDataTo( file( "a" ) );
+        writeInitialDataTo( file );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
 
         MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ) );
-        PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
+        PagedFile pagedFile = pageCache.map( file, 8 );
 
         try ( PageCursor cursor = pagedFile.io( 1, PF_EXCLUSIVE_LOCK ) )
         {
@@ -180,7 +180,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         assertNotNull( tracer.observe( Evict.class ) );
 
         ByteBuffer buf = ByteBuffer.allocate( 16 );
-        StoreChannel channel = fs.open( file( "a" ), "r" );
+        StoreChannel channel = fs.open( file, "r" );
         channel.read( buf );
         buf.flip();
         assertThat( buf.getLong(), is( x ) );
@@ -190,11 +190,11 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     @Test
     public void mustFlushDirtyPagesOnEvictingAllPages() throws Exception
     {
-        writeInitialDataTo( file( "a" ) );
+        writeInitialDataTo( file );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
 
         MuninnPageCache pageCache = createPageCache( fs, 4, 8, blockCacheFlush( tracer ) );
-        PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
+        PagedFile pagedFile = pageCache.map( file, 8 );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
         {
@@ -213,7 +213,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         assertNotNull( tracer.observe( Evict.class ) );
 
         ByteBuffer buf = ByteBuffer.allocate( 16 );
-        StoreChannel channel = fs.open( file( "a" ), "r" );
+        StoreChannel channel = fs.open( file, "r" );
         channel.read( buf );
         buf.flip();
         assertThat( buf.getLong(), is( 0L ) );
@@ -223,10 +223,10 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     @Test
     public void closingTheCursorMustUnlockModifiedPage() throws Exception
     {
-        writeInitialDataTo( file( "a" ) );
+        writeInitialDataTo( file );
 
         final MuninnPageCache pageCache = createPageCache( fs, 2, 8, PageCacheTracer.NULL );
-        final PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
+        final PagedFile pagedFile = pageCache.map( file, 8 );
 
         Future<?> task = executor.submit( new Runnable()
         {
@@ -258,7 +258,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         assertThat( clockArm, is( 1 ) );
 
         ByteBuffer buf = ByteBuffer.allocate( 16 );
-        StoreChannel channel = fs.open( file( "a" ), "r" );
+        StoreChannel channel = fs.open( file, "r" );
         channel.read( buf );
         buf.flip();
         assertThat( buf.getLong(), is( 42L ) );
@@ -268,7 +268,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     @Test( timeout = 10000 )
     public void mustUnblockPageFaultersWhenEvictionGetsException() throws Exception
     {
-        writeInitialDataTo( file( "a" ) );
+        writeInitialDataTo( file );
 
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
         {
@@ -287,7 +287,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         };
 
         MuninnPageCache pageCache = createPageCache( fs, 2, 8, PageCacheTracer.NULL );
-        final PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
+        final PagedFile pagedFile = pageCache.map( file, 8 );
 
         // The basic idea is that this loop, which will encounter a lot of page faults, must not block forever even
         // though the eviction thread is unable to flush any dirty pages because the file system throws exceptions on

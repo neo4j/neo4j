@@ -20,7 +20,7 @@
 /**
  * Generic staging framework and generic implementations of such used to execute batches in parallel.
  *
- * @see org.neo4j.unsafe.impl.batchimport.staging.Stage
- * @see org.neo4j.unsafe.impl.batchimport.staging.Step
+ * @see Stage
+ * @see Step
  */
 package org.neo4j.unsafe.impl.batchimport.staging;

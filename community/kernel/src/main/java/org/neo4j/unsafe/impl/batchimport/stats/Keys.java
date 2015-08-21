@@ -36,7 +36,7 @@ public enum Keys implements Key
     private final String shortName;
     private final String description;
 
-    Keys( String shortName, String description )
+    private Keys( String shortName, String description )
     {
         this.shortName = shortName;
         this.description = description;

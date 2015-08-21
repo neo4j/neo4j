@@ -21,7 +21,6 @@ package org.neo4j.unsafe.batchinsert;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -272,7 +271,7 @@ public class BatchInserterImpl implements BatchInserter
 
         if ( dump )
         {
-            dumpConfiguration( params, System.out );
+            dumpConfiguration( params );
         }
         msgLog.info( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
         life.start();
@@ -1196,14 +1195,15 @@ public class BatchInserterImpl implements BatchInserter
         return idGeneratorFactory;
     }
 
-    private void dumpConfiguration( Map<String,String> config, PrintStream out )
+    private void dumpConfiguration( Map<String, String> config )
     {
         for ( String key : config.keySet() )
         {
             Object value = config.get( key );
             if ( value != null )
             {
-                out.println( key + "=" + value );
+                // TODO no, No, NO NO NO!!! No. Pass in the PrintStream instead.
+                System.out.println( key + "=" + value );
             }
         }
     }
@@ -1314,7 +1314,7 @@ public class BatchInserterImpl implements BatchInserter
         private final int batchSize;
         private int attempts;
 
-        public BatchedFlushStrategy( DirectRecordAccessSet directRecordAccess,  int batchSize )
+        public BatchedFlushStrategy(DirectRecordAccessSet directRecordAccess,  int batchSize )
         {
             this.directRecordAccess = directRecordAccess;
             this.batchSize = batchSize;

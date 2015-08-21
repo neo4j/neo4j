@@ -19,8 +19,6 @@
  */
 package org.neo4j.unsafe.impl.internal.dragons;
 
-import sun.misc.Unsafe;
-
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -31,6 +29,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
+
+import sun.misc.Unsafe;
 
 /**
  * Always check that the Unsafe utilities are available with the {@link UnsafeUtil#assertHasUnsafe} method, before

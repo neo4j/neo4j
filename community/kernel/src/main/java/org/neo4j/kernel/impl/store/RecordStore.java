@@ -68,8 +68,6 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
 
     void close();
 
-    void flush();
-
     int getNumberOfReservedLowIds();
 
     Predicate<AbstractBaseRecord> IN_USE = new Predicate<AbstractBaseRecord>()

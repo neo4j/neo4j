@@ -27,7 +27,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.Consumers;
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.randomharness.Phase;
 import org.neo4j.io.pagecache.randomharness.RandomPageCacheTestHarness;
@@ -49,7 +49,7 @@ public class LinearHistoryPageCacheTracerTest
         harness.setPreparation( new Phase()
         {
             @Override
-            public void run( PageCache pageCache, FileSystemAbstraction fs, Set<File> files )
+            public void run( PageCache pageCache, EphemeralFileSystemAbstraction fs, Set<File> files )
             {
                 tracer.processHistory( Consumers.<LinearHistoryPageCacheTracer.HEvent>noop() );
             }

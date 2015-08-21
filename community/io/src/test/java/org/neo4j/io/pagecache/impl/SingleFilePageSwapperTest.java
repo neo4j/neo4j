@@ -21,7 +21,6 @@ package org.neo4j.io.pagecache.impl;
 
 import org.junit.After;
 import org.junit.Test;
-import org.junit.internal.AssumptionViolatedException;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -31,17 +30,14 @@ import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.adversaries.RandomAdversary;
-import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -53,6 +49,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.neo4j.test.ByteArrayMatcher.byteArray;
 
 public class SingleFilePageSwapperTest extends PageSwapperTest
@@ -86,14 +83,6 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     protected FileSystemAbstraction getFs()
     {
         return fs;
-    }
-
-    protected void assumeFalse( String message, boolean test )
-    {
-        if ( test )
-        {
-            throw new AssumptionViolatedException( message );
-        }
     }
 
     @Test
@@ -198,7 +187,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     @Test( expected = OverlappingFileLockException.class )
     public void creatingSwapperForFileMustTakeLockOnFile() throws Exception
     {
-        assumeFalse( "No file locking on Windows", FileUtils.OS_IS_WINDOWS );
+        assumeFalse( FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = swapperFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -222,7 +211,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     @Test( expected = FileLockException.class )
     public void creatingSwapperForInternallyLockedFileMustThrow() throws Exception
     {
-        assumeFalse( "No file locking on Windows", FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
+        assumeFalse( FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = swapperFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -241,7 +230,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     @Test( expected = FileLockException.class )
     public void creatingSwapperForExternallyLockedFileMustThrow() throws Exception
     {
-        assumeFalse( "No file locking on Windows", FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
+        assumeFalse( FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = swapperFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -274,7 +263,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     @Test
     public void mustUnlockFileWhenThePageSwapperIsClosed() throws Exception
     {
-        assumeFalse( "No file locking on Windows", FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
+        assumeFalse( FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = swapperFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -294,7 +283,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     @Test( expected = OverlappingFileLockException.class )
     public void fileMustRemainLockedEvenIfChannelIsClosedByStrayInterrupt() throws Exception
     {
-        assumeFalse( "No file locking on Windows", FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
+        assumeFalse( FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = swapperFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -322,7 +311,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     @Test
     public void mustCloseFilesIfTakingFileLockThrows() throws Exception
     {
-        assumeFalse( "No file locking on Windows", FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
+        assumeFalse( FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
 
         final AtomicInteger openFilesCounter = new AtomicInteger();
         PageSwapperFactory factory = swapperFactory();
@@ -378,193 +367,5 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         }
         buffer.clear();
         return buffer;
-    }
-
-    @Test
-    public void mustHandleMischiefInPositionedRead() throws Exception
-    {
-        int bytesTotal = 512;
-        byte[] data = new byte[bytesTotal];
-        ThreadLocalRandom.current().nextBytes( data );
-
-        PageSwapperFactory factory = swapperFactory();
-        factory.setFileSystemAbstraction( getFs() );
-        File file = getFile();
-        PageSwapper swapper = factory.createPageSwapper( file, bytesTotal, NO_CALLBACK, true );
-        try
-        {
-            swapper.write( 0, new ByteBufferPage( wrap( data ) ) );
-        }
-        finally
-        {
-            swapper.close();
-        }
-
-        RandomAdversary adversary = new RandomAdversary( 0.5, 0.0, 0.0 );
-        factory.setFileSystemAbstraction( new AdversarialFileSystemAbstraction( adversary, getFs() ) );
-        swapper = factory.createPageSwapper( file, bytesTotal, NO_CALLBACK, false );
-
-        ByteBufferPage page = createPage( bytesTotal );
-
-        try
-        {
-            for ( int i = 0; i < 10_000; i++ )
-            {
-                clear( page );
-                assertThat( swapper.read( 0, page ), is( (long) bytesTotal ) );
-                assertThat( array( page.buffer ), is( data ) );
-            }
-        }
-        finally
-        {
-            swapper.close();
-        }
-    }
-
-    @Test
-    public void mustHandleMischiefInPositionedWrite() throws Exception
-    {
-        int bytesTotal = 512;
-        byte[] data = new byte[bytesTotal];
-        ThreadLocalRandom.current().nextBytes( data );
-        ByteBufferPage zeroPage = createPage( bytesTotal );
-        clear( zeroPage );
-
-        File file = getFile();
-        PageSwapperFactory factory = swapperFactory();
-        RandomAdversary adversary = new RandomAdversary( 0.5, 0.0, 0.0 );
-        factory.setFileSystemAbstraction( new AdversarialFileSystemAbstraction( adversary, getFs() ) );
-        PageSwapper swapper = factory.createPageSwapper( file, bytesTotal, NO_CALLBACK, true );
-
-        ByteBufferPage page = createPage( bytesTotal );
-
-        try
-        {
-            for ( int i = 0; i < 10_000; i++ )
-            {
-                adversary.setProbabilityFactor( 0 );
-                swapper.write( 0, zeroPage );
-                page.putBytes( data, 0, 0, data.length );
-                adversary.setProbabilityFactor( 1 );
-                assertThat( swapper.write( 0, page ), is( (long) bytesTotal ) );
-                clear( page );
-                adversary.setProbabilityFactor( 0 );
-                swapper.read( 0, page );
-                assertThat( array( page.buffer ), is( data ) );
-            }
-        }
-        finally
-        {
-            swapper.close();
-        }
-    }
-
-    @Test
-    public void mustHandleMischiefInPositionedVectoredRead() throws Exception
-    {
-        int bytesTotal = 512;
-        int bytesPerPage = 32;
-        int pageCount = bytesTotal / bytesPerPage;
-        byte[] data = new byte[bytesTotal];
-        ThreadLocalRandom.current().nextBytes( data );
-
-        PageSwapperFactory factory = swapperFactory();
-        factory.setFileSystemAbstraction( getFs() );
-        File file = getFile();
-        PageSwapper swapper = factory.createPageSwapper( file, bytesTotal, NO_CALLBACK, true );
-        try
-        {
-            swapper.write( 0, new ByteBufferPage( wrap( data ) ) );
-        }
-        finally
-        {
-            swapper.close();
-        }
-
-        RandomAdversary adversary = new RandomAdversary( 0.5, 0.0, 0.0 );
-        factory.setFileSystemAbstraction( new AdversarialFileSystemAbstraction( adversary, getFs() ) );
-        swapper = factory.createPageSwapper( file, bytesPerPage, NO_CALLBACK, false );
-
-        ByteBufferPage[] pages = new ByteBufferPage[pageCount];
-        for ( int i = 0; i < pageCount; i++ )
-        {
-            pages[i] = createPage( bytesPerPage );
-        }
-
-        byte[] temp = new byte[bytesPerPage];
-        try
-        {
-            for ( int i = 0; i < 10_000; i++ )
-            {
-                for ( ByteBufferPage page : pages )
-                {
-                    clear( page );
-                }
-                assertThat( swapper.read( 0, pages, 0, pages.length ), is( (long) bytesTotal ) );
-                for ( int j = 0; j < pageCount; j++ )
-                {
-                    System.arraycopy( data, j * bytesPerPage, temp, 0, bytesPerPage );
-                    assertThat( array( pages[j].buffer ), is( temp ) );
-                }
-            }
-        }
-        finally
-        {
-            swapper.close();
-        }
-    }
-
-    @Test
-    public void mustHandleMischiefInPositionedVectoredWrite() throws Exception
-    {
-        int bytesTotal = 512;
-        int bytesPerPage = 32;
-        int pageCount = bytesTotal / bytesPerPage;
-        byte[] data = new byte[bytesTotal];
-        ThreadLocalRandom.current().nextBytes( data );
-        ByteBufferPage zeroPage = createPage( bytesPerPage );
-        clear( zeroPage );
-
-        File file = getFile();
-        PageSwapperFactory factory = swapperFactory();
-        RandomAdversary adversary = new RandomAdversary( 0.5, 0.0, 0.0 );
-        factory.setFileSystemAbstraction( new AdversarialFileSystemAbstraction( adversary, getFs() ) );
-        PageSwapper swapper = factory.createPageSwapper( file, bytesPerPage, NO_CALLBACK, true );
-
-        ByteBufferPage[] writePages = new ByteBufferPage[pageCount];
-        ByteBufferPage[] readPages = new ByteBufferPage[pageCount];
-        ByteBufferPage[] zeroPages = new ByteBufferPage[pageCount];
-        for ( int i = 0; i < pageCount; i++ )
-        {
-            writePages[i] = createPage( bytesPerPage );
-            writePages[i].putBytes( data, 0, i * bytesPerPage, bytesPerPage );
-            readPages[i] = createPage( bytesPerPage );
-            zeroPages[i] = zeroPage;
-        }
-
-        try
-        {
-            for ( int i = 0; i < 10_000; i++ )
-            {
-                adversary.setProbabilityFactor( 0 );
-                swapper.write( 0, zeroPages, 0, pageCount );
-                adversary.setProbabilityFactor( 1 );
-                swapper.write( 0, writePages, 0, pageCount );
-                for ( ByteBufferPage readPage : readPages )
-                {
-                    clear( readPage );
-                }
-                adversary.setProbabilityFactor( 0 );
-                assertThat( swapper.read( 0, readPages, 0, pageCount ), is( (long) bytesTotal ) );
-                for ( int j = 0; j < pageCount; j++ )
-                {
-                    assertThat( array( readPages[j].buffer ), is( array( writePages[j].buffer ) ) );
-                }
-            }
-        }
-        finally
-        {
-            swapper.close();
-        }
     }
 }

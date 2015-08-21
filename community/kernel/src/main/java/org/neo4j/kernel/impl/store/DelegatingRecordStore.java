@@ -123,12 +123,6 @@ public class DelegatingRecordStore<R extends AbstractBaseRecord> implements Reco
     }
 
     @Override
-    public void flush()
-    {
-        delegate.flush();
-    }
-
-    @Override
     public int getNumberOfReservedLowIds()
     {
         return delegate.getNumberOfReservedLowIds();
