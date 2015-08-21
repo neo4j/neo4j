@@ -116,4 +116,16 @@ public final class Suppliers
             }
         };
     }
+
+    public static <T> Supplier<Boolean> compose( final Supplier<T> input, final Predicate<T> predicate )
+    {
+        return new Supplier<Boolean>()
+        {
+            @Override
+            public Boolean get()
+            {
+                return predicate.test( input.get() );
+            }
+        };
+    }
 }

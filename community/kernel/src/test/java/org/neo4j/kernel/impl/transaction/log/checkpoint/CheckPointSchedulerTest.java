@@ -21,13 +21,19 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OnDemandJobScheduler;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -77,7 +83,7 @@ public class CheckPointSchedulerTest
         // then
         verify( jobScheduler, times( 2 ) ).schedule( eq( checkPoint ), any( Runnable.class ),
                 eq( 20l ), eq( TimeUnit.MILLISECONDS ) );
-        verify( checkPointer, times( 1 )).checkPointIfNeeded();
+        verify( checkPointer, times( 1 ) ).checkPointIfNeeded();
         assertEquals( scheduledJob, jobScheduler.getJob() );
     }
 
@@ -98,5 +104,80 @@ public class CheckPointSchedulerTest
 
         // then
         assertNull( jobScheduler.getJob() );
+    }
+
+    @Test
+    public void shouldWaitOnStopUntilTheRunningCheckpointIsDone() throws Throwable
+    {
+        // given
+        final AtomicReference<Throwable> ex = new AtomicReference<>();
+        final AtomicBoolean stoppedCompleted = new AtomicBoolean();
+        final DoubleLatch checkPointerLatch = new DoubleLatch( 1 );
+        CheckPointer checkPointer = new CheckPointer()
+        {
+            @Override
+            public void checkPointIfNeeded() throws IOException
+            {
+                checkPointerLatch.start();
+                checkPointerLatch.awaitFinish();
+            }
+
+            @Override
+            public void forceCheckPoint() throws IOException
+            {
+
+            }
+        };
+
+        final CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20l );
+
+        // when
+        scheduler.start();
+
+        Thread runCheckPointer = new Thread()
+        {
+            @Override
+            public void run()
+            {
+                jobScheduler.runJob();
+            }
+        };
+        runCheckPointer.start();
+
+        checkPointerLatch.awaitStart();
+
+        Thread stopper = new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    scheduler.stop();
+                    stoppedCompleted.set( true );
+                }
+                catch ( Throwable throwable )
+                {
+                    ex.set( throwable );
+                }
+            }
+        };
+
+        stopper.start();
+
+        Thread.sleep( 10 );
+
+        // then
+        assertFalse( stoppedCompleted.get() );
+
+        checkPointerLatch.finish();
+        runCheckPointer.join();
+
+        Thread.sleep( 10 );
+
+        assertTrue( stoppedCompleted.get() );
+        stopper.join(); // just in case
+
+        assertNull( ex.get() );
     }
 }
