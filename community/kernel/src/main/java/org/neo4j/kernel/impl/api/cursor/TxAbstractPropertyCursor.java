@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.cursor;
 
-import java.nio.channels.WritableByteChannel;
-
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
 import org.neo4j.kernel.api.cursor.PropertyItem;
@@ -89,35 +87,5 @@ public abstract class TxAbstractPropertyCursor implements Cursor<PropertyItem>, 
     public Object value()
     {
         return property.value();
-    }
-
-    @Override
-    public boolean booleanValue()
-    {
-        return (Boolean) value();
-    }
-
-    @Override
-    public long longValue()
-    {
-        return ((Number) value()).longValue();
-    }
-
-    @Override
-    public double doubleValue()
-    {
-        return ((Number) value()).doubleValue();
-    }
-
-    @Override
-    public String stringValue()
-    {
-        return value().toString();
-    }
-
-    @Override
-    public void byteArray( WritableByteChannel channel )
-    {
-        throw new UnsupportedOperationException( "NYI" );
     }
 }
