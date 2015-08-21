@@ -81,7 +81,7 @@ public class SingleFilePageSwapper implements PageSwapper
             UnsafeUtil.getFieldOffset( SingleFilePageSwapper.class, "fileSize" );
 
     private static final ThreadLocal<ByteBuffer> proxyCache = new ThreadLocal<>();
-    private static final MethodHandle positionLockGetter = null;//getPositionLockGetter();
+    private static final MethodHandle positionLockGetter = getPositionLockGetter();
 
     private static MethodHandle getPositionLockGetter()
     {
