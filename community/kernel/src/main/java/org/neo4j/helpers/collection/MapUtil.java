@@ -401,9 +401,9 @@ public abstract class MapUtil
     public static Map<String, String> toStringMap( PropertyContainer entity )
     {
         Map<String, String> out = new HashMap<>();
-        for ( String key : entity.getPropertyKeys() )
+        for ( Map.Entry<String, Object> property : entity.getAllProperties().entrySet() )
         {
-            out.put( key, entity.getProperty( key ).toString() );
+            out.put( property.getKey(), property.getValue().toString() );
         }
         return out;
     }

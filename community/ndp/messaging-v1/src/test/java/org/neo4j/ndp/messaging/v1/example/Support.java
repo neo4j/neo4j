@@ -28,7 +28,6 @@ import java.util.Map;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 
 import static java.util.Arrays.asList;
@@ -47,17 +46,6 @@ public class Support
             labels.add( label );
         }
         return labels;
-    }
-
-    // Collect properties from a PropertyContainer
-    public static Map<String, Object> properties( PropertyContainer entity )
-    {
-        Map<String, Object> properties = new HashMap<>();
-        for ( String key : entity.getPropertyKeys() )
-        {
-            properties.put( key, entity.getProperty( key ) );
-        }
-        return properties;
     }
 
     // Helper to produce literal list of nodes

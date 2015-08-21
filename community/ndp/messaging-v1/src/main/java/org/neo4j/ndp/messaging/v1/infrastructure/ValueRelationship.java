@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.ndp.messaging.v1.Neo4jPack;
 
-public class ValueRelationship implements Relationship
+public class ValueRelationship extends ValuePropertyContainer implements Relationship
 {
     private static final int STRUCT_FIELD_COUNT = 5;
 
@@ -71,15 +71,14 @@ public class ValueRelationship implements Relationship
     private final long startNode;
     private final long endNode;
     private final RelationshipType type;
-    private final Map<String,Object> props;
 
-    public ValueRelationship( long id, long from, long to, RelationshipType type, Map<String,Object> props )
+    public ValueRelationship( long id, long from, long to, RelationshipType type, Map<String, Object> props )
     {
+        super( props );
         this.id = id;
         this.startNode = from;
         this.endNode = to;
         this.type = type;
-        this.props = props;
     }
 
     @Override
@@ -98,18 +97,6 @@ public class ValueRelationship implements Relationship
     public Node getEndNode()
     {
         return new ValueNode( endNode, null, null );
-    }
-
-    @Override
-    public Iterable<String> getPropertyKeys()
-    {
-        return props.keySet();
-    }
-
-    @Override
-    public Object getProperty( String s )
-    {
-        return props.get( s );
     }
 
     @Override
@@ -176,12 +163,12 @@ public class ValueRelationship implements Relationship
     public String toString()
     {
         return "ValueRelationship{" +
-               "id=" + id +
-               ", startNode=" + startNode +
-               ", endNode=" + endNode +
-               ", type=" + type +
-               ", props=" + props +
-               '}';
+                "id=" + id +
+                ", startNode=" + startNode +
+                ", endNode=" + endNode +
+                ", type=" + type +
+                ", props=" + getAllProperties() +
+                '}';
     }
 
     @Override
@@ -207,7 +194,7 @@ public class ValueRelationship implements Relationship
             return false;
         }
         return startNode == that.startNode &&
-               !(type != null ? !type.name().equals( that.type.name() ) : that.type != null);
+                !(type != null ? !type.name().equals( that.type.name() ) : that.type != null);
 
     }
 

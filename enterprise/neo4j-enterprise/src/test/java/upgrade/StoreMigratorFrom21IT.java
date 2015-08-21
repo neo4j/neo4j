@@ -19,13 +19,13 @@
  */
 package upgrade;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.graphdb.DependencyResolver;
@@ -193,11 +193,7 @@ public class StoreMigratorFrom21IT
 
     private void verifyPropertiesEqual( PropertyContainer entity, Pair<String,String>... expectedProperties )
     {
-        HashMap<String,String> properties = new HashMap<>();
-        for ( String propertyKey : entity.getPropertyKeys() )
-        {
-            properties.put( propertyKey, (String) entity.getProperty( propertyKey ) );
-        }
+        Map<String, String> properties = (Map) entity.getAllProperties();
         assertThat( properties, is( IteratorUtil.asMap( Arrays.asList( expectedProperties ) ) ) );
     }
 

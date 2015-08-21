@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphalgo.impl.util;
 
+import java.util.Map;
+
 import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
@@ -121,6 +123,17 @@ public class PathImplTest
             return null;
         }
 
+        @Override
+        public Map<String, Object> getProperties( String... keys )
+        {
+            return null;
+        }
+
+        @Override
+        public Map<String, Object> getAllProperties()
+        {
+            return null;
+        }
     }
 
     @SuppressWarnings("deprecation")

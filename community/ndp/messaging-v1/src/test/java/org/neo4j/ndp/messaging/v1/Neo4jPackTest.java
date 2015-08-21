@@ -38,7 +38,6 @@ import static org.neo4j.ndp.messaging.v1.example.Nodes.ALICE;
 import static org.neo4j.ndp.messaging.v1.example.Paths.ALL_PATHS;
 import static org.neo4j.ndp.messaging.v1.example.Relationships.ALICE_KNOWS_BOB;
 import static org.neo4j.ndp.messaging.v1.example.Support.labels;
-import static org.neo4j.ndp.messaging.v1.example.Support.properties;
 
 public class Neo4jPackTest
 {
@@ -70,7 +69,7 @@ public class Neo4jPackTest
         Node unpackedNode = (Node) unpacked;
         assertThat( unpackedNode.getId(), equalTo( ALICE.getId() ) );
         assertThat( labels( unpackedNode ), equalTo( labels( ALICE ) ) );
-        assertThat( properties( unpackedNode ), equalTo( properties( ALICE ) ) );
+        assertThat( unpackedNode.getAllProperties(), equalTo( ALICE.getAllProperties() ) );
     }
 
     @Test
@@ -89,8 +88,8 @@ public class Neo4jPackTest
                 equalTo( ALICE_KNOWS_BOB.getEndNode().getId() ) );
         assertThat( unpackedRelationship.getType().name(),
                 equalTo( ALICE_KNOWS_BOB.getType().name() ) );
-        assertThat( properties( unpackedRelationship ),
-                equalTo( properties( ALICE_KNOWS_BOB ) ) );
+        assertThat( unpackedRelationship.getAllProperties(),
+                equalTo( ALICE_KNOWS_BOB.getAllProperties() ) );
     }
 
     @Test

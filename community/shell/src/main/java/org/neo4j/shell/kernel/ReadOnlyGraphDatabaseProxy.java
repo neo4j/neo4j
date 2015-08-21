@@ -387,6 +387,18 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         }
 
         @Override
+        public Map<String, Object> getProperties( String... names )
+        {
+            return actual.getProperties( names );
+        }
+
+        @Override
+        public Map<String, Object> getAllProperties()
+        {
+            return actual.getAllProperties();
+        }
+
+        @Override
         public boolean hasProperty( String key )
         {
             return actual.hasProperty( key );
@@ -533,6 +545,18 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         public Iterable<String> getPropertyKeys()
         {
             return actual.getPropertyKeys();
+        }
+
+        @Override
+        public Map<String, Object> getProperties( String... names )
+        {
+            return actual.getProperties( names );
+        }
+
+        @Override
+        public Map<String, Object> getAllProperties()
+        {
+            return actual.getAllProperties();
         }
 
         @Override

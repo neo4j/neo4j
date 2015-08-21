@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3
 
 import java.lang.Iterable
+import java.util
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.{CreateUniqueAction, UniqueLink}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
@@ -160,6 +161,10 @@ class PausingNode(n: Node, afterGetRelationship: Node => Unit) extends Node {
   def removeProperty(key: String): AnyRef = ???
 
   def getPropertyKeys: Iterable[String] = ???
+
+  def getProperties( keys: String* ): util.Map[String, AnyRef] = ???
+
+  def getAllProperties: util.Map[String, AnyRef] = ???
 
   def addLabel(label: Label) {
     ???

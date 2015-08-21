@@ -20,7 +20,6 @@
 package org.neo4j.ndp.messaging.v1.infrastructure;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -30,7 +29,9 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.ndp.messaging.v1.Neo4jPack;
 
-public class ValueUnboundRelationship implements UnboundRelationship
+public class ValueUnboundRelationship
+        extends ValuePropertyContainer
+        implements UnboundRelationship
 {
     private static final int STRUCT_FIELD_COUNT = 3;
 
@@ -64,40 +65,25 @@ public class ValueUnboundRelationship implements UnboundRelationship
         return new ValueUnboundRelationship( relId, relType, props );
     }
 
-    public static ValueUnboundRelationship unbind( Relationship relationship ) {
-        Map<String, Object> props = new HashMap<>();
-        for(String key: relationship.getPropertyKeys()) {
-            props.put( key, relationship.getProperty( key ) );
-        }
+    public static ValueUnboundRelationship unbind( Relationship relationship )
+    {
+        Map<String, Object> props = relationship.getAllProperties();
         return new ValueUnboundRelationship( relationship.getId(), relationship.getType(), props );
     }
 
     private final long id;
     private final RelationshipType type;
-    private final Map<String,Object> props;
 
     public ValueUnboundRelationship( long id, RelationshipType type, Map<String, Object> props )
     {
+        super( props );
         this.id = id;
         this.type = type;
-        this.props = props;
     }
 
     public long getId()
     {
         return id;
-    }
-
-    @Override
-    public Iterable<String> getPropertyKeys()
-    {
-        return props.keySet();
-    }
-
-    @Override
-    public Object getProperty( String s )
-    {
-        return props.get( s );
     }
 
     @Override
@@ -147,7 +133,7 @@ public class ValueUnboundRelationship implements UnboundRelationship
         return "ValueUnboundRelationship{" +
                 "id=" + id +
                 ", type=" + type +
-                ", props=" + props +
+                ", props=" + getAllProperties() +
                 '}';
     }
 
@@ -160,7 +146,11 @@ public class ValueUnboundRelationship implements UnboundRelationship
         ValueUnboundRelationship that = (ValueUnboundRelationship) o;
 
         if ( id != that.id ) return false;
-        if ( props != null ? !props.equals( that.props ) : that.props != null ) return false;
+        if ( getAllProperties() != null ? !getAllProperties().equals(
+                that.getAllProperties() ) : that.getAllProperties() != null )
+        {
+            return false;
+        }
         if ( type != null ? !type.equals( that.type ) : that.type != null ) return false;
 
         return true;
@@ -171,14 +161,14 @@ public class ValueUnboundRelationship implements UnboundRelationship
     {
         int result = (int) (id ^ (id >>> 32));
         result = 31 * result + (type != null ? type.hashCode() : 0);
-        result = 31 * result + (props != null ? props.hashCode() : 0);
+        result = 31 * result + (getAllProperties() != null ? getAllProperties().hashCode() : 0);
         return result;
     }
 
     @Override
     public Relationship bind( Node startNode, Node endNode )
     {
-        return new ValueRelationship( id, startNode.getId(), endNode.getId(), type, props );
+        return new ValueRelationship( id, startNode.getId(), endNode.getId(), type, getAllProperties() );
     }
 
     @Override

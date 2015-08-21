@@ -20,9 +20,13 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -33,6 +37,8 @@ import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
+import org.neo4j.kernel.api.cursor.PropertyItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -42,7 +48,9 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 
-public class RelationshipProxy implements Relationship, RelationshipVisitor<RuntimeException>
+public class RelationshipProxy
+        extends PropertyContainerProxy
+        implements Relationship, RelationshipVisitor<RuntimeException>
 {
     public interface RelationshipActions
     {
@@ -232,6 +240,73 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         {
             throw new ThisShouldNotHappenError( "Jake",
                     "Property key retrieved through kernel API should exist." );
+        }
+    }
+
+    @Override
+    public Map<String, Object> getProperties( String... keys )
+    {
+        if ( keys == null )
+        {
+            throw new NullPointerException( "keys" );
+        }
+
+        if ( keys.length == 0 )
+        {
+            return Collections.emptyMap();
+        }
+
+        try ( Statement statement = actions.statement() )
+        {
+            try ( Cursor<RelationshipItem> relationship = statement.readOperations().relationshipCursor( getId() ) )
+            {
+                if ( !relationship.next() )
+                {
+                    throw new NotFoundException( "Relationship not found",
+                            new EntityNotFoundException( EntityType.RELATIONSHIP, getId() ) );
+                }
+
+                try ( Cursor<PropertyItem> propertyCursor = relationship.get().properties() )
+                {
+                    return super.getProperties( statement, propertyCursor, keys );
+                }
+            }
+        }
+    }
+
+    @Override
+    public Map<String, Object> getAllProperties()
+    {
+        try ( Statement statement = actions.statement() )
+        {
+            try ( Cursor<RelationshipItem> relationship = statement.readOperations().relationshipCursor( getId() ) )
+            {
+                if ( !relationship.next() )
+                {
+                    throw new NotFoundException( "Relationship not found",
+                            new EntityNotFoundException( EntityType.RELATIONSHIP, getId() ) );
+                }
+
+                try ( Cursor<PropertyItem> propertyCursor = relationship.get().properties() )
+                {
+                    Map<String, Object> properties = new HashMap<>();
+
+                    // Get all properties
+                    while ( propertyCursor.next() )
+                    {
+                        String name = statement.readOperations().propertyKeyGetName(
+                                propertyCursor.get().propertyKeyId() );
+                        properties.put( name, propertyCursor.get().value() );
+                    }
+
+                    return properties;
+                }
+            }
+        }
+        catch ( PropertyKeyIdNotFoundKernelException e )
+        {
+            throw new ThisShouldNotHappenError( "Rickard",
+                    "Property key retrieved through kernel API should exist.", e );
         }
     }
 

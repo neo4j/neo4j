@@ -31,7 +31,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.ndp.messaging.NDPIOException;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueNode;
@@ -215,12 +214,12 @@ public class Neo4jPack
         // TODO: combine these
         public void packProperties( PropertyContainer entity ) throws IOException
         {
-            Collection<String> collectedKeys = Iterables.toList( entity.getPropertyKeys() );
-            packMapHeader( collectedKeys.size() );
-            for ( String key : collectedKeys )
+            Map<String, Object> props = entity.getAllProperties();
+            packMapHeader( props.size() );
+            for ( Map.Entry<String, Object> property : props.entrySet() )
             {
-                pack( key );
-                pack( entity.getProperty( key ) );
+                pack( property.getKey() );
+                pack( property.getValue() );
             }
         }
 
