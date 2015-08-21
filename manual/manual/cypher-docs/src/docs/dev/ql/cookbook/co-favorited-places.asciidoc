@@ -1,0 +1,12 @@
+[[cypher-cookbook-co-favorited-places]]
+== Co-favorited places ==
+
+:leveloffset: 2
+
+.Graph
+include::includes/cypher-cofavoritedplaces-graph.asciidoc[]
+
+include::co-favorited-places----users-who-like-x-also-like-y.asciidoc[]
+
+include::co-tagged-places----places-related-through-tags.asciidoc[]
+

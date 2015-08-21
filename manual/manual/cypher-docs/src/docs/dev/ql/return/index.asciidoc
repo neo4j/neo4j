@@ -1,0 +1,34 @@
+[[query-return]]
+= Return
+
+[abstract]
+The `RETURN` clause defines what to include in the query result set.
+
+In the `RETURN` part of your query, you define which parts of the pattern you are interested in.
+It can be nodes, relationships, or properties on these.
+
+[TIP]
+If what you actually want is the value of a property, make sure to not return the full node/relationship.
+This will improve performance.
+
+.Graph
+include::includes/cypher-return-graph.asciidoc[]
+
+include::return-nodes.asciidoc[]
+
+include::return-relationships.asciidoc[]
+
+include::return-property.asciidoc[]
+
+include::return-all-elements.asciidoc[]
+
+include::identifier-with-uncommon-characters.asciidoc[]
+
+include::column-alias.asciidoc[]
+
+include::optional-properties.asciidoc[]
+
+include::other-expressions.asciidoc[]
+
+include::unique-results.asciidoc[]
+

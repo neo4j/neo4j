@@ -1,0 +1,10 @@
+[[cypher-cookbook-similar-favorites]]
+== Find people based on similar favorites ==
+
+:leveloffset: 2
+
+.Graph
+include::includes/cypher-peoplesimilarityfavorites-graph.asciidoc[]
+
+include::find-people-based-on-similar-favorites.asciidoc[]
+

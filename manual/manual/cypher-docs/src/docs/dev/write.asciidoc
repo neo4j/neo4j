@@ -1,0 +1,44 @@
+[[query-write]]
+= Writing Clauses =
+
+Write data to the database.
+
+:leveloffset: 2
+
+include::ql/create/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/merge/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/set/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/delete/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/remove/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/foreach/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/create-unique/index.asciidoc[]
+
+:leveloffset: 2
+
+include::../parsed-graphgists/import/import-csv-with-cypher.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/periodic-commit/index.asciidoc[]
+
+:leveloffset: 0
+
+

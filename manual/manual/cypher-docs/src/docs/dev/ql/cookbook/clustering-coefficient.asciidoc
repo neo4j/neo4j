@@ -1,0 +1,10 @@
+[[cypher-cookbook-clustering-coefficient]]
+== Calculating the clustering coefficient of a network ==
+
+:leveloffset: 2
+
+.Graph
+include::includes/cypher-clusteringcoefficient-graph.asciidoc[]
+
+include::calculating-the-clustering-coefficient-of-a-friend-network.asciidoc[]
+

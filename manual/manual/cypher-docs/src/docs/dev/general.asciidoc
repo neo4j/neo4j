@@ -1,0 +1,36 @@
+[[query-general]]
+= General Clauses =
+
+:leveloffset: 2
+
+include::ql/return/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/order-by/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/limit/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/skip/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/with/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/unwind/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/union/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/using/index.asciidoc[]
+
+:leveloffset: 0

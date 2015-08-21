@@ -1,0 +1,109 @@
+= Create nodes and relationships =
+
+// console
+
+Create a node for the actor Tom Hanks:
+
+[source,cypher]
+----
+CREATE (n:Actor {name:"Tom Hanks"});
+----
+
+[source,querytest]
+----
+Nodes created: 1
+Properties set: 1
+Labels added: 1
+----
+
+Let's find the node we created:
+
+[source,cypher]
+----
+MATCH (actor:Actor {name: "Tom Hanks"})
+RETURN actor;
+----
+
+[source,querytest]
+----
+Tom Hanks
+1 row
+----
+
+Now let's create a movie and connect it to the Tom Hanks node with an `ACTED_IN` relationship:
+
+[source,cypher]
+----
+MATCH (actor:Actor)
+WHERE actor.name = "Tom Hanks"
+CREATE (movie:Movie {title:'Sleepless in Seattle'})
+CREATE (actor)-[:ACTED_IN]->(movie);
+----
+
+[source,querytest]
+----
+Nodes created: 1
+Relationships created: 1
+Properties set: 1
+Labels added: 1
+----
+
+Using a `WHERE` clause in the query above to get the Tom Hanks node does the same thing as the pattern in the `MATCH` clause of the previous query.
+
+This is how our graph looks now:
+
+// graph:created-first-movie
+
+We can do more of the work in a single clause.
+`CREATE UNIQUE` will make sure we don't create duplicate patterns.
+Using this: `[r:ACTED_IN]` lets us return the relationship.
+
+[source,cypher]
+----
+MATCH (actor:Actor {name: "Tom Hanks"})
+CREATE UNIQUE (actor)-[r:ACTED_IN]->(movie:Movie {title:"Forrest Gump"})
+RETURN r;
+----
+
+[source,querytest]
+----
+Nodes created: 1
+Relationships created: 1
+Properties set: 1
+Labels added: 1
+----
+
+Set a property on a node:
+
+[source,cypher]
+----
+MATCH (actor:Actor {name: "Tom Hanks"})
+SET actor.DoB = 1944
+RETURN actor.name, actor.DoB;
+----
+
+[source,querytest]
+----
+Tom Hanks
+1944
+Properties set: 1
+----
+
+The labels 'Actor' and 'Movie' help us organize the graph.
+Let's list all 'Movie' nodes:
+
+[source,cypher]
+----
+MATCH (movie:Movie)
+RETURN movie AS `All Movies`;
+----
+
+[source,querytest]
+----
+Sleepless in Seattle
+Forrest Gump
+----
+
+// table
+
+

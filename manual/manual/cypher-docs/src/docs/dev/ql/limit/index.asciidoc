@@ -1,0 +1,10 @@
+[[query-limit]]
+= Limit
+
+[abstract]
+`LIMIT` constrains the number of rows in the output.
+
+.Graph
+include::includes/cypher-limit-graph.asciidoc[]
+
+include::return-first-part.asciidoc[]

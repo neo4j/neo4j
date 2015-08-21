@@ -1,0 +1,50 @@
+[[query-create-unique]]
+= Create Unique
+
+[abstract]
+The `CREATE UNIQUE` clause is a mix of `MATCH` and `CREATE` -- it will match what it can, and create what is missing.
+
+== Introduction ==
+
+[TIP]
++<<query-merge,MERGE>>+ might be what you want to use instead of +CREATE UNIQUE+.
+Note however, that +MERGE+ doesn't give as strong guarantees for relationships being unique.
+
++CREATE UNIQUE+ is in the middle of +MATCH+ and +CREATE+ -- it will match what it can, and create what is missing.
++CREATE UNIQUE+ will always make the least change possible to the graph -- if it can use parts of the existing graph, it will.
+
+Another difference to +MATCH+ is that +CREATE UNIQUE+ assumes the pattern to be unique.
+If multiple matching subgraphs are found an error will be generated.
+
+[TIP]
+In the +CREATE UNIQUE+ clause, patterns are used a lot.
+Read <<introduction-pattern>> for an introduction.
+
+The examples start out with the following data set:
+
+include::includes/cypher-createunique-graph.asciidoc[]
+
+== Create unique nodes ==
+
+:leveloffset: 3
+
+include::create-node-if-missing.asciidoc[]
+
+include::create-nodes-with-values.asciidoc[]
+
+include::create-labeled-node-if-missing.asciidoc[]
+
+:leveloffset: 2
+
+== Create unique relationships ==
+
+:leveloffset: 3
+
+include::create-relationship-if-it-is-missing.asciidoc[]
+
+include::create-relationship-with-values.asciidoc[]
+
+:leveloffset: 2
+
+include::describe-complex-pattern.asciidoc[]
+

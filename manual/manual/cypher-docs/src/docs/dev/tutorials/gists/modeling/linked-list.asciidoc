@@ -1,0 +1,125 @@
+= Linked Lists =
+
+A powerful feature of using a graph database, is that you can create your own in-graph data structures -- for example a linked list.
+
+This data structure uses a single node as the list reference.
+The reference has an outgoing relationship to the head of the list, and an incoming relationship from the last element of the list.
+If the list is empty, the reference will point to itself.
+
+To make it clear what happens, we will show how the graph looks after each query.
+
+To initialize an empty linked list, we simply create a node, and make it link to itself.
+Unlike the actual list elements, it doesn't have a +value+ property.
+
+[source,cypher]
+----
+CREATE (root {name: 'ROOT'})-[:LINK]->(root)
+RETURN root
+----
+
+[source,querytest]
+----
+1 row
+Nodes created: 1
+Relationships created: 1
+Properties set: 1
+----
+
+// graph
+
+Adding values is done by finding the relationship where the new value should be placed in, and replacing it with
+a new node, and two relationships to it.
+We also have to handle the fact that the +before+ and +after+ nodes could be the same as the +root+ node.
+The case where +before+, +after+ and the +root+ node are all the same, makes it necessary to use `CREATE UNIQUE` to not create two new value nodes by mistake.
+
+[source,cypher]
+----
+MATCH (root)-[:LINK*0..]->(before),
+      (after)-[:LINK*0..]->(root),
+      (before)-[old:LINK]->(after)
+WHERE root.name = 'ROOT'
+  AND (before.value < 25 OR before = root)
+  AND (25 < after.value OR after = root)
+CREATE UNIQUE (before)-[:LINK]->({value:25})-[:LINK]->(after)
+DELETE old
+----
+
+[source,querytest]
+----
+Nodes created: 1
+Relationships created: 2
+Properties set: 1
+Relationships deleted: 1
+----
+
+// graph
+
+
+Let's add one more value:
+
+[source,cypher]
+----
+MATCH (root)-[:LINK*0..]->(before),
+      (after)-[:LINK*0..]->(root),
+      (before)-[old:LINK]->(after)
+WHERE root.name = 'ROOT'
+  AND (before.value < 10 OR before = root)
+  AND (10 < after.value OR after = root)
+CREATE UNIQUE (before)-[:LINK]->({value:10})-[:LINK]->(after)
+DELETE old
+----
+
+[source,querytest]
+----
+Nodes created: 1
+Relationships created: 2
+Properties set: 1
+Relationships deleted: 1
+----
+
+// graph
+
+Deleting a value, conversely, is done by finding the node with the value, and the two relationships going in and out
+from it, and replacing the relationships with a new one.
+
+[source,cypher]
+----
+MATCH (root)-[:LINK*0..]->(before),
+      (before)-[delBefore:LINK]->(del)-[delAfter:LINK]->(after),
+      (after)-[:LINK*0..]->(root)
+WHERE root.name = 'ROOT' AND del.value = 10
+CREATE UNIQUE (before)-[:LINK]->(after)
+DELETE del, delBefore, delAfter
+----
+
+[source,querytest]
+----
+Relationships created: 1
+Nodes deleted: 1
+Relationships deleted: 2
+----
+
+// graph
+
+Deleting the last value node is what requires us to use `CREATE UNIQUE` when replacing the relationships.
+Otherwise, we would end up with two relationships from the +root+ node to itself, as both +before+ and +after+ nodes are equal to the +root+ node, meaning the pattern would match twice.
+
+[source,cypher]
+----
+MATCH (root)-[:LINK*0..]->(before),
+      (before)-[delBefore:LINK]->(del)-[delAfter:LINK]->(after),
+      (after)-[:LINK*0..]->(root)
+WHERE root.name = 'ROOT' AND del.value = 25
+CREATE UNIQUE (before)-[:LINK]->(after)
+DELETE del, delBefore, delAfter
+----
+
+[source,querytest]
+----
+Relationships created: 1
+Nodes deleted: 1
+Relationships deleted: 2
+----
+
+// graph
+

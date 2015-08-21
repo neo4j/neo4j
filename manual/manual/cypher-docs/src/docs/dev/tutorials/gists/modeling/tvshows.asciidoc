@@ -1,0 +1,257 @@
+= TV Shows =
+
+This example show how TV Shows with Seasons, Episodes, Characters, Actors, Users and Reviews can be modeled in a graph database.
+
+== Data Model ==
+
+Let's start out with an entity-relationship model of the domain at hand:
+
+["dot", "modeling-tvshow-er-diagram.svg", "meta", "node [shape=box fillcolor=white style=filled] edge [shape=none arrowhead=none penwidth=1.0]"]
+----
+"TV Show" -> "Season" [label="has" arrowhead="crow"]
+"Season" -> "Episode" [label="has" arrowhead="crow"]
+"User" -> "Review" [label="wrote" arrowhead="crow"]
+"Episode" -> "Review" [label="has" arrowhead="crow"]
+"Episode" -> "Character" [label="featured" arrowhead="crow"]
+"Actor" -> "Character" [label="played" arrowhead="crow" arrowtail="crow" dir="both"]
+----
+
+To implement this in Neo4j we'll use the following relationship types:
+
+[options="header",cols="<1m,<2",width="75%"]
+|====
+| Relationship Type | Description
+| HAS_SEASON | Connects a show with its seasons.
+| HAS_EPISODE | Connects a season with its episodes.
+| FEATURED_CHARACTER | Connects an episode with its characters.
+| PLAYED_CHARACTER | Connects actors with characters.
+                     Note that an actor can play multiple characters in an episode,
+                     and that the same character can be played by multiple actors as well.
+| HAS_REVIEW | Connects an episode with its reviews.
+| WROTE_REVIEW | Connects users with reviews they contributed.
+|====
+
+== Sample Data ==
+
+Let's create some data and see how the domain plays out in practice:
+
+// console
+
+//setup
+[source,cypher]
+----
+CREATE (himym:TVShow {name: "How I Met Your Mother"})
+CREATE (himym_s1:Season {name: "HIMYM Season 1"})
+CREATE (himym_s1_e1:Episode {name: "Pilot"})
+CREATE (ted:Character {name: "Ted Mosby"})
+CREATE (joshRadnor:Actor {name: "Josh Radnor"})
+CREATE UNIQUE (joshRadnor)-[:PLAYED_CHARACTER]->(ted)
+CREATE UNIQUE (himym)-[:HAS_SEASON]->(himym_s1)
+CREATE UNIQUE (himym_s1)-[:HAS_EPISODE]->(himym_s1_e1)
+CREATE UNIQUE (himym_s1_e1)-[:FEATURED_CHARACTER]->(ted)
+CREATE (himym_s1_e1_review1 {title: "Meet Me At The Bar In 15 Minutes & Suit Up", content: "It was awesome"})
+CREATE (wakenPayne:User {name: "WakenPayne"})
+CREATE (wakenPayne)-[:WROTE_REVIEW]->(himym_s1_e1_review1)<-[:HAS_REVIEW]-(himym_s1_e1)
+----
+
+[source,querytest]
+----
+Nodes created: 7
+Relationships created: 6
+Properties set: 8
+----
+
+This is how the data looks in the database:
+
+//graph
+
+Note that even though we could have modeled the reviews as relationships with title and content properties on them, we made them nodes instead.
+We gain a lot of flexibility in this way, for example if we want to connect comments to each review.
+
+Now let's add more data:
+
+[source,cypher]
+----
+MATCH (himym:TVShow {name: "How I Met Your Mother"}), 
+       (himym_s1:Season),
+       (himym_s1_e1:Episode {name: "Pilot"}),
+       (himym)-[:HAS_SEASON]->(himym_s1)-[:HAS_EPISODE]->(himym_s1_e1)
+CREATE (marshall:Character {name: "Marshall Eriksen"})
+CREATE (robin:Character {name: "Robin Scherbatsky"})
+CREATE (barney:Character {name: "Barney Stinson"})
+CREATE (lily:Character {name: "Lily Aldrin"})
+CREATE (jasonSegel:Actor {name: "Jason Segel"})
+CREATE (cobieSmulders:Actor {name: "Cobie Smulders"})
+CREATE (neilPatrickHarris:Actor {name: "Neil Patrick Harris"})
+CREATE (alysonHannigan:Actor {name: "Alyson Hannigan"})
+CREATE UNIQUE (jasonSegel)-[:PLAYED_CHARACTER]->(marshall)
+CREATE UNIQUE (cobieSmulders)-[:PLAYED_CHARACTER]->(robin)
+CREATE UNIQUE (neilPatrickHarris)-[:PLAYED_CHARACTER]->(barney)
+CREATE UNIQUE (alysonHannigan)-[:PLAYED_CHARACTER]->(lily)
+CREATE UNIQUE (himym_s1_e1)-[:FEATURED_CHARACTER]->(marshall)
+CREATE UNIQUE (himym_s1_e1)-[:FEATURED_CHARACTER]->(robin)
+CREATE UNIQUE (himym_s1_e1)-[:FEATURED_CHARACTER]->(barney)
+CREATE UNIQUE (himym_s1_e1)-[:FEATURED_CHARACTER]->(lily)
+CREATE (himym_s1_e1_review2 {title: "What a great pilot for a show :)", content: "The humour is great."})
+CREATE (atlasredux:User {name: "atlasredux"})
+CREATE (atlasredux)-[:WROTE_REVIEW]->(himym_s1_e1_review2)<-[:HAS_REVIEW]-(himym_s1_e1)
+----
+
+[source,querytest]
+----
+Nodes created: 10
+Relationships created: 10
+Properties set: 11
+----
+
+== Information for a show ==
+
+For a particular TV show, show  all the seasons and all the episodes and all the reviews and all the cast members from that show, that is all of the information connected to that TV show.
+
+[source,cypher]
+----
+MATCH (tvShow:TVShow)-[:HAS_SEASON]->(season)-[:HAS_EPISODE]->(episode)
+WHERE tvShow.name = "How I Met Your Mother"
+RETURN season.name, episode.name
+----
+
+[source,querytest]
+----
+HIMYM Season 1
+Pilot
+1 row
+----
+
+//table
+
+We could also grab the reviews if there are any by slightly tweaking the query:
+
+[source,cypher]
+----
+MATCH (tvShow:TVShow)-[:HAS_SEASON]->(season)-[:HAS_EPISODE]->(episode)
+WHERE tvShow.name = "How I Met Your Mother"
+WITH season, episode
+OPTIONAL MATCH (episode)-[:HAS_REVIEW]->(review)
+RETURN season.name, episode.name, review
+----
+
+[source,querytest]
+----
+HIMYM Season 1
+Pilot
+Meet Me At The Bar In 15 Minutes & Suit Up
+It was awesome
+The humour is great.
+What a great pilot for a show
+2 rows
+----
+
+//table
+
+Now let's list the characters featured in a show.
+Note that in this query we only put identifiers on the nodes we actually use later on.
+The other nodes of the path pattern are designated by `()`.
+
+[source,cypher]
+----
+MATCH (tvShow:TVShow)-[:HAS_SEASON]->()-[:HAS_EPISODE]->()-[:FEATURED_CHARACTER]->(character) 
+WHERE tvShow.name = "How I Met Your Mother" 
+RETURN DISTINCT character.name
+----
+
+[source,querytest]
+----
+5 rows
+----
+
+//table
+
+Now let's look at how to get all cast members of a show.
+
+[source,cypher]
+----
+MATCH (tvShow:TVShow)-[:HAS_SEASON]->()-[:HAS_EPISODE]->(episode)-[:FEATURED_CHARACTER]->()<-[:PLAYED_CHARACTER]-(actor)
+WHERE tvShow.name = "How I Met Your Mother" 
+RETURN DISTINCT actor.name
+----
+
+[source,querytest]
+----
+5 rows
+----
+
+//table
+
+
+== Information for an actor ==
+
+First let’s add another TV show that Josh Radnor appeared in:
+
+[source,cypher]
+----
+CREATE (er:TVShow {name: "ER"})
+CREATE (er_s7:Season {name: "ER S7"})
+CREATE (er_s7_e17:Episode {name: "Peter's Progress"})
+CREATE (tedMosby:Character {name: "The Advocate "})
+CREATE UNIQUE (er)-[:HAS_SEASON]->(er_s7)
+CREATE UNIQUE (er_s7)-[:HAS_EPISODE]->(er_s7_e17)
+WITH er_s7_e17
+MATCH (actor:Actor), (episode:Episode)
+WHERE actor.name = "Josh Radnor" AND episode.name = "Peter's Progress"
+WITH actor, episode
+CREATE (keith:Character {name: "Keith"})
+CREATE UNIQUE (actor)-[:PLAYED_CHARACTER]->(keith)
+CREATE UNIQUE (episode)-[:FEATURED_CHARACTER]->(keith)
+----
+
+[source,querytest]
+----
+Nodes created: 5
+Relationships created: 4
+Properties set: 5
+----
+
+And now we’ll create a query to find the episodes that he has appeared in:
+
+[source,cypher]
+----
+MATCH (actor:Actor)-[:PLAYED_CHARACTER]->(character)<-[:FEATURED_CHARACTER]-(episode)
+WHERE actor.name = "Josh Radnor"
+RETURN episode.name AS Episode, character.name AS Character
+----
+
+[source,querytest]
+----
+Pilot
+Ted Mosby
+Peter's Progress
+Keith
+2 rows
+----
+
+//table
+
+Now let's go for a similar query, but add the season and show to it as well.
+
+[source,cypher]
+----
+MATCH (actor:Actor)-[:PLAYED_CHARACTER]->(character)<-[:FEATURED_CHARACTER]-(episode),
+     (episode)<-[:HAS_EPISODE]-(season)<-[:HAS_SEASON]-(tvshow)
+WHERE actor.name = "Josh Radnor"
+RETURN tvshow.name AS Show, season.name AS Season, episode.name as Episode, character.name AS Character
+----
+
+[source,querytest]
+----
+How I Met Your Mother
+HIMYM Season 1
+Pilot
+Ted Mosby
+ER
+ER S7
+Peter's Progress
+Keith
+----
+
+//table
+

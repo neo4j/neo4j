@@ -1,0 +1,22 @@
+[[query-foreach]]
+= Foreach =
+
+[abstract]
+The `FOREACH` clause is used to update data within a collection, whether components of a path, or result of aggregation.
+
+Collections and paths are key concepts in Cypher.
+To use them for updating data, you can use the `FOREACH` construct.
+It allows you to do updating commands on elements in a collection -- a path, or a collection created by aggregation.
+
+The identifier context inside of the foreach parenthesis is separate from the one outside it.
+This means that  if you `CREATE` a node identifier inside of a `FOREACH`, you will _not_ be able to use it outside of the foreach statement, unless you match to find it.
+
+Inside of the `FOREACH` parentheses, you can do any of the updating commands -- `CREATE`, `CREATE UNIQUE`, `MERGE`, `DELETE`, and `FOREACH`.
+
+If you want to execute an additional `MATCH` for each element in a collection then `UNWIND` (see <<query-unwind>>) would be a more appropriate command.
+
+.Data for the examples
+include::includes/cypher-foreach-graph.asciidoc[]
+
+include::mark-all-nodes-along-a-path.asciidoc[]
+

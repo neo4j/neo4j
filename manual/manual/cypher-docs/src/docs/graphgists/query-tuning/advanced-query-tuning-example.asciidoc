@@ -1,0 +1,35 @@
+= Advanced query tuning example
+
+As with the basic query tuning example <<cypherdoc-basic-query-tuning-example>> we'll use a movies data set to demonstrate how to do more advanced query tuning.
+
+//file:movies.csv
+//file:actors.csv
+//file:directors.csv
+
+//setup
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM "movies.csv" AS line
+MERGE (m:Movie {title:line.title})
+ON CREATE SET m.released = toInt(line.released), m.tagline = line.tagline
+----
+
+//setup
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM 'actors.csv' AS line
+MATCH (m:Movie {title:line.title})
+MERGE (p:Person {name:line.name})
+ON CREATE SET p.born = toInt(line.born)
+MERGE (p)-[:ACTED_IN {roles:split(line.roles,";")}]->(m)
+----
+
+//setup
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM 'directors.csv' AS line
+MATCH (m:Movie {title:line.title})
+MERGE (p:Person {name:line.name})
+ON CREATE SET p.born = toInt(line.born)
+MERGE (p)-[:DIRECTED]->(m)
+----

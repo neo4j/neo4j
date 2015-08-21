@@ -1,0 +1,181 @@
+= Social Movie Database
+
+Our example graph consists of movies with title and year and actors with a name.
+Actors have +ACTS_IN+ relationships to movies, which represents the role they played.
+This relationship also has a role attribute.
+
+So far, we queried the movie data; now let's _update the graph_ too.
+
+[source,cypher]
+----
+CREATE (matrix1:Movie {title : 'The Matrix', year : '1999-03-31'})
+CREATE (matrix2:Movie {title : 'The Matrix Reloaded', year : '2003-05-07'})
+CREATE (matrix3:Movie {title : 'The Matrix Revolutions', year : '2003-10-27'})
+CREATE (keanu:Actor {name:'Keanu Reeves'})
+CREATE (laurence:Actor {name:'Laurence Fishburne'})
+CREATE (carrieanne:Actor {name:'Carrie-Anne Moss'})
+CREATE (keanu)-[:ACTS_IN {role : 'Neo'}]->(matrix1)
+CREATE (keanu)-[:ACTS_IN {role : 'Neo'}]->(matrix2)
+CREATE (keanu)-[:ACTS_IN {role : 'Neo'}]->(matrix3)
+CREATE (laurence)-[:ACTS_IN {role : 'Morpheus'}]->(matrix1)
+CREATE (laurence)-[:ACTS_IN {role : 'Morpheus'}]->(matrix2)
+CREATE (laurence)-[:ACTS_IN {role : 'Morpheus'}]->(matrix3)
+CREATE (carrieanne)-[:ACTS_IN {role : 'Trinity'}]->(matrix1)
+CREATE (carrieanne)-[:ACTS_IN {role : 'Trinity'}]->(matrix2)
+CREATE (carrieanne)-[:ACTS_IN {role : 'Trinity'}]->(matrix3)
+----
+
+[source,querytest]
+----
+Nodes created: 6
+Relationships created: 9
+Properties set: 18
+----
+
+//console
+
+We will add ourselves, friends and movie ratings.
+
+Here's how to add a node for yourself and return it, let's say your name is ``Me'':
+
+[source,cypher]
+----
+CREATE (me:User {name: "Me"}) 
+RETURN me;
+----
+
+[source,querytest]
+----
+Nodes created: 1
+----
+
+//table
+
+Let's check if the node is there:
+
+[source,cypher]
+----
+MATCH (me:User {name: "Me"})
+RETURN me.name;
+----
+
+[source,querytest]
+----
+1 row
+Me
+----
+
+Add a movie rating:
+
+[source,cypher]
+----
+MATCH (me:User {name: "Me"}), (movie:Movie {title: "The Matrix"})
+CREATE (me)-[:RATED {stars : 5, comment : "I love that movie!"}]->(movie);
+----
+
+[source,querytest]
+----
+Relationships created: 1
+Properties set: 2
+----
+
+Which movies did I rate?
+
+[source,cypher]
+----
+MATCH (me:User {name: "Me"}), (me)-[rating:RATED]->(movie)
+RETURN movie.title, rating.stars, rating.comment;
+----
+
+[source,querytest]
+----
+1 row
+----
+
+//table
+
+We need a friend!
+
+[source,cypher]
+----
+CREATE (friend:User {name: "A Friend"})
+RETURN friend;
+----
+
+Add our friendship idempotently, so we can re-run the query without adding it several times.
+We return the relationship to check that it has not been created several times.
+
+[source,cypher]
+----
+MATCH (me:User {name: "Me"}), (friend:User {name: "A Friend"})
+CREATE UNIQUE (me)-[friendship:FRIEND]->(friend)
+RETURN friendship;
+----
+
+[source,querytest]
+----
+Relationships created: 1
+----
+
+You can rerun the query, see that it doesn't change anything the second time!
+
+Let's update our friendship with a +since+ property:
+
+[source,cypher]
+----
+MATCH (me:User {name: "Me"})-[friendship:FRIEND]->(friend:User {name: "A Friend"})
+SET friendship.since='forever'
+RETURN friendship;
+----
+
+[source,querytest]
+----
+Properties set: 1
+----
+
+Let's pretend us being our friend and wanting to see which movies our friends have rated.
+
+[source,cypher]
+----
+MATCH (me:User {name: "A Friend"})-[:FRIEND]-(friend)-[rating:RATED]->(movie)
+RETURN movie.title, avg(rating.stars) as stars, collect(rating.comment) as comments, count(*);
+----
+
+[source,querytest]
+----
+1 row
+----
+
+//table
+
+That's too little data, let's add some more friends and friendships.
+
+[source,cypher]
+----
+MATCH (me:User {name: "Me"})
+FOREACH (i in range(1,10) |
+  CREATE (friend:User {name: "Friend " + i}), (me)-[:FRIEND]->(friend));
+----
+
+[source,querytest]
+----
+Nodes created: 10
+Relationships created: 10
+Properties set: 10
+----
+
+Show all our friends:
+
+[source,cypher]
+----
+MATCH (me:User {name: "Me"})-[r:FRIEND]->(friend)
+RETURN type(r) as friendship, friend.name;
+----
+
+[source,querytest]
+----
+11 rows
+----
+
+//table
+

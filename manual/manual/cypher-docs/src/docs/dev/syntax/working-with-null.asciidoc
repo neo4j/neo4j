@@ -1,0 +1,69 @@
+[[cypher-working-with-null]]
+Working with NULL
+=================
+
+== Introduction to NULL in Cypher ==
+
+In Cypher, +NULL+ is used to represent missing or undefined values.
+Conceptually, +NULL+ means ``a missing unknown value'' and it is treated somewhat differently from other values.
+For example getting a property from a node that does not have said property produces +NULL+.
+Most expressions that take +NULL+ as input will produce +NULL+.
+This includes boolean expressions that are used as predicates in the +WHERE+ clause.
+In this case, anything that is not +TRUE+ is interpreted as being false.
+
++NULL+ is not equal to +NULL+.
+Not knowing two values does not imply that they are the same value.
+So the expression +NULL+ = +NULL+ yields +NULL+ and not +TRUE+.
+
+== Logical operations with NULL ==
+
+The logical operators (+AND+, +OR+, +XOR+, +IN+, +NOT+) treat +NULL+ as the ``unknown'' value of three-valued logic.
+Here is the truth table for +AND+, +OR+ and +XOR+.
+
+[options="header", cols="^,^,^,^,^", width="80%"]
+|====
+|a | b | a +AND+ b | a +OR+ b | a +XOR+ b
+|+FALSE+ | +FALSE+ | +FALSE+ | +FALSE+ | +FALSE+
+|+FALSE+ | +NULL+ | +FALSE+ | +NULL+ | +NULL+
+|+FALSE+ | +TRUE+ | +FALSE+ | +TRUE+ | +TRUE+
+|+TRUE+ | +FALSE+ | +FALSE+ | +TRUE+ | +TRUE+
+|+TRUE+ | +NULL+ | +NULL+ | +TRUE+ | +NULL+
+|+TRUE+ | +TRUE+ | +TRUE+ | +TRUE+ | +FALSE+
+|+NULL+ | +FALSE+ | +FALSE+ | +NULL+ | +NULL+
+|+NULL+ | +NULL+ | +NULL+ | +NULL+ | +NULL+
+|+NULL+ | +TRUE+ | +NULL+ | +TRUE+ | +NULL+
+|====
+
+== The IN operator and NULL ==
+
+The +IN+ operator follows similar logic.
+If Cypher knows that something exists in a collection, the result will be +TRUE+.
+Any collection that contains a +NULL+ and doesn't have a matching element will return +NULL+.
+Otherwise, the result will be false.
+Here is a table with examples:
+
+[options="header", cols="^,^", width="60%"]
+|====
+|Expression  | Result
+|2 IN [1, 2, 3] | +TRUE+
+|2 IN [1, +NULL+, 3] | +NULL+
+|2 IN [1, 2, +NULL+] | +TRUE+
+|2 IN [1] | +FALSE+
+|2 IN [] | +FALSE+
+|+NULL+ IN [1,2,3] | +NULL+
+|+NULL+ IN [1,+NULL+,3] | +NULL+
+|+NULL+ IN [] | +FALSE+
+|====
+
+Using +ALL+, +ANY+, +NONE+, and +SINGLE+ follows a similar rule.
+If the result can be calculated definitely, +TRUE+ or +FALSE+ is returned.
+Otherwise +NULL+ is produced.
+
+== Expressions that return NULL ==
+
+* Getting a missing element from a collection: +[][0]+, +head([])+
+* Trying to access a property that does not exist on a node or relationship: +n.missingProperty+
+* Comparisons when either side is +NULL+: +`1 < NULL`+
+* Arithmetic expressions containing +NULL+: +`1 + NULL`+
+* Function calls where any arguments are +NULL+: +sin(NULL)+
+

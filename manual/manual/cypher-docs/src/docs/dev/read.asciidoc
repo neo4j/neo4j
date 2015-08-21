@@ -1,0 +1,29 @@
+[[query-read]]
+= Reading Clauses =
+
+The flow of data within a Cypher query is an unordered sequence of maps with key-value pairs -- a set of possible bindings between the identifiers in the query and values derived from the database.
+This set is refined and augmented by subsequent parts of the query.
+
+:leveloffset: 2
+
+include::ql/match/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/optional-match/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/where/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/start/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/aggregation/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/load-csv/index.asciidoc[]

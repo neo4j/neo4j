@@ -1,0 +1,86 @@
+[[tutorials-cypher-java]]
+= Execute Cypher Queries from Java =
+
+[TIP]
+The full source code of the example:
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/cypher/docs/cypher-docs/src/test/java/org/neo4j/cypher/example/JavaQuery.java[JavaQuery.java]
+
+In Java, you can use the <<cypher-query-lang,Cypher query language>> as per the example below.
+First, let's add some data.
+
+[snippet,java]
+----
+component=neo4j-cypher-docs
+source=org/neo4j/cypher/example/JavaQuery.java
+tag=addData
+classifier=test-sources
+----
+
+Execute a query:
+
+[snippet,java]
+----
+component=neo4j-cypher-docs
+source=org/neo4j/cypher/example/JavaQuery.java
+tag=execute
+classifier=test-sources
+----
+
+In the above example, we also show how to iterate over the rows of the +link:javadocs/org/neo4j/graphdb/Result.html[Result]+.
+
+The code will generate:
+
+include::java-cypher-queries-rows.asciidoc[]
+
+[CAUTION]
+When using an `Result`, you should consume the entire result (iterate over all rows using `next()`, iterating over the iterator from `columnAs()` or calling for example `resultAsString()`).
+Failing to do so will not properly clean up resources used by the `Result` object, leading to unwanted behavior, such as leaking transactions.
+In case you don't want to iterate over all of the results, make sure to invoke `close()` as soon as you are done, to release the resources tied to the result.
+
+[TIP]
+Using a http://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html[try-with-resources statement]
+will make sure that the result is closed at the end of the statement.
+This is the recommended way to handle results.
+
+You can also get a list of the columns in the result like this:
+
+[snippet,java]
+----
+component=neo4j-cypher-docs
+source=org/neo4j/cypher/example/JavaQuery.java
+tag=columns
+classifier=test-sources
+----
+
+This gives us:
+
+include::java-cypher-queries-columns.asciidoc[]
+
+To fetch the result items from a single column, do like below.
+In this case we'll have to read the property from the node and not from the result.
+
+[snippet,java]
+----
+component=neo4j-cypher-docs
+source=org/neo4j/cypher/example/JavaQuery.java
+tag=items
+classifier=test-sources
+----
+
+In this case there's only one node in the result:
+
+include::java-cypher-queries-node.asciidoc[]
+
+Only use this if the result only contains a single column, or you are only interested in a single column of the result.
+
+[NOTE]
+`resultAsString()`, `writeAsStringTo()`, `columnAs()` cannot be called more than once on the same `Result` object, as they consume the result.
+In the same way, part of the result gets consumed for every call to `next()`.
+You should instead use only one and if you need the facilities of the other methods on the same query result instead create a new `Result`.
+
+For more information on the Java interface to Cypher, see the 
+link:javadocs/index.html[Java API].
+
+For more information and examples for Cypher, see <<cypher-query-lang>> and <<data-modeling-examples>>.
+
+

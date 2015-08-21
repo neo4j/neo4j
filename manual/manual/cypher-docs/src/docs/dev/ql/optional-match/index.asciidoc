@@ -1,0 +1,28 @@
+[[query-optional-match]]
+= Optional Match
+
+[abstract]
+The +OPTIONAL MATCH+ clause is used to search for the pattern described in it, while using ++NULL++s for missing parts of the pattern.
+
+== Introduction ==
+
++OPTIONAL MATCH+ matches patterns against your graph database, just like +MATCH+ does.
+The difference is that if no matches are found, +OPTIONAL MATCH+ will use ++NULL++s for missing parts of the pattern.
++OPTIONAL MATCH+ could be considered the Cypher equivalent of the outer join in SQL.
+
+Either the whole pattern is matched, or nothing is matched.
+Remember that +WHERE+ is part of the pattern description, and the predicates will be considered while looking for matches, not after.
+This matters especially in the case of multiple (++OPTIONAL++) +MATCH+ clauses, where it is crucial to put +WHERE+ together with the +MATCH+ it belongs to.
+
+[TIP]
+To understand the patterns used in the +OPTIONAL MATCH+ clause, read <<introduction-pattern>>.
+
+The following graph is used for the examples below:
+
+.Graph
+include::includes/cypher-optionalmatch-graph.asciidoc[]
+
+include::relationship.asciidoc[]
+include::properties-on-optional-elements.asciidoc[]
+include::optional-typed-and-named-relationship.asciidoc[]
+

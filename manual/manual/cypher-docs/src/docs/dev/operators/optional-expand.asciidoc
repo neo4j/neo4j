@@ -1,0 +1,5 @@
+[[operator-optional-expand]]
+= Optional expand =
+
+Expand traverses relationships from a given node, and makes sure that predicates are evaluated before producing rows.
+If no matching relationships are found, a single row with null for the relationship and end node identifier is produced.

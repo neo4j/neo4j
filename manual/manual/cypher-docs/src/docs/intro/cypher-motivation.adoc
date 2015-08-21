@@ -1,0 +1,57 @@
+[[cypher-motivation]]
+= Background and Motivation
+
+:WP:        https://en.wikipedia.org/wiki
+:WP_API:    {WP}/Application_programming_interface
+:WP_BSA:    {WP}/Binary_search_algorithm
+:WP_DP:     {WP}/Declarative_programming
+:WP_HCS:    {WP}/Heuristic_(computer_science)
+:WP_II:     {WP}/Inverted_index
+:WP_IP:     {WP}/Imperative_programming
+:WP_Java:   {WP}/Java_(programming_language)
+
+Cypher provides a convenient way to express queries and other Neo4j actions.
+Although Cypher is particularly useful for exploratory work, it is fast enough to be used in production.
+Java-based approaches (eg, unmanaged extensions) can also be used to handle particularly demanding use cases.
+
+== Query processing
+
+To use Cypher effectively, it's useful to have an idea of how it works.
+So, let's take a high-level look at the way Cypher processes queries.
+
+* Parse and validate the query.
+
+* Generate the execution plan.
+
+* Locate the initial node(s).
+
+* Select and traverse relationships.
+
+* Change and/or return values.
+
+=== Preparation
+
+Parsing and validating the Cypher statement(s) is important, but mundane.
+However, generating an optimal search strategy can be far more challenging.
+
+The execution plan must tell the database how to locate initial node(s), select relationships for traversal, etc.
+This involves tricky optimization problems (eg, which actions should happen first), but we can safely leave the details to the Neo4j engineers.
+So, let's move on to locating the initial node(s).
+
+=== Locate the initial node(s)
+
+Neo4j is highly optimized for traversing property graphs.
+Under ideal circumstances, it can traverse millions of nodes and relationships per second, following chains of pointers in the computer's memory.
+
+However, before traversal can begin, Neo4j must know one or more starting nodes.
+Unless the user (or, more likely, a client program) can provide this information, Neo4j will have to search for these nodes.
+
+A ``brute force'' search of the database (eg, for a specified property value) can be _very_ time consuming.
+Every node must be examined, first to see if it has the property, then to see if the value meets the desired criteria.
+To avoid this effort, Neo4j creates and uses indexes.
+So, Neo4j uses a separate index for each label/property combination.
+
+=== Traversal and actions
+
+Once the initial nodes are determined, Neo4j can traverse portions of the graph and perform any requested actions.
+The execution plan helps Neo4j to determine which nodes are relevant, which relationships to traverse, etc.

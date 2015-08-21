@@ -1,0 +1,61 @@
+
+:leveloffset: 1
+
+include::hyperedges.asciidoc[]
+
+:leveloffset: 1
+
+include::friend-finding.asciidoc[]
+
+:leveloffset: 1
+
+include::co-favorited-places.asciidoc[]
+
+:leveloffset: 1
+
+include::similar-favorites.asciidoc[]
+
+:leveloffset: 1
+
+include::mutual-friends-and-groups.asciidoc[]
+
+:leveloffset: 1
+
+include::similar-tags.asciidoc[]
+
+:leveloffset: 1
+
+include::multirelational-social-network.asciidoc[]
+
+:leveloffset: 1
+
+include::newsfeed.asciidoc[]
+
+:leveloffset: 1
+
+include::boosting-recommendations.asciidoc[]
+
+:leveloffset: 1
+
+include::clustering-coefficient.asciidoc[]
+
+:leveloffset: 1
+
+include::pretty-graphs.asciidoc[]
+
+:leveloffset: 1
+
+include::path-tree.asciidoc[]
+
+:leveloffset: 1
+
+include::similarity-complex.asciidoc[]
+
+:leveloffset: 1
+
+include::graphity.asciidoc[]
+
+:leveloffset: 1
+
+//include::activity-streams.asciidoc[]
+

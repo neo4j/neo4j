@@ -1,0 +1,217 @@
+= Getting the Results You Want
+
+Let's first get some data in to retrieve results from:
+
+[source,cypher]
+----
+CREATE (matrix:Movie {title:"The Matrix",released:1997})
+CREATE (cloudAtlas:Movie {title:"Cloud Atlas",released:2012})
+CREATE (forrestGump:Movie {title:"Forrest Gump",released:1994})
+CREATE (keanu:Person {name:"Keanu Reeves", born:1964})
+CREATE (robert:Person {name:"Robert Zemeckis", born:1951})
+CREATE (tom:Person {name:"Tom Hanks", born:1956})
+CREATE (tom)-[:ACTED_IN {roles:["Forrest"]}]->(forrestGump)
+CREATE (tom)-[:ACTED_IN {roles:['Zachry']} ]->(cloudAtlas)
+CREATE (robert)-[:DIRECTED]->(forrestGump)
+----
+
+This is the data we will start out with:
+
+//graph
+
+[source,querytest]
+----
+Nodes created: 6
+Relationships created: 3
+Properties set: 14
+Labels added: 6
+----
+
+== Filtering Results
+
+So far we've matched patterns in the graph and always returned all results we found.
+Quite often there are conditions in play for what we want to see.
+Similar to in _SQL_ those filter conditions are expressed in a `WHERE` clause.
+This clause allows to use any number of boolean expressions (predicates) combined with `AND`, `OR`, `XOR` and `NOT`.
+The simplest predicates are comparisons, especially equality.
+
+[source,cypher]
+----
+MATCH (m:Movie)
+WHERE m.title = "The Matrix"
+RETURN m
+----
+
+//table
+
+[source,querytest]
+----
+1 row
+----
+
+For equality on one or more properties, a more compact syntax can be used as well:
+
+[source,cypher]
+----
+MATCH (m:Movie {title: "The Matrix"})
+RETURN m
+----
+
+[source,querytest]
+----
+1 row
+----
+
+Other options are numeric comparisons, matching regular expressions and checking the existence of values within a collection.
+
+The `WHERE` clause below includes a regular expression match, a greater than comparison and a test to see if a value exists in a collection.
+
+[source,cypher]
+----
+MATCH (p:Person)-[r:ACTED_IN]->(m:Movie)
+WHERE p.name =~ "K.+" 
+   OR m.released > 2000
+   OR "Neo" IN r.roles
+RETURN p,r,m
+----
+
+//table
+
+[source,querytest]
+----
+1 row
+----
+
+One aspect that might be a little surprising is that you can even use patterns as predicates.
+Where `MATCH` expands the number and shape of patterns matched, a pattern predicate restricts the current result set.
+It only allows the paths to pass that satisfy the additional patterns as well (or `NOT`).
+
+[source,cypher]
+----
+MATCH (p:Person)-[:ACTED_IN]->(m)
+WHERE NOT (p)-[:DIRECTED]->()
+RETURN p,m
+----
+
+//table
+
+[source,querytest]
+----
+2 rows
+----
+
+Here we find actors, because they sport an `ACTED_IN` relationship but then skip those that ever `DIRECTED` any movie.
+
+There are also more advanced ways of filtering like collection-predicates which we will look at later on.
+
+== Returning Results
+
+So far we've returned only nodes, relationships, or paths directly via their identifiers.
+But the `RETURN` clause can actually return any number of expressions.
+But what are actually expressions in Cypher?
+
+The simplest expressions are literal values like numbers, strings and arrays as `[1,2,3]`, and maps like `{name:"Tom Hanks", born:1964, movies:["Forrest Gump", ...], count:13}`.
+You can access individual properties of any node, relationship, or map with a dot-syntax like `n.name`.
+Individual elements or slices of arrays can be retrieved with subscripts like `names[0]` or `movies[1..-1]`.
+Each function evaluation like `length(array)`, `toInt("12")`, `substring("2014-07-01",0,4)`, or `coalesce(p.nickname,"n/a")` is also an expression.
+
+Predicates that you'd use in `WHERE` count as boolean expressions.
+
+Of course simpler expressions can be composed and concatenated to form more complex expressions.
+
+By default the expression itself will be used as label for the column, in many cases you want to alias that with a more understandable name using `expression AS alias`.
+You can later on refer to that column using its alias.
+
+[source,cypher]
+----
+MATCH (p:Person)
+RETURN p, p.name AS name, upper(p.name), coalesce(p.nickname,"n/a") AS nickname, {name: p.name, label:head(labels(p))} AS person
+----
+
+//table
+
+If you're interested in unique results you can use the `DISTINCT` keyword after `RETURN` to indicate that.
+
+== Aggregating Information
+
+In many cases you want to aggregate or group the data that you encounter while traversing patterns in your graph.
+In Cypher aggregation happens in the `RETURN` clause while computing your final results.
+Many common aggregation functions are supported, e.g. `count`, `sum`, `avg`, `min`, and `max`, but there are several more.
+
+Counting the number of people in your database could be achieved by this:
+
+[source,cypher]
+----
+MATCH (:Person)
+RETURN count(*) as people
+----
+
+//table
+
+Please note that `NULL` values are skipped during aggregation.
+For aggregating only unique values use `DISTINCT`, like in `count(DISTINCT role)`.
+
+Aggregation in Cypher just works.
+You specify which result columns you want to aggregate and _Cypher will use all non-aggregated columns as grouping keys_.
+
+Aggregation affects which data is still visible in ordering or later query parts.
+
+To find out how often an actor and director worked together, you'd run this statement:
+
+[source,cypher]
+----
+MATCH (actor:Person)-[:ACTED_IN]->(movie:Movie)<-[:DIRECTED]-(director:Person)
+RETURN actor,director,count(*) as collaborations
+----
+
+//table
+
+Frequently you want to sort and paginate after aggregating a `count(x)`.
+
+== Ordering and Pagination
+
+Ordering works like in other query languages, with an `ORDER BY expression [ASC|DESC]` clause.
+The expression can be any expression discussed before as long as it is computable from the returned information.
+
+So for instance if you return `person.name` you can still `ORDER BY person.age` as both are accessible from the `person` reference.
+You cannot order by things that you can't infer from the information you return.
+This is especially important with aggregation and `DISTINCT` return values as both remove the visibility of data that is aggregated.
+
+Pagination is a straightforward use of `SKIP {offset} LIMIT {count}`.
+
+A common pattern is to aggregate for a count (score or frequency), order by it and only return the top-n entries.
+
+For instance to find the most prolific actors you could do:
+
+[source,cypher]
+----
+MATCH (a:Person)-[:ACTED_IN]->(m:Movie)
+RETURN a,count(*) as appearances
+ORDER BY appearances DESC
+LIMIT 10;
+----
+
+//table
+
+// also that you can order by things you return or which are computable from what you return
+
+== Collecting Aggregation
+
+The most helpful aggregation function is `collect`, which, as the name says, collects all aggregated values into a _real_ array or list.
+This comes very handy in many situations as you don't loose the detail information while aggregating.
+
+Collect is well suited for retrieving the typical parent-child structures, where one core entity (parent, root or head) is returned per row with all it's dependent information in associated collections created with `collect`.
+This means there's no need to repeat the parent information per each child-row or even running 1+n statements to retrieve the parent and its children individually.
+
+To retrieve the cast of each movie in our database you could use this statement:
+
+[source,cypher]
+----
+MATCH (m:Movie)<-[:ACTED_IN]-(a:Person)
+RETURN m.title as movie, collect(a.name) as cast, count(*) as actors
+----
+
+//table
+
+The lists created by collect can either be used from the client consuming the Cypher results or directly within a statement with any of the collection functions or predicates.
+

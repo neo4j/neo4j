@@ -1,0 +1,11 @@
+[[cypher-cookbook-similar-tags]]
+== Find friends based on similar tagging ==
+
+:leveloffset: 2
+
+.Graph
+include::includes/cypher-peoplesimilaritytags-graph.asciidoc[]
+
+include::find-people-based-on-similar-tagged-favorties.asciidoc[]
+
+

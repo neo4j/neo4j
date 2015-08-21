@@ -1,0 +1,156 @@
+= Social Network =
+
+This is a simple social network example, where users can be friends with other users, write posts and like or comment on posts.
+
+== Data Model ==
+
+["dot", "modeling-social-diaspora-er-diagram.svg", "meta", "node [shape=box fillcolor=white style=filled] edge [shape=none arrowhead=none penwidth=1.0]"]
+----
+"User" -> "User" [label="friend" arrowhead="crow"]
+"User" -> "Post" [label="posted" arrowhead="crow"]
+"User" -> "Post" [label="liked" arrowhead="crow" dir="both" arrowtail="crow"]
+"User" -> "Post" [label="commented" arrowhead="crow" dir="both" arrowtail="crow"]
+----
+
+== Sample Data ==
+
+We'll start out with a minimal set of data and see what that gives us.
+
+//console
+
+[source,cypher]
+----
+CREATE (rachel:User {name: "Rachel Green"})
+CREATE (monica:User {name: "Monica Geller"})
+CREATE (rachel)-[:FRIEND]->(monica)
+CREATE (monica)-[:POSTED]->(post:Post { text: "You don't like the game, because you suck at it." })
+CREATE (post)<-[:COMMENTED{ text: "lol" }]-(rachel)
+----
+
+[source,querytest]
+----
+Nodes created: 3
+Relationships created: 3
+Properties set: 4
+Labels added: 3
+----
+
+This is what we have in the database so far:
+
+//graph
+
+Now let's add more data:
+
+[source,cypher]
+----
+MATCH (rachel:User {name: "Rachel Green"})
+MATCH (monica:User {name: "Monica Geller"})
+CREATE (phoebe:User {name: "Phoebe Buffay"})
+CREATE (joey:User {name: "Joey Tribbiani"})
+CREATE (chandler:User {name: "Chandler Bing"})
+CREATE (ross:User {name: "Ross Geller"})
+CREATE (rachel)-[:FRIEND]->(phoebe)
+CREATE (rachel)-[:FRIEND]->(joey)
+CREATE (rachel)-[:FRIEND]->(chandler)
+CREATE (rachel)-[:FRIEND]->(ross)
+CREATE (monica)-[:FRIEND]->(phoebe)
+CREATE (monica)-[:FRIEND]->(joey)
+CREATE (monica)-[:FRIEND]->(chandler)
+CREATE (monica)-[:FRIEND]->(ross)
+CREATE (phoebe)-[:FRIEND]->(joey)
+CREATE (phoebe)-[:FRIEND]->(chandler)
+CREATE (phoebe)-[:FRIEND]->(ross)
+CREATE (joey)-[:FRIEND]->(chandler)
+CREATE (joey)-[:FRIEND]->(ross)
+CREATE (chandler)-[:FRIEND]->(ross)
+CREATE (phoebe)-[:POSTED]->(post1:Post { text: "Chandler still thinks I'm pregnant and he hasn't asked me how I'm feeling or offered to carry my bags. I feel bad for the woman who ends up with him." })
+CREATE (joey)-[:POSTED]->(post2:Post { text: "Just because she went to Yale drama, she thinks she's like the greatest actress since, since, sliced bread!" })
+CREATE (chandler)-[:POSTED]->(post3:Post { text: "In my defense, it was dark and he was a very pretty guy." })
+CREATE (rachel)-[:POSTED]->(post4:Post { text: "I don't want my baby's first words to be 'How You Doing'" })
+CREATE (ross)-[:POSTED]->(post5:Post { text: "Chandler entered a Vanilla Ice look-alike contest and *won*!" })
+CREATE (post1)<-[:COMMENTED{ text: "lol" }]-(rachel)
+CREATE (post2)<-[:COMMENTED{ text: "lol" }]-(chandler)
+CREATE (post3)<-[:COMMENTED{ text: "lol" }]-(joey)
+CREATE (post4)<-[:COMMENTED{ text: "lol" }]-(phoebe)
+CREATE (post5)<-[:COMMENTED{ text: "lol" }]-(ross)
+CREATE (post1)<-[:LIKED]-(rachel)
+CREATE (post1)<-[:LIKED]-(monica)
+CREATE (post2)<-[:LIKED]-(chandler)
+CREATE (post3)<-[:LIKED]-(joey)
+CREATE (post4)<-[:LIKED]-(phoebe)
+CREATE (post5)<-[:LIKED]-(monica)
+----
+
+[source,querytest]
+----
+Nodes created: 9
+Relationships created: 30
+Properties set: 14
+Labels added: 9
+----
+
+Now let's write some queries!
+
+== Queries ==
+
+We'll start with one to find the posts made by Rachel's friends:
+
+[source,cypher]
+----
+MATCH (u:User {name: "Rachel Green"})-[:FRIEND]-(f)-[:POSTED]->(post)
+RETURN f.name AS Friend, post.text as Content
+----
+
+[source,querytest]
+----
+Monica Geller
+Phoebe Buffay
+Joey Tribbiani
+Chandler Bing
+Ross Geller
+Vanilla Ice
+5 rows
+----
+
+// table
+
+Our next query might be a slight variation on this to collect the people who have liked a post:
+
+[source,cypher]
+----
+MATCH (u:User {name: "Rachel Green"})-[:FRIEND]-(f)-[:POSTED]->(post)<-[like:LIKED]-(liker)
+RETURN f.name AS Friend, post.text as Content, collect(liker.name) as `Liked by`
+----
+
+// table
+
+[source,querytest]
+----
+In my defense, it was dark and he was a very pretty guy.
+4 rows
+----
+
+A third query could collect all actions on a post, be they likes or comments.
+In this case we'll gather the data as one map per action.
+
+[source,cypher]
+----
+MATCH (u:User)-[:FRIEND]-(f)-[:POSTED]->(post)<-[a:LIKED|:COMMENTED]->(person) 
+WHERE u.name = "Rachel Green" 
+RETURN f.name AS Friend, left(post.text, 25) + "..." AS Content, 
+       collect({ person: person.name, action: type(a), text: a.text }) AS Actions
+----
+
+[source,querytest]
+----
+In my defense, it was dar...
+5 rows
+----
+
+// table
+
+As there are no texts on the +LIKED+ actions, they will give a +NULL+ back for the +text+ property instead.
+
+For a different social network data model optimized for easy access to the latest posts from everyone, see <<cypher-cookbook-newsfeed>>.
+
+

@@ -1,0 +1,171 @@
+= Movie Database =
+
+Our example graph consists of movies with title and year and actors with a name.
+Actors have +ACTS_IN+ relationships to movies, which represents the role they played.
+This relationship also has a role attribute.
+
+We'll go with three movies and three actors:
+
+[source,cypher]
+----
+CREATE (matrix1:Movie {title : 'The Matrix', year : '1999-03-31'})
+CREATE (matrix2:Movie {title : 'The Matrix Reloaded', year : '2003-05-07'})
+CREATE (matrix3:Movie {title : 'The Matrix Revolutions', year : '2003-10-27'})
+CREATE (keanu:Actor {name:'Keanu Reeves'})
+CREATE (laurence:Actor {name:'Laurence Fishburne'})
+CREATE (carrieanne:Actor {name:'Carrie-Anne Moss'})
+CREATE (keanu)-[:ACTS_IN {role : 'Neo'}]->(matrix1)
+CREATE (keanu)-[:ACTS_IN {role : 'Neo'}]->(matrix2)
+CREATE (keanu)-[:ACTS_IN {role : 'Neo'}]->(matrix3)
+CREATE (laurence)-[:ACTS_IN {role : 'Morpheus'}]->(matrix1)
+CREATE (laurence)-[:ACTS_IN {role : 'Morpheus'}]->(matrix2)
+CREATE (laurence)-[:ACTS_IN {role : 'Morpheus'}]->(matrix3)
+CREATE (carrieanne)-[:ACTS_IN {role : 'Trinity'}]->(matrix1)
+CREATE (carrieanne)-[:ACTS_IN {role : 'Trinity'}]->(matrix2)
+CREATE (carrieanne)-[:ACTS_IN {role : 'Trinity'}]->(matrix3)
+----
+
+[source,querytest]
+----
+Nodes created: 6
+Relationships created: 9
+Properties set: 18
+----
+
+This gives us the following graph to play with:
+
+//graph
+
+//console
+
+Let's check how many nodes we have now:
+
+[source,cypher]
+----
+MATCH (n)
+RETURN "Hello Graph with " + count(*) + " Nodes!" AS welcome;
+----
+
+[source,querytest]
+----
+Hello Graph with 6 Nodes!
+----
+
+Return a single node, by name:
+
+[source,cypher]
+----
+MATCH (movie:Movie {title: 'The Matrix'})
+RETURN movie;
+----
+
+[source,querytest]
+----
+The Matrix
+1999-03-31
+1 row
+----
+
+Return the title and date of the matrix node:
+
+[source,cypher]
+----
+MATCH (movie:Movie {title: 'The Matrix'})
+RETURN movie.title, movie.year;
+----
+
+Which results in:
+
+//table
+
+Show all actors:
+
+[source,cypher]
+----
+MATCH (actor:Actor)
+RETURN actor;
+----
+
+[source,querytest]
+----
+3 rows
+----
+
+Return just the name, and order them by name:
+
+[source,cypher]
+----
+MATCH (actor:Actor)
+RETURN actor.name
+ORDER BY actor.name;
+----
+
+Count the actors:
+
+[source,cypher]
+----
+MATCH (actor:Actor)
+RETURN count(*);
+----
+
+[source,querytest]
+----
+3
+----
+
+Get only the actors whose names end with ``s'':
+
+[source,cypher]
+----
+MATCH (actor:Actor)
+WHERE actor.name =~ ".*s$" 
+RETURN actor.name;
+----
+
+[source,querytest]
+----
+2 rows
+----
+
+Here's some exploratory queries for unknown datasets.
+_Don't do this on live production databases!_
+
+Count nodes:
+
+[source,cypher]
+----
+MATCH (n)
+RETURN count(*);
+----
+
+Count relationship types:
+
+[source,cypher]
+----
+MATCH (n)-[r]->()
+RETURN type(r), count(*);
+----
+
+[source,querytest]
+----
+1 row
+----
+
+//table
+
+List all nodes and their relationships:
+
+[source,cypher]
+----
+MATCH (n)-[r]->(m)
+RETURN n AS from, r AS `->`, m AS to;
+----
+
+[source,querytest]
+----
+9 rows
+----
+
+//table
+
+

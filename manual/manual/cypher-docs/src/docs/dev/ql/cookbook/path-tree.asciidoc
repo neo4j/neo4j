@@ -1,0 +1,27 @@
+[[cypher-cookbook-path-tree]]
+== A multilevel indexing structure (path tree) ==
+
+In this example, a multi-level tree structure 
+is used to index event nodes (here +Event1+, +Event2+ and +Event3+, 
+in this case with a YEAR-MONTH-DAY granularity, making this a timeline indexing structure.
+However, this approach should work for a wide range of multi-level ranges.
+
+The structure follows a couple of rules:
+
+- Events can be indexed multiple times by connecting the indexing structure leafs with the events via a +VALUE+ relationship.
+- The querying is done in a path-range fashion. That is, the start- and end path from the indexing root to the start and end leafs in the tree are calculated
+- Using Cypher, the queries following different strategies can be expressed as path sections and put together using one single query.
+
+The graph below depicts a structure with 3 Events being attached to an index structure at different leafs.
+
+:leveloffset: 2
+
+.Graph
+include::includes/path-tree-layout.asciidoc[]
+
+include::return-zero-range.asciidoc[]
+
+include::return-the-full-range.asciidoc[]
+
+include::return-partly-shared-path-ranges.asciidoc[]
+

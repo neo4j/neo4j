@@ -1,0 +1,12 @@
+[[csv-file-format]]
+= CSV file format =
+
+The CSV file to use with +LOAD CSV+ must have the following characteristics:
+
+* the character encoding is UTF-8;
+* the end line termination is system dependent, e.g., it is `\n` on unix or `\r\n` on windows;
+* the default field terminator is `,`;
+* the field terminator character can be change by using the option +FIELDTERMINATOR+ available in the +LOAD CSV+ command;
+* quoted strings are allowed in the CSV file and the quotes are dropped when reading the data;
+* the character for string quotation is double quote `"`;
+* the escape character is `\`.

@@ -1,0 +1,32 @@
+[[tutorials-cypher]]
+= Getting started with Cypher =
+
+This chapter will guide you through your first steps with <<cypher-query-lang,Cypher>>.
+
+In the online edition of this manual, all queries in this section can be executed interactively without installing Neo4j on your computer.
+
+Otherwise, first get the Neo4j server running to try things out locally.
+Instructions are found in <<server-installation>>.
+With the server running, you can choose to issue Cypher queries from either the web interface or the Neo4j shell.
+See <<tools-webadmin>> or <<shell>>.
+
+:leveloffset: 2
+
+include::../../parsed-graphgists/cypher/create-nodes-and-rels.asciidoc[]
+
+:leveloffset: 2
+
+include::../../parsed-graphgists/cypher/movie-db.asciidoc[]
+
+:leveloffset: 2
+
+include::../../parsed-graphgists/cypher/social-movie-db.asciidoc[]
+
+:leveloffset: 2
+
+include::../../parsed-graphgists/cypher/finding-paths.asciidoc[]
+
+:leveloffset: 2
+
+include::../../parsed-graphgists/cypher/labels.asciidoc[]
+

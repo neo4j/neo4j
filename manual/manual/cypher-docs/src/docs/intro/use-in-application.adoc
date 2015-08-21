@@ -1,0 +1,44 @@
+[[cypher-intro-applications]]
+= Use Cypher in an application
+
+The most direct way to use Cypher programmatically is to execute a HTTP POST operation against the transactional Cypher endpoint.
+You can send a large number of statements with parameters to the server with each request.
+For immediate execution you can use the `/db/data/transaction/commit` endpoint with a JSON payload like this:
+
+[source,bash]
+----
+curl -i -H accept:application/json -H content-type:application/json -XPOST http://localhost:7474/db/data/transaction/commit \
+  -d '{"statements":[{"statement":"CREATE (p:Person {name:{name},born:{born}}) RETURN p","parameters":{"name":"Keanu Reeves","born":1964}}]}'
+----
+
+The above command results in:
+
+[source,javascript]
+----
+{"results":[{"columns":["p"],"data":[{"row":[{"name":"Keanu Reeves","born":1964}]}]}],"errors":[]}
+----
+
+You can add as many "statement" objects in the "statements" list as you want.
+
+For larger use-cases that span multiple requests but whose read-write-read-write operations should be executed within the same transactional scope you'd use the `/db/data/transaction` endpoint.
+This will give you a transaction URL as the `Location` header, which you can continue to write to and read from.
+At the end you either commit the whole transaction by POSTing to the (also returned) commit URL or by issuing a DELETE request against the transaction URL.
+
+[source,bash]
+----
+curl -i -H accept:application/json -H content-type:application/json -XPOST http://localhost:7474/db/data/transaction \
+  -d '{"statements":[{"statement":"CREATE (p:Person {name:{name},born:{born}}) RETURN p","parameters":{"name":"Clint Eastwood","born":1930}}]}'
+----
+
+The above command results in:
+
+[source]
+----
+HTTP/1.1 201 Created
+Location: http://localhost:7474/db/data/transaction/261
+
+{"commit":"http://localhost:7474/db/data/transaction/261/commit","transaction":{"expires":"Wed, 03 Sep 2014 23:26:51 +0000"},"errors":[],
+ "results":[{"columns":["p"],"data":[{"row":[{"name":"Clint Eastwood","born":1930}]}]}]}
+----
+
+See <<rest-api-transactional>> for more information.

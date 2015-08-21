@@ -1,0 +1,21 @@
+[[cypher-schema]]
+= Schema =
+
+Neo4j 2.0 introduced an optional schema for the graph, based around the concept of labels.
+Labels are used in the specification of indexes, and for defining constraints on the graph.
+Together, indexes and constraints are the schema of the graph.
+Cypher includes data definition language (DDL) statements for manipulating the schema.
+
+:leveloffset: 2
+
+include::ql/schema-index/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/constraints/index.asciidoc[]
+
+:leveloffset: 2
+
+include::statistics.asciidoc[]
+
+

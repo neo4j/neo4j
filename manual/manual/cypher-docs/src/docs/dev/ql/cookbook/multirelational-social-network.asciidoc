@@ -1,0 +1,10 @@
+[[cypher-cookbook-multirelational-social-network]]
+== Multirelational (social) graphs ==
+
+:leveloffset: 2
+
+.Graph
+include::includes/cypher-multirelationalsocialnetwork-graph.asciidoc[]
+
+include::who-follows-or-loves-me-back.asciidoc[]
+

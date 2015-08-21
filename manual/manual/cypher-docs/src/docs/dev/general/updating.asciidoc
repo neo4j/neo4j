@@ -1,0 +1,59 @@
+[[query-updating]]
+= Updating the graph
+
+Cypher can be used for both querying and updating your graph.
+
+[[query-updating-structure]]
+== The Structure of Updating Queries ==
+
+[abstract]
+* A Cypher query part can't both match and update the graph at the same time.
+* Every part can either read and match on the graph, or make updates on it.
+
+If you read from the graph and then update the graph, your query implicitly has two parts -- the reading is the first part, and the writing is the second part.
+
+If your query only performs reads, Cypher will be lazy and not actually match the pattern until you ask for the results.
+In an updating query, the semantics are that _all_ the reading will be done before any writing actually happens.
+
+The only pattern where the query parts are implicit is when you first read and then write -- any other order and you have to be explicit about your query parts.
+The parts are separated using the `WITH` statement.
+`WITH` is like an event horizon -- it's a barrier between a plan and the finished execution of that plan.
+
+When you want to filter using aggregated data, you have to chain together two reading query parts -- the first one does the aggregating, and the second filters on the results coming from the first one.
+
+[source,cypher]
+----
+MATCH (n {name: 'John'})-[:FRIEND]-(friend)
+WITH n, count(friend) as friendsCount
+WHERE friendsCount > 3
+RETURN n, friendsCount
+----
+
+Using `WITH`, you specify how you want the aggregation to happen, and that the aggregation has to be finished before Cypher can start filtering.
+
+Here's an example of updating the graph, writing the aggregated data to the graph:
+
+[source,cypher]
+----
+MATCH (n {name: 'John'})-[:FRIEND]-(friend)
+WITH n, count(friend) as friendsCount
+SET n.friendCount = friendsCount
+RETURN n.friendsCount
+----
+
+You can chain together as many query parts as the available memory permits.
+
+[[query-updating-return]]
+== Returning data ==
+
+Any query can return data.
+If your query only reads, it has to return data -- it serves no purpose if it doesn't, and it is not a valid Cypher query.
+Queries that update the graph don't have to return anything, but they can.
+
+After all the parts of the query comes one final `RETURN` clause.
+`RETURN` is not part of any query part -- it is a period symbol at the end of a query.
+The `RETURN` clause has three sub-clauses that come with it: `SKIP`/`LIMIT` and `ORDER BY`.
+
+If you return graph elements from a query that has just deleted them -- beware, you are holding a pointer that is no longer valid.
+Operations on that node are undefined.
+

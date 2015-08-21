@@ -1,0 +1,259 @@
+= Patterns in Practice
+
+== Creating Data
+
+We'll start by looking into the clauses that allow us to create data.
+
+To add data, we just use the patterns we already know. 
+By providing patterns we can specify what graph structures, labels and properties we would like to make part of our graph. 
+
+Obviously the simplest clause is called `CREATE`. 
+It will just go ahead and directly create the patterns that you specify.
+
+For the patterns we've looked at so far this could look like the following:
+
+[source,cypher]
+----
+CREATE (:Movie {title:"The Matrix",released:1997})
+----
+
+If we execute this statement, Cypher returns the number of changes, in this case adding 1 node, 1 label and 2 properties.
+
+//table
+
+[source,querytest]
+----
+Nodes created: 1
+Properties set: 2
+Labels added: 1
+----
+
+As we started out with an empty database, we now have a database with a single node in it:
+
+//graph
+
+If case we also want to return the created data we can add a `RETURN` clause, which refers to the identifier we've assigned to our pattern elements.
+
+[source,cypher]
+----
+CREATE (p:Person {name:"Keanu Reeves", born:1964})
+RETURN p
+----
+
+This is what gets returned:
+
+//table
+
+If we want to create more than one element, we can separate the elements with commas or use multiple `CREATE` statements.
+
+We can of course also create more complex structures, like an `ACTED_IN` relationship with information about the character, or `DIRECTED` ones for the director.
+
+[source,cypher]
+----
+CREATE (a:Person {name:"Tom Hanks", born:1956})-[r:ACTED_IN {roles:["Forrest"]}]->(m:Movie {title:"Forrest Gump",released:1994})
+CREATE (d:Person {name:"Robert Zemeckis", born:1951})-[:DIRECTED]->(m)
+RETURN a,d,r,m
+----
+
+This is the part of the graph we just updated:
+
+//graph_result
+
+In most cases, we want to connect new data to existing structures.
+This requires that we know how to find existing patterns in our graph data, which we will look at next.
+
+== Matching Patterns
+
+Matching patterns is a task for the `MATCH` statement. 
+We pass the same kind of patterns we've used so far to `MATCH` to describe what we're looking for. 
+It is similar to _query by example_, only that our examples also include the structures.
+
+NOTE: A `MATCH` statement will search for the patterns we specify and return _one row per successful pattern match_.
+
+To find the data we've created so far, we can start looking for all nodes labeled with the `Movie` label.
+
+[source,cypher]
+----
+MATCH (m:Movie)
+RETURN m
+----
+
+Here's the result:
+
+// graph_result
+
+This should show both _The Matrix_ and _Forrest Gump_.
+
+[source,querytest]
+----
+The Matrix
+Forrest Gump
+----
+
+We can also look for a specific person, like _Keanu Reeves_.
+
+[source,cypher]
+----
+MATCH (p:Person {name:"Keanu Reeves"})
+RETURN p
+----
+
+This query returns the matching node:
+
+// graph_result
+
+[source,querytest]
+----
+Keanu Reeves
+1 row
+----
+
+Note that we only provide enough information to find the nodes, not all properties are required. 
+In most cases you have key-properties like SSN, ISBN, emails, logins, geolocation or product codes to look for.
+
+We can also find more interesting connections, like for instance the movies titles that _Tom Hanks_ acted in and the roles he played.
+
+[source,cypher]
+----
+MATCH (p:Person {name:"Tom Hanks"})-[r:ACTED_IN]->(m:Movie)
+RETURN m.title, r.roles
+----
+
+// table
+
+[source,querytest]
+----
+Forrest Gump
+1 row
+----
+
+In this case we only returned the properties of the nodes and relationships that we were interested in. 
+You can access them everywhere via a dot notation `identifer.property`. 
+
+Of course this only lists his role as _Forrest_ in _Forrest Gump_ because that's all data that we've added.
+
+Now we know enough to connect new nodes to existing ones and can combine `MATCH` and `CREATE` to attach structures to the graph.
+
+== Attaching Structures
+
+To extend the graph with new information, we first match the existing connection points and then attach the newly created nodes to them with relationships.
+Adding _Cloud Atlas_ as a new movie for _Tom Hanks_ could be achieved like this:
+
+[source,cypher]
+----
+MATCH (p:Person {name:"Tom Hanks"})
+CREATE (m:Movie {title:"Cloud Atlas",released:2012})
+CREATE (p)-[r:ACTED_IN {roles:['Zachry']} ]->(m)
+RETURN p,r,m
+----
+
+Here's what the structure looks like in the database:
+
+// graph_result
+
+[source,querytest]
+----
+1 row
+Nodes created: 1
+Relationships created: 1
+Properties set: 3
+Labels added: 1
+----
+
+TIP: It is important to remember that we can assign identifiers to both nodes and relationships and use them later on, no matter if they were created or matched.
+
+It is possible to attach both node and relationship in a single `CREATE` clause.
+For readability it helps to split them up though.
+
+[IMPORTANT]
+A tricky aspect of the combination of `MATCH` and `CREATE` is that we get _one row per matched pattern_.
+This causes subsequent `CREATE` statements to be executed once for each row.
+In many cases this is what you want.
+If that's not intended, please move the `CREATE` statement before the `MATCH`, or change the cardinality of the query with means discussed later or use the _get or create_ semantics of the next clause: `MERGE`.
+
+// not sure about the last sentence above
+
+== Completing Patterns
+
+Whenever we get data from external systems or are not sure if certain information already exists in the graph, we want to be able to express a repeatable (idempotent) update operation.
+In Cypher `MERGE` has this function. 
+It acts like a combination of `MATCH` _or_ `CREATE`, which checks for the existence of data first before creating it.
+With `MERGE` you define a pattern to be found or created. 
+Usually, as with `MATCH` you only want to include the key property to look for in your core pattern.
+`MERGE` allows you to provide additional properties you want to set `ON CREATE`.
+
+If we wouldn't know if our graph already contained _Cloud Atlas_ we could merge it in again.
+
+[source,cypher]
+----
+MERGE (m:Movie {title:"Cloud Atlas"}) ON CREATE SET m.released = 2012
+RETURN m
+----
+
+//table
+
+We get a result in any both cases: either the data (potentially more than one row) that was already in the graph or a single, newly created `Movie` node.
+
+[NOTE]
+A `MERGE` clause without any previously assigned identifiers in it either matches the full pattern or creates the full pattern.
+It never produces a partial mix of matching and creating within a pattern.
+To achieve a partial match/create, make sure to use already defined identifiers for the parts that shouldn't be affected.
+
+So foremost `MERGE` makes sure that you can't create duplicate information or structures, but it comes with the cost of needing to check for existing matches first.
+Especially on large graphs it can be costly to scan a large set of labeled nodes for a certain property.
+You can alleviate some of that by creating supporting indexes or constraints, which we'll discuss later.
+But it's still not for free, so whenever you're sure to not create duplicate data use `CREATE` over `MERGE`.
+
+[TIP]
+`MERGE` can also assert that a relationship is only created once. 
+For that to work you _have to pass in_ both nodes from a previous pattern match.
+
+[source,cypher]
+----
+MATCH (m:Movie {title:"Cloud Atlas"})
+MATCH (p:Person {name:"Tom Hanks"})
+MERGE (p)-[r:ACTED_IN]->(m) ON CREATE SET r.roles = ['Zachry']
+RETURN p,r,m
+----
+
+//graph_result
+
+[source,querytest]
+----
+1 row
+Tom Hanks
+Zachry
+Cloud Atlas
+----
+
+In case the direction of a relationship is arbitrary, you can leave off the arrowhead.
+`MERGE` will then check for the relationship in either direction, and create a new directed relationship if no matching relationship was found.
+
+If you choose to pass in only one node from a preceding clause, `MERGE` offers an interesting functionality.
+It will then only match within the direct neighborhood of the provided node for the given pattern, and, if not found create it.
+This can come in very handy for creating for example tree structures.
+
+[source,cypher]
+----
+CREATE (y:Year {year:2014})
+MERGE (y)<-[:IN_YEAR]-(m10:Month {month:10})
+MERGE (y)<-[:IN_YEAR]-(m11:Month {month:11})
+RETURN y,m10,m11
+----
+
+This is the graph structure that gets created:
+
+//graph_result
+
+[source,querytest]
+----
+1 row
+Nodes created: 3
+Relationships created: 2
+Properties set: 3
+Labels added: 3
+----
+
+Here there is no global search for the two `Month` nodes; they are only searched for in the context of the _2014_ `Year` node.
+
+

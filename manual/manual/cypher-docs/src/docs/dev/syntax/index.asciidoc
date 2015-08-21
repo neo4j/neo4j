@@ -1,0 +1,41 @@
+[[query-syntax]]
+= Syntax =
+
+The nitty-gritty details of Cypher syntax.
+
+:leveloffset: 2
+
+include::values.asciidoc[]
+
+:leveloffset: 2
+
+include::expressions.asciidoc[]
+
+:leveloffset: 2
+
+include::identifiers.asciidoc[]
+
+:leveloffset: 2
+
+include::operators.asciidoc[]
+
+:leveloffset: 2
+
+include::comparison.asciidoc[]
+
+:leveloffset: 2
+
+include::comments.asciidoc[]
+
+:leveloffset: 2
+
+include::../ql/introduction/pattern.asciidoc[]
+
+:leveloffset: 2
+
+include::../ql/syntax/collections.asciidoc[]
+
+:leveloffset: 2
+
+include::working-with-null.asciidoc[]
+
