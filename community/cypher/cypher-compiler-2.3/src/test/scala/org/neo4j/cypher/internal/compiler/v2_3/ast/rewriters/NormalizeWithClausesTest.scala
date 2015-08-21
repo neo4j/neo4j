@@ -569,6 +569,22 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
     )
   }
 
+  test("match (n) with n, 0 as foo with n as n order by foo, n.bar return n") {
+    assertRewrite(
+      """MATCH (n)
+        |WITH n, 0 AS foo
+        |WITH n AS n ORDER BY foo, n.bar
+        |RETURN n
+      """.stripMargin,
+    """MATCH (n)
+      |WITH n AS n, 0 AS foo
+      |WITH foo AS foo, n AS n
+      |WITH n AS n, foo AS foo, n.bar AS `  FRESHID55` ORDER BY foo, `  FRESHID55`
+      |_PRAGMA WITHOUT `  FRESHID55`
+      |RETURN n
+    """.stripMargin)
+  }
+
   test("match n with n as n order by max(n) return n") {
     evaluating { rewriting("match n with n as n order by max(n) return n") } should produce[SyntaxException]
   }

@@ -65,4 +65,24 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
         Map("n" -> 3)
       ))
   }
+
+  test("Properly handle projections and ORDER BY (GH#4937)") {
+    val crew1 = createLabeledNode(Map("name" -> "Neo", "rank" -> 1), "Crew")
+    val crew2 = createLabeledNode(Map("name" -> "Neo", "rank" -> 2), "Crew")
+    val crew3 = createLabeledNode(Map("name" -> "Neo", "rank" -> 3), "Crew")
+    val crew4 = createLabeledNode(Map("name" -> "Neo", "rank" -> 4), "Crew")
+    val crew5 = createLabeledNode(Map("name" -> "Neo", "rank" -> 5), "Crew")
+
+    val query = """MATCH (crew:Crew {name: 'Neo'})
+                  |WITH crew, 0 AS relevance RETURN crew
+                  |ORDER BY relevance, crew.rank""".stripMargin
+
+    executeWithAllPlanners(query).toList should equal(List(
+      Map("crew" -> crew1),
+      Map("crew"-> crew2),
+      Map("crew" -> crew3),
+      Map("crew" -> crew4),
+      Map("crew" -> crew5)
+    ))
+  }
 }
