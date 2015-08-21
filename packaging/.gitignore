@@ -18,3 +18,4 @@ server/neo4j-home/rrd
 .gradle
 server/rrd
 /installer-windows/src/main/resources/installer/installer-cache/
+snakeoil.*

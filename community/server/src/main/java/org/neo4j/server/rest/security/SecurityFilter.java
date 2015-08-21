@@ -36,7 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 
 public class SecurityFilter implements Filter
 {
-    private final HashMap<UriPathWildcardMatcher, HashSet<SecurityRule>> rules = new HashMap<UriPathWildcardMatcher, HashSet<SecurityRule>>();
+    private final HashMap<UriPathWildcardMatcher, HashSet<RuleEnforcer>> rules = new HashMap<UriPathWildcardMatcher, HashSet<RuleEnforcer>>();
 
     public SecurityFilter( SecurityRule rule, SecurityRule... rules )
     {
@@ -55,13 +55,13 @@ public class SecurityFilter implements Filter
             }
 
             UriPathWildcardMatcher uriPathWildcardMatcher = new UriPathWildcardMatcher( rulePath );
-            HashSet<SecurityRule> ruleHashSet = rules.get( uriPathWildcardMatcher );
+            HashSet<RuleEnforcer> ruleHashSet = rules.get( uriPathWildcardMatcher );
             if ( ruleHashSet == null )
             {
-                ruleHashSet = new HashSet<SecurityRule>();
+                ruleHashSet = new HashSet<RuleEnforcer>();
                 rules.put( uriPathWildcardMatcher, ruleHashSet );
             }
-            ruleHashSet.add( r );
+            ruleHashSet.add( new RuleEnforcer(r) );
         }
     }
 
@@ -96,8 +96,8 @@ public class SecurityFilter implements Filter
         {
             if ( uriPathWildcardMatcher.matches( path ) )
             {
-                HashSet<SecurityRule> securityRules = rules.get( uriPathWildcardMatcher );
-                for ( SecurityRule securityRule : securityRules )
+                HashSet<RuleEnforcer> securityRules = rules.get( uriPathWildcardMatcher );
+                for ( RuleEnforcer securityRule : securityRules )
                 {
                     // 401 on the first failed rule we come along
                     if ( !securityRule.isAuthorized( httpReq ) )
@@ -132,7 +132,7 @@ public class SecurityFilter implements Filter
         }
     }
 
-    private void createUnauthorizedChallenge( ServletResponse response, SecurityRule rule )
+    private void createUnauthorizedChallenge( ServletResponse response, RuleEnforcer rule )
     {
         HttpServletResponse httpServletResponse = (HttpServletResponse) response;
         httpServletResponse.setStatus( 401 );
