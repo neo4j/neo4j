@@ -3,8 +3,9 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.neo4j.doc</groupId>
-    <artifactId>neo4j-cypher-manual</artifactId>
+    <artifactId>neo4j-cypher-docs-parent</artifactId>
     <version>2.3-SNAPSHOT</version>
+    <relativePath>..</relativePath>
   </parent>
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-graphgist</artifactId>
