@@ -65,6 +65,7 @@ import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.randomharness.Command;
@@ -3539,6 +3540,8 @@ public abstract class PageCacheTest<T extends PageCache>
     @Test( timeout = 30000 )
     public void backgroundThreadsMustGracefullyShutDown() throws Exception
     {
+        assumeTrue( "For some reason, this test is very flaky on Windows", !FileUtils.OS_IS_WINDOWS );
+
         int iterations = 1000;
         List<WeakReference<PageCache>> refs = new LinkedList<>();
         final Queue<Throwable> caughtExceptions = new ConcurrentLinkedQueue<>();
