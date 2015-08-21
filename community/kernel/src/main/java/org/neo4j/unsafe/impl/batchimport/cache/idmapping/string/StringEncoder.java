@@ -21,6 +21,8 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import java.util.Arrays;
 
+import static java.lang.Math.max;
+
 /**
  * Encodes String into a long with very small chance of collision, i.e. two different Strings encoded into
  * the same long value.
@@ -134,7 +136,7 @@ public class StringEncoder implements Encoder
     private int[] simplestCode( byte[] bytes, int inputLength )
     {
         int[] codes = new int[]{0, 0};
-        codes[0] = inputLength << 25;
+        codes[0] = max( inputLength, 1 ) << 25;
         codes[1] = 0;
         for ( int i = 0; i < 3 && i < inputLength; i++ )
         {
