@@ -67,9 +67,10 @@ trait Clauses extends Parser
     group(keyword("SET") ~~ oneOrMore(SetItem, separator = CommaSep)) ~~>> (ast.SetClause(_))
   }
 
-  def Delete: Rule1[ast.Delete] = rule("DELETE") {
-    group(keyword("DELETE") ~~ oneOrMore(Expression, separator = CommaSep)) ~~>> (ast.Delete(_))
-  }
+  def Delete: Rule1[ast.Delete] = rule("DELETE") (
+      group(keyword("DELETE") ~~ oneOrMore(Expression, separator = CommaSep)) ~~>> (ast.Delete(_, false))
+    | group(keyword("DETACH DELETE") ~~ oneOrMore(Expression, separator = CommaSep)) ~~>> (ast.Delete(_, true))
+  )
 
   def Remove: Rule1[ast.Remove] = rule("REMOVE") {
     group(keyword("REMOVE") ~~ oneOrMore(RemoveItem, separator = CommaSep)) ~~>> (ast.Remove(_))

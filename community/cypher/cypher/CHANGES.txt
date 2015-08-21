@@ -11,6 +11,7 @@ o Range queries can now be solved using index seeks
 o Prefer size() over length() for collections and pattern predicates
 o Accept lower case 'e' in cypher exponent double literals
 o Added support for join hints: USING JOIN ON n
+o Added "DETACH DELETE" to Cypher
 
 2.3-M02
 -------

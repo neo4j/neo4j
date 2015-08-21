@@ -24,31 +24,35 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression,
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
-import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.graphdb
 
 import scala.collection.JavaConverters._
 
-case class DeleteEntityAction(elementToDelete: Expression)
+case class DeleteEntityAction(elementToDelete: Expression, forced: Boolean)
   extends UpdateAction {
 
   def exec(context: ExecutionContext, state: QueryState) = {
     elementToDelete(context)(state) match {
-      case n: Node => delete(n, state)
-      case r: Relationship => delete(r, state)
+      case n: graphdb.Node => delete(n, state, forced)
+      case r: graphdb.Relationship => delete(r, state, forced)
       case null =>
-      case p:Path => p.iterator().asScala.foreach( pc => delete(pc, state))
+      case p: graphdb.Path => p.iterator().asScala.foreach(pc => delete(pc, state, forced))
       case x => throw new CypherTypeException("Expression `" + elementToDelete.toString() + "` yielded `" + x.toString + "`. Don't know how to delete that.")
     }
     Iterator(context)
   }
 
-  private def delete(x: PropertyContainer, state: QueryState) {
-
+  private def delete(x: graphdb.PropertyContainer, state: QueryState, forced: Boolean) {
     x match {
-      case n: Node if !state.query.nodeOps.isDeleted(n)=>
+      case n: graphdb.Node if !state.query.nodeOps.isDeleted(n) && forced =>
+        val rels = state.query.getRelationshipsForIds(n, graphdb.Direction.BOTH, None)
+        rels.foreach(r => delete(r, state, forced))
         state.query.nodeOps.delete(n)
 
-      case r: Relationship if !state.query.relationshipOps.isDeleted(r) =>
+      case n: graphdb.Node if !state.query.nodeOps.isDeleted(n) =>
+        state.query.nodeOps.delete(n)
+
+      case r: graphdb.Relationship if !state.query.relationshipOps.isDeleted(r) =>
         state.query.relationshipOps.delete(r)
 
       case _ =>
@@ -58,7 +62,8 @@ case class DeleteEntityAction(elementToDelete: Expression)
 
   def identifiers: Seq[(String, CypherType)] = Nil
 
-  def rewrite(f: (Expression) => Expression) = DeleteEntityAction(elementToDelete.rewrite(f))
+  def rewrite(f: (Expression) => Expression) =
+    DeleteEntityAction(elementToDelete.rewrite(f), forced)
 
   def children = Seq(elementToDelete)
 

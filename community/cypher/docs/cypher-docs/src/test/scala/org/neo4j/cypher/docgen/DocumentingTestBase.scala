@@ -156,7 +156,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     internalTestQuery(title, text, queryText, optionalResultExplanation, Some(classTag), None, Map.empty, _ => {})
   }
 
-  def prepareAndTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String,
+  def prepareAndTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String = "",
                           prepare: GraphDatabaseAPI => Unit, assertions: InternalExecutionResult => Unit) {
     internalTestQuery(title, text, queryText, optionalResultExplanation, None, Some(prepare), Map.empty, assertions)
   }

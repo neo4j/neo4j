@@ -306,7 +306,7 @@ object StatementConverters {
             mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name), toCommandExpression(setItem.expression), false)
         }
       case c: ast.Delete =>
-        c.expressions.map(e => mutation.DeleteEntityAction(toCommandExpression(e)))
+        c.expressions.map(e => mutation.DeleteEntityAction(toCommandExpression(e), c.forced))
       case c: ast.Remove =>
         c.items.map {
           case remItem: ast.RemoveLabelItem =>
