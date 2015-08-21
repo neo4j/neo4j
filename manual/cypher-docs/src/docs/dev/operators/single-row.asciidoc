@@ -1,4 +1,0 @@
-[[operator-single-row]]
-= Single row =
-
-Produces a single empty row. Used for queries that only return static values or for sub queries.
