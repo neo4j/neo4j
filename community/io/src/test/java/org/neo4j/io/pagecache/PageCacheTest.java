@@ -65,6 +65,7 @@ import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.randomharness.Command;
@@ -2726,7 +2727,7 @@ public abstract class PageCacheTest<T extends PageCache>
     }
 
     @RepeatRule.Repeat( times = 100 )
-    @Test( timeout = 10000 )
+    @Test( timeout = 30000 )
     public void writeLockingCursorMustThrowWhenLockingPageRacesWithUnmapping() throws Exception
     {
         // Even if we block in pin, waiting to grab a lock on a page that is
@@ -2738,11 +2739,12 @@ public abstract class PageCacheTest<T extends PageCache>
         // Conversely, we don't have to go to the same lengths for read locked
         // pages, because those are never changed. Not by us, anyway.
 
-        generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize );
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
 
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
 
-        final PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+        final PagedFile pf = pageCache.map( file, filePageSize );
         final CountDownLatch hasLockLatch = new CountDownLatch( 1 );
         final CountDownLatch unlockLatch = new CountDownLatch( 1 );
         final CountDownLatch secondThreadGotLockLatch = new CountDownLatch( 1 );
@@ -2790,7 +2792,7 @@ public abstract class PageCacheTest<T extends PageCache>
 
         try
         {
-            closeFuture.get( 10, TimeUnit.MILLISECONDS );
+            closeFuture.get( 100, TimeUnit.MILLISECONDS );
             fail( "Expected a TimeoutException here" );
         }
         catch ( TimeoutException e )
@@ -2810,7 +2812,7 @@ public abstract class PageCacheTest<T extends PageCache>
 
         try
         {
-            closeFuture.get( 200, TimeUnit.MILLISECONDS );
+            closeFuture.get( 1000, TimeUnit.MILLISECONDS );
             // The closeFuture got it first, so the takeLockFuture should throw.
             try
             {
@@ -2830,7 +2832,7 @@ public abstract class PageCacheTest<T extends PageCache>
             // The takeLockFuture got it first, so the closeFuture should
             // complete when we release the latch.
             secondThreadGotLockLatch.countDown();
-            closeFuture.get( 200, TimeUnit.MILLISECONDS );
+            closeFuture.get( 2000, TimeUnit.MILLISECONDS );
         }
     }
 
@@ -3538,6 +3540,8 @@ public abstract class PageCacheTest<T extends PageCache>
     @Test( timeout = 30000 )
     public void backgroundThreadsMustGracefullyShutDown() throws Exception
     {
+        assumeTrue( "For some reason, this test is very flaky on Windows", !FileUtils.OS_IS_WINDOWS );
+
         int iterations = 1000;
         List<WeakReference<PageCache>> refs = new LinkedList<>();
         final Queue<Throwable> caughtExceptions = new ConcurrentLinkedQueue<>();
