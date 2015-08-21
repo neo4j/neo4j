@@ -78,13 +78,14 @@ public class CheckPointingLogRotationStressTesting
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.pagecache_memory, pageCacheMemory )
                 .setConfig( GraphDatabaseSettings.mapped_memory_page_size, pageSize )
+                .setConfig( GraphDatabaseSettings.check_point_interval_time, "1m" )
                 .setConfig( GraphDatabaseFacadeFactory.Configuration.tracer, "timer" )
                 .newGraphDatabase();
 
         System.out.println("3/6\tWarm up db...");
         try ( Workload workload = new Workload( db, defaultRandomMutation( nodeCount, db ), threads ) )
         {
-            workload.run( TimeUnit.SECONDS.toMillis( 10 ), Workload.TransactionThroughput.NONE );
+            workload.run( TimeUnit.SECONDS.toMillis( 30 ), Workload.TransactionThroughput.NONE );
         }
 
         System.out.println( "4/6\tStarting workload..." );
