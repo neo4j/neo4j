@@ -220,9 +220,9 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
   def init() {
     dir = createDir(section)
     allQueriesWriter = new OutputStreamWriter(new FileOutputStream(new File("target/all-queries.asciidoc"), true), "UTF-8")
-    db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
+    db = newTestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
 
-    GraphDatabaseServiceCleaner.cleanDatabaseContent(db);
+    GraphDatabaseServiceCleaner.cleanDatabaseContent(db)
 
     db.inTx {
       nodeIndex = db.index().forNodes("nodeIndexName")
@@ -246,5 +246,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
     }
     engine = new ExecutionEngine(db)
   }
+
+  protected def newTestGraphDatabaseFactory(): TestGraphDatabaseFactory = new TestGraphDatabaseFactory()
 }
 

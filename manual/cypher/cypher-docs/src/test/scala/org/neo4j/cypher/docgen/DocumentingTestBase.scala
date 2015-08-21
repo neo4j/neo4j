@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.frontend.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.{RewindableExecutionResult, ServerExecutionEngine}
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.graphdb._
-import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.graphdb.factory.{GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.graphdb.index.Index
 import org.neo4j.helpers.Settings
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -438,9 +438,11 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     hardReset()
   }
 
+  protected def newTestGraphDatabaseFactory(): TestGraphDatabaseFactory = new TestGraphDatabaseFactory()
+
   override def hardReset() {
     tearDown()
-    db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().
+    db = newTestGraphDatabaseFactory().newImpermanentDatabaseBuilder().
       setConfig(GraphDatabaseSettings.node_keys_indexable, "name").
       setConfig(GraphDatabaseSettings.node_auto_indexing, Settings.TRUE).
       newGraphDatabase().asInstanceOf[GraphDatabaseAPI]

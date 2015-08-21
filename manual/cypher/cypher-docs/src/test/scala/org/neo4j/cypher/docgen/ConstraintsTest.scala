@@ -22,10 +22,13 @@ package org.neo4j.cypher.docgen
 import org.junit.Test
 import org.neo4j.cypher.{ConstraintValidationException, CypherExecutionException}
 import org.neo4j.kernel.api.constraints.{NodePropertyConstraint, RelationshipPropertyConstraint}
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
 
 class ConstraintsTest extends DocumentingTestBase with SoftReset {
+
+  override protected def newTestGraphDatabaseFactory() = new TestEnterpriseGraphDatabaseFactory()
 
   def section: String = "Constraints"
 
