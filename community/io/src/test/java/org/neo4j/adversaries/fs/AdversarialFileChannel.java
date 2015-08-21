@@ -19,55 +19,20 @@
  */
 package org.neo4j.adversaries.fs;
 
-import sun.nio.ch.FileChannelImpl;
-
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.fs.StoreFileChannel;
-import org.neo4j.io.fs.StoreFileChannelUnwrapper;
-
-import static org.neo4j.adversaries.fs.AdversarialFileDispatcherFactory.makeFileDispatcherAdversarial;
 
 @SuppressWarnings( "unchecked" )
 public class AdversarialFileChannel implements StoreChannel
 {
-    public static volatile boolean useAdversarialFileDispatcherHack;
-
     private final StoreChannel delegate;
     private final Adversary adversary;
 
-    public static StoreChannel wrap( StoreChannel channel, Adversary adversary )
-    {
-        if ( useAdversarialFileDispatcherHack && channel.getClass() == StoreFileChannel.class )
-        {
-            FileChannel innerChannel = StoreFileChannelUnwrapper.unwrap( channel );
-            if ( innerChannel.getClass() == FileChannelImpl.class )
-            {
-                FileChannelImpl channelImpl = (FileChannelImpl) innerChannel;
-                try
-                {
-                    Field nd = FileChannelImpl.class.getDeclaredField( "nd" );
-                    nd.setAccessible( true );
-                    Object fileDispatcher = nd.get( channelImpl );
-                    nd.set( channelImpl, makeFileDispatcherAdversarial( fileDispatcher, adversary ) );
-                    return new StoreFileChannel( innerChannel );
-                }
-                catch ( Exception e )
-                {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return new AdversarialFileChannel( channel, adversary );
-    }
-
-    private AdversarialFileChannel( StoreChannel channel, Adversary adversary )
+    public AdversarialFileChannel( StoreChannel channel, Adversary adversary )
     {
         this.delegate = channel;
         this.adversary = adversary;
@@ -76,27 +41,14 @@ public class AdversarialFileChannel implements StoreChannel
     @Override
     public long write( ByteBuffer[] srcs ) throws IOException
     {
-        if ( adversary.injectFailureOrMischief( IOException.class ) )
-        {
-            ByteBuffer mischievousBuffer = srcs[srcs.length - 1];
-            int oldLimit = mischiefLimit( mischievousBuffer );
-            long written = delegate.write( srcs );
-            mischievousBuffer.limit( oldLimit );
-            return written;
-        }
+        adversary.injectFailure( IOException.class );
         return delegate.write( srcs );
     }
 
     @Override
     public int write( ByteBuffer src, long position ) throws IOException
     {
-        if ( adversary.injectFailureOrMischief( IOException.class ) )
-        {
-            int oldLimit = mischiefLimit( src );
-            int written = delegate.write( src, position );
-            src.limit( oldLimit );
-            return written;
-        }
+        adversary.injectFailure( IOException.class );
         return delegate.write( src, position );
     }
 
@@ -117,15 +69,7 @@ public class AdversarialFileChannel implements StoreChannel
     @Override
     public long write( ByteBuffer[] srcs, int offset, int length ) throws IOException
     {
-        if ( adversary.injectFailureOrMischief( IOException.class ) )
-        {
-            length = length == 1? 1 : length / 2;
-            ByteBuffer mischievousBuffer = srcs[offset + length - 1];
-            int oldLimit = mischiefLimit( mischievousBuffer );
-            long written = delegate.write( srcs, offset, length );
-            mischievousBuffer.limit( oldLimit );
-            return written;
-        }
+        adversary.injectFailure( IOException.class );
         return delegate.write( srcs, offset, length );
     }
 
@@ -236,13 +180,7 @@ public class AdversarialFileChannel implements StoreChannel
     @Override
     public int write( ByteBuffer src ) throws IOException
     {
-        if ( adversary.injectFailureOrMischief( IOException.class ) )
-        {
-            int oldLimit = mischiefLimit( src );
-            int written = delegate.write( src );
-            src.limit( oldLimit );
-            return written;
-        }
+        adversary.injectFailure( IOException.class );
         return delegate.write( src );
     }
 

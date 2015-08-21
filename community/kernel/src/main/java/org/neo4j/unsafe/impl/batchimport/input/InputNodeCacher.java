@@ -71,12 +71,12 @@ public class InputNodeCacher extends InputEntityCacher<InputNode>
 
     protected void writeDiff( byte mode, String[] compare, String[] with ) throws IOException
     {
-        for ( String value : compare )
+        for ( int i = 0; i < compare.length; i++ )
         {
-            if ( !contains( with, value ) )
+            if ( !contains( with, compare[i] ) )
             {
                 channel.put( mode );
-                writeToken( value );
+                writeToken( compare[i] );
             }
         }
     }

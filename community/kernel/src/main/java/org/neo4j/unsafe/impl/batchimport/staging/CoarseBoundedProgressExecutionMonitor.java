@@ -56,7 +56,7 @@ public class CoarseBoundedProgressExecutionMonitor extends ExecutionMonitor.Adap
         int highestPercentThere = previousPercent;
         for ( StageExecution execution : executions )
         {
-            // This calculation below is aware of internals of the parallel importer and may
+            // This calculation below is aware of internals of the parallell importer and may
             // be wrong for other importers.
             long maxNumberOfBatches =
                     (highNodeId/execution.getConfig().batchSize()) * 2 + // node records encountered twice

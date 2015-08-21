@@ -87,12 +87,7 @@ class Plan
         out.println( "Plan: [thread; action]" );
         for ( int i = 0; i < plan.length; i++ )
         {
-            long threadId = executedByThread[i];
-            out.printf( "  % 3d : %s%n", threadId, plan[i] );
-            if ( threadId == -1 )
-            {
-                break;
-            }
+            out.printf( "  % 3d : %s%n", executedByThread[i], plan[i] );
         }
     }
 
