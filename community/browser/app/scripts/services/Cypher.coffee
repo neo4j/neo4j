@@ -99,8 +99,10 @@ angular.module('neo4jApp.services')
               results.push partResult
               q.resolve(results[0])
         ).error(
-          (r) ->
-            q.reject r
+          (r, status, headers, config) ->
+            raw = {request: config, response: {headers: headers(), data: r}}
+            raw.request.status = status
+            q.reject({errors: r.errors, raw: raw})
         )
         q.promise
 
