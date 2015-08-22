@@ -20,10 +20,15 @@
 package org.neo4j.server.enterprise;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Pattern;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.logging.LogProvider;
@@ -85,5 +90,16 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
         {
             return super.getServices();
         }
+    }
+
+    @Override
+    protected Pattern[] getUriWhitelist()
+    {
+        final List<Pattern> uriWhitelist = new ArrayList<>( Arrays.asList( super.getUriWhitelist() ) );
+        if ( !getConfig().get( HaSettings.ha_status_auth_enabled ) )
+        {
+            uriWhitelist.add( Pattern.compile( "/db/manage/server/ha.*" ) );
+        }
+        return uriWhitelist.toArray( new Pattern[uriWhitelist.size()] );
     }
 }
