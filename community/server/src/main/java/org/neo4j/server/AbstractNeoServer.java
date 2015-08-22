@@ -28,6 +28,7 @@ import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.regex.Pattern;
 import javax.servlet.Filter;
 
 import org.neo4j.function.Function;
@@ -110,6 +111,12 @@ public abstract class AbstractNeoServer implements NeoServer
      * This ensures the expiry time displayed to the user is always at least 1 second, even after it is rounded down.
      */
     private static final long ROUNDING_SECOND = 1000L;
+
+    private static final Pattern[] DEFAULT_URI_WHITELIST = new Pattern[]{
+            Pattern.compile( "/browser.*" ),
+            Pattern.compile( "/webadmin.*" ),
+            Pattern.compile( "/" )
+    };
 
     private final Database.Factory dbFactory;
     private final GraphDatabaseFacadeFactory.Dependencies dependencies;
@@ -441,6 +448,11 @@ public abstract class AbstractNeoServer implements NeoServer
     protected String getWebServerAddress()
     {
         return config.get( ServerSettings.webserver_address );
+    }
+
+    protected Pattern[] getUriWhitelist()
+    {
+        return DEFAULT_URI_WHITELIST;
     }
 
     protected KeyStoreInformation createKeyStore()
