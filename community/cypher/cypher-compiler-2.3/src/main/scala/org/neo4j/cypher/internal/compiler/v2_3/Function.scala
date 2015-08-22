@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3
 import commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{FunctionName, FunctionInvocation, Expression}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
+import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
 import symbols._
 
 object Function {

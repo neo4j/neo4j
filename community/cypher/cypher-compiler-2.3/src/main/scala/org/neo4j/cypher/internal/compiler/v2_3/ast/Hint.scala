@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
 
 sealed trait Hint extends ASTNode with ASTPhrase with SemanticCheckable {
   def identifiers: NonEmptyList[Identifier]

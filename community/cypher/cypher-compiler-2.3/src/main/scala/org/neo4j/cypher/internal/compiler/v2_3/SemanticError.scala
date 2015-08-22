@@ -19,4 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
+import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
+
 case class SemanticError(msg: String, position: InputPosition, references: InputPosition*)

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3
 
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
 
 class InputPositionTest extends CypherFunSuite {
 

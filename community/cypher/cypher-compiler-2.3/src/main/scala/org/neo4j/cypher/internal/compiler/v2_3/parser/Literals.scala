@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.parser
 
-import org.neo4j.cypher.internal.compiler.v2_3.{InputPosition, ast}
+import org.neo4j.cypher.internal.compiler.v2_3.ast
 import org.parboiled.scala._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.SymbolicName
 

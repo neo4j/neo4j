@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast
 
-import org.neo4j.cypher.internal.compiler.v2_3.{DummyPosition, InputPosition}
+import org.neo4j.cypher.internal.compiler.v2_3.DummyPosition
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
 
 trait AstConstructionTestSupport extends CypherTestSupport {
   protected val pos = DummyPosition(0)

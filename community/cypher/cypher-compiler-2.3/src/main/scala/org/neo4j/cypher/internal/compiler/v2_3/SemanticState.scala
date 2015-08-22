@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.{ASTAnnotationMap, Identifier
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{TreeElem, TreeZipper}
 import org.neo4j.cypher.internal.compiler.v2_3.notification.InternalNotification
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
 
 import scala.collection.immutable.HashMap
 import scala.language.postfixOps

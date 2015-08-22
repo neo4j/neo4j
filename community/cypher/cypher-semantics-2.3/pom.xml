@@ -9,15 +9,15 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
-  <artifactId>neo4j-cypher-compiler-2.3</artifactId>
+  <artifactId>neo4j-cypher-semantics-2.3</artifactId>
   <packaging>jar</packaging>
   <version>2.3-SNAPSHOT</version>
-  <name>Neo4j - Cypher Compiler 2.3</name>
-  <description>Compiler for Cypher 2.3</description>
+  <name>Neo4j - Cypher Semantics 2.3</name>
+  <description>Front end of the Cypher compiler</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
-	  <url>https://github.com/neo4j/neo4j/tree/master/community/cypher/cypher-compiler-2.2</url>
+	  <url>https://github.com/neo4j/neo4j/tree/master/community/cypher/cypher-semantics-2.2</url>
   </scm>
 
   <properties>
@@ -107,54 +107,11 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- neo4j -->
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-io</artifactId>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-graph-matching</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-graph-algo</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-semantics-2.3</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <!-- neo4j testing -->
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
     <!-- other -->
 
     <dependency>
       <groupId>org.parboiled</groupId>
       <artifactId>parboiled-scala_2.11</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
-      <artifactId>concurrentlinkedhashmap-lru</artifactId>
     </dependency>
 
   </dependencies>

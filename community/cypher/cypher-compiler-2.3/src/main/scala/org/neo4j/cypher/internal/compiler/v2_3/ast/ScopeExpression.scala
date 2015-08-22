@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast
 
-import org.neo4j.cypher.internal.compiler.v2_3.{InputPosition, SemanticCheckResult}
+import org.neo4j.cypher.internal.compiler.v2_3.SemanticCheckResult
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
 
 // Scope expressions bundle together identifiers of a new scope
 // together with any child expressions that get evaluated in a context where

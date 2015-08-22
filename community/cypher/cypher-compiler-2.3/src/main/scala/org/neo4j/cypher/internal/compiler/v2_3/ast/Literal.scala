@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_3.perty.format.quoteString
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
 
 sealed trait Literal extends Expression {
   def value: AnyRef

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.notification
 
-import org.neo4j.cypher.internal.compiler.v2_3.InputPosition
+import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
 
 /**
  * Describes a notification

@@ -314,7 +314,7 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
     getClass.getName + "@" + Integer.toHexString(hashCode())
   }
 
-  private implicit class ConvertibleCompilerInputPosition(pos: org.neo4j.cypher.internal.compiler.v2_3.InputPosition) {
+  private implicit class ConvertibleCompilerInputPosition(pos: semantics.v2_3.InputPosition) {
     def asInputPosition = new InputPosition(pos.offset, pos.line, pos.column)
   }
 }

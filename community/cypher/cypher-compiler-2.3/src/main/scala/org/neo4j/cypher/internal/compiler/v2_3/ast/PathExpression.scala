@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast
 
-import org.neo4j.cypher.internal.compiler.v2_3.InputPosition
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.{CTPath, TypeSpec}
+import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
 import org.neo4j.graphdb.Direction
 
 

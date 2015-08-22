@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper
 import org.neo4j.cypher.internal.compiler.v2_3.notification.CartesianProductNotification
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
 
 import scala.annotation.tailrec
 

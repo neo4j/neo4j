@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
 import org.neo4j.graphdb.Direction
 
 case class GetDegree(node: Expression, relType: Option[RelTypeName], dir: Direction)(val position: InputPosition)

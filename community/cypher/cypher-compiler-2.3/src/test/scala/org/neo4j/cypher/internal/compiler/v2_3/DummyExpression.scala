@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3
 
 import ast.{SimpleTyping, Expression}
+import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
 import symbols._
 
 case class DummyExpression(possibleTypes: TypeSpec, position: InputPosition = DummyPosition(0)) extends Expression with SimpleTyping

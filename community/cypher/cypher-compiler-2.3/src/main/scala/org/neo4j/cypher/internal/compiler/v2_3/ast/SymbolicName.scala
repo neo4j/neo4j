@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast
 
 import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
 
 trait SymbolicName extends ASTNode with ASTParticle {
   def name: String

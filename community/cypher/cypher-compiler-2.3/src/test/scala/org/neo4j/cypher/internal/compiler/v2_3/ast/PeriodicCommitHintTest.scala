@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast
 
+import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
 import org.scalatest.FunSuite
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import org.neo4j.cypher.internal.compiler.v2_3.{SemanticCheckResult, InputPosition, SemanticState, DummyPosition}
+import org.neo4j.cypher.internal.compiler.v2_3.{SemanticCheckResult, SemanticState, DummyPosition}
 
 @RunWith(classOf[JUnitRunner])
 class PeriodicCommitHintTest extends FunSuite with Positional {

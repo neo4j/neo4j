@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast
 
 import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
 import symbols._
 
 case class And(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {

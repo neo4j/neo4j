@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
 
 case class NestedPlanExpression(plan: LogicalPlan, pattern: PatternExpression)(val position: InputPosition) extends Expression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
