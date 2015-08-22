@@ -17,13 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.symbols
+package org.neo4j.cypher.internal.semantics.v2_3.symbols
 
-object BooleanType {
-  val instance = new BooleanType() {
-    val parentType = CTAny
-    override val toString = "Boolean"
+object AnyType {
+  val instance = new AnyType() {
+    val parentType = this
+    override val isAbstract = true
+
+    override def isAssignableFrom(other: CypherType): Boolean = true
+
+    override val toString = "Any"
   }
 }
 
-sealed abstract class BooleanType extends CypherType
+sealed abstract class AnyType extends CypherType

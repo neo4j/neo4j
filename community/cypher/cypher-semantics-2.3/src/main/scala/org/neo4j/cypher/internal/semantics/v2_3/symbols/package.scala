@@ -17,17 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.symbols
+package org.neo4j.cypher.internal.semantics.v2_3
 
-object AnyType {
-  val instance = new AnyType() {
-    val parentType = this
-    override val isAbstract = true
+package object symbols {
+  val CTAny = AnyType.instance
+  val CTBoolean = BooleanType.instance
+  val CTString = StringType.instance
+  val CTNumber = NumberType.instance
+  val CTFloat = FloatType.instance
+  val CTInteger = IntegerType.instance
+  val CTMap = MapType.instance
+  val CTNode = NodeType.instance
+  val CTRelationship = RelationshipType.instance
+  val CTPath = PathType.instance
+  def CTCollection(inner: CypherType) = CollectionType(inner)
 
-    override def isAssignableFrom(other: CypherType): Boolean = true
-
-    override val toString = "Any"
-  }
+  implicit def invariantTypeSpec(that: CypherType): TypeSpec = that.invariant
 }
-
-sealed abstract class AnyType extends CypherType

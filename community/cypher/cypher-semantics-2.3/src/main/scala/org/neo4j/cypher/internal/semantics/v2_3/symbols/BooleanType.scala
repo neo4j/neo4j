@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.symbols
+package org.neo4j.cypher.internal.semantics.v2_3.symbols
 
-object PathType {
-  val instance = new PathType() {
+object BooleanType {
+  val instance = new BooleanType() {
     val parentType = CTAny
-    override val toString = "Path"
+    override val toString = "Boolean"
   }
 }
 
-sealed abstract class PathType extends CypherType
+sealed abstract class BooleanType extends CypherType

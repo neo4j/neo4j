@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.symbols
+package org.neo4j.cypher.internal.semantics.v2_3.symbols
 
-object MapType {
-  val instance = new MapType() {
-    val parentType = CTAny
-    override val toString = "Map"
+object FloatType {
+  val instance = new FloatType() {
+    val parentType = CTNumber
+    override val toString = "Float"
   }
 }
 
-sealed abstract class MapType extends CypherType
+sealed abstract class FloatType extends CypherType

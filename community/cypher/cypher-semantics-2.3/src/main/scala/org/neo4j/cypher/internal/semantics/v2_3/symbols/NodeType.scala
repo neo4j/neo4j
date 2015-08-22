@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.symbols
+package org.neo4j.cypher.internal.semantics.v2_3.symbols
 
-object FloatType {
-  val instance = new FloatType() {
-    val parentType = CTNumber
-    override val toString = "Float"
+object NodeType {
+  val instance = new NodeType() {
+    val parentType = CTMap
+    override val toString = "Node"
   }
 }
 
-sealed abstract class FloatType extends CypherType
+sealed abstract class NodeType extends CypherType

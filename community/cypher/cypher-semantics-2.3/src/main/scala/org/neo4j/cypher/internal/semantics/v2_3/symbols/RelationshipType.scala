@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.symbols
+package org.neo4j.cypher.internal.semantics.v2_3.symbols
 
-object NodeType {
-  val instance = new NodeType() {
+object RelationshipType {
+  val instance = new RelationshipType() {
     val parentType = CTMap
-    override val toString = "Node"
+    override val toString = "Relationship"
   }
 }
 
-sealed abstract class NodeType extends CypherType
+sealed abstract class RelationshipType extends CypherType

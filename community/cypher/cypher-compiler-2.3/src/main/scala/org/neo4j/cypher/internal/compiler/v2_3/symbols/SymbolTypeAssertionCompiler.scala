@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.symbols
 
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherTypeException, ExecutionContext}
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 import org.neo4j.graphdb.{Relationship, Node}
 
 import scala.annotation.tailrec
