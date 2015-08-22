@@ -17,11 +17,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.test_helpers
+package org.neo4j.cypher.internal.semantics.v2_3.test_helpers
 
-// Inherited by test mixin classes that need to manage resources
-trait CypherTestSupport  {
-  protected def initTest() {}
-  protected def stopTest() {}
+import org.junit.runner.RunWith
+import org.mockito.ArgumentCaptor
+import org.scalatest._
+import org.scalatest.junit.JUnitRunner
+import org.scalatest.mock.MockitoSugar
+
+import scala.reflect.Manifest
+
+@RunWith(classOf[JUnitRunner])
+abstract class CypherFunSuite
+  extends Suite
+  with Assertions
+  with CypherTestSupport
+  with MockitoSugar
+  with FunSuiteLike
+  with Matchers
+  with BeforeAndAfterEach {
+
+  override protected def beforeEach() {
+    initTest()
+  }
+
+  override protected def afterEach() {
+    stopTest()
+  }
+
+  def argCaptor[T <: AnyRef](implicit manifest: Manifest[T]): ArgumentCaptor[T] = {
+    ArgumentCaptor.forClass(manifest.runtimeClass.asInstanceOf[Class[T]])
+  }
 }
-

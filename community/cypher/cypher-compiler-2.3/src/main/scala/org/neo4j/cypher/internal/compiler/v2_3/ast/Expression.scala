@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast
 
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression._
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.semantics.v2_3.Foldable._
 
 import scala.collection.immutable.Stack
-import org.neo4j.cypher.internal.compiler.v2_3.Foldable._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression._
 
 object Expression {
   sealed trait SemanticContext

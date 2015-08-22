@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.helpers
 
 import org.mockito.Mockito.verifyZeroInteractions
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 
 import scala.collection.mutable.ArrayBuffer

@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers.StatementHelper._
 import org.neo4j.cypher.internal.compiler.v2_3.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.{inSequence, InputPosition}
 
 class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
 

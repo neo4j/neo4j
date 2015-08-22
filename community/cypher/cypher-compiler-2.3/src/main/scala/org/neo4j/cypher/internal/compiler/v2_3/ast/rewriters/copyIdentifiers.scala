@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_3.{bottomUp, Rewriter}
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Identifier
+import org.neo4j.cypher.internal.semantics.v2_3.{Rewriter, bottomUp}
 
 case object copyIdentifiers extends Rewriter {
   private val instance = Rewriter.lift { case identifier: Identifier => identifier.copyId }

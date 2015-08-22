@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.test_helpers
 
 import java.io.PrintWriter
 
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.{CypherFunSuite, CypherTestSupport}
+
 import scala.io.Codec
 import scala.reflect.io.File
 

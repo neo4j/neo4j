@@ -36,7 +36,6 @@ object Pattern {
   }
 
   object findDuplicateRelationships extends (Pattern => Set[Seq[Identifier]]) {
-    import org.neo4j.cypher.internal.compiler.v2_3.Foldable._
 
     def apply(pattern: Pattern): Set[Seq[Identifier]] = {
       val (seen, duplicates) = pattern.fold((Set.empty[Identifier], Seq.empty[Identifier])) {

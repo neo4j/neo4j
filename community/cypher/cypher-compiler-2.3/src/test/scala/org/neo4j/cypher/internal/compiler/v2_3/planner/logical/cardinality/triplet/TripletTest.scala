@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.trip
 import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v2_3.{RelTypeId, LabelId}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.{SpecifiedButUnknown, Unspecified, SpecifiedAndKnown}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 
 class TripletTest extends CypherFunSuite with LogicalPlanningTestSupport2 {

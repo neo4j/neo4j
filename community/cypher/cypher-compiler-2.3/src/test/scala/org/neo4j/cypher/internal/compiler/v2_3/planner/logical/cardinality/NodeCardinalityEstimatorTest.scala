@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport2, Predicate, QueryGraph, Selections}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 class NodeCardinalityEstimatorTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

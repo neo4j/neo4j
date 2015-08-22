@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.conditions
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{hasAggregateButIsNotAggregate, Expression}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.Condition
+import org.neo4j.cypher.internal.semantics.v2_3.Foldable._
 
 case object aggregationsAreIsolated extends Condition {
-  import org.neo4j.cypher.internal.compiler.v2_3.Foldable._
 
   def apply(that: Any): Seq[String] = that.treeFold(Seq.empty[String]) {
     case expr: Expression if hasAggregateButIsNotAggregate(expr) =>

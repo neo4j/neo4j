@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{Property, InequalityExpression, Not, IsNotNull}
 import org.neo4j.cypher.internal.compiler.v2_3.functions.Has
-import org.neo4j.cypher.internal.compiler.v2_3.{topDown, Rewriter}
+import org.neo4j.cypher.internal.semantics.v2_3.{topDown, Rewriter}
 
 case object normalizeSargablePredicates extends Rewriter {
 

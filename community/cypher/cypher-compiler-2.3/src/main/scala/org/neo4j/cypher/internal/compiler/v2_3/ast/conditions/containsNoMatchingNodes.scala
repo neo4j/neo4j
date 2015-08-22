@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.conditions
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.ASTNode
 import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
+import org.neo4j.cypher.internal.semantics.v2_3.Foldable._
 
 case class containsNoMatchingNodes(matcher: PartialFunction[ASTNode, String]) extends (Any => Seq[String]) {
-  import org.neo4j.cypher.internal.compiler.v2_3.Foldable._
 
   def apply(that: Any): Seq[String] = {
     that.fold(Seq.empty[(String, InputPosition)]) {

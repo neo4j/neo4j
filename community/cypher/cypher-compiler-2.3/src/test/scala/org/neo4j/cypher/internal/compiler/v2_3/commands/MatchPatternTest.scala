@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{MatchPattern, MatchRelationship}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 class MatchPatternTest extends CypherFunSuite {
 

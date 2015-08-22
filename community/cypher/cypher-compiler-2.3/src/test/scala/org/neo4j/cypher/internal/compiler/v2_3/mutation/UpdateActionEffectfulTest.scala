@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier,
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.{devNullLogger, symbols}
 
 class UpdateActionEffectfulTest extends CypherFunSuite {

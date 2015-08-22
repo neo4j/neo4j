@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.v2_3.parser.ParserFixture
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherTestSupport
 
 trait AstRewritingTestSupport extends CypherTestSupport with AstConstructionTestSupport {
   val parser = ParserFixture.parser

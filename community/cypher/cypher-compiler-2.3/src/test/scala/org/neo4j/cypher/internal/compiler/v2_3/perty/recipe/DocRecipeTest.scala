@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.perty.recipe
 
 import org.neo4j.cypher.internal.compiler.v2_3.perty.{DocRecipe, Extractor}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 class DocRecipeTest extends CypherFunSuite {
 

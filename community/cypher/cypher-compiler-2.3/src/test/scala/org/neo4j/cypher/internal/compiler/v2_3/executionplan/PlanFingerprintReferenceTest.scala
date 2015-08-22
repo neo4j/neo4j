@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit.{MILLISECONDS, SECONDS}
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compiler.v2_3.LabelId
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, GraphStatisticsSnapshot, NodesWithLabelCardinality}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.helpers.FakeClock
 
 class PlanFingerprintReferenceTest extends CypherFunSuite {

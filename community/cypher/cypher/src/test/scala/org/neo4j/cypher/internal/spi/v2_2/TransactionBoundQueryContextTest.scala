@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.spi.v2_3
 
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.DynamicIterable
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb._
 import org.mockito.Mockito._
 import org.neo4j.kernel.api._

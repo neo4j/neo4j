@@ -17,14 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3
+package org.neo4j.cypher.internal.semantics.v2_3
 
 import java.lang.reflect.Method
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.ASTNode
 
 import scala.annotation.tailrec
 import scala.collection.mutable.{HashMap => MutableHashMap}
+import org.neo4j.cypher.internal.semantics.v2_3.Foldable._
+import org.neo4j.cypher.internal.semantics.v2_3.Rewritable._
 
 object Rewriter {
   def lift(f: PartialFunction[AnyRef, AnyRef]): Rewriter = f.orElse(PartialFunction(identity[AnyRef]))
@@ -44,7 +45,6 @@ object Rewritable {
   }
 
   implicit class DuplicatableAny(val that: AnyRef) extends AnyVal {
-    import org.neo4j.cypher.internal.compiler.v2_3.Foldable._
 
     def dup(children: Seq[AnyRef]): AnyRef = that match {
       case a: Rewritable =>
@@ -70,7 +70,6 @@ object Rewritable {
   }
 
   implicit class DuplicatableProduct(val product: Product) extends AnyVal {
-    import org.neo4j.cypher.internal.compiler.v2_3.Foldable._
 
     def dup(children: Seq[AnyRef]): Product = product match {
       case a: Rewritable =>
@@ -105,7 +104,6 @@ trait Rewritable {
 }
 
 object inSequence {
-  import org.neo4j.cypher.internal.compiler.v2_3.Rewritable._
 
   class InSequenceRewriter(rewriters: Seq[Rewriter]) extends Rewriter {
     def apply(that: AnyRef): AnyRef = {
@@ -125,8 +123,6 @@ object inSequence {
 }
 
 object topDown {
-  import org.neo4j.cypher.internal.compiler.v2_3.Foldable._
-  import org.neo4j.cypher.internal.compiler.v2_3.Rewritable._
 
   class TopDownRewriter(rewriter: Rewriter) extends Rewriter {
     def apply(that: AnyRef): AnyRef = {
@@ -150,8 +146,6 @@ object topDown {
 }
 
 object bottomUp {
-  import org.neo4j.cypher.internal.compiler.v2_3.Foldable._
-  import org.neo4j.cypher.internal.compiler.v2_3.Rewritable._
 
   class BottomUpRewriter(val rewriter: Rewriter) extends Rewriter {
     def apply(that: AnyRef): AnyRef = {
@@ -183,9 +177,6 @@ case class replace(strategy: (Replacer => (AnyRef => AnyRef))) extends Rewriter 
 
   self =>
 
-  import org.neo4j.cypher.internal.compiler.v2_3.Foldable._
-  import org.neo4j.cypher.internal.compiler.v2_3.Rewritable._
-
   private val cont = strategy(new Replacer {
     def expand(replacement: AnyRef) = {
       //this piece of code is used a lot and has been through profiling
@@ -216,42 +207,6 @@ case class repeat(rewriter: Rewriter) extends Rewriter {
       t
     } else {
       apply(t)
-    }
-  }
-}
-
-/*
-This rewriter tries to limit rewriters that grow the product AST too much
- */
-case class repeatWithSizeLimit(rewriter: Rewriter)(implicit val monitor: AstRewritingMonitor) extends Rewriter {
-
-  import Foldable._
-
-  private def astNodeSize(value: Any): Int = value.treeFold(1) {
-    case _: ASTNode => (acc, children) => children(acc+1)
-  }
-
-  final def apply(that: AnyRef): AnyRef = {
-    val initialSize = astNodeSize(that)
-    val limit = initialSize * initialSize
-
-    innerApply(that, limit)
-  }
-
-  @tailrec
-  private def innerApply(that: AnyRef, limit: Int): AnyRef = {
-    val t = rewriter.apply(that)
-    val newSize = astNodeSize(t)
-
-    if (newSize > limit) {
-      monitor.abortedRewriting(that )
-      that
-    }
-    else if (t == that) {
-      t
-    }
-    else {
-      innerApply(t, limit)
     }
   }
 }

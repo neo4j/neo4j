@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{InternalExecutionR
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, CantHandleQueryException}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherTestSupport
 import org.neo4j.helpers.Exceptions
 
 import scala.util.{Failure, Success, Try}

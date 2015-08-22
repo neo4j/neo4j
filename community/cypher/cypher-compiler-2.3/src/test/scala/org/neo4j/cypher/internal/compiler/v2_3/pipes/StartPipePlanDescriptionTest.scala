@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class StartPipePlanDescriptionTest extends CypherFunSuite {

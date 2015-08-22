@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{Equals, Identifier, _}
 import org.neo4j.cypher.internal.compiler.v2_3.functions.Has
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTestSupport {
 

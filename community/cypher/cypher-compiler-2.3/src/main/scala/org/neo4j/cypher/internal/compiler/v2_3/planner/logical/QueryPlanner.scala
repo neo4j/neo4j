@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan, ProduceResult}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{LogicalPlan, ProduceResult}
+import org.neo4j.cypher.internal.semantics.v2_3.Rewriter
 
 trait QueryPlanner {
   def plan(plannerQuery: UnionQuery)(implicit context: LogicalPlanningContext): LogicalPlan

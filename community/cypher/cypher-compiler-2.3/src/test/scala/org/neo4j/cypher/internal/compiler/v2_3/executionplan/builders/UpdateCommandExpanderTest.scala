@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier,
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.UnresolvedLabel
 import org.neo4j.cypher.internal.compiler.v2_3.mutation._
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 class UpdateCommandExpanderTest extends CypherFunSuite with UpdateCommandExpander {
   // (a)-[r1]->(b), (b)-[r2]->(c), (c)-[r3]->(d)

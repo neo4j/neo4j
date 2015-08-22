@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.{Ascending, SortDescription
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan, Projection}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, LogicalPlanningContext}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

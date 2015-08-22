@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_3.planner.PlannerQuery
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, AllNodesScan}
-import org.neo4j.cypher.internal.compiler.v2_3.{DummyPosition, Rewriter}
+import org.neo4j.cypher.internal.compiler.v2_3.DummyPosition
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{AllNodesScan, IdName}
+import org.neo4j.cypher.internal.semantics.v2_3.Rewriter
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 
 class GetDegreeOptimizerTest extends CypherFunSuite with RewriteTest {

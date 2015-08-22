@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.PatternException
 import org.neo4j.cypher.internal.compiler.v2_3.commands.SortItem
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Add, Identifier, Literal, RandFunction}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 import scala.collection.mutable.{Map => MutableMap}
 import scala.util.Random

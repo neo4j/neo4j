@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.LabelId
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{SignedDecimalIntegerLiteral, PropertyKeyName, Property, Equals}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{PlannerQuery, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 
 class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {

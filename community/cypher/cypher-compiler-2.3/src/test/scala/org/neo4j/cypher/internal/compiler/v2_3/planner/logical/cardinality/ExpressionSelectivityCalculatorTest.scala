@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{Predicate, Selections, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
 
 class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {

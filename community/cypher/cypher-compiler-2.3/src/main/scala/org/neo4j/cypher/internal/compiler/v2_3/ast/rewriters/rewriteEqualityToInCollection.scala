@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
+import org.neo4j.cypher.internal.semantics.v2_3.{bottomUp, Rewriter}
 
 /*
 This class rewrites equality predicates into IN comparisons which can then be turned into

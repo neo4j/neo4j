@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{UnresolvedLabel,
 import org.neo4j.cypher.internal.compiler.v2_3.commands.SingleQueryExpression
 import org.neo4j.cypher.internal.compiler.v2_3.{LabelId, PropertyKeyId, ast}
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundPlanContext, TransactionBoundQueryContext}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.kernel.GraphDatabaseAPI

@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{VarPattern
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanConstructionTestSupport, Predicate, Selections, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 import org.neo4j.graphdb.Direction
 

@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.StatementCon
 import org.neo4j.cypher.internal.compiler.v2_3.commands.AbstractQuery
 import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterCondition
+import org.neo4j.cypher.internal.semantics.v2_3.Rewriter
 
 case class PreparedQuery(statement: Statement,
                          queryText: String,

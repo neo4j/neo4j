@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 
 class UniqueLinkTest extends CypherFunSuite {

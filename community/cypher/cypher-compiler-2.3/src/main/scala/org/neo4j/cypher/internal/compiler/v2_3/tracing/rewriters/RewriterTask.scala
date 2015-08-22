@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_3.Rewriter
+import org.neo4j.cypher.internal.semantics.v2_3.Rewriter
 
 sealed trait RewriterTask
 final case class RunConditions(previousName: Option[String], conditions: Set[RewriterCondition]) extends RewriterTask

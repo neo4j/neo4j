@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression,
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, True, Predicate}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 
 class ExpanderStepReversalTest extends CypherFunSuite {

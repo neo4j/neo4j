@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.perty.format
 
 import org.neo4j.cypher.internal.compiler.v2_3.perty._
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 class LineFitterTest extends CypherFunSuite {
 

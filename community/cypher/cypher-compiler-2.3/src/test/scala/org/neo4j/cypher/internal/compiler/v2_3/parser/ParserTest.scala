@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.parser
 
 import org.neo4j.cypher.internal.compiler.v2_3.InvalidInputErrorFormatter
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.parboiled.errors.InvalidInputError
 import org.parboiled.scala._
 

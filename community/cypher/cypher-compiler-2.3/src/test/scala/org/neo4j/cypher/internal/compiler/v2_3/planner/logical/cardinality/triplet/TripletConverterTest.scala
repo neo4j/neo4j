@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.{SpecifiedAndKnown, SpecifiedButUnknown, Unspecified}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.compiler.v2_3.{LabelId, RelTypeId}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 
 class TripletConverterTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {

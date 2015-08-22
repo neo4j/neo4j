@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 class UnsignedDecimalIntegerLiteralTest extends CypherFunSuite {
   test("correctly parses decimal numbers") {

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast
 
-import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.perty._
-import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
+import org.neo4j.cypher.internal.semantics.v2_3.Rewritable._
+import org.neo4j.cypher.internal.semantics.v2_3.{Foldable, InputPosition, Rewritable}
 
 trait ASTNode
   extends Product
@@ -33,9 +33,6 @@ trait ASTNode
 {
 
   self =>
-
-  import org.neo4j.cypher.internal.compiler.v2_3.Foldable._
-  import org.neo4j.cypher.internal.compiler.v2_3.Rewritable._
 
 //  def toDefaultPrettyString(formatter: DocFormatter): String =
 ////    toPrettyString(formatter)(DefaultDocHandler.docGen) /* scala like */

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v2_3.planner.Predicate
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionTestSupport {
 

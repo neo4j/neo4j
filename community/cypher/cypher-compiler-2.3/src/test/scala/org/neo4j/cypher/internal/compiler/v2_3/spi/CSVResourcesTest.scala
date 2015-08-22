@@ -24,7 +24,8 @@ import java.net.URL
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_3.TaskCloser
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.{CreateTempFileTestSupport, CypherFunSuite}
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 
 class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {

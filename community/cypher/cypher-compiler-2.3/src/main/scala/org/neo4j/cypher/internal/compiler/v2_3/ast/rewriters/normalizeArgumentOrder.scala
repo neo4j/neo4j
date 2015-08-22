@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.functions.Has
+import org.neo4j.cypher.internal.semantics.v2_3.{topDown, Rewriter}
 
 // TODO: Support n.prop <op> m.prop, perhaps by
 //  either killing this and just looking on both lhs and rhs all over the place or

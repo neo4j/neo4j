@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryStateHelper
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 class DivideTest extends CypherFunSuite {
   test("should_throw_arithmetic_exception_for_divide_by_zero") {

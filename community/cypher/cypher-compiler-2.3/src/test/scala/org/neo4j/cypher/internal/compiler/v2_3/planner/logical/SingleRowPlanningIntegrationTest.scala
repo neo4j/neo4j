@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_3.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{Projection, SingleRow}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 class SingleRowPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should build plans containing single row") {

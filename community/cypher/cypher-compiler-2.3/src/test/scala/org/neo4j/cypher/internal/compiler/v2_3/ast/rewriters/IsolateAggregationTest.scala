@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.compiler.v2_3.{SyntaxExceptionCreator, inSequence}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.SyntaxExceptionCreator
+import org.neo4j.cypher.internal.semantics.v2_3.inSequence
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
   val rewriterUnderTest = isolateAggregation

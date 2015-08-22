@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.semantics.v2_3.Rewriter
 
 object RewriterStep {
    implicit def namedProductRewriter(p: Product with Rewriter): ApplyRewriter = ApplyRewriter(p.productPrefix, p)

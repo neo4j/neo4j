@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 class RangeTest extends CypherFunSuite {
 

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Relationship, Direction, Node}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext

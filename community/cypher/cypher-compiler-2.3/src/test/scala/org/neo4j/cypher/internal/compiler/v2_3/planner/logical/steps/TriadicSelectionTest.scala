@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.QueryGraphProduce
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 
 class TriadicSelectionTest extends CypherFunSuite with LogicalPlanningTestSupport with QueryGraphProducer {

@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionRe
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport, SemanticTable}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.{CostBasedPlannerName, NormalMode, ParameterNotFoundException, TaskCloser}
 import org.neo4j.cypher.internal.spi.v2_3.GeneratedQueryStructure
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}

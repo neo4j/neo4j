@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, plans}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.{ProfileMode, symbols}
 import org.neo4j.function.Supplier
 import org.neo4j.kernel.api._

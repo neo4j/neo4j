@@ -33,10 +33,11 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter.{LogicalPlanRewriter, unnestApply}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.semantics.v2_3.inSequence
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.helpers.collection.Visitable
-import org.neo4j.kernel.api.constraints.{UniquenessConstraint, PropertyConstraint}
+import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 

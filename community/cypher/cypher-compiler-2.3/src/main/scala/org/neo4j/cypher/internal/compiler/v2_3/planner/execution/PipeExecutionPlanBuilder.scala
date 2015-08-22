@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantHandleQueryException, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.semantics.v2_3.{Rewriter, bottomUp}
 import org.neo4j.graphdb.Relationship
 import org.neo4j.helpers.Clock
 

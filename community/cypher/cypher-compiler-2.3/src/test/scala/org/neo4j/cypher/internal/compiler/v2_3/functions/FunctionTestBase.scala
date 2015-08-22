@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.functions
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 abstract class FunctionTestBase(funcName: String) extends CypherFunSuite {
 

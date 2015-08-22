@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planDescription
 
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{SingleRowPipe, PipeMonitor}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 class RenderSummaryTest extends CypherFunSuite {
 
