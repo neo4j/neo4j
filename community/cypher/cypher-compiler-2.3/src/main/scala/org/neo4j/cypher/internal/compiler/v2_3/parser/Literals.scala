@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.parser
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast
+import org.neo4j.cypher.internal.semantics.v2_3.ast
 import org.parboiled.scala._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.SymbolicName
 
 trait Literals extends Parser
   with Base with Strings {

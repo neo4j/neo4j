@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.semantics.v2_3.symbols
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 
 case class NodeProjection(nodeIdVar: Variable) extends CodeGenExpression {
   assert(nodeIdVar.cypherType == symbols.CTNode)

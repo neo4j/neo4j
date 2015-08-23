@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 
 case class IndexOperationPipe(indexOp: IndexOperation)(implicit val monitor: PipeMonitor) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {

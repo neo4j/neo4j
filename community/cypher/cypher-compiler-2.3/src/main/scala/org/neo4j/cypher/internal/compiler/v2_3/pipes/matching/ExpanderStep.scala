@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{True, Predicate}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{MutableMaps, QueryState}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 import org.neo4j.graphdb._
 import org.neo4j.helpers.ThisShouldNotHappenError
 

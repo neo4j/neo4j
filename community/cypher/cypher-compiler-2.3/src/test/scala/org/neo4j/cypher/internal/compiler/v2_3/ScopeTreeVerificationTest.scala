@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
+import org.neo4j.cypher.internal.semantics.v2_3.Scope
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 class ScopeTreeVerificationTest extends CypherFunSuite {

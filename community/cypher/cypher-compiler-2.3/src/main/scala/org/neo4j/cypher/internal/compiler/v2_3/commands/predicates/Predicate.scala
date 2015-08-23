@@ -23,10 +23,12 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsLabel}
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.{CastSupport, CollectionSupport, IsCollection, NonEmptyList}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.{CastSupport, CollectionSupport, IsCollection}
 import org.neo4j.cypher.internal.compiler.v2_3.parser.ParsedLikePattern
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.semantics.v2_3.helpers.NonEmptyList
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 import org.neo4j.graphdb._
 
 import scala.util.{Failure, Success, Try}

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.RelTypeName
-import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
+import org.neo4j.cypher.internal.semantics.v2_3.ast.RelTypeName
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
+import org.neo4j.cypher.internal.semantics.v2_3.SemanticTable
 
 case class LazyTypes(names:Seq[String]) {
   private var ids = Seq.empty[Int]

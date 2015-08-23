@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsLabel, ReadsNodeProperty, ReadsNodes}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.Index
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols.{CTNode, SymbolTable}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.semantics.v2_3.ast.{LabelToken, PropertyKeyToken}
+import org.neo4j.cypher.internal.semantics.v2_3.symbols.CTNode
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 case class NodeIndexScanPipe(ident: String,
@@ -49,7 +50,7 @@ case class NodeIndexScanPipe(ident: String,
   def planDescriptionWithoutCardinality =
     new PlanDescriptionImpl(this.id, "NodeIndexScan", NoChildren, Seq(Index(label.name, propertyKey.name)), identifiers)
 
-  def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
+  def symbols = new SymbolTable(Map(ident -> CTNode))
 
   override def monitor = pipeMonitor
 

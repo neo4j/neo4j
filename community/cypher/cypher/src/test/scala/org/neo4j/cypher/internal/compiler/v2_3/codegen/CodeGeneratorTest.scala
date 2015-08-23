@@ -24,12 +24,13 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlanBuilder.tracer
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.semantics.v2_3.SemanticTable
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.{CostBasedPlannerName, NormalMode, ParameterNotFoundException, TaskCloser}
 import org.neo4j.cypher.internal.spi.v2_3.GeneratedQueryStructure

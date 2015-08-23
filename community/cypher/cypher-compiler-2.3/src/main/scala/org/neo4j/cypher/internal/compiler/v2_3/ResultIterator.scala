@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
+import org.neo4j.cypher.internal.semantics.v2_3.helpers.Eagerly
 import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.kernel.api.exceptions.Status
 

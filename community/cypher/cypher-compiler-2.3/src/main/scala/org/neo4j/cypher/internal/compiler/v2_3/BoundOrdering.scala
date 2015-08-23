@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
+import org.neo4j.cypher.internal.semantics.v2_3.Bound
+
 // Tested by SeekRangeTest
 final case class MinBoundOrdering[T](inner: Ordering[T]) extends Ordering[Bound[T]] {
   override def compare(x: Bound[T], y: Bound[T]): Int = {

@@ -26,7 +26,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlanInPro
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{BidirectionalTraversalMatcher, MonoDirectionalTraversalMatcher, Trail, TraversalMatcher}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityProducer, PipeMonitor, SingleRowPipe, TraversalMatchPipe}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 import org.neo4j.graphdb.Node
 import org.neo4j.helpers.ThisShouldNotHappenError
 

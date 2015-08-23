@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3
 
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.compatibility.{StringInfoLogger2_3, WrappedMonitors2_3}
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
+import org.neo4j.cypher.internal.semantics.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite

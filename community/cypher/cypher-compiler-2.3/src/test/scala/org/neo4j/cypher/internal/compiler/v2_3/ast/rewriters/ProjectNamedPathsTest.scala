@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
+import org.neo4j.cypher.internal.compiler.v2_3.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.v2_3.planner.AstRewritingTestSupport
-import org.neo4j.cypher.internal.compiler.v2_3.{SemanticState, SyntaxExceptionCreator}
-import org.neo4j.cypher.internal.semantics.v2_3.inSequence
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.semantics.v2_3.{SemanticDirection, SemanticState, inSequence}
 
 class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport {
 
@@ -161,7 +160,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val returns = parseReturnedExpr("MATCH p = (a)-[r]->(b) RETURN p")
 
     val expected = PathExpression(
-      NodePathStep(Identifier("a")_, SingleRelationshipPathStep(Identifier("r")_, Direction.OUTGOING, NilPathStep))
+      NodePathStep(Identifier("a")_, SingleRelationshipPathStep(Identifier("r")_, SemanticDirection.OUTGOING, NilPathStep))
     )_
 
     returns should equal(expected: PathExpression)
@@ -171,7 +170,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val returns = parseReturnedExpr("MATCH p = (b)<-[r]-(a) RETURN p")
 
     val expected = PathExpression(
-      NodePathStep(Identifier("b")_, SingleRelationshipPathStep(Identifier("r")_, Direction.INCOMING, NilPathStep))
+      NodePathStep(Identifier("b")_, SingleRelationshipPathStep(Identifier("r")_, SemanticDirection.INCOMING, NilPathStep))
     )_
 
     returns should equal(expected: PathExpression)
@@ -181,7 +180,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val returns = parseReturnedExpr("MATCH p = (a)-[r*]->(b) RETURN p")
 
     val expected = PathExpression(
-      NodePathStep(Identifier("a")_, MultiRelationshipPathStep(Identifier("r")_, Direction.OUTGOING, NilPathStep))
+      NodePathStep(Identifier("a")_, MultiRelationshipPathStep(Identifier("r")_, SemanticDirection.OUTGOING, NilPathStep))
     )_
 
     returns should equal(expected: PathExpression)
@@ -191,7 +190,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val returns = parseReturnedExpr("MATCH p = (b)<-[r*]-(a) RETURN p AS p")
 
     val expected = PathExpression(
-      NodePathStep(Identifier("b")_, MultiRelationshipPathStep(Identifier("r")_, Direction.INCOMING, NilPathStep))
+      NodePathStep(Identifier("b")_, MultiRelationshipPathStep(Identifier("r")_, SemanticDirection.INCOMING, NilPathStep))
     )_
 
     returns should equal(expected: PathExpression)
@@ -214,14 +213,14 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           EveryPath(
             RelationshipChain(
               NodePattern(Some(aId), List(), None, naked = false)(pos),
-              RelationshipPattern(Some(rId), optional = false, List(), None, None, Direction.OUTGOING)(pos), NodePattern(Some(bId), List(), None, naked = false)(pos)
+              RelationshipPattern(Some(rId), optional = false, List(), None, None, SemanticDirection.OUTGOING)(pos), NodePattern(Some(bId), List(), None, naked = false)(pos)
             )(pos))
         ))(pos), List(), None)(pos)
 
     val WITH =
       With(distinct = false,
         ReturnItems(includeExisting = false, Seq(
-          AliasedReturnItem(PathExpression(NodePathStep(aId, SingleRelationshipPathStep(rId, Direction.OUTGOING, NilPathStep)))(pos), fresh30)(pos),
+          AliasedReturnItem(PathExpression(NodePathStep(aId, SingleRelationshipPathStep(rId, SemanticDirection.OUTGOING, NilPathStep)))(pos), fresh30)(pos),
           AliasedReturnItem(SignedDecimalIntegerLiteral("42")(pos), fresh33)(pos)
         ))(pos),
         Some(OrderBy(List(AscSortItem(fresh33)(pos)))(pos)),
@@ -253,7 +252,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val WHERE =
       Where(
         GreaterThan(
-          FunctionInvocation(FunctionName("length")(pos), PathExpression(NodePathStep(aId, SingleRelationshipPathStep(rId, Direction.OUTGOING, NilPathStep)))(pos))(pos),
+          FunctionInvocation(FunctionName("length")(pos), PathExpression(NodePathStep(aId, SingleRelationshipPathStep(rId, SemanticDirection.OUTGOING, NilPathStep)))(pos))(pos),
           SignedDecimalIntegerLiteral("10")(pos)
         )(pos)
       )(pos)
@@ -264,7 +263,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           EveryPath(
             RelationshipChain(
               NodePattern(Some(aId), List(), None, naked = false)(pos),
-              RelationshipPattern(Some(rId), optional = false, List(), None, None, Direction.OUTGOING)(pos), NodePattern(Some(bId), List(), None, naked = false)(pos)
+              RelationshipPattern(Some(rId), optional = false, List(), None, None, SemanticDirection.OUTGOING)(pos), NodePattern(Some(bId), List(), None, naked = false)(pos)
             )(pos))
         ))(pos), List(), Some(WHERE))(pos)
 

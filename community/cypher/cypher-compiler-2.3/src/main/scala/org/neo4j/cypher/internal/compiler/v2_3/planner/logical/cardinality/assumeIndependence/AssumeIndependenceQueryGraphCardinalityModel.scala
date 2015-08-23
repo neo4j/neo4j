@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.assumeIndependence
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.LabelName
+import org.neo4j.cypher.internal.semantics.v2_3.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.{QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.{ExpressionSelectivityCalculator, SelectivityCombiner}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, SimplePatternLength, VarPatternLength}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, Selectivity}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{QueryGraph, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
+import org.neo4j.cypher.internal.semantics.v2_3.SemanticTable
 
 case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, combiner: SelectivityCombiner)
   extends QueryGraphCardinalityModel {

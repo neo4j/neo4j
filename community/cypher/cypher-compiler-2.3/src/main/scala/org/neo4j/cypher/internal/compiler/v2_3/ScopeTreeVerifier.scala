@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
+import org.neo4j.cypher.internal.semantics.v2_3.{SymbolUse, Scope, Ref}
+
 import scala.compat.Platform.EOL
 
 object ScopeTreeVerifier {
@@ -33,9 +35,4 @@ object ScopeTreeVerifier {
     localSymbolTableIssues
   }
 
-  private def formattedOccurrences(occurrences: Set[(SymbolUse, Scope)]) = {
-    occurrences.toSeq.sortBy(_._1.name).map {
-      case (key, scope) => s"$key in scope #${Ref(scope).toIdString}"
-    }
-  }
 }

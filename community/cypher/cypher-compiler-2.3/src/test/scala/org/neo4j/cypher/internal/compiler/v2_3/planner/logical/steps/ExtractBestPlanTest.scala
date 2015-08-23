@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.notification.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.{IndexHintException, JoinHintException, RecordingNotificationLogger}
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
+import org.neo4j.cypher.internal.semantics.v2_3.notification.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.index.IndexDescriptor
 

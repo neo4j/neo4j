@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.perty.DocFormatters
-import org.neo4j.cypher.internal.compiler.v2_3.perty.gen.DocHandlerTestSuite
-import org.neo4j.cypher.internal.compiler.v2_3.perty.handler.{DefaultDocHandler, SimpleDocHandler}
-import org.neo4j.cypher.internal.compiler.v2_3.perty.print.{PrintNewLine, PrintText, condense}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
+import org.neo4j.cypher.internal.semantics.v2_3.SemanticDirection
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
+import org.neo4j.cypher.internal.semantics.v2_3.perty.DocFormatters
+import org.neo4j.cypher.internal.semantics.v2_3.perty.gen.DocHandlerTestSuite
+import org.neo4j.cypher.internal.semantics.v2_3.perty.handler.DefaultDocHandler
+import org.neo4j.cypher.internal.semantics.v2_3.perty.print.{PrintNewLine, PrintText, condense}
 import org.neo4j.graphdb.Direction
 
 class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTestSupport {
@@ -132,7 +133,7 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
     val nodeB = NodePattern(identifier = Some(ident("b")), Seq.empty, None, naked = false)_
     val length: Some[Some[Range]] = Some(Some(Range(Some(UnsignedDecimalIntegerLiteral("1")_), None)_))
 
-    val relPat = RelationshipPattern(Some(ident("rel")), optional = false, Seq.empty, length, None, Direction.OUTGOING)_
+    val relPat = RelationshipPattern(Some(ident("rel")), optional = false, Seq.empty, length, None, SemanticDirection.OUTGOING)_
     val ast = ShortestPaths(RelationshipChain(nodeA, relPat, nodeB)_, single = true)_
     val sp = ShortestPathPattern(Some(IdName("sp")), patRel, single = true)(ast)
 
@@ -147,7 +148,7 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
     val nodeB = NodePattern(identifier = Some(ident("b")), Seq.empty, None, naked = false)_
     val length: Some[Some[Range]] = Some(Some(Range(Some(UnsignedDecimalIntegerLiteral("1")_), None)_))
 
-    val relPat = RelationshipPattern(Some(ident("rel")), optional = false, Seq.empty, length, None, Direction.OUTGOING)_
+    val relPat = RelationshipPattern(Some(ident("rel")), optional = false, Seq.empty, length, None, SemanticDirection.OUTGOING)_
     val ast = ShortestPaths(RelationshipChain(nodeA, relPat, nodeB)_, single = true)_
     val sp = ShortestPathPattern(None, patRel, single = true)(ast)
 
@@ -162,7 +163,7 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
     val nodeB = NodePattern(identifier = Some(ident("b")), Seq.empty, None, naked = false)_
     val length: Some[Some[Range]] = Some(Some(Range(Some(UnsignedDecimalIntegerLiteral("1")_), None)_))
 
-    val relPat = RelationshipPattern(Some(ident("rel")), optional = false, Seq.empty, length, None, Direction.OUTGOING)_
+    val relPat = RelationshipPattern(Some(ident("rel")), optional = false, Seq.empty, length, None, SemanticDirection.OUTGOING)_
     val ast = ShortestPaths(RelationshipChain(nodeA, relPat, nodeB)_, single = false)_
     val sp = ShortestPathPattern(Some(IdName("sp")), patRel, single = false)(ast)
 

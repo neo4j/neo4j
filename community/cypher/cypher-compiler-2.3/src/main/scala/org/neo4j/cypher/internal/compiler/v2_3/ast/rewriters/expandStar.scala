@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_3.SemanticState
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
+import org.neo4j.cypher.internal.semantics.v2_3.SemanticState
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
 import org.neo4j.cypher.internal.semantics.v2_3.{Rewriter, replace}
 import org.neo4j.helpers.ThisShouldNotHappenError
 

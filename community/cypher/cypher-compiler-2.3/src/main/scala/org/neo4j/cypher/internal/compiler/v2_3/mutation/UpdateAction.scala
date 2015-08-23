@@ -26,7 +26,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_3.pipes
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.{SymbolTable, TypeSafe}
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 
 
 trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {

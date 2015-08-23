@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_3.{devNullLogger, InternalNotificationLogger}
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
+import org.neo4j.cypher.internal.semantics.v2_3.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan, StrictnessMode}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
+import org.neo4j.cypher.internal.semantics.v2_3.SemanticTable
 
 case class LogicalPlanningContext(planContext: PlanContext,
                                   logicalPlanProducer: LogicalPlanProducer,

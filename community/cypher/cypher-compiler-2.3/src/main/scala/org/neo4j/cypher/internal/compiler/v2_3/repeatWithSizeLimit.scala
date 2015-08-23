@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.ASTNode
+import org.neo4j.cypher.internal.semantics.v2_3.ast.ASTNode
 import org.neo4j.cypher.internal.semantics.v2_3.Foldable._
 import org.neo4j.cypher.internal.semantics.v2_3.Rewriter
 

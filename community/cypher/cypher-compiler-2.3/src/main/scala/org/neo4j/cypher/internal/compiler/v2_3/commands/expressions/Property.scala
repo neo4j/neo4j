@@ -24,9 +24,11 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.IsMap
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
-import org.neo4j.graphdb.{Relationship, Node, NotFoundException}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
+import org.neo4j.graphdb.{Node, NotFoundException, Relationship}
 import org.neo4j.helpers.ThisShouldNotHappenError
+
 
 case class Property(mapExpr: Expression, propertyKey: KeyToken)
   extends Expression with Product with Serializable

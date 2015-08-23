@@ -19,13 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import commands.expressions.{Expression, Literal}
-import mutation.{RelationshipEndpoint, CreateRelationship, CreateNode, DeleteEntityAction}
-import symbols._
-import org.neo4j.cypher.{ExecutionEngineFunSuite}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, Literal}
+import org.neo4j.cypher.internal.compiler.v2_3.mutation.{CreateNode, CreateRelationship, DeleteEntityAction, RelationshipEndpoint}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{ExecuteUpdateCommandsPipe, PipeMonitor, QueryState, SingleRowPipe}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 import org.neo4j.graphdb.{Node, NotFoundException}
-import collection.mutable.{Map => MutableMap}
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{PipeMonitor, QueryState, ExecuteUpdateCommandsPipe, SingleRowPipe}
+
+import scala.collection.mutable.{Map => MutableMap}
 
 class MutationTest extends ExecutionEngineFunSuite {
 

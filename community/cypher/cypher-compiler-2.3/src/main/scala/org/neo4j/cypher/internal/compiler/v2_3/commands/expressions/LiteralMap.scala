@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import pipes.QueryState
-import symbols._
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 import collection.Map
 
 case class LiteralMap(data: Map[String, Expression]) extends Expression with GraphElementPropertyFunctions {

@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.assu
 
 import org.mockito.Matchers.any
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_3.LabelId
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{AstConstructionTestSupport, HasLabels, LabelName}
+import org.neo4j.cypher.internal.semantics.v2_3.ast.{AstConstructionTestSupport, HasLabels, LabelName}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.IndependenceCombiner
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{VarPatternLength, IdName, PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, Selectivity}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanConstructionTestSupport, Predicate, Selections, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanConstructionTestSupport, Predicate, Selections}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
+import org.neo4j.cypher.internal.semantics.v2_3.{SemanticTable, LabelId}
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 import org.neo4j.graphdb.Direction

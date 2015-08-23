@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.parser
 
-import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.semantics.v2_3.ast
 import org.parboiled.scala._
 
 trait Expressions extends Parser

@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{InequalitySeekRangeWrapper, PrefixSeekRangeWrapper, NestedPipeExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.ProjectedPath._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression => CommandExpression, InequalitySeekRangeExpression, ProjectedPath}
@@ -28,11 +29,204 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.UnresolvedRelType
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => commandexpressions, predicates, values => commandvalues}
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v2_3.parser.{LikePatternParser, ParsedLikePattern, convertLikePatternToRegex}
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
+import org.neo4j.cypher.internal.semantics.v2_3.ast.functions._
+import org.neo4j.cypher.internal.semantics.v2_3.helpers.NonEmptyList
+import org.neo4j.cypher.internal.semantics.v2_3.{SemanticDirection, ast}
 import org.neo4j.graphdb.Direction
 
 object ExpressionConverters {
+  def toCommandExpression(expression: ast.Function, invocation: ast.FunctionInvocation): CommandExpression =
+    expression match {
+      case Abs => commandexpressions.AbsFunction(toCommandExpression(invocation.arguments.head))
+      case Acos => commandexpressions.AcosFunction(toCommandExpression(invocation.arguments.head))
+      case Asin => commandexpressions.AsinFunction(toCommandExpression(invocation.arguments.head))
+      case Atan => commandexpressions.AtanFunction(toCommandExpression(invocation.arguments.head))
+      case Atan2 =>
+        commandexpressions.Atan2Function(
+          toCommandExpression(invocation.arguments.head),
+          toCommandExpression(invocation.arguments(1)))
+      case Avg =>
+        val inner = toCommandExpression(invocation.arguments.head)
+        val command = commandexpressions.Avg(inner)
+        if (invocation.distinct)
+          commandexpressions.Distinct(command, inner)
+        else
+          command
+      case Ceil => commandexpressions.CeilFunction(toCommandExpression(invocation.arguments.head))
+      case Coalesce => commandexpressions.CoalesceFunction(toCommandExpression(invocation.arguments): _*)
+      case Collect =>
+        val inner = toCommandExpression(invocation.arguments.head)
+        val command = commandexpressions.Collect(inner)
+        if (invocation.distinct)
+          commandexpressions.Distinct(command, inner)
+        else
+          command
+      case Cos => commandexpressions.CosFunction(toCommandExpression(invocation.arguments.head))
+      case Cot => commandexpressions.CotFunction(toCommandExpression(invocation.arguments.head))
+      case Count =>
+        val inner = toCommandExpression(invocation.arguments.head)
+        val command = commandexpressions.Count(inner)
+        if (invocation.distinct)
+          commandexpressions.Distinct(command, inner)
+        else
+          command
+      case Degrees => commandexpressions.DegreesFunction(toCommandExpression(invocation.arguments.head))
+      case E => commandexpressions.EFunction()
+      case EndNode => commandexpressions.RelationshipEndPoints(toCommandExpression(invocation.arguments.head), start = false)
+      case Exists =>
+        invocation.arguments.head match {
+          case property: ast.Property =>
+            commands.predicates.PropertyExists(toCommandExpression(property.map), PropertyKey(property.propertyKey.name))
+          case expression: ast.PatternExpression =>
+            toCommandPredicate(expression)
+          case expression: NestedPipeExpression =>
+            toCommandPredicate(expression)
+        }
+      case Exp => commandexpressions.ExpFunction(toCommandExpression(invocation.arguments.head))
+      case Floor => commandexpressions.FloorFunction(toCommandExpression(invocation.arguments.head))
+      case Has =>
+        val property = invocation.arguments.head.asInstanceOf[ast.Property]
+        commands.predicates.PropertyExists(toCommandExpression(property.map), PropertyKey(property.propertyKey.name))
+
+      case Haversin => commandexpressions.HaversinFunction(toCommandExpression(invocation.arguments.head))
+      case Head =>
+        commandexpressions.ContainerIndex(
+          toCommandExpression(invocation.arguments.head),
+          commandexpressions.Literal(0)
+        )
+      case Id => commandexpressions.IdFunction(toCommandExpression(invocation.arguments.head))
+      case Keys => commandexpressions.KeysFunction(toCommandExpression(invocation.arguments.head))
+      case Labels => commandexpressions.LabelsFunction(toCommandExpression(invocation.arguments.head))
+      case Last =>
+        commandexpressions.ContainerIndex(
+          toCommandExpression(invocation.arguments.head),
+          commandexpressions.Literal(-1)
+        )
+      case Left =>
+        commandexpressions.LeftFunction(
+          toCommandExpression(invocation.arguments.head),
+          toCommandExpression(invocation.arguments(1))
+        )
+      case Length => commandexpressions.LengthFunction(toCommandExpression(invocation.arguments.head))
+      case Log => commandexpressions.LogFunction(toCommandExpression(invocation.arguments.head))
+      case Log10 => commandexpressions.Log10Function(toCommandExpression(invocation.arguments.head))
+      case Lower => commandexpressions.LowerFunction(toCommandExpression(invocation.arguments.head))
+      case LTrim => commandexpressions.LTrimFunction(toCommandExpression(invocation.arguments.head))
+      case Max =>
+        val inner = toCommandExpression(invocation.arguments.head)
+        val command = commandexpressions.Max(inner)
+        if (invocation.distinct)
+          commandexpressions.Distinct(command, inner)
+        else
+          command
+      case Min =>
+        val inner = toCommandExpression(invocation.arguments.head)
+        val command = commandexpressions.Min(inner)
+        if (invocation.distinct)
+          commandexpressions.Distinct(command, inner)
+        else
+          command
+      case Nodes => commandexpressions.NodesFunction(toCommandExpression(invocation.arguments.head))
+      case PercentileCont =>
+        val firstArg = toCommandExpression(invocation.arguments.head)
+        val secondArg = toCommandExpression(invocation.arguments(1))
+
+        val command = commandexpressions.PercentileCont(firstArg, secondArg)
+        if (invocation.distinct)
+          commandexpressions.Distinct(command, firstArg)
+        else
+          command
+      case PercentileDisc =>
+        val firstArg = toCommandExpression(invocation.arguments.head)
+        val secondArg = toCommandExpression(invocation.arguments(1))
+
+        val command = commandexpressions.PercentileDisc(firstArg, secondArg)
+        if (invocation.distinct)
+          commandexpressions.Distinct(command, firstArg)
+        else
+          command
+      case Pi => commandexpressions.PiFunction()
+      case Radians => commandexpressions.RadiansFunction(toCommandExpression(invocation.arguments.head))
+      case Rand => commandexpressions.RandFunction()
+      case functions.Range =>
+        commandexpressions.RangeFunction(
+          toCommandExpression(invocation.arguments.head),
+          toCommandExpression(invocation.arguments(1)),
+          toCommandExpression(invocation.arguments.lift(2)).getOrElse(commandexpressions.Literal(1))
+        )
+      case Relationships | Rels => commandexpressions.RelationshipFunction(toCommandExpression(invocation.arguments.head))
+      case Replace =>
+        commandexpressions.ReplaceFunction(
+          toCommandExpression(invocation.arguments.head),
+          toCommandExpression(invocation.arguments(1)),
+          toCommandExpression(invocation.arguments(2))
+        )
+      case Reverse => commandexpressions.ReverseFunction(toCommandExpression(invocation.arguments.head))
+      case Right =>
+        commandexpressions.RightFunction(
+          toCommandExpression(invocation.arguments.head),
+          toCommandExpression(invocation.arguments(1))
+        )
+      case Round => commandexpressions.RoundFunction(toCommandExpression(invocation.arguments.head))
+      case RTrim => commandexpressions.RTrimFunction(toCommandExpression(invocation.arguments.head))
+      case Sign => commandexpressions.SignFunction(toCommandExpression(invocation.arguments.head))
+      case Sin => commandexpressions.SinFunction(toCommandExpression(invocation.arguments.head))
+      case Size => commandexpressions.SizeFunction(toCommandExpression(invocation.arguments.head))
+      case Split =>
+        commandexpressions.SplitFunction(
+          toCommandExpression(invocation.arguments.head),
+          toCommandExpression(invocation.arguments(1))
+        )
+      case Sqrt => commandexpressions.SqrtFunction(toCommandExpression(invocation.arguments.head))
+      case StartNode => commandexpressions.RelationshipEndPoints(toCommandExpression(invocation.arguments.head), start = true)
+      case StdDev =>
+        val inner = toCommandExpression(invocation.arguments.head)
+        val command = commandexpressions.Stdev(inner)
+        if (invocation.distinct)
+          commandexpressions.Distinct(command, inner)
+        else
+          command
+      case StdDevP =>
+        val inner = toCommandExpression(invocation.arguments.head)
+        val command = commandexpressions.StdevP(inner)
+        if (invocation.distinct)
+          commandexpressions.Distinct(command, inner)
+        else
+          command
+      case Str => commandexpressions.StrFunction(toCommandExpression(invocation.arguments.head))
+      case Substring =>
+        commandexpressions.SubstringFunction(
+          toCommandExpression(invocation.arguments.head),
+          toCommandExpression(invocation.arguments(1)),
+          toCommandExpression(invocation.arguments.lift(2))
+        )
+      case Sum =>
+        val inner = toCommandExpression(invocation.arguments.head)
+        val command = commandexpressions.Sum(inner)
+        if (invocation.distinct)
+          commandexpressions.Distinct(command, inner)
+        else
+          command
+      case Tail =>
+        commandexpressions.CollectionSliceExpression(
+          toCommandExpression(invocation.arguments.head),
+          Some(commandexpressions.Literal(1)),
+          None
+        )
+      case Tan => commandexpressions.TanFunction(toCommandExpression(invocation.arguments.head))
+      case Timestamp => commandexpressions.TimestampFunction()
+      case ToFloat => commandexpressions.ToFloatFunction(toCommandExpression(invocation.arguments.head))
+      case ToInt => commandexpressions.ToIntFunction(toCommandExpression(invocation.arguments.head))
+      case ToLower => commandexpressions.LowerFunction(toCommandExpression(invocation.arguments.head))
+      case ToStr => commandexpressions.StrFunction(toCommandExpression(invocation.arguments.head))
+      case ToString => commandexpressions.ToStringFunction(toCommandExpression(invocation.arguments.head))
+      case ToUpper => commandexpressions.UpperFunction(toCommandExpression(invocation.arguments.head))
+      case Trim => commandexpressions.TrimFunction(toCommandExpression(invocation.arguments.head))
+      case Type => commandexpressions.RelationshipTypeFunction(toCommandExpression(invocation.arguments.head))
+      case Upper => commandexpressions.UpperFunction(toCommandExpression(invocation.arguments.head))
+    }
 
   def toCommandExpression(expression: ast.Expression): CommandExpression = expression match {
     case e: ast.Null => commandexpressions.Null()
@@ -63,7 +257,7 @@ object ExpressionConverters {
     case e: ast.Divide => commandexpressions.Divide(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
     case e: ast.Modulo => commandexpressions.Modulo(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
     case e: ast.Pow => commandexpressions.Pow(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
-    case e: ast.FunctionInvocation => e.function.get.asCommandExpression(e)
+    case e: ast.FunctionInvocation => toCommandExpression(e.function.get, e)
     case e: ast.CountStar => commandexpressions.CountStar()
     case e: ast.Property => toCommandProperty(e)
     case e: ast.Parameter => toCommandParameter(e)
@@ -84,10 +278,10 @@ object ExpressionConverters {
     case e: ast.SingleIterablePredicate => commands.SingleInCollection(toCommandExpression(e.expression), e.identifier.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
     case e: ast.ReduceExpression => commandexpressions.ReduceFunction(toCommandExpression(e.collection), e.identifier.name, toCommandExpression(e.expression), e.accumulator.name, toCommandExpression(e.init))
     case e: ast.PathExpression => toCommandProjectedPath(e)
-    case e: ast.NestedPipeExpression => commandexpressions.NestedPipeExpression(e.pipe, toCommandProjectedPath(e.path))
+    case e: NestedPipeExpression => commandexpressions.NestedPipeExpression(e.pipe, toCommandProjectedPath(e.path))
     case e: ast.GetDegree => getDegree(e)
-    case e: ast.PrefixSeekRangeWrapper => commandexpressions.PrefixSeekRangeExpression(e.range)
-    case e: ast.InequalitySeekRangeWrapper => InequalitySeekRangeExpression(e.range.mapBounds(toCommandExpression))
+    case e: PrefixSeekRangeWrapper => commandexpressions.PrefixSeekRangeExpression(e.range)
+    case e: InequalitySeekRangeWrapper => InequalitySeekRangeExpression(e.range.mapBounds(toCommandExpression))
     case e: ast.AndedPropertyInequalities => predicates.AndedPropertyComparablePredicates(identifier(e.identifier), toCommandProperty(e.property), e.inequalities.map(inequalityExpression))
     case _ =>
       throw new InternalException(s"Unknown expression type during transformation (${expression.getClass})")
@@ -126,7 +320,7 @@ object ExpressionConverters {
 
   private def getDegree(original: ast.GetDegree) = {
     val typ = original.relType.map(relType => UnresolvedRelType(relType.name))
-    commandexpressions.GetDegree(toCommandExpression(original.node), typ, original.dir)
+    commandexpressions.GetDegree(toCommandExpression(original.node), typ, toGraphDb(original.dir))
   }
 
 
@@ -207,22 +401,22 @@ object ExpressionConverters {
       case NodePathStep(Identifier(node), next) =>
         singleNodeProjector(node, project(next))
 
-      case SingleRelationshipPathStep(Identifier(rel), Direction.INCOMING, next) =>
+      case SingleRelationshipPathStep(Identifier(rel), SemanticDirection.INCOMING, next) =>
         singleIncomingRelationshipProjector(rel, project(next))
 
-      case SingleRelationshipPathStep(Identifier(rel), Direction.OUTGOING, next) =>
+      case SingleRelationshipPathStep(Identifier(rel), SemanticDirection.OUTGOING, next) =>
         singleOutgoingRelationshipProjector(rel, project(next))
 
-      case SingleRelationshipPathStep(Identifier(rel), Direction.BOTH, next) =>
+      case SingleRelationshipPathStep(Identifier(rel), SemanticDirection.BOTH, next) =>
         singleUndirectedRelationshipProjector(rel, project(next))
 
-      case MultiRelationshipPathStep(Identifier(rel), Direction.INCOMING, next) =>
+      case MultiRelationshipPathStep(Identifier(rel), SemanticDirection.INCOMING, next) =>
         multiIncomingRelationshipProjector(rel, project(next))
 
-      case MultiRelationshipPathStep(Identifier(rel), Direction.OUTGOING, next) =>
+      case MultiRelationshipPathStep(Identifier(rel), SemanticDirection.OUTGOING, next) =>
         multiOutgoingRelationshipProjector(rel, project(next))
 
-      case MultiRelationshipPathStep(Identifier(rel), Direction.BOTH, next) =>
+      case MultiRelationshipPathStep(Identifier(rel), SemanticDirection.BOTH, next) =>
         multiUndirectedRelationshipProjector(rel, project(next))
 
       case NilPathStep =>
@@ -233,5 +427,13 @@ object ExpressionConverters {
     val dependencies = e.step.dependencies.map(_.name)
 
     ProjectedPath(dependencies, projector)
+  }
+}
+
+object DirectionConverter {
+  def toGraphDb(dir: SemanticDirection): Direction = dir match {
+    case SemanticDirection.INCOMING => Direction.INCOMING
+    case SemanticDirection.OUTGOING => Direction.OUTGOING
+    case SemanticDirection.BOTH => Direction.BOTH
   }
 }

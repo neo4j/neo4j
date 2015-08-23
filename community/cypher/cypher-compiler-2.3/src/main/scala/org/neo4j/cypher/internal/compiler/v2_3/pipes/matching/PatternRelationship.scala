@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{LazyTypes, QueryState}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription}
 import org.neo4j.kernel.{Traversal, Uniqueness}

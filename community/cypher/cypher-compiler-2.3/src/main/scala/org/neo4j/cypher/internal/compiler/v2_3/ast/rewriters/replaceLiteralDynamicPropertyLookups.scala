@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{Property, PropertyKeyName}
+import org.neo4j.cypher.internal.semantics.v2_3._
+import org.neo4j.cypher.internal.semantics.v2_3.ast.{Property, PropertyKeyName}
 import org.neo4j.cypher.internal.semantics.v2_3.{Rewriter, bottomUp}
 
 case object replaceLiteralDynamicPropertyLookups extends Rewriter {

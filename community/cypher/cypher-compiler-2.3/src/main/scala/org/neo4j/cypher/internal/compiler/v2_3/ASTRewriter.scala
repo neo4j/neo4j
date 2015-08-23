@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.conditions._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStepSequencer}
-import org.neo4j.cypher.internal.semantics.v2_3.Rewriter
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
+import org.neo4j.cypher.internal.semantics.v2_3.{Rewriter, SemanticState}
 
 class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, shouldExtractParameters: Boolean = true) {
 
@@ -58,7 +58,7 @@ class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, shouldEx
       replaceLiteralDynamicPropertyLookups
     )
 
-    val rewrittenStatement = statement.rewrite(contract.rewriter).asInstanceOf[ast.Statement]
+    val rewrittenStatement = statement.endoRewrite(contract.rewriter)
 
     (rewrittenStatement, extractedParameters, contract.postConditions)
   }

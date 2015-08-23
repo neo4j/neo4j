@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsLabel}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.LabelName
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols.{SymbolTable, _}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 
 case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
                               (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
@@ -46,7 +47,7 @@ case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
 
   def planDescriptionWithoutCardinality = new PlanDescriptionImpl(this.id, "NodeByLabelScan", NoChildren, Seq(LabelName(label.name)), identifiers)
 
-  def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
+  def symbols = new SymbolTable(Map(ident -> CTNode))
 
   override def monitor = pipeMonitor
 

@@ -21,16 +21,15 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{times, verify, when}
-import org.neo4j.cypher.internal.compiler.v2_3.ExpressionTypeInfo
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{ASTAnnotationMap, Expression, Hint}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LazyMode, LogicalPlan, ProduceResult, Projection}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, LogicalPlanningTestSupport2, PlannerQuery, QueryGraph, RegularQueryProjection, SemanticTable, UnionQuery}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, LogicalPlanningTestSupport2, PlannerQuery, QueryGraph, RegularQueryProjection, UnionQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
-import org.neo4j.cypher.internal.semantics.v2_3.Rewriter
+import org.neo4j.cypher.internal.semantics.v2_3.ast.{ASTAnnotationMap, Expression, Hint}
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.{ExpressionTypeInfo, Rewriter, SemanticTable}
 
 class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

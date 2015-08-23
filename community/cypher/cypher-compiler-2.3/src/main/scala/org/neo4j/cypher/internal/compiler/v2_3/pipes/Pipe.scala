@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, InternalPlanDescription, SingleRowPlanDescription}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 import scala.collection.immutable

@@ -27,10 +27,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenT
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.{DisconnectedShortestPathEndPointsBuilder, _}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Converge.iterateUntilConverged
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.semantics.v2_3.helpers.NonEmptyList
 
 trait ExecutionPlanInProgressRewriter {
   def rewrite(in: ExecutionPlanInProgress)(implicit context: PipeMonitor): ExecutionPlanInProgress
@@ -108,6 +108,7 @@ class LegacyExecutablePlanBuilder(monitors: Monitors, rewriterSequencer: (String
 
   private def groupAndRewriteInequalities(psq: PartiallySolvedQuery): PartiallySolvedQuery = {
     import NonEmptyList._
+
     psq.where.map(p => p.token) match {
       case None => psq
       case Some(predicates) => {

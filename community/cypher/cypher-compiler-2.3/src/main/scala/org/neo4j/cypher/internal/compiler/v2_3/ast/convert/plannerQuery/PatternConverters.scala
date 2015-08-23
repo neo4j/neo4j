@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, PatternRelationship, ShortestPathPattern}
@@ -52,7 +54,7 @@ object PatternConverters {
       case RelationshipChain(NodePattern(Some(leftNodeId), Seq(), None, _), RelationshipPattern(Some(relId), _, relTypes, length, None, direction), NodePattern(Some(rightNodeId), Seq(), None, _)) =>
         val leftNode = IdName(leftNodeId.name)
         val rightNode = IdName(rightNodeId.name)
-        val r = PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, length.asPatternLength)
+        val r = PatternRelationship(IdName(relId.name), (leftNode, rightNode), toGraphDb(direction), relTypes, length.asPatternLength)
         DestructResult(Seq(leftNode, rightNode), Seq(r), Seq.empty)
 
       // ...->[r]->(b)
@@ -60,7 +62,7 @@ object PatternConverters {
         val destructed = relChain.destructedRelationshipChain
         val leftNode = IdName(destructed.rels.last.right.name)
         val rightNode = IdName(rightNodeId.name)
-        val newRel = PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, length.asPatternLength)
+        val newRel = PatternRelationship(IdName(relId.name), (leftNode, rightNode), toGraphDb(direction), relTypes, length.asPatternLength)
         destructed.
           addNodeId(rightNode).
           addRel(newRel)

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.SortItem
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 
 class SortBuilderTest extends BuilderTest {
 

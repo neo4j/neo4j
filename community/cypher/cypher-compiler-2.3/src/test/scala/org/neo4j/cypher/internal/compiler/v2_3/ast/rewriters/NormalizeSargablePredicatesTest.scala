@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.functions.Has
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
+import org.neo4j.cypher.internal.semantics.v2_3.ast.functions.Has
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 class NormalizeSargablePredicatesTest extends CypherFunSuite with AstConstructionTestSupport {

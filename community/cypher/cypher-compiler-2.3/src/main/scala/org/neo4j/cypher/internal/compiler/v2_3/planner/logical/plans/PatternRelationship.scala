@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast
-import org.neo4j.cypher.internal.compiler.v2_3.ast.RelTypeName
-import org.neo4j.cypher.internal.compiler.v2_3.perty.PageDocFormatting
+import org.neo4j.cypher.internal.semantics.v2_3.ast
+import org.neo4j.cypher.internal.semantics.v2_3.ast.RelTypeName
+import org.neo4j.cypher.internal.semantics.v2_3.perty.PageDocFormatting
 import org.neo4j.graphdb.Direction
 
 final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: Direction, types: Seq[RelTypeName], length: PatternLength)

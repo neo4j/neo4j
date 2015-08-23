@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands
 
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.semantics.v2_3.{SemanticDirection, ast}
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => commandexpressions, values => commandvalues}
@@ -129,7 +131,7 @@ object PatternConverters {
         case None                              => (false, Some(1))//non-varlength case
         case _                                 => (false, None)
       }
-      Seq(commands.ShortestPath(pathName, leftName, rightName, reltypes, rel.direction, allowZeroLength, maxDepth, part.single, relIteratorName))
+      Seq(commands.ShortestPath(pathName, leftName, rightName, reltypes, toGraphDb(rel.direction), allowZeroLength, maxDepth, part.single, relIteratorName))
     }
 
     def asLegacyNamedPath(pathName: String) = None
@@ -202,7 +204,7 @@ object PatternConverters {
           case None =>
             ParsedRelation(
               chain.relationship.legacyName, props, startNode, endNode,
-              chain.relationship.types.map(_.name), chain.relationship.direction, chain.relationship.optional)
+              chain.relationship.types.map(_.name), toGraphDb(chain.relationship.direction), chain.relationship.optional)
 
           case _    =>
             val (relName, relIterator) = chain.relationship.identifier match {
@@ -213,7 +215,7 @@ object PatternConverters {
             }
 
             ParsedVarLengthRelation(relName, props, startNode, endNode, chain.relationship.types.map(_.name),
-              chain.relationship.direction, chain.relationship.optional, minDepth, maxDepth, relIterator)
+              toGraphDb(chain.relationship.direction), chain.relationship.optional, minDepth, maxDepth, relIterator)
         }
       }
 
@@ -261,16 +263,16 @@ object PatternConverters {
           }
           val relIterator = relationship.identifier.map(_.name)
           commands.VarLengthRelatedTo(pathName, leftNode.asLegacyNode, rightNode.asLegacyNode, min, max,
-            relationship.types.map(_.name).distinct, relationship.direction, relIterator, properties = legacyProperties)
+            relationship.types.map(_.name).distinct, toGraphDb(relationship.direction), relIterator, properties = legacyProperties)
         case None             =>
           commands.RelatedTo(leftNode.asLegacyNode, rightNode.asLegacyNode, relationship.legacyName,
-            relationship.types.map(_.name).distinct, relationship.direction, legacyProperties)
+            relationship.types.map(_.name).distinct, toGraphDb(relationship.direction), legacyProperties)
       }
     }
 
     def asLegacyCreates(fromEnd: mutation.RelationshipEndpoint, toEnd: mutation.RelationshipEndpoint): mutation.CreateRelationship = {
       val (from, to) = relationship.direction match {
-        case Direction.INCOMING => (toEnd, fromEnd)
+        case SemanticDirection.INCOMING => (toEnd, fromEnd)
         // Direction.{OUTGOING|BOTH}
         case _                  => (fromEnd, toEnd)
       }

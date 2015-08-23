@@ -22,16 +22,17 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compiler.v2_3.ast.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.compiler.v2_3.ProfileMode
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.Variable
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, plans}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, plans}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.semantics.v2_3.ast.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.semantics.v2_3.symbols
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_3.{ProfileMode, symbols}
 import org.neo4j.function.Supplier
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}

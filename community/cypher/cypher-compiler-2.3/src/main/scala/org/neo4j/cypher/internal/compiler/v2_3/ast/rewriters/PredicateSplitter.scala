@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_3.Ref
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
-import org.neo4j.cypher.internal.semantics.v2_3.{Rewriter, bottomUp, topDown}
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
+import org.neo4j.cypher.internal.semantics.v2_3._
 
 object PredicateSplitter {
   val empty = PredicateSplitter(Map.empty)

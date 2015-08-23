@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.greedy
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{Expression, HasLabels, LabelName}
+import org.neo4j.cypher.internal.semantics.v2_3.ast.{Expression, HasLabels, LabelName}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{AllNodesScan, NodeByLabelScan, Selection}

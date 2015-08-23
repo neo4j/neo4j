@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery.PatternConverters._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.{addUniquenessPredicates, LabelPredicateNormalizer, MatchPredicateNormalizerChain, PropertyPredicateNormalizer}
+import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.{LabelPredicateNormalizer, MatchPredicateNormalizerChain, PropertyPredicateNormalizer, addUniquenessPredicates}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.UnNamedNameGenerator._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{PatternLength, VarPatternLength, SimplePatternLength, IdName}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, PatternLength, SimplePatternLength, VarPatternLength}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{Predicate, QueryGraph}
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
 import org.neo4j.cypher.internal.semantics.v2_3.{Rewriter, topDown}
 
 object ExpressionConverters {

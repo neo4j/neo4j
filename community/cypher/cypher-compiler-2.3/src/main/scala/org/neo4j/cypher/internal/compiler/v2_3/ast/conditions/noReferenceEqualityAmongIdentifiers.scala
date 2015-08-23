@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.conditions
 
-import org.neo4j.cypher.internal.compiler.v2_3.Ref
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.Condition
+import org.neo4j.cypher.internal.semantics.v2_3.Ref
+import org.neo4j.cypher.internal.semantics.v2_3.ast.Identifier
 
 case object noReferenceEqualityAmongIdentifiers extends Condition {
   def apply(that: Any): Seq[String] = {

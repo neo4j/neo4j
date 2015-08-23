@@ -23,7 +23,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito.{verify, _}
 import org.neo4j.cypher.internal.compatibility.{StringInfoLogger2_3, WrappedMonitors2_3}
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.notification.CartesianProductNotification
+import org.neo4j.cypher.internal.semantics.v2_3.notification.CartesianProductNotification
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.semantics.v2_3.InputPosition

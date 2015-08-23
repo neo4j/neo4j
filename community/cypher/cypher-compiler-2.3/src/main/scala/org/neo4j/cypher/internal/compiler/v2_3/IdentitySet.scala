@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
+import org.neo4j.cypher.internal.semantics.v2_3.IdentityMap
+
 object IdentitySet {
   private val PRESENT = new Object
   def empty[T] = IdentitySet(IdentityMap.empty[T, AnyRef])

@@ -26,9 +26,10 @@ import executionplan.{ExecutionPlanInProgress, Phase, PartiallySolvedQuery, Plan
 import mutation._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import pipes._
 import spi.PlanContext
-import symbols._
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 
 /*
 This class solves MERGE for patterns. It does this by creating an execution plan that uses normal pattern matching

@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{Expression, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport, Predicate, Selections}
+import org.neo4j.cypher.internal.semantics.v2_3.ast.{Expression, Identifier}
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.{SemanticDirection, ast}
 import org.neo4j.graphdb.Direction
 
 class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -33,7 +33,7 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
   val bNode: ast.NodePattern = ast.NodePattern(Some(ast.Identifier("b")(pos)), Seq.empty, None, naked = false)_
   val unnamedIdentifier: ast.Identifier = ast.Identifier("  UNNAMED1")_
   val anonymousNode: ast.NodePattern = ast.NodePattern(Some(unnamedIdentifier), Seq.empty, None, naked = false)_
-  val rRel: ast.RelationshipPattern = ast.RelationshipPattern(Some(ast.Identifier("r")(pos)), false, Seq.empty, None, None, Direction.OUTGOING)_
+  val rRel: ast.RelationshipPattern = ast.RelationshipPattern(Some(ast.Identifier("r")(pos)), false, Seq.empty, None, None, SemanticDirection.OUTGOING)_
   val TYP: ast.RelTypeName = ast.RelTypeName("TYP")_
 
   val rRelWithType: ast.RelationshipPattern = rRel.copy(types = Seq(TYP)) _

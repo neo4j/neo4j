@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_3.CypherException
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.semantics.v2_3.{InputPosition, Rewriter, bottomUp, topDown}
 
@@ -61,7 +61,7 @@ case class normalizeWithClauses(mkException: (String, InputPosition) => CypherEx
       Seq(clause.copy(returnItems = ri.copy(items = initialReturnItems)(ri.position))(clause.position))
 
     case clause @ With(distinct, ri, orderBy, skip, limit, where) =>
-      clause.verifyOrderByAggregationUse(mkException)
+      clause.verifyOrderByAggregationUse((s,i) => throw mkException(s,i))
       val (unaliasedReturnItems, aliasedReturnItems) = partitionReturnItems(ri.items)
       val initialReturnItems = unaliasedReturnItems ++ aliasedReturnItems
       val (introducedReturnItems, updatedOrderBy, updatedWhere) = aliasOrderByAndWhere(aliasedReturnItems.map(i => i.expression -> i.alias.get.copyId).toMap, orderBy, where)

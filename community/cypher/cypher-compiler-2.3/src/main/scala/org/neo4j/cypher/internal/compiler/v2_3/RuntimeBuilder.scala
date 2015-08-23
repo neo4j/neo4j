@@ -23,11 +23,12 @@ import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer.Compilatio
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeStructure, CodeGenerator}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{GeneratedQuery, CompiledPlan, NewRuntimeSuccessRateMonitor, PipeInfo}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers._
-import org.neo4j.cypher.internal.compiler.v2_3.notification.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.v2_3.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
+import org.neo4j.cypher.internal.semantics.v2_3.SemanticTable
+import org.neo4j.cypher.internal.semantics.v2_3.notification.RuntimeUnsupportedNotification
 import org.neo4j.helpers.Clock
 
 object RuntimeBuilder {

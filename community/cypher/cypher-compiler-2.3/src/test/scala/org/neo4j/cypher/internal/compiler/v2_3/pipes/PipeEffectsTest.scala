@@ -20,14 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.ReturnItem
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier, Literal}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{HasLabel, True}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.UnresolvedLabel
-import org.neo4j.cypher.internal.compiler.v2_3.commands.ReturnItem
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.{CreateNode, CreateRelationship, MergeNodeAction, RelationshipEndpoint}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{PatternGraph, Trail, TraversalMatcher}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.scalatest.prop.TableDrivenPropertyChecks

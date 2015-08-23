@@ -19,17 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality
 
-import org.mockito.Mockito
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Selectivity
-import org.neo4j.cypher.internal.compiler.v2_3.{PropertyKeyId, LabelId}
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{Predicate, Selections, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{Predicate, Selections}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
+import org.neo4j.cypher.internal.semantics.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
+import org.neo4j.cypher.internal.semantics.v2_3.{InputPosition, LabelId, PropertyKeyId, SemanticTable}
 
 class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
 

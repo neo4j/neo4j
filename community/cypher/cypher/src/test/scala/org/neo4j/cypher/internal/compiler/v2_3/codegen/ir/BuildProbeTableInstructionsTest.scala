@@ -26,8 +26,8 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, JoinTableMethod, Variable}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
-import org.neo4j.cypher.internal.compiler.v2_3.symbols
+import org.neo4j.cypher.internal.semantics.v2_3.symbols
+import org.neo4j.cypher.internal.semantics.v2_3.SemanticTable
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{GraphDatabaseService, Node}
 import org.neo4j.kernel.api.{ReadOperations, Statement}

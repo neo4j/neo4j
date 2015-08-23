@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.UnNamedNameGenerator.isNamed
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{PlanDescriptionImpl, SingleChild}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects._
 
 

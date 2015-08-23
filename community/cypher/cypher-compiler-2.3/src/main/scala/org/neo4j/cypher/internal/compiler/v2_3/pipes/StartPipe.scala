@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, _}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,

@@ -19,16 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.groupInequalityPredicates
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{Selections, PlannerQuery, QueryGraph, QueryHorizon}
-
+import org.neo4j.cypher.internal.semantics.v2_3.helpers.NonEmptyList._
 
 case class PlannerQueryBuilder(private val q: PlannerQuery, returns: Seq[IdName] = Seq.empty)
   extends CollectionSupport {
-
-  import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList._
 
   def withReturns(returns: Seq[IdName]): PlannerQueryBuilder = copy(returns = returns)
 

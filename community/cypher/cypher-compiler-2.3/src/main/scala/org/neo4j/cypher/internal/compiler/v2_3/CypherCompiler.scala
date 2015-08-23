@@ -20,19 +20,19 @@
 package org.neo4j.cypher.internal.compiler.v2_3
 
 import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer.CompilationPhase.{AST_REWRITE, PARSING, SEMANTIC_CHECK}
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{NodePattern, Statement}
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeStructure
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.closing
-import org.neo4j.cypher.internal.compiler.v2_3.notification.{BareNodeSyntaxDeprecatedNotification, InternalNotification}
 import org.neo4j.cypher.internal.compiler.v2_3.parser.CypherParser
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CachedMetricsFactory, DefaultQueryPlanner, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.semantics.v2_3.{inSequence, InputPosition}
+import org.neo4j.cypher.internal.semantics.v2_3.ast.{NodePattern, Statement}
+import org.neo4j.cypher.internal.semantics.v2_3.notification.{BareNodeSyntaxDeprecatedNotification, InternalNotification}
+import org.neo4j.cypher.internal.semantics.v2_3.{InputPosition, SemanticTable, inSequence}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 

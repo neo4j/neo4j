@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_3.parser.CypherParser
@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter.{L
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.semantics.v2_3.inSequence
+import org.neo4j.cypher.internal.semantics.v2_3.{SemanticTable, PropertyKeyId, inSequence}
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.api.constraints.UniquenessConstraint

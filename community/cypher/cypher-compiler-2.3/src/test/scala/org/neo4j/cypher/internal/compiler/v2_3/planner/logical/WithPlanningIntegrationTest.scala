@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{Expression, SignedDecimalIntegerLiteral, UnsignedDecimalIntegerLiteral}
+import org.neo4j.cypher.internal.semantics.v2_3.ast.{Expression, SignedDecimalIntegerLiteral, UnsignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{AllNodesScan, Projection, Limit}
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite

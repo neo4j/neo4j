@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
-import org.neo4j.cypher.internal.semantics.v2_3.Rewriter
+import org.neo4j.cypher.internal.semantics.v2_3.ast.Statement
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.{DummyPosition, Rewriter}
 
 trait RewriteTest {
   self: CypherFunSuite =>

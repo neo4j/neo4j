@@ -24,8 +24,9 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.Cardinali
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan, NodeHashJoin, PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, LogicalPlanningContext, Metrics, QueryGraphSolver}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, LogicalPlanConstructionTestSupport, PlannerQuery, QueryGraph, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, LogicalPlanConstructionTestSupport, PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
+import org.neo4j.cypher.internal.semantics.v2_3.SemanticTable
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 

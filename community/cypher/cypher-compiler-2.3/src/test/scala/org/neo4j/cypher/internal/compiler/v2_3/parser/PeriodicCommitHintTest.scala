@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.parser
 
-import org.neo4j.cypher.internal.compiler.v2_3.{DummyPosition, ast}
+import org.neo4j.cypher.internal.semantics.v2_3.{DummyPosition, ast}
 import org.parboiled.scala._
 
 class PeriodicCommitHintTest extends ParserTest[ast.PeriodicCommitHint, Any] with Query {

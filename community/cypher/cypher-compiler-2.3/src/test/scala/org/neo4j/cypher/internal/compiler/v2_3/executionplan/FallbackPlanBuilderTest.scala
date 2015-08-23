@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_3.notification.PlannerUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantHandleQueryException}
 import org.neo4j.cypher.internal.compiler.v2_3.{RecordingNotificationLogger, CompilationPhaseTracer, PreparedQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.parser.CypherParser
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
+import org.neo4j.cypher.internal.semantics.v2_3.notification.PlannerUnsupportedNotification
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 class FallbackPlanBuilderTest extends CypherFunSuite {

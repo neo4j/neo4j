@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{HasLabels, LabelName}
+import org.neo4j.cypher.internal.semantics.v2_3.ast.{HasLabels, LabelName}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._

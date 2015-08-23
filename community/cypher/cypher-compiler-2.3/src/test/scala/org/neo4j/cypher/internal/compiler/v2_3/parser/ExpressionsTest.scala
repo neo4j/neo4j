@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.parser
 
-import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, True}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => legacy, predicates}
+import org.neo4j.cypher.internal.semantics.v2_3.ast
 
 class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with Expressions {
   implicit val parserToTest = Expression

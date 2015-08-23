@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.helpers.Platforms
 import pipes.QueryState
-import symbols._
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import scala.collection.Map
@@ -38,28 +39,6 @@ abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(a
   def calculateType(symbols: SymbolTable) = CTString
 
   def symbolTableDependencies = arg.symbolTableDependencies
-}
-
-object StringHelper {
-  private val positionPattern = """\(line (\d+), column (\d+) \(offset: (\d+)\)\)""".r
-
-  implicit class RichString(val text: String) extends AnyVal {
-    def stripLinesAndMargins: String =
-      text.stripMargin.filter((ch: Char) => Character.isDefined(ch) && !Character.isISOControl(ch))
-
-    def cypherEscape: String =
-      text.replace("\\", "\\\\")
-
-    // (line 1, column 8 (offset: 7))
-    def fixPosition: String = if (Platforms.platformIsWindows()) {
-      positionPattern.replaceAllIn(text, (matcher) => {
-        val line = matcher.group(1).toInt
-        val column = matcher.group(2).toInt
-        val offset = matcher.group(3).toInt + line - 1
-        s"(line $line, column $column (offset: $offset))"
-      } )
-    } else { text }
-  }
 }
 
 trait StringHelper {

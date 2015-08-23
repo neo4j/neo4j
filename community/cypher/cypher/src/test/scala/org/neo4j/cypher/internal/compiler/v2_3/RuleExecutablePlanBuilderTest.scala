@@ -26,7 +26,6 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.compatibility.WrappedMonitors2_3
 import org.neo4j.cypher.internal.compiler.v2_2.Rewriter
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier, Literal}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.HasLabel
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.{Label, PropertyKey}
@@ -35,13 +34,15 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlanInPro
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.{CreateNode, DeletePropertyAction}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v2_3.planner.CostBasedPipeBuilderFactory
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{DefaultQueryPlanner, SimpleMetricsFactory}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{CostBasedPipeBuilderFactory, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.semantics.v2_3.ast.Statement
+import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.{Scope, SemanticTable}
 import org.neo4j.cypher.internal.spi.v2_3.{GeneratedQueryStructure, TransactionBoundQueryContext}
 import org.neo4j.graphdb.DynamicLabel
 import org.neo4j.helpers.Clock

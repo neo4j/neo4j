@@ -29,7 +29,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.parser
  *    p =      shortestPath(    (a)             -[r1]->           (b)            -[r2]->           (c)       )
  */
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast
+import org.neo4j.cypher.internal.semantics.v2_3.{SemanticDirection, ast}
 import org.parboiled.scala._
 import org.neo4j.graphdb.Direction
 
@@ -71,10 +71,10 @@ trait Patterns extends Parser
 
   private def RelationshipPattern: Rule1[ast.RelationshipPattern] = rule {
     (
-        LeftArrowHead ~~ Dash ~~ RelationshipDetail ~~ Dash ~~ RightArrowHead ~ push(Direction.BOTH)
-      | LeftArrowHead ~~ Dash ~~ RelationshipDetail ~~ Dash ~ push(Direction.INCOMING)
-      | Dash ~~ RelationshipDetail ~~ Dash ~~ RightArrowHead ~ push(Direction.OUTGOING)
-      | Dash ~~ RelationshipDetail ~~ Dash ~ push(Direction.BOTH)
+        LeftArrowHead ~~ Dash ~~ RelationshipDetail ~~ Dash ~~ RightArrowHead ~ push(SemanticDirection.BOTH)
+      | LeftArrowHead ~~ Dash ~~ RelationshipDetail ~~ Dash ~ push(SemanticDirection.INCOMING)
+      | Dash ~~ RelationshipDetail ~~ Dash ~~ RightArrowHead ~ push(SemanticDirection.OUTGOING)
+      | Dash ~~ RelationshipDetail ~~ Dash ~ push(SemanticDirection.BOTH)
     ) ~~>> (ast.RelationshipPattern(_, _, _, _, _, _))
   }
 

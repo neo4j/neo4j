@@ -24,7 +24,7 @@ import java.text.NumberFormat
 import java.util.{Date, Locale}
 
 import org.neo4j.cypher.internal.compatibility.WrappedMonitors2_3
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
+import org.neo4j.cypher.internal.semantics.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_3.parser.CypherParser
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription

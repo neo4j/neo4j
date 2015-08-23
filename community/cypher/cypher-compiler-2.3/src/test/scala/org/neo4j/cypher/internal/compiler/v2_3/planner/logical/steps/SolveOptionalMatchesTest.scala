@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
 import org.mockito.Matchers.any
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_3.ast
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, LogicalPlanningContext, QueryPlannerConfiguration}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, LogicalPlanningTestSupport, PlannerQuery, QueryGraph, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, LogicalPlanningTestSupport, PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.semantics.v2_3.{SemanticTable, ast}
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 

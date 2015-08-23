@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 class CodeGenExpressionTypesTest extends CypherFunSuite {

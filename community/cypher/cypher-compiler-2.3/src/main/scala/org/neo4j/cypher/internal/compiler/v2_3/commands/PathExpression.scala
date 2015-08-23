@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.PatternGra
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.UnNamedNameGenerator.isNamed
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.MatchingContext
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class PathExpression(pathPattern: Seq[Pattern], predicate:Predicate=True())

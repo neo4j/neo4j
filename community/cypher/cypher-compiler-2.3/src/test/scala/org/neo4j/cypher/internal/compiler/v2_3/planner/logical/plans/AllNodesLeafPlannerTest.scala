@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.PatternExpression
+import org.neo4j.cypher.internal.semantics.v2_3.ast.PatternExpression
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.allNodesLeafPlanner
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport, QueryGraph}
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite

@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import commands.RelatedTo
-import commands.expressions.Literal
-import executionplan.builders.PatternGraphBuilder
-import pipes.matching.PatternMatchingBuilder
-import symbols._
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.commands.RelatedTo
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Literal
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.PatternGraphBuilder
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternMatchingBuilder
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 import org.neo4j.graphdb.Direction
 
 class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuilder with QueryStateTestSupport {

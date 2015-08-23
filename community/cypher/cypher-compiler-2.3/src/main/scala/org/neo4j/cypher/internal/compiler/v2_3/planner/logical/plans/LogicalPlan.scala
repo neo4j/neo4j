@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 import java.lang.reflect.Method
 
 import org.neo4j.cypher.internal.compiler.v2_3.InternalException
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{Expression, Identifier}
-import org.neo4j.cypher.internal.compiler.v2_3.perty._
+import org.neo4j.cypher.internal.semantics.v2_3.ast.{Expression, Identifier}
+import org.neo4j.cypher.internal.semantics.v2_3.perty._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlanningFunction2, QueryPlannerConfiguration}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.semantics.v2_3.Foldable._

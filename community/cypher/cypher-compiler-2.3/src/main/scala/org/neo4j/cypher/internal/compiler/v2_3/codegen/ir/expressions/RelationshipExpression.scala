@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure, Variable}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.semantics.v2_3.symbols
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 
 case class RelationshipExpression(relId: Variable) extends CodeGenExpression {
   assert(relId.cypherType == symbols.CTRelationship)

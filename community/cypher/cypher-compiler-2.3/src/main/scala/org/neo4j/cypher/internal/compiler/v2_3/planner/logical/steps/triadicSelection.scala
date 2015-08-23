@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CandidateGenerator, LogicalPlanningContext}
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
 import org.neo4j.graphdb.Direction
 
 object triadicSelection extends CandidateGenerator[LogicalPlan] {
@@ -54,6 +55,6 @@ object triadicSelection extends CandidateGenerator[LogicalPlan] {
                   NodePattern(Some(Identifier(pfrom)), List(), None, false),
                   RelationshipPattern(None, false, ptypes, None, None, pdir),
                   NodePattern(Some(Identifier(pto)), List(), None, false)))))
-        if pfrom == from && pto == to && ptypes == ptypes && pdir == dir => p
+        if pfrom == from && pto == to && ptypes == ptypes && toGraphDb(pdir) == dir => p
     }
 }

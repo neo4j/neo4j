@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_3.perty.gen.{DocHandlerTestSuite, toStringDocGen}
+import org.neo4j.cypher.internal.semantics.v2_3.perty.gen.{DocHandlerTestSuite, toStringDocGen}
 
 class ToStringDocGenTest extends DocHandlerTestSuite[Any] {
 

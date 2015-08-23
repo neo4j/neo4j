@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.conditions
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.ASTNode
+import org.neo4j.cypher.internal.semantics.v2_3.ast.ASTNode
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.Condition
 
 import scala.reflect.ClassTag

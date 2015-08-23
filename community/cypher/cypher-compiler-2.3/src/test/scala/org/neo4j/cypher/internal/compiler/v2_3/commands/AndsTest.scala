@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
-import org.mockito.Mockito._
 import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{True, Not, Ands, Predicate}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Ands, Not, Predicate, True}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryStateHelper
+import org.neo4j.cypher.internal.semantics.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 
 class AndsTest extends CypherFunSuite {
   private implicit val state = QueryStateHelper.empty

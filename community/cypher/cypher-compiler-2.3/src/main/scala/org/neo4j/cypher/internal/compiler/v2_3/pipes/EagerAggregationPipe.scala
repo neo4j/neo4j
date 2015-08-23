@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.AggregationExpression
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 
 import scala.collection.mutable.{Map => MutableMap}
 

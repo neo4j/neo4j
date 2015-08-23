@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
 import org.neo4j.cypher.internal.semantics.v2_3.{bottomUp, Rewriter}
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Return
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
+import org.neo4j.cypher.internal.semantics.v2_3.ast.Return
 
 case object reattachAliasedExpressions extends Rewriter {
   def apply(in: AnyRef): AnyRef = bottomUp(findingRewriter).apply(in)

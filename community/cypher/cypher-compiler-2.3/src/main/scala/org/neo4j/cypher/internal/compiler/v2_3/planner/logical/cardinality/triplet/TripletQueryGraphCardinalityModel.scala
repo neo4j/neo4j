@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.triplet
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression
+import org.neo4j.cypher.internal.semantics.v2_3.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.triplet.TripletQueryGraphCardinalityModel.NodeCardinalities
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.{ExpressionSelectivityEstimator, NodeCardinalityEstimator, SelectivityCombiner}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, Selectivity}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{QueryGraph, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
+import org.neo4j.cypher.internal.semantics.v2_3.SemanticTable
 
 object TripletQueryGraphCardinalityModel {
   type SelectivityEstimator = Expression => Selectivity

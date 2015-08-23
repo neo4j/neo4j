@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlanInPro
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.UpdateAction
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 trait BuilderTest extends CypherFunSuite {

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression
+import org.neo4j.cypher.internal.semantics.v2_3.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 
 case class DirectedRelationshipByIdSeek(idName: IdName,

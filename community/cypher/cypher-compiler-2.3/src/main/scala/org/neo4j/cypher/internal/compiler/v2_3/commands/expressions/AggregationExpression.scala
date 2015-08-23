@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import pipes.aggregation._
-import pipes.QueryState
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.aggregation._
+import org.neo4j.cypher.internal.semantics.v2_3.symbols.CypherType
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 abstract class AggregationExpression extends Expression {

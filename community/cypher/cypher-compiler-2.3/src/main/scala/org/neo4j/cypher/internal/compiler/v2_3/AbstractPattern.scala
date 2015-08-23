@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import commands._
-import commands.expressions.{Expression, Identifier}
-import commands.values.KeyToken
-import mutation.GraphElementPropertyFunctions
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.commands._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_3.mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 import org.neo4j.graphdb.Direction
-import collection.Map
+
+import scala.collection.Map
 
 abstract sealed class AbstractPattern extends AstNode[AbstractPattern] {
   def makeOutgoing: AbstractPattern

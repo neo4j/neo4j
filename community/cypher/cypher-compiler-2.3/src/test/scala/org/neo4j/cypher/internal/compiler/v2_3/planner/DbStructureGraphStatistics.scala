@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner
 
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.compiler.v2_3.{LabelId, NameId, PropertyKeyId, RelTypeId}
+import org.neo4j.cypher.internal.semantics.v2_3.{LabelId, NameId, PropertyKeyId, RelTypeId}
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureLookup
 
 class DbStructureGraphStatistics(lookup: DbStructureLookup) extends GraphStatistics {

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.perty.gen.DocHandlerTestSuite
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
+import org.neo4j.cypher.internal.semantics.v2_3.perty.gen.DocHandlerTestSuite
 
 class AstPhraseDocGenTest extends DocHandlerTestSuite[ASTNode] with AstConstructionTestSupport {
 

@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.{ParameterWrongTypeException, symbols, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionContext, ParameterWrongTypeException}
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 
 case class ToFloatFunction(a: Expression) extends NullInNullOutExpression(a) {
   def symbolTableDependencies: Set[String] = a.symbolTableDependencies

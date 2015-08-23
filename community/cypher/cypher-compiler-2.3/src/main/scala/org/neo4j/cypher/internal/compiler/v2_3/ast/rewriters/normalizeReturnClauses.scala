@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_3.CypherException
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.semantics.v2_3.{InputPosition, topDown, Rewriter, bottomUp}
 
@@ -57,7 +57,7 @@ case class normalizeReturnClauses(mkException: (String, InputPosition) => Cypher
       )
 
     case clause @ Return(distinct, ri, orderBy, skip, limit) =>
-      clause.verifyOrderByAggregationUse(mkException)
+      clause.verifyOrderByAggregationUse((s,i) => throw mkException(s,i))
       var rewrites = Map[Expression, Identifier]()
 
       val (aliasProjection, finalProjection) = ri.items.map {

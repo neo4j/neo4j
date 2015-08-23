@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner
 
 import org.neo4j.cypher.internal.compiler.v2_3.InternalException
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.perty._
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
+import org.neo4j.cypher.internal.semantics.v2_3.perty._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{LazyMode, StrictnessMode, IdName}
 
 sealed trait QueryHorizon extends PageDocFormatting { // with ToPrettyString[QueryHorizon] {

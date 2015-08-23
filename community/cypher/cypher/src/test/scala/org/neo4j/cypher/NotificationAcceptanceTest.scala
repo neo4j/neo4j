@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_3.notification._
 import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
+import org.neo4j.cypher.internal.semantics.v2_3.notification._
 
 class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 

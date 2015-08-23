@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.{namePatternPredicatePatternElements, normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport, _}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.semantics.v2_3.inSequence
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.semantics.v2_3.{SemanticDirection, SemanticTable, inSequence}
 import org.neo4j.graphdb.Direction
 
 class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -441,7 +441,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val nodeName = "  UNNAMED21"
     val exp: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
-      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, Direction.OUTGOING) _,
+      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
       NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
     ) _) _)
     val predicate= Predicate(Set(IdName("a")), exp)
@@ -494,7 +494,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val nodeName = "  UNNAMED36"
     val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
-      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, Direction.OUTGOING) _,
+      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
       NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
     ) _) _)
     val exp2: Expression = In(
@@ -517,7 +517,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val nodeName = "  UNNAMED21"
     val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
-      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, Direction.OUTGOING) _,
+      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
       NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
     ) _) _)
     val exp2: Expression = In(
@@ -540,7 +540,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val nodeName = "  UNNAMED37"
     val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
-      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, Direction.OUTGOING) _,
+      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
       NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
     ) _) _)
     val exp2: Expression = In(

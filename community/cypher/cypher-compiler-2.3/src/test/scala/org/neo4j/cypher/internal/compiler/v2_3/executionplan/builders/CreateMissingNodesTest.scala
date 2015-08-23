@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, Identifier, Literal}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, UnresolvedLabel}
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.{CreateNode, CreateRelationship, RelationshipEndpoint}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 class CreateMissingNodesTest extends CypherFunSuite {

@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.LegacyExpression
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{PlanDescriptionImpl, TwoChildren}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 
 case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, predicate: Predicate, negated: Boolean)
                                    (val estimatedCardinality: Option[Double] = None)
