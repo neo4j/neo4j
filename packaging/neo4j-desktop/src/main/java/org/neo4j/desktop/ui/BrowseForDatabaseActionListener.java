@@ -83,7 +83,7 @@ class BrowseForDatabaseActionListener implements ActionListener
             {
                 int choice = showWrappedConfirmDialog(
                         frame,
-                        ude.getMessage() + "\nPlease choose a different folder.",
+                        ude.getMessage() + "\n" + "Please choose a different folder.",
                         "Invalid folder selected", OK_CANCEL_OPTION, ERROR_MESSAGE );
 
                 if ( choice == CANCEL_OPTION )

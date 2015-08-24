@@ -64,11 +64,11 @@ public class DarwinInstallation extends UnixInstallation
 
             Runtime.getRuntime().exec( commands );
         }
-        catch( IOException e )
+        catch( IOException ioe )
         {
             System.out.println( "Error writing openNeoTerminal.sh" );
         }
-        catch( URISyntaxException e )
+        catch( URISyntaxException urise )
         {
             System.out.println( "Error getting bin locations for openNeoTerminal.sh" );
         }

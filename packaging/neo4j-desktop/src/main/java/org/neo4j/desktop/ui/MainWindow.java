@@ -167,7 +167,7 @@ public class MainWindow
 
     private JPanel createSelectionPanel( JTextField directoryDisplay, JButton selectButton )
     {
-        return withTitledBorder( "Database location", withBoxLayout( BoxLayout.LINE_AXIS,
+        return withTitledBorder( "Database Location", withBoxLayout( BoxLayout.LINE_AXIS,
                 createPanel( directoryDisplay, selectButton ) ) );
     }
 
