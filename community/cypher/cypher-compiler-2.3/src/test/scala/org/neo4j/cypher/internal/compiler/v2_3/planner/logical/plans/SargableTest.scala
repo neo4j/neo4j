@@ -157,7 +157,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("PropertyScannable works") {
     val propertyExpr: Property = Property(nodeA, PropertyKeyName("name")_)_
-    val expr: FunctionInvocation = FunctionInvocation(FunctionName("has") _, propertyExpr)_
+    val expr: FunctionInvocation = FunctionInvocation(FunctionName("exists") _, propertyExpr)_
 
     assertMatches(expr) {
       case AsPropertyScannable(scannable) =>

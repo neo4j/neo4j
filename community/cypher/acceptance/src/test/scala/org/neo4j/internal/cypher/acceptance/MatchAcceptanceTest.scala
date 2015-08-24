@@ -1159,7 +1159,7 @@ return b
     ))
   }
 
-  test("should use the index for property existence queries for cost when asked for it") {
+  test("should use the index for property existence queries (with has) for cost when asked for it") {
     // given
     val n = createLabeledNode(Map("email" -> "me@mine"), "User")
     val m = createLabeledNode(Map("email" -> "you@yours"), "User")
@@ -1168,6 +1168,36 @@ return b
 
     // when
     val result = executeWithCostPlannerOnly("MATCH (n:User) USING INDEX n:User(email) WHERE has(n.email) RETURN n")
+
+    // then
+    result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
+    result.executionPlanDescription().toString should include("NodeIndexScan")
+  }
+
+  test("should use the index for property existence queries (with exists) for cost when asked for it") {
+    // given
+    val n = createLabeledNode(Map("email" -> "me@mine"), "User")
+    val m = createLabeledNode(Map("email" -> "you@yours"), "User")
+    val p = createLabeledNode(Map("emailx" -> "youtoo@yours"), "User")
+    graph.createIndex("User", "email")
+
+    // when
+    val result = executeWithCostPlannerOnly("MATCH (n:User) USING INDEX n:User(email) WHERE exists(n.email) RETURN n")
+
+    // then
+    result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
+    result.executionPlanDescription().toString should include("NodeIndexScan")
+  }
+
+  test("should use the index for property existence queries (with IS NOT NULL) for cost when asked for it") {
+    // given
+    val n = createLabeledNode(Map("email" -> "me@mine"), "User")
+    val m = createLabeledNode(Map("email" -> "you@yours"), "User")
+    val p = createLabeledNode(Map("emailx" -> "youtoo@yours"), "User")
+    graph.createIndex("User", "email")
+
+    // when
+    val result = executeWithCostPlannerOnly("MATCH (n:User) USING INDEX n:User(email) WHERE n.email IS NOT NULL RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
@@ -1183,7 +1213,7 @@ return b
     val p = createLabeledNode(Map("emailx" -> "youtoo@yours"), "User")
     graph.createIndex("User", "email")
     graph.createIndex("User", "name")
-    return Seq(n, m, p)
+    Seq(n, m, p)
   }
 
   test("should use the index for property existence queries when cardinality prefers it") {

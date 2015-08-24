@@ -140,7 +140,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
 
   private def containsPropertyPredicate(identifier: String, property: String): Boolean = {
     val properties: Seq[String] = (where match {
-      case Some(where) => where.treeFold(Seq.empty[String]) {
+      case Some(w) => w.treeFold(Seq.empty[String]) {
         case Equals(Property(Identifier(id), PropertyKeyName(name)), other) if id == identifier && applicable(other) =>
           (acc, _) => acc :+ name
         case Equals(other, Property(Identifier(id), PropertyKeyName(name))) if id == identifier && applicable(other) =>
@@ -148,7 +148,9 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
         case In(Property(Identifier(id), PropertyKeyName(name)),_) if id == identifier =>
           (acc, _) => acc :+ name
         case predicate@FunctionInvocation(_, _, IndexedSeq(Property(Identifier(id), PropertyKeyName(name))))
-          if id == identifier && predicate.function == Some(functions.Has) =>
+          if id == identifier && (predicate.function.contains(functions.Exists) || predicate.function.contains(functions.Has)) =>
+          (acc, _) => acc :+ name
+        case IsNotNull(Property(Identifier(id), PropertyKeyName(name))) if id == identifier =>
           (acc, _) => acc :+ name
         case Like(Property(Identifier(id), PropertyKeyName(name)), _, _) if id == identifier =>
           (acc, _) => acc :+ name
@@ -163,9 +165,9 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
       }
       case None => Seq.empty
     }) ++ pattern.treeFold(Seq.empty[String]) {
-      case NodePattern(Some(Identifier(id)), _, Some(MapExpression(properties)), _) if identifier == id => {
+      case NodePattern(Some(Identifier(id)), _, Some(MapExpression(prop)), _) if identifier == id => {
         case (acc, _) =>
-          acc ++ properties.map(_._1.name)
+          acc ++ prop.map(_._1.name)
       }
     }
     properties.contains(property)

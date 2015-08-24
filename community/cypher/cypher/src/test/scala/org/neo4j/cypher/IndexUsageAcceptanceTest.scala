@@ -153,6 +153,51 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     result.executionPlanDescription().toString should include("NodeIndexSeek")
   }
 
+  test("should use index on has") {
+    // Given
+    val person = createLabeledNode(Map("name" -> "Smith"), "Person")
+     1 to 100 foreach (_ => createLabeledNode("Person"))
+    graph.createIndex("Person", "name")
+
+    // When
+    val result = executeWithCostPlannerOnly(
+      "MATCH (p:Person) WHERE has(p.name) RETURN p")
+
+    // Then
+    result.toList should equal(List(Map("p" -> person)))
+    result.executionPlanDescription().toString should include("NodeIndexScan")
+  }
+
+  test("should use index on IS NOT NULL") {
+    // Given
+    val person = createLabeledNode(Map("name" -> "Smith"), "Person")
+    1 to 100 foreach (_ => createLabeledNode("Person"))
+    graph.createIndex("Person", "name")
+
+    // When
+    val result = executeWithCostPlannerOnly(
+      "MATCH (p:Person) WHERE p.name IS NOT NULL RETURN p")
+
+    // Then
+    result.toList should equal(List(Map("p" -> person)))
+    result.executionPlanDescription().toString should include("NodeIndexScan")
+  }
+
+  test("should use index on exists") {
+    // Given
+    val person = createLabeledNode(Map("name" -> "Smith"), "Person")
+    1 to 100 foreach (_ => createLabeledNode("Person"))
+    graph.createIndex("Person", "name")
+
+    // When
+    val result = executeWithCostPlannerOnly(
+      "MATCH (p:Person) WHERE exists(p.name) RETURN p")
+
+    // Then
+    result.toList should equal(List(Map("p" -> person)))
+    result.executionPlanDescription().toString should include("NodeIndexScan")
+  }
+
   private def setUpDatabaseForTests() {
     executeWithRulePlanner(
       """CREATE (architect:Matrix { name:'The Architect' }),

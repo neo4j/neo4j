@@ -32,7 +32,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   val hasLabels: Expression = HasLabels(ident("n"), Seq(LabelName("Awesome")_))_
   val property: Expression = Property(ident("n"), PropertyKeyName("prop") _)_
 
-  val hasPredicate: Expression = FunctionInvocation(FunctionName(functions.Has.name) _, property)_
+  val existsPredicate: Expression = FunctionInvocation(FunctionName(functions.Exists.name) _, property)_
   val likePredicate: Expression = Like(property, LikePattern(StringLiteral("%")_), caseInsensitive = false)_
   val iLikePredicate: Expression = Like(property, LikePattern(StringLiteral("%")_), caseInsensitive = true)_
   val ltPredicate: Expression = LessThan(property, SignedDecimalIntegerLiteral("12")_)_
@@ -42,7 +42,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("does not plan index scan when no index exist") {
     new given {
-      qg = queryGraph(hasPredicate, hasLabels)
+      qg = queryGraph(existsPredicate, hasLabels)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
@@ -54,7 +54,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("index scan when there is an index on the property") {
     new given {
-      qg = queryGraph(hasPredicate, hasLabels)
+      qg = queryGraph(existsPredicate, hasLabels)
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -71,7 +71,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("unique index scan when there is an unique index on the property") {
     new given {
-      qg = queryGraph(hasPredicate, hasLabels)
+      qg = queryGraph(existsPredicate, hasLabels)
 
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -89,7 +89,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Awesome")_, ident("prop"))_
 
     new given {
-      qg = queryGraph(hasPredicate, hasLabels).addHints(Some(hint))
+      qg = queryGraph(existsPredicate, hasLabels).addHints(Some(hint))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -111,7 +111,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Awesome")_, ident("prop"))_
 
     new given {
-      qg = queryGraph(hasPredicate, hasLabels).addHints(Some(hint))
+      qg = queryGraph(existsPredicate, hasLabels).addHints(Some(hint))
 
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -143,7 +143,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
             plan.solved should beLike {
               case PlannerQuery(scanQG, _, _) =>
-                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(hasPredicate, likePredicate)))
+                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, likePredicate)))
             }
         }
       }
@@ -164,7 +164,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
             plan.solved should beLike {
               case PlannerQuery(scanQG, _, _) =>
-                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(hasPredicate, likePredicate)))
+                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, likePredicate)))
             }
         }
       }
@@ -185,7 +185,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
             plan.solved should beLike {
               case PlannerQuery(scanQG, _, _) =>
-                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(hasPredicate, ltPredicate)))
+                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, ltPredicate)))
             }
         }
       }
@@ -206,7 +206,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
             plan.solved should beLike {
               case PlannerQuery(scanQG, _, _) =>
-                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(hasPredicate, neqPredicate)))
+                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, neqPredicate)))
             }
         }
       }
@@ -227,7 +227,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
             plan.solved should beLike {
               case PlannerQuery(scanQG, _, _) =>
-                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(hasPredicate, eqPredicate)))
+                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, eqPredicate)))
             }
         }
       }
@@ -248,7 +248,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
             plan.solved should beLike {
               case PlannerQuery(scanQG, _, _) =>
-                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(hasPredicate, regexPredicate)))
+                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, regexPredicate)))
             }
         }
       }
