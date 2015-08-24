@@ -47,12 +47,13 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     private final HighAvailabilityMemberContext context;
     private final AvailabilityGuard availabilityGuard;
     private final ClusterMemberEvents events;
-    private StringLogger logger;
-    private Iterable<HighAvailabilityMemberListener> memberListeners = Listeners.newListeners();
-    private volatile HighAvailabilityMemberState state;
-    private StateMachineClusterEventListener eventsListener;
+    private final StringLogger logger;
     private final ClusterMembers members;
     private final Election election;
+
+    private Iterable<HighAvailabilityMemberListener> memberListeners = Listeners.newListeners();
+    private StateMachineClusterEventListener eventsListener;
+    private volatile HighAvailabilityMemberState state;
 
     public HighAvailabilityMemberStateMachine( HighAvailabilityMemberContext context,
                                                AvailabilityGuard availabilityGuard,
@@ -96,7 +97,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         // If we are in a state that allows access, we must deny now that we shut down.
         if ( oldState.isAccessAllowed() )
         {
-            availabilityGuard.deny(this);
+            availabilityGuard.deny( this );
         }
 
         context.setAvailableHaMasterId( null );
@@ -143,9 +144,8 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
 
 
                     context.setElectedMasterId( coordinatorId );
-                    final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState,
-                            state, coordinatorId,
-                            null );
+                    final HighAvailabilityMemberChangeEvent event =
+                            new HighAvailabilityMemberChangeEvent( oldState, state, coordinatorId, null );
                     Listeners.notifyListeners( memberListeners,
                             new Listeners.Notification<HighAvailabilityMemberListener>()
                             {

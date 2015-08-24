@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.jboss.netty.logging.InternalLoggerFactory;
+
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.Map;
-
-import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -459,8 +459,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                     TransactionCommitProcess inner =
                             defaultCommitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore,
                                     storeApplier, txValidator, indexUpdatesValidator, config );
+                    assert highAvailabilityModeSwitcher != null;
                     new CommitProcessSwitcher( pusher, master, commitProcessDelegate, requestContextFactory,
-                            memberStateMachine, txValidator, inner );
+                            highAvailabilityModeSwitcher, txValidator, inner );
 
                     return (TransactionCommitProcess) Proxy
                             .newProxyInstance( TransactionCommitProcess.class.getClassLoader(),
@@ -537,7 +538,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         DelegateInvocationHandler<Locks> lockManagerDelegate = new DelegateInvocationHandler<>( Locks.class );
         Locks lockManager = (Locks) Proxy.newProxyInstance(
                 Locks.class.getClassLoader(), new Class[]{Locks.class}, lockManagerDelegate );
-        new LockManagerModeSwitcher( memberStateMachine, lockManagerDelegate, masterDelegateInvocationHandler,
+        assert highAvailabilityModeSwitcher != null;
+        new LockManagerModeSwitcher( highAvailabilityModeSwitcher, lockManagerDelegate, masterDelegateInvocationHandler,
                 requestContextFactory, availabilityGuard, config, new Factory<Locks>()
         {
             @Override
@@ -564,7 +566,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                     (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
                             new Class[]{TokenCreator.class}, relationshipTypeCreatorDelegate );
 
-            new RelationshipTypeCreatorModeSwitcher( memberStateMachine, relationshipTypeCreatorDelegate,
+            assert highAvailabilityModeSwitcher != null;
+            new RelationshipTypeCreatorModeSwitcher( highAvailabilityModeSwitcher, relationshipTypeCreatorDelegate,
                     masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory );
 
             return relationshipTypeCreator;
@@ -585,7 +588,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             TokenCreator propertyTokenCreator =
                     (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
                             new Class[]{TokenCreator.class}, propertyKeyCreatorDelegate );
-            new PropertyKeyCreatorModeSwitcher( memberStateMachine, propertyKeyCreatorDelegate,
+            assert highAvailabilityModeSwitcher != null;
+            new PropertyKeyCreatorModeSwitcher( highAvailabilityModeSwitcher, propertyKeyCreatorDelegate,
                     masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory );
             return propertyTokenCreator;
         }
@@ -605,7 +609,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             TokenCreator labelIdCreator =
                     (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
                             new Class[]{TokenCreator.class}, labelIdCreatorDelegate );
-            new LabelTokenCreatorModeSwitcher( memberStateMachine, labelIdCreatorDelegate,
+            assert highAvailabilityModeSwitcher != null;
+            new LabelTokenCreatorModeSwitcher( highAvailabilityModeSwitcher, labelIdCreatorDelegate,
                     masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory );
             return labelIdCreator;
         }

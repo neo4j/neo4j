@@ -200,8 +200,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
                     @Override
                     public void notify( ClusterMemberListener listener )
                     {
-                        for ( MemberIsAvailable memberIsAvailable : clusterMembersSnapshot.getCurrentAvailableMembers
-                                () )
+                        for ( MemberIsAvailable memberIsAvailable : clusterMembersSnapshot.getCurrentAvailableMembers() )
                         {
                             listener.memberIsAvailable( memberIsAvailable.getRole(), memberIsAvailable.getInstanceId(),
                                     memberIsAvailable.getRoleUri(), memberIsAvailable.getStoreId() );

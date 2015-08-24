@@ -19,15 +19,13 @@
  */
 package org.neo4j.kernel.ha.lock;
 
-import java.net.URI;
-
 import org.neo4j.function.Factory;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
+import org.neo4j.kernel.ha.cluster.ModeSwitcherNotifier;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -40,12 +38,12 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
     private final Config config;
     private final Factory<Locks> locksFactory;
 
-    public LockManagerModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
+    public LockManagerModeSwitcher( ModeSwitcherNotifier modeSwitcherNotifier,
                                     DelegateInvocationHandler<Locks> delegate, DelegateInvocationHandler<Master> master,
                                     RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
                                     Config config, Factory<Locks> locksFactory )
     {
-        super( stateMachine, delegate );
+        super( modeSwitcherNotifier, delegate );
         this.master = master;
         this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
@@ -60,7 +58,7 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
     }
 
     @Override
-    protected Locks getSlaveImpl( URI serverHaUri )
+    protected Locks getSlaveImpl()
     {
         return new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(),
                 availabilityGuard,
