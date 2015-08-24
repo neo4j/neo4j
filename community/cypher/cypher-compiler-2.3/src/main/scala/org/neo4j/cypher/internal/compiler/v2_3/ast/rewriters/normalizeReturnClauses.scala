@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_3.CypherException
-import org.neo4j.cypher.internal.semantics.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.FreshIdNameGenerator
-import org.neo4j.cypher.internal.semantics.v2_3.{InputPosition, topDown, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.semantics.v2_3._
+import org.neo4j.cypher.internal.semantics.v2_3.ast._
 
 /**
  * This rewriter makes sure that all return items in a RETURN clauses are aliased, and moves

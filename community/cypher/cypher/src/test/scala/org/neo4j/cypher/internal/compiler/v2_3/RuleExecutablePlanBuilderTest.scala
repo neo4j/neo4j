@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.semantics.v2_3.ast.Statement
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.semantics.v2_3.{Scope, SemanticTable}
+import org.neo4j.cypher.internal.semantics.v2_3.{InternalException, Scope, SemanticTable}
 import org.neo4j.cypher.internal.spi.v2_3.{GeneratedQueryStructure, TransactionBoundQueryContext}
 import org.neo4j.graphdb.DynamicLabel
 import org.neo4j.helpers.Clock

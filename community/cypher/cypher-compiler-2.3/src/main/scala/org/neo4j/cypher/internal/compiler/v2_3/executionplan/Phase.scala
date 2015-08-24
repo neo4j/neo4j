@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
-import org.neo4j.cypher.internal.compiler.v2_3.InternalException
-import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.PipeMonitor
+import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
+import org.neo4j.cypher.internal.semantics.v2_3.InternalException
 
 trait Phase {
   self =>

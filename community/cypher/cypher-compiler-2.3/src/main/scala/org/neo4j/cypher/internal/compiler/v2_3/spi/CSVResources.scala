@@ -23,8 +23,9 @@ import java.io._
 import java.net.{CookieHandler, CookieManager, CookiePolicy, URL}
 
 import org.neo4j.csv.reader._
-import org.neo4j.cypher.internal.compiler.v2_3.{LoadExternalResourceException, TaskCloser}
+import org.neo4j.cypher.internal.compiler.v2_3.TaskCloser
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.ExternalResource
+import org.neo4j.cypher.internal.semantics.v2_3.LoadExternalResourceException
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks._

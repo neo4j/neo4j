@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality
 
-import org.neo4j.cypher.internal.semantics.v2_3.ast.SymbolicNameWithId
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_3.InternalException
-import org.neo4j.cypher.internal.semantics.v2_3.{SemanticTable, RelTypeId, LabelId, NameId}
+import org.neo4j.cypher.internal.semantics.v2_3._
+import org.neo4j.cypher.internal.semantics.v2_3.ast.SymbolicNameWithId
 
 sealed trait TokenSpec[+ID <: NameId] {
   def id: Option[ID]

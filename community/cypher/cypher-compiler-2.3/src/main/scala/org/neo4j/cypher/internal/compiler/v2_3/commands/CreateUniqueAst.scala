@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import mutation.{CreateUniqueAction, NamedExpectation, UniqueLink}
+import org.neo4j.cypher.internal.compiler.v2_3.mutation.{CreateUniqueAction, NamedExpectation, UniqueLink}
+import org.neo4j.cypher.internal.semantics.v2_3.PatternException
 
 case class CreateUniqueAst(patterns: Seq[AbstractPattern]) {
   def nextStep(): (Seq[CreateUniqueStartItem], Seq[NamedPath]) = {

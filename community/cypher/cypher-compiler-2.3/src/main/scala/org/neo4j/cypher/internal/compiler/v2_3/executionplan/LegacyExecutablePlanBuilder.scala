@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers.Converge.iterateUntilConv
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.semantics.v2_3.SyntaxException
 import org.neo4j.cypher.internal.semantics.v2_3.helpers.NonEmptyList
 
 trait ExecutionPlanInProgressRewriter {

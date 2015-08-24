@@ -17,13 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3
+package org.neo4j.cypher.internal.semantics.v2_3.parser.matchers
 
-import parser.matchers._
-import org.parboiled.scala._
+import org.parboiled.MatcherContext
+import org.parboiled.matchers.CustomMatcher
 
-package object parser {
-  lazy val IdentifierStart: Rule0 = new IdentifierStartMatcher()
-  lazy val IdentifierPart: Rule0 = new IdentifierPartMatcher()
-  lazy val WSChar: Rule0 = new WhitespaceCharMatcher()
+abstract class ScalaCharMatcher(label: String) extends CustomMatcher(label) {
+
+  protected def matchChar(c: Char): Boolean
+
+  def `match`[V](context: MatcherContext[V]): Boolean =
+    if (matchChar(context.getCurrentChar)) {
+      context.advanceIndex(1)
+      context.createNode()
+      true
+    } else {
+      false
+    }
+
+  def isSingleCharMatcher: Boolean = true
+
+  def canMatchEmpty: Boolean = false
+
+  def isStarterChar(c: Char): Boolean = matchChar(c)
+
+  def getStarterChar: Char = 'a'
 }

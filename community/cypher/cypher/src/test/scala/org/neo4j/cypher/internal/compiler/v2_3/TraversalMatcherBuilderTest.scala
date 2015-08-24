@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.{BuilderTest, Solved, TraversalMatcherBuilder, Unsolved}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
-import org.neo4j.cypher.internal.compiler.v2_3.parser.CypherParser
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{ArgumentPipe, SingleRowPipe}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.semantics.v2_3.parser.CypherParser
 import org.neo4j.cypher.internal.spi.v2_3.TransactionBoundPlanContext
 import org.neo4j.graphdb.Transaction
 

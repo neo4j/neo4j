@@ -23,9 +23,10 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsAnyLabel}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.semantics.v2_3.CypherTypeException
 import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 import org.neo4j.graphdb.Node
-import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 
 case class LabelsFunction(nodeExpr: Expression) extends Expression {
 

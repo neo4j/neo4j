@@ -24,10 +24,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
-import org.neo4j.cypher.internal.compiler.v2_3.parser.{MatchText, ParsedLikePattern, WildcardLikePatternOp}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.PipeMonitor
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.semantics.v2_3.{ExclusiveBound, InclusiveBound}
+import org.neo4j.cypher.internal.semantics.v2_3.parser.{MatchText, ParsedLikePattern, WildcardLikePatternOp}
+import org.neo4j.cypher.internal.semantics.v2_3.{ExclusiveBound, InclusiveBound, IndexHintException}
 
 class IndexLookupBuilder extends PlanBuilder {
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) =
@@ -42,8 +42,9 @@ class IndexLookupBuilder extends PlanBuilder {
     val labelPredicates = findLabelPredicates(plan, hint)
 
     if (propertyPredicates.isEmpty || labelPredicates.isEmpty)
-      throw IndexHintException(hint, "No useful predicate was found for your index hint. Make sure the" +
-        " property expression is alone either side of the equality sign.")
+      throw new IndexHintException(hint.identifier, hint.label, hint.property,
+        "No useful predicate was found for your index hint. Make sure the" +
+          " property expression is alone either side of the equality sign.")
 
     val (predicate, expression) = propertyPredicates.head
 
@@ -57,6 +58,11 @@ class IndexLookupBuilder extends PlanBuilder {
 
     plan.copy(query = newQuery)
   }
+
+
+    private def throwE(hint: SchemaIndex, message: String) =
+      new IndexHintException(hint.identifier, hint.label, hint.property, message)
+
 
   private def findLabelPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex) =
     plan.query.where.collect {

@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenT
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.semantics.v2_3.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.semantics.v2_3.helpers.NonEmptyList
-import org.neo4j.cypher.internal.semantics.v2_3.{ExclusiveBound, InclusiveBound, ast}
+import org.neo4j.cypher.internal.semantics.v2_3.{ExclusiveBound, InclusiveBound, IndexHintException, ast}
 
 class IndexLookupBuilderTest extends BuilderTest {
 

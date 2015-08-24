@@ -17,8 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.parser.matchers
+package org.neo4j.cypher.internal.semantics.v2_3.parser.matchers
 
-class IdentifierPartMatcher extends ScalaCharMatcher("an identifier character") {
-  protected def matchChar(c: Char): Boolean = Character.isJavaIdentifierPart(c)
+class IdentifierStartMatcher extends ScalaCharMatcher("an identifier") {
+  protected def matchChar(c: Char): Boolean = Character.isJavaIdentifierStart(c)
 }

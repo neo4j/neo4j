@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
-import org.neo4j.cypher.internal.semantics.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
@@ -34,6 +33,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, ProfileMode, _}
+import org.neo4j.cypher.internal.semantics.v2_3.PeriodicCommitInOpenTransactionException
+import org.neo4j.cypher.internal.semantics.v2_3.ast.Statement
 import org.neo4j.function.Supplier
 import org.neo4j.function.Suppliers.singleton
 import org.neo4j.graphdb.GraphDatabaseService

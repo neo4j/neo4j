@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes.matching
 
-import org.neo4j.cypher.internal.compiler.v2_3.PatternException
 import org.neo4j.cypher.internal.compiler.v2_3.commands.Pattern
+import org.neo4j.cypher.internal.semantics.v2_3.PatternException
 
 case class PatternGraph(patternNodes: Map[String, PatternNode],
                         patternRels: Map[String, PatternRelationship],

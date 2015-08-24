@@ -20,20 +20,20 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{InequalitySeekRangeWrapper, PrefixSeekRangeWrapper, NestedPipeExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.PatternConverters._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{InequalitySeekRangeWrapper, NestedPipeExpression, PrefixSeekRangeWrapper}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.ProjectedPath._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression => CommandExpression, InequalitySeekRangeExpression, ProjectedPath}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.UnresolvedRelType
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => commandexpressions, predicates, values => commandvalues}
-import org.neo4j.cypher.internal.compiler.v2_3.parser.{LikePatternParser, ParsedLikePattern, convertLikePatternToRegex}
 import org.neo4j.cypher.internal.semantics.v2_3.ast._
 import org.neo4j.cypher.internal.semantics.v2_3.ast.functions._
 import org.neo4j.cypher.internal.semantics.v2_3.helpers.NonEmptyList
-import org.neo4j.cypher.internal.semantics.v2_3.{SemanticDirection, ast}
+import org.neo4j.cypher.internal.semantics.v2_3.parser.{LikePatternParser, ParsedLikePattern, convertLikePatternToRegex}
+import org.neo4j.cypher.internal.semantics.v2_3.{InternalException, SemanticDirection, ast}
 import org.neo4j.graphdb.Direction
 
 object ExpressionConverters {

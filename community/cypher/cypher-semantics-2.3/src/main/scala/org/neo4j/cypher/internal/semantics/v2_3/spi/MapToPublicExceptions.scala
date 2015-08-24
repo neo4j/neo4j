@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.spi
+package org.neo4j.cypher.internal.semantics.v2_3.spi
 
-import org.neo4j.cypher.internal.compiler.v2_3.CypherException
+import org.neo4j.cypher.internal.semantics.v2_3.CypherException
 
 trait MapToPublicExceptions[T <: Throwable] {
   def failedIndexException(indexName: String, cause: Throwable): T

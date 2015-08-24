@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.parser
+package org.neo4j.cypher.internal.semantics.v2_3.parser
 
-import java.util.regex.Pattern.quote
+import java.util.regex.Pattern._
 
 /**
  * Converts [[ParsedLikePattern]] into a regular expression string

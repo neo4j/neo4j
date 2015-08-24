@@ -17,25 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.parser
+package org.neo4j.cypher.internal.semantics.v2_3.parser
 
-
-import org.neo4j.cypher.internal.compiler.v2_3.SyntaxException
-import org.neo4j.cypher.internal.semantics.v2_3.{InputPosition, ast}
+import org.neo4j.cypher.internal.semantics.v2_3.ast
 import org.parboiled.scala._
 
-class CypherParser extends Parser
-  with Statement
-  with Expressions {
+trait Statement extends Parser
+  with Query
+  with Command
+  with Base {
 
-
-  @throws(classOf[SyntaxException])
-  def parse(queryText: String, offset: Option[InputPosition] = None): ast.Statement =
-    parseOrThrow(queryText, offset, CypherParser.Statements)
-}
-
-object CypherParser extends Parser with Statement with Expressions {
-  val Statements: Rule1[Seq[ast.Statement]] = rule {
-    oneOrMore(WS ~ Statement ~ WS, separator = ch(';')) ~~ optional(ch(';')) ~~ EOI.label("end of input")
-  }
+  def Statement: Rule1[ast.Statement] = rule (
+       Command
+     | Query
+  )
 }

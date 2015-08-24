@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
+import org.neo4j.cypher.internal.semantics.v2_3._
 import org.neo4j.cypher.internal.semantics.v2_3.ast.Statement
-import org.neo4j.cypher.internal.semantics.v2_3.{SemanticCheckResult, SemanticState, InputPosition}
 
 class SemanticChecker {
   def check(queryText: String, statement: Statement, notificationLogger: InternalNotificationLogger = devNullLogger,

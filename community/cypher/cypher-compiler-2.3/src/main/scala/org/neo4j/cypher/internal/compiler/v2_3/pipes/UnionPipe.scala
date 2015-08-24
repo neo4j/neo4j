@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{InternalPlanDescription, PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.semantics.v2_3.InternalException
 import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 
 case class UnionPipe(sources: List[Pipe], columns:List[String])(implicit val monitor: PipeMonitor) extends Pipe {

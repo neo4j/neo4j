@@ -17,18 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.parser
+package org.neo4j.cypher.internal.semantics.v2_3.parser.matchers
 
-import org.parboiled.scala._
-
-class BaseRulesTest extends ParserTest[Any, Any] with Base {
-
-  test("testWhitespaceHandling") {
-    implicit val parserToTest: Rule1[Boolean] = "a" ~ WS ~ "b" ~ push(true)
-
-    parsing("a b") shouldGive true
-    parsing("a　b") shouldGive true
-  }
-
-  def convert(result: Any): Any = result
+class WhitespaceCharMatcher extends ScalaCharMatcher("whitespace") {
+  protected def matchChar(c: Char): Boolean = c.isWhitespace
 }

@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3
+package org.neo4j.cypher.internal.semantics.v2_3
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands.SchemaIndex
-import org.neo4j.cypher.internal.compiler.v2_3.spi.MapToPublicExceptions
+import org.neo4j.cypher.internal.semantics.v2_3.spi.MapToPublicExceptions
 
 abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
   def this() = this(null, null)
@@ -140,9 +139,4 @@ class SyntaxException(message: String, val query: String, val offset: Option[Int
 
 class CypherExecutionException(message: String, cause: Throwable) extends CypherException(message, cause) {
   override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T = mapper.cypherExecutionException(message, this)
-}
-
-object IndexHintException {
-  def apply(hint: SchemaIndex, message: String) =
-    new IndexHintException(hint.identifier, hint.label, hint.property, message)
 }

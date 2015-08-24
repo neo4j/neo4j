@@ -17,29 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.parser.matchers
+package org.neo4j.cypher.internal.semantics.v2_3.parser
 
-import org.parboiled.matchers.CustomMatcher
-import org.parboiled.MatcherContext
+import org.parboiled.scala._
 
-abstract class ScalaCharMatcher(label: String) extends CustomMatcher(label) {
+class BaseRulesTest extends ParserTest[Any, Any] with Base {
 
-  protected def matchChar(c: Char): Boolean
+  test("testWhitespaceHandling") {
+    implicit val parserToTest: Rule1[Boolean] = "a" ~ WS ~ "b" ~ push(true)
 
-  def `match`[V](context: MatcherContext[V]): Boolean =
-    if (matchChar(context.getCurrentChar)) {
-      context.advanceIndex(1)
-      context.createNode()
-      true
-    } else {
-      false
-    }
+    parsing("a b") shouldGive true
+    parsing("a　b") shouldGive true
+  }
 
-  def isSingleCharMatcher: Boolean = true
-
-  def canMatchEmpty: Boolean = false
-
-  def isStarterChar(c: Char): Boolean = matchChar(c)
-
-  def getStarterChar: Char = 'a'
+  def convert(result: Any): Any = result
 }

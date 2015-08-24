@@ -20,16 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-import org.neo4j.helpers.Platforms
-import pipes.QueryState
-import org.neo4j.cypher.internal.semantics.v2_3.symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.{CollectionSupport, IsCollection, IsMap}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
-import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
-import scala.collection.Map
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.{IsCollection, CollectionSupport, IsMap}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.semantics.v2_3.CypherTypeException
+import org.neo4j.cypher.internal.semantics.v2_3.symbols._
+import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+
 import scala.annotation.tailrec
+import scala.collection.Map
 
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) with StringHelper with CollectionSupport {
   def innerExpectedType = CTString

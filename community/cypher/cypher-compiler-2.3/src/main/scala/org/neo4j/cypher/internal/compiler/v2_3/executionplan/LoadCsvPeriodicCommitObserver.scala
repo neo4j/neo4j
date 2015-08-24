@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
-import org.neo4j.cypher.internal.compiler.v2_3.{LoadCsvStatusWrapCypherException, CypherException}
+import java.net.URL
+
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.ExternalResource
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
-import java.net.URL
+import org.neo4j.cypher.internal.semantics.v2_3.{CypherException, LoadCsvStatusWrapCypherException}
 
 class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalResource, queryContext: QueryContext)
   extends ExternalResource with ((CypherException) => CypherException) {

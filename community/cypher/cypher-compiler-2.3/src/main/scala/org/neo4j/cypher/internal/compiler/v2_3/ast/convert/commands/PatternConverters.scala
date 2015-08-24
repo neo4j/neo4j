@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.semantics.v2_3.{SemanticDirection, ast}
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => commandexpressions, values => commandvalues}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.UnNamedNameGenerator
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.semantics.v2_3.{SemanticDirection, SyntaxException, ast}
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 object PatternConverters {

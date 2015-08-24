@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.mutation
 
+import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, _}
@@ -26,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers.PropertySupport
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.semantics.v2_3.symbols._
-import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionContext, InternalException, InvalidSemanticsException}
+import org.neo4j.cypher.internal.semantics.v2_3.{InternalException, InvalidSemanticsException}
 import org.neo4j.graphdb.Node
 import org.neo4j.helpers.ThisShouldNotHappenError
 

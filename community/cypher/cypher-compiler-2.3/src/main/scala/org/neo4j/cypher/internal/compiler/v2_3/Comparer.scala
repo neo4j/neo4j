@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+import org.neo4j.cypher.internal.semantics.v2_3.IncomparableValuesException
 
 /**
  * Comparer is a trait that enables it's subclasses to compare to AnyRef with each other.

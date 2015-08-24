@@ -22,21 +22,22 @@ package org.neo4j.cypher.internal.compiler.v2_3.parser
 import org.hamcrest.CoreMatchers.equalTo
 import org.junit.Assert._
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.StatementConverters._
-import org.neo4j.cypher.internal.compiler.v2_3.commands._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.Query
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
+import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{UnresolvedLabel, TokenType, KeyToken}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType, UnresolvedLabel}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.LabelSupport
 import org.neo4j.cypher.internal.compiler.v2_3.mutation._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.StatementConverters._
+import org.neo4j.cypher.internal.semantics.v2_3.SyntaxException
+import org.neo4j.cypher.internal.semantics.v2_3.parser._
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 
 class CypherParserTest extends CypherFunSuite {
-
-  import org.neo4j.cypher.internal.compiler.v2_3.parser.ParserFixture._
-
+  val parser = new CypherParser
   test("shouldParseEasiestPossibleQuery") {
     expectQuery(
       "start s = NODE(1) return s",

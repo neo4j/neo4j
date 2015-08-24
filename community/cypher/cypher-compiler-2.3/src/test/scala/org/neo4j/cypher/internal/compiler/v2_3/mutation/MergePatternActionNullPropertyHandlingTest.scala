@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.mutation
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{VarLengthRelatedTo, SingleNode, RelatedTo}
-import org.neo4j.cypher.internal.compiler.v2_3.{InvalidSemanticsException, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Literal
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{RelatedTo, SingleNode, VarLengthRelatedTo}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryStateHelper
+import org.neo4j.cypher.internal.semantics.v2_3.InvalidSemanticsException
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Literal
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 class MergePatternActionNullPropertyHandlingTest extends CypherFunSuite {

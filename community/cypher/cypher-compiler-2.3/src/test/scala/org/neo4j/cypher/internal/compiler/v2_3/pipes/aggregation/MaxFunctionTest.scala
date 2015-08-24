@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes.aggregation
 
-import org.neo4j.cypher.internal.compiler.v2_3.{IncomparableValuesException, SyntaxException}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
+import org.neo4j.cypher.internal.semantics.v2_3.IncomparableValuesException
 import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
 
 class MaxFunctionTest extends CypherFunSuite with AggregateTest {

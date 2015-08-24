@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.semantics.v2_3.symbols.CypherType
+import org.neo4j.cypher.internal.semantics.v2_3.{PatternException, UniquePathNotUniqueException}
 import org.neo4j.graphdb.PropertyContainer
 import org.neo4j.helpers.ThisShouldNotHappenError
 

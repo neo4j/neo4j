@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import java.net.URL
 
+import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionContext, LoadExternalResourceException}
+import org.neo4j.cypher.internal.semantics.v2_3.LoadExternalResourceException
 import org.neo4j.cypher.internal.semantics.v2_3.symbols.{AnyType, CollectionType, MapType}
 
 sealed trait CSVFormat

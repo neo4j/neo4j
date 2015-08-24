@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.profiler
 
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{Pipe, PipeDecorator, QueryState}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{DelegatingOperations, DelegatingQueryContext, Operations, QueryContext}
+import org.neo4j.cypher.internal.semantics.v2_3.ProfilerStatisticsNotReadyException
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 import scala.collection.mutable

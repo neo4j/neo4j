@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_3.parser._
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.semantics.v2_3.parser._
 import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 
 /*

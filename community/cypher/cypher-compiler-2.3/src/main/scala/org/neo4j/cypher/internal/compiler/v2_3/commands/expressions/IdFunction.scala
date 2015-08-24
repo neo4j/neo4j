@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-import pipes.QueryState
+import org.neo4j.cypher.internal.semantics.v2_3.CypherTypeException
 import org.neo4j.cypher.internal.semantics.v2_3.symbols._
 import org.neo4j.graphdb.{Node, Relationship}
 

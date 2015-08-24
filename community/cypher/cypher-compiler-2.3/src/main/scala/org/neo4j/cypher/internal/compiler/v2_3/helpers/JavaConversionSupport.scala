@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.helpers
 
 import org.neo4j.collection.primitive.{PrimitiveIntIterator, PrimitiveLongIterator}
+import org.neo4j.cypher.internal.semantics.v2_3.EntityNotFoundException
 
 object JavaConversionSupport {
   def asScala(iterator: PrimitiveLongIterator): Iterator[Long] = new Iterator[Long] {
@@ -55,7 +56,7 @@ object JavaConversionSupport {
           _next = Some(f(iterator.next()))
         } catch {
           case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => fetchNext()
-          case _: org.neo4j.cypher.internal.compiler.v2_3.EntityNotFoundException => fetchNext()
+          case _: EntityNotFoundException => fetchNext()
         }
       }
 

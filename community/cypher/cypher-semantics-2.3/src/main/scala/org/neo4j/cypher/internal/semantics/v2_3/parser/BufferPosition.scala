@@ -17,8 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.parser.matchers
+package org.neo4j.cypher.internal.semantics.v2_3.parser
 
-class WhitespaceCharMatcher extends ScalaCharMatcher("whitespace") {
-  protected def matchChar(c: Char): Boolean = c.isWhitespace
+import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
+import org.parboiled.Context
+import org.parboiled.buffers.InputBuffer
+
+object BufferPosition {
+  def apply(buffer: InputBuffer, offset: Int): InputPosition = {
+    val position = buffer.getPosition(offset)
+    InputPosition(offset, position.line, position.column)
+  }
+}
+
+object ContextPosition {
+  def apply(ctx: Context[Any]): InputPosition =
+    BufferPosition(ctx.getInputBuffer, ctx.getMatchRange.start)
 }
