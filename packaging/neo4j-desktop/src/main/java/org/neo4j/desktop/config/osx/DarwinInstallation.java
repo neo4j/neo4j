@@ -43,12 +43,12 @@ public class DarwinInstallation extends UnixInstallation
                     "export PATH=$PATH:" + this.getInstallationBinDirectory().getAbsolutePath().toString() + ":" +
                     this.getInstallationJreBinDirectory().getAbsolutePath().toString(),
                     "echo Neo4j Command Prompt",
-                    "echo.",
+                    "echo",
                     "echo This window is configured with Neo4j on the path.",
-                    "echo.",
+                    "echo",
                     "echo Available commands:",
-                    "echo * Neo4jShell",
-                    "echo * Neo4jImport"};
+                    "echo Neo4jShell",
+                    "echo Neo4jImport"};
 
             FileWriter fileWriter = new FileWriter( new File( filename ), false );
 

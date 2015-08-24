@@ -70,7 +70,7 @@ class BrowseForDatabaseActionListener implements ActionListener
             try
             {
                 model.setDatabaseDirectory( selectedFile );
-                directoryDisplay.setText( model.getDatabaseDirectory().getAbsolutePath() );
+                directoryDisplay.setText( selectedFile.getAbsolutePath() );
 
                 validLocation = true;
 
