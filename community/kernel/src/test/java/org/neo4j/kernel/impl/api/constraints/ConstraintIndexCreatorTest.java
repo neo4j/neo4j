@@ -227,11 +227,5 @@ public class ConstraintIndexCreatorTest
         {
             throw new UnsupportedOperationException( "Please implement" );
         }
-
-        @Override
-        public StatisticsData heuristics()
-        {
-            throw new UnsupportedOperationException( "Please implement" );
-        }
     }
 }

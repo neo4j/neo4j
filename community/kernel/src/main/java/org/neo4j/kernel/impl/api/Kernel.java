@@ -24,7 +24,6 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.heuristics.StatisticsData;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -95,12 +94,6 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     public void unregisterTransactionHook( TransactionHook hook )
     {
         hooks.unregister( hook );
-    }
-
-    @Override
-    public StatisticsData heuristics()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
