@@ -19,75 +19,61 @@
  */
 package org.neo4j.cypher.internal
 
-import java.util.concurrent.atomic.AtomicReference
-
-import org.neo4j.cypher.internal.compatibility.{CompatibilityFor1_9, CompatibilityFor2_2, CompatibilityFor2_3}
+import org.neo4j.cypher.internal.compatibility.{CompatibilityFor1_9, CompatibilityFor2_2, CompatibilityFor2_2Cost, CompatibilityFor2_2Rule, CompatibilityFor2_3, CompatibilityFor2_3Cost, CompatibilityFor2_3Rule}
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime}
+import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.kernel.api.KernelAPI
+import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
+import org.neo4j.logging.Log
 
-import scala.annotation.tailrec
-import scala.ref.WeakReference
+import scala.collection.mutable
 
-sealed trait PlannerSpec {
-  type SPI
-}
+sealed trait PlannerSpec
 
-case object PlannerSpec_v1_9 extends PlannerSpec {
-  type SPI = CompatibilityFor1_9
-}
+case object PlannerSpec_v1_9 extends PlannerSpec
 
-final case class PlannerSpec_v2_2(planner: CypherPlanner) extends PlannerSpec {
-  type SPI = CompatibilityFor2_2
-}
+final case class PlannerSpec_v2_2(planner: CypherPlanner) extends PlannerSpec
 
-final case class PlannerSpec_v2_3(planner: CypherPlanner, runtime: CypherRuntime) extends PlannerSpec {
-  type SPI = CompatibilityFor2_3
-}
+final case class PlannerSpec_v2_3(planner: CypherPlanner, runtime: CypherRuntime) extends PlannerSpec
 
-trait PlannerFactory {
-  def create[S](spec: PlannerSpec { type SPI = S }): S
-}
+class PlannerFactory(graph: GraphDatabaseService, kernelAPI: KernelAPI, kernelMonitors: KernelMonitors, log: Log,
+                     queryCacheSize: Int, statisticsDivergenceThreshold: Double, queryPlanTTL: Long,
+                     useErrorsOverWarnings: Boolean) {
 
-trait PlannerCache[K <: PlannerSpec]  {
-  def apply[S](spec: K { type SPI = S }): S
-}
+  def create(spec: PlannerSpec_v1_9.type) = CompatibilityFor1_9(graph, queryCacheSize, kernelMonitors)
 
-object VersionBasedPlannerCache {
-
-  class PlannerMap[K <: PlannerSpec { type SPI = S }, S](factory: PlannerFactory) {
-    private val cell = newCell(newRef(Map.empty[K, S]))
-
-    def apply(spec: K): S = recurse(spec, None)
-
-    @tailrec
-    private final def recurse(spec: K, candidate: Option[S]): S = {
-      val ref = cell.get()
-      val map = ref.get.getOrElse(Map.empty)
-      map.get(spec) match {
-        case Some(result) => result
-        case None =>
-          val nextCandidate = candidate.getOrElse(factory.create(spec))
-          val nextRef = newRef(map.updated(spec, nextCandidate))
-          if (cell.compareAndSet(ref, nextRef)) nextCandidate else recurse(spec, candidate orElse Some(nextCandidate))
-      }
-    }
+  def create(spec: PlannerSpec_v2_2) = spec.planner match {
+    case CypherPlanner.rule => CompatibilityFor2_2Rule(graph, queryCacheSize, statisticsDivergenceThreshold,
+      queryPlanTTL, CypherCompiler.CLOCK, kernelMonitors, kernelAPI)
+    case _ => CompatibilityFor2_2Cost(graph, queryCacheSize, statisticsDivergenceThreshold, queryPlanTTL,
+      CypherCompiler.CLOCK, kernelMonitors, kernelAPI, log, spec.planner)
   }
 
-  private def newCell[T <: AnyRef](v: T) = new AtomicReference(v)
-  private def newRef[T <: AnyRef](v: T) = new WeakReference[T](v)
-}
-
-class VersionBasedPlannerCache(factory: PlannerFactory) extends PlannerCache[PlannerSpec] {
-
-  import VersionBasedPlannerCache.PlannerMap
-
-  private val cache_v1_9 = new PlannerMap[PlannerSpec_v1_9.type, CompatibilityFor1_9](factory)
-  private val cache_v2_2 = new PlannerMap[PlannerSpec_v2_2, CompatibilityFor2_2](factory)
-  private val cache_v2_3 = new PlannerMap[PlannerSpec_v2_3, CompatibilityFor2_3](factory)
-
-  def apply[S](spec: PlannerSpec { type SPI = S }): S = spec match {
-    case s@PlannerSpec_v1_9 => cache_v1_9(s)
-    case s: PlannerSpec_v2_2 => cache_v2_2(s)
-    case s: PlannerSpec_v2_3 => cache_v2_3(s)
+  def create(spec: PlannerSpec_v2_3) =  spec.planner match {
+    case CypherPlanner.rule => CompatibilityFor2_3Rule(graph, queryCacheSize, statisticsDivergenceThreshold,
+      queryPlanTTL, CypherCompiler.CLOCK, kernelMonitors, kernelAPI)
+    case _ => CompatibilityFor2_3Cost(graph, queryCacheSize, statisticsDivergenceThreshold, queryPlanTTL,
+      CypherCompiler.CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime, useErrorsOverWarnings)
   }
 }
 
+class PlannerCache(factory: PlannerFactory)  {
+  private val cache_v1_9 = new CachingValue[CompatibilityFor1_9]
+  private val cache_v2_2 = new mutable.HashMap[PlannerSpec_v2_2, CompatibilityFor2_2]
+  private val cache_v2_3 = new mutable.HashMap[PlannerSpec_v2_3, CompatibilityFor2_3]
+
+  def apply(spec: PlannerSpec_v1_9.type) = cache_v1_9.getOrElseUpdate(factory.create(spec))
+  def apply(spec: PlannerSpec_v2_2) = cache_v2_2.getOrElseUpdate(spec, factory.create(spec))
+  def apply(spec: PlannerSpec_v2_3) = cache_v2_3.getOrElseUpdate(spec, factory.create(spec))
+}
+
+class CachingValue[T]() {
+  private var innerOption: Option[T] = None
+
+  def getOrElseUpdate(op: => T) = innerOption match {
+    case None =>
+      innerOption = Some(op)
+      innerOption.get
+    case Some(value) => value
+  }
+}
