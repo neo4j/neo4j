@@ -69,11 +69,12 @@ public class Workload implements Resource
         long now = System.currentTimeMillis();
         long previousReportTime = System.currentTimeMillis();
         long finishLine = runningTimeMillis + now;
-        long lastReport = TimeUnit.SECONDS.toMillis( 10 ) + now;
+        long sampleRate = TimeUnit.SECONDS.toMillis( 10 );
+        long lastReport = sampleRate + now;
         long previousTransactionCount = 0;
+        Thread.sleep( sampleRate );
         do
         {
-            Thread.sleep( 1000 );
             now = System.currentTimeMillis();
             if ( lastReport <= now )
             {
@@ -84,7 +85,12 @@ public class Workload implements Resource
                 previousReportTime = now;
                 previousTransactionCount = currentTransactionCount;
 
-                lastReport = TimeUnit.SECONDS.toMillis( 10 ) + now;
+                lastReport = sampleRate + now;
+                Thread.sleep( sampleRate );
+            }
+            else
+            {
+                Thread.sleep( 10 );
             }
         }
         while ( now < finishLine );
