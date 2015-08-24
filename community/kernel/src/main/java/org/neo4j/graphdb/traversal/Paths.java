@@ -124,7 +124,7 @@ public class Paths
      */
     public static String defaultPathToString( Path path )
     {
-        return pathToString( path, new DefaultPathDescriptor<Path>() );
+        return pathToString( path, new DefaultPathDescriptor<>() );
     }
 
     /**
