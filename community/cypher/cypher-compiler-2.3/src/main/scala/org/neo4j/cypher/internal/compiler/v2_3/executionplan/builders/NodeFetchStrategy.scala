@@ -180,7 +180,7 @@ object IndexSeekStrategy extends NodeStrategy {
 
     where.collect {
       case literalPredicate@LiteralLikePattern(
-      reg@LiteralRegularExpression(p@Property(Identifier(id), prop), _),
+      reg@MatchLiteralRegex(p@Property(Identifier(id), prop), _),
       ParsedLikePattern(MatchText(prefix) :: (wildcard: WildcardLikePatternOp) :: tl),
       caseInsensitive
       ) if !caseInsensitive && id == identifier && literalPredicate.symbolDependenciesMet(symbols) =>
@@ -189,13 +189,13 @@ object IndexSeekStrategy extends NodeStrategy {
         } else {
           val pattern = ParsedLikePattern(List(MatchText(prefix), MatchMany))
           val prefixPredicate = LiteralLikePattern(
-            LiteralRegularExpression(p, Literal(convertLikePatternToRegex(pattern, caseInsensitive))),
+            MatchLiteralRegex(p, Literal(convertLikePatternToRegex(pattern, caseInsensitive))),
             pattern,
             caseInsensitive
           )
           val filterPattern = ParsedLikePattern(prefix.map(_ => MatchSingle).toList ++ (wildcard :: tl))
           val filterPredicate = LiteralLikePattern(
-            LiteralRegularExpression(p, Literal(convertLikePatternToRegex(filterPattern, caseInsensitive))),
+            MatchLiteralRegex(p, Literal(convertLikePatternToRegex(filterPattern, caseInsensitive))),
             filterPattern,
             caseInsensitive
           )

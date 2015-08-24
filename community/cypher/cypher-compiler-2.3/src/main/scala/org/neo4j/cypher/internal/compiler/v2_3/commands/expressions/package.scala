@@ -17,14 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.commands.values
+package org.neo4j.cypher.internal.compiler.v2_3.commands
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.InterpolationStringPart
-import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
-
-// See ast.Interpolation for the role of this class
-case class InterpolationValue(parts: NonEmptyList[InterpolationStringPart]) {
-
-  def interpolate: String = parts.map(_.value).foldLeft("")(_ + _)
+package object expressions {
+  type RegexConverter = Any => Option[java.util.regex.Pattern]
 }
-

@@ -73,7 +73,7 @@ object AsPropertyScannable {
     case like: Like =>
       partialPropertyPredicate(like, like.lhs)
 
-    case regex: RegexMatch =>
+    case regex: MatchRegex =>
       partialPropertyPredicate(regex, regex.lhs)
 
     case expr: NotEquals =>

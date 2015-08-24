@@ -24,6 +24,33 @@ import org.neo4j.cypher.internal.frontend.v2_3.ast.{Expression, SimpleTyping}
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v2_3.symbols.CTString
 
-case class Interpolation(parts: NonEmptyList[Either[Expression, String]])(val position: InputPosition) extends Expression with SimpleTyping {
+/*
+ Staging of various interpolation objects throughout the lifetime of a query
+
+ Query
+ |
+ [parsing]
+ |
+ v
+ ast.InterpolationLiteral
+ |
+ [compileInterpolations rewriter]
+ |
+ v
+ ast.Interpolation
+ |
+ [pipe building]
+ |
+ v
+ commandexpressions.Interpolation
+ |
+ [evaluation at runtime]
+ |
+ v
+ InterpolationValue (containing InterpolationStringParts)
+ */
+case class Interpolation(parts: NonEmptyList[Either[Expression, String]])(val position: InputPosition)
+  extends Expression with SimpleTyping {
+
   protected def possibleTypes = CTString
 }

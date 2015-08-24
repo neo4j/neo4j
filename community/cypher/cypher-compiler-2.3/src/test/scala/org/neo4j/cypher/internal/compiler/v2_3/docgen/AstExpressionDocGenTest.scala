@@ -141,7 +141,7 @@ class AstExpressionDocGenTest extends DocHandlerTestSuite[Any] with AstConstruct
   }
 
   test("RegexMatch(left, right) => left =~ right") {
-    val expr: Expression = RegexMatch(ident("a"), ident("b"))_
+    val expr: Expression = MatchRegex(ident("a"), ident("b"))_
     pprintToString(expr) should equal("a =~ b")
   }
 

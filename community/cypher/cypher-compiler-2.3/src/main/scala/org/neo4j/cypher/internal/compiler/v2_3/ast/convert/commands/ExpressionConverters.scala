@@ -241,7 +241,7 @@ object ExpressionConverters {
     case e: ast.Not => predicates.Not(toCommandPredicate(e.rhs))
     case e: ast.Equals => predicates.Equals(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
     case e: ast.NotEquals => predicates.Not(predicates.Equals(toCommandExpression(e.lhs), toCommandExpression(e.rhs)))
-    case e: ast.RegexMatch => regexMatch(e)
+    case e: ast.MatchRegex => regexMatch(e)
     case e: ast.In => in(e)
     case e: ast.Like => like(e)
     case e: ast.NotLike => predicates.Not(toCommandPredicate(ast.Like(e.lhs, e.pattern, e.caseInsensitive)(e.position)))
@@ -326,16 +326,16 @@ object ExpressionConverters {
   }
 
 
-  private def regexMatch(e: ast.RegexMatch) = toCommandExpression(e.rhs) match {
+  private def regexMatch(e: ast.MatchRegex) = toCommandExpression(e.rhs) match {
     case literal: commandexpressions.Literal =>
-      predicates.LiteralRegularExpression(toCommandExpression(e.lhs), literal)
+      predicates.MatchLiteralRegex(toCommandExpression(e.lhs), literal)
     case command =>
-      predicates.RegularExpression(toCommandExpression(e.lhs), command)
+      predicates.MatchDynamicRegex(toCommandExpression(e.lhs), command)
   }
 
   private def like(e: ast.Like) = {
-    def stringToRegex(s: String): String =
-      patternToRegex(LikePatternParser(s))
+    def stringToRegex(s: Any) =
+      if (s == null) None else Some(patternToRegex(LikePatternParser(s.toString)).r.pattern)
 
     def patternToRegex(likePattern: ParsedLikePattern): String =
       convertLikePatternToRegex(likePattern, e.caseInsensitive)
@@ -347,11 +347,11 @@ object ExpressionConverters {
       case commandexpressions.Literal(v) =>
         val pattern = LikePatternParser(v.asInstanceOf[String])
         val literal = commandexpressions.Literal(patternToRegex(pattern))
-        val regularExpression = predicates.LiteralRegularExpression(toCommandExpression(e.lhs), literal)
+        val regularExpression = predicates.MatchLiteralRegex(toCommandExpression(e.lhs), literal)
         predicates.LiteralLikePattern(regularExpression, pattern, e.caseInsensitive)
 
       case command =>
-        predicates.RegularExpression(toCommandExpression(e.lhs), command)(stringToRegex)
+        predicates.MatchDynamicRegex(toCommandExpression(e.lhs), command)(stringToRegex)
     }
   }
 

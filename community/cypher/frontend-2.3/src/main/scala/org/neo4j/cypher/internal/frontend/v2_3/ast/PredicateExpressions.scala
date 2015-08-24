@@ -87,7 +87,7 @@ case class InvalidNotEquals(lhs: Expression, rhs: Expression)(val position: Inpu
   override def canonicalOperatorSymbol = "!="
 }
 
-case class RegexMatch(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
+case class MatchRegex(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )

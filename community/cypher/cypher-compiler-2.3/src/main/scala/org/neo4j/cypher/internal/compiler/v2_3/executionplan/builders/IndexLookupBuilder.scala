@@ -88,7 +88,7 @@ class IndexLookupBuilder extends PlanBuilder {
   private def findLikePredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex) =
     plan.query.where.collect {
       case predicate@QueryToken(LiteralLikePattern(
-        LiteralRegularExpression(Property(Identifier(id), prop), _),
+        MatchLiteralRegex(Property(Identifier(id), prop), _),
         ParsedLikePattern(MatchText(prefix) :: (_: WildcardLikePatternOp) :: tl),
         caseInsensitive)
       ) if !caseInsensitive && id == hint.identifier && prop.name == hint.property =>

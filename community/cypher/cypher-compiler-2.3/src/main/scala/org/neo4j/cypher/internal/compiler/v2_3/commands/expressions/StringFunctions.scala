@@ -43,11 +43,21 @@ abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(a
 }
 
 trait StringHelper {
+
+  protected def asOptString(a: Any): Option[String] = a match {
+    case x: String => Some(x)
+    case x: InterpolationValue => Some(x.interpolate)
+    case _ => None
+  }
+
   protected def asString(a: Any): String = a match {
-    case null      => null
+    case null => null
     case x: String => x
     case x: InterpolationValue => x.interpolate
-    case _         => throw new CypherTypeException("Expected a string value for %s, but got: %s; perhaps you'd like to cast to a string it with str().".format(toString, a.toString))
+    case _  =>
+      throw new CypherTypeException(
+        "Expected a string value for %s, but got: %s; perhaps you'd like to cast to a string it with str().".format(toString, a.toString)
+      )
   }
 
   protected def props(x: PropertyContainer, qtx: QueryContext): String = {

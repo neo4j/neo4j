@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.frontend.v2_3.symbols.{CypherType, _}
 import scala.annotation.tailrec
 import scala.collection.mutable
 
+// See ast.Interpolation for the role of this class
 case class Interpolation(parts: NonEmptyList[Either[Expression, String]]) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     val partsValues = compile(parts, ctx, state, NonEmptyList.newBuilder[InterpolationStringPart])
@@ -78,6 +79,7 @@ case class Interpolation(parts: NonEmptyList[Either[Expression, String]]) extend
   override def toString = s"Interpolation(${parts.map(_.toString).reduceLeft(_ + ", " + _)}})"
 }
 
+// See ast.Interpolation for the role of this class
 sealed trait InterpolationStringPart {
   def value: String
 }

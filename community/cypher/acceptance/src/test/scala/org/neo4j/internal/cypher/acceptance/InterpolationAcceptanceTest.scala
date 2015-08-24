@@ -208,4 +208,31 @@ class InterpolationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
 
     result.toList should equal(List(Map("n" -> node)))
   }
+
+  test("should interpolate in rhs of regular expressions") {
+    val node = createNode(Map("name" -> "Henry"))
+    val query = "MATCH (n) WHERE n.name =~ $'H.+' RETURN n"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("n" -> node)))
+  }
+
+  test("should interpolate in lhs of regular expressions") {
+    val node = createNode(Map("name" -> "Henry"))
+    val query = "MATCH (n) WHERE $'${n.name}' =~ 'H.+' RETURN n"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("n" -> node)))
+  }
+
+  test("should interpolate in regular expressions") {
+    val node = createNode(Map("name" -> "Henry"))
+    val query = "MATCH (n) WHERE $'${n.name}' =~ $'H.+' RETURN n"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("n" -> node)))
+  }
 }
