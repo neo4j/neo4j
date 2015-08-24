@@ -402,7 +402,7 @@ public class TestApps extends AbstractShellTest
     public void createNodeWithArrayProperty() throws Exception
     {
         executeCommand( "mknode --np \"{'values':[1,2,3,4]}\" --cd" );
-        assertThat( getCurrentNode(), inTx( db, hasProperty( "values" ).withValue( new int[] {1,2,3,4} ) ) );
+        assertThat( getCurrentNode(), inTx( db, hasProperty( "values" ).withValue( new int[]{1, 2, 3, 4} ) ) );
     }
 
     @Test
@@ -535,7 +535,7 @@ public class TestApps extends AbstractShellTest
     @Test
     public void startCypherQueryWithUnwind() throws Exception
     {
-        executeCommand( "unwind [1,2,3] as x return x;", "| x |", "| 1 |");
+        executeCommand( "unwind [1,2,3] as x return x;", "| x |", "| 1 |" );
     }
 
     @Test
@@ -575,7 +575,7 @@ public class TestApps extends AbstractShellTest
     public void canSetInitialSessionVariables() throws Exception
     {
         Map<String, Serializable> values = genericMap( "mykey", "myvalue",
-                                                       "my_other_key", "My other value" );
+                "my_other_key", "My other value" );
         ShellClient client = newShellClient( shellServer, values );
         String[] allStrings = new String[values.size()*2];
         int i = 0;
@@ -595,7 +595,8 @@ public class TestApps extends AbstractShellTest
         ShellClient client = new SameJvmClient( values, shellServer, out );
         client.shutdown();
         final String outString = out.asString();
-        assertEquals( "Shows welcome message: " + outString, false, outString.contains( "Welcome to the Neo4j Shell! Enter 'help' for a list of commands" ) );
+        assertEquals( "Shows welcome message: " + outString, false,
+                outString.contains( "Welcome to the Neo4j Shell! Enter 'help' for a list of commands" ) );
     }
 
     @Test
@@ -1366,6 +1367,19 @@ public class TestApps extends AbstractShellTest
         });
         thread.start();
 
-        executeCommandExpectingException("CYPHER 2.2 FOREACH(i IN range(0, 10000) | CREATE ());", "has been terminated" );
+        executeCommandExpectingException( "CYPHER 2.2 FOREACH(i IN range(0, 10000) | CREATE ());",
+                "has been terminated" );
+    }
+
+    @Test
+    public void canUseForeach() throws Exception
+    {
+        executeCommand( "FOREACH (x in range(0,10) | CREATE ()));" );
+    }
+
+    @Test
+    public void canUseCommandsWithoutSpaceBeforeLeftParenthesis() throws Exception
+    {
+        executeCommand( "FOREACH(x in range(0,10) | CREATE ()));" );
     }
 }
