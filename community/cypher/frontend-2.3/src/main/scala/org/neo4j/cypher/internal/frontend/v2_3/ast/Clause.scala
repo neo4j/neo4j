@@ -237,7 +237,7 @@ case class Delete(expressions: Seq[Expression], forced: Boolean)(val position: I
   def semanticCheck =
     expressions.semanticCheck(Expression.SemanticContext.Simple) chain
     warnAboutDeletingLabels chain
-    expressions.expectType(CTNode.covariant | CTRelationship.covariant | CTPath.covariant)
+    expressions.expectType(CTNode.covariant | CTRelationship.covariant)
 
   def warnAboutDeletingLabels =
     expressions.filter(_.isInstanceOf[HasLabels]) map {
