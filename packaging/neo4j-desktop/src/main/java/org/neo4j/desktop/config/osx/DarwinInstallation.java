@@ -50,7 +50,7 @@ public class DarwinInstallation extends UnixInstallation
                     "echo * Neo4jShell",
                     "echo * Neo4jImport"};
 
-            FileWriter fileWriter = new FileWriter( new File( filename ) );
+            FileWriter fileWriter = new FileWriter( new File( filename ), false );
 
             for( String scriptCommand : scriptCommands )
             {
@@ -66,11 +66,11 @@ public class DarwinInstallation extends UnixInstallation
         }
         catch( IOException e )
         {
-
+            System.out.println( "Error writing openNeoTerminal.sh" );
         }
         catch( URISyntaxException e )
         {
-
+            System.out.println( "Error getting bin locations for openNeoTerminal.sh" );
         }
     }
 
