@@ -204,7 +204,7 @@ public class MainWindow
     private JButton createBrowseButton()
     {
         ActionListener actionListener = new BrowseForDatabaseActionListener( frame, directoryDisplay, model );
-        return Components.createTextButton( ellipsis( "Browse" ), actionListener );
+        return Components.createTextButton( ellipsis( "Choose" ), actionListener );
     }
 
     private JButton createStartButton()
