@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands.values
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.InterpolatedString
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.InterpolationStringPart
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
 
-case class InterpolationValue(parts: NonEmptyList[InterpolatedString]) {
+case class InterpolationValue(parts: NonEmptyList[InterpolationStringPart]) {
 
   def interpolate: String = parts.map(_.value).foldLeft("")(_ + _)
 }

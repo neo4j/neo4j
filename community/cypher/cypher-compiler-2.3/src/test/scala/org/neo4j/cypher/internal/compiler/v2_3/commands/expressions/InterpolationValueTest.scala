@@ -30,33 +30,33 @@ class InterpolationValueTest extends CypherFunSuite {
   implicit val state = QueryStateHelper.empty
 
   test("should compile literals") {
-    evaluateInterpolation(Right("string"))().to(InterpolatedLiteral("string"))
-    evaluateInterpolation(Right("$"))().to(InterpolatedLiteral("$"))
-    evaluateInterpolation(Right("\'\\"))().to(InterpolatedLiteral("\'\\"))
+    evaluateInterpolation(Right("string"))().to(LiteralStringPart("string"))
+    evaluateInterpolation(Right("$"))().to(LiteralStringPart("$"))
+    evaluateInterpolation(Right("\'\\"))().to(LiteralStringPart("\'\\"))
   }
 
   test("should compile identifiers") {
-    evaluateInterpolation(Left(Identifier("n")))("n" -> 1).to(InterpolatedExpression("1"))
-    evaluateInterpolation(Left(Identifier("n")))("n" -> "1").to(InterpolatedExpression("1"))
-    evaluateInterpolation(Left(Identifier("n")))("n" -> 0.5).to(InterpolatedExpression("0.5"))
-    evaluateInterpolation(Left(Identifier("n")))("n" -> Math.PI).to(InterpolatedExpression(Math.PI.toString))
+    evaluateInterpolation(Left(Identifier("n")))("n" -> 1).to(InterpolatedStringPart("1"))
+    evaluateInterpolation(Left(Identifier("n")))("n" -> "1").to(InterpolatedStringPart("1"))
+    evaluateInterpolation(Left(Identifier("n")))("n" -> 0.5).to(InterpolatedStringPart("0.5"))
+    evaluateInterpolation(Left(Identifier("n")))("n" -> Math.PI).to(InterpolatedStringPart(Math.PI.toString))
     evaluateInterpolation(Left(Identifier("n")))("n" -> null).toNull()
     evaluateInterpolation(Right("prefix"), Left(Identifier("n")), Right("suffix"))("n" -> null).toNull()
     evaluateInterpolation(Right("prefix"), Left(Identifier("n")), Right("suffix"), Left(Identifier("m")))("n" -> 0.5, "m" -> null).toNull()
   }
 
   test("should compile nested interpolations") {
-    evaluateInterpolation(Left(Identifier("n")))("n" -> InterpolationValue(NonEmptyList(InterpolatedLiteral("string")))).to(InterpolatedExpression("string"))
-    evaluateInterpolation(Left(Identifier("n")))("n" -> InterpolationValue(NonEmptyList(InterpolatedExpression("15"), InterpolatedLiteral("suffix")))).to(InterpolatedExpression("15suffix"))
+    evaluateInterpolation(Left(Identifier("n")))("n" -> InterpolationValue(NonEmptyList(LiteralStringPart("string")))).to(InterpolatedStringPart("string"))
+    evaluateInterpolation(Left(Identifier("n")))("n" -> InterpolationValue(NonEmptyList(InterpolatedStringPart("15"), LiteralStringPart("suffix")))).to(InterpolatedStringPart("15suffix"))
   }
 
   test("should compile additions") {
-    evaluateInterpolation(Left(Add(Identifier("n"), Literal(12))))("n" -> 1).to(InterpolatedExpression("13"))
-    evaluateInterpolation(Left(Add(Identifier("n"), Identifier("m"))))("n" -> 1, "m" -> 2).to(InterpolatedExpression("3"))
+    evaluateInterpolation(Left(Add(Identifier("n"), Literal(12))))("n" -> 1).to(InterpolatedStringPart("13"))
+    evaluateInterpolation(Left(Add(Identifier("n"), Identifier("m"))))("n" -> 1, "m" -> 2).to(InterpolatedStringPart("3"))
   }
 
   private case class evaluateInterpolation(head: Either[Expression, String], tail: Either[Expression, String]*)(values: (String, Any)*) {
-    def to(toHead: InterpolatedString, toTail: InterpolatedString*) = {
+    def to(toHead: InterpolationStringPart, toTail: InterpolationStringPart*) = {
       val actual = Interpolation(NonEmptyList(head, tail:_*)).apply(ExecutionContext.from(values:_*))
       val expected = InterpolationValue(NonEmptyList(toHead, toTail:_*))
 

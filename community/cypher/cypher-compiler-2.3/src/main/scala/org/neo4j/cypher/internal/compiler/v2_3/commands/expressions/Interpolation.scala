@@ -31,9 +31,9 @@ import scala.collection.mutable
 
 case class Interpolation(parts: NonEmptyList[Either[Expression, String]]) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
-    val partsValues = compile(parts, ctx, state, NonEmptyList.newBuilder[InterpolatedString])
-
-    partsValues.map(InterpolationValue).orNull
+    val partsValues = compile(parts, ctx, state, NonEmptyList.newBuilder[InterpolationStringPart])
+    val result = partsValues.map(InterpolationValue).orNull
+    result
   }
 
   @tailrec
@@ -41,8 +41,8 @@ case class Interpolation(parts: NonEmptyList[Either[Expression, String]]) extend
     remaining: NonEmptyList[Either[Expression, String]],
     ctx: ExecutionContext,
     state: QueryState,
-    acc: mutable.Builder[InterpolatedString, Option[NonEmptyList[InterpolatedString]]])
-  : Option[NonEmptyList[InterpolatedString]] = {
+    acc: mutable.Builder[InterpolationStringPart, Option[NonEmptyList[InterpolationStringPart]]])
+  : Option[NonEmptyList[InterpolationStringPart]] = {
 
     val stop = remaining.head match {
       case Left(expr) =>
@@ -50,11 +50,11 @@ case class Interpolation(parts: NonEmptyList[Either[Expression, String]]) extend
         if (value == null)
           true
         else {
-          acc += InterpolatedExpression(toStringValue(value))
+          acc += InterpolatedStringPart(toStringValue(value))
           false
         }
       case Right(string) =>
-        acc += InterpolatedLiteral(string)
+        acc += LiteralStringPart(string)
         false
     }
 
@@ -78,11 +78,10 @@ case class Interpolation(parts: NonEmptyList[Either[Expression, String]]) extend
   override def toString = s"Interpolation(${parts.map(_.toString).reduceLeft(_ + ", " + _)}})"
 }
 
-trait InterpolatedString {
+sealed trait InterpolationStringPart {
   def value: String
 }
 
-case class InterpolatedExpression(value: String) extends InterpolatedString
-
-case class InterpolatedLiteral(value: String) extends InterpolatedString
+final case class InterpolatedStringPart(value: String) extends InterpolationStringPart
+final case class LiteralStringPart(value: String) extends InterpolationStringPart
 

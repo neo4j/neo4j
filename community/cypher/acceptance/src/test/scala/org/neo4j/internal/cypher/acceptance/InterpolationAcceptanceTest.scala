@@ -200,4 +200,12 @@ class InterpolationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     result.toList should equal(List(Map("r" -> Seq("aB", "cD"))))
   }
 
+  test("should interpolate dynamic property lookups") {
+    val node = createNode(Map("initial" -> "X"))
+    val query = "MATCH (n) WHERE n[$'${{prop}}'] = 'X' RETURN n"
+
+    val result = executeWithAllPlanners(query, "prop" -> "initial")
+
+    result.toList should equal(List(Map("n" -> node)))
+  }
 }
