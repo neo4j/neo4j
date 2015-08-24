@@ -20,11 +20,65 @@
 package org.neo4j.desktop.config.osx;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.Scanner;
 
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
+import org.neo4j.desktop.config.Environment;
 import org.neo4j.desktop.config.unix.UnixInstallation;
 
 public class DarwinInstallation extends UnixInstallation
 {
+
+    public DarwinInstallation()
+    {
+        String filename = "openNeoTerminal.sh";
+        try
+        {
+            String[] scriptCommands = {
+                    "#!/bin/bash",
+                    "export PATH=$PATH:" + this.getInstallationBinDirectory().getAbsolutePath().toString() + ":" +
+                    this.getInstallationJreBinDirectory().getAbsolutePath().toString(),
+                    "echo Neo4j Command Prompt",
+                    "echo.",
+                    "echo This window is configured with Neo4j on the path.",
+                    "echo.",
+                    "echo Available commands:",
+                    "echo * Neo4jShell",
+                    "echo * Neo4jImport"};
+
+            FileWriter fileWriter = new FileWriter( new File( filename ) );
+
+            for( String scriptCommand : scriptCommands )
+            {
+                fileWriter.write( scriptCommand + "\n");
+            }
+
+            fileWriter.flush();
+            fileWriter.close();
+
+            String commands[] = { "bash", "-c", "ch", "chmod a+x " + filename };
+
+            Runtime.getRuntime().exec( commands );
+        }
+        catch( IOException e )
+        {
+
+        }
+        catch( URISyntaxException e )
+        {
+
+        }
+    }
+
+    @Override
+    public Environment getEnvironment()
+    {
+        return new DarwinEnvironment();
+    }
 
     @Override
     protected File getDefaultDirectory()

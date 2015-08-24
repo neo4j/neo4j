@@ -83,7 +83,7 @@ public class MainWindow
         this.debugWindow = new SystemOutDebugWindow();
         this.databaseActions = databaseActions;
 
-        this.frame = new JFrame( "Neo4j Community" );
+        this.frame = new JFrame( "Neo4j CE" );
         this.frame.setIconImages( Graphics.loadIcons() );
         this.sysTray = SysTray.install( new SysTrayActions(), frame );
 
