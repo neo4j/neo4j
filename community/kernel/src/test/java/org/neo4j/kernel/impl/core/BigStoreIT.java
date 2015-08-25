@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -42,7 +43,6 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -200,12 +200,12 @@ public class BigStoreIT implements RelationshipType
 
     public static boolean machineIsOkToRunThisTest(int requiredHeapMb )
     {
-        if ( Settings.osIsWindows() )
+        if ( SystemUtils.IS_OS_WINDOWS )
         {
             // This test cannot be run on Windows because it can't handle files of this size in a timely manner
             return false;
         }
-        if ( Settings.osIsMacOS() )
+        if ( SystemUtils.IS_OS_MAC_OSX )
         {
             // This test cannot be run on Mac OS X because Mac OS X doesn't support sparse files
             return false;

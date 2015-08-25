@@ -19,6 +19,7 @@
  */
 package files;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -31,7 +32,6 @@ import javax.management.ObjectName;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Settings;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
@@ -58,7 +58,7 @@ public class TestNoFileDescriptorLeaks
     @BeforeClass
     public static void beforeClass()
     {
-        Assume.assumeFalse( Settings.osIsWindows() );
+        Assume.assumeFalse( SystemUtils.IS_OS_WINDOWS );
     }
 
     @Before

@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
+import org.apache.commons.lang3.SystemUtils
 import org.neo4j.cypher.internal.compiler.v2_3.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{AstRewritingTestSupport, CantHandleQueryException}
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v2_3.{SemanticState, inSequence}
-import org.neo4j.helpers.Platforms
 
 class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport {
 
@@ -373,7 +373,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       """.stripMargin)
 
     // TODO: this is a temporary solution we should rethink how to generated fresh ids on windows
-    val freshIdName = if (Platforms.platformIsWindows()) "`  FRESHID197`" else "`  FRESHID194`"
+    val freshIdName = if (SystemUtils.IS_OS_WINDOWS) "`  FRESHID197`" else "`  FRESHID194`"
     result should equal(ast(
       s"""match n where id(n) IN [0,1,2,3]
         |with n.division AS `n.division`, max(n.age) AS `max(n.age)`

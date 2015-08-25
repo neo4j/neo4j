@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.impl;
 
+import org.apache.commons.lang3.SystemUtils;
 import sun.nio.ch.FileChannelImpl;
 
 import java.io.File;
@@ -33,7 +34,6 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.io.fs.StoreFileChannelUnwrapper;
@@ -190,7 +190,7 @@ public class SingleFilePageSwapper implements PageSwapper
 
     private void acquireLock() throws IOException
     {
-        if ( FileUtils.OS_IS_WINDOWS )
+        if ( SystemUtils.IS_OS_WINDOWS )
         {
             // We don't take file locks on the individual store files on Windows, because once you've taking
             // a file lock on a channel, you can only do IO on that file through that channel. This would

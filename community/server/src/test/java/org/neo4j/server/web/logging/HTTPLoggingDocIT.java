@@ -20,6 +20,7 @@
 package org.neo4j.server.web.logging;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -49,7 +50,6 @@ import org.neo4j.test.server.HTTP;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.Settings.osIsWindows;
 import static org.neo4j.io.fs.FileUtils.readTextFile;
 import static org.neo4j.test.Assert.assertEventually;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
@@ -228,7 +228,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
     private File createUnwritableDirectory()
     {
         File file;
-        if ( osIsWindows() )
+        if ( SystemUtils.IS_OS_WINDOWS )
         {
             file = new File( "\\\\" + UUID.randomUUID().toString() + "\\http.log" );
         }

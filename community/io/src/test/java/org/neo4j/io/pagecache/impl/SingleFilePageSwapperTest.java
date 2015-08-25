@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.impl;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.internal.AssumptionViolatedException;
@@ -41,7 +42,6 @@ import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -198,7 +198,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     @Test( expected = OverlappingFileLockException.class )
     public void creatingSwapperForFileMustTakeLockOnFile() throws Exception
     {
-        assumeFalse( "No file locking on Windows", FileUtils.OS_IS_WINDOWS );
+        assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS );
 
         PageSwapperFactory factory = swapperFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -222,7 +222,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     @Test( expected = FileLockException.class )
     public void creatingSwapperForInternallyLockedFileMustThrow() throws Exception
     {
-        assumeFalse( "No file locking on Windows", FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
+        assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = swapperFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -241,7 +241,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     @Test( expected = FileLockException.class )
     public void creatingSwapperForExternallyLockedFileMustThrow() throws Exception
     {
-        assumeFalse( "No file locking on Windows", FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
+        assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = swapperFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -274,7 +274,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     @Test
     public void mustUnlockFileWhenThePageSwapperIsClosed() throws Exception
     {
-        assumeFalse( "No file locking on Windows", FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
+        assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = swapperFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -294,7 +294,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     @Test( expected = OverlappingFileLockException.class )
     public void fileMustRemainLockedEvenIfChannelIsClosedByStrayInterrupt() throws Exception
     {
-        assumeFalse( "No file locking on Windows", FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
+        assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = swapperFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -322,7 +322,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     @Test
     public void mustCloseFilesIfTakingFileLockThrows() throws Exception
     {
-        assumeFalse( "No file locking on Windows", FileUtils.OS_IS_WINDOWS ); // no file locking on Windows.
+        assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
 
         final AtomicInteger openFilesCounter = new AtomicInteger();
         PageSwapperFactory factory = swapperFactory();

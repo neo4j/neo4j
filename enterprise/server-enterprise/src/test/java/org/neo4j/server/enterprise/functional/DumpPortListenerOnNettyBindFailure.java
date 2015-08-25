@@ -19,6 +19,12 @@
  */
 package org.neo4j.server.enterprise.functional;
 
+import org.apache.commons.lang3.SystemUtils;
+import org.jboss.netty.channel.ChannelException;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,13 +32,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Writer;
-
-import org.jboss.netty.channel.ChannelException;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
-import static org.neo4j.helpers.Settings.osIsWindows;
 
 public class DumpPortListenerOnNettyBindFailure implements TestRule
 {
@@ -56,7 +55,7 @@ public class DumpPortListenerOnNettyBindFailure implements TestRule
     @Override
     public Statement apply( final Statement base, Description description )
     {
-        if ( osIsWindows() )
+        if ( SystemUtils.IS_OS_WINDOWS )
         {
             return base; // we don't have 'lsof' on windows...
         }

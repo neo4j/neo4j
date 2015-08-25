@@ -20,6 +20,7 @@
 package org.neo4j.ext.udc.impl;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.localserver.LocalTestServer;
@@ -406,7 +407,7 @@ public class UdcExtensionImplTest
     @Test
     public void shouldIncludeDistributionForLinux() throws Exception
     {
-        if ( !System.getProperty( "os.name" ).equals( "Linux" ) )
+        if ( !SystemUtils.IS_OS_LINUX )
         {
             return;
         }

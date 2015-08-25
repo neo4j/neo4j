@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.preflight;
 
+import org.apache.commons.lang.SystemUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -33,8 +34,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.TargetDirectory;
 
-import static org.neo4j.helpers.Settings.osIsMacOS;
-import static org.neo4j.helpers.Settings.osIsWindows;
 import static org.neo4j.server.configuration.ServerSettings.http_log_config_file;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
 
@@ -106,11 +105,11 @@ public class HTTPLoggingPreparednessRuleTest
     public static File createUnwritableDirectory()
     {
         File file;
-        if ( osIsWindows() )
+        if ( SystemUtils.IS_OS_WINDOWS )
         {
             file = new File( "\\\\" + UUID.randomUUID().toString() + "\\" );
         }
-        else if ( osIsMacOS() )
+        else if ( SystemUtils.IS_OS_MAC_OSX )
         {
             file = new File( "/Network/Servers/localhost/" + UUID.randomUUID().toString() );
         }
