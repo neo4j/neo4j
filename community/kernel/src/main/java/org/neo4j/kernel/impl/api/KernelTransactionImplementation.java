@@ -30,7 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.SchemaRuleVerifier;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
@@ -68,8 +68,6 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
-import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -143,7 +141,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final UpdateableSchemaState schemaState;
     private final StatementOperationParts operations;
     private final Pool<KernelTransactionImplementation> pool;
-    private final SchemaRuleVerifier schemaRuleVerifier;
+    private final ConstraintSemantics constraintSemantics;
     // State
     private final TransactionRecordState recordState;
     private final CountsRecordState counts = new CountsRecordState();
@@ -191,7 +189,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             StoreReadLayer storeLayer,
             LegacyIndexTransactionState legacyIndexTransactionState,
             Pool<KernelTransactionImplementation> pool,
-            SchemaRuleVerifier schemaRuleVerifier,
+            ConstraintSemantics constraintSemantics,
             Clock clock,
             TransactionTracer tracer )
     {
@@ -211,7 +209,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.storeLayer = storeLayer;
         this.legacyIndexTransactionState = new CachingLegacyIndexTransactionState( legacyIndexTransactionState );
         this.pool = pool;
-        this.schemaRuleVerifier = schemaRuleVerifier;
+        this.constraintSemantics = constraintSemantics;
         this.clock = clock;
         this.schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
         this.tracer = tracer;
@@ -282,7 +280,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( currentStatement == null )
         {
             currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),
-                    labelScanStore, this, locks, operations, storeStatement, schemaRuleVerifier );
+                    labelScanStore, this, locks, operations, storeStatement, constraintSemantics );
         }
         currentStatement.acquire();
         return currentStatement;
@@ -395,7 +393,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private TxStateVisitor txStateVisitor()
     {
-        return schemaRuleVerifier.createVerifierFor( operations, storeStatement, storeLayer, this, txStateToRecordStateVisitor );
+        return constraintSemantics
+                .decorateTxStateVisitor( operations, storeStatement, storeLayer, this, txStateToRecordStateVisitor );
     }
 
     private void assertTransactionOpen()
@@ -921,8 +920,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     element.label(),
                     element.propertyKey(),
                     SchemaStorage.IndexRuleKind.CONSTRAINT );
-            recordState.createSchemaRule( UniquePropertyConstraintRule.uniquenessConstraintRule(
-                    constraintId, element.label(), element.propertyKey(), indexRule.getId() ) );
+            recordState.createSchemaRule( constraintSemantics
+                    .writeUniquePropertyConstraint( constraintId, element.label(), element.propertyKey(),
+                            indexRule.getId() ) );
             recordState.setConstraintIndexOwner( indexRule, constraintId );
         }
 
@@ -955,7 +955,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         public void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
         {
             clearState = true;
-            recordState.createSchemaRule( NodePropertyExistenceConstraintRule.nodePropertyExistenceConstraintRule(
+            recordState.createSchemaRule( constraintSemantics.writeNodePropertyExistenceConstraint(
                     schemaStorage.newRuleId(), element.label(), element.propertyKey() ) );
         }
 
@@ -985,9 +985,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         public void visitAddedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
         {
             clearState = true;
-            recordState.createSchemaRule(
-                    RelationshipPropertyExistenceConstraintRule.relPropertyExistenceConstraintRule(
-                            schemaStorage.newRuleId(), element.relationshipType(), element.propertyKey() ) );
+            recordState.createSchemaRule( constraintSemantics.writeRelationshipPropertyExistenceConstraint(
+                    schemaStorage.newRuleId(), element.relationshipType(), element.propertyKey() ) );
         }
 
         @Override

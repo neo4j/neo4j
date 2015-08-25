@@ -21,7 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.Clock;
-import org.neo4j.kernel.SchemaRuleVerifier;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -58,7 +58,7 @@ public class KernelTransactionFactory
                 mock( StoreReadLayer.class ),
                 mock( LegacyIndexTransactionState.class ),
                 mock(Pool.class),
-                mock( SchemaRuleVerifier.class ),
+                mock( ConstraintSemantics.class ),
                 Clock.SYSTEM_CLOCK,
                 TransactionTracer.NULL );
     }

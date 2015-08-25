@@ -33,7 +33,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.SchemaRuleVerifier;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.configuration.Config;
@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
+import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
 import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
@@ -113,16 +114,16 @@ public class CommunityEditionModule
 
         upgradeConfiguration = new ConfigMapUpgradeConfiguration( config );
 
-        schemaRuleVerifier = createSchemaRuleVerifier();
+        constraintSemantics = createSchemaRuleVerifier();
 
         registerRecovery( config.get( GraphDatabaseFacadeFactory.Configuration.editionName), life, deps );
 
         publishEditionInfo( deps.resolveDependency( UsageData.class ) );
     }
 
-    protected SchemaRuleVerifier createSchemaRuleVerifier()
+    protected ConstraintSemantics createSchemaRuleVerifier()
     {
-        return new CommunitySchemaRuleVerifier();
+        return new StandardConstraintSemantics();
     }
 
     private void publishEditionInfo( UsageData sysInfo )

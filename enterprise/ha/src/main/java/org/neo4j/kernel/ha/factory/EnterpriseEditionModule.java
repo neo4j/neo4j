@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.ha.factory;
 
-import org.neo4j.kernel.SchemaRuleVerifier;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -36,8 +36,8 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     }
 
     @Override
-    protected SchemaRuleVerifier createSchemaRuleVerifier()
+    protected ConstraintSemantics createSchemaRuleVerifier()
     {
-        return new EnterpriseSchemaRuleVerifier();
+        return new EnterpriseConstraintSemantics();
     }
 }

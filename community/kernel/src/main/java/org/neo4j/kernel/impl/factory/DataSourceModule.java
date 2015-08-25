@@ -202,7 +202,7 @@ public class DataSourceModule
                 storeMigrationProcess, platformModule.transactionMonitor, kernelHealth,
                 platformModule.monitors.newMonitor( PhysicalLogFile.Monitor.class ),
                 editionModule.headerInformationFactory, startupStatistics, nodeManager, guard, indexStore,
-                editionModule.commitProcessFactory, pageCache, editionModule.schemaRuleVerifier,
+                editionModule.commitProcessFactory, pageCache, editionModule.constraintSemantics,
                 platformModule.monitors, platformModule.tracers ) );
         dataSourceManager.register( neoStoreDataSource );
 

@@ -17,21 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.constraints;
 
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.api.txstate.TxStateVisitor;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
 
-public interface SchemaRuleVerifier
+/**
+ * Implements semantics of constraint creation and enforcement.
+ */
+public interface ConstraintSemantics
 {
-    void verify( SchemaRule rule );
-
     void assertPropertyConstraintCreationAllowed();
 
-    TxStateVisitor createVerifierFor( StatementOperationParts operations, StoreStatement storeStatement,
+    PropertyConstraint readConstraint( PropertyConstraintRule rule );
+
+    PropertyConstraintRule writeUniquePropertyConstraint( long ruleId, int label, int propertyKey, long indexId );
+
+    PropertyConstraintRule writeNodePropertyExistenceConstraint( long ruleId, int label, int propertyKey );
+
+    PropertyConstraintRule writeRelationshipPropertyExistenceConstraint( long ruleId, int type, int propertyKey );
+
+    TxStateVisitor decorateTxStateVisitor( StatementOperationParts operations, StoreStatement storeStatement,
             StoreReadLayer storeLayer, TxStateHolder holder, TxStateVisitor visitor );
 }

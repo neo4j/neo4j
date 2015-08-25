@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.SchemaRuleVerifier;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -34,7 +34,7 @@ public class StatementLifecycleTest
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         KernelStatement statement = new KernelStatement( transaction, mock( IndexReaderFactory.class ), null,
-                null, null, null, null, mock( SchemaRuleVerifier.class) );
+                null, null, null, null, mock( ConstraintSemantics.class) );
         statement.acquire();
 
         // when
@@ -50,7 +50,7 @@ public class StatementLifecycleTest
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         KernelStatement statement = new KernelStatement( transaction, mock( IndexReaderFactory.class ), null,
-                null, null, null, null, mock( SchemaRuleVerifier.class) );
+                null, null, null, null, mock( ConstraintSemantics.class) );
         statement.acquire();
         statement.acquire();
 
