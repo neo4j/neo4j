@@ -83,20 +83,24 @@ public class FullCheck
         DiffRecordAccess records = recordAccess( stores.nativeStores() );
         execute( stores, decorator, records, report );
         ownerCheck.scanForOrphanChains( progressFactory );
-        CountsAccessor counts = stores.nativeStores().getCounts();
-        if ( counts instanceof CountsTracker )
+
+        if ( checkGraph )
         {
-            CountsTracker tracker = (CountsTracker) counts;
-            try
+            CountsAccessor counts = stores.nativeStores().getCounts();
+            if ( counts instanceof CountsTracker )
             {
-                tracker.start();
+                CountsTracker tracker = (CountsTracker) counts;
+                try
+                {
+                    tracker.start();
+                }
+                catch ( Exception e )
+                {
+                    // let's hope it was already started :)
+                }
             }
-            catch ( Exception e )
-            {
-                // let's hope it was already started :)
-            }
+            countsBuilder.checkCounts( counts, new ConsistencyReporter( records, report ), progressFactory );
         }
-        countsBuilder.checkCounts( counts, new ConsistencyReporter( records, report ), progressFactory );
 
         if ( !summary.isConsistent() )
         {
@@ -106,7 +110,7 @@ public class FullCheck
     }
 
     void execute( final DirectStoreAccess directStoreAccess, CheckDecorator decorator,
-                  final DiffRecordAccess recordAccess, final InconsistencyReport report )
+            final DiffRecordAccess recordAccess, final InconsistencyReport report )
             throws ConsistencyCheckIncompleteException
     {
         final ConsistencyReporter reporter = new ConsistencyReporter( recordAccess, report );

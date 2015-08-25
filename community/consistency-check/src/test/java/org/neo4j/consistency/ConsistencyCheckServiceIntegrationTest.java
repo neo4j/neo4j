@@ -19,23 +19,28 @@
  */
 package org.neo4j.consistency;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
+import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.GraphStoreFixture;
+import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
@@ -47,6 +52,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.consistency.ConsistencyCheckService.defaultLogFileName;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
@@ -133,6 +139,32 @@ public class ConsistencyCheckServiceIntegrationTest
             tx.success();
         }
         db.shutdown();
+
+        // when
+        Result result = service.runFullConsistencyCheck( testDirectory.absolutePath(), configuration,
+                ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+
+        // then
+        assertEquals( ConsistencyCheckService.Result.SUCCESS, result );
+    }
+
+    @Test
+    public void shouldAllowGraphCheckDisabled() throws IOException, ConsistencyCheckIncompleteException
+    {
+        GraphDatabaseService gds = new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.absolutePath() );
+
+        try ( Transaction tx = gds.beginTx() )
+        {
+            gds.createNode();
+            tx.success();
+        }
+
+        gds.shutdown();
+
+        ConsistencyCheckService service = new ConsistencyCheckService();
+        Config configuration = new Config( settings(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        configuration.applyChanges( MapUtil.stringMap( ConsistencyCheckSettings.consistency_check_graph.name(),
+                Settings.FALSE ) );
 
         // when
         Result result = service.runFullConsistencyCheck( testDirectory.absolutePath(), configuration,
