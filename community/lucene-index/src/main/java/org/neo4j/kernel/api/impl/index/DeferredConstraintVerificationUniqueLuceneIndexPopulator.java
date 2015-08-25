@@ -34,6 +34,7 @@ import org.apache.lucene.search.TermQuery;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -267,7 +268,7 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
         private final PropertyAccessor accessor;
         private final LuceneDocumentStructure documentStructure;
         private final int propertyKeyId;
-        private final EntrySet actualValues;
+        private EntrySet actualValues;
         private IndexReader reader;
         private int docBase;
 
@@ -354,7 +355,7 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
 
         public void reset()
         {
-            actualValues.reset(); // TODO benchmark this vs. not clearing and instead creating a new object, perhaps
+            actualValues = new EntrySet();
         }
     }
 
@@ -366,23 +367,15 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
      */
     private static class EntrySet
     {
-        static final int INCREMENT = 100;
+        static final int INCREMENT = 10000;
 
         Object[] value = new Object[INCREMENT];
         long[] nodeId = new long[INCREMENT];
         EntrySet next;
 
-        public void reset()
+        EntrySet()
         {
-            EntrySet current = this;
-            do {
-                for (int i = 0; i < INCREMENT; i++)
-                {
-                    current.value[i] = null;
-                    current.nodeId[i] = StatementConstants.NO_SUCH_NODE;
-                }
-                current = next;
-            } while ( current != null );
+	       Arrays.fill( nodeId, StatementConstants.NO_SUCH_NODE );
         }
     }
 }
