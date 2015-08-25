@@ -19,14 +19,14 @@
  */
 package org.neo4j.consistency;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.GraphStoreFixture;
@@ -174,7 +174,7 @@ public class ConsistencyCheckServiceIntegrationTest
         assertEquals( ConsistencyCheckService.Result.SUCCESS, result );
     }
 
-    protected Map<String, String> settings( String... strings )
+    protected Map<String,String> settings( String... strings )
     {
         Map<String, String> defaults = new HashMap<>();
         defaults.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );

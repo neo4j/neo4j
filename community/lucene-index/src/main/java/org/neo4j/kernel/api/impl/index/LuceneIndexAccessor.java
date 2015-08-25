@@ -52,7 +52,7 @@ import static org.neo4j.kernel.api.impl.index.DirectorySupport.deleteDirectoryCo
 abstract class LuceneIndexAccessor implements IndexAccessor
 {
     protected final LuceneDocumentStructure documentStructure;
-    protected final ReferenceManager<IndexSearcher> searcherManager;
+    protected final LuceneReferenceManager<IndexSearcher> searcherManager;
     protected final ReservingLuceneIndexWriter writer;
 
     private final Directory dir;
@@ -70,17 +70,75 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         }
     };
 
+    // we need this wrapping in order to test the index accessor since the ReferenceManager is not mock friendly
+    public interface LuceneReferenceManager<G> extends Closeable
+    {
+        G acquire();
+
+        boolean maybeRefresh() throws IOException;
+
+        void release( G reference ) throws IOException;
+
+        class Wrap<G> implements LuceneReferenceManager<G>
+        {
+            private final ReferenceManager<G> delegate;
+
+            Wrap( ReferenceManager<G> delegate )
+            {
+
+                this.delegate = delegate;
+            }
+
+            @Override
+            public G acquire()
+            {
+                return delegate.acquire();
+            }
+
+            @Override
+            public boolean maybeRefresh() throws IOException
+            {
+                return delegate.maybeRefresh();
+            }
+
+            @Override
+            public void release( G reference ) throws IOException
+            {
+                delegate.release( reference );
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                delegate.close();
+            }
+        }
+    }
 
     LuceneIndexAccessor( LuceneDocumentStructure documentStructure,
-                         IndexWriterFactory<ReservingLuceneIndexWriter> indexWriterFactory,
-                         DirectoryFactory dirFactory, File dirFile, int bufferSizeLimit ) throws IOException
+            IndexWriterFactory<ReservingLuceneIndexWriter> indexWriterFactory,
+            DirectoryFactory dirFactory, File dirFile,
+            int bufferSizeLimit ) throws IOException
     {
         this.documentStructure = documentStructure;
         this.dirFile = dirFile;
         this.bufferSizeLimit = bufferSizeLimit;
         this.dir = dirFactory.open( dirFile );
         this.writer = indexWriterFactory.create( dir );
-        this.searcherManager = writer.createSearcherManager();
+        this.searcherManager = new LuceneReferenceManager.Wrap<>( writer.createSearcherManager() );
+    }
+
+    // test only
+    LuceneIndexAccessor( LuceneDocumentStructure documentStructure, ReservingLuceneIndexWriter writer,
+            LuceneReferenceManager<IndexSearcher> searcherManager,
+            Directory dir, File dirFile, int bufferSizeLimit )
+    {
+        this.documentStructure = documentStructure;
+        this.writer = writer;
+        this.searcherManager = searcherManager;
+        this.dir = dir;
+        this.dirFile = dirFile;
+        this.bufferSizeLimit = bufferSizeLimit;
     }
 
     @Override
@@ -88,14 +146,14 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     {
         switch ( mode )
         {
-            case ONLINE:
-                return new LuceneIndexUpdater( false );
+        case ONLINE:
+            return new LuceneIndexUpdater( false );
 
-            case RECOVERY:
-                return new LuceneIndexUpdater( true );
+        case RECOVERY:
+            return new LuceneIndexUpdater( true );
 
-            default:
-                throw new ThisShouldNotHappenError( "Stefan", "Unsupported update mode" );
+        default:
+            throw new ThisShouldNotHappenError( "Stefan", "Unsupported update mode" );
         }
     }
 
@@ -119,7 +177,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     public void force() throws IOException
     {
         writer.commitAsOnline();
-        searcherManager.maybeRefresh();
+        refreshSearcherManager();
     }
 
     @Override
@@ -160,7 +218,8 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     @Override
     public BoundedIterable<Long> newAllEntriesReader()
     {
-        return new LuceneAllEntriesIndexAccessorReader( new LuceneAllDocumentsReader( searcherManager ), documentStructure );
+        return new LuceneAllEntriesIndexAccessorReader( new LuceneAllDocumentsReader( searcherManager ),
+                documentStructure );
     }
 
     @Override
@@ -251,24 +310,24 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         {
             switch ( update.getUpdateMode() )
             {
-                case ADDED:
-                    if ( inRecovery )
-                    {
-                        addRecovered( update.getNodeId(), update.getValueAfter() );
-                    }
-                    else
-                    {
-                        add( update.getNodeId(), update.getValueAfter() );
-                    }
-                    break;
-                case CHANGED:
-                    change( update.getNodeId(), update.getValueAfter() );
-                    break;
-                case REMOVED:
-                    LuceneIndexAccessor.this.remove( update.getNodeId() );
-                    break;
-                default:
-                    throw new UnsupportedOperationException();
+            case ADDED:
+                if ( inRecovery )
+                {
+                    addRecovered( update.getNodeId(), update.getValueAfter() );
+                }
+                else
+                {
+                    add( update.getNodeId(), update.getValueAfter() );
+                }
+                break;
+            case CHANGED:
+                change( update.getNodeId(), update.getValueAfter() );
+                break;
+            case REMOVED:
+                LuceneIndexAccessor.this.remove( update.getNodeId() );
+                break;
+            default:
+                throw new UnsupportedOperationException();
             }
         }
 

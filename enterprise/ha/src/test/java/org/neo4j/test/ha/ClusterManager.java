@@ -19,7 +19,6 @@
  */
 package org.neo4j.test.ha;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.w3c.dom.Document;
 
