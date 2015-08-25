@@ -36,13 +36,13 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.index.IndexConfiguration;
+import org.neo4j.kernel.api.IndexDescriptor;
+import org.neo4j.kernel.index.IndexEntryConflictException;
+import org.neo4j.kernel.index.IndexReader;
+import org.neo4j.kernel.index.IndexUpdater;
+import org.neo4j.kernel.index.InternalIndexState;
+import org.neo4j.kernel.index.SchemaIndexProvider;
 
 public class FlippableIndexProxy implements IndexProxy
 {

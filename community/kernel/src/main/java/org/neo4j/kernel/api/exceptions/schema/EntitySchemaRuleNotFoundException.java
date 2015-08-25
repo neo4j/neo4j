@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
-import org.neo4j.kernel.api.EntityType;
+import org.neo4j.kernel.impl.core.EntityType;
 import org.neo4j.kernel.api.TokenNameLookup;
 
 public class EntitySchemaRuleNotFoundException extends SchemaRuleNotFoundException

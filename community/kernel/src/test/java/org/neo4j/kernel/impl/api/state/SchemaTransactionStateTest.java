@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,16 +31,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.cursor.PropertyItem;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.IndexDescriptor;
+import org.neo4j.kernel.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
@@ -52,7 +51,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -232,7 +230,6 @@ public class SchemaTransactionStateTest
     private final long nodeId = 20;
 
     private StoreReadLayer store;
-    private TransactionState txState;
     private StateHandlingStatementOperations txContext;
     private KernelStatement state;
     private StoreStatement storeStatement;
@@ -240,7 +237,7 @@ public class SchemaTransactionStateTest
     @Before
     public void before() throws Exception
     {
-        txState = new TxState();
+        TxState txState = new TxState();
         state = StatementOperationsTestHelper.mockedState( txState );
 
         store = mock( StoreReadLayer.class );

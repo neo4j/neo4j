@@ -24,7 +24,7 @@ import java.util.Set;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.IndexDescriptor;
 
 import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;

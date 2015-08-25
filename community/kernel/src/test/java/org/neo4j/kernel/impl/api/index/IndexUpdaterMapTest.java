@@ -24,8 +24,8 @@ import java.io.IOException;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.IndexDescriptor;
+import org.neo4j.kernel.index.IndexUpdater;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;

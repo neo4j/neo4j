@@ -23,9 +23,8 @@ import org.neo4j.cypher.CypherExecutionException
 import org.neo4j.cypher.internal.compiler.v2_2.spi
 import org.neo4j.cypher.internal.compiler.v2_2.spi._
 import org.neo4j.graphdb.{Direction, Node, PropertyContainer, Relationship}
-import org.neo4j.kernel.api.TokenNameLookup
+import org.neo4j.kernel.api.{IndexDescriptor, TokenNameLookup}
 import org.neo4j.kernel.api.exceptions.KernelException
-import org.neo4j.kernel.api.index.IndexDescriptor
 
 class ExceptionTranslatingQueryContextFor2_2(inner: QueryContext) extends DelegatingQueryContext(inner) {
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =

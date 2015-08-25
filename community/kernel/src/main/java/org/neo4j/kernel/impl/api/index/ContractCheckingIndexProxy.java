@@ -25,8 +25,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.index.IndexEntryConflictException;
+import org.neo4j.kernel.index.IndexUpdater;
 
 /**
  * {@link IndexProxy} layer that enforces the dynamic contract of {@link IndexProxy} (cf. Test)

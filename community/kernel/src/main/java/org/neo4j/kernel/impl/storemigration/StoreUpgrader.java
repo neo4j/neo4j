@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.index.SchemaIndexProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 

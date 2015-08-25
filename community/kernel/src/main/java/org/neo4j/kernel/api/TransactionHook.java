@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api;
 
-import org.neo4j.kernel.api.txstate.ReadableTxState;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 
 /**
@@ -27,13 +26,13 @@ import org.neo4j.kernel.impl.api.store.StoreReadLayer;
  */
 public interface TransactionHook<OUTCOME extends TransactionHook.Outcome>
 {
-    public interface Outcome
+    interface Outcome
     {
         boolean isSuccessful();
         Throwable failure();
     }
 
-    OUTCOME beforeCommit( ReadableTxState state, KernelTransaction transaction, StoreReadLayer storeReadLayer );
-    void afterCommit( ReadableTxState state, KernelTransaction transaction, OUTCOME outcome );
-    void afterRollback( ReadableTxState state, KernelTransaction transaction, OUTCOME outcome );
+    OUTCOME beforeCommit( TransactionHookView state, KernelTransaction transaction, StoreReadLayer storeReadLayer );
+    void afterCommit( TransactionHookView state, KernelTransaction transaction, OUTCOME outcome );
+    void afterRollback( TransactionHookView state, KernelTransaction transaction, OUTCOME outcome );
 }

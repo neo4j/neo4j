@@ -20,10 +20,10 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.IndexDescriptor;
+import org.neo4j.kernel.index.NodePropertyUpdate;
+import org.neo4j.kernel.index.PropertyAccessor;
+import org.neo4j.kernel.index.NodeLabelUpdate;
 import org.neo4j.register.Register.DoubleLongRegister;
 
 /** The indexing services view of the universe. */

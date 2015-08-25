@@ -38,11 +38,9 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.api.txstate.TxStateVisitor;
+import org.neo4j.kernel.api.IndexDescriptor;
+import org.neo4j.kernel.properties.DefinedProperty;
+import org.neo4j.kernel.properties.Property;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
@@ -61,10 +59,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.Pair.of;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.kernel.api.properties.Property.booleanProperty;
-import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
-import static org.neo4j.kernel.api.properties.Property.numberProperty;
-import static org.neo4j.kernel.api.properties.Property.stringProperty;
+import static org.neo4j.kernel.properties.Property.booleanProperty;
+import static org.neo4j.kernel.properties.Property.noNodeProperty;
+import static org.neo4j.kernel.properties.Property.numberProperty;
+import static org.neo4j.kernel.properties.Property.stringProperty;
 
 public class TxStateTest
 {
@@ -1547,7 +1545,7 @@ public class TxStateTest
     private final IndexDescriptor indexOn_1_2 = new IndexDescriptor( labelId1, propertyKeyId2 );
     private final IndexDescriptor indexOn_2_1 = new IndexDescriptor( labelId2, propertyKeyId1 );
 
-    private TransactionState state;
+    private TxState state;
 
     @Before
     public void before() throws Exception

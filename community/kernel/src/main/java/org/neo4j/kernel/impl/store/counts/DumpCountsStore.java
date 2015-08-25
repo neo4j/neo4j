@@ -26,7 +26,7 @@ import java.io.PrintStream;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.core.Token;
@@ -157,7 +157,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
 
     private String label( int id )
     {
-        if ( id == ReadOperations.ANY_LABEL )
+        if ( id == Statement.ANY_LABEL )
         {
             return "";
         }
@@ -171,7 +171,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
 
     private String relationshipType( int id )
     {
-        if ( id == ReadOperations.ANY_RELATIONSHIP_TYPE )
+        if ( id == Statement.ANY_RELATIONSHIP_TYPE )
         {
             return "";
         }

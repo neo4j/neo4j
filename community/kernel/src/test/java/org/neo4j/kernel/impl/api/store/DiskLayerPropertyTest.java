@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.cursor.PropertyItem;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 
 import static java.util.Collections.singletonMap;

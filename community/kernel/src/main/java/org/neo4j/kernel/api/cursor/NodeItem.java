@@ -54,7 +54,7 @@ public interface NodeItem
         }
     };
 
-    public abstract class NodeItemHelper
+    abstract class NodeItemHelper
             extends EntityItemHelper
             implements NodeItem
     {

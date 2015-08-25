@@ -26,8 +26,8 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
-import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.util.FailureStorage;
+import org.neo4j.kernel.index.IndexPopulator;
+import org.neo4j.kernel.index.util.FailureStorage;
 
 public abstract class LuceneIndexPopulator implements IndexPopulator
 {

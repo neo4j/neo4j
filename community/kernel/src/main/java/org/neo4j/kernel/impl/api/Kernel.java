@@ -91,12 +91,6 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     }
 
     @Override
-    public void unregisterTransactionHook( TransactionHook hook )
-    {
-        hooks.unregister( hook );
-    }
-
-    @Override
     public void stop() throws Throwable
     {
         transactions.disposeAll();

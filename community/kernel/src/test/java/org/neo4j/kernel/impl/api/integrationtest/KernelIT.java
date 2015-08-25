@@ -38,7 +38,7 @@ import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.IndexDescriptor;
 import org.neo4j.kernel.impl.api.Kernel;
 
 import static java.util.concurrent.TimeUnit.SECONDS;

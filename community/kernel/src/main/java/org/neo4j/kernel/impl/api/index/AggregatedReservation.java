@@ -20,12 +20,12 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.api.index.Reservation;
+import org.neo4j.kernel.index.Reservation;
 
 /**
- * Represents a set of {@link org.neo4j.kernel.api.index.Reservation} objects that could be atomically
+ * Represents a set of {@link org.neo4j.kernel.index.Reservation} objects that could be atomically
  * released via {@link org.neo4j.kernel.impl.api.index.AggregatedReservation#release()}.
- * Method {@link org.neo4j.kernel.api.index.Reservation#release()} is called on all underlying reservations even if
+ * Method {@link org.neo4j.kernel.index.Reservation#release()} is called on all underlying reservations even if
  * some of them throw exceptions.
  */
 class AggregatedReservation implements Reservation

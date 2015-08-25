@@ -31,8 +31,8 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.properties.DefinedProperty;
+import org.neo4j.kernel.properties.Property;
 import org.neo4j.kernel.impl.core.Token;
 
 import static junit.framework.TestCase.fail;
@@ -46,9 +46,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.kernel.api.properties.Property.byteArrayProperty;
-import static org.neo4j.kernel.api.properties.Property.property;
-import static org.neo4j.kernel.api.properties.Property.stringProperty;
+import static org.neo4j.kernel.properties.Property.byteArrayProperty;
+import static org.neo4j.kernel.properties.Property.property;
+import static org.neo4j.kernel.properties.Property.stringProperty;
 
 public class PropertyIT extends KernelIntegrationTest
 {

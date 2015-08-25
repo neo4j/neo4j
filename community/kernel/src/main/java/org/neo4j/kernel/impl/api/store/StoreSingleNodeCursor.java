@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.function.Consumer;
-import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
@@ -50,7 +50,7 @@ public class StoreSingleNodeCursor extends StoreAbstractNodeCursor
     @Override
     public boolean next()
     {
-        if ( nodeId != StatementConstants.NO_SUCH_NODE )
+        if ( nodeId != Statement.NO_SUCH_NODE )
         {
             try
             {
@@ -60,7 +60,7 @@ public class StoreSingleNodeCursor extends StoreAbstractNodeCursor
             }
             finally
             {
-                nodeId = StatementConstants.NO_SUCH_NODE;
+                nodeId = Statement.NO_SUCH_NODE;
             }
         }
 

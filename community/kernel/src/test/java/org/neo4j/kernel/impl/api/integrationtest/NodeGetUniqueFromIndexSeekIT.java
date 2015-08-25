@@ -26,12 +26,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.IndexDescriptor;
+import org.neo4j.kernel.properties.Property;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.test.DoubleLatch;
 
@@ -179,7 +178,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 
     private boolean isNoSuchNode( long foundId )
     {
-        return StatementConstants.NO_SUCH_NODE == foundId;
+        return Statement.NO_SUCH_NODE == foundId;
     }
 
     private long createNodeWithValue( String value ) throws KernelException

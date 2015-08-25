@@ -26,7 +26,7 @@ import java.io.IOException;
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.index.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.record.NodeRecord;

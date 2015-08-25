@@ -29,10 +29,9 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.cursor.LabelItem;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.IndexDescriptor;
+import org.neo4j.kernel.index.InternalIndexState;
+import org.neo4j.kernel.properties.Property;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
@@ -54,9 +53,9 @@ import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
-import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
-import static org.neo4j.kernel.api.properties.Property.stringProperty;
+import static org.neo4j.kernel.api.Statement.NO_SUCH_NODE;
+import static org.neo4j.kernel.properties.Property.noNodeProperty;
+import static org.neo4j.kernel.properties.Property.stringProperty;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asLabelCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
@@ -76,7 +75,7 @@ public class IndexQueryTransactionStateTest
     @Before
     public void before() throws Exception
     {
-        TransactionState txState = new TxState();
+        TxState txState = new TxState();
         state = StatementOperationsTestHelper.mockedState( txState );
 
         int labelId1 = 10, labelId2 = 12;

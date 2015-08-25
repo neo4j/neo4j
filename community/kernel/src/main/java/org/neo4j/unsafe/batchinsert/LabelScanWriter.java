@@ -23,7 +23,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.index.NodeLabelUpdate;
 
 public interface LabelScanWriter extends Closeable
 {

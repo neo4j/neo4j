@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 
 public class DefaultSchemaIndexProviderMap implements SchemaIndexProviderMap

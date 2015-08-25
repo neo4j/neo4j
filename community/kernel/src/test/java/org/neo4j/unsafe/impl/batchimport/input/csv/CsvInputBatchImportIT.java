@@ -47,7 +47,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -296,7 +296,7 @@ public class CsvInputBatchImportIT
             NeoStore neoStore = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency(
                     NeoStoreSupplier.class ).get();
             Function<String, Integer> labelTranslationTable =
-                    translationTable( neoStore.getLabelTokenStore(), ReadOperations.ANY_LABEL );
+                    translationTable( neoStore.getLabelTokenStore(), Statement.ANY_LABEL );
             for ( Pair<Integer,Long> count : allNodeCounts( labelTranslationTable, expectedNodeCounts ) )
             {
                 assertEquals( "Label count mismatch for label " + count.first(),
@@ -307,7 +307,7 @@ public class CsvInputBatchImportIT
             }
 
             Function<String, Integer> relationshipTypeTranslationTable =
-                    translationTable( neoStore.getRelationshipTypeTokenStore(), ReadOperations.ANY_RELATIONSHIP_TYPE );
+                    translationTable( neoStore.getRelationshipTypeTokenStore(), Statement.ANY_RELATIONSHIP_TYPE );
             for ( Pair<RelationshipCountKey,Long> count : allRelationshipCounts( labelTranslationTable,
                     relationshipTypeTranslationTable, expectedRelationshipCounts ) )
             {

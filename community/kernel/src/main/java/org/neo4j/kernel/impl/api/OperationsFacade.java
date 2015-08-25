@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
-import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
@@ -59,10 +59,10 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexSchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.IndexDescriptor;
+import org.neo4j.kernel.index.InternalIndexState;
+import org.neo4j.kernel.properties.DefinedProperty;
+import org.neo4j.kernel.properties.Property;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
@@ -163,7 +163,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public PrimitiveLongIterator nodesGetForLabel( int labelId )
     {
         statement.assertOpen();
-        if ( labelId == StatementConstants.NO_SUCH_LABEL )
+        if ( labelId == Statement.NO_SUCH_LABEL )
         {
             return PrimitiveLongCollections.emptyIterator();
         }
@@ -253,7 +253,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
 
-        if ( labelId == StatementConstants.NO_SUCH_LABEL )
+        if ( labelId == Statement.NO_SUCH_LABEL )
         {
             return false;
         }
@@ -278,7 +278,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public boolean nodeHasProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKeyId == Statement.NO_SUCH_PROPERTY_KEY )
         {
             return false;
         }
@@ -292,7 +292,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public Object nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKeyId == Statement.NO_SUCH_PROPERTY_KEY )
         {
             return null;
         }
@@ -368,7 +368,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public boolean relationshipHasProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKeyId == Statement.NO_SUCH_PROPERTY_KEY )
         {
             return false;
         }
@@ -382,7 +382,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public Object relationshipGetProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKeyId == Statement.NO_SUCH_PROPERTY_KEY )
         {
             return null;
         }
@@ -396,7 +396,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public boolean graphHasProperty( int propertyKeyId )
     {
         statement.assertOpen();
-        if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKeyId == Statement.NO_SUCH_PROPERTY_KEY )
         {
             return false;
         }
@@ -407,7 +407,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public Object graphGetProperty( int propertyKeyId )
     {
         statement.assertOpen();
-        if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKeyId == Statement.NO_SUCH_PROPERTY_KEY )
         {
             return null;
         }
@@ -465,81 +465,6 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         return dataRead().relationshipCursor( statement, relId );
     }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetAll()
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetAll( statement );
-    }
-
-    @Override
-    public Cursor<RelationshipItem> relationshipCursorGetAll()
-    {
-        statement.assertOpen();
-        return dataRead().relationshipCursorGetAll( statement );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetForLabel( int labelId )
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetForLabel( statement, labelId );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexSeek( IndexDescriptor index,
-            Object value ) throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexSeek( statement, index, value );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexScan( IndexDescriptor index ) throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexScan( statement, index );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByNumber( IndexDescriptor index,
-            Number lower, boolean includeLower,
-            Number upper, boolean includeUpper )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper,
-                includeUpper );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByString( IndexDescriptor index,
-            String lower, boolean includeLower,
-            String upper, boolean includeUpper )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexRangeSeekByString( statement, index, lower, includeLower, upper,
-                includeUpper );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByPrefix( IndexDescriptor index, String prefix )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexRangeSeekByPrefix( statement, index, prefix );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromUniqueIndexSeek( IndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException, IndexBrokenKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetFromUniqueIndexSeek( statement, index, value );
-    }
-
     // </DataReadCursors>
 
     // <SchemaRead>

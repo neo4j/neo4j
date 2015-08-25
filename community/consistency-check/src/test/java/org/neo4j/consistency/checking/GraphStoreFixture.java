@@ -33,12 +33,10 @@ import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
@@ -291,7 +289,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
 
         private void updateCounts( NodeRecord node, int delta )
         {
-            writer.incrementNodeCount( ReadOperations.ANY_LABEL, delta );
+            writer.incrementNodeCount( org.neo4j.kernel.api.Statement.ANY_LABEL, delta );
             for ( long label : NodeLabelsField.parseLabelsField( node ).get( nodes ) )
             {
                 writer.incrementNodeCount( (int)label, delta );

@@ -21,7 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.Clock;
-import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
+import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StatementOperationParts;

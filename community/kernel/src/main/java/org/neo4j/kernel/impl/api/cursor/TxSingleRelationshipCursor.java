@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.api.cursor;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
-import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
-import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.state.TxState;
 
 /**
  * Overlays transaction state on a {@link RelationshipItem} item.
@@ -33,7 +33,7 @@ public class TxSingleRelationshipCursor
 {
     private long nextId;
 
-    public TxSingleRelationshipCursor( TransactionState state, Consumer<TxSingleRelationshipCursor> instanceCache )
+    public TxSingleRelationshipCursor( TxState state, Consumer<TxSingleRelationshipCursor> instanceCache )
     {
         super( state, (Consumer) instanceCache );
     }
@@ -50,8 +50,8 @@ public class TxSingleRelationshipCursor
     {
         if ( state.relationshipIsDeletedInThisTx( nextId ) )
         {
-            visit( StatementConstants.NO_SUCH_RELATIONSHIP, StatementConstants.NO_SUCH_RELATIONSHIP_TYPE,
-                    StatementConstants.NO_SUCH_NODE, StatementConstants.NO_SUCH_NODE );
+            visit( Statement.NO_SUCH_RELATIONSHIP, Statement.NO_SUCH_RELATIONSHIP_TYPE,
+                    Statement.NO_SUCH_NODE, Statement.NO_SUCH_NODE );
             return false;
         }
 
@@ -74,8 +74,8 @@ public class TxSingleRelationshipCursor
         }
         else
         {
-            visit( StatementConstants.NO_SUCH_RELATIONSHIP, StatementConstants.NO_SUCH_RELATIONSHIP_TYPE,
-                    StatementConstants.NO_SUCH_NODE, StatementConstants.NO_SUCH_NODE );
+            visit( Statement.NO_SUCH_RELATIONSHIP, Statement.NO_SUCH_RELATIONSHIP_TYPE,
+                    Statement.NO_SUCH_NODE, Statement.NO_SUCH_NODE );
             this.relationshipState = null;
             return false;
         }

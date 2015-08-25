@@ -27,12 +27,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
-import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.util.FailureStorage;
+import org.neo4j.kernel.api.IndexDescriptor;
+import org.neo4j.kernel.index.IndexUpdater;
+import org.neo4j.kernel.index.NodePropertyUpdate;
+import org.neo4j.kernel.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.index.PropertyAccessor;
+import org.neo4j.kernel.index.util.FailureStorage;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
@@ -47,9 +47,9 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.impl.index.AllNodesCollector.getAllNodes;
-import static org.neo4j.kernel.api.properties.Property.intProperty;
-import static org.neo4j.kernel.api.properties.Property.longProperty;
-import static org.neo4j.kernel.api.properties.Property.stringProperty;
+import static org.neo4j.kernel.properties.Property.intProperty;
+import static org.neo4j.kernel.properties.Property.longProperty;
+import static org.neo4j.kernel.properties.Property.stringProperty;
 
 public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
 {

@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.cursor;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
-import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.cursor.LabelItem;
 import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
 
@@ -56,7 +56,7 @@ public class TxSingleLabelCursor
 
         if ( labelDiffSet.isRemoved( labelId ) )
         {
-            label = StatementConstants.NO_SUCH_LABEL;
+            label = Statement.NO_SUCH_LABEL;
             return false;
         }
 
@@ -67,7 +67,7 @@ public class TxSingleLabelCursor
         }
         else
         {
-            label = StatementConstants.NO_SUCH_LABEL;
+            label = Statement.NO_SUCH_LABEL;
             return false;
         }
     }

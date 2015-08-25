@@ -26,9 +26,8 @@ import org.mockito.stubbing.Answer;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.IndexDescriptor;
+import org.neo4j.kernel.index.IndexReader;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
@@ -40,6 +39,7 @@ import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.locking.Locks;
 
 import static org.mockito.Mockito.mock;
@@ -65,10 +65,10 @@ public abstract class StatementOperationsTestHelper
 
     public static KernelStatement mockedState()
     {
-        return mockedState( mock( TransactionState.class ) );
+        return mockedState( mock( TxState.class ) );
     }
 
-    public static KernelStatement mockedState( final TransactionState txState )
+    public static KernelStatement mockedState( final TxState txState )
     {
         KernelStatement state = mock( KernelStatement.class );
         Locks.Client lockHolder = mock( Locks.Client.class );

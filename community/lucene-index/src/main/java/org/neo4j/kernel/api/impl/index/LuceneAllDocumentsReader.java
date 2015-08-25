@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.api.direct.BoundedIterable;
+import org.neo4j.kernel.impl.util.BoundedIterable;
 
 public class LuceneAllDocumentsReader implements BoundedIterable<Document>
 {

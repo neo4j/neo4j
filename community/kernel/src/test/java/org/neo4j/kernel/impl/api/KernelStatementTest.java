@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.kernel.api.labelscan.LabelScanReader;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.index.LabelScanReader;
+import org.neo4j.kernel.index.LabelScanStore;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;

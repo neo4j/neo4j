@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.api.cursor;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
-import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.cursor.PropertyItem;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.properties.DefinedProperty;
+import org.neo4j.kernel.properties.Property;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
 
 /**
@@ -55,7 +55,7 @@ public class TxSinglePropertyCursor extends TxAbstractPropertyCursor
     @Override
     public boolean next()
     {
-        if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKeyId == Statement.NO_SUCH_PROPERTY_KEY )
         {
             return false;
         }
@@ -104,7 +104,7 @@ public class TxSinglePropertyCursor extends TxAbstractPropertyCursor
         }
         finally
         {
-            propertyKeyId = StatementConstants.NO_SUCH_PROPERTY_KEY;
+            propertyKeyId = Statement.NO_SUCH_PROPERTY_KEY;
         }
     }
 

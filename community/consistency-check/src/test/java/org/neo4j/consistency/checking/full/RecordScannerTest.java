@@ -22,7 +22,7 @@ package org.neo4j.consistency.checking.full;
 import org.junit.Test;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.api.direct.BoundedIterable;
+import org.neo4j.kernel.impl.util.BoundedIterable;
 
 import static java.util.Arrays.asList;
 import static org.mockito.Matchers.anyLong;

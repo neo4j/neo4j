@@ -334,11 +334,11 @@ public class RelationshipCountsTest
         // start
         if ( start == null )
         {
-            startId = ReadOperations.ANY_LABEL;
+            startId = Statement.ANY_LABEL;
         }
         else
         {
-            if ( ReadOperations.NO_SUCH_LABEL == (startId = read.labelGetForName( start.name() )) )
+            if ( Statement.NO_SUCH_LABEL == (startId = read.labelGetForName( start.name() )) )
             {
                 return 0;
             }
@@ -346,11 +346,11 @@ public class RelationshipCountsTest
         // type
         if ( type == null )
         {
-            typeId = ReadOperations.ANY_RELATIONSHIP_TYPE;
+            typeId = Statement.ANY_RELATIONSHIP_TYPE;
         }
         else
         {
-            if ( ReadOperations.NO_SUCH_LABEL == (typeId = read.relationshipTypeGetForName( type.name() )) )
+            if ( Statement.NO_SUCH_LABEL == (typeId = read.relationshipTypeGetForName( type.name() )) )
             {
                 return 0;
             }
@@ -358,11 +358,11 @@ public class RelationshipCountsTest
         // end
         if ( end == null )
         {
-            endId = ReadOperations.ANY_LABEL;
+            endId = Statement.ANY_LABEL;
         }
         else
         {
-            if ( ReadOperations.NO_SUCH_LABEL == (endId = read.labelGetForName( end.name() )) )
+            if ( Statement.NO_SUCH_LABEL == (endId = read.labelGetForName( end.name() )) )
             {
                 return 0;
             }

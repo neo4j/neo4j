@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.api.cursor;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
-import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.cursor.EntityItem;
 import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
-import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.state.RelationshipState;
+import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.util.Cursors;
 
 /**
@@ -37,7 +37,7 @@ public abstract class TxAbstractRelationshipCursor
         extends EntityItem.EntityItemHelper implements Cursor<RelationshipItem>, RelationshipItem,
         RelationshipVisitor<RuntimeException>
 {
-    protected final TransactionState state;
+    protected final TxState state;
     private final Consumer<TxAbstractRelationshipCursor> instanceCache;
 
     protected Cursor<RelationshipItem> cursor;
@@ -50,7 +50,7 @@ public abstract class TxAbstractRelationshipCursor
     protected RelationshipState relationshipState;
     protected boolean relationshipIsAddedInThisTx;
 
-    public TxAbstractRelationshipCursor( TransactionState state,
+    public TxAbstractRelationshipCursor( TxState state,
             Consumer<TxAbstractRelationshipCursor> instanceCache )
     {
         this.state = state;
@@ -66,7 +66,7 @@ public abstract class TxAbstractRelationshipCursor
     @Override
     public RelationshipItem get()
     {
-        if ( id == StatementConstants.NO_SUCH_RELATIONSHIP )
+        if ( id == Statement.NO_SUCH_RELATIONSHIP )
         {
             throw new IllegalStateException();
         }

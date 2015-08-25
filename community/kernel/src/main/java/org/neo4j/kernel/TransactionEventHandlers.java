@@ -33,11 +33,10 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
-import org.neo4j.kernel.api.txstate.ReadableTxState;
+import org.neo4j.kernel.api.TransactionHookView;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.TxStateTransactionDataSnapshot;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -54,14 +53,12 @@ public class TransactionEventHandlers
 
     private final NodeProxy.NodeActions nodeActions;
     private final RelationshipProxy.RelationshipActions relationshipActions;
-    private final ThreadToStatementContextBridge bridge;
 
-    public TransactionEventHandlers( NodeProxy.NodeActions nodeActions, RelationshipProxy.RelationshipActions
-            relationshipActions, ThreadToStatementContextBridge bridge )
+    public TransactionEventHandlers(
+            NodeProxy.NodeActions nodeActions, RelationshipProxy.RelationshipActions relationshipActions )
     {
         this.nodeActions = nodeActions;
         this.relationshipActions = relationshipActions;
-        this.bridge = bridge;
     }
 
     @Override
@@ -111,7 +108,7 @@ public class TransactionEventHandlers
     }
 
     @Override
-    public TransactionHandlerState beforeCommit( ReadableTxState state, KernelTransaction transaction,
+    public TransactionHandlerState beforeCommit( TransactionHookView state, KernelTransaction transaction,
             StoreReadLayer storeReadLayer )
     {
         if ( transactionEventHandlers.isEmpty() )
@@ -140,7 +137,7 @@ public class TransactionEventHandlers
 
     @Override
     @SuppressWarnings("unchecked")
-    public void afterCommit( ReadableTxState state,
+    public void afterCommit( TransactionHookView state,
             KernelTransaction transaction,
             TransactionHandlerState handlerState )
     {
@@ -157,7 +154,7 @@ public class TransactionEventHandlers
 
     @Override
     @SuppressWarnings("unchecked")
-    public void afterRollback( ReadableTxState state,
+    public void afterRollback( TransactionHookView state,
             KernelTransaction transaction,
             TransactionHandlerState handlerState )
     {

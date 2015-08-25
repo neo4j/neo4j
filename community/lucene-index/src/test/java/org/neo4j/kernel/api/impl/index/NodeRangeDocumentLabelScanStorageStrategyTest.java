@@ -46,7 +46,7 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.kernel.api.impl.index.PageOfRangesIteratorTest.docs;
 import static org.neo4j.kernel.api.impl.index.PageOfRangesIteratorTest.document;
-import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
+import static org.neo4j.kernel.index.NodeLabelUpdate.labelChanges;
 
 /**
  * Tests updating the label scan store through a {@link NodeRangeDocumentLabelScanStorageStrategy}.

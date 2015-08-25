@@ -28,10 +28,10 @@ import java.util.List;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.index.IndexAccessor;
+import org.neo4j.kernel.index.IndexConfiguration;
+import org.neo4j.kernel.index.IndexReader;
+import org.neo4j.kernel.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.getRootDirectory;
+import static org.neo4j.kernel.index.SchemaIndexProvider.getRootDirectory;
 import static org.neo4j.kernel.impl.store.record.SchemaRule.Kind.UNIQUENESS_CONSTRAINT;
 
 public class SchemaIndexMigrator implements StoreMigrationParticipant

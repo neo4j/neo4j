@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
@@ -137,9 +137,9 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
                             continue;
                         }
                     }
-                    int startLabel = startNodeLabelId == anyLabel ? ReadOperations.ANY_LABEL : startNodeLabelId;
-                    int type = typeId == anyRelationshipType ? ReadOperations.ANY_RELATIONSHIP_TYPE : typeId;
-                    int endLabel = endNodeLabelId == anyLabel ? ReadOperations.ANY_LABEL : endNodeLabelId;
+                    int startLabel = startNodeLabelId == anyLabel ? Statement.ANY_LABEL : startNodeLabelId;
+                    int type = typeId == anyRelationshipType ? Statement.ANY_RELATIONSHIP_TYPE : typeId;
+                    int endLabel = endNodeLabelId == anyLabel ? Statement.ANY_LABEL : endNodeLabelId;
                     long count = counts.get( index );
                     countsUpdater.incrementRelationshipCount( startLabel, type, endLabel, count );
                 }

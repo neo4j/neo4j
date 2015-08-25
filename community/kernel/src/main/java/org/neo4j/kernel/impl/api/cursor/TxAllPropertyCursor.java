@@ -24,8 +24,8 @@ import java.util.Iterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
 import org.neo4j.kernel.api.cursor.PropertyItem;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.properties.DefinedProperty;
+import org.neo4j.kernel.properties.Property;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
 
 /**

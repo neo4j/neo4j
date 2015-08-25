@@ -22,7 +22,7 @@ package org.neo4j.perftest.enterprise.ccheck;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.consistency.checking.DirectStoreAccess;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLog;
 

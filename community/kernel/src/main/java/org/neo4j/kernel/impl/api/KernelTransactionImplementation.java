@@ -32,11 +32,10 @@ import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.DegreeItem;
 import org.neo4j.kernel.api.cursor.NodeItem;
@@ -49,30 +48,29 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
-import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.api.txstate.TxStateVisitor;
+import org.neo4j.kernel.api.IndexDescriptor;
+import org.neo4j.kernel.index.SchemaIndexProvider;
+import org.neo4j.kernel.index.LabelScanStore;
+import org.neo4j.kernel.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.api.state.TxStateHolder;
+import org.neo4j.kernel.impl.api.state.TxStateVisitor;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
-import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
+import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -83,8 +81,6 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.util.collection.ArrayCollection;
 
-import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
-import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
 
 /**
@@ -155,7 +151,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final Clock clock;
     private final TransactionToRecordStateVisitor txStateToRecordStateVisitor = new TransactionToRecordStateVisitor();
     private final Collection<Command> extractedCommands = new ArrayCollection<>( 32 );
-    private TransactionState txState;
+    private TxState txState;
     private LegacyIndexTransactionState legacyIndexTransactionState;
     private TransactionType transactionType = TransactionType.ANY;
     private TransactionHooks.TransactionHooksState hooksState;
@@ -329,7 +325,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public TransactionState txState()
+    public TxState txState()
     {
         if ( txState == null )
         {
@@ -699,7 +695,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         public void visitCreatedNode( long id )
         {
             recordState.nodeCreate( id );
-            counts.incrementNodeCount( ANY_LABEL, 1 );
+            counts.incrementNodeCount( Statement.ANY_LABEL, 1 );
         }
 
         @Override
@@ -707,7 +703,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             try ( StoreStatement statement = storeLayer.acquireStatement() )
             {
-                counts.incrementNodeCount( ANY_LABEL, -1 );
+                counts.incrementNodeCount( Statement.ANY_LABEL, -1 );
                 try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id ) )
                 {
                     if ( node.next() )
@@ -1056,17 +1052,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private void updateRelationshipsCountsFromDegrees( int type, int label, long outgoing, long incoming )
     {
         // untyped
-        counts.incrementRelationshipCount( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL, outgoing );
-        counts.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, label, incoming );
+        counts.incrementRelationshipCount( label, Statement.ANY_RELATIONSHIP_TYPE, Statement.ANY_LABEL, outgoing );
+        counts.incrementRelationshipCount( Statement.ANY_LABEL, Statement.ANY_RELATIONSHIP_TYPE, label, incoming );
         // typed
-        counts.incrementRelationshipCount( label, type, ANY_LABEL, outgoing );
-        counts.incrementRelationshipCount( ANY_LABEL, type, label, incoming );
+        counts.incrementRelationshipCount( label, type, Statement.ANY_LABEL, outgoing );
+        counts.incrementRelationshipCount( Statement.ANY_LABEL, type, label, incoming );
     }
 
     private void updateRelationshipCount( long startNode, int type, long endNode, int delta )
             throws EntityNotFoundException
     {
-        updateRelationshipsCountsFromDegrees( type, ANY_LABEL, delta, 0 );
+        updateRelationshipsCountsFromDegrees( type, Statement.ANY_LABEL, delta, 0 );
         for ( PrimitiveIntIterator startLabels = labelsOf( startNode ); startLabels.hasNext(); )
         {
             updateRelationshipsCountsFromDegrees( type, startLabels.next(), delta, 0 );

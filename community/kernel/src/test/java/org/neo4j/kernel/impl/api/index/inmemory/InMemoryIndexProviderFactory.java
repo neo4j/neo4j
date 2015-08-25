@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.index.inmemory;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 

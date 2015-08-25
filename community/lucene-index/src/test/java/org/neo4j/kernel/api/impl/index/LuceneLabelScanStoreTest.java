@@ -46,11 +46,11 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
-import org.neo4j.kernel.api.direct.NodeLabelRange;
+import org.neo4j.kernel.index.AllEntriesLabelScanReader;
+import org.neo4j.kernel.index.NodeLabelRange;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
-import org.neo4j.kernel.api.labelscan.LabelScanReader;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.index.LabelScanReader;
+import org.neo4j.kernel.index.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
@@ -76,7 +76,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.tracking;
-import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
+import static org.neo4j.kernel.index.NodeLabelUpdate.labelChanges;
 
 @RunWith(Parameterized.class)
 public class LuceneLabelScanStoreTest

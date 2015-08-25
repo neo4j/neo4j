@@ -174,11 +174,11 @@ public class LabelCountsTest
         int labelId;
         if ( label == null )
         {
-            labelId = ReadOperations.ANY_LABEL;
+            labelId = Statement.ANY_LABEL;
         }
         else
         {
-            if ( ReadOperations.NO_SUCH_LABEL == (labelId = read.labelGetForName( label.name() )) )
+            if ( Statement.NO_SUCH_LABEL == (labelId = read.labelGetForName( label.name() )) )
             {
                 return 0;
             }

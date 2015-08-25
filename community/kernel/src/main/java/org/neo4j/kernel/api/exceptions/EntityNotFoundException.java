@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
-import org.neo4j.kernel.api.EntityType;
+import org.neo4j.kernel.impl.core.EntityType;
 
 public class EntityNotFoundException extends KernelException
 {

@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.RecordState;
@@ -33,8 +34,6 @@ import org.neo4j.register.Registers;
 
 import static java.util.Objects.requireNonNull;
 
-import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
-import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
@@ -214,7 +213,7 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
 
     public void addNode( long[] labels )
     {
-        incrementNodeCount( ANY_LABEL, 1 );
+        incrementNodeCount( Statement.ANY_LABEL, 1 );
         for ( long label : labels )
         {
             incrementNodeCount( (int) label, 1 );
@@ -223,25 +222,25 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
 
     public void addRelationship( long[] startLabels, int type, long[] endLabels )
     {
-        incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
-        incrementRelationshipCount( ANY_LABEL, type, ANY_LABEL, 1 );
+        incrementRelationshipCount( Statement.ANY_LABEL, Statement.ANY_RELATIONSHIP_TYPE, Statement.ANY_LABEL, 1 );
+        incrementRelationshipCount( Statement.ANY_LABEL, type, Statement.ANY_LABEL, 1 );
         for ( long startLabelId : startLabels )
         {
-            incrementRelationshipCount( (int) startLabelId, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
-            incrementRelationshipCount( (int) startLabelId, type, ANY_LABEL, 1 );
+            incrementRelationshipCount( (int) startLabelId, Statement.ANY_RELATIONSHIP_TYPE, Statement.ANY_LABEL, 1 );
+            incrementRelationshipCount( (int) startLabelId, type, Statement.ANY_LABEL, 1 );
             if ( COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS )
             {
                 for ( long endLabelId : endLabels )
                 {
-                    incrementRelationshipCount( (int) startLabelId, ANY_RELATIONSHIP_TYPE, (int) endLabelId, 1 );
+                    incrementRelationshipCount( (int) startLabelId, Statement.ANY_RELATIONSHIP_TYPE, (int) endLabelId, 1 );
                     incrementRelationshipCount( (int) startLabelId, type, (int) endLabelId, 1 );
                 }
             }
         }
         for ( long endLabelId : endLabels )
         {
-            incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, (int) endLabelId, 1 );
-            incrementRelationshipCount( ANY_LABEL, type, (int) endLabelId, 1 );
+            incrementRelationshipCount( Statement.ANY_LABEL, Statement.ANY_RELATIONSHIP_TYPE, (int) endLabelId, 1 );
+            incrementRelationshipCount( Statement.ANY_LABEL, type, (int) endLabelId, 1 );
         }
     }
 

@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.function.Consumer;
-import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.store.PropertyStore;
 
 /**
@@ -49,7 +49,7 @@ public class StoreSinglePropertyCursor extends StorePropertyCursor
     {
         try
         {
-            if ( propertyKeyId != StatementConstants.NO_SUCH_PROPERTY_KEY )
+            if ( propertyKeyId != Statement.NO_SUCH_PROPERTY_KEY )
             {
                 while ( super.next() )
                 {
@@ -64,7 +64,7 @@ public class StoreSinglePropertyCursor extends StorePropertyCursor
         }
         finally
         {
-            this.propertyKeyId = StatementConstants.NO_SUCH_PROPERTY_KEY;
+            this.propertyKeyId = Statement.NO_SUCH_PROPERTY_KEY;
         }
     }
 }

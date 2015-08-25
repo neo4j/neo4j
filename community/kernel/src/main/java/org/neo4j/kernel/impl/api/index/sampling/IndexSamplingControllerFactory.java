@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.neo4j.function.Predicate;
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.util.JobScheduler;

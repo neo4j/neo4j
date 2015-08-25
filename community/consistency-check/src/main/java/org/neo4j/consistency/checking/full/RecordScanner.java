@@ -21,7 +21,7 @@ package org.neo4j.consistency.checking.full;
 
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.api.direct.BoundedIterable;
+import org.neo4j.kernel.impl.util.BoundedIterable;
 
 public class RecordScanner<RECORD> implements StoppableRunnable
 {

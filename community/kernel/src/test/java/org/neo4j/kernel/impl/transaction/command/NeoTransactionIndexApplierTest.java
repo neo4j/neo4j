@@ -28,8 +28,8 @@ import java.util.Collections;
 
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.Provider;
-import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.index.SchemaIndexProvider.Descriptor;
+import org.neo4j.kernel.index.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;

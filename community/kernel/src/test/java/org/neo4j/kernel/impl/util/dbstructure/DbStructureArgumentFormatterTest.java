@@ -24,7 +24,7 @@ import org.junit.Test;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.IndexDescriptor;
 
 import static org.junit.Assert.assertEquals;
 

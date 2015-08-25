@@ -35,7 +35,7 @@ import java.util.concurrent.locks.Lock;
 
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.impl.index.bitmaps.Bitmap;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.index.NodeLabelUpdate;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 

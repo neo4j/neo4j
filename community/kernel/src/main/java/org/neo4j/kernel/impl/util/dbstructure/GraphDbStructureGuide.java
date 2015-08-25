@@ -38,13 +38,11 @@ import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
-import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 
 public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
 {
@@ -205,7 +203,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
 
     private void showNodeCounts( ReadOperations read, DbStructureVisitor visitor )
     {
-        visitor.visitAllNodesCount( read.countsForNode( ANY_LABEL ) );
+        visitor.visitAllNodesCount( read.countsForNode( Statement.ANY_LABEL ) );
         for ( Label label : glops.getAllLabels() )
         {
             int labelId = read.labelGetForName( label.name() );
@@ -215,15 +213,15 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
     private void showRelCounts( ReadOperations read, DbStructureVisitor visitor )
     {
         // all wildcards
-        noSide( read, visitor, WILDCARD_REL_TYPE, ANY_RELATIONSHIP_TYPE );
+        noSide( read, visitor, WILDCARD_REL_TYPE, Statement.ANY_RELATIONSHIP_TYPE );
 
         // one label only
         for ( Label label : glops.getAllLabels() )
         {
             int labelId = read.labelGetForName( label.name() );
 
-            leftSide( read, visitor, label, labelId, WILDCARD_REL_TYPE, ANY_RELATIONSHIP_TYPE );
-            rightSide( read, visitor, label, labelId, WILDCARD_REL_TYPE, ANY_RELATIONSHIP_TYPE );
+            leftSide( read, visitor, label, labelId, WILDCARD_REL_TYPE, Statement.ANY_RELATIONSHIP_TYPE );
+            rightSide( read, visitor, label, labelId, WILDCARD_REL_TYPE, Statement.ANY_RELATIONSHIP_TYPE );
         }
 
         // fixed rel type
@@ -248,25 +246,25 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
     private void noSide( ReadOperations read, DbStructureVisitor visitor, RelationshipType relType, int relTypeId )
     {
         String userDescription = format("MATCH ()-[%s]->() RETURN count(*)", colon( relType.name() ));
-        long amount = read.countsForRelationship( ANY_LABEL, relTypeId, ANY_LABEL );
+        long amount = read.countsForRelationship( Statement.ANY_LABEL, relTypeId, Statement.ANY_LABEL );
 
-        visitor.visitRelCount( ANY_LABEL, relTypeId, ANY_LABEL, userDescription, amount );
+        visitor.visitRelCount( Statement.ANY_LABEL, relTypeId, Statement.ANY_LABEL, userDescription, amount );
     }
 
     private void leftSide( ReadOperations read, DbStructureVisitor visitor, Label label, int labelId, RelationshipType relType, int relTypeId )
     {
         String userDescription = format( "MATCH (%s)-[%s]->() RETURN count(*)", colon( label.name() ), colon( relType.name() ) );
-        long amount = read.countsForRelationship( labelId, relTypeId, ANY_LABEL );
+        long amount = read.countsForRelationship( labelId, relTypeId, Statement.ANY_LABEL );
 
-        visitor.visitRelCount( labelId, relTypeId, ANY_LABEL, userDescription, amount );
+        visitor.visitRelCount( labelId, relTypeId, Statement.ANY_LABEL, userDescription, amount );
     }
 
     private void rightSide( ReadOperations read, DbStructureVisitor visitor, Label label, int labelId, RelationshipType relType, int relTypeId )
     {
         String userDescription = format( "MATCH ()-[%s]->(%s) RETURN count(*)", colon( relType.name() ), colon( label.name() ) );
-        long amount = read.countsForRelationship( ANY_LABEL, relTypeId, labelId );
+        long amount = read.countsForRelationship( Statement.ANY_LABEL, relTypeId, labelId );
 
-        visitor.visitRelCount( ANY_LABEL, relTypeId, labelId, userDescription, amount );
+        visitor.visitRelCount( Statement.ANY_LABEL, relTypeId, labelId, userDescription, amount );
     }
 
     private String colon( String name )

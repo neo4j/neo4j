@@ -45,9 +45,9 @@ import org.neo4j.function.Supplier
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb._
 import org.neo4j.helpers.collection.MapUtil
+import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.exceptions.KernelException
-import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.kernel.api.{ReadOperations, Statement, StatementTokenNameLookup, TokenNameLookup}
+import org.neo4j.kernel.api._
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}
 import org.neo4j.kernel.impl.core.NodeManager

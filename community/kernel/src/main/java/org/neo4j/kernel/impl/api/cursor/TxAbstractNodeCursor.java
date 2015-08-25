@@ -28,14 +28,14 @@ import org.neo4j.cursor.IntValue;
 import org.neo4j.function.Consumer;
 import org.neo4j.function.IntSupplier;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.cursor.DegreeItem;
 import org.neo4j.kernel.api.cursor.LabelItem;
 import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
-import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.state.NodeState;
+import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.util.Cursors;
 
 /**
@@ -45,7 +45,7 @@ public abstract class TxAbstractNodeCursor
         extends NodeItem.NodeItemHelper
         implements Cursor<NodeItem>, NodeItem
 {
-    protected final TransactionState state;
+    protected final TxState state;
     private final Consumer<TxAbstractNodeCursor> cache;
 
     protected Cursor<NodeItem> cursor;
@@ -55,7 +55,7 @@ public abstract class TxAbstractNodeCursor
     protected NodeState nodeState;
     protected boolean nodeIsAddedInThisTx;
 
-    public TxAbstractNodeCursor( TransactionState state, Consumer<TxAbstractNodeCursor> cache )
+    public TxAbstractNodeCursor( TxState state, Consumer<TxAbstractNodeCursor> cache )
     {
         this.state = state;
         this.cache = cache;
@@ -70,7 +70,7 @@ public abstract class TxAbstractNodeCursor
     @Override
     public NodeItem get()
     {
-        if ( id == StatementConstants.NO_SUCH_NODE )
+        if ( id == Statement.NO_SUCH_NODE )
         {
             throw new IllegalStateException();
         }

@@ -25,8 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.Provider;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.index.LabelScanStore;
+import org.neo4j.kernel.index.NodeLabelUpdate;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.mockito.Mockito.mock;

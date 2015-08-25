@@ -36,8 +36,7 @@ import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.LabelItem;
 import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
@@ -59,7 +58,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.kernel.api.properties.Property.intProperty;
+import static org.neo4j.kernel.properties.Property.intProperty;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
@@ -102,7 +101,7 @@ public class StateHandlingStatementOperationsTest
     {
         // given
         PropertyConstraint constraint = new UniquenessConstraint( 10, 66 );
-        TransactionState txState = mock( TransactionState.class );
+        TxState txState = mock( TxState.class );
         when( txState.nodesWithLabelChanged( anyInt() ) ).thenReturn( new DiffSets() );
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
@@ -121,7 +120,7 @@ public class StateHandlingStatementOperationsTest
     {
         // given
         PropertyConstraint constraint = new UniquenessConstraint( 10, 66 );
-        TransactionState txState = new TxState();
+        TxState txState = new TxState();
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
                 .thenAnswer( asAnswer( Collections.emptyList() ) );
@@ -143,7 +142,7 @@ public class StateHandlingStatementOperationsTest
         PropertyConstraint constraint2 = new UniquenessConstraint( 11, 99 );
         PropertyConstraint constraint1 = new UniquenessConstraint( 11, 66 );
 
-        TransactionState txState = new TxState();
+        TxState txState = new TxState();
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
                 .thenAnswer( asAnswer( Collections.emptyList() ) );
@@ -171,7 +170,7 @@ public class StateHandlingStatementOperationsTest
         PropertyConstraint constraint1 = new UniquenessConstraint( 10, 66 );
         PropertyConstraint constraint2 = new UniquenessConstraint( 11, 99 );
 
-        TransactionState txState = new TxState();
+        TxState txState = new TxState();
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
                 .thenAnswer( asAnswer( Collections.emptyList() ) );
@@ -192,7 +191,7 @@ public class StateHandlingStatementOperationsTest
     public void shouldConsiderTransactionStateDuringIndexScan() throws Exception
     {
         // Given
-        TransactionState txState = mock( TransactionState.class );
+        TxState txState = mock( TxState.class );
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
@@ -222,7 +221,7 @@ public class StateHandlingStatementOperationsTest
     public void shouldConsiderTransactionStateDuringIndexSeek() throws Exception
     {
         // Given
-        TransactionState txState = mock( TransactionState.class );
+        TxState txState = mock( TxState.class );
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
@@ -252,7 +251,7 @@ public class StateHandlingStatementOperationsTest
     public void shouldConsiderTransactionStateDuringIndexRangeSeekByPrefix() throws Exception
     {
         // Given
-        TransactionState txState = mock( TransactionState.class );
+        TxState txState = mock( TxState.class );
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
@@ -288,7 +287,7 @@ public class StateHandlingStatementOperationsTest
         int lower = 10;
         int upper = 20;
 
-        TransactionState txState = mock( TransactionState.class );
+        TxState txState = mock( TxState.class );
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
@@ -342,7 +341,7 @@ public class StateHandlingStatementOperationsTest
     public void shouldConsiderTransactionStateDuringIndexBetweenRangeSeekByString() throws Exception
     {
         // Given
-        TransactionState txState = mock( TransactionState.class );
+        TxState txState = mock( TxState.class );
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.neo4j.kernel.api.EntityType;
+import org.neo4j.kernel.impl.core.EntityType;
 
 class GraphState extends PropertyContainerState.Mutable
 {

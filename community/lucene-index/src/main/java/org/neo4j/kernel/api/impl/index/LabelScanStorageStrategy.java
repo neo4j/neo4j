@@ -29,7 +29,7 @@ import java.util.Iterator;
 import java.util.concurrent.locks.Lock;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
+import org.neo4j.kernel.index.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
