@@ -22,20 +22,46 @@ package org.neo4j.kernel.ha.factory;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.schema.ConstraintType;
-import org.neo4j.kernel.SchemaRuleVerifier;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.api.txstate.TxStateVisitor;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
+import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
+import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 
-class EnterpriseSchemaRuleVerifier implements SchemaRuleVerifier
+import static org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule.nodePropertyExistenceConstraintRule;
+import static org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule.relPropertyExistenceConstraintRule;
+
+class EnterpriseConstraintSemantics extends StandardConstraintSemantics
 {
     @Override
-    public void verify( SchemaRule rule )
+    protected PropertyConstraint readNonStandardConstraint( PropertyConstraintRule rule )
     {
+        if ( rule instanceof NodePropertyExistenceConstraintRule )
+        {
+            return ((NodePropertyExistenceConstraintRule) rule).toConstraint();
+        }
+        if ( rule instanceof RelationshipPropertyExistenceConstraintRule )
+        {
+            return ((RelationshipPropertyExistenceConstraintRule) rule).toConstraint();
+        }
+        throw new IllegalStateException( "Unsupported constraint type: " + rule );
+    }
+
+    @Override
+    public PropertyConstraintRule writeNodePropertyExistenceConstraint( long ruleId, int type, int propertyKey )
+    {
+        return nodePropertyExistenceConstraintRule( ruleId, type, propertyKey );
+    }
+
+    @Override
+    public PropertyConstraintRule writeRelationshipPropertyExistenceConstraint( long ruleId, int type, int propertyKey )
+    {
+        return relPropertyExistenceConstraintRule( ruleId, type, propertyKey );
     }
 
     @Override
@@ -44,8 +70,9 @@ class EnterpriseSchemaRuleVerifier implements SchemaRuleVerifier
     }
 
     @Override
-    public TxStateVisitor createVerifierFor( StatementOperationParts operations, StoreStatement storeStatement,
-            StoreReadLayer storeLayer, TxStateHolder holder, TxStateVisitor visitor ) {
+    public TxStateVisitor decorateTxStateVisitor( StatementOperationParts operations, StoreStatement storeStatement,
+            StoreReadLayer storeLayer, TxStateHolder holder, TxStateVisitor visitor )
+    {
         Iterator<PropertyConstraint> constraints = storeLayer.constraintsGetAll();
         while ( constraints.hasNext() )
         {

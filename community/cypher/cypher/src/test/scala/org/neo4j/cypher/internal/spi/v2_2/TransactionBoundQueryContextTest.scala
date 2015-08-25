@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.spi.v2_3
 
+import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.DynamicIterable
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb._
-import org.mockito.Mockito._
-import org.neo4j.kernel.SchemaRuleVerifier
 import org.neo4j.kernel.api._
-import org.neo4j.kernel.impl.api.{StatementOperationParts, KernelTransactionImplementation, KernelStatement}
+import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation}
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.test.ImpermanentGraphDatabase
 
@@ -41,7 +41,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     graph = new ImpermanentGraphDatabase
     outerTx = mock[Transaction]
     statement = new KernelStatement(mock[KernelTransactionImplementation], null, null, null, null, null, null,
-      mock[SchemaRuleVerifier])
+      mock[ConstraintSemantics])
   }
 
   test ("should_mark_transaction_successful_if_successful") {

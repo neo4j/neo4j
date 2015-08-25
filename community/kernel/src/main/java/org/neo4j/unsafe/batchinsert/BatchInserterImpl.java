@@ -92,6 +92,7 @@ import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
 import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
+import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.NoOpClient;
@@ -283,7 +284,7 @@ public class BatchInserterImpl implements BatchInserter
         Token[] types = getRelationshipTypeStore().getTokens( Integer.MAX_VALUE );
         relationshipTypeTokens = new BatchTokenHolder( types );
         indexStore = life.add( new IndexConfigStore( this.storeDir, fileSystem ) );
-        schemaCache = new SchemaCache( neoStore.getSchemaStore() );
+        schemaCache = new SchemaCache( new StandardConstraintSemantics(), neoStore.getSchemaStore() );
 
         Dependencies deps = new Dependencies();
         deps.satisfyDependencies( fileSystem, config, logService, new NeoStoreSupplier()

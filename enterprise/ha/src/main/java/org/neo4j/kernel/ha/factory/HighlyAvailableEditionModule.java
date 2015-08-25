@@ -550,7 +550,7 @@ public class HighlyAvailableEditionModule
 
         upgradeConfiguration = new HAUpgradeConfiguration();
 
-        schemaRuleVerifier = new EnterpriseSchemaRuleVerifier();
+        constraintSemantics = new EnterpriseConstraintSemantics();
 
         registerRecovery( config.get( GraphDatabaseFacadeFactory.Configuration.editionName ), dependencies, logging );
 

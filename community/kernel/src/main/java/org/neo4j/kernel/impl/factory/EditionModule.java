@@ -23,7 +23,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelDiagnostics;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.SchemaRuleVerifier;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -60,7 +60,7 @@ public abstract class EditionModule
 
     public UpgradeConfiguration upgradeConfiguration;
 
-    public SchemaRuleVerifier schemaRuleVerifier;
+    public ConstraintSemantics constraintSemantics;
 
     protected void doAfterRecoveryAndStartup( String editionName, DependencyResolver dependencyResolver)
     {
