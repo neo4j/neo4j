@@ -20,16 +20,20 @@
 
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import org.neo4j.collection.primitive.PrimitiveLongSet
+import org.neo4j.collection.primitive.{Primitive, PrimitiveLongSet}
+import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v2_3.{CypherTypeException, ExecutionContext}
+import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException
 import org.neo4j.graphdb.Node
 
-case class TriadicPipe(left: Pipe, source: String, seen: String, target: String, right: Pipe)
-                      (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(left, pipeMonitor) with RonjaPipe with NoEffectsPipe {
+import scala.collection.mutable.ListBuffer
+import scala.collection.{AbstractIterator, Iterator}
+
+case class TriadicSelectionPipe(positivePredicate: Boolean, left: Pipe, source: String, seen: String, target: String, right: Pipe)
+                               (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+extends PipeWithSource(left, pipeMonitor) with RonjaPipe with NoEffectsPipe {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     var triadicState: PrimitiveLongSet = null
@@ -55,7 +59,7 @@ case class TriadicPipe(left: Pipe, source: String, seen: String, target: String,
     // 3. Probe
     }.filter { ctx =>
       ctx(target) match {
-        case n: Node => !triadicState.contains(n.getId)
+        case n: Node => if(positivePredicate) triadicState.contains(n.getId) else !triadicState.contains(n.getId)
         case _ => false
       }
     }
@@ -63,7 +67,7 @@ case class TriadicPipe(left: Pipe, source: String, seen: String, target: String,
 
   override def planDescriptionWithoutCardinality = new PlanDescriptionImpl(
     id = id,
-    name = "Triadic",
+    name = "TriadicSelection",
     children = TwoChildren(left.planDescription, right.planDescription),
     arguments = Seq(KeyNames(Seq(source, seen, target))),
     identifiers = identifiers)
@@ -75,5 +79,61 @@ case class TriadicPipe(left: Pipe, source: String, seen: String, target: String,
   override def dup(sources: List[Pipe]) = {
     val (left :: right :: Nil) = sources
     copy(left = left, right = right)(estimatedCardinality)
+  }
+}
+
+abstract class LazyGroupingIterator[ROW >: Null <: AnyRef](val input: Iterator[ROW]) extends AbstractIterator[ROW] {
+  def setState(state: PrimitiveLongSet)
+  def getKey(row: ROW): Any
+  def getValue(row: ROW): Option[Long]
+
+  var current: Iterator[ROW] = null
+  var nextRow: ROW = null
+
+  override def next() = if(hasNext) current.next() else Iterator.empty.next()
+
+  override def hasNext: Boolean = {
+    if (current != null && current.hasNext)
+      true
+    else {
+      val firstRow = if(nextRow != null) {
+        val row = nextRow
+        nextRow = null
+        row
+      } else if(input.hasNext) {
+        input.next()
+      } else null
+      if (firstRow == null) {
+        current = null
+        setState(null)
+        false
+      }
+      else {
+        val buffer = new ListBuffer[ROW]
+        val valueSet = Primitive.longSet()
+        setState(valueSet)
+        buffer += firstRow
+        update(valueSet, firstRow)
+        val key = getKey(firstRow)
+        // N.B. should we rewrite takeWhile to a while-loop?
+        buffer ++= input.takeWhile{ row =>
+          val s = getKey(row)
+          if (s == key) {
+            update(valueSet, row)
+            true
+          } else {
+            nextRow = row
+            false
+          }
+        }
+        current = buffer.iterator
+        true
+      }
+    }
+  }
+
+  def update(triadicSet: PrimitiveLongSet, row: ROW): AnyVal = {
+    for (value <- getValue(row))
+      triadicSet.add(value)
   }
 }
