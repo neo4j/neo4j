@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel;
 
+import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.api.txstate.TxStateVisitor;
+import org.neo4j.kernel.impl.api.StatementOperationParts;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 
 public interface SchemaRuleVerifier
@@ -26,4 +31,7 @@ public interface SchemaRuleVerifier
     void verify( SchemaRule rule );
 
     void assertPropertyConstraintCreationAllowed();
+
+    TxStateVisitor createVerifierFor( StatementOperationParts operations, StoreStatement storeStatement,
+            StoreReadLayer storeLayer, TxStateHolder holder, TxStateVisitor visitor );
 }

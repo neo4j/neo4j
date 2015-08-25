@@ -28,7 +28,6 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.SchemaRuleVerifier;
@@ -37,7 +36,6 @@ import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.DegreeItem;
 import org.neo4j.kernel.api.cursor.NodeItem;
@@ -67,13 +65,13 @@ import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
-import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
+import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -397,18 +395,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private TxStateVisitor txStateVisitor()
     {
-        Iterator<PropertyConstraint> constraints = storeLayer.constraintsGetAll();
-        while ( constraints.hasNext() )
-        {
-            PropertyConstraint constraint = constraints.next();
-            if ( constraint.type() == ConstraintType.NODE_PROPERTY_EXISTENCE ||
-                    constraint.type() == ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE )
-            {
-                return new PropertyExistenceEnforcer( operations.entityReadOperations(), txStateToRecordStateVisitor,
-                        this, storeLayer, storeStatement );
-            }
-        }
-        return txStateToRecordStateVisitor;
+        return schemaRuleVerifier.createVerifierFor( operations, storeStatement, storeLayer, this, txStateToRecordStateVisitor );
     }
 
     private void assertTransactionOpen()
