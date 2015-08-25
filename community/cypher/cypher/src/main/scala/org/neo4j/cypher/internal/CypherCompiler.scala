@@ -71,25 +71,15 @@ class CypherCompiler(graph: GraphDatabaseService,
                      logProvider: LogProvider) {
   import org.neo4j.cypher.internal.CypherCompiler._
 
-  private val factory = new PlannerFactory {
-    private val log: Log = logProvider.getLog(getClass)
-    private val queryCacheSize: Int = getQueryCacheSize
-    private val queryPlanTTL: Long = getMinimumTimeBeforeReplanning
-    private val statisticsDivergenceThreshold = getStatisticsDivergenceThreshold
-    override def create[S](spec: PlannerSpec { type SPI = S }): S = spec match {
-      case PlannerSpec_v1_9 => CompatibilityFor1_9(graph, queryCacheSize, kernelMonitors)
-      case PlannerSpec_v2_2(planner) => planner match {
-        case CypherPlanner.rule => CompatibilityFor2_2Rule(graph, queryCacheSize, statisticsDivergenceThreshold, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI)
-        case _ => CompatibilityFor2_2Cost(graph, queryCacheSize, statisticsDivergenceThreshold, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, log, planner)
-      }
-      case PlannerSpec_v2_3(planner, runtime) => planner match {
-        case CypherPlanner.rule => CompatibilityFor2_3Rule(graph, queryCacheSize, statisticsDivergenceThreshold, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI)
-        case _ => CompatibilityFor2_3Cost(graph, queryCacheSize, statisticsDivergenceThreshold, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, log, planner, runtime, useErrorsOverWarnings)
-      }
-    }
-  }
+  private val log: Log = logProvider.getLog(getClass)
+  private val queryCacheSize: Int = getQueryCacheSize
+  private val queryPlanTTL: Long = getMinimumTimeBeforeReplanning
+  private val statisticsDivergenceThreshold = getStatisticsDivergenceThreshold
 
-  private val planners: PlannerCache[PlannerSpec] = new VersionBasedPlannerCache(factory)
+  private val factory = new
+      PlannerFactory(graph, kernelAPI, kernelMonitors, log, queryCacheSize, statisticsDivergenceThreshold, queryPlanTTL,
+        useErrorsOverWarnings)
+  private val planners: PlannerCache = new PlannerCache(factory)
 
   private final val VERSIONS_WITH_FIXED_PLANNER: Set[CypherVersion] = Set(v1_9)
   private final val VERSIONS_WITH_FIXED_RUNTIME: Set[CypherVersion] = Set(v1_9, v2_2)
@@ -143,7 +133,6 @@ class CypherCompiler(graph: GraphDatabaseService,
   def parseQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer): ParsedQuery = {
     val planner = preParsedQuery.planner
     val runtime = preParsedQuery.runtime
-
     preParsedQuery.version match {
       case CypherVersion.v2_3 => planners(PlannerSpec_v2_3(planner, runtime)).produceParsedQuery(preParsedQuery, tracer)
       case CypherVersion.v2_2 => planners(PlannerSpec_v2_2(planner)).produceParsedQuery(preParsedQuery, tracer)
