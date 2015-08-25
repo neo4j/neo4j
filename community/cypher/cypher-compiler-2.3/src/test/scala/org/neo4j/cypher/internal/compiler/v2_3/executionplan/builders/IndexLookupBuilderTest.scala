@@ -27,7 +27,9 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, HasL
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
+import org.neo4j.cypher.internal.frontend.v2_3.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
+import org.neo4j.cypher.internal.frontend.v2_3.{ExclusiveBound, InclusiveBound, IndexHintException, ast}
 
 class IndexLookupBuilderTest extends BuilderTest {
 
@@ -60,7 +62,7 @@ class IndexLookupBuilderTest extends BuilderTest {
   }
 
   test("should_accept_a_prefix_seek_query") {
-    object inner extends org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport {
+    object inner extends AstConstructionTestSupport {
 
       def run() = {
         //GIVEN
@@ -76,7 +78,7 @@ class IndexLookupBuilderTest extends BuilderTest {
   }
 
   test("should accept a textual range seek query") {
-    object inner extends org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport {
+    object inner extends AstConstructionTestSupport {
 
       def run() = {
         //GIVEN
@@ -93,7 +95,7 @@ class IndexLookupBuilderTest extends BuilderTest {
   }
 
   test("should accept a numerical range seek query") {
-    object inner extends org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport {
+    object inner extends AstConstructionTestSupport {
 
       def run() = {
         //GIVEN
@@ -111,7 +113,7 @@ class IndexLookupBuilderTest extends BuilderTest {
   }
 
   test("should accept a numerical range seek query with many ranges") {
-    object inner extends org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport {
+    object inner extends AstConstructionTestSupport {
       def run() = {
         //GIVEN
         val property: ast.Property = ast.Property(ident("n"), ast.PropertyKeyName("prop") _) _

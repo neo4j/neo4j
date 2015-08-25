@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
 //Named MyMap to avoid conflict with collection.Map which makes everything weird
 case class MyMap(instructions: Map[String, CodeGenExpression]) extends CodeGenExpression {

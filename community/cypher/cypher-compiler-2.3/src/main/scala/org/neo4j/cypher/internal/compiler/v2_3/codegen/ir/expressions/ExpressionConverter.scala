@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.symbols.{CTRelationship, CTNode}
-import org.neo4j.cypher.internal.compiler.v2_3.{InternalException, symbols, ast}
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, MethodStructure, CodeGenContext}
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.frontend.v2_3.symbols.{CTNode, CTRelationship}
+import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, ast, symbols}
 
 object ExpressionConverter {
 

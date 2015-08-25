@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{Match, Query, SingleQuery, Where, _}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_3.{LabelId, PropertyKeyId, RelTypeId}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.frontend.v2_3._
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{Match, Query, SingleQuery, Where, _}
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
 class SimpleTokenResolverTest extends CypherFunSuite {
 
@@ -139,7 +138,7 @@ class SimpleTokenResolverTest extends CypherFunSuite {
           false,
           Pattern(Seq(EveryPath(RelationshipChain(
             NodePattern(None, Seq(), None, false),
-            RelationshipPattern(None, false, Seq(relTypeToken), None, None, Direction.OUTGOING),
+            RelationshipPattern(None, false, Seq(relTypeToken), None, None, SemanticDirection.OUTGOING),
             NodePattern(None, Seq(), None, false)
           )))),
           Seq(),
@@ -166,7 +165,7 @@ class SimpleTokenResolverTest extends CypherFunSuite {
           false,
           Pattern(Seq(EveryPath(RelationshipChain(
             NodePattern(None, Seq(), None, false),
-            RelationshipPattern(None, false, Seq(relTypeToken), None, None, Direction.OUTGOING),
+            RelationshipPattern(None, false, Seq(relTypeToken), None, None, SemanticDirection.OUTGOING),
             NodePattern(None, Seq(), None, false)
           )))),
           Seq(),

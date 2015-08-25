@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_3._
-import ast._
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
+import org.neo4j.cypher.internal.frontend.v2_3.{topDown, InputPosition, Rewriter, replace}
 
 class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends Rewriter {
 

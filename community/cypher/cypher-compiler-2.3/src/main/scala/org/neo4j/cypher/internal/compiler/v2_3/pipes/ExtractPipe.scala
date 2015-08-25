@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{CachedExpre
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{PlanDescriptionImpl, SingleChild}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
 object ExtractPipe {
   def apply(source: Pipe, expressions: Map[String, Expression])(implicit pipeMonitor: PipeMonitor): ExtractPipe = source match {

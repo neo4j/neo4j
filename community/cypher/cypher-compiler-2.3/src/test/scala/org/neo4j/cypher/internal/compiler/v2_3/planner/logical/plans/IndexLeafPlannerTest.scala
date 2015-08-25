@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{SingleQueryExpression, ManyQueryExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.{indexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

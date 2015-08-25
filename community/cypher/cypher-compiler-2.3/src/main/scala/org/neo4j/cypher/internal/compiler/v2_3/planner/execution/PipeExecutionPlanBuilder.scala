@@ -19,25 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.execution
 
-import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.OtherConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.StatementConverters
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.projectNamedPaths
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{Expression, Identifier, NodeStartItem, RelTypeName}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.EntityProducerFactory
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{AggregationExpression, Expression => CommandExpression}
-import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{True, _}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{PipeInfo, PlanFingerprint}
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{LazyTypes, _}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantHandleQueryException, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{Limit, Skip, Union, _}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionContext, Monitors, PlannerName, ast => compilerAst}
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v2_3.{Rewriter, SemanticTable, ast, bottomUp}
 import org.neo4j.graphdb.Relationship
 import org.neo4j.helpers.Clock
 
@@ -235,11 +236,13 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
 
     object buildPipeExpressions extends Rewriter {
       val instance = Rewriter.lift {
-        case ast.NestedPlanExpression(patternPlan, pattern) =>
+        case compilerAst.NestedPlanExpression(patternPlan, pattern) =>
           val pos = pattern.position
           val pipe = buildPipe(patternPlan)
-          val step = projectNamedPaths.patternPartPathExpression(ast.EveryPath(pattern.pattern.element))
-          val result = ast.NestedPipeExpression(pipe, ast.PathExpression(step)(pos))(pos)
+          val path = ast.EveryPath(pattern.pattern.element)
+          val step: PathStep = projectNamedPaths.patternPartPathExpression(path)
+          val pathExpression: PathExpression = ast.PathExpression(step)(pos)
+          val result = compilerAst.NestedPipeExpression(pipe, pathExpression)(pos)
           result
       }
 

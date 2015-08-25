@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.FreshIdNameGenerator
-import org.neo4j.cypher.internal.compiler.v2_3.{CypherException, InputPosition, Rewriter, bottomUp, topDown}
+import org.neo4j.cypher.internal.frontend.v2_3._
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
 
 /**
  * This rewriter normalizes the scoping structure of a query, ensuring it is able to
@@ -60,7 +60,7 @@ case class normalizeWithClauses(mkException: (String, InputPosition) => CypherEx
       Seq(clause.copy(returnItems = ri.copy(items = initialReturnItems)(ri.position))(clause.position))
 
     case clause @ With(distinct, ri, orderBy, skip, limit, where) =>
-      clause.verifyOrderByAggregationUse(mkException)
+      clause.verifyOrderByAggregationUse((s,i) => throw mkException(s,i))
       val (unaliasedReturnItems, aliasedReturnItems) = partitionReturnItems(ri.items)
       val initialReturnItems = unaliasedReturnItems ++ aliasedReturnItems
       val (introducedReturnItems, updatedOrderBy, updatedWhere) = aliasOrderByAndWhere(aliasedReturnItems.map(i => i.expression -> i.alias.get.copyId).toMap, orderBy, where)

@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp
 
 import org.mockito.Mockito.{spy, verify, verifyNoMoreInteractions}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlanningContext, Metrics, ProjectingSelector, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticTable
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
 import scala.collection.immutable.BitSet
 

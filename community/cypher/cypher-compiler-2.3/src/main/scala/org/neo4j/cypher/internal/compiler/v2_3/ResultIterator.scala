@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v2_3.{CypherException, NodeStillHasRelationshipsException}
 import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.kernel.api.exceptions.Status
 

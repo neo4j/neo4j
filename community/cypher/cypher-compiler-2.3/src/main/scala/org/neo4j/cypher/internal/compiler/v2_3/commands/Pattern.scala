@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
-import expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.True
-import org.neo4j.graphdb.Direction
-import collection.Seq
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_3.mutation.GraphElementPropertyFunctions
-import collection.Map
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.UnNamedNameGenerator
+import org.neo4j.cypher.internal.compiler.v2_3.mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.TypeSafe
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
+import org.neo4j.graphdb.Direction
 
+import scala.collection.{Map, Seq}
 trait Pattern extends TypeSafe with AstNode[Pattern] {
   def possibleStartPoints: Seq[(String,CypherType)]
   def relTypes:Seq[String]

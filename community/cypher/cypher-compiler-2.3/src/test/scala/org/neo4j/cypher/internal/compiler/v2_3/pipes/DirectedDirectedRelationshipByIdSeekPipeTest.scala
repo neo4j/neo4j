@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{Operations, QueryContext}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Direction, Relationship}
 import org.mockito.Mockito
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Collection, Literal}

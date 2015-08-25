@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_3.ast.NestedPlanExpression
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
+import org.neo4j.cypher.internal.frontend.v2_3.{Rewriter, SemanticDirection, replace}
 
 // Rewrites queries to allow using the much faster getDegree method on the nodes
 case object getDegreeOptimizer extends Rewriter {
@@ -46,14 +46,14 @@ case object getDegreeOptimizer extends Rewriter {
         // LENGTH( ()-[]->(a) )
         case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None, _), RelationshipPattern(None, _, types, None, None, dir), NodePattern(Some(node), List(), None, _))))))
           if func.function == Some(functions.Length) || func.function == Some(functions.Size) =>
-          calculateUsingGetDegree(func, node, types, dir.reverse())
+          calculateUsingGetDegree(func, node, types, dir.reversed)
 
         case rewritten =>
           rewritten
       }
   })
 
-  def calculateUsingGetDegree(func: FunctionInvocation, node: Identifier, types: Seq[RelTypeName], dir: Direction): Expression = {
+  def calculateUsingGetDegree(func: FunctionInvocation, node: Identifier, types: Seq[RelTypeName], dir: SemanticDirection): Expression = {
     types
       .map(typ => GetDegree(node.copyId, Some(typ), dir)(typ.position))
       .reduceOption[Expression](Add(_, _)(func.position))

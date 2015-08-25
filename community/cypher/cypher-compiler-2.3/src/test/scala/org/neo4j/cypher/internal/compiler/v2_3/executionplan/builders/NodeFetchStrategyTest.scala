@@ -20,17 +20,18 @@
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_3.ast
-import org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.AnyInCollection
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Collection, Identifier, Property}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, HasLabel}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{UnresolvedLabel, UnresolvedProperty}
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v2_3.ast
+import org.neo4j.cypher.internal.frontend.v2_3.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class NodeFetchStrategyTest extends CypherFunSuite {

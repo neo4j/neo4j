@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
+import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsNodes, ReadsRelationships}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.ExpandExpression
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
-import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionContext, InternalException}
+import org.neo4j.cypher.internal.frontend.v2_3.InternalException
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.graphdb.{Direction, Node}
 
 case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: Direction, types: LazyTypes, predicate: Predicate)

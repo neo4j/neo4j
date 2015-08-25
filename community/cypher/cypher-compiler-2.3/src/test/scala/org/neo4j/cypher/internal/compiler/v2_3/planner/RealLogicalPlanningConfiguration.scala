@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.{QueryGra
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CardinalityCostModel, Cost, Metrics, StatisticsBackedCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticTable
 
 case class RealLogicalPlanningConfiguration()
   extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {

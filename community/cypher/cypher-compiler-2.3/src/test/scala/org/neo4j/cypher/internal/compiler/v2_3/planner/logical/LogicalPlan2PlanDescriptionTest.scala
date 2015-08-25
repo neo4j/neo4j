@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.ManyQueryExpression
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{LabelName, _}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.compiler.v2_3.{InputPosition, LabelId, PropertyKeyId}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition, LabelId, PropertyKeyId}
 import org.neo4j.graphdb.Direction
 import org.scalatest.prop.TableDrivenPropertyChecks
 

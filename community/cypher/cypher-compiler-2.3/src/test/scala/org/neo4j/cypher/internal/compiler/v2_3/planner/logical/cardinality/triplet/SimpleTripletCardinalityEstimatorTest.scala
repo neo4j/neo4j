@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.triplet.TripletQueryGraphCardinalityModel.NodeCardinalities
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.{CypherFunSuite, RandomizedTestSupport}
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.RandomizedTestSupport
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
 import scala.language.implicitConversions
 

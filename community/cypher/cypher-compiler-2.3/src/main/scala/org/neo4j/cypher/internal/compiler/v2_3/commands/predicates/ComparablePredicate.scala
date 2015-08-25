@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, Identifier, Literal}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.IsCollection
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+import org.neo4j.cypher.internal.frontend.v2_3.IncomparableValuesException
 import org.neo4j.graphdb.{Node, Relationship}
 
 abstract sealed class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate with Comparer {

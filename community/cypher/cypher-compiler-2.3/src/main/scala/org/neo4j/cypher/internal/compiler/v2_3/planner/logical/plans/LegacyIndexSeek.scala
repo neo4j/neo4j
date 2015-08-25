@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.LegacyIndexHint
+import org.neo4j.cypher.internal.frontend.v2_3.ast.LegacyIndexHint
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 
 case class LegacyIndexSeek(idName: IdName, hint: LegacyIndexHint, argumentIds: Set[IdName])

@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.{IsCollection, IsMap, CollectionSupport, CastSupport}
-import org.neo4j.graphdb.PropertyContainer
-import pipes.QueryState
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.{CastSupport, CollectionSupport, IsCollection, IsMap}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
 case class ContainerIndex(expression: Expression, index: Expression) extends NullInNullOutExpression(expression)
 with CollectionSupport {

@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions._
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_3.{ArithmeticException, CypherTypeException}
+import org.neo4j.cypher.internal.frontend.v2_3
+import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.scalatest._
 
 class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with CodeGenSugar {
@@ -82,10 +83,10 @@ class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with
 
   val divOperation = Operation("Division", Division.apply, Seq(
     (0, 2, Left(0)),
-    (10, 0, Right(classOf[ArithmeticException])),
+    (10, 0, Right(classOf[v2_3.ArithmeticException])),
     (-42, 42, Left(-1)),
     (1, 2, Left(0)),
-    (10.0, 0.0, Right(classOf[ArithmeticException])),
+    (10.0, 0.0, Right(classOf[v2_3.ArithmeticException])),
     (-3.25, 13.0, Left(-0.25)),
     (0, 2.0, Left(0.0)),
     (-9, 3.0, Left(-3.0)),

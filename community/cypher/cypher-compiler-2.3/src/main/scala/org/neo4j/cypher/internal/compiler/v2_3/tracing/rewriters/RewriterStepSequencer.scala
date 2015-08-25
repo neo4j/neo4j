@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.frontend.v2_3._
 
 import scala.collection.mutable
 

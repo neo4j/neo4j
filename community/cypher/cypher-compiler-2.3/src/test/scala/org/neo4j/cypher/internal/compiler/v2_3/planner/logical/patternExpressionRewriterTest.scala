@@ -22,11 +22,12 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 import org.mockito.Mockito.{verify, verifyNoMoreInteractions, when}
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{AllNodesScan, IdName, LogicalPlan, Selection}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
 class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -92,7 +93,7 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
   private def newPatExpr(left: String, right: String): PatternExpression = {
     PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(ident(left)), Seq.empty, None, naked = false) _,
-      RelationshipPattern(None, optional = false, Seq.empty, None, None, Direction.OUTGOING) _,
+      RelationshipPattern(None, optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
       NodePattern(Some(ident(right)), Seq.empty, None, naked = false) _) _) _)
   }
 

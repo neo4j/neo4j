@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp
 
-import org.neo4j.cypher.internal.compiler.v2_3.InternalException
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.IteratorSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
@@ -27,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp.expandSolverS
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.solveOptionalMatches.OptionalSolver
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.{applyOptional, outerHashJoin}
+import org.neo4j.cypher.internal.frontend.v2_3.InternalException
 
 import scala.annotation.tailrec
 

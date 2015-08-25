@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.parser
 
-import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.GreaterThan
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => legacy}
+import org.neo4j.cypher.internal.frontend.v2_3.ast
+import org.neo4j.cypher.internal.frontend.v2_3.parser.{Expressions, ParserTest}
 import org.parboiled.scala._
 
 class ListComprehensionTest extends ParserTest[ast.ListComprehension, legacy.Expression] with Expressions {

@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_3.{Foldable, ast}
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery.ClauseConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
+import org.neo4j.cypher.internal.frontend.v2_3.{Foldable, ast}
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
 
 object StatementConverters {
 

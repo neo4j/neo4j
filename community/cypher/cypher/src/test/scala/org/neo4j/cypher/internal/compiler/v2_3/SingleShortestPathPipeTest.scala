@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{FakePipe, PipeMonitor, ShortestPathPipe}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.graphdb.{Direction, Node, Path}
 
 class SingleShortestPathPipeTest extends GraphDatabaseFunSuite {

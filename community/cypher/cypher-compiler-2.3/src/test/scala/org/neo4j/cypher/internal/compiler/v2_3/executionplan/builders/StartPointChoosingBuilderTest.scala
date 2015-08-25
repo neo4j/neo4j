@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
 import org.mockito.Matchers
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_3.ast
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
@@ -29,10 +28,12 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, HasL
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.FakePipe
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.ast
+import org.neo4j.cypher.internal.frontend.v2_3.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
@@ -266,7 +267,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
   }
 
   test("should_pick_any_index_available_for_prefix_search") {
-    object inner extends org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport {
+    object inner extends AstConstructionTestSupport {
 
       def run() = {
         // Given
@@ -294,7 +295,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
   }
 
   test("should pick any index available for range queries") {
-    object inner extends org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport {
+    object inner extends AstConstructionTestSupport {
 
       def run() = {
         // Given

@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_3.DummyPosition
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{Identifier, SignedDecimalIntegerLiteral}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{AllNodesScan, IdName, Projection, SingleRow}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{Projection, SingleRow}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery, RegularQueryProjection, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery, RegularQueryProjection}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.ast.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.{DummyPosition, SemanticTable}
 
 class PlanEventHorizonTest extends CypherFunSuite {
 

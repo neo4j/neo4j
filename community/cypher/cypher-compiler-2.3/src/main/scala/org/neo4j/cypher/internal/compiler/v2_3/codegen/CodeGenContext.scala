@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.JoinData
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_3.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v2_3.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticTable
 
 import scala.collection.mutable
 

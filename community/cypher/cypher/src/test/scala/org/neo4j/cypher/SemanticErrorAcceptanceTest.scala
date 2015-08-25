@@ -20,7 +20,8 @@
 package org.neo4j.cypher
 
 import org.neo4j.graphdb.QueryExecutionException
-import collection.JavaConverters._
+
+import scala.collection.JavaConverters._
 
 class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -527,7 +528,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   def executeAndEnsureError(query: String, expected: String) {
-    import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper._
+    import org.neo4j.cypher.internal.frontend.v2_3.helpers.StringHelper._
 
     val fixedExpected = expected.fixPosition
     try {

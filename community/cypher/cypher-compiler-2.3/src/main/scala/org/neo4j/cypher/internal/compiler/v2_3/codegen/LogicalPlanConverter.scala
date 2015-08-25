@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{QueryExpression, ManyQueryExpression, RangeQueryExpression, SingleQueryExpression}
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.{InternalException, ast, symbols}
+import org.neo4j.cypher.internal.frontend.v2_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, ast, symbols}
 
 object LogicalPlanConverter {
 

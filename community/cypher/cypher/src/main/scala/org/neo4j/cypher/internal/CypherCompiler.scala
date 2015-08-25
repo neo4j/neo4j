@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.CypherVersion._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.frontend.v2_3.InputPosition
 import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings

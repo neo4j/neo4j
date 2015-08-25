@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_3.{CypherTypeException, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{InternalPlanDescription, PlanDescriptionImpl, TwoChildren}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException
 import org.neo4j.graphdb.Node
 
 import scala.collection.mutable
@@ -65,7 +65,7 @@ case class NodeHashJoinPipe(nodeIdentifiers: Set[String], left: Pipe, right: Pip
       identifiers
     )
 
-  def symbols: SymbolTable = left.symbols.add(right.symbols.identifiers)
+  def symbols = left.symbols.add(right.symbols.identifiers)
 
   override val sources = Seq(left, right)
 

@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
-import pipes.QueryState
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
 case class ExtractFunction(collection: Expression, id: String, expression: Expression)
   extends NullInNullOutExpression(collection)

@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, PrefixSeekRangeExpression, InequalitySeekRangeExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, InequalitySeekRangeExpression, PrefixSeekRangeExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.IsCollection
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v2_3.{CypherTypeException, ExecutionContext}
+import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException
 import org.neo4j.graphdb.Node
 
 import scala.collection.GenTraversableOnce

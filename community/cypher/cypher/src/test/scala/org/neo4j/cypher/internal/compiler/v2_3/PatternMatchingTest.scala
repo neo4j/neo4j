@@ -19,15 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import commands.RelatedTo
-import commands.expressions.Identifier
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.commands.RelatedTo
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Identifier
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.HasLabel
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.UnresolvedLabel
-import executionplan.builders.PatternGraphBuilder
-import symbols._
-import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.PatternGraphBuilder
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternMatchingBuilder
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
+import org.neo4j.graphdb.Direction
 
 class PatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuilder with QueryStateTestSupport {
   val symbols = new SymbolTable(Map("a" -> CTNode))

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, HasL
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{TokenType, KeyToken}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 import org.scalatest.BeforeAndAfterAll
 

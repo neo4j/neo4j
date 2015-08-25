@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.collection.primitive.Primitive
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 
 class TriadicProbePipeTest extends CypherFunSuite {

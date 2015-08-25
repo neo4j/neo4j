@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import pipes.QueryState
-import symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
 case class Null() extends Expression {
   def apply(v1: ExecutionContext)(implicit state: QueryState) = null

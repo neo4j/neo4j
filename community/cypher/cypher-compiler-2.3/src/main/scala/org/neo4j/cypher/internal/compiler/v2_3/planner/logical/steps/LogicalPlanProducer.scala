@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
+import org.neo4j.cypher.internal.frontend.v2_3.InternalException
 import org.neo4j.cypher.internal.compiler.v2_3.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{LazyLabel, SortDescription}
@@ -27,8 +27,9 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
-import org.neo4j.cypher.internal.compiler.v2_3.{InternalException, ast}
+import org.neo4j.cypher.internal.frontend.v2_3.ast
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.graphdb.Direction
 
 case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends CollectionSupport {

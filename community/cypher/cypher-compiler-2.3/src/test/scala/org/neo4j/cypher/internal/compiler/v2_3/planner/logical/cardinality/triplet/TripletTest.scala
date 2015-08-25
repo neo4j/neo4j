@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.triplet
 
 import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v2_3.{RelTypeId, LabelId}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.{SpecifiedButUnknown, Unspecified, SpecifiedAndKnown}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.{SpecifiedAndKnown, SpecifiedButUnknown, Unspecified}
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.{LabelId, RelTypeId}
 
 class TripletTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

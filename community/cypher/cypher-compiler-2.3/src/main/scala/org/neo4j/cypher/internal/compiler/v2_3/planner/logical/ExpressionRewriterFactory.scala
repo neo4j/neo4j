@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.getDegreeOptimizer
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_3.{inSequence, bottomUp, Rewriter}
+import org.neo4j.cypher.internal.frontend.v2_3.{inSequence, bottomUp, Rewriter}
 
 object ExpressionRewriterFactory extends (LogicalPlanningContext => Rewriter) {
   override def apply(context: LogicalPlanningContext): Rewriter = bottomUp(Rewriter.lift {

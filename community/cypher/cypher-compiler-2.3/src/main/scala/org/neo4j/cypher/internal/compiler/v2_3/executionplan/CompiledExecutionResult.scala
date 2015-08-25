@@ -25,11 +25,13 @@ import java.util.Collections
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.IsCollection
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport.asScala
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.{JavaConversionSupport, Eagerly, IsCollection}
-import org.neo4j.cypher.internal.compiler.v2_3.notification.InternalNotification
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v2_3.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v2_3.{EntityNotFoundException, ProfilerStatisticsNotReadyException}
 import org.neo4j.function.Supplier
 import org.neo4j.graphdb.QueryExecutionType._
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}

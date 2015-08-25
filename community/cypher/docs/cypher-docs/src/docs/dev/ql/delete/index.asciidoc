@@ -18,4 +18,3 @@ include::delete-all-nodes-and-relationships.asciidoc[]
 
 include::delete-a-node-with-all-its-relationships.asciidoc[]
 
-include::delete-a-path.asciidoc[]

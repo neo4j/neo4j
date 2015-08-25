@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
+import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException;
+import org.neo4j.cypher.internal.frontend.v2_3.IncomparableValuesException;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.MathUtil;
+
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-
-import org.neo4j.cypher.internal.compiler.v2_3.CypherTypeException;
-import org.neo4j.cypher.internal.compiler.v2_3.IncomparableValuesException;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.helpers.MathUtil;
 
 // Class with static methods used by compiled execution plans
 public abstract class CompiledConversionUtils

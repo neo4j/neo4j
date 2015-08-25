@@ -65,13 +65,4 @@ class DeleteTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
       optionalResultExplanation = "",
       assertions = (p) => assertStats(p, relationshipsDeleted = 2, nodesDeleted = 1))
   }
-
-  @Test def delete_a_whole_path() {
-    testQuery(
-      title = "Delete a path",
-      text = "Using Cypher, you can find whole paths and delete all nodes and relationships.",
-      queryText = "MATCH p=({name:'Andres'})-[*]->() DETACH DELETE p",
-      optionalResultExplanation = "",
-      assertions = (p) => assertStats(p, relationshipsDeleted = 2, nodesDeleted = 2))
-  }
 }

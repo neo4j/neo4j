@@ -130,6 +130,17 @@
       <artifactId>neo4j-graph-algo</artifactId>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-frontend-2.3</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-frontend-2.3</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+    </dependency>
 
     <!-- neo4j testing -->
 

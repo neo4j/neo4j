@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_3.planner.PlannerQuery
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, AllNodesScan}
-import org.neo4j.cypher.internal.compiler.v2_3.{DummyPosition, Rewriter}
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_3.ast.NestedPlanExpression
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{AllNodesScan, IdName}
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.{DummyPosition, Rewriter, SemanticDirection}
 
 class GetDegreeOptimizerTest extends CypherFunSuite with RewriteTest {
 
@@ -39,7 +38,7 @@ class GetDegreeOptimizerTest extends CypherFunSuite with RewriteTest {
       val statement = parseForRewriting(s"MATCH n WHERE $fun((n)-->()) RETURN n")
       val wherePredicate = findWherePredicate(statement.endoRewrite(getDegreeOptimizer))
 
-      wherePredicate should equal(GetDegree(Identifier("n")(pos), None, Direction.OUTGOING)(pos))
+      wherePredicate should equal(GetDegree(Identifier("n")(pos), None, SemanticDirection.OUTGOING)(pos))
     }
   }
 
@@ -49,7 +48,7 @@ class GetDegreeOptimizerTest extends CypherFunSuite with RewriteTest {
       val statement = parseForRewriting(s"MATCH n WHERE $fun((n)<--()) RETURN n")
       val wherePredicate = findWherePredicate(statement.endoRewrite(getDegreeOptimizer))
 
-      wherePredicate should equal(GetDegree(Identifier("n")(pos), None, Direction.INCOMING)(pos))
+      wherePredicate should equal(GetDegree(Identifier("n")(pos), None, SemanticDirection.INCOMING)(pos))
     }
   }
 
@@ -58,7 +57,7 @@ class GetDegreeOptimizerTest extends CypherFunSuite with RewriteTest {
       val statement = parseForRewriting(s"MATCH n WHERE $fun((n)--()) RETURN n")
       val wherePredicate = findWherePredicate(statement.endoRewrite(getDegreeOptimizer))
 
-      wherePredicate should equal(GetDegree(Identifier("n")(pos), None, Direction.BOTH)(pos))
+      wherePredicate should equal(GetDegree(Identifier("n")(pos), None, SemanticDirection.BOTH)(pos))
     }
   }
 
@@ -67,7 +66,7 @@ class GetDegreeOptimizerTest extends CypherFunSuite with RewriteTest {
       val statement = parseForRewriting(s"MATCH n WHERE $fun((n)-[:X]->()) RETURN n")
       val wherePredicate = findWherePredicate(statement.endoRewrite(getDegreeOptimizer))
 
-      wherePredicate should equal(GetDegree(Identifier("n")(pos), Some(RelTypeName("X")(pos)), Direction.OUTGOING)(pos))
+      wherePredicate should equal(GetDegree(Identifier("n")(pos), Some(RelTypeName("X")(pos)), SemanticDirection.OUTGOING)(pos))
     }
   }
 
@@ -76,7 +75,7 @@ class GetDegreeOptimizerTest extends CypherFunSuite with RewriteTest {
       val statement = parseForRewriting(s"MATCH n WHERE $fun(()-[:X]->(n)) RETURN n")
       val wherePredicate = findWherePredicate(statement.endoRewrite(getDegreeOptimizer))
 
-      wherePredicate should equal(GetDegree(Identifier("n")(pos), Some(RelTypeName("X")(pos)), Direction.INCOMING)(pos))
+      wherePredicate should equal(GetDegree(Identifier("n")(pos), Some(RelTypeName("X")(pos)), SemanticDirection.INCOMING)(pos))
     }
   }
 
@@ -87,8 +86,8 @@ class GetDegreeOptimizerTest extends CypherFunSuite with RewriteTest {
 
       wherePredicate should equal(
         Add(
-          GetDegree(Identifier("n")(pos), Some(RelTypeName("X")(pos)), Direction.OUTGOING)(pos),
-          GetDegree(Identifier("n")(pos), Some(RelTypeName("Y")(pos)), Direction.OUTGOING)(pos))(pos))
+          GetDegree(Identifier("n")(pos), Some(RelTypeName("X")(pos)), SemanticDirection.OUTGOING)(pos),
+          GetDegree(Identifier("n")(pos), Some(RelTypeName("Y")(pos)), SemanticDirection.OUTGOING)(pos))(pos))
     }
   }
 

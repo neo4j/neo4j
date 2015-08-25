@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_3.IdentityMap
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.frontend.v2_3.IdentityMap
 
 /*
 The map of logical plan and ids is used to allow profiling to connect to the right part in the logical plan

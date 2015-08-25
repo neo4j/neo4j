@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.ASTNode
-import org.neo4j.cypher.internal.compiler.v2_3.perty.{DocRecipe, ExtractorSeq, DocHandler}
-import org.neo4j.cypher.internal.compiler.v2_3.perty.handler.DefaultDocHandler
+import org.neo4j.cypher.internal.frontend.v2_3.ast.ASTNode
+import org.neo4j.cypher.internal.frontend.v2_3.perty.{DocRecipe, ExtractorSeq, DocHandler}
+import org.neo4j.cypher.internal.frontend.v2_3.perty.handler.DefaultDocHandler
 
 // Doc gen for printing any kind of ast node
 case object AstDocHandler extends DocHandler[ASTNode] {

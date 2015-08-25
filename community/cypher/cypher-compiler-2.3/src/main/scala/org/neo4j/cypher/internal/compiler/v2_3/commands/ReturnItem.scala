@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
-import expressions.{Identifier, Expression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.UnNamedNameGenerator.isNamed
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
-import collection.Map
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+
+import scala.collection.Map
 
 abstract class ReturnColumn {
   def expressions(symbols: SymbolTable): Map[String,Expression]

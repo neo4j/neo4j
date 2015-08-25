@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
+import org.neo4j.cypher.internal.frontend.v2_3.InternalException
+
 abstract sealed class Maybe[+T] {
   def values: Seq[T]
   def success: Boolean

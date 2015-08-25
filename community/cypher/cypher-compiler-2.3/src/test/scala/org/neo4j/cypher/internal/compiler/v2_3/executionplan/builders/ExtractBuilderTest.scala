@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.ReturnItem
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.ExtractPipe
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
 class ExtractBuilderTest extends BuilderTest {
 

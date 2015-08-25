@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Namer, _}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlanBuilder.tracer
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledExecutionResult, CompiledPlan, GeneratedQuery, GeneratedQueryExecution, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_3.{CostBasedPlannerName, ExecutionMode, NormalMode, TaskCloser}
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticTable
 import org.neo4j.cypher.internal.spi.v2_3.GeneratedQueryStructure
 import org.neo4j.function.Supplier
 import org.neo4j.graphdb.GraphDatabaseService

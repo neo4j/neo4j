@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v2_3.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.planner.AggregatingQueryProjection
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan

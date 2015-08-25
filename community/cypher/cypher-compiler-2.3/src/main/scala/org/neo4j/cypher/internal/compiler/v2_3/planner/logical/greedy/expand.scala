@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.greedy
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{AllIterablePredicate, FilterScope, Identifier}
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{AllIterablePredicate, FilterScope, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CandidateGenerator, LogicalPlanningContext}

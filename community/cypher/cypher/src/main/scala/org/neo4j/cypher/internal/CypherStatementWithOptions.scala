@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compiler.v2_3.InputPosition
-import org.neo4j.cypher.internal.compiler.v2_3.notification.{LegacyPlannerNotification, InternalNotification}
-import org.neo4j.cypher.{CypherRuntime, CypherPlanner, CypherVersion, InvalidArgumentException}
+import org.neo4j.cypher.internal.frontend.v2_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v2_3.notification.{InternalNotification, LegacyPlannerNotification}
+import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherVersion, InvalidArgumentException}
 
 import scala.annotation.tailrec
 

@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathImpl
 import org.neo4j.cypher.internal.compiler.v2_3.commands.Pattern
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.True
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.MutableMaps
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.graphdb.{Direction, Node, PropertyContainer, Relationship}
 
 final case class VariableLengthStepTrail(next: Trail,

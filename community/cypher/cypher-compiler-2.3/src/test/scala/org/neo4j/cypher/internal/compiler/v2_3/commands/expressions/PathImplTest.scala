@@ -23,7 +23,7 @@ import java.lang.Iterable
 import java.util
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._
 

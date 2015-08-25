@@ -24,11 +24,12 @@ import java.util
 import java.util.Collections
 
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.{CollectionSupport, Eagerly, iteratorToVisitable}
-import org.neo4j.cypher.internal.compiler.v2_3.notification.InternalNotification
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.{CollectionSupport, iteratorToVisitable}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v2_3.notification.InternalNotification
 import org.neo4j.graphdb.QueryExecutionType.{QueryType, profiled, query}
 import org.neo4j.graphdb.{NotFoundException, ResourceIterator}
 import org.neo4j.graphdb.Result.ResultVisitor

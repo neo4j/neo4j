@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
-import expressions._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, HasLabel}
-import values.KeyToken
-import values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.mutation.{MergePatternAction, UpdateAction, PropertySetAction, MergeNodeAction}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, HasLabel}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.compiler.v2_3.mutation.{MergeNodeAction, MergePatternAction, PropertySetAction, UpdateAction}
+import org.neo4j.cypher.internal.frontend.v2_3.PatternException
 
 case class MergeAst(patterns: Seq[AbstractPattern],
                     onActions: Seq[OnAction],

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner
 
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherTestSupport
 
 import scala.language.implicitConversions
 

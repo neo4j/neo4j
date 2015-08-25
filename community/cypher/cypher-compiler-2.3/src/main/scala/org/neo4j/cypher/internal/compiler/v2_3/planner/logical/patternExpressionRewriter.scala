@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{NestedPlanExpression, PatternExpression, Expression}
+import org.neo4j.cypher.internal.compiler.v2_3.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.frontend.v2_3.Foldable._
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{Expression, PatternExpression}
+import org.neo4j.cypher.internal.frontend.v2_3.{IdentityMap, Rewriter, replace}
 
 // Rewrite pattern expressions to nested plan expressions by planning them using the given context
 case class patternExpressionRewriter(planArguments: Set[IdName], context: LogicalPlanningContext) extends Rewriter {
-
-    import org.neo4j.cypher.internal.compiler.v2_3.Foldable._
 
     def apply(that: AnyRef): AnyRef = that match {
       case  expression: Expression =>

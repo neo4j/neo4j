@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{GreaterThan,
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
-import org.neo4j.cypher.internal.compiler.v2_3.symbols.CTInteger
+import org.neo4j.cypher.internal.frontend.v2_3.symbols.CTInteger
 import org.neo4j.cypher.internal.{ExecutionPlan, CypherCompiler => Compiler}
 import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._

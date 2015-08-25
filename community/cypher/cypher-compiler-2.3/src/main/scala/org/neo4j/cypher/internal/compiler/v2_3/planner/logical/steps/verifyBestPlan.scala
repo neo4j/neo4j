@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{Identifier, LabelName, UsingIndexHint, UsingJoinHint}
-import org.neo4j.cypher.internal.compiler.v2_3.notification.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlanningContext, PlanTransformer}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantHandleQueryException, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_3.{IndexHintException, JoinHintException}
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{Identifier, LabelName, UsingIndexHint, UsingJoinHint}
+import org.neo4j.cypher.internal.frontend.v2_3.notification.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
+import org.neo4j.cypher.internal.frontend.v2_3.{IndexHintException, JoinHintException}
 
 object verifyBestPlan extends PlanTransformer[PlannerQuery] {
   def apply(plan: LogicalPlan, expected: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = {

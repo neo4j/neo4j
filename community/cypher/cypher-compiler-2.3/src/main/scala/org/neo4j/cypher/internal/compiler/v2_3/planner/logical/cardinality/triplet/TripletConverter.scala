@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.triplet
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{LabelName, RelTypeName}
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{LabelName, RelTypeName}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.{LabelInfo, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.TokenSpec
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.TokenSpec.{LabelSpecs, RelTypeSpecs}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, PatternRelationship}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{QueryGraph, Selections, SemanticTable}
-import org.neo4j.cypher.internal.compiler.v2_3.{LabelId, RelTypeId}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{QueryGraph, Selections}
+import org.neo4j.cypher.internal.frontend.v2_3.{SemanticTable, RelTypeId, LabelId}
 import org.neo4j.graphdb.Direction
 
 case class TripletConverter(qg: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable)

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v2_3.symbols.CypherType
 
 trait CodeGenExpression {
   def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit

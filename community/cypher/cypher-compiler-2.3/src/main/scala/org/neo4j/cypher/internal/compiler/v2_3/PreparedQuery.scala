@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.AbstractQuery
-import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterCondition
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{Query, Statement}
+import org.neo4j.cypher.internal.frontend.v2_3.{Rewriter, Scope, SemanticTable}
 
 case class PreparedQuery(statement: Statement,
                          queryText: String,
@@ -35,8 +35,8 @@ case class PreparedQuery(statement: Statement,
   def abstractQuery: AbstractQuery = statement.asQuery(notificationLogger).setQueryText(queryText)
 
   def isPeriodicCommit = statement match {
-    case ast.Query(Some(_), _) => true
-    case _                     => false
+    case Query(Some(_), _) => true
+    case _ => false
   }
 
   def rewrite(rewriter: Rewriter): PreparedQuery =

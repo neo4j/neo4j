@@ -33,6 +33,7 @@
   </scm>
 
   <modules>
+    <module>frontend-2.3</module>
     <module>cypher-compiler-2.3</module>
     <module>cypher</module>
     <module>acceptance</module>

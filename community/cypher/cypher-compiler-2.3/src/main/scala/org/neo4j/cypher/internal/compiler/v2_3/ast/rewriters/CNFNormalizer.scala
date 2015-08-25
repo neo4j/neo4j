@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.{repeat, _}
+import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
+import org.neo4j.cypher.internal.frontend.v2_3.Rewritable._
+import org.neo4j.cypher.internal.frontend.v2_3.{Rewriter, bottomUp, inSequence, repeat}
 
 case class CNFNormalizer()(implicit monitor: AstRewritingMonitor) extends Rewriter {
 

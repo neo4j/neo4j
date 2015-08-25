@@ -26,7 +26,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, Pred
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.PatternGraphBuilder
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.MatchingContext
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.graphdb.Direction
 
 import scala.collection.Map

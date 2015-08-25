@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
+import org.neo4j.cypher.internal.compiler.v2_3.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{AstRewritingTestSupport, CantHandleQueryException}
-import org.neo4j.cypher.internal.compiler.v2_3.{SyntaxExceptionCreator, SemanticState, inSequence}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.{SemanticState, inSequence}
 import org.neo4j.helpers.Platforms
 
 class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport {

@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.aggregation.SumFunction
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 
 case class Sum(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new SumFunction(anInner)
