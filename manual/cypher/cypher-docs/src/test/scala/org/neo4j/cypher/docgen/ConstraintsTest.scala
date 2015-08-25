@@ -36,7 +36,7 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
     testQuery(
       title = "Create uniqueness constraint",
       text = "To create a constraint that makes sure that your database will never contain more than one node with a specific " +
-        "label and one property value, use the +IS+ +UNIQUE+ syntax.",
+        "label and one property value, use the `IS UNIQUE` syntax.",
       queryText = "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE",
       optionalResultExplanation = "",
       assertions = (p) => assertNodeConstraintExist("Book", "isbn")
@@ -48,7 +48,7 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
 
     prepareAndTestQuery(
       title = "Drop uniqueness constraint",
-      text = "By using +DROP+ +CONSTRAINT+, you remove a constraint from the database.",
+      text = "By using `DROP CONSTRAINT`, you remove a constraint from the database.",
       queryText = "DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE",
       optionalResultExplanation = "",
       prepare = _ => executePreparationQueries(List("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")),
@@ -101,7 +101,7 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
   @Test def create_node_property_existence_constraint() {
     testQuery(
       title = "Create node property existence constraint",
-      text = "To create a constraint that makes sure that all nodes with a certain label have a certain property, use the +IS+ +NOT+ +NULL+ syntax.",
+      text = "To create a constraint that makes sure that all nodes with a certain label have a certain property, use the `ASSERT exists(identifier.propertyName)` syntax.",
       queryText = "CREATE CONSTRAINT ON (book:Book) ASSERT exists(book.isbn)",
       optionalResultExplanation = "",
       assertions = (p) => assertNodeConstraintExist("Book", "isbn")
@@ -151,7 +151,7 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
     engine.execute("CREATE (book:Book {isbn: '1449356265', title: 'Graph Databases'})")
     testFailingQuery[ConstraintValidationException](
       title = "Removing an existence constrained node property",
-      text = "Trying to remove property `isbn` from an existing node `book`, given a property existence constraint on `:Book(isbn)`.",
+      text = "Trying to remove the `isbn` property from an existing node `book`, given a property existence constraint on `:Book(isbn)`.",
       queryText = "MATCH (book:Book {title: 'Graph Databases'}) REMOVE book.isbn",
       optionalResultExplanation = "In this case the property is not removed."
     )
@@ -174,7 +174,7 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
   @Test def create_relationship_property_existence_constraint() {
     testQuery(
       title = "Create relationship property existence constraint",
-      text = "To create a constraint that makes sure that all relationships with a certain type have a certain property, use the +IS+ +NOT+ +NULL+ syntax.",
+      text = "To create a constraint that makes sure that all relationships with a certain type have a certain property, use the `ASSERT exists(identifier.propertyName)` syntax.",
       queryText = "CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT exists(like.day)",
       optionalResultExplanation = "",
       assertions = (p) => assertRelationshipConstraintExist("LIKED", "day")
@@ -186,7 +186,7 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
 
     prepareAndTestQuery(
       title = "Drop relationship property existence constraint",
-      text = "By using +DROP+ +CONSTRAINT+, you remove a constraint from the database.",
+      text = "To remove a constraint from the database, use `DROP CONSTRAINT`.",
       queryText = "DROP CONSTRAINT ON ()-[like:LIKED]-() ASSERT exists(like.day)",
       optionalResultExplanation = "",
       prepare = _ => executePreparationQueries(List("CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT exists(like.day)")),
@@ -224,7 +224,7 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
     engine.execute("CREATE (user:User)-[like:LIKED {day: 'today'}]->(book:Book)")
     testFailingQuery[ConstraintValidationException](
       title = "Removing an existence constrained relationship property",
-      text = "Trying to remove property `day` from an existing relationship `like` of type `LIKED`, given a property existence constraint `:LIKED(day)`.",
+      text = "Trying to remove the `day` property from an existing relationship `like` of type `LIKED`, given a property existence constraint `:LIKED(day)`.",
       queryText = "MATCH (user:User)-[like:LIKED]->(book:Book) REMOVE like.day",
       optionalResultExplanation = "In this case the property is not removed."
     )
@@ -237,7 +237,7 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
     testFailingQuery[CypherExecutionException](
       title = "Failure to create a relationship property existence constraint due to existing relationship",
       text = "Create a constraint on the property `day` on relationships with the `LIKED` type when there already " +
-        "exists a relationship without an `day`.",
+        "exists a relationship without a property named `day`.",
       queryText = "CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT exists(like.day)",
       optionalResultExplanation = "In this case the constraint can't be created because it is violated by existing " +
         "data. We may choose to remove the offending relationships and then re-apply the constraint."
