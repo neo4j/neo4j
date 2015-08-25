@@ -45,4 +45,6 @@ public abstract class ConstraintVerificationFailedKernelException extends Kernel
 
     @Override
     public abstract String getUserMessage( TokenNameLookup tokenNameLookup );
+
+    public abstract PropertyConstraint constraint();
 }

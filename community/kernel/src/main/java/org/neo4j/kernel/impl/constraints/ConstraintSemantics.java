@@ -19,7 +19,11 @@
  */
 package org.neo4j.kernel.impl.constraints;
 
+import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.api.txstate.TxStateVisitor;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
@@ -32,7 +36,11 @@ import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
  */
 public interface ConstraintSemantics
 {
-    void assertPropertyConstraintCreationAllowed();
+    void validateNodePropertyExistenceConstraint( Cursor<NodeItem> allNodes, int label, int propertyKey )
+            throws CreateConstraintFailureException;
+
+    void validateRelationshipPropertyExistenceConstraint( Cursor<RelationshipItem> allRels, int type, int propertyKey )
+            throws CreateConstraintFailureException;
 
     PropertyConstraint readConstraint( PropertyConstraintRule rule );
 

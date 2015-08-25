@@ -21,8 +21,17 @@ package org.neo4j.kernel.ha.factory;
 
 import java.util.Iterator;
 
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.api.txstate.TxStateVisitor;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
@@ -65,8 +74,42 @@ class EnterpriseConstraintSemantics extends StandardConstraintSemantics
     }
 
     @Override
-    public void assertPropertyConstraintCreationAllowed()
+    public void validateNodePropertyExistenceConstraint( Cursor<NodeItem> allNodes, int label, int propertyKey )
+            throws CreateConstraintFailureException
     {
+        while ( allNodes.next() )
+        {
+            NodeItem node = allNodes.get();
+            if ( !node.hasProperty( propertyKey ) )
+            {
+                throw createConstraintFailure(
+                        new NodePropertyExistenceConstraintVerificationFailedKernelException(
+                                new NodePropertyExistenceConstraint( label,propertyKey ), node.id() ) );
+            }
+        }
+    }
+
+    @Override
+    public void validateRelationshipPropertyExistenceConstraint(
+            Cursor<RelationshipItem> allRels, int type, int propertyKey )
+            throws CreateConstraintFailureException
+    {
+        while ( allRels.next() )
+        {
+            RelationshipItem relationship = allRels.get();
+            if ( relationship.type() == type && !relationship.hasProperty( propertyKey ) )
+            {
+                throw createConstraintFailure(
+                        new RelationshipPropertyExistenceConstraintVerificationFailedKernelException(
+                                new RelationshipPropertyExistenceConstraint( type, propertyKey ), relationship.id() ) );
+            }
+
+        }
+    }
+
+    private CreateConstraintFailureException createConstraintFailure( ConstraintVerificationFailedKernelException it )
+    {
+        return new CreateConstraintFailureException( it.constraint(), it );
     }
 
     @Override
