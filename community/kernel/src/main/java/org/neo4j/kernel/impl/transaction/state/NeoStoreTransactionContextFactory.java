@@ -19,22 +19,20 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.kernel.impl.store.NeoStore;
 
-public class TransactionalRelationshipLocker implements RelationshipLocker
+public class NeoStoreTransactionContextFactory
 {
-    private Locks.Client locks;
+    private final NeoStore neoStore;
 
-    @Override
-    public void getWriteLock( long relId ) throws AcquireLockTimeoutException
+    public NeoStoreTransactionContextFactory( NeoStore neoStore )
     {
-        locks.acquireExclusive( ResourceTypes.RELATIONSHIP, relId );
+        this.neoStore = neoStore;
     }
 
-    public void setLockClient( Locks.Client locks )
+    public NeoStoreTransactionContext newInstance( Locks.Client locks )
     {
-        this.locks = locks;
+        return new NeoStoreTransactionContext( neoStore, locks );
     }
 }

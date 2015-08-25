@@ -72,12 +72,18 @@ import org.neo4j.test.PageCacheRule;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TransactionRecordStateTest
 {
+    @Rule
+    public final CleanupRule cleanup = new CleanupRule();
+    @Rule
+    public final EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
     @Test
     public void shouldDeleteDynamicLabelsForDeletedNode() throws Exception
     {
@@ -126,9 +132,7 @@ public class TransactionRecordStateTest
     {
         // GIVEN
         NeoStore neoStore = newNeoStore( GraphDatabaseSettings.dense_node_threshold.name(), "1" );
-        NeoStoreTransactionContextSupplier supplier = new NeoStoreTransactionContextSupplier( neoStore );
-        NeoStoreTransactionContext context = new NeoStoreTransactionContext( supplier, neoStore );
-        context.bind( mock( Locks.Client.class ) );
+        NeoStoreTransactionContext context = new NeoStoreTransactionContext( neoStore, mock( Locks.Client.class ) );
         TransactionRecordState recordState =
                 new TransactionRecordState( neoStore, mock( IntegrityValidator.class ), context );
         long nodeId = 0, relId = 1;
@@ -157,9 +161,7 @@ public class TransactionRecordStateTest
     {
         // GIVEN
         NeoStore neoStore = newNeoStore( GraphDatabaseSettings.dense_node_threshold.name(), "1" );
-        NeoStoreTransactionContextSupplier supplier = new NeoStoreTransactionContextSupplier( neoStore );
-        NeoStoreTransactionContext context = new NeoStoreTransactionContext( supplier, neoStore );
-        context.bind( mock( Locks.Client.class ) );
+        NeoStoreTransactionContext context = new NeoStoreTransactionContext( neoStore, mock( Locks.Client.class ) );
         TransactionRecordState recordState =
                 new TransactionRecordState( neoStore, mock( IntegrityValidator.class ), context );
         long nodeId = 0, relId1 = 1, relId2 = 2, relId3 = 3;
@@ -171,8 +173,7 @@ public class TransactionRecordStateTest
                 LockService.NO_LOCK_SERVICE, new LockGroup(), 1 );
         apply( applier, transaction( recordState ) );
 
-        context = new NeoStoreTransactionContext( supplier, neoStore );
-        context.bind( mock( Locks.Client.class ) );
+        context = new NeoStoreTransactionContext( neoStore, mock( Locks.Client.class ) );
         recordState = new TransactionRecordState( neoStore, mock( IntegrityValidator.class ), context );
         recordState.nodeChangeProperty( nodeId, 0, 102 );
         recordState.relCreate( relId3, 0, nodeId, nodeId );
@@ -203,12 +204,10 @@ public class TransactionRecordStateTest
     {
         // GIVEN
         NeoStore neoStore = newNeoStore( GraphDatabaseSettings.dense_node_threshold.name(), "1" );
-        NeoStoreTransactionContextSupplier supplier = new NeoStoreTransactionContextSupplier( neoStore );
-        NeoStoreTransactionContext context = new NeoStoreTransactionContext( supplier, neoStore );
-        context.bind( mock( Locks.Client.class ) );
+        NeoStoreTransactionContext context = new NeoStoreTransactionContext( neoStore, mock( Locks.Client.class ) );
         TransactionRecordState recordState =
                 new TransactionRecordState( neoStore, mock( IntegrityValidator.class ), context );
-        long nodeId1 = 0, nodeId2 = 1, relId1 = 1, relId2 = 2, relId3 = 3, relId4 = 10;
+        long nodeId1 = 0, nodeId2 = 1, relId1 = 1, relId2 = 2, relId4 = 10;
         recordState.nodeCreate( nodeId1 );
         recordState.nodeCreate( nodeId2 );
         recordState.relCreate( relId1, 0, nodeId1, nodeId1 );
@@ -219,8 +218,7 @@ public class TransactionRecordStateTest
                 LockService.NO_LOCK_SERVICE, new LockGroup(), 1 );
         apply( applier, transaction( recordState ) );
 
-        context = new NeoStoreTransactionContext( supplier, neoStore );
-        context.bind( mock( Locks.Client.class ) );
+        context = new NeoStoreTransactionContext( neoStore, mock( Locks.Client.class ) );
         recordState = new TransactionRecordState( neoStore, mock( IntegrityValidator.class ), context );
         recordState.relDelete( relId4 );
         recordState.nodeDelete( nodeId2 );
@@ -285,7 +283,7 @@ public class TransactionRecordStateTest
     private TransactionRecordState nodeWithDynamicLabelRecord( NeoStore store,
             AtomicLong nodeId, AtomicLong dynamicLabelRecordId )
     {
-        NeoStoreTransactionContext context = context( store );
+        NeoStoreTransactionContext context = new NeoStoreTransactionContext( store, mock( Locks.Client.class ) );
         TransactionRecordState recordState = recordState( store, context );
 
         nodeId.set( store.getNodeStore().nextId() );
@@ -311,7 +309,7 @@ public class TransactionRecordStateTest
 
     private TransactionRecordState deleteNode( NeoStore store, long nodeId )
     {
-        NeoStoreTransactionContext context = context( store );
+        NeoStoreTransactionContext context = new NeoStoreTransactionContext( store, mock( Locks.Client.class ) );
         TransactionRecordState recordState = recordState( store, context );
         recordState.nodeDelete( nodeId );
         return recordState;
@@ -326,13 +324,6 @@ public class TransactionRecordStateTest
     {
         return new TransactionRecordState( store,
                 new IntegrityValidator( store, mock( IndexingService.class ) ), context );
-    }
-
-    private NeoStoreTransactionContext context( NeoStore store )
-    {
-        NeoStoreTransactionContextSupplier contextSupplier = new NeoStoreTransactionContextSupplier( store );
-        NeoStoreTransactionContext context = new NeoStoreTransactionContext( contextSupplier, store );
-        return context;
     }
 
     private TransactionRepresentation transaction( TransactionRecordState recordState )
@@ -350,8 +341,4 @@ public class TransactionRecordStateTest
         DynamicRecord record = store.getNodeStore().getDynamicLabelStore().forceGetRecord( id );
         assertTrue( inUse == record.inUse() );
     }
-
-    public final @Rule CleanupRule cleanup = new CleanupRule();
-    public final @Rule EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
-    public final @Rule PageCacheRule pageCacheRule = new PageCacheRule();
 }

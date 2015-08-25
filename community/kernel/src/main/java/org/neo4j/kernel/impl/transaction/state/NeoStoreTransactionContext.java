@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.transaction.state;
 
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.locking.Locks.Client;
@@ -44,41 +42,23 @@ public class NeoStoreTransactionContext
 {
     private final RelationshipCreator relationshipCreator;
     private final RelationshipDeleter relationshipDeleter;
-    private final NeoStoreTransactionContextSupplier supplier;
-    private final PropertyTraverser propertyTraverser;
     private final PropertyCreator propertyCreator;
     private final PropertyDeleter propertyDeleter;
-    private final TransactionalRelationshipLocker locker;
-    private final RelationshipGroupGetter relationshipGroupGetter;
-
     private final RecordAccessSet recordChangeSet;
+
     private final NeoStore neoStore;
 
-    public NeoStoreTransactionContext( NeoStoreTransactionContextSupplier supplier, NeoStore neoStore )
+    public NeoStoreTransactionContext( NeoStore neoStore, Client locks )
     {
-        this( supplier, neoStore, new RecordChangeSet( neoStore ) );
-    }
-
-    public NeoStoreTransactionContext( NeoStoreTransactionContextSupplier supplier, NeoStore neoStore,
-            RecordAccessSet recordAccessSet )
-    {
-        this.supplier = supplier;
         this.neoStore = neoStore;
 
-        this.recordChangeSet = recordAccessSet;
-
-        locker = new TransactionalRelationshipLocker();
-        relationshipGroupGetter = new RelationshipGroupGetter( neoStore.getRelationshipGroupStore() );
-        propertyTraverser = new PropertyTraverser();
+        recordChangeSet = new RecordChangeSet( neoStore );
+        RelationshipGroupGetter relGroupGetter = new RelationshipGroupGetter( neoStore.getRelationshipGroupStore() );
+        PropertyTraverser propertyTraverser = new PropertyTraverser();
         propertyCreator = new PropertyCreator( neoStore.getPropertyStore(), propertyTraverser );
         propertyDeleter = new PropertyDeleter( neoStore.getPropertyStore(), propertyTraverser );
-        relationshipCreator = new RelationshipCreator( locker, relationshipGroupGetter, neoStore.getDenseNodeThreshold() );
-        relationshipDeleter = new RelationshipDeleter( locker, relationshipGroupGetter, propertyDeleter );
-    }
-
-    public RecordAccessSet getRecordChangeSet()
-    {
-        return recordChangeSet;
+        relationshipCreator = new RelationshipCreator( locks, relGroupGetter, neoStore.getDenseNodeThreshold() );
+        relationshipDeleter = new RelationshipDeleter( locks, relGroupGetter, propertyDeleter );
     }
 
     public ArrayMap<Integer, DefinedProperty> relationshipDelete( long relId )
@@ -135,22 +115,9 @@ public class NeoStoreTransactionContext
         creator.createToken( name, id, getRelationshipTypeTokenRecords() );
     }
 
-    public void bind( Client locksClient )
-    {
-        locker.setLockClient( locksClient );
-    }
-
     public void initialize()
     {
         recordChangeSet.close();
-    }
-
-    public void close()
-    {
-        recordChangeSet.close();
-
-        locker.setLockClient( null );
-        supplier.release( this );
     }
 
     public RecordAccess<Long, NodeRecord, Void> getNodeRecords()
@@ -197,14 +164,12 @@ public class NeoStoreTransactionContext
     {
         long groupId = node.getNextRel();
         long previousGroupId = Record.NO_NEXT_RELATIONSHIP.intValue();
-        Set<Integer> allTypes = new HashSet<>();
         while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             RecordProxy<Long, RelationshipGroupRecord, Integer> change =
                     recordChangeSet.getRelGroupRecords().getOrLoad( groupId, type );
             RelationshipGroupRecord record = change.forReadingData();
             record.setPrev( previousGroupId ); // not persistent so not a "change"
-            allTypes.add( record.getType() );
             if ( record.getType() == type )
             {
                 return change;

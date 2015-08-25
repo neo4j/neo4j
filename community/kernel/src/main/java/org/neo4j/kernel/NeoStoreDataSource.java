@@ -143,7 +143,7 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextSupplier;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextFactory;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -962,15 +962,14 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
 
         LegacyPropertyTrackers legacyPropertyTrackers = new LegacyPropertyTrackers( propertyKeyTokenHolder,
                 nodeManager.getNodePropertyTrackers(), nodeManager.getRelationshipPropertyTrackers(), nodeManager );
-        final NeoStoreTransactionContextSupplier neoStoreTransactionContextSupplier =
-                new NeoStoreTransactionContextSupplier( neoStore );
+        NeoStoreTransactionContextFactory neoStoreTxContextFactory = new NeoStoreTransactionContextFactory( neoStore );
 
         StatementOperationParts statementOperations = buildStatementOperations( storeLayer, legacyPropertyTrackers,
                 constraintIndexCreator, updateableSchemaState, guard, legacyIndexStore );
 
         final TransactionHooks hooks = new TransactionHooks();
         final KernelTransactions kernelTransactions =
-                life.add( new KernelTransactions( neoStoreTransactionContextSupplier,
+                life.add( new KernelTransactions( neoStoreTxContextFactory,
                         neoStore, locks, integrityValidator, constraintIndexCreator, indexingService, labelScanStore,
                         statementOperations, updateableSchemaState, schemaWriteGuard, schemaIndexProviderMap,
                         transactionHeaderInformationFactory, storeLayer, transactionCommitProcess,

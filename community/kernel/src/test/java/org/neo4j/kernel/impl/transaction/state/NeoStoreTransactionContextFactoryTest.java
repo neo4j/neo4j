@@ -19,24 +19,27 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.collection.pool.LinkedQueuePool;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.junit.Test;
 
-public class NeoStoreTransactionContextSupplier extends LinkedQueuePool<NeoStoreTransactionContext>
+import org.neo4j.kernel.impl.locking.Locks;
+
+import static org.junit.Assert.assertNotSame;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.store.NeoStoreMocking.mockNeoStore;
+
+public class NeoStoreTransactionContextFactoryTest
 {
-    private final NeoStore neoStore;
-
-    public NeoStoreTransactionContextSupplier( NeoStore neoStore )
+    @Test
+    public void shouldCreateNewInstances()
     {
-        super( Runtime.getRuntime().availableProcessors() * 2, null,
-                new CheckStrategy.TimeoutCheckStrategy( 1000 ),
-                new Monitor.Adapter<>() );
-        this.neoStore = neoStore;
-    }
+        // Given
+        NeoStoreTransactionContextFactory supplier = new NeoStoreTransactionContextFactory( mockNeoStore() );
 
-    @Override
-    protected NeoStoreTransactionContext create()
-    {
-        return new NeoStoreTransactionContext( this, neoStore );
+        // When
+        NeoStoreTransactionContext context1 = supplier.newInstance( mock( Locks.Client.class ) );
+        NeoStoreTransactionContext context2 = supplier.newInstance( mock( Locks.Client.class ) );
+
+        // Then
+        assertNotSame( context1, context2 );
     }
 }
