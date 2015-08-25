@@ -86,7 +86,7 @@ public class IdGeneratorImpl implements IdGenerator
     // used to calculate number of ids actually in use
     private long defraggedIdCount = -1;
 
-    private final File fileName;
+    private final File file;
     private final FileSystemAbstraction fs;
     private StoreChannel fileChannel = null;
     // defragged ids read from file (freed in a previous session).
@@ -110,7 +110,7 @@ public class IdGeneratorImpl implements IdGenerator
      * happens one has to rebuild the id generator from the (node/rel/prop)
      * store file.
      *
-     * @param fileName
+     * @param file
      *            The file name (and path if needed) for the id generator to be
      *            opened
      * @param grabSize
@@ -123,7 +123,7 @@ public class IdGeneratorImpl implements IdGenerator
      * @throws UnderlyingStorageException
      *             If no such file exist or if the id generator is sticky
      */
-    public IdGeneratorImpl( FileSystemAbstraction fs, File fileName, int grabSize, long max, boolean aggressiveReuse,
+    public IdGeneratorImpl( FileSystemAbstraction fs, File file, int grabSize, long max, boolean aggressiveReuse,
             long highId )
     {
         this.fs = fs;
@@ -133,7 +133,7 @@ public class IdGeneratorImpl implements IdGenerator
             throw new IllegalArgumentException( "Illegal grabSize: " + grabSize );
         }
         this.max = max;
-        this.fileName = fileName;
+        this.file = file;
         this.grabSize = grabSize;
         initGenerator();
         this.highId.set( max( this.highId.get(), highId ) );
@@ -177,7 +177,7 @@ public class IdGeneratorImpl implements IdGenerator
         if ( id > max || id < 0  )
         {
             throw new UnderlyingStorageException(
-                    "Id capacity exceeded: " + id + " is not within bounds [0; " + max + "] for " + fileName );
+                    "Id capacity exceeded: " + id + " is not within bounds [0; " + max + "] for " + file );
         }
     }
 
@@ -215,7 +215,7 @@ public class IdGeneratorImpl implements IdGenerator
     {
         if ( fileChannel == null )
         {
-            throw new IllegalStateException( "Closed id generator " + fileName );
+            throw new IllegalStateException( "Closed id generator " + file );
         }
     }
 
@@ -302,7 +302,7 @@ public class IdGeneratorImpl implements IdGenerator
 
         if ( fileChannel == null )
         {
-            throw new IllegalStateException( "Generator closed " + fileName );
+            throw new IllegalStateException( "Generator closed " + file );
         }
         if ( id < 0 || id >= highId.get() )
         {
@@ -368,7 +368,7 @@ public class IdGeneratorImpl implements IdGenerator
         catch ( IOException e )
         {
             throw new UnderlyingStorageException(
-                "Unable to close id generator " + fileName, e );
+                    "Unable to close id generator " + file, e );
         }
     }
 
@@ -463,7 +463,7 @@ public class IdGeneratorImpl implements IdGenerator
     {
         try
         {
-            fileChannel = fs.open( fileName, "rw" );
+            fileChannel = fs.open( file, "rw" );
             ByteBuffer buffer = readHeader();
             markAsSticky( buffer );
 
@@ -475,7 +475,7 @@ public class IdGeneratorImpl implements IdGenerator
         catch ( IOException e )
         {
             throw new UnderlyingStorageException(
-                "Unable to init id generator " + fileName, e );
+                    "Unable to init id generator " + file, e );
         }
     }
 
@@ -491,7 +491,7 @@ public class IdGeneratorImpl implements IdGenerator
     {
         try
         {
-            ByteBuffer buffer = readHighIdFromHeader( fileChannel, fileName );
+            ByteBuffer buffer = readHighIdFromHeader( fileChannel, file );
             readPosition = HEADER_SIZE;
             this.highId.set( buffer.getLong() );
             return buffer;
@@ -549,7 +549,6 @@ public class IdGeneratorImpl implements IdGenerator
             readBuffer.flip();
             assert (bytesRead % 8) == 0;
             int idsRead = bytesRead / 8;
-            defraggedIdCount -= idsRead;
             for ( int i = 0; i < idsRead; i++ )
             {
                 long id = readBuffer.getLong();
@@ -666,9 +665,9 @@ public class IdGeneratorImpl implements IdGenerator
         {
             throw new RuntimeException( "Must be closed to delete" );
         }
-        if ( !fs.deleteFile( fileName ) )
+        if ( !fs.deleteFile( file ) )
         {
-            throw new UnderlyingStorageException( "Unable to delete id generator " + fileName );
+            throw new UnderlyingStorageException( "Unable to delete id generator " + file );
         }
     }
 
@@ -676,6 +675,6 @@ public class IdGeneratorImpl implements IdGenerator
     public String toString()
     {
         return "IdGeneratorImpl " + hashCode() + " [highId=" + highId + ", defragged=" + defraggedIdCount + ", fileName="
-                + fileName + ", max=" + max + ", aggressive=" + aggressiveReuse + "]";
+               + file + ", max=" + max + ", aggressive=" + aggressiveReuse + "]";
     }
 }
