@@ -24,46 +24,12 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
+import java.nio.channels.SelectableChannel;
 
 import org.neo4j.unsafe.impl.internal.dragons.LookupBypass;
 
 public class DelegateFileDispatcher extends AccessibleFileDisptacher
 {
-    private static final MethodHandle forceHandle = getForceHandle();
-
-    private static MethodHandle getForceHandle()
-    {
-        LookupBypass lookup = new LookupBypass();
-        MethodType arg2 = MethodType.methodType( int.class, FileDescriptor.class, boolean.class );
-        MethodType arg3 = MethodType.methodType( int.class, FileDescriptor.class, boolean.class, boolean.class );
-        MethodHandle handle = lookupFileDispatcherHandle( lookup, "force", arg2, false );
-        if ( handle == null )
-        {
-            handle = lookupFileDispatcherHandle( lookup, "force", arg3, true );
-        }
-        return handle;
-    }
-
-    private static MethodHandle lookupFileDispatcherHandle(
-            LookupBypass lookup, String name, MethodType type, boolean throwOnError )
-    {
-        try
-        {
-            Class<FileDispatcher> cls = FileDispatcher.class;
-            Method method = cls.getDeclaredMethod( name, type.parameterArray() );
-            method.setAccessible( true );
-            return lookup.unreflect( method ); // We have to unreflect because we need to setAccessible( true )
-        }
-        catch ( Exception e )
-        {
-            if ( throwOnError )
-            {
-                throw new LinkageError( "No such FileDispatcher method: " + name + " of type " + type );
-            }
-            return null;
-        }
-    }
-
     private final FileDispatcher delegate;
 
     public DelegateFileDispatcher( Object delegate )
@@ -95,6 +61,21 @@ public class DelegateFileDispatcher extends AccessibleFileDisptacher
         {
             throw new LinkageError( "not linked: FileDispatcher.force(FileDescriptor, boolean, boolean)", throwable );
         }
+    }
+
+    private static final MethodHandle forceHandle = getForceHandle();
+
+    private static MethodHandle getForceHandle()
+    {
+        LookupBypass lookup = new LookupBypass();
+        MethodType arg2 = MethodType.methodType( int.class, FileDescriptor.class, boolean.class );
+        MethodType arg3 = MethodType.methodType( int.class, FileDescriptor.class, boolean.class, boolean.class );
+        MethodHandle handle = lookupFileDispatcherHandle( lookup, "force", arg2, false );
+        if ( handle == null )
+        {
+            handle = lookupFileDispatcherHandle( lookup, "force", arg3, true );
+        }
+        return handle;
     }
 
     public long readv( FileDescriptor fd, long address, int len ) throws IOException
@@ -165,5 +146,83 @@ public class DelegateFileDispatcher extends AccessibleFileDisptacher
     public void close( FileDescriptor fd ) throws IOException
     {
         delegate.close( fd );
+    }
+
+    // new method introduced in oracle 8u60 and 7u80
+    boolean transferToDirectlyNeedsPositionLock()
+    {
+        if ( transferToDirectlyNeedsPositionLockHandle == null )
+        {
+            // whatever it should not be called...
+            return false;
+        }
+
+        try
+        {
+            return (Boolean) transferToDirectlyNeedsPositionLockHandle.invokeExact( delegate );
+        }
+        catch ( Throwable throwable )
+        {
+            throw new LinkageError( "not linked: FileDispatcher.transferToDirectlyNeedsPositionLock()", throwable );
+        }
+    }
+
+    private static final MethodHandle transferToDirectlyNeedsPositionLockHandle =
+            getTransferToDirectlyNeedsPositionLockHandle();
+
+    public static MethodHandle getTransferToDirectlyNeedsPositionLockHandle()
+    {
+        LookupBypass lookup = new LookupBypass();
+        MethodType methodType = MethodType.methodType( boolean.class );
+        return lookupFileDispatcherHandle( lookup, "transferToDirectlyNeedsPositionLock", methodType, false );
+    }
+
+    // new method introduced in oracle 8u60 and 7u80
+    boolean canTransferToDirectly( SelectableChannel selectableChannel )
+    {
+        if ( canTransferToDirectlyHandle == null )
+        {
+            // whatever it should not be called...
+            return false;
+        }
+
+        try
+        {
+            return (Boolean) canTransferToDirectlyHandle.invokeExact( delegate, selectableChannel );
+        }
+        catch ( Throwable throwable )
+        {
+            throw new LinkageError( "not linked: FileDispatcher.canTransferToDirectly(SelectableChannel)", throwable );
+        }
+    }
+
+    private static final MethodHandle canTransferToDirectlyHandle = getCanTransferToDirectlyHandle();
+
+    public static MethodHandle getCanTransferToDirectlyHandle()
+    {
+        LookupBypass lookup = new LookupBypass();
+        MethodType methodType = MethodType.methodType( boolean.class, SelectableChannel.class );
+        return lookupFileDispatcherHandle( lookup, "canTransferToDirectly", methodType, false );
+    }
+
+    // utility method
+    private static MethodHandle lookupFileDispatcherHandle(
+            LookupBypass lookup, String name, MethodType type, boolean throwOnError )
+    {
+        try
+        {
+            Class<FileDispatcher> cls = FileDispatcher.class;
+            Method method = cls.getDeclaredMethod( name, type.parameterArray() );
+            method.setAccessible( true );
+            return lookup.unreflect( method ); // We have to unreflect because we need to setAccessible( true )
+        }
+        catch ( Exception e )
+        {
+            if ( throwOnError )
+            {
+                throw new LinkageError( "No such FileDispatcher method: " + name + " of type " + type );
+            }
+            return null;
+        }
     }
 }
