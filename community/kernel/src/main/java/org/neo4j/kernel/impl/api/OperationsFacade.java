@@ -28,17 +28,16 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
@@ -82,14 +81,11 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 {
     final KernelStatement statement;
     private final StatementOperationParts operations;
-    private final ConstraintSemantics constraintSemantics;
 
-    OperationsFacade( KernelStatement statement, StatementOperationParts operations,
-            ConstraintSemantics constraintSemantics )
+    OperationsFacade( KernelStatement statement, StatementOperationParts operations )
     {
         this.statement = statement;
         this.operations = operations;
-        this.constraintSemantics = constraintSemantics;
     }
 
     final KeyReadOperations tokenRead()
@@ -936,7 +932,6 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
             throws CreateConstraintFailureException, AlreadyConstrainedException
     {
         statement.assertOpen();
-        constraintSemantics.assertPropertyConstraintCreationAllowed();
         return schemaWrite().nodePropertyExistenceConstraintCreate( statement, labelId, propertyKeyId );
     }
 
@@ -946,7 +941,6 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
             throws CreateConstraintFailureException, AlreadyConstrainedException
     {
         statement.assertOpen();
-        constraintSemantics.assertPropertyConstraintCreationAllowed();
         return schemaWrite().relationshipPropertyExistenceConstraintCreate( statement, relTypeId, propertyKeyId );
     }
 

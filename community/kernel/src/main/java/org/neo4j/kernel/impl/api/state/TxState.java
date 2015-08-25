@@ -909,15 +909,17 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public Cursor<NodeItem> augmentNodesGetAllCursor( Cursor<NodeItem> cursor )
     {
-        return hasChanges && nodes != null && !nodes.isEmpty() ? iteratorNodeCursor.get().init( cursor,
-                nodes.getAdded().iterator() ) : cursor;
+        return hasChanges && nodes != null && !nodes.isEmpty()
+               ? iteratorNodeCursor.get().init( cursor, nodes.getAdded().iterator() )
+               : cursor;
     }
 
     @Override
     public Cursor<RelationshipItem> augmentRelationshipsGetAllCursor( Cursor<RelationshipItem> cursor )
     {
-        return hasChanges && !relationships.isEmpty() ? iteratorRelationshipCursor.get().init( cursor,
-                toPrimitiveIterator( relationships.getAdded().iterator() ) ) : cursor;
+        return hasChanges && relationships != null && !relationships.isEmpty()
+               ? iteratorRelationshipCursor.get().init( cursor, toPrimitiveIterator( relationships.getAdded().iterator() ) )
+               : cursor;
     }
 
     @Override
@@ -1440,7 +1442,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         {
             return null;
         }
-        TreeMap<DefinedProperty,DiffSets<Long>> sortedUpdates = null;
+        TreeMap<DefinedProperty,DiffSets<Long>> sortedUpdates;
         if ( updates instanceof TreeMap )
         {
             sortedUpdates = (TreeMap<DefinedProperty,DiffSets<Long>>) updates;

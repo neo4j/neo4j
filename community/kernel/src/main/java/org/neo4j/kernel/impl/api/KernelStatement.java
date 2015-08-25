@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -54,7 +53,7 @@ public class KernelStatement implements TxStateHolder, Statement
 
     public KernelStatement( KernelTransactionImplementation transaction, IndexReaderFactory indexReaderFactory,
             LabelScanStore labelScanStore, TxStateHolder txStateHolder, Locks.Client locks,
-            StatementOperationParts operations, StoreStatement storeStatement, ConstraintSemantics constraintSemantics )
+            StatementOperationParts operations, StoreStatement storeStatement )
     {
         this.transaction = transaction;
         this.locks = locks;
@@ -62,7 +61,7 @@ public class KernelStatement implements TxStateHolder, Statement
         this.txStateHolder = txStateHolder;
         this.labelScanStore = labelScanStore;
         this.storeStatement = storeStatement;
-        this.facade = new OperationsFacade( this, operations, constraintSemantics );
+        this.facade = new OperationsFacade( this, operations );
     }
 
     @Override

@@ -25,6 +25,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.locking.Locks;
 
 import static org.junit.Assert.*;
@@ -55,7 +56,7 @@ public class ConstraintEnforcingEntityOperationsTest
         this.locks = mock( Locks.Client.class );
         when( state.locks() ).thenReturn( locks );
 
-        this.ops = new ConstraintEnforcingEntityOperations( null, readOps, schemaWriteOps, schemaReadOps );
+        this.ops = new ConstraintEnforcingEntityOperations( new StandardConstraintSemantics(), null, readOps, schemaWriteOps, schemaReadOps );
     }
 
     @Test

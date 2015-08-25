@@ -280,7 +280,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( currentStatement == null )
         {
             currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),
-                    labelScanStore, this, locks, operations, storeStatement, constraintSemantics );
+                    labelScanStore, this, locks, operations, storeStatement );
         }
         currentStatement.acquire();
         return currentStatement;
@@ -415,7 +415,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private boolean hasDataChanges()
     {
-        return hasTxStateWithChanges() ? txState.hasDataChanges() : false;
+        return hasTxStateWithChanges() && txState.hasDataChanges();
     }
 
     public TransactionRecordState getTransactionRecordState()

@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb._
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation}
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.test.ImpermanentGraphDatabase
 
@@ -40,8 +39,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     super.beforeEach()
     graph = new ImpermanentGraphDatabase
     outerTx = mock[Transaction]
-    statement = new KernelStatement(mock[KernelTransactionImplementation], null, null, null, null, null, null,
-      mock[ConstraintSemantics])
+    statement = new KernelStatement(mock[KernelTransactionImplementation], null, null, null, null, null, null)
   }
 
   test ("should_mark_transaction_successful_if_successful") {
