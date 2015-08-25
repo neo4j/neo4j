@@ -27,28 +27,32 @@ import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
 class CompileInterpolationsTest extends CypherFunSuite with AstConstructionTestSupport {
 
+  // We use scala string interpolations here to produce Cypher string interpolations in order to get around
+  // a really annoying scalac warning about possibly having forgotten to interpolate a string literal that
+  // contains a '$' (warning cannot be disables as of 25-08-2015)
+
   test("should compile correct interpolations") {
-    compilingInterpolationLiteral("").produces(Right(""))
-    compilingInterpolationLiteral("prefix").produces(Right("prefix"))
-    compilingInterpolationLiteral("${param}").produces(Left(ident("param")))
-    compilingInterpolationLiteral("Hello, ${{param}}!").produces(Right("Hello, "), Left(Parameter("param")_), Right("!"))
-    compilingInterpolationLiteral("Hello, $${Mats}!").produces(Right("Hello, ${Mats}!"))
-    compilingInterpolationLiteral("n.prop is ${n.prop}").produces(Right("n.prop is "), Left(Property(ident("n"), PropertyKeyName("prop")_)_))
-    compilingInterpolationLiteral("${a}${b}").produces(Left(ident("a")), Left(ident("b")))
-    compilingInterpolationLiteral("Hello, ${{name}}! Would you like to win $$${amount}?").produces(
+    compilingInterpolationLiteral(s"").produces(Right(""))
+    compilingInterpolationLiteral(s"prefix").produces(Right("prefix"))
+    compilingInterpolationLiteral(s"$${param}").produces(Left(ident("param")))
+    compilingInterpolationLiteral(s"Hello, $${{param}}!").produces(Right("Hello, "), Left(Parameter("param")_), Right("!"))
+    compilingInterpolationLiteral(s"Hello, $$$${Mats}!").produces(Right(s"Hello, $${Mats}!"))
+    compilingInterpolationLiteral(s"n.prop is $${n.prop}").produces(Right("n.prop is "), Left(Property(ident("n"), PropertyKeyName("prop")_)_))
+    compilingInterpolationLiteral(s"$${a}$${b}").produces(Left(ident("a")), Left(ident("b")))
+    compilingInterpolationLiteral(s"Hello, $${{name}}! Would you like to win $$$$$${amount}?").produces(
       Right("Hello, "), Left(Parameter("name")_), Right("! Would you like to win $"), Left(ident("amount")), Right("?")
     )
-    compilingInterpolationLiteral("${prefix}%").produces(Left(ident("prefix")), Right("%"))
-    compilingInterpolationLiteral("${''}").produces(Left(StringLiteral("") _))
+    compilingInterpolationLiteral(s"$${prefix}%").produces(Left(ident("prefix")), Right("%"))
+    compilingInterpolationLiteral(s"$${''}").produces(Left(StringLiteral("") _))
   }
 
   test("should fail to compile unbalanced interpolations") {
-    compilingInterpolationLiteral("$").throwsSyntaxException()
-    compilingInterpolationLiteral("${").throwsSyntaxException()
-    compilingInterpolationLiteral("Mixed ${{param}").throwsSyntaxException()
-    compilingInterpolationLiteral("${}").throwsSyntaxException()
-    compilingInterpolationLiteral("$a").throwsSyntaxException()
-    compilingInterpolationLiteral("characters in a string $ continuation").throwsSyntaxException()
+    compilingInterpolationLiteral(s"$$").throwsSyntaxException()
+    compilingInterpolationLiteral(s"$${").throwsSyntaxException()
+    compilingInterpolationLiteral(s"Mixed $${{param}").throwsSyntaxException()
+    compilingInterpolationLiteral(s"$${}").throwsSyntaxException()
+    compilingInterpolationLiteral(s"$$a").throwsSyntaxException()
+    compilingInterpolationLiteral(s"characters in a string $$ continuation").throwsSyntaxException()
   }
 
   private case class compilingInterpolationLiteral(pattern: String) {

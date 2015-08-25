@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_3.commands.values.InterpolationValue
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{InterpolatedStringPart, InterpolationStringPart, InterpolationValue, LiteralStringPart}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
@@ -31,7 +31,7 @@ class InterpolationValueTest extends CypherFunSuite {
 
   test("should compile literals") {
     evaluateInterpolation(Right("string"))().to(LiteralStringPart("string"))
-    evaluateInterpolation(Right("$"))().to(LiteralStringPart("$"))
+    evaluateInterpolation(Right(s"$$"))().to(LiteralStringPart("$"))
     evaluateInterpolation(Right("\'\\"))().to(LiteralStringPart("\'\\"))
   }
 

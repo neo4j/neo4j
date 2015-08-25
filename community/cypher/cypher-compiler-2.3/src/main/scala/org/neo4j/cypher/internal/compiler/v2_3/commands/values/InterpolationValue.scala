@@ -19,12 +19,39 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands.values
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.InterpolationStringPart
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
 
 // See ast.Interpolation for the role of this class
 case class InterpolationValue(parts: NonEmptyList[InterpolationStringPart]) {
-
-  def interpolate: String = parts.map(_.value).foldLeft("")(_ + _)
+  def interpolate[T](mode: InterpolationMode[T]): T = mode(parts)
 }
 
+sealed trait InterpolationStringPart {
+  def value: String
+}
+
+final case class InterpolatedStringPart(value: String) extends InterpolationStringPart
+final case class LiteralStringPart(value: String) extends InterpolationStringPart
+
+sealed trait InterpolationMode[+T] extends (NonEmptyList[InterpolationStringPart] => T)
+
+case object TextInterpolationMode extends InterpolationMode[String] {
+
+  def apply(parts: NonEmptyList[InterpolationStringPart]): String =
+    parts.map(_.value).foldLeft("")(_ + _)
+}
+
+case object PatternInterpolationMode extends InterpolationMode[java.util.regex.Pattern] {
+
+  def apply(parts: NonEmptyList[InterpolationStringPart]): java.util.regex.Pattern = {
+    val builder = new StringBuilder()
+    parts.foreach {
+      case InterpolatedStringPart(partText) =>
+        builder ++= java.util.regex.Pattern.quote(partText)
+
+      case LiteralStringPart(partText) =>
+        builder ++= partText
+    }
+    builder.result().r.pattern
+  }
+}

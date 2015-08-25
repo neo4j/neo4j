@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_3.commands.values.InterpolationValue
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{InterpolationValue, TextInterpolationMode}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v2_3.ParameterWrongTypeException
@@ -42,7 +42,7 @@ object toStringValue extends (Any => String) {
   def apply(value: Any) = value match {
     case v: Number => v.toString
     case v: String => v
-    case v: InterpolationValue => v.interpolate
+    case v: InterpolationValue => v.interpolate(TextInterpolationMode)
     case v =>
       throw new ParameterWrongTypeException(s"Expected a String or Number, got: $v")
   }

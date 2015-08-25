@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.values.InterpolationValue
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{InterpolatedStringPart, InterpolationStringPart, InterpolationValue, LiteralStringPart}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
@@ -32,13 +32,13 @@ import scala.collection.mutable
 // See ast.Interpolation for the role of this class
 case class Interpolation(parts: NonEmptyList[Either[Expression, String]]) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
-    val partsValues = compile(parts, ctx, state, NonEmptyList.newBuilder[InterpolationStringPart])
+    val partsValues = evaluate(parts, ctx, state, NonEmptyList.newBuilder[InterpolationStringPart])
     val result = partsValues.map(InterpolationValue).orNull
     result
   }
 
   @tailrec
-  private def compile(
+  private def evaluate(
     remaining: NonEmptyList[Either[Expression, String]],
     ctx: ExecutionContext,
     state: QueryState,
@@ -64,7 +64,7 @@ case class Interpolation(parts: NonEmptyList[Either[Expression, String]]) extend
     else
       remaining.tailOption match {
         case None => acc.result()
-        case Some(tail) => compile(tail, ctx, state, acc)
+        case Some(tail) => evaluate(tail, ctx, state, acc)
       }
   }
 
@@ -78,12 +78,4 @@ case class Interpolation(parts: NonEmptyList[Either[Expression, String]]) extend
 
   override def toString = s"Interpolation(${parts.map(_.toString).reduceLeft(_ + ", " + _)}})"
 }
-
-// See ast.Interpolation for the role of this class
-sealed trait InterpolationStringPart {
-  def value: String
-}
-
-final case class InterpolatedStringPart(value: String) extends InterpolationStringPart
-final case class LiteralStringPart(value: String) extends InterpolationStringPart
 

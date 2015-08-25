@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands.predicates
 
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.values.InterpolationValue
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{InterpolationValue, PatternInterpolationMode}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException
 
@@ -52,7 +52,7 @@ final case class MatchLiteralRegex(lhs: Expression, regex: Literal)
   )
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState) =
-    asOptString(lhs(m)).map(pattern.matcher(_).matches())
+    Option(asString(lhs(m))).map(pattern.matcher(_).matches())
 
   override def toString = s"$lhs =~ $regex"
 }
@@ -62,29 +62,21 @@ final case class MatchDynamicRegex(lhs: Expression, regex: Expression)
   extends MatchRegex[Expression] {
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] =
-    asOptString(lhs(m)).flatMap { lhs =>
+    Option(asString(lhs(m))).flatMap { lhs =>
       regexConverter(regex(m)).map(_.matcher(lhs).matches())
     }
 
   override def toString: String = s"$lhs =~ /$regex/"
 }
 
-object defaultRegexConverter extends (Any => Option[java.util.regex.Pattern]) with StringHelper {
-  override def apply(v: Any) = {
-    val patternText = v match {
-      case patternText: String => patternText
-      case InterpolationValue(parts) =>
-        val builder = new StringBuilder()
-        parts.foreach {
-          case InterpolatedStringPart(partText) =>
-            builder ++= java.util.regex.Pattern.quote(partText)
+object defaultRegexConverter extends (Any => Option[java.util.regex.Pattern]) {
 
-          case LiteralStringPart(partText) =>
-            builder ++= partText
-        }
-        builder.result()
-    }
-    Some(patternText.r.pattern)
+  override def apply(v: Any) = v match {
+    case patternText: String =>
+      Some(patternText.r.pattern)
+
+    case interpolation: InterpolationValue =>
+      Some(interpolation.interpolate(PatternInterpolationMode))
   }
 }
 
