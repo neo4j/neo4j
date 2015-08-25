@@ -20,6 +20,11 @@
 package org.neo4j.kernel.impl.factory;
 
 import org.neo4j.kernel.SchemaRuleVerifier;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.api.txstate.TxStateVisitor;
+import org.neo4j.kernel.impl.api.StatementOperationParts;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
@@ -40,5 +45,12 @@ class CommunitySchemaRuleVerifier implements SchemaRuleVerifier
     public void assertPropertyConstraintCreationAllowed()
     {
         throw new IllegalStateException("Property existence constraints can only be used on Neo4j enterprise"); // todo: message and new exception type
+    }
+
+    @Override
+    public TxStateVisitor createVerifierFor( StatementOperationParts operations, StoreStatement storeStatement,
+            StoreReadLayer storeLayer, TxStateHolder holder, TxStateVisitor visitor )
+    {
+        return visitor;
     }
 }

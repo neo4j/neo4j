@@ -19,7 +19,16 @@
  */
 package org.neo4j.kernel.ha.factory;
 
+import java.util.Iterator;
+
+import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.kernel.SchemaRuleVerifier;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.api.txstate.TxStateVisitor;
+import org.neo4j.kernel.impl.api.StatementOperationParts;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 
 class EnterpriseSchemaRuleVerifier implements SchemaRuleVerifier
@@ -32,5 +41,22 @@ class EnterpriseSchemaRuleVerifier implements SchemaRuleVerifier
     @Override
     public void assertPropertyConstraintCreationAllowed()
     {
+    }
+
+    @Override
+    public TxStateVisitor createVerifierFor( StatementOperationParts operations, StoreStatement storeStatement,
+            StoreReadLayer storeLayer, TxStateHolder holder, TxStateVisitor visitor ) {
+        Iterator<PropertyConstraint> constraints = storeLayer.constraintsGetAll();
+        while ( constraints.hasNext() )
+        {
+            PropertyConstraint constraint = constraints.next();
+            if ( constraint.type() == ConstraintType.NODE_PROPERTY_EXISTENCE ||
+                 constraint.type() == ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE )
+            {
+                return new PropertyExistenceEnforcer( operations.entityReadOperations(), visitor,
+                        holder, storeLayer, storeStatement );
+            }
+        }
+        return visitor;
     }
 }
