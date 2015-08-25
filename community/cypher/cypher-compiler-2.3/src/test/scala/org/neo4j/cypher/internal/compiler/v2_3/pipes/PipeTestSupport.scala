@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherTestSupport
 import org.scalatest.mock.MockitoSugar
 
 trait PipeTestSupport extends CypherTestSupport with MockitoSugar {

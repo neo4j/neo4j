@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
-import org.neo4j.cypher.internal.semantics.v2_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v2_3.Rewriter
 import org.neo4j.cypher.internal.compiler.v2_3.planner.PlannerQuery
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 

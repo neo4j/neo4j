@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
-import org.neo4j.cypher.internal.semantics.v2_3.ast._
-import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
 object PredicateSplitterTest extends AstConstructionTestSupport {
   val RETURN_ALL = Return(distinct = false, ReturnItems(includeExisting = true, Seq.empty)_, None, None, None)_

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{CSVResources, QueryContext}
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, ExplainMode, _}
-import org.neo4j.cypher.internal.semantics.v2_3.CypherException
+import org.neo4j.cypher.internal.frontend.v2_3.CypherException
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 
 case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: List[String]) extends ExecutionResultBuilderFactory {

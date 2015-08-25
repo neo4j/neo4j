@@ -23,11 +23,11 @@ import java.lang.reflect.Method
 
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlanningFunction2, QueryPlannerConfiguration}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery, QueryGraph}
-import org.neo4j.cypher.internal.semantics.v2_3.Foldable._
-import org.neo4j.cypher.internal.semantics.v2_3.Rewritable._
-import org.neo4j.cypher.internal.semantics.v2_3.ast.{Expression, Identifier}
-import org.neo4j.cypher.internal.semantics.v2_3.perty._
-import org.neo4j.cypher.internal.semantics.v2_3.{InternalException, Rewritable}
+import org.neo4j.cypher.internal.frontend.v2_3.Foldable._
+import org.neo4j.cypher.internal.frontend.v2_3.Rewritable._
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{Expression, Identifier}
+import org.neo4j.cypher.internal.frontend.v2_3.perty._
+import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, Rewritable}
 
 /*
 A LogicalPlan is an algebraic query, which is represented by a query tree whose leaves are database relations and

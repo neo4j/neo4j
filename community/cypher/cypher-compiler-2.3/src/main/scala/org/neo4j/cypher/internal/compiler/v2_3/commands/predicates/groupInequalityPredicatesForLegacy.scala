@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.predicates
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier, Property}
-import org.neo4j.cypher.internal.semantics.v2_3.helpers.NonEmptyList
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
 
 // This transforms
 //

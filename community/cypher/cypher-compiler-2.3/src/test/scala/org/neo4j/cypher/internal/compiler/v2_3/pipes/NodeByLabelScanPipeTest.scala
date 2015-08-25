@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import org.neo4j.cypher.internal.semantics.v2_3.ast.LabelName
+import org.neo4j.cypher.internal.frontend.v2_3.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
-import org.neo4j.cypher.internal.semantics.v2_3.{SemanticTable, LabelId}
-import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.{SemanticTable, LabelId}
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 
 class NodeByLabelScanPipeTest extends CypherFunSuite {

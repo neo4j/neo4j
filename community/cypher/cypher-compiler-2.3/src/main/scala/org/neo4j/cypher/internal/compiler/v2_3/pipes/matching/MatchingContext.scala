@@ -24,7 +24,7 @@ import commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import pipes.QueryState
-import org.neo4j.cypher.internal.semantics.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import collection.immutable
 
 /**

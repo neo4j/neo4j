@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.cypher.internal.semantics.v2_3.IdentityMap
+import org.neo4j.cypher.internal.frontend.v2_3.IdentityMap
 
 object IdentitySet {
   private val PRESENT = new Object

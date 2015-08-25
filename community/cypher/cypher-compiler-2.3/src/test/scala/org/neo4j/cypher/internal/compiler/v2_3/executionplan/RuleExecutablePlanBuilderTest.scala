@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_3.{Monitors, PreparedQuery, devNullLogger}
-import org.neo4j.cypher.internal.semantics.v2_3.parser.CypherParser
-import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.semantics.v2_3.{Scope, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v2_3.parser.CypherParser
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.{Scope, SemanticTable}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class RuleExecutablePlanBuilderTest extends CypherFunSuite {

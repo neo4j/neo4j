@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityProducer, QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-import org.neo4j.cypher.internal.semantics.v2_3.symbols._
-import org.neo4j.cypher.internal.semantics.v2_3.{InternalException, InvalidSemanticsException, MergeConstraintConflictException}
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, InvalidSemanticsException, MergeConstraintConflictException}
 import org.neo4j.graphdb.Node
 
 final case class IndexNodeProducer(label: KeyToken, propertyKey: KeyToken, producer: EntityProducer[Node]) extends EntityProducer[Node] {

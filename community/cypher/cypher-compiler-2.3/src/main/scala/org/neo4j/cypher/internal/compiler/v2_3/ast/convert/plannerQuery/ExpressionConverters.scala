@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.{LabelPredicateNorm
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.UnNamedNameGenerator._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, PatternLength, SimplePatternLength, VarPatternLength}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{Predicate, QueryGraph}
-import org.neo4j.cypher.internal.semantics.v2_3.ast._
-import org.neo4j.cypher.internal.semantics.v2_3.{Rewriter, topDown}
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
+import org.neo4j.cypher.internal.frontend.v2_3.{Rewriter, topDown}
 
 object ExpressionConverters {
   val normalizer = MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer)

@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import java.io.PrintWriter
 
-import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{ExecutionPlanDescription, Result}
 
 import scala.collection.Map

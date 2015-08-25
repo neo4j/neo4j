@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.Selection
-import org.neo4j.cypher.internal.semantics.v2_3.{bottomUp, Rewriter}
+import org.neo4j.cypher.internal.frontend.v2_3.{bottomUp, Rewriter}
 
 case object fuseSelections extends Rewriter {
 

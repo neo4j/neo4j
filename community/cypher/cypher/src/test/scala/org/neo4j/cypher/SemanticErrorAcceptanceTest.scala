@@ -528,7 +528,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   def executeAndEnsureError(query: String, expected: String) {
-    import org.neo4j.cypher.internal.semantics.v2_3.helpers.StringHelper._
+    import org.neo4j.cypher.internal.frontend.v2_3.helpers.StringHelper._
 
     val fixedExpected = expected.fixPosition
     try {

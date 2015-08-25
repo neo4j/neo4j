@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.{Ascending, Descending, Sor
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{PlannerQuery, QueryProjection}
-import org.neo4j.cypher.internal.semantics.v2_3.ast.Identifier
-import org.neo4j.cypher.internal.semantics.v2_3.{InternalException, ast}
+import org.neo4j.cypher.internal.frontend.v2_3.ast.Identifier
+import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, ast}
 
 object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
 

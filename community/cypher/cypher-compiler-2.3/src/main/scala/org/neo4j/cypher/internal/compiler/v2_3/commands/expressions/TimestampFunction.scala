@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import pipes.QueryState
-import org.neo4j.cypher.internal.semantics.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
 case class TimestampFunction() extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState):Any = state.readTimeStamp()

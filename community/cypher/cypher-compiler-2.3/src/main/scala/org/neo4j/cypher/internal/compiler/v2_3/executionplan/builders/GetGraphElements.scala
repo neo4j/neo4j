@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
-import org.neo4j.cypher.internal.semantics.v2_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException
 import org.neo4j.graphdb.PropertyContainer
 
 import scala.collection.JavaConverters._

@@ -29,7 +29,7 @@ import org.neo4j.cypher.export.{DatabaseSubGraph, SubGraphExporter}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.cypher.internal.semantics.v2_3.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.{RewindableExecutionResult, ServerExecutionEngine}
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.graphdb._

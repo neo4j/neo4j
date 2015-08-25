@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast.conditions
 
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.Condition
-import org.neo4j.cypher.internal.semantics.v2_3.ast.{Match, NodePattern, RelationshipPattern}
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{Match, NodePattern, RelationshipPattern}
 
 case object noUnnamedPatternElementsInMatch extends Condition {
   def apply(that: Any): Seq[String] = {

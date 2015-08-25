@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import pipes.QueryState
-import org.neo4j.cypher.internal.semantics.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
 case class ForeachAction(collection: Expression, id: String, actions: Seq[UpdateAction])
   extends UpdateAction

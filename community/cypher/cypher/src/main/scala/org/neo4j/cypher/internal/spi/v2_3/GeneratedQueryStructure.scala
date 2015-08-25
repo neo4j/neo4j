@@ -39,8 +39,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, TaskCloser}
-import org.neo4j.cypher.internal.semantics.v2_3.symbols.CypherType
-import org.neo4j.cypher.internal.semantics.v2_3.{CypherExecutionException, ParameterNotFoundException, symbols}
+import org.neo4j.cypher.internal.frontend.v2_3.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v2_3.{CypherExecutionException, ParameterNotFoundException, symbols}
 import org.neo4j.function.Supplier
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb._

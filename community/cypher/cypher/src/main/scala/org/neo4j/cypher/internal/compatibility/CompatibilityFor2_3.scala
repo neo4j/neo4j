@@ -30,9 +30,9 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerFactory, DPPlannerName, ExplainMode => ExplainModev2_3, GreedyPlannerName, IDPPlannerName, InfoLogger, Monitors, NormalMode => NormalModev2_3, PlannerName, ProfileMode => ProfileModev2_3, _}
-import org.neo4j.cypher.internal.semantics.v2_3.notification.{InternalNotification, LegacyPlannerNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
-import org.neo4j.cypher.internal.semantics.v2_3.spi.MapToPublicExceptions
-import org.neo4j.cypher.internal.semantics.v2_3.{CypherException => InternalCypherException}
+import org.neo4j.cypher.internal.frontend.v2_3.notification.{InternalNotification, LegacyPlannerNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
+import org.neo4j.cypher.internal.frontend.v2_3.spi.MapToPublicExceptions
+import org.neo4j.cypher.internal.frontend.v2_3.{CypherException => InternalCypherException}
 import org.neo4j.cypher.internal.spi.v2_3.{GeneratedQueryStructure, TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.graphdb.Result.ResultVisitor
@@ -315,7 +315,7 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
     getClass.getName + "@" + Integer.toHexString(hashCode())
   }
 
-  private implicit class ConvertibleCompilerInputPosition(pos: semantics.v2_3.InputPosition) {
+  private implicit class ConvertibleCompilerInputPosition(pos: frontend.v2_3.InputPosition) {
     def asInputPosition = new InputPosition(pos.offset, pos.line, pos.column)
   }
 }

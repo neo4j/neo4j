@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers.{CollectionSupport, itera
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
-import org.neo4j.cypher.internal.semantics.v2_3.helpers.Eagerly
-import org.neo4j.cypher.internal.semantics.v2_3.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v2_3.notification.InternalNotification
 import org.neo4j.graphdb.QueryExecutionType.{QueryType, profiled, query}
 import org.neo4j.graphdb.{NotFoundException, ResourceIterator}
 import org.neo4j.graphdb.Result.ResultVisitor

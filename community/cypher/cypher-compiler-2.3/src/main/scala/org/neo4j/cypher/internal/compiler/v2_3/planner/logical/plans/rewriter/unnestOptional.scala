@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.semantics.v2_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v2_3.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.semantics.v2_3.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v2_3.{Rewriter, bottomUp}
 
 case object unnestOptional extends Rewriter {
 

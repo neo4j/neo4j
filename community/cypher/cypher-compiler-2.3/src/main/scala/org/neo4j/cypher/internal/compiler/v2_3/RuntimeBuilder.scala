@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.semantics.v2_3.notification.RuntimeUnsupportedNotification
-import org.neo4j.cypher.internal.semantics.v2_3.{InternalException, InvalidArgumentException, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v2_3.notification.RuntimeUnsupportedNotification
+import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, InvalidArgumentException, SemanticTable}
 import org.neo4j.helpers.Clock
 
 object RuntimeBuilder {

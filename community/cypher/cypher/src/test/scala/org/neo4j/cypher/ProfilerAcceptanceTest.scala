@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.helpers.TxCounts
-import org.neo4j.cypher.internal.semantics.v2_3.helpers.StringHelper.RichString
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.StringHelper.RichString
 
 class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFileTestSupport with NewPlannerTestSupport {
 

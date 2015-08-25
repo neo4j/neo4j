@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.docgen
 
-import org.neo4j.cypher.internal.semantics.v2_3.perty._
-import org.neo4j.cypher.internal.semantics.v2_3.perty.handler.{SimpleDocHandler, DefaultDocHandler}
+import org.neo4j.cypher.internal.frontend.v2_3.perty._
+import org.neo4j.cypher.internal.frontend.v2_3.perty.handler.{SimpleDocHandler, DefaultDocHandler}
 
 // Doc builder for printing any internal class
 case object InternalDocHandler extends CustomDocHandler[Any] {

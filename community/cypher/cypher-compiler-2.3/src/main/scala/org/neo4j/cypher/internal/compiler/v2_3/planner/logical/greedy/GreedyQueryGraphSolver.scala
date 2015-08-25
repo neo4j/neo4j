@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.solveOptionalMatches
-import org.neo4j.cypher.internal.semantics.v2_3.HintException
+import org.neo4j.cypher.internal.frontend.v2_3.HintException
 
 class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[GreedyPlanTable],
                              val config: QueryPlannerConfiguration = QueryPlannerConfiguration.default)

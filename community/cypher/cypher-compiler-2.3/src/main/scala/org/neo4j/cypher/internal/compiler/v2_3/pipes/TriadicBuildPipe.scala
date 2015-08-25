@@ -23,7 +23,7 @@ import org.neo4j.collection.primitive.{Primitive, PrimitiveLongSet}
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
-import org.neo4j.cypher.internal.semantics.v2_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException
 import org.neo4j.graphdb.Node
 
 import scala.collection.mutable.ListBuffer

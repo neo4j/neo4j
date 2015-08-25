@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionCo
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => commandexpressions, values => commandvalues}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.UnNamedNameGenerator
-import org.neo4j.cypher.internal.semantics.v2_3.{SemanticDirection, SyntaxException, ast}
+import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, SyntaxException, ast}
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 object PatternConverters {

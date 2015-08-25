@@ -27,11 +27,11 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, HasL
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{UnresolvedLabel, UnresolvedProperty}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-import org.neo4j.cypher.internal.semantics.v2_3.ast
-import org.neo4j.cypher.internal.semantics.v2_3.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.semantics.v2_3.helpers.NonEmptyList
-import org.neo4j.cypher.internal.semantics.v2_3.symbols._
-import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.ast
+import org.neo4j.cypher.internal.frontend.v2_3.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class NodeFetchStrategyTest extends CypherFunSuite {

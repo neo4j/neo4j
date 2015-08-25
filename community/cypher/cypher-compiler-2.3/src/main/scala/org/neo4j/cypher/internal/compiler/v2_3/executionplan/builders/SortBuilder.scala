@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{CachedExpre
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{LegacySortPipe, PipeMonitor}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.semantics.v2_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException
 
 class SortBuilder extends PlanBuilder with SortingPreparations {
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {

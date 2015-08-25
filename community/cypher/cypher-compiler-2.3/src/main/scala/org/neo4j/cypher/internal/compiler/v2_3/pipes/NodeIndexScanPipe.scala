@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsLabe
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.Index
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-import org.neo4j.cypher.internal.semantics.v2_3.ast.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.semantics.v2_3.symbols.CTNode
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{LabelToken, PropertyKeyToken}
+import org.neo4j.cypher.internal.frontend.v2_3.symbols.CTNode
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 case class NodeIndexScanPipe(ident: String,

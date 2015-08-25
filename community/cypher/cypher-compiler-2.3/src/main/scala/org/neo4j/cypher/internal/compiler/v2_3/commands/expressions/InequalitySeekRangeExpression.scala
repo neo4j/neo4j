@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionContext, InequalitySeekRange}
-import org.neo4j.cypher.internal.semantics.v2_3.InternalException
-import org.neo4j.cypher.internal.semantics.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.InternalException
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
 case class InequalitySeekRangeExpression(range: InequalitySeekRange[Expression])
   extends Expression {

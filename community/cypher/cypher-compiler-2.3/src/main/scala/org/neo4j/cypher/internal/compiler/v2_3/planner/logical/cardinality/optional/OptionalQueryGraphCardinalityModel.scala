@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.opti
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.{QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
-import org.neo4j.cypher.internal.semantics.v2_3.SemanticTable
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticTable
 
 case class OptionalQueryGraphCardinalityModel(inner: QueryGraphCardinalityModel) extends QueryGraphCardinalityModel {
 

@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.Namespacer.IdentifierRenamings
-import org.neo4j.cypher.internal.semantics.v2_3.Foldable._
-import org.neo4j.cypher.internal.semantics.v2_3.ast._
-import org.neo4j.cypher.internal.semantics.v2_3.{Ref, Rewriter, SemanticTable, bottomUp, _}
+import org.neo4j.cypher.internal.frontend.v2_3.Foldable._
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
+import org.neo4j.cypher.internal.frontend.v2_3.{Ref, Rewriter, SemanticTable, bottomUp, _}
 
 object Namespacer {
 

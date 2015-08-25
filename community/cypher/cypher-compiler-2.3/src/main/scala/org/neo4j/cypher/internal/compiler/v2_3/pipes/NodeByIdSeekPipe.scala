@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsNode
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{CollectionSupport, IsCollection}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-import org.neo4j.cypher.internal.semantics.v2_3.symbols.CTNode
+import org.neo4j.cypher.internal.frontend.v2_3.symbols.CTNode
 
 sealed trait SeekArgs {
   def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any]

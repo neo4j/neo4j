@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3
 
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.semantics.v2_3.{PropertyKeyId, RelTypeId, LabelId}
+import org.neo4j.cypher.internal.frontend.v2_3.{PropertyKeyId, RelTypeId, LabelId}
 
 
 case object HardcodedGraphStatistics extends HardcodedGraphStatisticsValues

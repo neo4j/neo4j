@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, HasL
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.{MergeNodeAction, MergePatternAction, PropertySetAction, UpdateAction}
-import org.neo4j.cypher.internal.semantics.v2_3.PatternException
+import org.neo4j.cypher.internal.frontend.v2_3.PatternException
 
 case class MergeAst(patterns: Seq[AbstractPattern],
                     onActions: Seq[OnAction],

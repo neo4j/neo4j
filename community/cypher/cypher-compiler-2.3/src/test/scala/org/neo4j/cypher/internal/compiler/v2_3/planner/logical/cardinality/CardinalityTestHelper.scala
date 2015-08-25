@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, St
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, QueryGraphProducer, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.semantics.v2_3.ast.Identifier
-import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.semantics.v2_3.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v2_3.ast.Identifier
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.mutable

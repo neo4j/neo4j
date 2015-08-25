@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
-import org.neo4j.cypher.internal.semantics.v2_3.CypherTypeException;
-import org.neo4j.cypher.internal.semantics.v2_3.IncomparableValuesException;
+import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException;
+import org.neo4j.cypher.internal.frontend.v2_3.IncomparableValuesException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.MathUtil;

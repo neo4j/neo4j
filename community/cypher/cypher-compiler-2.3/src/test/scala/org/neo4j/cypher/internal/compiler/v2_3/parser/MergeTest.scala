@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenT
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{MergeAst, expressions}
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.PropertySetAction
 import org.neo4j.cypher.internal.compiler.v2_3.{AbstractPattern, On, OnAction, ParsedEntity}
-import org.neo4j.cypher.internal.semantics.v2_3.ast
-import org.neo4j.cypher.internal.semantics.v2_3.parser.{Expressions, ParserTest, Query}
+import org.neo4j.cypher.internal.frontend.v2_3.ast
+import org.neo4j.cypher.internal.frontend.v2_3.parser.{Expressions, ParserTest, Query}
 import org.parboiled.scala._
 
 class MergeTest extends ParserTest[ast.Merge, MergeAst] with Query with Expressions {

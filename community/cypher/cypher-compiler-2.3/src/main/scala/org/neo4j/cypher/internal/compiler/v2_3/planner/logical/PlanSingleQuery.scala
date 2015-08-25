@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_3.planner.PlannerQuery
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.verifyBestPlan
-import org.neo4j.cypher.internal.semantics.v2_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v2_3.Rewriter
 
 /*
 This coordinates PlannerQuery planning and delegates work to the classes that do the actual planning of

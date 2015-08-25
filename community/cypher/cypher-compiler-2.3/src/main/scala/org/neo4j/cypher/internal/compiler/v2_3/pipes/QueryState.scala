@@ -25,7 +25,7 @@ import org.neo4j.collection.primitive.PrimitiveLongSet
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
-import org.neo4j.cypher.internal.semantics.v2_3.ParameterNotFoundException
+import org.neo4j.cypher.internal.frontend.v2_3.ParameterNotFoundException
 
 import scala.collection.mutable
 

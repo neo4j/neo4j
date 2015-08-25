@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.prettifier
 
-import org.neo4j.cypher.internal.semantics.v2_3.SyntaxException
-import org.neo4j.cypher.internal.semantics.v2_3.parser.{Base, Strings}
+import org.neo4j.cypher.internal.frontend.v2_3.SyntaxException
+import org.neo4j.cypher.internal.frontend.v2_3.parser.{Base, Strings}
 import org.parboiled.scala._
 
 import scala.collection.mutable

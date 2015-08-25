@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{InternalPlanDescription, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.{SymbolTable, SymbolTypeAssertionCompiler}
-import org.neo4j.cypher.internal.semantics.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
 case class ArgumentPipe(symbols: SymbolTable)
                        (val estimatedCardinality: Option[Double] = None)

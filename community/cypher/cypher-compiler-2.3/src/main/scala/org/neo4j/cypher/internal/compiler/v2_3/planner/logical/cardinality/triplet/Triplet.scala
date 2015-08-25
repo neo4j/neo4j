@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Multiplier
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.TokenSpec
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, PatternLength, SimplePatternLength}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.semantics.v2_3.{LabelId, RelTypeId}
+import org.neo4j.cypher.internal.frontend.v2_3.{LabelId, RelTypeId}
 
 case class Triplet(name: IdName,
                    left: IdName, leftLabels: Set[TokenSpec[LabelId]],

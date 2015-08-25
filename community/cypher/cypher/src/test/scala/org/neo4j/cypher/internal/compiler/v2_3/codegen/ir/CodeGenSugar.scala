@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, InternalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_3.{CostBasedPlannerName, ExecutionMode, NormalMode, TaskCloser}
-import org.neo4j.cypher.internal.semantics.v2_3.SemanticTable
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticTable
 import org.neo4j.cypher.internal.spi.v2_3.GeneratedQueryStructure
 import org.neo4j.function.Supplier
 import org.neo4j.graphdb.GraphDatabaseService

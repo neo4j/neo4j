@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.semantics.v2_3.ast.{LabelName, RelTypeName}
-import org.neo4j.cypher.internal.semantics.v2_3.{InternalException, LabelId, RelTypeId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{LabelName, RelTypeName}
+import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, LabelId, RelTypeId, SemanticTable}
 import org.neo4j.graphdb.Direction
 
 trait Pattern2Selectivity {

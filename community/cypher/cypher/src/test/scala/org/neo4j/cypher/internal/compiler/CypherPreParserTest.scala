@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.semantics.v2_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.InputPosition
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 class CypherPreParserTest extends CypherFunSuite with TableDrivenPropertyChecks {

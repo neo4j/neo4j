@@ -25,13 +25,13 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.greedy.{GreedyQue
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan, NodeHashJoin}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport2, PlannerQuery}
-import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.Direction._
 import org.scalacheck.Gen._
 import org.scalacheck.{Gen, Shrink}
 import org.scalatest.prop.PropertyChecks
-import org.neo4j.cypher.internal.semantics.v2_3.Foldable.FoldableAny
+import org.neo4j.cypher.internal.frontend.v2_3.Foldable.FoldableAny
 
 import scala.util.Random
 

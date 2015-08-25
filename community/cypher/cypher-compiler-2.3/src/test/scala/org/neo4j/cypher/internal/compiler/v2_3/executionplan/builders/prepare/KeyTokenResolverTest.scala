@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PlanBuilder
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.{BuilderTest, Unsolved}
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.{CreateUniqueAction, NamedExpectation, UniqueLink}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.semantics.v2_3.parser.{MatchMany, MatchText, ParsedLikePattern}
+import org.neo4j.cypher.internal.frontend.v2_3.parser.{MatchMany, MatchText, ParsedLikePattern}
 import org.neo4j.graphdb.Direction
 
 class KeyTokenResolverTest extends BuilderTest {

@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.NestedPlanExpression
-import org.neo4j.cypher.internal.semantics.v2_3.ast._
-import org.neo4j.cypher.internal.semantics.v2_3.{Rewriter, SemanticDirection, replace}
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
+import org.neo4j.cypher.internal.frontend.v2_3.{Rewriter, SemanticDirection, replace}
 
 // Rewrites queries to allow using the much faster getDegree method on the nodes
 case object getDegreeOptimizer extends Rewriter {

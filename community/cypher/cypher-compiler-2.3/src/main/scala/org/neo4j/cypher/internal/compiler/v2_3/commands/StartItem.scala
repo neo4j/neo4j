@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.mutation._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.{SymbolTable, TypeSafe}
-import org.neo4j.cypher.internal.semantics.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
 trait NodeStartItemIdentifiers extends StartItem {
   def identifiers: Seq[(String, CypherType)] = Seq(identifierName -> CTNode)

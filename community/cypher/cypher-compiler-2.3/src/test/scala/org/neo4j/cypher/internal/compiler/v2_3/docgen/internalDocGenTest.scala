@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_3.docgen
 
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{AllNodesScan, IdName}
-import org.neo4j.cypher.internal.semantics.v2_3.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.semantics.v2_3.perty.gen.DocHandlerTestSuite
-import org.neo4j.cypher.internal.semantics.v2_3.perty.handler.SimpleDocHandler
+import org.neo4j.cypher.internal.frontend.v2_3.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.frontend.v2_3.perty.gen.DocHandlerTestSuite
+import org.neo4j.cypher.internal.frontend.v2_3.perty.handler.SimpleDocHandler
 
 class InternalDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTestSupport {
   val docGen =  plannerDocGen orElse AstDocHandler.docGen.lift[Any] orElse SimpleDocHandler.docGen

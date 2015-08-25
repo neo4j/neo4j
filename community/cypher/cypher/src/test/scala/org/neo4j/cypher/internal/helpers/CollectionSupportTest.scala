@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.helpers
 
-import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
 class CollectionSupportTest extends CypherFunSuite with CollectionSupport {
 

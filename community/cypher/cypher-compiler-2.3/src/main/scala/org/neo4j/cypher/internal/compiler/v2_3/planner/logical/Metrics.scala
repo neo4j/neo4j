@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
-import org.neo4j.cypher.internal.semantics.v2_3.ast.LabelName
+import org.neo4j.cypher.internal.frontend.v2_3.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.{QueryGraphCardinalityModel, CardinalityModel, CostModel}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{StrictnessMode, IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.semantics.v2_3.SemanticTable
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticTable
 
 import scala.language.implicitConversions
 

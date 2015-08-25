@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner
 
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, PatternRelationship, StrictnessMode}
-import org.neo4j.cypher.internal.semantics.v2_3.InternalException
-import org.neo4j.cypher.internal.semantics.v2_3.ast.{Hint, LabelName}
-import org.neo4j.cypher.internal.semantics.v2_3.perty._
+import org.neo4j.cypher.internal.frontend.v2_3.InternalException
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{Hint, LabelName}
+import org.neo4j.cypher.internal.frontend.v2_3.perty._
 
 import scala.annotation.tailrec
 import scala.collection.GenTraversableOnce

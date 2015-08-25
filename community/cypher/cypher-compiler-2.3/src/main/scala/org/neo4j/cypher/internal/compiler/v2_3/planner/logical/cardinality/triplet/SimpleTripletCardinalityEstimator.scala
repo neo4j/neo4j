@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.tripl
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, VarPatternLength, SimplePatternLength}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, Multiplier}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.semantics.v2_3.RelTypeId
+import org.neo4j.cypher.internal.frontend.v2_3.RelTypeId
 
 import scala.annotation.tailrec
 

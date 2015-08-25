@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import commands.expressions._
 import commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.TypeSafe
-import org.neo4j.cypher.internal.semantics.v2_3.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.Eagerly
 import pipes.QueryState
-import org.neo4j.cypher.internal.semantics.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.cypher.internal.compiler.v2_3.spi.Operations
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import collection.Map

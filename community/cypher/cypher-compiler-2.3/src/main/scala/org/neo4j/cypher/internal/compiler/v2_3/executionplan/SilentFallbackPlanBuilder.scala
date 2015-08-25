@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
 import org.neo4j.cypher.internal.compiler.v2_3.{CompilationPhaseTracer, PreparedQuery}
-import org.neo4j.cypher.internal.semantics.v2_3.ast._
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.semantics.v2_3.notification.PlannerUnsupportedNotification
+import org.neo4j.cypher.internal.frontend.v2_3.notification.PlannerUnsupportedNotification
 
 trait FallbackBuilder extends ExecutablePlanBuilder {
 

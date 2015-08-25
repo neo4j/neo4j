@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.collection.primitive.PrimitiveLongIterable
-import org.neo4j.cypher.internal.semantics.v2_3.symbols._
-import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb._
 import org.neo4j.kernel.impl.core.NodeProxy
 

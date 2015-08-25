@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
-import org.neo4j.cypher.internal.semantics.v2_3.ArithmeticException
+import org.neo4j.cypher.internal.frontend.v2_3.ArithmeticException
 
 case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def operand = "/"

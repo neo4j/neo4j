@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport, Predicate, Selections}
-import org.neo4j.cypher.internal.semantics.v2_3.ast.{Expression, Identifier}
-import org.neo4j.cypher.internal.semantics.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.semantics.v2_3.{SemanticDirection, ast}
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{Expression, Identifier}
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, ast}
 import org.neo4j.graphdb.Direction
 
 class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanningTestSupport {

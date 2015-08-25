@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.mutation.GraphElementPropertyFunc
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityProducer, IndexSeekModeFactory, QueryState}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.semantics.v2_3.{EntityNotFoundException, IndexHintException, InternalException}
+import org.neo4j.cypher.internal.frontend.v2_3.{EntityNotFoundException, IndexHintException, InternalException}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 class EntityProducerFactory extends GraphElementPropertyFunctions {

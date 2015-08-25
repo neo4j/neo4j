@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-import org.neo4j.cypher.internal.semantics.v2_3.LoadExternalResourceException
-import org.neo4j.cypher.internal.semantics.v2_3.symbols.{AnyType, CollectionType, MapType}
+import org.neo4j.cypher.internal.frontend.v2_3.LoadExternalResourceException
+import org.neo4j.cypher.internal.frontend.v2_3.symbols.{AnyType, CollectionType, MapType}
 
 sealed trait CSVFormat
 case object HasHeaders extends CSVFormat

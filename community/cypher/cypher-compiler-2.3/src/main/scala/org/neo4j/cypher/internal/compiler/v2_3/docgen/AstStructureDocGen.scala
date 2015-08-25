@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.docgen
 
-import org.neo4j.cypher.internal.semantics.v2_3.ast.{ASTNode, ASTParticle}
-import org.neo4j.cypher.internal.semantics.v2_3.perty._
-import org.neo4j.cypher.internal.semantics.v2_3.perty.handler.SimpleDocHandler
-import org.neo4j.cypher.internal.semantics.v2_3.perty.recipe.DocRecipe.strategyExpander
-import org.neo4j.cypher.internal.semantics.v2_3.perty.recipe.Pretty
-import org.neo4j.cypher.internal.semantics.v2_3.perty.step.AddPretty
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{ASTNode, ASTParticle}
+import org.neo4j.cypher.internal.frontend.v2_3.perty._
+import org.neo4j.cypher.internal.frontend.v2_3.perty.handler.SimpleDocHandler
+import org.neo4j.cypher.internal.frontend.v2_3.perty.recipe.DocRecipe.strategyExpander
+import org.neo4j.cypher.internal.frontend.v2_3.perty.recipe.Pretty
+import org.neo4j.cypher.internal.frontend.v2_3.perty.step.AddPretty
 
 import scala.reflect.runtime.universe.TypeTag
 

@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import pipes._
 import spi.PlanContext
-import org.neo4j.cypher.internal.semantics.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
 /*
 This class solves MERGE for patterns. It does this by creating an execution plan that uses normal pattern matching

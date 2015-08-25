@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.PatternConve
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{And, Predicate, True}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => commandexpressions, values => commandvalues, _}
 import org.neo4j.cypher.internal.compiler.v2_3.{InternalNotificationLogger, On, OnAction, commands, mutation}
-import org.neo4j.cypher.internal.semantics.v2_3.ast
-import org.neo4j.cypher.internal.semantics.v2_3.notification.JoinHintUnsupportedNotification
+import org.neo4j.cypher.internal.frontend.v2_3.ast
+import org.neo4j.cypher.internal.frontend.v2_3.notification.JoinHintUnsupportedNotification
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 object StatementConverters {

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast.conditions
 
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.Condition
-import org.neo4j.cypher.internal.semantics.v2_3.ast.ReturnItems
+import org.neo4j.cypher.internal.frontend.v2_3.ast.ReturnItems
 
 case object noDuplicatesInReturnItems extends Condition {
   def apply(that: Any): Seq[String] = {
