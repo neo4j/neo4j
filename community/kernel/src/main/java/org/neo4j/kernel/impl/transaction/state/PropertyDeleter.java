@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -27,7 +26,6 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
-import org.neo4j.kernel.impl.util.ArrayMap;
 
 public class PropertyDeleter
 {
@@ -40,10 +38,9 @@ public class PropertyDeleter
         this.traverser = traverser;
     }
 
-    public ArrayMap<Integer, DefinedProperty> getAndDeletePropertyChain( PrimitiveRecord primitive,
+    public void deletePropertyChain( PrimitiveRecord primitive,
             RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords )
     {
-        ArrayMap<Integer, DefinedProperty> result = new ArrayMap<>( (byte) 9, false, true );
         long nextProp = primitive.getNextProp();
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
@@ -52,11 +49,6 @@ public class PropertyDeleter
 
             // TODO forChanging/forReading piggy-backing
             PropertyRecord propRecord = propertyChange.forChangingData();
-            PropertyRecord before = propertyChange.getBefore();
-            for ( PropertyBlock block : before )
-            {
-                result.put( block.getKeyIndexId(), block.newPropertyData( propertyStore ) );
-            }
             for ( PropertyBlock block : propRecord )
             {
                 for ( DynamicRecord valueRecord : block.getValueRecords() )
@@ -73,7 +65,6 @@ public class PropertyDeleter
             propRecord.clearPropertyBlocks();
         }
         primitive.setNextProp( Record.NO_NEXT_PROPERTY.intValue() );
-        return result;
     }
 
     public <P extends PrimitiveRecord> void removeProperty( RecordProxy<Long,P,Void> primitiveProxy, int propertyKey,

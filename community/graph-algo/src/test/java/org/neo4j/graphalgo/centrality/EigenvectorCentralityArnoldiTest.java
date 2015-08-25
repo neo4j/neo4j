@@ -21,7 +21,6 @@ package org.neo4j.graphalgo.centrality;
 
 import java.util.Set;
 
-import org.junit.Test;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.impl.centrality.EigenvectorCentrality;
 import org.neo4j.graphalgo.impl.centrality.EigenvectorCentralityArnoldi;
