@@ -98,7 +98,6 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static java.lang.Integer.parseInt;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.emptyArray;
@@ -115,6 +114,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import static java.lang.Integer.parseInt;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
@@ -1780,6 +1782,22 @@ public class BatchInsertTest
             // good
             assertEquals( new PreexistingIndexEntryConflictException( value, 0, 1 ), ex.getCause() );
         }
+    }
+
+    @Test
+    public void shouldChangePropertiesInCurrentBatch() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+        Map<String,Object> properties = map( "key1", "value1" );
+        long node = inserter.createNode( properties );
+
+        // WHEN
+        properties.put( "additionalKey", "Additional value" );
+        inserter.setNodeProperties( node, properties );
+
+        // THEN
+        assertEquals( properties, inserter.getNodeProperties( node ) );
     }
 
     private void createRelationships( BatchInserter inserter, long node, RelationshipType relType,

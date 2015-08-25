@@ -939,7 +939,7 @@ public class BatchInserterImpl implements BatchInserter
         NodeRecord record = getNodeRecord( node ).forChangingData();
         if ( record.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            propertyDeletor.getAndDeletePropertyChain( record, recordAccess.getPropertyRecords() );
+            propertyDeletor.deletePropertyChain( record, recordAccess.getPropertyRecords() );
         }
         record.setNextProp( propertyCreator.createPropertyChain( record, propertiesIterator( properties ),
                 recordAccess.getPropertyRecords() ) );
@@ -952,7 +952,7 @@ public class BatchInserterImpl implements BatchInserter
         RelationshipRecord record = recordAccess.getRelRecords().getOrLoad( rel, null ).forChangingData();
         if ( record.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            propertyDeletor.getAndDeletePropertyChain( record, recordAccess.getPropertyRecords() );
+            propertyDeletor.deletePropertyChain( record, recordAccess.getPropertyRecords() );
         }
         record.setNextProp( propertyCreator.createPropertyChain( record, propertiesIterator( properties ),
                 recordAccess.getPropertyRecords() ) );

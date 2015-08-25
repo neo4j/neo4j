@@ -48,7 +48,6 @@ import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.Mode;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
-import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
 
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
@@ -222,9 +221,9 @@ public class TransactionRecordState implements RecordState
         context.relationshipCreate( id, typeId, startNodeId, endNodeId );
     }
 
-    public ArrayMap<Integer, DefinedProperty> relDelete( long relId )
+    public void relDelete( long relId )
     {
-        return context.relationshipDelete( relId );
+        context.relationshipDelete( relId );
     }
 
     @SafeVarargs
@@ -259,7 +258,7 @@ public class TransactionRecordState implements RecordState
      * @param nodeId The id of the node to delete.
      * @return The properties of the node that were removed during the delete.
      */
-    public ArrayMap<Integer, DefinedProperty> nodeDelete( long nodeId )
+    public void nodeDelete( long nodeId )
     {
         NodeRecord nodeRecord = context.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
         if ( !nodeRecord.inUse() )
@@ -270,7 +269,7 @@ public class TransactionRecordState implements RecordState
         nodeRecord.setInUse( false );
         nodeRecord.setLabelField( Record.NO_LABELS_FIELD.intValue(),
                 markNotInUse( nodeRecord.getDynamicLabelRecords() ) );
-        return getAndDeletePropertyChain( nodeRecord );
+        getAndDeletePropertyChain( nodeRecord );
     }
 
     private Collection<DynamicRecord> markNotInUse( Collection<DynamicRecord> dynamicLabelRecords )
@@ -282,9 +281,9 @@ public class TransactionRecordState implements RecordState
         return dynamicLabelRecords;
     }
 
-    private ArrayMap<Integer, DefinedProperty> getAndDeletePropertyChain( NodeRecord nodeRecord )
+    private void getAndDeletePropertyChain( NodeRecord nodeRecord )
     {
-        return context.getAndDeletePropertyChain( nodeRecord );
+        context.getAndDeletePropertyChain( nodeRecord );
     }
 
     /**

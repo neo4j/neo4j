@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import java.util.Collection;
 
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -36,7 +35,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
-import org.neo4j.kernel.impl.util.ArrayMap;
 
 public class NeoStoreTransactionContext
 {
@@ -61,9 +59,9 @@ public class NeoStoreTransactionContext
         relationshipDeleter = new RelationshipDeleter( locks, relGroupGetter, propertyDeleter );
     }
 
-    public ArrayMap<Integer, DefinedProperty> relationshipDelete( long relId )
+    public void relationshipDelete( long relId )
     {
-        return relationshipDeleter.relDelete( relId, recordChangeSet );
+        relationshipDeleter.relDelete( relId, recordChangeSet );
     }
 
     public void relationshipCreate( long id, int typeId, long startNodeId, long endNodeId )
@@ -71,10 +69,9 @@ public class NeoStoreTransactionContext
         relationshipCreator.relationshipCreate( id, typeId, startNodeId, endNodeId, recordChangeSet );
     }
 
-    public ArrayMap<Integer, DefinedProperty> getAndDeletePropertyChain( NodeRecord nodeRecord )
+    public void getAndDeletePropertyChain( NodeRecord nodeRecord )
     {
-        return propertyDeleter.getAndDeletePropertyChain( nodeRecord,
-                recordChangeSet.getPropertyRecords() );
+        propertyDeleter.deletePropertyChain( nodeRecord, recordChangeSet.getPropertyRecords() );
     }
 
     public <T extends PrimitiveRecord> void removeProperty( RecordProxy<Long,T,Void> primitiveProxy, int propertyKey )
