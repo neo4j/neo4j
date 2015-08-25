@@ -25,6 +25,7 @@ import org.apache.lucene.search.ReferenceManager;
 import java.io.IOException;
 
 public class SearcherManagerStub extends ReferenceManager<IndexSearcher>
+        implements LuceneIndexAccessor.LuceneReferenceManager<IndexSearcher>
 {
     public SearcherManagerStub( IndexSearcher searcher )
     {
