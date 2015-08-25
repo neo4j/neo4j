@@ -56,7 +56,7 @@ public interface IdOrderingQueue
 
     boolean isEmpty();
 
-    public static final IdOrderingQueue BYPASS = new IdOrderingQueue()
+    IdOrderingQueue BYPASS = new IdOrderingQueue()
     {
         @Override
         public void offer( long value )

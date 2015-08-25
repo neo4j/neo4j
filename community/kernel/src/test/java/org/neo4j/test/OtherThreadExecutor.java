@@ -107,7 +107,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
         };
     }
 
-    private static enum ExecutionState
+    private enum ExecutionState
     {
         REQUESTED_EXECUTION,
         EXECUTING,

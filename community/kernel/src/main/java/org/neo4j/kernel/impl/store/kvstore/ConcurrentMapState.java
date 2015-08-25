@@ -26,39 +26,36 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 
-import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
-import org.neo4j.kernel.impl.util.OutOfOrderSequence;
-
 class ConcurrentMapState<Key> extends ActiveState<Key>
 {
-    private static final long[] META = {};
     private final ConcurrentMap<Key, byte[]> changes;
     private final File file;
     private final AtomicLong highestAppliedVersion;
     private final AtomicLong appliedChanges;
+    private final AtomicBoolean hasTrackedChanges;
     private final long previousVersion;
-    private final OutOfOrderSequence versionSequence;
 
     ConcurrentMapState( ReadableState<Key> store, File file )
     {
         super( store );
         this.previousVersion = store.version();
-        this.versionSequence = new ArrayQueueOutOfOrderSequence( previousVersion, 50, META );
         this.file = file;
         this.highestAppliedVersion = new AtomicLong( previousVersion );
         this.changes = new ConcurrentHashMap<>();
         this.appliedChanges = new AtomicLong();
+        hasTrackedChanges = new AtomicBoolean();
     }
 
     private ConcurrentMapState( Prototype<Key> prototype, ReadableState<Key> store, File file )
     {
         super( store );
         this.previousVersion = store.version();
-        this.versionSequence = new ArrayQueueOutOfOrderSequence( previousVersion, 50, META );
         this.file = file;
+        this.hasTrackedChanges = prototype.hasTrackedChanges;
         this.changes = prototype.changes;
         this.highestAppliedVersion = prototype.highestAppliedVersion;
         this.appliedChanges = prototype.appliedChanges;
@@ -73,19 +70,19 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
     @Override
     public EntryUpdater<Key> updater( long version, Lock lock )
     {
-        if ( versionSequence.seen( version, META ) )
+        if ( version <= previousVersion )
         {
-            throw new IllegalStateException( "Cannot apply update with given version " + version +
-                                             " when base version is " + previousVersion );
+            return EntryUpdater.noUpdates();
         }
-        versionSequence.offer( version, META );
         update( highestAppliedVersion, version );
+        hasTrackedChanges.set( true );
         return new Updater<>( lock, store, changes, appliedChanges );
     }
 
     @Override
     public EntryUpdater<Key> unsafeUpdater( Lock lock )
     {
+        hasTrackedChanges.set( true );
         return new Updater<>( lock, store, changes, null );
     }
 
@@ -223,10 +220,14 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
     {
         final ConcurrentMap<Key, byte[]> changes = new ConcurrentHashMap<>();
         final AtomicLong highestAppliedVersion, appliedChanges = new AtomicLong();
+        final AtomicBoolean hasTrackedChanges;
+        private final long threshold;
 
         Prototype( ConcurrentMapState<Key> state, long version )
         {
             super( state );
+            threshold = version;
+            hasTrackedChanges = new AtomicBoolean();
             this.highestAppliedVersion = new AtomicLong( version );
         }
 
@@ -240,19 +241,28 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
         protected EntryUpdater<Key> updater( long version, Lock lock )
         {
             update( highestAppliedVersion, version );
-            return new Updater<>( lock, store, changes, appliedChanges );
+            if ( version > threshold )
+            {
+                hasTrackedChanges.set( true );
+                return new Updater<>( lock, store, changes, appliedChanges );
+            }
+            else
+            {
+                return new Updater<>( lock, store, changes, null );
+            }
         }
 
         @Override
         protected EntryUpdater<Key> unsafeUpdater( Lock lock )
         {
+            hasTrackedChanges.set( true );
             return new Updater<>( lock, store, changes, null );
         }
 
         @Override
         protected boolean hasChanges()
         {
-            return !changes.isEmpty();
+            return hasTrackedChanges.get() && !changes.isEmpty();
         }
 
         @Override
@@ -305,7 +315,7 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
     @Override
     protected boolean hasChanges()
     {
-        return !changes.isEmpty();
+        return hasTrackedChanges.get() && !changes.isEmpty();
     }
 
     @Override

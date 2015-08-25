@@ -26,8 +26,10 @@ import org.junit.rules.ExpectedException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.neo4j.function.IOFunction;
 import org.neo4j.function.Predicate;
@@ -35,6 +37,7 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.test.ThreadingRule;
 
@@ -48,7 +51,7 @@ import static org.neo4j.kernel.impl.store.kvstore.Resources.TestPath.FILE_IN_EXI
 public class AbstractKeyValueStoreTest
 {
     @Rule
-    public final Resources the = new Resources( FILE_IN_EXISTING_DIRECTORY );
+    public final Resources resourceManager = new Resources( FILE_IN_EXISTING_DIRECTORY );
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
     @Rule
@@ -79,30 +82,30 @@ public class AbstractKeyValueStoreTest
     public void shouldStartAndStopStore() throws Exception
     {
         // given
-        the.managed( new Store() );
+        resourceManager.managed( new Store() );
 
         // when
-        the.lifeStarts();
-        the.lifeShutsDown();
+        resourceManager.lifeStarts();
+        resourceManager.lifeShutsDown();
     }
 
     @Test
-    @Resources.Life(STARTED)
+    @Resources.Life( STARTED )
     public void shouldRotateStore() throws Exception
     {
         // given
-        Store store = the.managed( new Store() );
+        Store store = resourceManager.managed( new Store() );
 
         // when
         store.prepareRotation( 0 ).rotate();
     }
 
     @Test
-    @Resources.Life(STARTED)
+    @Resources.Life( STARTED )
     public void shouldStoreEntries() throws Exception
     {
         // given
-        Store store = the.managed( new Store() );
+        Store store = resourceManager.managed( new Store() );
 
         // when
         store.put( "message", "hello world" );
@@ -123,49 +126,9 @@ public class AbstractKeyValueStoreTest
     @Test
     public void shouldPickFileWithGreatestTransactionId() throws Exception
     {
-        // given
-        class Impl extends Store
-        {
-            Impl()
-            {
-                super( TX_ID );
-            }
-
-            @SuppressWarnings("unchecked")
-            @Override
-            <Value> Value initialHeader( HeaderField<Value> field )
-            {
-                if ( field == TX_ID )
-                {
-                    return (Value) (Object) 1l;
-                }
-                else
-                {
-                    return super.initialHeader( field );
-                }
-            }
-
-            @Override
-            protected int compareHeaders( Headers lhs, Headers rhs )
-            {
-                return Long.compare( lhs.get( TX_ID ), rhs.get( TX_ID ) );
-            }
-
-            @Override
-            protected long version( Headers headers )
-            {
-                return headers.get( TX_ID );
-            }
-
-            @Override
-            protected void updateHeaders( Headers.Builder headers, long version )
-            {
-                headers.put( TX_ID, version );
-            }
-        }
         try ( Lifespan life = new Lifespan() )
         {
-            Store store = life.add( new Impl() );
+            Store store = life.add( createTestStore() );
 
             // when
             for ( long txId = 2; txId <= 10; txId++ )
@@ -178,7 +141,7 @@ public class AbstractKeyValueStoreTest
         // then
         try ( Lifespan life = new Lifespan() )
         {
-            Store store = life.add( new Impl() );
+            Store store = life.add( createTestStore() );
             assertEquals( 10l, store.headers().get( TX_ID ).longValue() );
         }
     }
@@ -187,34 +150,13 @@ public class AbstractKeyValueStoreTest
     public void shouldNotPickCorruptStoreFile() throws Exception
     {
         // given
-        Store store = new Store( TX_ID )
-        {
-            @SuppressWarnings("unchecked")
-            @Override
-            <Value> Value initialHeader( HeaderField<Value> field )
-            {
-                if ( field == TX_ID )
-                {
-                    return (Value) (Object) 1l;
-                }
-                else
-                {
-                    return super.initialHeader( field );
-                }
-            }
-
-            @Override
-            protected int compareHeaders( Headers lhs, Headers rhs )
-            {
-                return Long.compare( lhs.get( TX_ID ), rhs.get( TX_ID ) );
-            }
-        };
+        Store store = createTestStore();
         RotationStrategy rotation = store.rotationStrategy;
 
         // when
         File[] files = new File[10];
         {
-            Pair<File, KeyValueStoreFile> file = rotation.create( EMPTY_DATA_PROVIDER, 1 );
+            Pair<File,KeyValueStoreFile> file = rotation.create( EMPTY_DATA_PROVIDER, 1 );
             files[0] = file.first();
             for ( int txId = 2, i = 1; i < files.length; txId <<= 1, i++ )
             {
@@ -239,7 +181,7 @@ public class AbstractKeyValueStoreTest
             file.other().close();
         }
         // Corrupt the last files
-        try ( StoreChannel channel = the.fileSystem().open( files[9], "rw" ) )
+        try ( StoreChannel channel = resourceManager.fileSystem().open( files[9], "rw" ) )
         {   // ruin the header
             channel.position( 16 );
             ByteBuffer value = ByteBuffer.allocate( 16 );
@@ -247,7 +189,7 @@ public class AbstractKeyValueStoreTest
             value.flip();
             channel.writeAll( value );
         }
-        try ( StoreChannel channel = the.fileSystem().open( files[8], "rw" ) )
+        try ( StoreChannel channel = resourceManager.fileSystem().open( files[8], "rw" ) )
         {   // ruin the header
             channel.position( 32 );
             ByteBuffer value = ByteBuffer.allocate( 16 );
@@ -255,7 +197,7 @@ public class AbstractKeyValueStoreTest
             value.flip();
             channel.writeAll( value );
         }
-        try ( StoreChannel channel = the.fileSystem().open( files[7], "rw" ) )
+        try ( StoreChannel channel = resourceManager.fileSystem().open( files[7], "rw" ) )
         {   // ruin the header
             channel.position( 32 + 32 + 32 + 16 );
             ByteBuffer value = ByteBuffer.allocate( 16 );
@@ -275,54 +217,15 @@ public class AbstractKeyValueStoreTest
     }
 
     @Test
-    @Resources.Life(STARTED)
+    @Resources.Life( STARTED )
     public void shouldRotateWithCorrectVersion() throws Exception
     {
         // given
-        final Store store = the.managed( new Store( TX_ID )
-        {
-            @SuppressWarnings("unchecked")
-            @Override
-            <Value> Value initialHeader( HeaderField<Value> field )
-            {
-                if ( field == TX_ID )
-                {
-                    return (Value) (Object) 1l;
-                }
-                else
-                {
-                    return super.initialHeader( field );
-                }
-            }
+        final Store store = resourceManager.managed( createTestStore() );
+        updateStore( store, 1 );
 
-            @Override
-            protected void updateHeaders( Headers.Builder headers, long version )
-            {
-                headers.put( TX_ID, version );
-            }
-
-            @Override
-            protected int compareHeaders( Headers lhs, Headers rhs )
-            {
-                return Long.compare( lhs.get( TX_ID ), rhs.get( TX_ID ) );
-            }
-        } );
-        ThrowingConsumer<Long, IOException> update = new ThrowingConsumer<Long, IOException>()
-        {
-            @Override
-            public void accept( Long update ) throws IOException
-            {
-                try ( EntryUpdater<String> updater = store.updater( update ).get() )
-                {
-                    updater.apply( "key " + update, store.value( "value " + update ) );
-                }
-            }
-        };
-
-        // when
-        update.accept( 1l );
         PreparedRotation rotation = store.prepareRotation( 2 );
-        update.accept( 2l );
+        updateStore( store, 2 );
         rotation.rotate();
 
         // then
@@ -331,52 +234,46 @@ public class AbstractKeyValueStoreTest
     }
 
     @Test
-    @Resources.Life(STARTED)
+    @Resources.Life( STARTED )
+    public void postStateUpdatesCountedOnlyForTransactionsGreaterThanRotationVersion()
+            throws IOException, TimeoutException, InterruptedException, ExecutionException
+    {
+        final Store store = resourceManager.managed( createTestStore() );
+
+        PreparedRotation rotation = store.prepareRotation( 2 );
+        updateStore( store, 4 );
+        updateStore( store, 3 );
+        updateStore( store, 1 );
+        updateStore( store, 2 );
+
+        assertEquals( 2, rotation.rotate() );
+
+        Future<Long> rotationFuture = threading.executeAndAwait( store.rotation, 5l, new Predicate<Thread>()
+        {
+            @Override
+            public boolean test( Thread thread )
+            {
+                return Thread.State.TIMED_WAITING == thread.getState();
+            }
+        }, 100, SECONDS );
+
+        Thread.sleep( TimeUnit.SECONDS.toMillis( 1 ) );
+
+        assertFalse( rotationFuture.isDone() );
+        updateStore( store, 5 );
+
+        assertEquals( 5, rotationFuture.get().longValue() );
+    }
+
+    @Test
+    @Resources.Life( STARTED )
     public void shouldBlockRotationUntilRequestedTransactionsAreApplied() throws Exception
     {
         // given
-        final Store store = the.managed( new Store( TX_ID )
-        {
-            @SuppressWarnings("unchecked")
-            @Override
-            <Value> Value initialHeader( HeaderField<Value> field )
-            {
-                if ( field == TX_ID )
-                {
-                    return (Value) (Object) 1l;
-                }
-                else
-                {
-                    return super.initialHeader( field );
-                }
-            }
-
-            @Override
-            protected void updateHeaders( Headers.Builder headers, long version )
-            {
-                headers.put( TX_ID, version );
-            }
-
-            @Override
-            protected int compareHeaders( Headers lhs, Headers rhs )
-            {
-                return Long.compare( lhs.get( TX_ID ), rhs.get( TX_ID ) );
-            }
-        } );
-        ThrowingConsumer<Long, IOException> update = new ThrowingConsumer<Long, IOException>()
-        {
-            @Override
-            public void accept( Long update ) throws IOException
-            {
-                try ( EntryUpdater<String> updater = store.updater( update ).get() )
-                {
-                    updater.apply( "key " + update, store.value( "value " + update ) );
-                }
-            }
-        };
+        final Store store = resourceManager.managed( createTestStore() );
 
         // when
-        update.accept( 1l );
+        updateStore( store, 1 );
         Future<Long> rotation = threading.executeAndAwait( store.rotation, 3l, new Predicate<Thread>()
         {
             @Override
@@ -399,19 +296,19 @@ public class AbstractKeyValueStoreTest
         SECONDS.sleep( 1 );
         assertFalse( rotation.isDone() );
         // apply update
-        update.accept( 3l );
+        updateStore( store, 3 );
         // rotation should still wait...
         assertFalse( rotation.isDone() );
         SECONDS.sleep( 1 );
         assertFalse( rotation.isDone() );
         // apply update
-        update.accept( 4l );
+        updateStore( store, 4 );
         // rotation should still wait...
         assertFalse( rotation.isDone() );
         SECONDS.sleep( 1 );
         assertFalse( rotation.isDone() );
         // apply update
-        update.accept( 2l );
+        updateStore( store, 2 );
 
         // then
         assertEquals( 3, rotation.get().longValue() );
@@ -425,7 +322,23 @@ public class AbstractKeyValueStoreTest
     {
 
         // GIVEN
-        final Store store = the.managed( new Store( 0, TX_ID )
+        final Store store = resourceManager.managed( createTestStore( 0 ) );
+
+        // THEN
+        expectedException.expect( RotationTimeoutException.class );
+
+        // WHEN
+        store.prepareRotation( 10l ).rotate();
+    }
+
+    private Store createTestStore()
+    {
+        return createTestStore( TimeUnit.SECONDS.toMillis( 100 ) );
+    }
+
+    private Store createTestStore( long rotationTimeout )
+    {
+        return new Store( rotationTimeout, TX_ID )
         {
             @SuppressWarnings( "unchecked" )
             @Override
@@ -452,14 +365,25 @@ public class AbstractKeyValueStoreTest
             {
                 return Long.compare( lhs.get( TX_ID ), rhs.get( TX_ID ) );
             }
-        } );
-
-        // THEN
-        expectedException.expect( RotationTimeoutException.class );
-
-        // WHEN
-        store.prepareRotation( 10l ).rotate();
+        };
     }
+
+    private void updateStore( final Store store, long transaction ) throws IOException
+    {
+        ThrowingConsumer<Long,IOException> update = new ThrowingConsumer<Long,IOException>()
+        {
+            @Override
+            public void accept( Long update ) throws IOException
+            {
+                try ( EntryUpdater<String> updater = store.updater( update ).get() )
+                {
+                    updater.apply( "key " + update, store.value( "value " + update ) );
+                }
+            }
+        };
+        update.accept( transaction );
+    }
+
 
     static DataProvider data( final Entry... data )
     {
@@ -490,11 +414,11 @@ public class AbstractKeyValueStoreTest
         void write( WritableBuffer key, WritableBuffer value );
     }
 
-    @Rotation(Rotation.Strategy.INCREMENTING)
+    @Rotation( Rotation.Strategy.INCREMENTING )
     class Store extends AbstractKeyValueStore<String>
     {
         private final HeaderField<?>[] headerFields;
-        final IOFunction<Long, Long> rotation = new IOFunction<Long, Long>()
+        final IOFunction<Long,Long> rotation = new IOFunction<Long,Long>()
         {
             @Override
             public Long apply( Long version ) throws IOException
@@ -510,8 +434,9 @@ public class AbstractKeyValueStoreTest
 
         private Store( long rotationTimeout, HeaderField<?>... headerFields )
         {
-            super( the.fileSystem(), the.pageCache(), the.testPath(), null, new RotationTimerFactory( Clock.SYSTEM_CLOCK,
-                    rotationTimeout ), 16, 16, headerFields );
+            super( resourceManager.fileSystem(), resourceManager.pageCache(), resourceManager.testPath(), null,
+                    new RotationTimerFactory( Clock.SYSTEM_CLOCK,
+                            rotationTimeout ), 16, 16, headerFields );
             this.headerFields = headerFields;
             setEntryUpdaterInitializer( new DataInitializer<EntryUpdater<String>>()
             {
@@ -555,7 +480,7 @@ public class AbstractKeyValueStoreTest
             return 0;
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         private <Value> void putField( Headers.Builder builder, HeaderField<Value> field, Object change )
         {
             builder.put( field, (Value) change );
@@ -600,20 +525,15 @@ public class AbstractKeyValueStoreTest
         @Override
         protected void updateHeaders( Headers.Builder headers, long version )
         {
+            headers.put( TX_ID, version );
         }
 
         @Override
         protected long version( Headers headers )
         {
-            try
-            {
-                String filename = this.currentFile().getName();
-                return Integer.parseInt( filename.substring( filename.lastIndexOf( '.' ) + 1 ) );
-            }
-            catch ( IllegalStateException e )
-            {
-                return 0;
-            }
+            Long transactionId = headers.get( TX_ID );
+            return Math.max( TransactionIdStore.BASE_TX_ID,
+                    transactionId != null ? transactionId.longValue() : TransactionIdStore.BASE_TX_ID );
         }
 
         @Override
