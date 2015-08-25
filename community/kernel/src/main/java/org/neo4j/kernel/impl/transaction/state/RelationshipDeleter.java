@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
-import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 
 public class RelationshipDeleter
@@ -53,15 +51,13 @@ public class RelationshipDeleter
      * @return The properties of the relationship that were removed during the
      *         delete.
      */
-    public ArrayMap<Integer, DefinedProperty> relDelete( long id, RecordAccessSet recordChanges )
+    public void relDelete( long id, RecordAccessSet recordChanges )
     {
         RelationshipRecord record = recordChanges.getRelRecords().getOrLoad( id, null ).forChangingLinkage();
-        ArrayMap<Integer, DefinedProperty> propertyMap =
-                propertyChainDeleter.getAndDeletePropertyChain( record, recordChanges.getPropertyRecords() );
+        propertyChainDeleter.deletePropertyChain( record, recordChanges.getPropertyRecords() );
         disconnectRelationship( record, recordChanges );
         updateNodesForDeletedRelationship( record, recordChanges );
         record.setInUse( false );
-        return propertyMap;
     }
 
     private void disconnectRelationship( RelationshipRecord rel, RecordAccessSet recordChangeSet )

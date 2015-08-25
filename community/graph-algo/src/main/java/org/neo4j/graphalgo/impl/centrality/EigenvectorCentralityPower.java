@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphalgo.impl.centrality;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
