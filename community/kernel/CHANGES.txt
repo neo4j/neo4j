@@ -1,3 +1,18 @@
+2.2.5
+-----
+o Adds timeout for log rotation
+o Count store no longer rotates during consistency checks
+o Count store is now properly marked as unclean on failed shutdown and is
+  rebuilt if necessary
+o Fixes issue where very large configured values for log prunning threshold
+  would not be respected
+o Legacy index lifecycle is now handled properly during restarts, which fixes an
+  issue where stale index files were used
+o Fixes an IllegalArgumentException encountered during count store rebuilds with
+  large number of indexes
+o Properties are no longer read when deleting them, fixing  an issue where stale
+  reads could lead to errors
+
 2.2.4
 -----
 o Fixes #4910 - TransactionData incorrect when modifying/deleting relationships.

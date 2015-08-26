@@ -1,3 +1,7 @@
+2.2.5
+-----
+o No longer ignores --multiline-field option
+
 2.2.4
 -----
 o Empty files are now handled gracefully and no longer infinitely loop

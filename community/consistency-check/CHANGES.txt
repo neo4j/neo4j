@@ -1,3 +1,7 @@
+2.2.5
+-----
+o Can now run with consistency_check_graph=false
+
 2.2.3
 -----
 o Fixes an issue where not all relationship references where consistency checked.
