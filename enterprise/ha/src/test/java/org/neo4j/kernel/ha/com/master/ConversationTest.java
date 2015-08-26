@@ -81,7 +81,7 @@ public class ConversationTest
         final CountDownLatch answerLatch = new CountDownLatch( 1 );
         final CountDownLatch stopLatch = new CountDownLatch( 1 );
         final CountDownLatch stopReadyLatch = new CountDownLatch( 1 );
-        final int sleepTime = 500;
+        final int sleepTime = 1000;
         doAnswer( new Answer<Void>()
         {
             @Override
@@ -111,9 +111,10 @@ public class ConversationTest
         long raceStartTime = System.currentTimeMillis();
         stopLatch.countDown();
         answerLatch.await();
-        // execution time should be at least 500 millis
+        // execution time should be at least 1000 millis
         long executionTime = System.currentTimeMillis() - raceStartTime;
-        assertTrue( executionTime  > sleepTime);
+        assertTrue(String.format( "Execution time should be at least equal to %d, but was %d.", sleepTime, executionTime),
+                executionTime  >= sleepTime);
     }
 
     private Function<Conversation,Void> closeConversation()
