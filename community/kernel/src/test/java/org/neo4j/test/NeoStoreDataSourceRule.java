@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.TransactionEventHandlers;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -92,7 +93,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 mock( PhysicalLogFile.Monitor.class ), TransactionHeaderInformationFactory.DEFAULT,
                 new StartupStatisticsProvider(), mock( NodeManager.class ), null, null,
                 CommunityEditionModule.createCommitProcessFactory(), mock( PageCache.class ),
-                new Monitors(), new Tracers( "null", NullLog.getInstance() ) );
+                mock( ConstraintSemantics.class), new Monitors(), new Tracers( "null", NullLog.getInstance() ) );
 
         return theDs;
     }

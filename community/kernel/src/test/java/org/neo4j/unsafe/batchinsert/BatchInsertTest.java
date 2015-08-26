@@ -85,11 +85,11 @@ import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -1462,179 +1462,6 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldCreateNodePropertyExistenceConstraint() throws Exception
-    {
-        // Given
-        Label label = label( "Person" );
-        String propertyKey = "name";
-
-        BatchInserter inserter = newBatchInserter();
-
-        // When
-        inserter.createDeferredConstraint( label ).assertPropertyExists( propertyKey ).create();
-
-        // Then
-        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
-        try
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                List<ConstraintDefinition> constraints = asList( db.schema().getConstraints() );
-                assertEquals( 1, constraints.size() );
-                ConstraintDefinition constraint = constraints.get( 0 );
-                assertEquals( label.name(), constraint.getLabel().name() );
-                assertEquals( propertyKey, single( constraint.getPropertyKeys() ) );
-                tx.success();
-            }
-
-            try ( Transaction tx = db.beginTx() )
-            {
-                db.createNode( label );
-                tx.success();
-            }
-            fail( "Node property existence constraint was violated, exception expected" );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            assertEquals(
-                    "Node 0 with label \"" + label.name() + "\" must have the property \"" + propertyKey + "\" due to a constraint",
-                    e.getMessage()
-            );
-        }
-        finally
-        {
-            db.shutdown();
-        }
-    }
-
-    @Test
-    public void shouldCreateRelationshipPropertyExistenceConstraint() throws Exception
-    {
-        // Given
-        RelationshipType type = DynamicRelationshipType.withName( "KNOWS" );
-        String propertyKey = "since";
-
-        BatchInserter inserter = newBatchInserter();
-
-        // When
-        inserter.createDeferredConstraint( type ).assertPropertyExists( propertyKey ).create();
-
-        // Then
-        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
-        try
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                List<ConstraintDefinition> constraints = asList( db.schema().getConstraints() );
-                assertEquals( 1, constraints.size() );
-                ConstraintDefinition constraint = constraints.get( 0 );
-                assertEquals( type.name(), constraint.getRelationshipType().name() );
-                assertEquals( propertyKey, single( constraint.getPropertyKeys() ) );
-                tx.success();
-            }
-
-            try ( Transaction tx = db.beginTx() )
-            {
-                db.createNode().createRelationshipTo( db.createNode(), type );
-                tx.success();
-            }
-            fail( "Relationship property existence constraint was violated, exception expected" );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            assertEquals(
-                    "Relationship 0 with type \"" + type.name() + "\" must have the property \"" + propertyKey + "\" due to a constraint",
-                    e.getMessage()
-            );
-        }
-        finally
-        {
-            db.shutdown();
-        }
-    }
-
-    @Test
-    public void shouldAllowCreationOfIndexAndExistenceConstraintOnSameLabelAndProperty() throws Exception
-    {
-        // Given
-        Label label = label( "Person" );
-        String property = "name";
-
-        BatchInserter inserter = newBatchInserter();
-
-        // When
-        inserter.createDeferredSchemaIndex( label ).on( property ).create();
-        inserter.createDeferredConstraint( label ).assertPropertyExists( property ).create();
-
-        // Then
-        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
-        try
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                List<IndexDefinition> indexes = asList( db.schema().getIndexes() );
-                assertEquals( 1, indexes.size() );
-                IndexDefinition index = indexes.get( 0 );
-                assertEquals( label.name(), index.getLabel().name() );
-                assertEquals( property, single( index.getPropertyKeys() ) );
-                List<ConstraintDefinition> constraints = asList( db.schema().getConstraints() );
-                assertEquals( 1, constraints.size() );
-                ConstraintDefinition constraint = constraints.get( 0 );
-                assertEquals( label.name(), constraint.getLabel().name() );
-                assertEquals( property, single( constraint.getPropertyKeys() ) );
-                tx.success();
-            }
-        }
-        finally
-        {
-            db.shutdown();
-        }
-    }
-
-    @Test
-    public void shouldAllowCreationOfUniquenessAndExistenceConstraintOnSameLabelAndProperty() throws Exception
-    {
-        // Given
-        Label label = label( "Person" );
-        String property = "name";
-
-        BatchInserter inserter = newBatchInserter();
-
-        // When
-        inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create();
-        inserter.createDeferredConstraint( label ).assertPropertyExists( property ).create();
-
-        // Then
-        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
-        try
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                List<ConstraintDefinition> constraints = asList( db.schema().getConstraints() );
-                assertEquals( 2, constraints.size() );
-                for ( ConstraintDefinition constraint : constraints )
-                {
-                    if ( constraint.getConstraintType() == ConstraintType.UNIQUENESS ||
-                         constraint.getConstraintType() == ConstraintType.NODE_PROPERTY_EXISTENCE )
-                    {
-                        assertEquals( label.name(), constraint.getLabel().name() );
-                        assertEquals( property, single( constraint.getPropertyKeys() ) );
-                    }
-                    else
-                    {
-                        fail( "Unexpected constraint type found: " + constraint.getConstraintType() );
-                    }
-                }
-                tx.success();
-            }
-        }
-        finally
-        {
-            db.shutdown();
-        }
-    }
-
-    @Test
     public void shouldNotAllowCreationOfUniquenessConstraintAndIndexOnSameLabelAndProperty() throws Exception
     {
         // Given
@@ -1702,56 +1529,6 @@ public class BatchInsertTest
         {
             // Then
             assertEquals( "Index for given {label;property} already exists", e.getMessage() );
-        }
-    }
-
-    @Test
-    public void shouldNotAllowDuplicatedNodePropertyExistenceConstraints() throws Exception
-    {
-        // Given
-        Label label = label( "Person" );
-        String property = "name";
-
-        BatchInserter inserter = newBatchInserter();
-
-        // When
-        inserter.createDeferredConstraint( label ).assertPropertyExists( property ).create();
-        try
-        {
-            inserter.createDeferredConstraint( label ).assertPropertyExists( property ).create();
-            fail( "Exception expected" );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            // Then
-            assertEquals(
-                    "Node property existence constraint for given {label;property} already exists",
-                    e.getMessage() );
-        }
-    }
-
-    @Test
-    public void shouldNotAllowDuplicatedRelationshipPropertyExistenceConstraints() throws Exception
-    {
-        // Given
-        RelationshipType type = DynamicRelationshipType.withName( "KNOWS" );
-        String property = "since";
-
-        BatchInserter inserter = newBatchInserter();
-
-        // When
-        inserter.createDeferredConstraint( type ).assertPropertyExists( property ).create();
-        try
-        {
-            inserter.createDeferredConstraint( type ).assertPropertyExists( property ).create();
-            fail( "Exception expected" );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            // Then
-            assertEquals(
-                    "Relationship property existence constraint for given {type;property} already exists",
-                    e.getMessage() );
         }
     }
 

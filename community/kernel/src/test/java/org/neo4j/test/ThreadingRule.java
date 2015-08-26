@@ -155,7 +155,7 @@ public class ThreadingRule extends ExternalResource
             {
                 ReflectionUtil.verifyMethodExists( owner, method );
 
-                if ( thread.getState() != Thread.State.WAITING )
+                if ( thread.getState() != Thread.State.WAITING && thread.getState() != Thread.State.TIMED_WAITING )
                 {
                     return false;
                 }

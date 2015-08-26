@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb.schema;
 
+import org.neo4j.graphdb.ConstraintViolationException;
+
 /**
  * A builder for entering details about a constraint to create. After all details have been entered
  * {@link #create()} must be called for the constraint to actually be created. A constraint creator knows
@@ -31,12 +33,9 @@ package org.neo4j.graphdb.schema;
  * backwards compatibility is only guaranteed for clients of this interface, not for
  * implementors.
  *
- * <b>NOTE:</b> this interface should in fact be named NodeConstraintCreator. Renaming is not done due to backwards
- * compatibility reasons will happen in the next major release.
- *
  * @see Schema
  */
-public interface ConstraintCreator extends BaseConstraintCreator<ConstraintCreator>
+public interface ConstraintCreator
 {
     /**
      * Imposes a uniqueness constraint for the given property, such that
@@ -47,11 +46,11 @@ public interface ConstraintCreator extends BaseConstraintCreator<ConstraintCreat
     ConstraintCreator assertPropertyIsUnique( String propertyKey );
 
     /**
-     * Imposes an existence constraint for the given property, such that any node with the given label must have a
-     * value set for the given property key.
+     * Creates a constraint with the details specified by the other methods in this interface.
      *
-     * @return a {@link ConstraintCreator} instance to be used for further interaction.
+     * @return the created {@link ConstraintDefinition constraint}.
+     * @throws ConstraintViolationException if creating this constraint would violate any
+     * existing constraints.
      */
-    @Override
-    ConstraintCreator assertPropertyExists( String propertyKey );
+    ConstraintDefinition create() throws ConstraintViolationException;
 }

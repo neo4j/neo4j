@@ -31,7 +31,6 @@ import java.util.regex.Pattern;
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -871,32 +870,6 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListNodePropertyExistenceConstraints() throws Exception
-    {
-        // GIVEN
-        Label label = label( "Person" );
-        beginTx();
-        db.schema().constraintFor( label ).assertPropertyExists( "name" ).create();
-        finishTx();
-
-        // WHEN / THEN
-        executeCommand( "schema ls", "ON \\(person:Person\\) ASSERT exists\\(person.name\\)" );
-    }
-
-    @Test
-    public void canListRelationshipPropertyExistenceConstraints() throws Exception
-    {
-        // GIVEN
-        RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
-        beginTx();
-        db.schema().constraintFor( relType ).assertPropertyExists( "since" ).create();
-        finishTx();
-
-        // WHEN / THEN
-        executeCommand( "schema ls", "ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT exists\\(knows.since\\)" );
-    }
-
-    @Test
     public void canListUniquePropertyConstraintsByLabel() throws Exception
     {
         // GIVEN
@@ -910,120 +883,6 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListNodePropertyExistenceConstraintsByLabel() throws Exception
-    {
-        // GIVEN
-        Label label1 = label( "Person" );
-        beginTx();
-        db.schema().constraintFor( label1 ).assertPropertyExists( "name" ).create();
-        finishTx();
-
-        // WHEN / THEN
-        executeCommand( "schema ls -l :Person", "ON \\(person:Person\\) ASSERT exists\\(person.name\\)" );
-    }
-
-    @Test
-    public void canListRelationshipPropertyExistenceConstraintsByType() throws Exception
-    {
-        // GIVEN
-        RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
-        beginTx();
-        db.schema().constraintFor( relType ).assertPropertyExists( "since" ).create();
-        finishTx();
-
-        // WHEN / THEN
-        executeCommand( "schema ls -r :KNOWS", "ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT exists\\(knows.since\\)" );
-    }
-
-    @Test
-    public void canListRelationshipPropertyExistenceConstraintsByTypeAndProperty() throws Exception
-    {
-        // GIVEN
-        RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
-        beginTx();
-        db.schema().constraintFor( relType ).assertPropertyExists( "since" ).create();
-        finishTx();
-
-        // WHEN / THEN
-        executeCommand( "schema ls -r :KNOWS -p since",
-                "ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT exists\\(knows.since\\)" );
-    }
-
-    @Test
-    public void canListBothNodeAndRelationshipPropertyExistenceConstraints() throws Exception
-    {
-        // GIVEN
-        Label label = DynamicLabel.label( "Person" );
-        RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
-
-        // WHEN
-        beginTx();
-        db.schema().constraintFor( label ).assertPropertyExists( "name" ).create();
-        finishTx();
-
-        beginTx();
-        db.schema().constraintFor( relType ).assertPropertyExists( "since" ).create();
-        finishTx();
-
-        // THEN
-        executeCommand( "schema ls",
-                "ON \\(person:Person\\) ASSERT exists\\(person.name\\)",
-                "ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT exists\\(knows.since\\)" );
-    }
-
-    @Test
-    public void canListBothNodeAndRelationshipPropertyExistenceConstraintsByLabelAndType() throws Exception
-    {
-        // GIVEN
-        Label label = DynamicLabel.label( "Person" );
-        RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
-
-        // WHEN
-        beginTx();
-        db.schema().constraintFor( label ).assertPropertyExists( "name" ).create();
-        finishTx();
-
-        beginTx();
-        db.schema().constraintFor( relType ).assertPropertyExists( "since" ).create();
-        finishTx();
-
-        // THEN
-        executeCommand( "schema ls -l :Person -r :KNOWS",
-                "ON \\(person:Person\\) ASSERT exists\\(person.name\\)",
-                "ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT exists\\(knows.since\\)" );
-    }
-
-    @Test
-    public void shouldHaveCorrectIndentationsInSchemaListing() throws Exception
-    {
-        // GIVEN
-        Label label = DynamicLabel.label( "Person" );
-        RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
-
-        // WHEN
-        beginTx();
-        db.schema().constraintFor( label ).assertPropertyIsUnique( "name" ).create();
-        finishTx();
-
-        beginTx();
-        db.schema().constraintFor( label ).assertPropertyExists( "name" ).create();
-        finishTx();
-
-        beginTx();
-        db.schema().constraintFor( relType ).assertPropertyExists( "since" ).create();
-        finishTx();
-
-        // THEN
-        executeCommand( "schema",
-                "Indexes",
-                "  ON :Person\\(name\\) ONLINE \\(for uniqueness constraint\\)",
-                "Constraints",
-                "  ON \\(person:Person\\) ASSERT person.name IS UNIQUE",
-                "  ON \\(person:Person\\) ASSERT exists\\(person.name\\)",
-                "  ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT exists\\(knows.since\\)" );
-    }
-
-    @Test
     public void canListUniquePropertyConstraintsByLabelAndProperty() throws Exception
     {
         // GIVEN
@@ -1034,19 +893,6 @@ public class TestApps extends AbstractShellTest
 
         // WHEN / THEN
         executeCommand( "schema ls -l :Person -p name", "ON \\(person:Person\\) ASSERT person.name IS UNIQUE" );
-    }
-
-    @Test
-    public void canListNodePropertyExistenceConstraintsByLabelAndProperty() throws Exception
-    {
-        // GIVEN
-        Label label1 = label( "Person" );
-        beginTx();
-        db.schema().constraintFor( label1 ).assertPropertyExists( "name" ).create();
-        finishTx();
-
-        // WHEN / THEN
-        executeCommand( "schema ls -l :Person -p name", "ON \\(person:Person\\) ASSERT exists\\(person.name\\)" );
     }
 
     @Test

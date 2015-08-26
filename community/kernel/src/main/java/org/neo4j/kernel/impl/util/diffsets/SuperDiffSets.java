@@ -27,6 +27,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
 
 import static java.lang.String.format;
@@ -56,7 +57,8 @@ abstract class SuperDiffSets<T,LONGITERATOR extends PrimitiveLongIterator>
     }
 
     @Override
-    public void accept( DiffSetsVisitor<T> visitor ) throws ConstraintValidationKernelException
+    public void accept( DiffSetsVisitor<T> visitor )
+            throws ConstraintValidationKernelException, CreateConstraintFailureException
     {
         for ( T element : added( false ) )
         {
