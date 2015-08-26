@@ -61,7 +61,7 @@ object AsPropertyScannable {
   def unapply(v: Any): Option[Scannable[Expression]] = v match {
 
     case func@FunctionInvocation(_, _, IndexedSeq(property@Property(ident: Identifier, _)))
-      if func.function.contains(functions.Has) =>
+      if func.function.contains(functions.Exists) =>
       Some(ExplicitlyPropertyScannable(func, ident, property))
 
     case expr: Equals =>
@@ -86,7 +86,7 @@ object AsPropertyScannable {
   private def partialPropertyPredicate[P <: Expression](predicate: P, lhs: Expression) = lhs match {
     case property@Property(ident: Identifier, _) =>
       PartialPredicate.ifNotEqual(
-        FunctionInvocation(FunctionName(functions.Has.name)(predicate.position), property)(predicate.position),
+        FunctionInvocation(FunctionName(functions.Exists.name)(predicate.position), property)(predicate.position),
         predicate
       ).map(ImplicitlyPropertyScannable(_, ident, property))
 

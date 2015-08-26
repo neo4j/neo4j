@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v2_3.ast.{Property, InequalityExpression, Not, IsNotNull}
-import org.neo4j.cypher.internal.frontend.v2_3.ast.functions.Has
 import org.neo4j.cypher.internal.frontend.v2_3.{topDown, Rewriter}
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
+import org.neo4j.cypher.internal.frontend.v2_3.ast.functions.{Exists, Has}
 
 case object normalizeSargablePredicates extends Rewriter {
 
@@ -29,9 +29,13 @@ case object normalizeSargablePredicates extends Rewriter {
 
   private val instance: Rewriter = Rewriter.lift {
 
-    // turn n.prop IS NOT NULL into has(n.prop)
+    // turn n.prop IS NOT NULL into exists(n.prop)
     case predicate@IsNotNull(property@Property(_, _)) =>
-      Has.asInvocation(property)(predicate.position)
+      Exists.asInvocation(property)(predicate.position)
+
+    // turn has(n.prop) to exists(n.prop)
+    case func@FunctionInvocation(_, _, IndexedSeq(property@Property(_, _))) if func.function.contains(Has)  =>
+      Exists.asInvocation(property)(func.position)
 
     // remove not from inequality expressions by negating them
     case Not(inequality: InequalityExpression) =>
