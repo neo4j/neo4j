@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
-
 import java.net.URI;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -32,9 +26,16 @@ import java.util.List;
 
 import org.junit.Test;
 
+import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
 import org.neo4j.kernel.impl.store.StoreId;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
 
 public class HANewSnapshotFunctionTest
 {
@@ -151,6 +152,56 @@ public class HANewSnapshotFunctionTest
         List<MemberIsAvailable> expected = new LinkedList<>();
         expected.add( roleForId( MASTER, 2 ) );
         expected.add( roleForId( SLAVE, 3 ) );
+
+        // WHEN events start getting added
+        Iterable<MemberIsAvailable> result = new LinkedList<>();
+        for ( MemberIsAvailable event : events )
+        {
+            result = new HANewSnapshotFunction().apply( result, event );
+        }
+
+        // THEN the result should be the expected one
+        eventsMatch( result, expected );
+    }
+
+    @Test
+    public void instanceBeingBackupReplacedByAnotherInstanceShouldNotRemainBackup() throws Exception
+    {
+        // GIVEN these events
+        List<MemberIsAvailable> events = new LinkedList<>();
+        events.add( roleForId( OnlineBackupKernelExtension.BACKUP, 1 ) );
+        events.add( roleForId( MASTER, 2 ) );
+        events.add( roleForId( OnlineBackupKernelExtension.BACKUP, 2 ) );
+        events.add( roleForId( SLAVE, 3 ) );
+        // and this expected outcome
+        List<MemberIsAvailable> expected = new LinkedList<>();
+        expected.add( roleForId( MASTER, 2 ) );
+        expected.add( roleForId( OnlineBackupKernelExtension.BACKUP, 2 ) );
+        expected.add( roleForId( SLAVE, 3 ) );
+
+        // WHEN events start getting added
+        Iterable<MemberIsAvailable> result = new LinkedList<>();
+        for ( MemberIsAvailable event : events )
+        {
+            result = new HANewSnapshotFunction().apply( result, event );
+        }
+
+        // THEN the result should be the expected one
+        eventsMatch( result, expected );
+    }
+
+    @Test
+    public void instanceBeingBackupRepeatedlyShouldRemainBackupOnceOnly() throws Exception
+    {
+        // GIVEN these events
+        List<MemberIsAvailable> events = new LinkedList<>();
+        events.add( roleForId( OnlineBackupKernelExtension.BACKUP, 1 ) );
+        events.add( roleForId( OnlineBackupKernelExtension.BACKUP, 1 ) );
+        events.add( roleForId( OnlineBackupKernelExtension.BACKUP, 1 ) );
+        events.add( roleForId( OnlineBackupKernelExtension.BACKUP, 1 ) );
+        // and this expected outcome
+        List<MemberIsAvailable> expected = new LinkedList<>();
+        expected.add( roleForId( OnlineBackupKernelExtension.BACKUP, 1 ) );
 
         // WHEN events start getting added
         Iterable<MemberIsAvailable > result = new LinkedList<>();
