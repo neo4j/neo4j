@@ -99,6 +99,6 @@ public class CheckPointScheduler extends LifecycleAdapter
         {
             handle.cancel( false );
         }
-        Predicates.await( checkPointingCondition, recurringPeriodMillis, MILLISECONDS );
+        Predicates.awaitForever( checkPointingCondition, 100, MILLISECONDS );
     }
 }

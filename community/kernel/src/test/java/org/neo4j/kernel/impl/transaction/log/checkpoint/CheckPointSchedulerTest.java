@@ -173,7 +173,7 @@ public class CheckPointSchedulerTest
         checkPointerLatch.finish();
         runCheckPointer.join();
 
-        Thread.sleep( 10 );
+        Thread.sleep( 150 );
 
         assertTrue( stoppedCompleted.get() );
         stopper.join(); // just in case

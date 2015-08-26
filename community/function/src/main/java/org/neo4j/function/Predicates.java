@@ -218,4 +218,19 @@ public class Predicates
         while ( System.currentTimeMillis() < deadline );
         throw new TimeoutException( "Waited for " + timeout + " " + unit + ", but " + condition + " was not accepted." );
     }
+
+
+    public static void awaitForever( Supplier<Boolean> condition, long checkInterval, TimeUnit unit ) throws InterruptedException
+    {
+        long sleep = unit.toMillis( checkInterval );
+        do
+        {
+            if ( condition.get() )
+            {
+                return;
+            }
+            Thread.sleep( sleep );
+        }
+        while ( true );
+    }
 }
