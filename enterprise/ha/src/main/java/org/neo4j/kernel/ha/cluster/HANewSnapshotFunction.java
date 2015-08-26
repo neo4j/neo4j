@@ -23,6 +23,7 @@ import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
 import org.neo4j.helpers.Function2;
 import org.neo4j.helpers.collection.Iterables;
@@ -35,10 +36,11 @@ import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
  * face of failures of instances in the cluster.
  */
 public class HANewSnapshotFunction
-    implements Function2<Iterable<MemberIsAvailable>, MemberIsAvailable, Iterable<MemberIsAvailable>>, Serializable
+        implements Function2<Iterable<MemberIsAvailable>, MemberIsAvailable, Iterable<MemberIsAvailable>>, Serializable
 {
     @Override
-    public Iterable<MemberIsAvailable> apply( Iterable<MemberIsAvailable> previousSnapshot, final MemberIsAvailable newMessage )
+    public Iterable<MemberIsAvailable> apply( Iterable<MemberIsAvailable> previousSnapshot,
+            final MemberIsAvailable newMessage )
     {
         /*
          * If a master event is received, all events that set to slave that instance should be removed. The same
@@ -49,8 +51,8 @@ public class HANewSnapshotFunction
             List<MemberIsAvailable> result = new LinkedList<>();
             for ( MemberIsAvailable existing : previousSnapshot )
             {
-                if ( ( isSlave( existing ) && sameIds( newMessage, existing ) )
-                        || isMaster( existing ))
+                if ( (isSlave( existing ) && sameIds( newMessage, existing ))
+                        || isMaster( existing ) )
                 {
                     continue;
                 }
@@ -69,6 +71,20 @@ public class HANewSnapshotFunction
             for ( MemberIsAvailable existing : previousSnapshot )
             {
                 if ( sameIds( newMessage, existing ) )
+                {
+                    continue;
+                }
+                result.add( existing );
+            }
+            result.add( newMessage );
+            return result;
+        }
+        else if ( newMessage.getRole().equals( OnlineBackupKernelExtension.BACKUP ) )
+        {
+            List<MemberIsAvailable> result = new LinkedList<>();
+            for ( MemberIsAvailable existing : previousSnapshot )
+            {
+                if ( existing.getRole().equals( OnlineBackupKernelExtension.BACKUP ) )
                 {
                     continue;
                 }
