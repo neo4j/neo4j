@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.junit.Test;
-
 import java.util.Set;
+
+import org.junit.Test;
 
 import org.neo4j.SchemaHelper;
 import org.neo4j.graphdb.GraphDatabaseService;

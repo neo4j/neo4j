@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import org.neo4j.SchemaHelper;
 import org.neo4j.function.ThrowingFunction;
@@ -41,16 +41,13 @@ import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.impl.api.OperationsFacade;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.ThreadingRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertThat;
@@ -58,10 +55,8 @@ import static org.junit.Assert.fail;
 import static org.junit.runners.Suite.SuiteClasses;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT
-        .NodePropertyExistenceExistenceConstrainVerificationIT;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT
-        .RelationshipPropertyExistenceExistenceConstrainVerificationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT.NodePropertyExistenceExistenceConstrainVerificationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT.RelationshipPropertyExistenceExistenceConstrainVerificationIT;
 import static org.neo4j.test.ThreadingRule.waitingWhileIn;
 
 @RunWith( Suite.class )

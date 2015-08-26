@@ -17,27 +17,32 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.factory;
+package org.neo4j.kernel.impl.enterprise;
 
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import java.io.File;
+import java.util.Map;
+
 import org.neo4j.kernel.impl.factory.EditionModule;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 
 /**
- * This implementation of {@link EditionModule} creates the implementations of services
- * that are specific to the Enterprise edition, without HA
+ * This facade creates instances of the Enterprise edition of Neo4j.
  */
-public class EnterpriseEditionModule extends CommunityEditionModule
+public class EnterpriseFacadeFactory extends GraphDatabaseFacadeFactory
 {
-    public EnterpriseEditionModule( PlatformModule platformModule )
+    @Override
+    public GraphDatabaseFacade newFacade( File storeDir, Map<String,String> params, Dependencies dependencies,
+            GraphDatabaseFacade graphDatabaseFacade )
     {
-        super( platformModule );
+        params.put( Configuration.editionName.name(), "Enterprise" );
+        return super.newFacade( storeDir, params, dependencies, graphDatabaseFacade );
     }
 
     @Override
-    protected ConstraintSemantics createSchemaRuleVerifier()
+    protected EditionModule createEdition( PlatformModule platformModule )
     {
-        return new EnterpriseConstraintSemantics();
+        return new EnterpriseEditionModule( platformModule );
     }
 }

@@ -1,16 +1,17 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.neo4j.build</groupId>
-    <artifactId>enterprise-build</artifactId>
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent</artifactId>
     <version>2.3-SNAPSHOT</version>
-    <relativePath>..</relativePath>
+    <relativePath>../..</relativePath>
   </parent>
-  <artifactId>neo4j-pec-tests</artifactId>
+  <groupId>org.neo4j</groupId>
+  <artifactId>neo4j-enterprise-kernel</artifactId>
   <version>2.3-SNAPSHOT</version>
 
-  <name>Neo4j - Enterprise Property Existence Constraint Tests</name>
-  <description>Tests for property existence constraints</description>
+  <name>Neo4j - Enterprise Graph Database Kernel Features</name>
+  <description>Enterprise features for Neo4j</description>
   <packaging>jar</packaging>
 
   <scm>
@@ -84,7 +85,7 @@
     <!-- Neo4j dependencies -->
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-enterprise</artifactId>
+      <artifactId>neo4j-advanced</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -144,32 +145,6 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-io</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-ha</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-ha</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.app</groupId>
-      <artifactId>neo4j-server-enterprise</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.app</groupId>
-      <artifactId>neo4j-server-enterprise</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import java.util.UUID;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
-
-import java.util.UUID;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -44,10 +44,8 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintValidationIT
-        .NodePropertyExistenceExistenceConstraintValidationIT;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintValidationIT
-        .RelationshipPropertyExistenceExistenceConstraintValidationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintValidationIT.NodePropertyExistenceExistenceConstraintValidationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintValidationIT.RelationshipPropertyExistenceExistenceConstraintValidationIT;
 
 @RunWith( Suite.class )
 @SuiteClasses( {
