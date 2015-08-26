@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.TaskCloser;
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.QueryExecutionTracer;
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
 import org.neo4j.function.Supplier;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.NodeManager;
 

@@ -121,6 +121,11 @@ public class Magic
         return NONE;
     }
 
+    public static int longest()
+    {
+        return LONGEST;
+    }
+
     private final String description;
     private final Charset encoding;
     private final byte[] bytes;

@@ -24,9 +24,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PushbackInputStream;
 import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
@@ -76,6 +78,36 @@ public class Readables
             return "EMPTY";
         }
     };
+
+    public static CharReadable wrap( final InputStream stream, final String sourceName, Charset charset )
+            throws IOException
+    {
+        byte[] bytes = new byte[Magic.longest()];
+        PushbackInputStream pushbackStream = new PushbackInputStream( stream, bytes.length );
+        Charset usedCharset = charset;
+        int read = stream.read( bytes );
+        if ( read >= 0 )
+        {
+            bytes = read < bytes.length ? Arrays.copyOf( bytes, read ) : bytes;
+            Magic magic = Magic.of( bytes );
+            int excessiveBytes = read;
+            if ( magic.impliesEncoding() )
+            {
+                // Unread the diff between the BOM and the longest magic we gathered bytes for
+                excessiveBytes -= magic.length();
+                usedCharset = magic.encoding();
+            }
+            pushbackStream.unread( bytes, read - excessiveBytes, excessiveBytes );
+        }
+        return wrap( new InputStreamReader( pushbackStream, usedCharset )
+        {
+            @Override
+            public String toString()
+            {
+                return sourceName;
+            }
+        } );
+    }
 
     /**
      * Remember that the {@link Reader#toString()} must provide a description of the data source.
