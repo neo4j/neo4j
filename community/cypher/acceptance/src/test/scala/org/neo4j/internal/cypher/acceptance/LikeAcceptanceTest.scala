@@ -44,22 +44,47 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
   // *** TESTS OF INTERPOLATED LIKE PREFIX SEARCHES
 
-  ignore("should work with interpolated strings") {
+  test("should work with interpolated strings when there is an index") {
     val london = createLabeledNode(Map("name" -> "London"), "Location")
     createLabeledNode(Map("name" -> "london"), "Location")
     graph.createIndex("Location", "name")
+    graph.inTx {
+      (1 to 100).foreach { _ =>
+        createLabeledNode("Location")
+      }
+      (1 to 300).map { i =>
+        createLabeledNode(Map("name" -> i.toString), "Location")
+      }
+    }
 
     val query =
       """WITH 'Lon' as prefix
         |MATCH (l:Location)
+//        |USING INDEX l:Location(name)
         |WHERE l.name LIKE $'${prefix}%'
-        |USING INDEX l:Location(name)
         |RETURN l
       """.stripMargin
 
     val result = executeWithAllPlanners(query)
 
     result.executionPlanDescription().toString should include(IndexSeekByRange.name)
+    result.toList should equal(List(Map("l" -> london)))
+  }
+
+  test("should work with dynamic interpolated strings when there is no index") {
+    val london = createLabeledNode(Map("name" -> "London"), "Location")
+    createLabeledNode(Map("name" -> "london"), "Location")
+
+    val query =
+      """WITH 'Lon' as prefix
+        |MATCH (l:Location)
+        |WITH l AS l, $'${prefix}%' as pat
+        |WHERE l.name LIKE pat
+        |RETURN l
+      """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
     result.toList should equal(List(Map("l" -> london)))
   }
 

@@ -37,16 +37,6 @@ class MatchRegexTest extends CypherFunSuite {
     expression.isMatch(null)(QueryStateHelper.empty) should equal(None)
   }
 
-  test("MatchDynamicRegex: should not match if the lhs expression evaluates to something that is not a string"){
-    val expression = new MatchDynamicRegex(Literal(5), Literal(".*"))
-    expression.isMatch(null)(QueryStateHelper.empty) should equal(None)
-  }
-
-  test("MatchLiteralRegex: should not match if the lhs expression evaluates to something that is not a string"){
-    val expression = new MatchLiteralRegex(Literal(5), Literal(".*"))
-    expression.isMatch(null)(QueryStateHelper.empty) should equal(None)
-  }
-
   test("MatchDynamicRegex: should match pattern to string") {
     val expression1 = new MatchDynamicRegex(Literal("value"), Literal("v[a-z]+"))
     expression1.isMatch(null)(QueryStateHelper.empty) should equal(Some(true))

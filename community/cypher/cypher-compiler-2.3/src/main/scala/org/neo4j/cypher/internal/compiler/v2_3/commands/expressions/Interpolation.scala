@@ -76,6 +76,8 @@ case class Interpolation(parts: NonEmptyList[Either[Expression, String]]) extend
 
   def symbolTableDependencies = parts.map(_.left.toOption.map(_.symbolTableDependencies).getOrElse(Set.empty)).reduceLeft(_ ++ _)
 
-  override def toString = s"Interpolation(${parts.map(_.toString).reduceLeft(_ + ", " + _)}})"
+  def toPartString = parts.map(_.toString).reduceLeft(_ + ", " + _)
+
+  override def toString = s"Interpolation($toPartString)"
 }
 

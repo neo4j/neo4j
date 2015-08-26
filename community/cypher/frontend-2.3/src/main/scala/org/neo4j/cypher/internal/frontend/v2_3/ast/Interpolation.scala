@@ -17,15 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.symbols
+package org.neo4j.cypher.internal.frontend.v2_3.ast
 
-import org.neo4j.cypher.internal.frontend.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
+import org.neo4j.cypher.internal.frontend.v2_3.symbols.CTString
 
-sealed trait InterpolationType extends CypherType
+/*
+ Staging of various interpolation objects throughout the lifetime of a query
 
-object InterpolationType {
-  val instance = new InterpolationType() {
-    val parentType = CTAny
-    override val toString = "Interpolation"
-  }
+ Query
+ |
+ [parsing]
+ |
+ v
+ ast.InterpolationLiteral
+ |
+ [compileInterpolations rewriter]
+ |
+ v
+ ast.Interpolation
+ |
+ [pipe building]
+ |
+ v
+ commandexpressions.Interpolation
+ |
+ [evaluation at runtime]
+ |
+ v
+ InterpolationValue (containing InterpolationStringParts)
+ */
+case class Interpolation(parts: NonEmptyList[Either[Expression, String]])(val position: InputPosition)
+  extends Expression with SimpleTyping {
+
+  protected def possibleTypes = CTString
 }

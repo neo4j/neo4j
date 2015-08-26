@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.cypher.internal.frontend.v2_3.{Bounds, Bound}
+import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
+import org.neo4j.cypher.internal.frontend.v2_3.ast.Interpolation
+import org.neo4j.cypher.internal.frontend.v2_3.{Bound, Bounds}
 
 sealed trait SeekRange[+V]
 
@@ -144,4 +146,15 @@ final case class RangeLessThan[+V](bounds: Bounds[V]) extends HalfOpenSeekRange[
     MinBoundOrdering(ordering.forMin)
 }
 
-final case class PrefixRange(prefix: String) extends SeekRange[String]
+final case class PrefixRange(prefix: String) extends SeekRange[String] {
+  def prefixLength = prefix.length
+}
+
+final case class InterpolatedPrefixRange(prefix: Interpolation) extends SeekRange[Interpolation] {
+  def dependencies = prefix.dependencies
+
+  def prefixLength = prefix.parts.foldLeft(0) {
+    case (acc, Left(expr)) => acc + GraphStatistics.DEFAULT_STRING_LENGTH
+    case (acc, Right(string)) => acc + string.length
+  }
+}

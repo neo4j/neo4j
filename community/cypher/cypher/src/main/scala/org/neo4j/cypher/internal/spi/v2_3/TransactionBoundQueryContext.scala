@@ -144,7 +144,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
 
     case PrefixRange(prefix) =>
-      indexSeekByPrefixRange(index, prefix)
+      if (prefix == null) Iterator.empty else indexSeekByPrefixRange(index, prefix)
 
     case range: InequalitySeekRange[Any] =>
       val groupedRanges = range.groupBy { (bound: Bound[Any]) =>

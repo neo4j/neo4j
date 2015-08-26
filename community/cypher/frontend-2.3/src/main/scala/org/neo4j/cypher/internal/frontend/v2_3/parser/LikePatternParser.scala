@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v2_3.parser
 
+import org.neo4j.cypher.internal.frontend.v2_3.ast.Expression
 import org.parboiled.scala._
 import org.parboiled.scala.parserunners.ReportingParseRunner
 
@@ -50,6 +51,7 @@ case object LikePatternParser extends Parser {
 
 /** Contains a sequence of parsed LIKE tokens*/
 case class ParsedLikePattern(ops: List[LikePatternOp]) {
+
  def compact: ParsedLikePattern = {
    val newOps = ops.foldLeft(List.empty[LikePatternOp]) {
      case (MatchText(fst) :: tl, MatchText(snd)) =>
@@ -60,7 +62,11 @@ case class ParsedLikePattern(ops: List[LikePatternOp]) {
    }
    ParsedLikePattern(newOps.reverse)
  }
+
  override def toString = ops.mkString("\"","","\"")
+
+ def asRegex(caseInsensitive: Boolean) =
+  convertLikePatternToRegex(this, caseInsensitive).r.pattern
 }
 
 sealed trait LikePatternOp
@@ -70,6 +76,10 @@ sealed trait WildcardLikePatternOp extends LikePatternOp
 /** Contains a string that needs quoting for use in regular expression */
 case class MatchText(text: String) extends LikePatternOp  {
   override def toString = text
+}
+
+case class MatchExpression(expr: Expression) extends LikePatternOp {
+  override def toString = s"$${$expr}"
 }
 
 /** Matches a % */

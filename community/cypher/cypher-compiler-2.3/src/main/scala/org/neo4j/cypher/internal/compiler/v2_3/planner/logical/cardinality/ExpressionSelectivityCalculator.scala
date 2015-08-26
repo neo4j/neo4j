@@ -53,9 +53,13 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case AsPropertySeekable(seekable) =>
       calculateSelectivityForPropertyEquality(seekable.name, seekable.args.sizeHint, selections, seekable.propertyKey)
 
-    // WHERE x.prop LIKE ...
-    case AsStringRangeSeekable(seekable@PrefixRangeSeekable(PrefixRange(prefix), _, _, _)) =>
-      calculateSelectivityForPrefixRangeSeekable(seekable.name, selections, seekable.propertyKey, prefix)
+    // WHERE x.prop LIKE "..."
+    case AsStringRangeSeekable(seekable@PrefixRangeSeekable(range, _, _, _)) =>
+      calculateSelectivityForPrefixRangeSeekable(seekable.name, selections, seekable.propertyKey, range.prefixLength)
+
+    // WHERE x.prop LIKE $"..."
+    case AsInterpolatedPrefixRangeSeekable(seekable@InterpolatedPrefixRangeSeekable(range, _, _, _)) =>
+      calculateSelectivityForPrefixRangeSeekable(seekable.name, selections, seekable.propertyKey, range.prefixLength)
 
     // WHERE x.prop <, <=, >=, > that could benefit from an index
     case AsValueRangeSeekable(seekable@InequalityRangeSeekable(_, _, _)) =>
@@ -130,10 +134,10 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   }
 
   private def calculateSelectivityForPrefixRangeSeekable(identifier: String,
-                                                   selections: Selections,
-                                                   propertyKey: PropertyKeyName,
-                                                   prefix: String)
-                                                  (implicit semanticTable: SemanticTable): Selectivity = {
+                                                         selections: Selections,
+                                                         propertyKey: PropertyKeyName,
+                                                         prefixLength: Int)
+                                                        (implicit semanticTable: SemanticTable): Selectivity = {
     /*
      * c = DEFAULT_RANGE_SEEK_FACTOR
      * p = prefix length
@@ -144,8 +148,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
      * return min(x, e + s in (0,1))
      */
     val equality = java.math.BigDecimal.valueOf(calculateSelectivityForPropertyEquality(identifier, None, selections, propertyKey).factor)
-    val prefixLength = java.math.BigDecimal.valueOf(prefix.length)
-    val factor = java.math.BigDecimal.ONE.divide(prefixLength, 17, RoundingMode.HALF_UP)
+    val bcdPrefixLength = java.math.BigDecimal.valueOf(prefixLength)
+    val factor = java.math.BigDecimal.ONE.divide(bcdPrefixLength, 17, RoundingMode.HALF_UP)
       .multiply(java.math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR)).stripTrailingZeros()
     val slack = BigDecimalCombiner.negate(equality).multiply(factor)
     val result = Selectivity(equality.add(slack).doubleValue())

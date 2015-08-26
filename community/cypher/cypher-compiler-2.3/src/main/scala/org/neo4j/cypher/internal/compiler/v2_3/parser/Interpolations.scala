@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_3.parser
 
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.frontend.v2_3
 import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition, SyntaxException}
-import org.neo4j.cypher.internal.frontend.v2_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{Interpolation, Expression}
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v2_3.parser.Expressions
 import org.parboiled.scala._
@@ -43,15 +44,15 @@ case object Interpolations extends Parser with Expressions {
   def ErrorPart: Rule1[TrailingChars] =
     zeroOrMore(ANY) ~> (str => if (str.isEmpty) None else Some(str))
 
-  def Interpolation: Rule1[(ast.Interpolation, TrailingChars)] =
+  def Interpolation: Rule1[(Interpolation, TrailingChars)] =
     (oneOrMore(AnyPart) ~ ErrorPart) ~~>> { (parts: List[Either[Expression, String]], trailing: TrailingChars) =>
-      pos => (ast.Interpolation(NonEmptyList.from(parts))(pos), trailing)
+      pos => (v2_3.ast.Interpolation(NonEmptyList.from(parts))(pos), trailing)
     }
 
   @throws(classOf[SyntaxException])
-  def parse(queryText: String, offset: InputPosition): ast.Interpolation = {
+  def parse(queryText: String, offset: InputPosition): Interpolation = {
     if (queryText.isEmpty)
-      ast.Interpolation(NonEmptyList(Right("")))(offset)
+      v2_3.ast.Interpolation(NonEmptyList(Right("")))(offset)
     else {
       parseOrThrow(queryText, Some(offset), Interpolation) match {
         case (_, Some(trailing)) =>

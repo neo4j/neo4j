@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands.predicates
 
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{InterpolationValue, PatternInterpolationMode}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{InterpolationValue, ParsedLikePatternInterpolationMode, PatternInterpolationMode}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v2_3.parser.LikePatternParser
 
 sealed abstract class MatchRegex[R <: Expression] extends Predicate with StringHelper {
 
@@ -77,6 +78,35 @@ object defaultRegexConverter extends (Any => Option[java.util.regex.Pattern]) {
 
     case interpolation: InterpolationValue =>
       Some(interpolation.interpolate(PatternInterpolationMode))
+
+    case v =>
+      throw new CypherTypeException(
+        s"Expected regular expression pattern but got: $v"
+      )
   }
 }
 
+sealed trait LikeRegexConverter extends (Any => Option[java.util.regex.Pattern]) with StringHelper {
+
+  def caseInsensitive: Boolean
+
+  def apply(s: Any) = Option(s).map {
+    case interpolation: InterpolationValue =>
+      interpolation.interpolate(ParsedLikePatternInterpolationMode).asRegex(caseInsensitive)
+
+    case other =>
+      LikePatternParser(asString(other)).asRegex(caseInsensitive)
+  }
+}
+
+object LikeRegexConverter {
+  def given(caseInsensitive: Boolean) =
+    if (caseInsensitive) caseInsensitiveLikeRegexConverter else caseSensitiveLikeRegexConverter
+}
+case object caseSensitiveLikeRegexConverter extends LikeRegexConverter {
+  override def caseInsensitive: Boolean = false
+}
+
+case object caseInsensitiveLikeRegexConverter extends LikeRegexConverter {
+  override def caseInsensitive: Boolean = true
+}

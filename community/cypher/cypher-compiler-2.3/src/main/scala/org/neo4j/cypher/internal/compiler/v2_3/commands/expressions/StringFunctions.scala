@@ -50,7 +50,7 @@ trait StringHelper {
     case x: InterpolationValue => x.interpolate(TextInterpolationMode)
     case _  =>
       throw new CypherTypeException(
-        "Expected a string value for %s, but got: %s; perhaps you'd like to cast to a string it with str().".format(toString, a.toString)
+        "Expected a string value for %s, but got: %s; perhaps you'd like to cast it to a string with toString() or str().".format(toString, a.toString)
       )
   }
 

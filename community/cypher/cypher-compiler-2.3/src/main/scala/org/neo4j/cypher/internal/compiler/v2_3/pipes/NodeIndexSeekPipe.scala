@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, InequalitySeekRangeExpression, PrefixSeekRangeExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, InequalitySeekRangeExpression, InterpolatedPrefixSeekRangeExpression, PrefixSeekRangeExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{QueryExpression, RangeQueryExpression, indexQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsLabel, ReadsNodeProperty, ReadsNodes}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Index, InequalityIndex, PrefixIndex}
@@ -62,6 +62,9 @@ case class NodeIndexSeekPipe(ident: String,
         valueExpr match {
           case RangeQueryExpression(PrefixSeekRangeExpression(PrefixRange(prefix))) =>
             PrefixIndex(label.name, propertyKey.name, prefix)
+
+          case RangeQueryExpression(InterpolatedPrefixSeekRangeExpression(interpolation)) =>
+            PrefixIndex(label.name, propertyKey.name, interpolation.toPartString)
 
           case RangeQueryExpression(InequalitySeekRangeExpression(RangeLessThan(bounds))) =>
             InequalityIndex(label.name, propertyKey.name, bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toSeq)

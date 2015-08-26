@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.values
 
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
+import org.neo4j.cypher.internal.frontend.v2_3.parser.{LikePatternParser, MatchText, ParsedLikePattern}
 
 // See ast.Interpolation for the role of this class
 case class InterpolationValue(parts: NonEmptyList[InterpolationStringPart]) {
@@ -53,5 +54,15 @@ case object PatternInterpolationMode extends InterpolationMode[java.util.regex.P
         builder ++= partText
     }
     builder.result().r.pattern
+  }
+}
+
+case object ParsedLikePatternInterpolationMode extends InterpolationMode[ParsedLikePattern] {
+  def apply(parts: NonEmptyList[InterpolationStringPart]): ParsedLikePattern = {
+    val newParts = parts.map {
+      case InterpolatedStringPart(part) => List(MatchText(part))
+      case LiteralStringPart(part) => LikePatternParser(part).ops
+    }.toList.flatten
+    ParsedLikePattern(newParts)
   }
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Interpolation
 import org.neo4j.cypher.internal.frontend.v2_3.SyntaxException
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList

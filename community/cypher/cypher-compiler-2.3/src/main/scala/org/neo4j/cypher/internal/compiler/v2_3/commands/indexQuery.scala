@@ -19,17 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
-import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, InequalitySeekRangeExpression, PrefixSeekRangeExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, InequalitySeekRangeExpression, PrefixSeekRangeExpression, _}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.IsCollection
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionContext, PrefixRange}
 import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException
 import org.neo4j.graphdb.Node
 
 import scala.collection.GenTraversableOnce
 
-object indexQuery extends GraphElementPropertyFunctions {
+object indexQuery extends GraphElementPropertyFunctions with StringHelper {
   def apply(queryExpression: QueryExpression[Expression],
             m: ExecutionContext,
             state: QueryState,
@@ -52,10 +52,16 @@ object indexQuery extends GraphElementPropertyFunctions {
     case RangeQueryExpression(rangeWrapper) =>
       val range = rangeWrapper match {
         // StringSeekRange => PrefixRange("Petra")
-        case s: PrefixSeekRangeExpression => s.range
+        case PrefixSeekRangeExpression(range) =>
+          range
+
+        // InterpolatedStringSeekRange => PrefixRange computed from expression
+        case InterpolatedPrefixSeekRangeExpression(expression) =>
+          PrefixRange(asString(expression(m)(state)))
 
         // ValueSeekRange(RangeGT(InclusiveBound(n.prop + 12)) => RangeGT(InclusiveBound(15)))
-        case InequalitySeekRangeExpression(range) => range.mapBounds(_(m)(state)).mapBounds(makeValueNeoSafe)
+        case InequalitySeekRangeExpression(range) =>
+          range.mapBounds(_(m)(state)).mapBounds(makeValueNeoSafe)
       }
       index(range).toIterator
   }

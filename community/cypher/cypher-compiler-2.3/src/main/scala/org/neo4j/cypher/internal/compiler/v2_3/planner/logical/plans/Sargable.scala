@@ -21,13 +21,16 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{InequalitySeekRangeWrapper, PrefixSeekRangeWrapper}
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{InequalitySeekRangeWrapper, PrefixSeekRangeWrapper, _}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{ManySeekArgs, SeekArgs, SingleSeekArg}
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
-import org.neo4j.cypher.internal.frontend.v2_3.parser.{LikePatternOp, LikePatternParser, MatchText, WildcardLikePatternOp}
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
+import org.neo4j.cypher.internal.frontend.v2_3.parser._
 import org.neo4j.cypher.internal.frontend.v2_3.{ExclusiveBound, InclusiveBound}
+
+import scala.annotation.tailrec
 
 object WithSeekableArgs {
   def unapply(v: Any) = v match {
@@ -99,17 +102,20 @@ object AsStringRangeSeekable {
   def unapply(v: Any): Option[PrefixRangeSeekable] = v match {
     case like@Like(Property(ident: Identifier, propertyKey), LikePattern(lit@StringLiteral(value)), _)
       if !like.caseInsensitive =>
+        val likePattern = LikePatternParser(value).compact.ops
+
         for ((range, prefix) <- getRange(value))
           yield {
             val prefixPattern = LikePattern(StringLiteral(prefix)(lit.position))
             val predicate = like.copy(pattern = prefixPattern)(like.position)
             PrefixRangeSeekable(range, predicate, ident, propertyKey)
           }
+
     case _ =>
       None
   }
 
-  def getRange(literal: String): Option[(PrefixRange, String)] = {
+  private def getRange(literal: String): Option[(PrefixRange, String)] = {
     val ops: List[LikePatternOp] = LikePatternParser(literal).compact.ops
     ops match {
       case MatchText(prefix) :: (_: WildcardLikePatternOp) :: tl =>
@@ -117,6 +123,47 @@ object AsStringRangeSeekable {
       case _ =>
         None
     }
+  }
+}
+
+object AsInterpolatedPrefixRangeSeekable {
+  def unapply(v: Any): Option[InterpolatedPrefixRangeSeekable] = v match {
+    case like@Like(Property(ident: Identifier, propertyKey), LikePattern(interpolation@Interpolation(parts)), _)
+      if !like.caseInsensitive =>
+
+      val pattern = ParsedLikePattern(parts.map {
+        case Left(expr) => List(MatchExpression(expr))
+        case Right(string) => LikePatternParser(string).compact.ops
+      }.toList.flatten).compact
+
+      //              prefix                         tail
+      //              ------------------------------ -------
+      // n.prop LIKE $'constant|${{interpolated} ... %|_ ...'
+      val (prefix, tail) = patternOpsPrefix(pattern.ops)
+      if (prefix.nonEmpty && tail.nonEmpty) {
+        val prefixParts = NonEmptyList.from(prefix)
+        val prefixValueExpr = Interpolation(prefixParts)(interpolation.position)
+        val prefixPatternExpr = Interpolation(prefixParts :+ Right("%"))(interpolation.position)
+
+        val prefixPattern = LikePattern(prefixPatternExpr)
+        val predicate = like.copy(pattern = prefixPattern)(like.position)
+
+        Some(InterpolatedPrefixRangeSeekable(InterpolatedPrefixRange(prefixValueExpr), predicate, ident, propertyKey))
+      }
+      else {
+        None
+      }
+
+    case _ =>
+      None
+  }
+
+  @tailrec
+  private def patternOpsPrefix(remaining: List[LikePatternOp], prefix: List[Either[Expression, String]] = List.empty)
+  : (List[Either[Expression, String]], List[LikePatternOp]) = remaining match {
+    case MatchText(string) :: tail => patternOpsPrefix(tail, Right(string) :: prefix)
+    case MatchExpression(expr) :: tail => patternOpsPrefix(tail, Left(expr) :: prefix)
+    case _ => prefix.reverse -> remaining
   }
 }
 
@@ -168,6 +215,15 @@ case class PrefixRangeSeekable(override val range: PrefixRange, expr: Like, iden
 
   def asQueryExpression: QueryExpression[Expression] =
     RangeQueryExpression(PrefixSeekRangeWrapper(range)(expr.rhs.position))
+}
+
+case class InterpolatedPrefixRangeSeekable(override val range: InterpolatedPrefixRange, expr: Like, ident: Identifier, propertyKey: PropertyKeyName)
+  extends RangeSeekable[Like, Expression] {
+
+  def dependencies = range.dependencies
+
+  def asQueryExpression: QueryExpression[Expression] =
+    RangeQueryExpression(InterpolatedPrefixSeekRangeWrapper(range)(expr.rhs.position))
 }
 
 case class InequalityRangeSeekable(ident: Identifier, propertyKeyName: PropertyKeyName, expr: AndedPropertyInequalities)
