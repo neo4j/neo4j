@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.core;
 import java.util.Arrays;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.properties.DefinedProperty;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState.PropertyReceiver;
 
 /**

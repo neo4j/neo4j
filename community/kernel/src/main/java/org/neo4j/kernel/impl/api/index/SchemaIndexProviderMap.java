@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.function.Function;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.index.SchemaIndexProvider;
 
 public interface SchemaIndexProviderMap extends Function<SchemaIndexProvider.Descriptor, SchemaIndexProvider>
 {

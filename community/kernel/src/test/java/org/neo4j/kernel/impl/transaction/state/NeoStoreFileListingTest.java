@@ -31,7 +31,7 @@ import java.util.Set;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.index.IndexImplementation;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.index.LabelScanStore;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;

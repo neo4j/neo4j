@@ -32,10 +32,10 @@ import java.util.Set;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.index.IndexAccessor;
+import org.neo4j.kernel.index.IndexConfiguration;
+import org.neo4j.kernel.index.IndexReader;
+import org.neo4j.kernel.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.AbstractStore;
@@ -57,7 +57,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.getRootDirectory;
+import static org.neo4j.kernel.index.SchemaIndexProvider.getRootDirectory;
 
 public class SchemaIndexMigratorTest
 {

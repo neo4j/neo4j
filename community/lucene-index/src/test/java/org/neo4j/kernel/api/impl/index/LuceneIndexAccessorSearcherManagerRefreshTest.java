@@ -29,7 +29,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.index.IndexUpdater;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;

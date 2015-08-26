@@ -29,7 +29,7 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.KernelHealth;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 /**
  * Performs validation of index updates for transactions based on
  * {@link org.neo4j.kernel.impl.transaction.command.Command}s in transaction state.
- * It is done by inferring {@link org.neo4j.kernel.api.index.NodePropertyUpdate}s from commands and asking
+ * It is done by inferring {@link org.neo4j.kernel.index.NodePropertyUpdate}s from commands and asking
  * {@link org.neo4j.kernel.impl.api.index.IndexingService} to check those via
  * {@link org.neo4j.kernel.impl.api.index.IndexingService#validate(Iterable)}.
  */

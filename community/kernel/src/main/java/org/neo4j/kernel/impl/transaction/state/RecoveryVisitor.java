@@ -94,8 +94,8 @@ public class RecoveryVisitor implements CloseableVisitor<RecoverableTransaction,
      * Recovery operates under a condition that all index updates are valid because otherwise they have no chance to
      * appear in write ahead log.
      * This step is still needed though, because it is not only about validation of index sizes but also about
-     * inferring {@link org.neo4j.kernel.api.index.NodePropertyUpdate}s from commands in transaction state and
-     * grouping those by {@link org.neo4j.kernel.api.index.IndexUpdater}s.
+     * inferring {@link org.neo4j.kernel.index.NodePropertyUpdate}s from commands in transaction state and
+     * grouping those by {@link org.neo4j.kernel.index.IndexUpdater}s.
      */
     private ValidatedIndexUpdates prepareIndexUpdates( TransactionRepresentation txRepresentation ) throws IOException
     {

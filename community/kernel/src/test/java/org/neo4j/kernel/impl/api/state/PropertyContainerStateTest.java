@@ -24,8 +24,8 @@ import java.util.Iterator;
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.EntityType;
-import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.impl.core.EntityType;
+import org.neo4j.kernel.properties.DefinedProperty;
 
 import static java.util.Arrays.asList;
 
@@ -33,7 +33,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
-import static org.neo4j.kernel.api.properties.Property.stringProperty;
+import static org.neo4j.kernel.properties.Property.stringProperty;
 
 public class PropertyContainerStateTest
 {

@@ -25,9 +25,9 @@ import java.util.List;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 
-import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
-import org.neo4j.kernel.api.direct.BoundedIterable;
-import org.neo4j.kernel.api.direct.NodeLabelRange;
+import org.neo4j.kernel.index.AllEntriesLabelScanReader;
+import org.neo4j.kernel.impl.util.BoundedIterable;
+import org.neo4j.kernel.index.NodeLabelRange;
 import org.neo4j.kernel.api.impl.index.bitmaps.Bitmap;
 
 public class LuceneAllEntriesLabelScanReader implements AllEntriesLabelScanReader

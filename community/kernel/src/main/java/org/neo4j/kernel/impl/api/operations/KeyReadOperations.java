@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.operations;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
@@ -30,9 +29,9 @@ import org.neo4j.kernel.impl.core.Token;
 
 public interface KeyReadOperations
 {
-    int NO_SUCH_LABEL = StatementConstants.NO_SUCH_LABEL;
-    int NO_SUCH_PROPERTY_KEY = StatementConstants.NO_SUCH_PROPERTY_KEY;
-    int NO_SUCH_RELATIONSHIP_TYPE = StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
+    int NO_SUCH_LABEL = Statement.NO_SUCH_LABEL;
+    int NO_SUCH_PROPERTY_KEY = Statement.NO_SUCH_PROPERTY_KEY;
+    int NO_SUCH_RELATIONSHIP_TYPE = Statement.NO_SUCH_RELATIONSHIP_TYPE;
 
     /** Returns a label id for a label name. If the label doesn't exist, {@link #NO_SUCH_LABEL} will be returned. */
     int labelGetForName( Statement state, String labelName );

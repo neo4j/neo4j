@@ -24,8 +24,8 @@ import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.function.Suppliers;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.properties.DefinedProperty;
+import org.neo4j.kernel.properties.Property;
 import org.neo4j.kernel.impl.api.PropertyLookup;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NodeStore;

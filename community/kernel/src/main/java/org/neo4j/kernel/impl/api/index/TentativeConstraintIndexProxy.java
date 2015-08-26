@@ -30,12 +30,12 @@ import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.IndexDescriptor;
+import org.neo4j.kernel.index.IndexEntryConflictException;
+import org.neo4j.kernel.index.IndexReader;
+import org.neo4j.kernel.index.IndexUpdater;
+import org.neo4j.kernel.index.InternalIndexState;
+import org.neo4j.kernel.index.NodePropertyUpdate;
 
 /**
  * WHat is a tentative constraint index proxy? Well, the way we build uniqueness constraints is as follows:

@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.frontend.v2_3.notification.{IndexHintUnfulfilla
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v2_3.{IndexHintException, JoinHintException}
 import org.neo4j.graphdb.Direction
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.kernel.api.IndexDescriptor
 
 class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

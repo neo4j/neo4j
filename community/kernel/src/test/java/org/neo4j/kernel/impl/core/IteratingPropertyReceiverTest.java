@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.properties.DefinedProperty;
+import org.neo4j.kernel.properties.Property;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

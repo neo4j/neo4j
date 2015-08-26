@@ -23,10 +23,10 @@ import java.io.IOException;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.index.IndexAccessor;
+import org.neo4j.kernel.index.IndexConfiguration;
+import org.neo4j.kernel.api.IndexDescriptor;
+import org.neo4j.kernel.index.SchemaIndexProvider;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;

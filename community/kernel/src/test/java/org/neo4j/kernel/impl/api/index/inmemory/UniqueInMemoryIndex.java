@@ -26,12 +26,12 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
-import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.Reservation;
+import org.neo4j.kernel.index.IndexEntryConflictException;
+import org.neo4j.kernel.index.IndexUpdater;
+import org.neo4j.kernel.index.NodePropertyUpdate;
+import org.neo4j.kernel.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.index.PropertyAccessor;
+import org.neo4j.kernel.index.Reservation;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.UniquePropertyIndexUpdater;
 

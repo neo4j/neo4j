@@ -24,6 +24,14 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 
 public interface Statement extends Resource
 {
+    int NO_SUCH_RELATIONSHIP_TYPE = -1;
+    int NO_SUCH_LABEL = -1;
+    int NO_SUCH_PROPERTY_KEY = -1;
+    long NO_SUCH_NODE = -1;
+    long NO_SUCH_RELATIONSHIP = -1;
+    int ANY_LABEL = -1;
+    int ANY_RELATIONSHIP_TYPE = -1;
+
     ReadOperations readOperations();
 
     /**

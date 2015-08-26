@@ -37,8 +37,8 @@ import org.neo4j.cypher.internal.frontend.v2_3.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.frontend.v2_3.{PropertyKeyId, SemanticTable, inSequence}
 import org.neo4j.helpers.collection.Visitable
+import org.neo4j.kernel.api.IndexDescriptor
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
-import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 
 import scala.language.reflectiveCalls

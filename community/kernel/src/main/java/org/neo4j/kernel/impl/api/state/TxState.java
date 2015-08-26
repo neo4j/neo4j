@@ -47,13 +47,10 @@ import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.txstate.ReadableTxState;
-import org.neo4j.kernel.api.txstate.RelationshipChangeVisitorAdapter;
-import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.api.txstate.TxStateVisitor;
+import org.neo4j.kernel.api.IndexDescriptor;
+import org.neo4j.kernel.properties.DefinedProperty;
+import org.neo4j.kernel.properties.Property;
+import org.neo4j.kernel.api.TransactionHookView;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.cursor.TxAllPropertyCursor;
 import org.neo4j.kernel.impl.api.cursor.TxIteratorNodeCursor;
@@ -73,14 +70,14 @@ import org.neo4j.kernel.impl.util.diffsets.RelationshipDiffSets;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.kernel.api.properties.Property.numberProperty;
+import static org.neo4j.kernel.properties.Property.numberProperty;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.NUMBER;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.STRING;
 
 /**
  * This class contains transaction-local changes to the graph. These changes can then be used to augment reads from the
  * committed state of the database (to make the local changes appear in local transaction read operations). At commit
- * time a visitor is sent into this class to convert the end result of the tx changes into a physical changeset.
+ * time a visitor is sent into this class to convert the end result of the tx changes into a physical change set.
  * <p>
  * See {@link org.neo4j.kernel.impl.api.KernelTransactionImplementation} for how this happens.
  * <p>
@@ -88,7 +85,7 @@ import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.STRING
  * into one component. Now that that work is done, this class should be refactored to increase transparency in how it
  * works.
  */
-public final class TxState implements TransactionState, RelationshipVisitor.Home
+public final class TxState implements TransactionHookView, RelationshipVisitor.Home
 {
     private Map<Integer/*Label ID*/, LabelState.Mutable> labelStatesMap;
     private static final LabelState.Defaults LABEL_STATE = new LabelState.Defaults()
@@ -169,14 +166,14 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     private PrimitiveIntObjectMap<Map<DefinedProperty, DiffSets<Long>>> indexUpdates;
     private PrimitiveIntObjectMap<DiffSets<RelationshipPropertyConstraint>> relationshipConstraintChanges;
 
-    private InstanceCache<TxIteratorNodeCursor> iteratorNodeCursor;
-    private InstanceCache<TxSingleNodeCursor> singleNodeCursor;
-    private InstanceCache<TxIteratorRelationshipCursor> iteratorRelationshipCursor;
-    private InstanceCache<TxSingleRelationshipCursor> singleRelationshipCursor;
-    private InstanceCache<TxAllPropertyCursor> propertyCursor;
-    private InstanceCache<TxSinglePropertyCursor> singlePropertyCursor;
-    private InstanceCache<TxLabelCursor> labelCursor;
-    private InstanceCache<TxSingleLabelCursor> singleLabelCursor;
+    private final InstanceCache<TxIteratorNodeCursor> iteratorNodeCursor;
+    private final InstanceCache<TxSingleNodeCursor> singleNodeCursor;
+    private final InstanceCache<TxIteratorRelationshipCursor> iteratorRelationshipCursor;
+    private final InstanceCache<TxSingleRelationshipCursor> singleRelationshipCursor;
+    private final InstanceCache<TxAllPropertyCursor> propertyCursor;
+    private final InstanceCache<TxSinglePropertyCursor> singlePropertyCursor;
+    private final InstanceCache<TxLabelCursor> labelCursor;
+    private final InstanceCache<TxSingleLabelCursor> singleLabelCursor;
 
     private boolean hasChanges, hasDataChanges;
 
@@ -249,7 +246,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         };
     }
 
-    @Override
     public void accept( final TxStateVisitor visitor ) throws ConstraintValidationKernelException
     {
         // Created nodes
@@ -380,7 +376,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         };
     }
 
-    private static DiffSetsVisitor<Long> createdRelationshipsVisitor( ReadableTxState tx, final TxStateVisitor visitor )
+    private static DiffSetsVisitor<Long> createdRelationshipsVisitor( TransactionHookView tx, final TxStateVisitor visitor )
     {
         return new RelationshipChangeVisitorAdapter( tx )
         {
@@ -534,7 +530,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         };
     }
 
-    @Override
     public boolean hasChanges()
     {
         return hasChanges;
@@ -551,7 +546,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return LABEL_STATE.getOrCreate( this, labelId ).getOrCreateNodeDiffSets();
     }
 
-    @Override
     public ReadableDiffSets<Integer> nodeStateLabelDiffSets( long nodeId )
     {
         return NODE_STATE.get( this, nodeId ).labelDiffSets();
@@ -562,7 +556,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return getOrCreateNodeState( nodeId ).getOrCreateLabelDiffSets();
     }
 
-    @Override
     public Iterator<DefinedProperty> augmentGraphProperties( Iterator<DefinedProperty> original )
     {
         if ( graphState != null )
@@ -595,14 +588,12 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         hasDataChanges = true;
     }
 
-    @Override
     public void nodeDoCreate( long id )
     {
         nodes().add( id );
         dataChanged();
     }
 
-    @Override
     public void nodeDoDelete( long nodeId )
     {
         if ( nodes().remove( nodeId ) )
@@ -627,7 +618,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         dataChanged();
     }
 
-    @Override
     public void relationshipDoCreate( long id, int relationshipTypeId, long startNodeId, long endNodeId )
     {
         relationships().add( id );
@@ -653,13 +643,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return nodesDeletedInTx != null && nodesDeletedInTx.contains( nodeId );
     }
 
-    @Override
-    public boolean nodeModifiedInThisTx( long nodeId )
-    {
-        return nodeIsAddedInThisTx( nodeId ) || nodeIsDeletedInThisTx( nodeId ) || hasNodeState( nodeId );
-    }
-
-    @Override
     public void relationshipDoDelete( long id, int type, long startNodeId, long endNodeId )
     {
         if ( relationships().remove( id ) )
@@ -689,7 +672,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         dataChanged();
     }
 
-    @Override
     public void relationshipDoDeleteAddedInThisTx( long relationshipId )
     {
         RELATIONSHIP_STATE.get( this, relationshipId ).accept( new RelationshipVisitor<RuntimeException>()
@@ -708,7 +690,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return relationshipsDeletedInTx != null && relationshipsDeletedInTx.contains( relationshipId );
     }
 
-    @Override
     public void nodeDoReplaceProperty( long nodeId, Property replacedProperty, DefinedProperty newProperty )
     {
         if ( replacedProperty.isDefined() )
@@ -726,7 +707,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         dataChanged();
     }
 
-    @Override
     public void relationshipDoReplaceProperty( long relationshipId,
             Property replacedProperty,
             DefinedProperty newProperty )
@@ -742,7 +722,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         dataChanged();
     }
 
-    @Override
     public void graphDoReplaceProperty( Property replacedProperty, DefinedProperty newProperty )
     {
         if ( replacedProperty.isDefined() )
@@ -756,7 +735,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         dataChanged();
     }
 
-    @Override
     public void nodeDoRemoveProperty( long nodeId, DefinedProperty removedProperty )
     {
         getOrCreateNodeState( nodeId ).removeProperty( removedProperty );
@@ -765,21 +743,18 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         dataChanged();
     }
 
-    @Override
     public void relationshipDoRemoveProperty( long relationshipId, DefinedProperty removedProperty )
     {
         getOrCreateRelationshipState( relationshipId ).removeProperty( removedProperty );
         dataChanged();
     }
 
-    @Override
     public void graphDoRemoveProperty( DefinedProperty removedProperty )
     {
         getOrCreateGraphState().removeProperty( removedProperty );
         dataChanged();
     }
 
-    @Override
     public void nodeDoAddLabel( int labelId, long nodeId )
     {
         getOrCreateLabelStateNodeDiffSets( labelId ).add( nodeId );
@@ -787,7 +762,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         dataChanged();
     }
 
-    @Override
     public void nodeDoRemoveLabel( int labelId, long nodeId )
     {
         getOrCreateLabelStateNodeDiffSets( labelId ).remove( nodeId );
@@ -795,7 +769,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         dataChanged();
     }
 
-    @Override
     public void labelDoCreateForName( String labelName, int id )
     {
         if ( createdLabelTokens == null )
@@ -806,7 +779,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         changed();
     }
 
-    @Override
     public void propertyKeyDoCreateForName( String propertyKeyName, int id )
     {
         if ( createdPropertyKeyTokens == null )
@@ -817,7 +789,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         changed();
     }
 
-    @Override
     public void relationshipTypeDoCreateForName( String labelName, int id )
     {
         if ( createdRelationshipTypeTokens == null )
@@ -828,13 +799,11 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         changed();
     }
 
-    @Override
     public NodeState getNodeState( long id )
     {
         return NODE_STATE.get( this, id );
     }
 
-    @Override
     public RelationshipState getRelationshipState( long id )
     {
         return RELATIONSHIP_STATE.get( this, id );
@@ -891,13 +860,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return hasChanges ? singleRelationshipCursor.get().init( cursor, relationshipId ) : cursor;
     }
 
-    @Override
-    public Cursor<RelationshipItem> augmentIteratorRelationshipCursor( Cursor<RelationshipItem> cursor,
-            RelationshipIterator iterator )
-    {
-        return hasChanges ? iteratorRelationshipCursor.get().init( cursor, iterator ) : cursor;
-    }
-
     public Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor,
             NodeState nodeState,
             Direction direction,
@@ -906,14 +868,12 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return nodeState.augmentNodeRelationshipCursor( iteratorRelationshipCursor, cursor, direction, relTypes );
     }
 
-    @Override
     public Cursor<NodeItem> augmentNodesGetAllCursor( Cursor<NodeItem> cursor )
     {
         return hasChanges && nodes != null && !nodes.isEmpty() ? iteratorNodeCursor.get().init( cursor,
                 nodes.getAdded().iterator() ) : cursor;
     }
 
-    @Override
     public Cursor<RelationshipItem> augmentRelationshipsGetAllCursor( Cursor<RelationshipItem> cursor )
     {
         return hasChanges && !relationships.isEmpty() ? iteratorRelationshipCursor.get().init( cursor,
@@ -926,7 +886,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return LABEL_STATE.get( this, labelId ).nodeDiffSets();
     }
 
-    @Override
     public void indexRuleDoAdd( IndexDescriptor descriptor )
     {
         DiffSets<IndexDescriptor> diff = indexChangesDiffSets();
@@ -942,7 +901,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         changed();
     }
 
-    @Override
     public void constraintIndexRuleDoAdd( IndexDescriptor descriptor )
     {
         constraintIndexChangesDiffSets().add( descriptor );
@@ -950,7 +908,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         changed();
     }
 
-    @Override
     public void indexDoDrop( IndexDescriptor descriptor )
     {
         indexChangesDiffSets().remove( descriptor );
@@ -958,7 +915,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         changed();
     }
 
-    @Override
     public void constraintIndexDoDrop( IndexDescriptor descriptor )
     {
         constraintIndexChangesDiffSets().remove( descriptor );
@@ -966,19 +922,16 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         changed();
     }
 
-    @Override
     public ReadableDiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId )
     {
         return LABEL_STATE.get( this, labelId ).indexChanges();
     }
 
-    @Override
     public ReadableDiffSets<IndexDescriptor> constraintIndexDiffSetsByLabel( int labelId )
     {
         return LABEL_STATE.get( this, labelId ).constraintIndexChanges();
     }
 
-    @Override
     public ReadableDiffSets<IndexDescriptor> indexChanges()
     {
         return ReadableDiffSets.Empty.ifNull( indexChanges );
@@ -993,7 +946,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return indexChanges;
     }
 
-    @Override
     public ReadableDiffSets<IndexDescriptor> constraintIndexChanges()
     {
         return ReadableDiffSets.Empty.ifNull( constraintIndexChanges );
@@ -1023,19 +975,16 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return nodes;
     }
 
-    @Override
     public int augmentNodeDegree( long nodeId, int degree, Direction direction )
     {
         return NODE_STATE.get( this, nodeId ).augmentDegree( direction, degree );
     }
 
-    @Override
     public int augmentNodeDegree( long nodeId, int degree, Direction direction, int typeId )
     {
         return NODE_STATE.get( this, nodeId ).augmentDegree( direction, degree, typeId );
     }
 
-    @Override
     public PrimitiveIntIterator nodeRelationshipTypes( long nodeId )
     {
         return NODE_STATE.get( this, nodeId ).relationshipTypes();
@@ -1086,7 +1035,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return graphState;
     }
 
-    @Override
     public void constraintDoAdd( UniquenessConstraint constraint, long indexId )
     {
         constraintsChangesDiffSets().add( constraint );
@@ -1095,7 +1043,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         changed();
     }
 
-    @Override
     public void constraintDoAdd( NodePropertyExistenceConstraint constraint )
     {
         constraintsChangesDiffSets().add( constraint );
@@ -1103,7 +1050,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         hasChanges = true;
     }
 
-    @Override
     public void constraintDoAdd( RelationshipPropertyExistenceConstraint constraint )
     {
         constraintsChangesDiffSets().add( constraint );
@@ -1111,7 +1057,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         hasChanges = true;
     }
 
-    @Override
     public ReadableDiffSets<NodePropertyConstraint> constraintsChangesForLabelAndProperty( int labelId,
             final int propertyKey )
     {
@@ -1126,13 +1071,11 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
                 } );
     }
 
-    @Override
     public ReadableDiffSets<NodePropertyConstraint> constraintsChangesForLabel( int labelId )
     {
         return LABEL_STATE.get( this, labelId ).nodeConstraintsChanges();
     }
 
-    @Override
     public ReadableDiffSets<RelationshipPropertyConstraint> constraintsChangesForRelationshipType( int relTypeId )
     {
         DiffSets<RelationshipPropertyConstraint> changes = null;
@@ -1143,7 +1086,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return ReadableDiffSets.Empty.ifNull( changes );
     }
 
-    @Override
     public ReadableDiffSets<RelationshipPropertyConstraint> constraintsChangesForRelationshipTypeAndProperty(
             int relTypeId, final int propertyKey )
     {
@@ -1159,7 +1101,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         );
     }
 
-    @Override
     public ReadableDiffSets<PropertyConstraint> constraintsChanges()
     {
         return ReadableDiffSets.Empty.ifNull( constraintsChanges );
@@ -1174,7 +1115,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return constraintsChanges;
     }
 
-    @Override
     public void constraintDoDrop( NodePropertyConstraint constraint )
     {
         constraintsChangesDiffSets().remove( constraint );
@@ -1188,7 +1128,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         changed();
     }
 
-    @Override
     public void constraintDoDrop( RelationshipPropertyConstraint constraint )
     {
         constraintsChangesDiffSets().remove( constraint );
@@ -1210,7 +1149,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return diffSets;
     }
 
-    @Override
     public boolean constraintDoUnRemove( NodePropertyConstraint constraint )
     {
         if ( constraintsChangesDiffSets().unRemove( constraint ) )
@@ -1221,7 +1159,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return false;
     }
 
-    @Override
     public boolean constraintIndexDoUnRemove( IndexDescriptor index )
     {
         if ( constraintIndexChangesDiffSets().unRemove( index ) )
@@ -1232,7 +1169,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return false;
     }
 
-    @Override
     public Iterable<IndexDescriptor> constraintIndexesCreatedInTx()
     {
         if ( createdConstraintIndexesByConstraint != null && !createdConstraintIndexesByConstraint.isEmpty() )
@@ -1250,14 +1186,12 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return Iterables.empty();
     }
 
-    @Override
     public Long indexCreatedForConstraint( UniquenessConstraint constraint )
     {
         return createdConstraintIndexesByConstraint == null ? null :
                 createdConstraintIndexesByConstraint.get( constraint );
     }
 
-    @Override
     public ReadableDiffSets<Long> indexUpdatesForScanOrSeek( IndexDescriptor descriptor, Object value )
     {
         return ReadableDiffSets.Empty.ifNull( (value == null) ?
@@ -1273,7 +1207,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         );
     }
 
-    @Override
     public ReadableDiffSets<Long> indexUpdatesForRangeSeekByNumber( IndexDescriptor descriptor,
                                                                     Number lower, boolean includeLower,
                                                                     Number upper, boolean includeUpper )
@@ -1333,7 +1266,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return diffs;
     }
 
-    @Override
     public ReadableDiffSets<Long> indexUpdatesForRangeSeekByString( IndexDescriptor descriptor,
                                                                     String lower, boolean includeLower,
                                                                     String upper, boolean includeUpper )
@@ -1393,7 +1325,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return diffs;
     }
 
-    @Override
     public ReadableDiffSets<Long> indexUpdatesForRangeSeekByPrefix( IndexDescriptor descriptor, String prefix )
     {
         return ReadableDiffSets.Empty.ifNull( getIndexUpdatesForRangeSeekByPrefix( descriptor, prefix ) );
@@ -1440,7 +1371,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         {
             return null;
         }
-        TreeMap<DefinedProperty,DiffSets<Long>> sortedUpdates = null;
+        TreeMap<DefinedProperty,DiffSets<Long>> sortedUpdates;
         if ( updates instanceof TreeMap )
         {
             sortedUpdates = (TreeMap<DefinedProperty,DiffSets<Long>>) updates;
@@ -1454,7 +1385,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return sortedUpdates;
     }
 
-    @Override
     public void indexDoUpdateProperty( IndexDescriptor descriptor, long nodeId,
             DefinedProperty propertyBefore, DefinedProperty propertyAfter )
     {
@@ -1550,24 +1480,17 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return createdConstraintIndexesByConstraint;
     }
 
-    private boolean hasNodeState( long nodeId )
-    {
-        return nodeStatesMap != null && nodeStatesMap.containsKey( nodeId );
-    }
-
     private PropertyChanges nodePropertyChanges()
     {
         return propertyChangesForNodes == null ?
                 propertyChangesForNodes = new PropertyChanges() : propertyChangesForNodes;
     }
 
-    @Override
     public PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed )
     {
         return addedAndRemovedNodes().augment( committed );
     }
 
-    @Override
     public RelationshipIterator augmentRelationshipsGetAll( RelationshipIterator committed )
     {
         return addedAndRemovedRelationships().augment( committed );
@@ -1579,7 +1502,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return RELATIONSHIP_STATE.get( this, relId ).accept( visitor );
     }
 
-    @Override
     public void nodeLegacyIndexDoCreate( String indexName, Map<String, String> customConfig )
     {
         assert customConfig != null;
@@ -1593,7 +1515,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         changed();
     }
 
-    @Override
     public void relationshipLegacyIndexDoCreate( String indexName, Map<String, String> customConfig )
     {
         assert customConfig != null;
@@ -1607,7 +1528,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         changed();
     }
 
-    @Override
     public boolean hasDataChanges()
     {
         return hasDataChanges;

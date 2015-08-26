@@ -26,8 +26,8 @@ import java.util.List;
 
 import org.neo4j.graphdb.DependencyResolver.SelectionStrategy;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.index.LabelScanStore;
+import org.neo4j.kernel.index.NodeLabelUpdate;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.store.NodeLabelsField;

@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.index.SchemaIndexProvider;
 
 import static org.neo4j.helpers.UTF8.getDecodedStringFrom;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;

@@ -32,15 +32,16 @@ import java.util.List;
 import java.util.concurrent.locks.Lock;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
+import org.neo4j.kernel.index.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.impl.index.bitmaps.BitmapFormat;
+import org.neo4j.kernel.index.LabelScanStore;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.concat;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
 /**
- * {@link org.neo4j.kernel.api.labelscan.LabelScanStore} implemented using Lucene. There's only one big index for all labels
+ * {@link LabelScanStore} implemented using Lucene. There's only one big index for all labels
  * because the Lucene document structure handles that quite efficiently.
  *
  * With {@link BitmapFormat#_32 32bit bitmaps} it would look as follows:

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
+import org.neo4j.kernel.index.IndexEntryConflictException;
 
 /**
  * This class represents validated and prepared index updates that are ready to be flushed.
@@ -69,7 +69,7 @@ public interface ValidatedIndexUpdates extends AutoCloseable
 
     /**
      * Release all possible resources used by this batch of index updates. Such resources might include
-     * {@link org.neo4j.kernel.api.index.IndexUpdater} and {@link org.neo4j.kernel.api.index.Reservation}.
+     * {@link org.neo4j.kernel.index.IndexUpdater} and {@link org.neo4j.kernel.index.Reservation}.
      */
     @Override
     void close();

@@ -23,12 +23,12 @@ import java.io.File;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.index.IndexConfiguration;
+import org.neo4j.kernel.api.IndexDescriptor;
+import org.neo4j.kernel.index.IndexReader;
+import org.neo4j.kernel.index.IndexUpdater;
+import org.neo4j.kernel.index.InternalIndexState;
+import org.neo4j.kernel.index.SchemaIndexProvider;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;

@@ -39,18 +39,18 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
-import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.Reservation;
-import org.neo4j.kernel.api.index.util.FailureStorage;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.IndexDescriptor;
+import org.neo4j.kernel.index.IndexEntryConflictException;
+import org.neo4j.kernel.index.IndexUpdater;
+import org.neo4j.kernel.index.NodePropertyUpdate;
+import org.neo4j.kernel.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.index.PropertyAccessor;
+import org.neo4j.kernel.index.Reservation;
+import org.neo4j.kernel.index.util.FailureStorage;
+import org.neo4j.kernel.properties.Property;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.register.Register.DoubleLong;
 
@@ -295,14 +295,14 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
             {
                 doCollect( doc );
             }
+            catch ( PreexistingIndexEntryConflictException e )
+            {
+                throw new IOException( e );
+            }
             catch ( KernelException e )
             {
                 throw new ThisShouldNotHappenError(
                         "Chris", "Indexed node should exist and have the indexed property.", e );
-            }
-            catch ( PreexistingIndexEntryConflictException e )
-            {
-                throw new IOException( e );
             }
         }
 
@@ -320,7 +320,7 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
                 {
                     Object value = current.value[i];
 
-                    if ( current.nodeId[i] == StatementConstants.NO_SUCH_NODE )
+                    if ( current.nodeId[i] == Statement.NO_SUCH_NODE )
                     {
                         current.value[i] = property.value();
                         current.nodeId[i] = nodeId;
@@ -375,7 +375,7 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
 
         EntrySet()
         {
-	       Arrays.fill( nodeId, StatementConstants.NO_SUCH_NODE );
+	       Arrays.fill( nodeId, Statement.NO_SUCH_NODE );
         }
     }
 }

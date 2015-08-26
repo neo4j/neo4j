@@ -33,10 +33,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.kernel.api.impl.index.DirectoryFactory.InMemoryDirectoryFactory;
-import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.Reservation;
+import org.neo4j.kernel.index.IndexAccessor;
+import org.neo4j.kernel.index.IndexUpdater;
+import org.neo4j.kernel.index.NodePropertyUpdate;
+import org.neo4j.kernel.index.Reservation;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 
 import static java.util.Arrays.asList;

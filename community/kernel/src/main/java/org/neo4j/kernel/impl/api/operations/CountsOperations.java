@@ -23,9 +23,9 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 
 public interface CountsOperations
 {
-    /** @see org.neo4j.kernel.api.CountsRead#countsForNode(int) */
+    /** @see org.neo4j.kernel.api.ReadOperations#countsForNode(int) */
     long countsForNode( KernelStatement statement, int labelId );
 
-    /** @see org.neo4j.kernel.api.CountsRead#countsForRelationship(int, int, int) */
+    /** @see org.neo4j.kernel.api.ReadOperations#countsForRelationship(int, int, int) */
     long countsForRelationship( KernelStatement statement, int startLabelId, int typeId, int endLabelId );
 }

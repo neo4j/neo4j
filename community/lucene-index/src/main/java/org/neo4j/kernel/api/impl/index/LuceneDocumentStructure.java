@@ -30,7 +30,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.NumericUtils;
 
-import org.neo4j.kernel.api.index.ArrayEncoder;
+import org.neo4j.kernel.index.ArrayEncoder;
 
 import static java.lang.String.format;
 import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;

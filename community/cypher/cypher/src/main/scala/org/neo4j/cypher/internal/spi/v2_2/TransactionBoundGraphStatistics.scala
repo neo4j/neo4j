@@ -23,8 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Sel
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
 import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, PropertyKeyId, RelTypeId}
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
-import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.kernel.api.{Statement => KernelStatement}
+import org.neo4j.kernel.api.{Statement => KernelStatement, IndexDescriptor}
 
 object TransactionBoundGraphStatistics {
   def apply(statement: KernelStatement) = new StatisticsCompletingGraphStatistics(new BaseTransactionBoundGraphStatistics(statement))

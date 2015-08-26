@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.Statement;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -39,7 +39,7 @@ public class DataStatementArgumentVerificationTest
         DataWriteOperations statement = stubStatement();
 
         // when
-        Object value = statement.nodeGetProperty( 17, StatementConstants.NO_SUCH_PROPERTY_KEY );
+        Object value = statement.nodeGetProperty( 17, Statement.NO_SUCH_PROPERTY_KEY );
 
         // then
         assertNull( "should return NoProperty", value );
@@ -53,7 +53,7 @@ public class DataStatementArgumentVerificationTest
         DataWriteOperations statement = stubStatement();
 
         // when
-        Object value = statement.relationshipGetProperty( 17, StatementConstants.NO_SUCH_PROPERTY_KEY );
+        Object value = statement.relationshipGetProperty( 17, Statement.NO_SUCH_PROPERTY_KEY );
 
         // then
         assertNull( "should return NoProperty", value );
@@ -67,7 +67,7 @@ public class DataStatementArgumentVerificationTest
         DataWriteOperations statement = stubStatement();
 
         // when
-        Object value = statement.graphGetProperty( StatementConstants.NO_SUCH_PROPERTY_KEY );
+        Object value = statement.graphGetProperty( Statement.NO_SUCH_PROPERTY_KEY );
 
         // then
         assertNull( "should return NoProperty", value );
@@ -80,7 +80,7 @@ public class DataStatementArgumentVerificationTest
         DataWriteOperations statement = stubStatement();
 
         // when
-        PrimitiveLongIterator nodes = statement.nodesGetForLabel( StatementConstants.NO_SUCH_LABEL );
+        PrimitiveLongIterator nodes = statement.nodesGetForLabel( Statement.NO_SUCH_LABEL );
 
         // then
         assertFalse( "should not contain any ids", nodes.hasNext() );
@@ -93,7 +93,7 @@ public class DataStatementArgumentVerificationTest
         DataWriteOperations statement = stubStatement();
 
         // when
-        boolean hasLabel = statement.nodeHasLabel( 17, StatementConstants.NO_SUCH_LABEL );
+        boolean hasLabel = statement.nodeHasLabel( 17, Statement.NO_SUCH_LABEL );
 
         // then
         assertFalse( "should not contain any ids", hasLabel );

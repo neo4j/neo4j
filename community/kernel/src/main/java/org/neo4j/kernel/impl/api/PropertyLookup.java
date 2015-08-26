@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.properties.Property;
 
 public interface PropertyLookup
 {

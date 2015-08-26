@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.{ManyQueryExpression, Qu
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.kernel.api.IndexDescriptor
 
 
 abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {

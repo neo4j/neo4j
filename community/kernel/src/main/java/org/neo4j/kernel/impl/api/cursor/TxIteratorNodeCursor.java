@@ -24,7 +24,7 @@ import java.util.Iterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
 import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.state.TxState;
 
 /**
  * Overlays transaction state on a {@link NodeItem} cursor.
@@ -35,7 +35,7 @@ public class TxIteratorNodeCursor
     private Iterator<Long> added;
     private Iterator<Long> addedNodeIterator;
 
-    public TxIteratorNodeCursor( TransactionState state, Consumer<TxIteratorNodeCursor> cache )
+    public TxIteratorNodeCursor( TxState state, Consumer<TxIteratorNodeCursor> cache )
     {
         super( state, (Consumer) cache );
     }

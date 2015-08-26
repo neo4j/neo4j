@@ -25,14 +25,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.index.IndexEntryConflictException;
+import org.neo4j.kernel.index.IndexUpdater;
+import org.neo4j.kernel.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 
 /**
  * This IndexUpdater ensures that updated properties abide by uniqueness constraints. Updates are grouped up in
- * {@link #process(org.neo4j.kernel.api.index.NodePropertyUpdate)}, and verified in {@link #close()}.
+ * {@link #process(org.neo4j.kernel.index.NodePropertyUpdate)}, and verified in {@link #close()}.
  *
  */
 public abstract class UniquePropertyIndexUpdater implements IndexUpdater

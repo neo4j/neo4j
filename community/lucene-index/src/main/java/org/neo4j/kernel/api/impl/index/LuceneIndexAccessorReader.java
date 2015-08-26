@@ -37,7 +37,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.index.impl.lucene.Hits;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.*;

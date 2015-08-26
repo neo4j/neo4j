@@ -33,7 +33,7 @@ import java.util.List;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.index.NodePropertyUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreFactory;

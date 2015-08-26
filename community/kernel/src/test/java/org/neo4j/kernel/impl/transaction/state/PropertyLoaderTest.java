@@ -49,7 +49,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 import static org.neo4j.helpers.collection.Iterables.toList;
-import static org.neo4j.kernel.api.properties.DefinedProperty.intProperty;
+import static org.neo4j.kernel.properties.DefinedProperty.intProperty;
 
 public class PropertyLoaderTest
 {

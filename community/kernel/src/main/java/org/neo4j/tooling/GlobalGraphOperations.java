@@ -50,7 +50,7 @@ import static org.neo4j.helpers.collection.Iterables.cast;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-import static org.neo4j.kernel.api.CountsRead.ANY_LABEL;
+import static org.neo4j.kernel.api.Statement.ANY_LABEL;
 
 /**
  * A tool for doing global operations, for example {@link #getAllNodes()}.

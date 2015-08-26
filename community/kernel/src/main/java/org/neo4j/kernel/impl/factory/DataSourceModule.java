@@ -135,8 +135,8 @@ public class DataSourceModule
                 createRelationshipActions( graphDatabaseFacade, threadToTransactionBridge, nodeManager,
                         relationshipTypeTokenHolder ) );
 
-        transactionEventHandlers = new TransactionEventHandlers( nodeActions, relationshipActions,
-                threadToTransactionBridge );
+        transactionEventHandlers = new TransactionEventHandlers( nodeActions, relationshipActions
+        );
 
         IndexConfigStore indexStore = life.add( deps.satisfyDependency( new IndexConfigStore( storeDir, fileSystem ) ) );
 

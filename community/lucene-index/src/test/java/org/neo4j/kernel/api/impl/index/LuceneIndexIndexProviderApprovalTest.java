@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.neo4j.kernel.api.index.SchemaIndexProviderApprovalTest;
+import org.neo4j.kernel.index.SchemaIndexProviderApprovalTest;
 
 public class LuceneIndexIndexProviderApprovalTest extends SchemaIndexProviderApprovalTest
 {

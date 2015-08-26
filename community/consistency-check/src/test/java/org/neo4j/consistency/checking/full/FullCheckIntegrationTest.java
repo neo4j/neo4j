@@ -55,18 +55,18 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.consistency.checking.DirectStoreAccess;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
-import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.index.IndexAccessor;
+import org.neo4j.kernel.index.IndexConfiguration;
+import org.neo4j.kernel.api.IndexDescriptor;
+import org.neo4j.kernel.index.IndexPopulator;
+import org.neo4j.kernel.index.IndexUpdater;
+import org.neo4j.kernel.index.NodePropertyUpdate;
+import org.neo4j.kernel.index.SchemaIndexProvider;
+import org.neo4j.kernel.index.LabelScanStore;
+import org.neo4j.kernel.index.NodeLabelUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -111,9 +111,7 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
-import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
-import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
+import static org.neo4j.kernel.index.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
@@ -670,8 +668,9 @@ public class FullCheckIntegrationTest
                 tx.create( node2 );
                 tx.create( relationship );
                 tx.create( property );
-                tx.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
-                tx.incrementRelationshipCount( ANY_LABEL, M, ANY_LABEL, 1 );
+                tx.incrementRelationshipCount( org.neo4j.kernel.api.Statement.ANY_LABEL, org.neo4j.kernel.api.Statement.ANY_RELATIONSHIP_TYPE, org.neo4j
+                        .kernel.api.Statement.ANY_LABEL, 1 );
+                tx.incrementRelationshipCount( org.neo4j.kernel.api.Statement.ANY_LABEL, M, org.neo4j.kernel.api.Statement.ANY_LABEL, 1 );
             }
         } );
 
@@ -1352,8 +1351,8 @@ public class FullCheckIntegrationTest
                 tx.create( withNext( inUse( new RelationshipRecord( relA, otherNode, otherNode, C ) ), relB ) );
                 tx.create( withPrev( inUse( new RelationshipRecord( relB, otherNode, otherNode, C ) ), relA ) );
                 tx.create( withOwner( withRelationships( inUse( new RelationshipGroupRecord( group, C ) ), relB, relB, relB ), node ) );
-                tx.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 2 );
-                tx.incrementRelationshipCount( ANY_LABEL, C, ANY_LABEL, 2 );
+                tx.incrementRelationshipCount( org.neo4j.kernel.api.Statement.ANY_LABEL, org.neo4j.kernel.api.Statement.ANY_RELATIONSHIP_TYPE, org.neo4j.kernel.api.Statement.ANY_LABEL, 2 );
+                tx.incrementRelationshipCount( org.neo4j.kernel.api.Statement.ANY_LABEL, C, org.neo4j.kernel.api.Statement.ANY_LABEL, 2 );
             }
         } );
 
@@ -1523,8 +1522,8 @@ public class FullCheckIntegrationTest
                 tx.create( new RelationshipRecord( rel, otherNode, otherNode, T ) );
                 tx.create( withOwner( withRelationships( new RelationshipGroupRecord( group, C ),
                         rel, rel, rel ), node ) );
-                tx.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
-                tx.incrementRelationshipCount( ANY_LABEL, T, ANY_LABEL, 1 );
+                tx.incrementRelationshipCount( org.neo4j.kernel.api.Statement.ANY_LABEL, org.neo4j.kernel.api.Statement.ANY_RELATIONSHIP_TYPE, org.neo4j.kernel.api.Statement.ANY_LABEL, 1 );
+                tx.incrementRelationshipCount( org.neo4j.kernel.api.Statement.ANY_LABEL, T, org.neo4j.kernel.api.Statement.ANY_LABEL, 1 );
             }
         } );
 
@@ -1564,8 +1563,8 @@ public class FullCheckIntegrationTest
                 tx.create( new NodeRecord( nodeA, true, groupA, NO_NEXT_PROPERTY.intValue() ) );
                 tx.create( new NodeRecord( nodeB, false, rel, NO_NEXT_PROPERTY.intValue() ) );
                 tx.create( firstInChains( new RelationshipRecord( rel, nodeA, nodeB, C ), 1 ) );
-                tx.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
-                tx.incrementRelationshipCount( ANY_LABEL, C, ANY_LABEL, 1 );
+                tx.incrementRelationshipCount( org.neo4j.kernel.api.Statement.ANY_LABEL, org.neo4j.kernel.api.Statement.ANY_RELATIONSHIP_TYPE, org.neo4j.kernel.api.Statement.ANY_LABEL, 1 );
+                tx.incrementRelationshipCount( org.neo4j.kernel.api.Statement.ANY_LABEL, C, org.neo4j.kernel.api.Statement.ANY_LABEL, 1 );
 
                 tx.create( withOwner( withRelationship( withNext( new RelationshipGroupRecord( groupA, C ), groupB ),
                         Direction.OUTGOING, rel ), nodeA ) );
@@ -1612,7 +1611,7 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                tx.incrementRelationshipCount( label1 , C, ANY_LABEL, 1 );
+                tx.incrementRelationshipCount( label1 , C, org.neo4j.kernel.api.Statement.ANY_LABEL, 1 );
             }
         } );
 

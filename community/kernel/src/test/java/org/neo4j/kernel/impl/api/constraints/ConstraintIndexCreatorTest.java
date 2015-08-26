@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.constraints;
 
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import org.junit.Test;
 
 import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.KernelAPI;
@@ -32,15 +32,14 @@ import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.heuristics.StatisticsData;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
-import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.IndexDescriptor;
+import org.neo4j.kernel.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.state.TxState;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -50,7 +49,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedParts;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 import static org.neo4j.kernel.impl.store.SchemaStorage.IndexRuleKind.CONSTRAINT;
@@ -126,12 +124,12 @@ public class ConstraintIndexCreatorTest
                           e.getMessage() );
         }
         assertEquals( 2, kernel.statements.size() );
-        TransactionState tx1 = kernel.statements.get( 0 ).txState();
+        TxState tx1 = kernel.statements.get( 0 ).txState();
         verify( tx1 ).constraintIndexRuleDoAdd( new IndexDescriptor( 123, 456 ) );
         verifyNoMoreInteractions( tx1 );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, descriptor, CONSTRAINT );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
-        TransactionState tx2 = kernel.statements.get( 1 ).txState();
+        TxState tx2 = kernel.statements.get( 1 ).txState();
         verify( tx2 ).constraintIndexDoDrop( new IndexDescriptor( 123, 456 ) );
         verifyNoMoreInteractions( tx2 );
     }
@@ -218,12 +216,6 @@ public class ConstraintIndexCreatorTest
 
         @Override
         public void registerTransactionHook( TransactionHook hook )
-        {
-            throw new UnsupportedOperationException( "Please implement" );
-        }
-
-        @Override
-        public void unregisterTransactionHook( TransactionHook hook )
         {
             throw new UnsupportedOperationException( "Please implement" );
         }

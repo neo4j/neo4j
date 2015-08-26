@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.api.cursor;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
-import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.state.TxState;
 
 /**
  * Overlays transaction state on a {@link NodeItem} cursor.
@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 public class TxSingleNodeCursor
         extends TxAbstractNodeCursor
 {
-    public TxSingleNodeCursor( TransactionState state, Consumer<TxSingleNodeCursor> cache )
+    public TxSingleNodeCursor( TxState state, Consumer<TxSingleNodeCursor> cache )
     {
         super( state, (Consumer) cache );
     }
@@ -46,7 +46,7 @@ public class TxSingleNodeCursor
     @Override
     public boolean next()
     {
-        if ( id == StatementConstants.NO_SUCH_NODE )
+        if ( id == Statement.NO_SUCH_NODE )
         {
             return false;
         }
@@ -55,7 +55,7 @@ public class TxSingleNodeCursor
 
         if ( state.nodeIsDeletedInThisTx( id ) )
         {
-            this.id = StatementConstants.NO_SUCH_NODE;
+            this.id = Statement.NO_SUCH_NODE;
             return false;
         }
 
@@ -67,7 +67,7 @@ public class TxSingleNodeCursor
         }
         else
         {
-            this.id = StatementConstants.NO_SUCH_NODE;
+            this.id = Statement.NO_SUCH_NODE;
             this.nodeState = null;
             return false;
         }

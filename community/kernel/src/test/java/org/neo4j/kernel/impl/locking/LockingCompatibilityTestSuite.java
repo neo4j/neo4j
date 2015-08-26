@@ -30,7 +30,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.kernel.api.index.ParameterizedSuiteRunner;
+import org.neo4j.kernel.index.ParameterizedSuiteRunner;
 import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.TargetDirectory;
 

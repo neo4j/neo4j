@@ -33,11 +33,11 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
-import org.neo4j.kernel.api.direct.NodeLabelRange;
-import org.neo4j.kernel.api.labelscan.LabelScanReader;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.index.AllEntriesLabelScanReader;
+import org.neo4j.kernel.index.NodeLabelRange;
+import org.neo4j.kernel.index.LabelScanReader;
+import org.neo4j.kernel.index.LabelScanStore;
+import org.neo4j.kernel.index.NodeLabelUpdate;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.util.Arrays.binarySearch;

@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.index.Reservation;
+import org.neo4j.kernel.index.Reservation;
 
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertNull;

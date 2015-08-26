@@ -23,8 +23,8 @@ import java.util.Arrays;
 import java.util.concurrent.Callable;
 
 import org.neo4j.function.Supplier;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.properties.DefinedProperty;
+import org.neo4j.kernel.properties.Property;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 
 /**

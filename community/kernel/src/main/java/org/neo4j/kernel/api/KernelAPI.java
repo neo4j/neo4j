@@ -44,11 +44,4 @@ public interface KernelAPI
      * @param hook {@link TransactionHook} for receiving notifications about transactions to commit.
      */
     void registerTransactionHook( TransactionHook hook );
-
-    /**
-     * Unregisters an already registered {@link TransactionHook} so that it will no longer receive notifications
-     * about transactions.
-     * @param hook {@link TransactionHook} to unregister.
-     */
-    void unregisterTransactionHook( TransactionHook hook );
 }

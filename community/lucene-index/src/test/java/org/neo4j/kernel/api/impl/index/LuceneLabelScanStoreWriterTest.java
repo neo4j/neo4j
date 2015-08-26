@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.locks.Lock;
 
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.index.NodeLabelUpdate;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;

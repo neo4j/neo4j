@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index.inmemory;
 
-import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.index.IndexProviderCompatibilityTestSuite;
+import org.neo4j.kernel.index.SchemaIndexProvider;
 
 public class InMemoryIndexProviderTest extends IndexProviderCompatibilityTestSuite
 {

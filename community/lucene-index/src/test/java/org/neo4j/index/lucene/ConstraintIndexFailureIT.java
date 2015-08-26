@@ -32,8 +32,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
-import org.neo4j.kernel.api.index.util.FailureStorage;
-import org.neo4j.kernel.api.index.util.FolderLayout;
+import org.neo4j.kernel.index.util.FailureStorage;
+import org.neo4j.kernel.index.util.FolderLayout;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 

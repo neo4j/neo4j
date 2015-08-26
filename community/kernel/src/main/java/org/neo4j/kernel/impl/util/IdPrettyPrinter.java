@@ -19,22 +19,22 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
 
 public class IdPrettyPrinter
 {
     public static String label( int id )
     {
-        return id == ReadOperations.ANY_LABEL ? "" : (":label=" + id);
+        return id == Statement.ANY_LABEL ? "" : (":label=" + id);
     }
 
     public static String propertyKey( int id )
     {
-        return id == ReadOperations.NO_SUCH_PROPERTY_KEY ? "" : (":propertyKey=" + id);
+        return id == Statement.NO_SUCH_PROPERTY_KEY ? "" : (":propertyKey=" + id);
     }
 
     public static String relationshipType( int id )
     {
-        return id == ReadOperations.ANY_RELATIONSHIP_TYPE ? "" : ("[:type=" + id + "]");
+        return id == Statement.ANY_RELATIONSHIP_TYPE ? "" : ("[:type=" + id + "]");
     }
 }

@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.Resource;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 
 public interface StoreMigrationParticipant extends Resource
@@ -58,7 +58,7 @@ public interface StoreMigrationParticipant extends Resource
      * After a successful migration, move all affected files from {@code upgradeDirectory} over to
      * the {@code workingDirectory}, effectively activating the migration changes.
      * @param migrationDir directory where the
-     * {@link #migrate(java.io.File, java.io.File, org.neo4j.kernel.api.index.SchemaIndexProvider) migration}
+     * {@link #migrate(java.io.File, java.io.File, org.neo4j.kernel.index.SchemaIndexProvider) migration}
      * put its files.
      * @param storeDir directory the store directory of the to move the migrated files to.
      * @throws IOException if unable to move one or more files.

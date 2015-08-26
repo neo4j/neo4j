@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.cursor.LabelItem;
 import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
-import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.properties.DefinedProperty;
 import org.neo4j.kernel.impl.util.Cursors;
 
 /**

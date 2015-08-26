@@ -42,8 +42,8 @@ import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.txstate.ReadableTxState;
+import org.neo4j.kernel.properties.DefinedProperty;
+import org.neo4j.kernel.api.TransactionHookView;
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor;
 import org.neo4j.kernel.impl.api.state.NodeState;
 import org.neo4j.kernel.impl.api.state.RelationshipState;
@@ -55,11 +55,11 @@ import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
 import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
 
 /**
- * Transform for {@link org.neo4j.kernel.api.txstate.ReadableTxState} to make it accessible as {@link TransactionData}.
+ * Transform for {@link TransactionHookView} to make it accessible as {@link TransactionData}.
  */
 public class TxStateTransactionDataSnapshot implements TransactionData
 {
-    private final ReadableTxState state;
+    private final TransactionHookView state;
     private final NodeProxy.NodeActions nodeActions;
     private final StoreStatement storeStatement;
     private final RelationshipActions relationshipActions;
@@ -76,7 +76,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     private final PrimitiveLongObjectMap<RelationshipProxy> relationshipsReadFromStore = Primitive.longObjectMap( 16 );
 
     public TxStateTransactionDataSnapshot(
-            ReadableTxState state,
+            TransactionHookView state,
             NodeProxy.NodeActions nodeActions, RelationshipProxy.RelationshipActions relationshipActions,
             StoreReadLayer storeReadLayer )
     {

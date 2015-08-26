@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.neo4j.kernel.api.index.SchemaConstraintProviderApprovalTest;
+import org.neo4j.kernel.index.SchemaConstraintProviderApprovalTest;
 
 public class LuceneIndexConstraintProviderApprovalTest extends SchemaConstraintProviderApprovalTest
 {

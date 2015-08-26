@@ -31,8 +31,7 @@ import java.util.Map;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
@@ -65,7 +64,7 @@ public class LabelTransactionStateTest
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
 
-        txState = new TxState();
+        TxState txState = new TxState();
         state = StatementOperationsTestHelper.mockedState( txState );
         txContext = new StateHandlingStatementOperations( store, mock( LegacyPropertyTrackers.class ),
                 mock( ConstraintIndexCreator.class ), mock( LegacyIndexStore.class ) );
@@ -298,7 +297,6 @@ public class LabelTransactionStateTest
     private final long nodeId = 20;
 
     private StoreReadLayer store;
-    private TransactionState txState;
     private StateHandlingStatementOperations txContext;
 
     private KernelStatement state;
