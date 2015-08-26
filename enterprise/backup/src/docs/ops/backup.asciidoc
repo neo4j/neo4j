@@ -1,28 +1,24 @@
 [[operations-backup]]
-Backup
-======
+= Backup
 
 NOTE: The Backup features are only available in the Neo4j Enterprise Edition.
 
 [[backup-introduction]]
-== Introducing Backup ==
+== Introducing Backup
 
-Backups are performed over the network, from a running Neo4j server and into a
-local copy of the database store (the backup). The backup is run using the
-+neo4j-backup+ tool, which is provided alongside Neo4j Enterprise.
+Backups are performed over the network, from a running Neo4j server and into a local copy of the database store (the backup).
+The backup is run using the `neo4j-backup` tool, which is provided alongside Neo4j Enterprise.
 
 [IMPORTANT]
-Neo4j Server must be configured to run a backup service. This is enabled via
-the configuration parameter `online_backup_enabled`, and is enabled by default.
-The interface and port the backup service listens on is configured via the
-parameter `online_backup_server` and defaults to the loopback interface and
-port 6362. It is typical to reconfigure this to listen on an external
-interface, by setting `online_backup_server=<my-host-ip-address>:6362`. It can
-also be configured to listen on all interfaces by setting
-`online_backup_server=0.0.0.0:6362`.
+Neo4j Server must be configured to run a backup service.
+This is enabled via the configuration parameter `online_backup_enabled`, and is enabled by default.
+The interface and port the backup service listens on is configured via the parameter `online_backup_server` and defaults to the loopback interface and port 6362.
+It is typical to reconfigure this to listen on an external
+interface, by setting `online_backup_server=<my-host-ip-address>:6362`.
+It can also be configured to listen on all interfaces by setting `online_backup_server=0.0.0.0:6362`.
 
-Performing a backup requires specifying the target host, an optional port, and
-the backup location. The backup tool will automatically select a full or incremental backup, based on whether an existing backup is present at that location.
+Performing a backup requires specifying the target host, an optional port, and the backup location.
+The backup tool will automatically select a full or incremental backup, based on whether an existing backup is present at that location.
 
 The relevant configuration settings are found below.
 
@@ -31,8 +27,13 @@ include::{importdir}/neo4j-backup-docs-jar/ops/configuration-attributes.asciidoc
 include::{importdir}/neo4j-consistency-check-docs-jar/ops/configuration-attributes.asciidoc[]
 
 
-[[backup-embedded-and-server]]
-== Server and Embedded ==
+[[backup-performing]]
+== Performing Backups
+
+TIP: When using Neo4j in embedded mode, the way to perform backup is still the same.
+
+[[backup-commands]]
+=== Backup Commands
 
 [source,shell]
 ----
@@ -47,9 +48,12 @@ mkdir /mnt/backup/neo4j-backup
 ./bin/neo4j-backup -host 192.168.1.34 -port 9999 -to /mnt/backup/neo4j-backup
 ----
 
-=== Incremental Backups ===
-An incremental backup is performed whenever an existing backup directory is specified. The backup tool will then copy any new transactions from the Neo4j server and apply them
-to the backup. The result will be an updated backup that is consistent with the current
+[[backup-incremental]]
+=== Incremental Backups
+
+An incremental backup is performed whenever an existing backup directory is specified.
+The backup tool will then copy any new transactions from the Neo4j server and apply them to the backup.
+The result will be an updated backup that is consistent with the current
 server state.
 
 However, the incremental backup may fail for a number of reasons:
@@ -59,18 +63,14 @@ However, the incremental backup may fail for a number of reasons:
 * If the existing directory contains a backup from a previous database version.
 
 [NOTE]
-Note that when copying the outstanding transactions, the backup tool needs
-access to the historical logical logs. These logical logs are kept by Neo4j and
-automatically removed after a period of time, based on the
-<<configuration-logical-logs,+keep_logical_logs+ configuration>>. If the
-required logical logs have already been removed, the backup tool will do a full
-backup instead.
+Note that when copying the outstanding transactions, the backup tool needs access to the historical logical logs.
+These logical logs are kept by Neo4j and automatically removed after a period of time, based on the  <<configuration-logical-logs,+keep_logical_logs+ configuration>>.
+If the required logical logs have already been removed, the backup tool will do a full backup instead.
 
 [[backup-java]]
-== Online Backup from Java ==
+=== Online Backup from Java
 
-In order to programmatically backup your data full or subsequently incremental from a
-JVM based program, you need to write Java code like
+In order to programmatically backup your data full or subsequently incremental from a JVM based program, you need to write Java code like the following:
 
 [snippet,java]
 ----
@@ -80,11 +80,11 @@ tag=onlineBackup
 classifier=test-sources
 ----
 
-For more information, please see link:javadocs/org/neo4j/backup/OnlineBackup.html[the Javadocs for 
-OnlineBackup]
+For more information, please see link:javadocs/org/neo4j/backup/OnlineBackup.html[the Javadocs for
+OnlineBackup].
 
 [[backup-restoring]]
-== Restoring Your Data ==
+== Restoring Your Data
 
 The Neo4j backups are fully functional databases.
 To use a backup, all you need to do replace your database folder with the backup.
@@ -92,11 +92,10 @@ Just make sure the database isn't running while replacing the folder.
 
 To restore from backup in a clustered environment, follow these steps:
 
-. Shut down all instances in the cluster
-. Restore the backup to the individual database folders
+. Shut down all instances in the cluster.
+. Restore the backup to the individual database folders.
 . Restart the instances.
 
 Make sure there's at least one _neostore.transaction.db.nnn_ file included in the backup.
-If there isn't, start up one instance in stand-alone mode first, and issue one updating transaction against it (any
-sort of write, like creating a node).
+If there isn't, start up one instance in stand-alone mode first, and issue one updating transaction against it (any sort of write, like creating a node).
 Then copy that database to all instances in your cluster.
