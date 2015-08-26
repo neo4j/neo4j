@@ -1031,6 +1031,8 @@ public class BatchInserterImpl implements BatchInserter
 
         flushStrategy.forceFlush();
 
+        rebuildCounts();
+
         try
         {
             repopulateAllIndexes();
@@ -1039,7 +1041,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             throw new RuntimeException( e );
         }
-        rebuildCounts();
+        
         neoStores.close();
 
         try

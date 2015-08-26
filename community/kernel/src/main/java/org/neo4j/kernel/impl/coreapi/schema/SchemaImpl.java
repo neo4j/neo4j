@@ -60,6 +60,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
@@ -244,6 +245,38 @@ public class SchemaImpl implements Schema
                     index.getLabel().name(), propertyKey ) );
         }
     }
+
+    @Override
+    public IndexPopulationProgress getIndexPopulationProgress( IndexDefinition index )
+    {
+
+        assertInUnterminatedTransaction();
+
+        String propertyKey = single( index.getPropertyKeys() );
+        try ( Statement statement = statementContextSupplier.get() )
+        {
+            int labelId = statement.readOperations().labelGetForName( index.getLabel().name() );
+            int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
+
+            if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
+            {
+                throw new NotFoundException( format( "Label %s not found", index.getLabel().name() ) );
+            }
+
+            if ( propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+            {
+                throw new NotFoundException( format( "Property key %s not found", propertyKey ) );
+            }
+
+            IndexDescriptor descriptor = statement.readOperations().indexesGetForLabelAndPropertyKey( labelId,
+                    propertyKeyId );
+            return statement.readOperations().indexGetPopulationProgress( descriptor );
+        }
+        catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
+        {
+            throw new NotFoundException( format( "No index for label %s on property %s",
+                    index.getLabel().name(), propertyKey ) );
+        }    }
 
     @Override
     public String getIndexFailure( IndexDefinition index )

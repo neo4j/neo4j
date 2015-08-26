@@ -349,6 +349,20 @@ public class FlippableIndexProxy implements IndexProxy
         }
     }
 
+    @Override
+    public IndexPopulationProgress getIndexPopulationProgress()
+    {
+        lock.readLock().lock();
+        try
+        {
+            return delegate.getIndexPopulationProgress();
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+
     public void setFlipTarget( IndexProxyFactory flipTarget )
     {
         lock.writeLock().lock();

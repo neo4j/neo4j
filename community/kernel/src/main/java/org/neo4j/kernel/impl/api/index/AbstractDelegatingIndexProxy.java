@@ -124,6 +124,12 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
+    public IndexPopulationProgress getIndexPopulationProgress()
+    {
+        return getDelegate().getIndexPopulationProgress();
+    }
+
+    @Override
     public String toString()
     {
         return String.format( "%s -> %s", getClass().getSimpleName(), getDelegate().toString() );

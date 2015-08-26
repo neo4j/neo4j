@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -50,8 +51,10 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.register.Registers;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.kernel.api.CountsRead.ANY_LABEL;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
@@ -110,12 +113,15 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     {
         final int soughtLabelId = descriptor.getLabelId();
         final int soughtPropertyKeyId = descriptor.getPropertyKeyId();
-        return new NodeStoreScan<NodePropertyUpdate, FAILURE>()
+        final long labelledNodes =
+                counts.nodeCount( soughtLabelId, Registers.newDoubleLongRegister() ).readSecond();
+
+        return new NodeStoreScan<NodePropertyUpdate, FAILURE>( nodeStore, locks, labelledNodes )
         {
             @Override
             protected NodePropertyUpdate read( NodeRecord node )
             {
-                long[] labels = parseLabelsField( node ).get( nodeStore );
+                long[] labels = parseLabelsField( node ).get( this.nodeStore );
                 if ( !containsLabel( soughtLabelId, labels ) )
                 {
                     return null;
@@ -145,12 +151,15 @@ public class NeoStoreIndexStoreView implements IndexStoreView
             final Visitor<NodePropertyUpdate, FAILURE> propertyUpdateVisitor,
             final Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor )
     {
-        return new NodeStoreScan<Update, FAILURE>()
+        final long allNodes =
+                counts.nodeCount( ANY_LABEL, Registers.newDoubleLongRegister() ).readSecond();
+
+        return new NodeStoreScan<Update, FAILURE>( nodeStore, locks, allNodes )
         {
             @Override
             protected Update read( NodeRecord node )
             {
-                long[] labels = parseLabelsField( node ).get( nodeStore );
+                long[] labels = parseLabelsField( node ).get( this.nodeStore );
                 Update update = new Update( node.getId(), labels );
                 if ( !containsAnyLabel( labelIds, labels ) )
                 {
@@ -339,13 +348,26 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         }
     }
 
-    private abstract class NodeStoreScan<RESULT, FAILURE extends Exception> implements StoreScan<FAILURE>
+    abstract static class NodeStoreScan<RESULT, FAILURE extends Exception> implements StoreScan<FAILURE>
     {
         private volatile boolean continueScanning;
+
+        protected final NodeStore nodeStore;
+        protected final LockService locks;
+        private final long totalCount;
+
+        private long count = 0;
 
         protected abstract RESULT read( NodeRecord node );
 
         protected abstract void process( RESULT result ) throws FAILURE;
+
+        public NodeStoreScan( NodeStore nodeStore, LockService locks, long totalCount )
+        {
+            this.nodeStore = nodeStore;
+            this.locks = locks;
+            this.totalCount = totalCount;
+        }
 
         @Override
         public void run() throws FAILURE
@@ -361,6 +383,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
                     NodeRecord record = nodeStore.forceGetRecord( id );
                     if ( record.inUse() )
                     {
+                        count++;
                         result = read( record );
                     }
                 }
@@ -375,6 +398,20 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         public void stop()
         {
             continueScanning = false;
+        }
+
+        @Override
+        public IndexPopulationProgress getProgress()
+        {
+            if ( totalCount > 0)
+            {
+                return new IndexPopulationProgress( count, totalCount );
+            }
+            else
+            {
+                // nothing to do 100% completed
+                return IndexPopulationProgress.DONE;
+            }
         }
     }
 }

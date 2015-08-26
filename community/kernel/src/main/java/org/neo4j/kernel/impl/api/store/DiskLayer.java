@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -374,6 +375,13 @@ public class DiskLayer implements StoreReadLayer
             throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor ).getState();
+    }
+
+    @Override
+    public IndexPopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor )
+            throws IndexNotFoundKernelException
+    {
+        return indexService.getIndexProxy( descriptor ).getIndexPopulationProgress();
     }
 
     @Override

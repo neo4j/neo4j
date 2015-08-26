@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
 import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 
 public interface SchemaReadOperations
@@ -66,6 +67,12 @@ public interface SchemaReadOperations
      * Retrieve the state of an index.
      */
     InternalIndexState indexGetState( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+
+    /**
+     * Retrieve the population progress of an index.
+     */
+    IndexPopulationProgress indexGetPopulationProgress( KernelStatement state, IndexDescriptor descriptor ) throws
+            IndexNotFoundKernelException;
 
     /**
      * Get the index size.

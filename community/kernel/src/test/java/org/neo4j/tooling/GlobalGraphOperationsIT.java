@@ -61,7 +61,7 @@ public class GlobalGraphOperationsIT
         GlobalGraphOperations gg = GlobalGraphOperations.at( db );
 
         // When
-        try( Transaction _ = db.beginTx() )
+        try( Transaction tx = db.beginTx() )
         {
             assertThat( toList( gg.getAllPropertyKeys() ), equalTo( asList( "myProperty" ) ) );
         }

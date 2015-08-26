@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
 
 /**
  * Interface for managing the schema of your graph database. This currently includes
@@ -51,7 +52,7 @@ public interface Schema
      * Returns an {@link IndexCreator} where details about the index to create can be
      * specified. When all details have been entered {@link IndexCreator#create() create}
      * must be called for it to actually be created.
-     * 
+     *
      * Creating an index enables indexing for nodes with the specified label. The index will
      * have the details supplied to the {@link IndexCreator returned index creator}.
      * All existing and all future nodes matching the index definition will be indexed,
@@ -63,13 +64,13 @@ public interface Schema
      * an index for the given {@link Label label}.
      */
     IndexCreator indexFor( Label label );
-    
+
     /**
      * @param label the {@link Label} to get {@link IndexDefinition indexes} for.
      * @return all {@link IndexDefinition indexes} attached to the given {@link Label label}.
      */
     Iterable<IndexDefinition> getIndexes( Label label );
-    
+
     /**
      * @return all {@link IndexDefinition indexes} in this database.
      */
@@ -85,7 +86,20 @@ public interface Schema
      * @return the current {@link IndexState} of the index
      */
     IndexState getIndexState( IndexDefinition index );
-    
+
+    /**
+     * Poll the database for the population progress. This can be used to track the progress of the
+     * population job associated to the given index. If the index is
+     * {@link IndexState#POPULATING populating} or {@link IndexState#ONLINE online}, the state will contain current
+     * progress. If the index is {@link IndexState#FAILED failed} then the state returned from this method
+     * should be regarded as invalid.
+     *
+     * @param index the index that we want to poll state for
+     * @return the current population progress for the index
+     *
+     */
+    IndexPopulationProgress getIndexPopulationProgress( IndexDefinition index );
+
     /**
      * If {@link #getIndexState(IndexDefinition)} return {@link IndexState#FAILED} this method will
      * return the failure description.
@@ -103,7 +117,7 @@ public interface Schema
      * Creating a constraint will block on the {@linkplain ConstraintCreator#create() create method} until
      * all existing data has been verified for compliance. If any existing data doesn't comply with the constraint an
      * exception will be thrown, and the constraint will not be created.
-     * 
+     *
      * @param label the label this constraint is for.
      * @return a {@link ConstraintCreator} capable of providing details for, as well as creating
      * a constraint for the given {@linkplain Label label}.
@@ -129,7 +143,7 @@ public interface Schema
 
     /**
      * Wait until an index comes online
-     * 
+     *
      * @param index the index that we want to wait for
      * @param duration duration to wait for the index to come online
      * @param unit TimeUnit of duration
@@ -141,7 +155,7 @@ public interface Schema
 
     /**
      * Wait until all indices comes online
-     * 
+     *
      * @param duration duration to wait for all indexes to come online
      * @param unit TimeUnit of duration
      * @throws IllegalStateException if some index did not enter the ONLINE

@@ -291,31 +291,61 @@ create the friend and the relationship according to the variables available.
 [[shell-listing-indexes-and-constraints]]
 === Listing Indexes and Constraints ===
 
-The +schema+ command allows to list all existing indexes and constraints together with their current status.
+The +schema+ command provides information about indexes and constraints together with their current status.
 
 [NOTE]
 This command does not list legacy indexes. For working with legacy indexes, please see <<shell-legacy-indexing>>.
 
+The +schema+ command supports the following actions:
 
-List all indexes and constraints:
+* +ls+ lists indexes and constraints
+* +sample+ samples indexes
+* +await+ blocks until index population is complete
+* +progress+ prints the current status of the index population
+
+The +schema+ command also supports the following optional parameters:
+
+* +-l :Label+ limit to indexes or constraints on +:Label+ nodes
 
 [source]
 ----
-schema
+schema ls -l :Person
 ----
 
-List indexes or constraints on +:Person+ nodes for the property +name+:
+* +-r :Relation:+ limit to indexes or constraints for the given relationship
 
 [source]
 ----
-schema -l :Person -p name
+schema ls -r :KNOWS
 ----
 
-The +schema+ command supports the following parameters:
+* +-p propertyKey+ limit to indexes or constraints for the given property
 
-* +-l :Label+ only list indexes or constraints for the given label +:Label+
-* +-p propertyKey+ only list indexes or constraints for the given property key +propertyKey+
+[source]
+----
+schema progress -l :Person -p name
+----
+
 * +-v+ if an index is in the +FAILED+ state, print a verbose error cause if available
+
+[source]
+----
+schema ls -v
+----
+
+* +-a+ sample all indexes
+
+[source]
+----
+schema sample -a
+----
+
+* +-f+ Force sampling of index(es)
+
+[source]
+----
+schema sample -f -l :Person :p name
+----
 
 Indexes and constraints can be created or removed using Cypher or the Java Core API. They are updated automatically
 whenever the graph is changed.  See <<graphdb-neo4j-schema>> for more information.

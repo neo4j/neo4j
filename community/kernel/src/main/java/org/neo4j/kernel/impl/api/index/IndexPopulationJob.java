@@ -232,6 +232,17 @@ public class IndexPopulationJob implements Runnable
         storeScan.run();
     }
 
+    public IndexPopulationProgress getPopulationProgress()
+    {
+        if (storeScan == null) {
+            // indexing hasn't begun yet
+            return IndexPopulationProgress.NONE;
+        } else
+        {
+            return storeScan.getProgress();
+        }
+    }
+
     private void verifyDeferredConstraints() throws IndexPopulationFailedKernelException
     {
         monitor.verifyDeferredConstraints();

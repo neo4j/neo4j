@@ -58,6 +58,7 @@ import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 import org.neo4j.kernel.security.URLAccessValidationError;
@@ -951,6 +952,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         public IndexState getIndexState( IndexDefinition index )
         {
             return actual.getIndexState( index );
+        }
+
+        @Override
+        public IndexPopulationProgress getIndexPopulationProgress( IndexDefinition index )
+        {
+            return actual.getIndexPopulationProgress( index );
         }
 
         @Override

@@ -17,28 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.server.rest.repr;
 
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
 
 import static org.neo4j.helpers.collection.Iterables.map;
 
 public class IndexDefinitionRepresentation extends MappingRepresentation
 {
     private final IndexDefinition indexDefinition;
+    private final IndexPopulationProgress indexPopulationProgress;
+    private final Schema.IndexState indexState;
 
     public IndexDefinitionRepresentation( IndexDefinition indexDefinition )
     {
+        // Online state will mean progress is ignored
+        this( indexDefinition, Schema.IndexState.ONLINE, IndexPopulationProgress.DONE );
+    }
+
+    public IndexDefinitionRepresentation( IndexDefinition indexDefinition, Schema.IndexState indexState,
+            IndexPopulationProgress indexPopulationProgress )
+    {
         super( RepresentationType.INDEX_DEFINITION );
         this.indexDefinition = indexDefinition;
+        this.indexPopulationProgress = indexPopulationProgress;
+        this.indexState = indexState;
     }
 
     @Override
     protected void serialize( MappingSerializer serializer )
     {
         serializer.putString( "label", indexDefinition.getLabel().name() );
-        Function<String, Representation> converter = new Function<String, Representation>()
+        Function<String,Representation> converter = new Function<String,Representation>()
         {
             @Override
             public Representation apply( String propertyKey )
@@ -49,5 +63,12 @@ public class IndexDefinitionRepresentation extends MappingRepresentation
         Iterable<Representation> propertyKeyRepresentations = map( converter, indexDefinition.getPropertyKeys() );
         serializer.putList( "property_keys", new ListRepresentation( RepresentationType.STRING,
                 propertyKeyRepresentations ) );
+        // Only print state and progress if progress is a valid value and not yet online
+        if ( indexState == Schema.IndexState.POPULATING && indexPopulationProgress.getTotalCount() > 0 )
+        {
+            serializer.putString( "state", indexState.name() );
+            serializer.putString( "population_progress", String.format( "%1.0f%%",
+                    indexPopulationProgress.getCompletedPercentage() ) );
+        }
     }
 }

@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LockOperations;
@@ -194,12 +195,21 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public InternalIndexState indexGetState( KernelStatement state,
-            IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( KernelStatement state, IndexDescriptor descriptor )
+            throws IndexNotFoundKernelException
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         state.assertOpen();
         return schemaReadDelegate.indexGetState( state, descriptor );
+    }
+
+    @Override
+    public IndexPopulationProgress indexGetPopulationProgress( KernelStatement state, IndexDescriptor descriptor )
+            throws IndexNotFoundKernelException
+    {
+        state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
+        state.assertOpen();
+        return schemaReadDelegate.indexGetPopulationProgress( state, descriptor );
     }
 
     @Override

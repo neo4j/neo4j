@@ -68,6 +68,14 @@ public class EmbeddedNeo4jWithNewIndexing
                 schema.awaitIndexOnline( indexDefinition, 10, TimeUnit.SECONDS );
             }
             // END SNIPPET: wait
+            // START SNIPPET: progress
+            try ( Transaction tx = graphDb.beginTx() )
+            {
+                Schema schema = graphDb.schema();
+                System.out.println( String.format( "Percent complete: %1.0f%%",
+                        schema.getIndexPopulationProgress( indexDefinition ).getCompletedPercentage() ) );
+            }
+            // END SNIPPET: progress
         }
 
         {
@@ -96,7 +104,7 @@ public class EmbeddedNeo4jWithNewIndexing
             try ( Transaction tx = graphDb.beginTx() )
             {
                 try ( ResourceIterator<Node> users =
-                        graphDb.findNodes( label, "username", nameToFind ) )
+                              graphDb.findNodes( label, "username", nameToFind ) )
                 {
                     ArrayList<Node> userNodes = new ArrayList<>();
                     while ( users.hasNext() )
@@ -106,7 +114,8 @@ public class EmbeddedNeo4jWithNewIndexing
 
                     for ( Node node : userNodes )
                     {
-                        System.out.println( "The username of user " + idToFind + " is " + node.getProperty( "username" ) );
+                        System.out.println(
+                                "The username of user " + idToFind + " is " + node.getProperty( "username" ) );
                     }
                 }
             }
@@ -141,7 +150,7 @@ public class EmbeddedNeo4jWithNewIndexing
 
                 for ( Node node : loop( graphDb.findNodes( label, "username", nameToFind ) ) )
                 {
-                    node.setProperty( "username", "user" + ( idToFind + 1 ) + "@neo4j.org" );
+                    node.setProperty( "username", "user" + (idToFind + 1) + "@neo4j.org" );
                 }
                 tx.success();
             }
