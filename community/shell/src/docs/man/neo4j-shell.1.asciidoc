@@ -1,22 +1,18 @@
-NEO4J-SHELL(1)
-==============
+= NEO4J-SHELL(1)
 :author: The Neo4j Team
 
-NAME
-----
+== NAME
 neo4j-shell - a command-line tool for exploring and manipulating a graph database
 
 
 [[shell-manpage]]
-SYNOPSIS
---------
+== SYNOPSIS
 *neo4j-shell* ['REMOTE OPTIONS']
 
 *neo4j-shell* ['LOCAL OPTIONS']
 
 [[shell-manpage-description]]
-DESCRIPTION
------------
+== DESCRIPTION
 Neo4j shell is a command-line shell for running Cypher queries.
 There's also commands to get information about the database.
 In addition, you can browse the graph, much like how the Unix shell along with commands like +cd+, +ls+ and +pwd+ can be used to browse your local file system.
@@ -24,8 +20,7 @@ The shell can connect directly to a graph database on the file system.
 To access local a local database used by other processes, use the readonly mode.
 
 [[shell-manpage-remote-options]]
-REMOTE OPTIONS
---------------
+== REMOTE OPTIONS
 *-port* 'PORT'::
   Port of host to connect to (default: 1337).
 
@@ -38,9 +33,8 @@ REMOTE OPTIONS
 *-readonly*::
   Access the database in read-only mode.
 
-[[shell-manpage-local-options]]    
-LOCAL OPTIONS
---------------
+[[shell-manpage-local-options]]
+== LOCAL OPTIONS
 *-path* 'PATH'::
   The path to the database directory.
   If there is no database at the location, a new one will e created.
@@ -55,15 +49,14 @@ LOCAL OPTIONS
   Command line to execute. After executing it the shell exits.
 
 *-file* 'FILE'::
-  File to read and execute. After executing it the shell exits. 
+  File to read and execute. After executing it the shell exits.
   If '-' is supplied as filename data is read from stdin instead.
 
 *-config* 'CONFIG'::
   The path to the Neo4j configuration file to be used.
 
 [[shell-manpage-examples]]
-EXAMPLES
---------
+== EXAMPLES
 
 Examples for remote:
 ....

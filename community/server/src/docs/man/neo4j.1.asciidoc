@@ -1,20 +1,16 @@
-NEO4J(1)
-========
+= NEO4J(1)
 :author: The Neo4j Team
 
-NAME
-----
+== NAME
 neo4j - Neo4j Server control
 
 [[neo4j-manpage]]
-SYNOPSIS
---------
+== SYNOPSIS
 
 *neo4j* <command>
 
 [[neo4j-manpage-description]]
-DESCRIPTION
------------
+== DESCRIPTION
 
 Neo4j is a graph database, perfect for working with highly connected data.
 The `neo4j` command is used to control the Neo4j Server.
@@ -23,8 +19,7 @@ The preferred way to install Neo4j on Linux systems is by using prebuilt install
 For information regarding Windows, see below.
 
 [[neo4j-manpage-commands]]
-COMMANDS
---------
+== COMMANDS
 
 *console*::
   Start the server as an application, running as a foreground process. Stop the server using `CTRL-C`.
@@ -45,8 +40,7 @@ COMMANDS
   Displays configuration information, such as the current NEO4J_HOME and CLASSPATH.
 
 [[neo4j-manpage-usage-windows]]
-Usage - Windows
----------------
+== Usage - Windows
 
 *Neo4j.bat*
 
@@ -55,8 +49,7 @@ To quit, just press `control-C` in the console window.
 
 
 [[neo4j-manpage-files]]
-FILES
------
+== FILES
 
 *conf/neo4j-server.properties*::
   Server configuration.

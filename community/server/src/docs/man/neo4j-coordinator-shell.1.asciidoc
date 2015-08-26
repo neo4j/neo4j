@@ -1,20 +1,16 @@
-NEO4J-COORDINATOR-SHELL(1)
-==========================
+= NEO4J-COORDINATOR-SHELL(1)
 :author: The Neo4j Team
 
-NAME
-----
+== NAME
 neo4j-coordinator-shell - Neo4j Coordinator Shell interactive interface
 
 [[neo4j-manpage]]
-SYNOPSIS
---------
+== SYNOPSIS
 
 *neo4j-coordinator-shell* <command>
 
 [[neo4j-manpage-description]]
-DESCRIPTION
------------
+== DESCRIPTION
 
 The Coordinator functionality and corresponding scripts are no longer required for Neo4j HA operations since version 1.9.
 

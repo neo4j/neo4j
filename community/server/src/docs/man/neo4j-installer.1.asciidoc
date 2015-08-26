@@ -1,19 +1,16 @@
-= NEO4J-INSTALLER(1) =
+= NEO4J-INSTALLER(1)
 :author: The Neo4j Team
 
-NAME
-----
+== NAME
 neo4j-installer - Neo4j Server installation and removal
 
 [[neo4j-installer-manpage]]
-SYNOPSIS
---------
+== SYNOPSIS
 
 *neo4j-installer* <command>
 
 [[neo4j-installer-manpage-description]]
-DESCRIPTION
------------
+== DESCRIPTION
 
 Neo4j is a graph database, perfect for working with highly connected data.
 
@@ -23,8 +20,7 @@ For information regarding Windows, see below.
 Use the `neo4j` command to control the Neo4j Server.
 
 [[neo4j-installer-manpage-commands]]
-COMMANDS
---------
+== COMMANDS
 
 *install*::
   Installs the server as a platform-appropriate system service.
@@ -33,8 +29,7 @@ COMMANDS
   Uninstalls the system service.
 
 [[neo4j-installer-manpage-usage-windows]]
-Usage - Windows
----------------
+== Usage - Windows
 
 To just control the Neo4j Server, use the `Neo4j.bat` command.
 
@@ -45,13 +40,12 @@ window. You'll need to run the scripts with Administrator privileges.
 Just use the `Neo4jInstaller.bat` script with the proper argument:
 
 * Neo4jInstaller.bat install - install as a Windows service
-** will install the service 
+** will install the service
 * Neo4jInstaller.bat remove - remove the Neo4j service
 ** will stop and remove the Neo4j service
 
 [[neo4j-installer-manpage-files]]
-FILES
------
+== FILES
 
 *conf/neo4j-server.properties*::
   Server configuration.
