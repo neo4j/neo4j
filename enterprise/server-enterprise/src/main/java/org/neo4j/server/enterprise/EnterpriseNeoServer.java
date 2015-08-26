@@ -43,9 +43,7 @@ import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManag
 
 public class EnterpriseNeoServer extends AdvancedNeoServer
 {
-    public static final String SINGLE = "SINGLE";
     public static final String HA = "HA";
-    public static final String ENTERPRISE = "ENTERPRISE";
     private static final GraphFactory HA_FACTORY = new GraphFactory()
     {
         @Override
@@ -73,15 +71,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
     protected static Database.Factory createDbFactory( Config config )
     {
         String mode = config.get( EnterpriseServerSettings.mode ).toUpperCase();
-        if ( HA.equals( mode ) )
-        {
-            return lifecycleManagingDatabase( HA_FACTORY );
-        }
-        else if ( ENTERPRISE.equals( mode ) )
-        {
-            return lifecycleManagingDatabase( ENTERPRISE_FACTORY );
-        }
-        return lifecycleManagingDatabase( COMMUNITY_FACTORY );
+        return lifecycleManagingDatabase( mode.equals( HA ) ? HA_FACTORY : ENTERPRISE_FACTORY );
     }
 
     @SuppressWarnings( "unchecked" )
