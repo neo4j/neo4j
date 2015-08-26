@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
-import java.io.File;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -56,6 +56,21 @@ public class IdGeneratorImplTest
         catch ( UnderlyingStorageException e )
         {   // OK
         }
+    }
+
+    @Test
+    public void correctDefragCountWhenHaveIdsInFile()
+    {
+        IdGeneratorImpl.createGenerator( fsr.get(), file );
+        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, true, 100 );
+
+        idGenerator.freeId( 5 );
+        idGenerator.close();
+
+        IdGenerator reloadedIdGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, true, 100 );
+        assertEquals( 1, reloadedIdGenerator.getDefragCount() );
+        assertEquals( 5, reloadedIdGenerator.nextId() );
+        assertEquals( 0, reloadedIdGenerator.getDefragCount() );
     }
 
     @Test

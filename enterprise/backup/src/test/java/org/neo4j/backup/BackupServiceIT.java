@@ -34,11 +34,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.storecopy.StoreCopyServer;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -77,6 +82,7 @@ import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -87,13 +93,11 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.backup.BackupServiceStressTestingBuilder.untilTimeExpired;
 
 public class BackupServiceIT
 {
+
     private static final class StoreSnoopingMonitor extends StoreCopyServer.Monitor.Adapter
     {
         private final Barrier barrier;
@@ -184,6 +188,102 @@ public class BackupServiceIT
         }
 
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
+    }
+
+    /*
+     * During incremental backup destination db should not track free ids independently from source db
+     * for now we will always cleanup id files generated after incremental backup and will regenerate them afterwards
+     * This should prevent situation when destination db free id following master, but never allocates it from
+     * generator till some db will be started on top of it.
+     * That will cause all sorts of problems with several entities in a store with same id.
+     *
+     * As soon as backup will be able to align ids between participants please remove description and adapt test.
+     */
+    @Test
+    public void incrementallyBackupDatabaseShouldNotKeepGeneratedIdFiles()
+    {
+        defaultBackupPortHostParams();
+        GraphDatabaseAPI graphDatabase = dbRule.getGraphDatabaseAPI();
+        Label markerLabel = DynamicLabel.label( "marker" );
+
+        try ( Transaction transaction = graphDatabase.beginTx() )
+        {
+            Node node = graphDatabase.createNode();
+            node.addLabel( markerLabel );
+            transaction.success();
+        }
+
+        try ( Transaction transaction = graphDatabase.beginTx() )
+        {
+            Node node = findNodeByLabel( graphDatabase, markerLabel );
+            for ( int i = 0; i < 10; i++ )
+            {
+                node.setProperty( "property" + i, "testValue" + i );
+            }
+            transaction.success();
+        }
+        // propagate to backup node and properties
+        doIncrementalBackupOrFallbackToFull();
+
+        // removing properties will free couple of ids that will be reused during next properties creation
+        try ( Transaction transaction = graphDatabase.beginTx() )
+        {
+            Node node = findNodeByLabel( graphDatabase, markerLabel );
+            for ( int i = 0; i < 6; i++ )
+            {
+                node.removeProperty( "property" + i );
+            }
+
+            transaction.success();
+        }
+
+        // propagate removed properties
+        doIncrementalBackupOrFallbackToFull();
+
+        try ( Transaction transaction = graphDatabase.beginTx() )
+        {
+            Node node = findNodeByLabel( graphDatabase, markerLabel );
+            for ( int i = 10; i < 16; i++ )
+            {
+                node.setProperty( "property" + i, "updatedValue" + i );
+            }
+
+            transaction.success();
+        }
+
+        // propagate to backup new properties with reclaimed ids
+        doIncrementalBackupOrFallbackToFull();
+
+        // it should be possible to at this point to start db based on our backup and create couple of properties
+        // their ids should not clash with already existing
+        GraphDatabaseService backupBasedDatabase =
+                new GraphDatabaseFactory().newEmbeddedDatabase( backupDir.getAbsolutePath() );
+        try
+        {
+            try ( Transaction transaction = backupBasedDatabase.beginTx() )
+            {
+                Node node = findNodeByLabel( (GraphDatabaseAPI) backupBasedDatabase, markerLabel );
+                Iterable<String> propertyKeys = node.getPropertyKeys();
+                for ( String propertyKey : propertyKeys )
+                {
+                    node.setProperty( propertyKey, "updatedClientValue" + propertyKey );
+                }
+                node.setProperty( "newProperty", "updatedClientValue" );
+                transaction.success();
+            }
+
+            try ( Transaction transaction = backupBasedDatabase.beginTx() )
+            {
+                Node node = findNodeByLabel( (GraphDatabaseAPI) backupBasedDatabase, markerLabel );
+                // newProperty + 10 defined properties.
+                assertEquals( "We should be able to see all previously defined properties.",
+                        11, Iterables.toList( node.getPropertyKeys() ).size() );
+            }
+        }
+        finally
+        {
+            backupBasedDatabase.shutdown();
+        }
     }
 
     @Test
@@ -692,6 +792,21 @@ public class BackupServiceIT
         for ( File log : fileSystem.listFiles( backupDir, LogFiles.FILENAME_FILTER ) )
         {
             fileSystem.deleteFile( log );
+        }
+    }
+
+    private void doIncrementalBackupOrFallbackToFull()
+    {
+        BackupService backupService = backupService();
+        backupService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort,
+                backupDir.getAbsolutePath(), false, new Config(), BackupClient.BIG_READ_TIMEOUT, false );
+    }
+
+    private Node findNodeByLabel( GraphDatabaseAPI graphDatabase, Label label )
+    {
+        try ( ResourceIterator<Node> nodes = graphDatabase.findNodes( label ) )
+        {
+            return nodes.next();
         }
     }
 }

@@ -221,7 +221,7 @@ public class HighIdTransactionApplier implements NeoCommandHandler
         HighId highId = highIds.get( store );
         if ( highId == null )
         {
-            highIds.put( store, highId = new HighId( id ) );
+            highIds.put( store, new HighId( id ) );
         }
         else
         {
