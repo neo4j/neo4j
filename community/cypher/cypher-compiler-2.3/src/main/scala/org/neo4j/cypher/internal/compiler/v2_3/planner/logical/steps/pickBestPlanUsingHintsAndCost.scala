@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CandidateSelector, LogicalPlanningContext, LogicalPlanningFunction0}
 
 object pickBestPlanUsingHintsAndCost extends LogicalPlanningFunction0[CandidateSelector] {
-  private val VERBOSE = false
+  private val VERBOSE = java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
   private val baseOrdering = implicitly[Ordering[(Int, Double, Int)]]
 
   override def apply(implicit context: LogicalPlanningContext): CandidateSelector = new CandidateSelector {

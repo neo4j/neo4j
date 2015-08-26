@@ -24,22 +24,24 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CandidateGenerator, LogicalPlanningContext}
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
+import org.neo4j.cypher.internal.frontend.v2_3.ast.Expression
 import org.neo4j.graphdb.Direction
 
-object triadicSelection extends CandidateGenerator[LogicalPlan] {
+object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
   override def apply(in: LogicalPlan, qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = in match {
+    // MATCH (a)-[:X]->(b)-[:X]->(c) WHERE (predicate involving (a)-[:X]->(c))
     case sel@Selection(predicates,
            exp2@Expand(
-             exp1@Expand(lhs, from1, dir1, types1, to1, _, ExpandAll),
+             exp1@Expand(lhs, from1, dir1, types1, to1, rel1, ExpandAll),
                               from2, dir2, types2, to2, rel2, ExpandAll))
-      if to1 == from2 && types1 == types2 && dir1 == dir2 =>
+      if to1 == from2 =>
 
       val newPlan = matchingPredicateExists(qg, in.availableSymbols, from1.name, to2.name, types1, dir1) map {
-        predicate =>
-          val triadicBuild = context.logicalPlanProducer.planTriadicBuild(exp1, from1, to1)
-          val newExpand2 = Expand(triadicBuild, from2, dir2, types2, to2, rel2, ExpandAll)(exp2.solved)
+        case (positivePredicate, predicate) =>
+          val argument = context.logicalPlanProducer.planArgumentRowFrom(exp1)
+          val newExpand2 = Expand(argument, from2, dir2, types2, to2, rel2, ExpandAll)(exp2.solved)
           val newSelection = context.logicalPlanProducer.planSelection(sel.predicates, newExpand2)
-          context.logicalPlanProducer.planTriadicProbe(newSelection, from1, to1, to2, predicate)
+          context.logicalPlanProducer.planTriadicSelection(positivePredicate, exp1, from1, to1, to2, newSelection, predicate)
       }
 
       newPlan.toSeq
@@ -47,14 +49,23 @@ object triadicSelection extends CandidateGenerator[LogicalPlan] {
     case _ => Seq.empty
   }
 
-  private def matchingPredicateExists(qg: QueryGraph, availableSymbols: Set[IdName], from: String, to: String, types: Seq[RelTypeName], dir: Direction): Option[Expression] =
+  private def matchingPredicateExists(qg: QueryGraph, availableSymbols: Set[IdName], from: String, to: String, types: Seq[RelTypeName], dir: Direction): Option[(Boolean,Expression)] =
     qg.selections.patternPredicatesGiven(availableSymbols).collectFirst {
-      case p@Not(PatternExpression(
-                  RelationshipsPattern(
-                  RelationshipChain(
-                  NodePattern(Some(Identifier(pfrom)), List(), None, false),
-                  RelationshipPattern(None, false, ptypes, None, None, pdir),
-                  NodePattern(Some(Identifier(pto)), List(), None, false)))))
-        if pfrom == from && pto == to && ptypes == ptypes && toGraphDb(pdir) == dir => p
+      // WHERE NOT (a)-[:X]->(c)
+      case predicate@Not(patternExpr: PatternExpression) if matchingRelationshipPattern(patternExpr, from, to, types, dir) => (false, predicate)
+      // WHERE (a)-[:X]->(c)
+      case patternExpr: PatternExpression if matchingRelationshipPattern(patternExpr, from, to, types, dir) => (true, patternExpr)
     }
+
+  private def matchingRelationshipPattern(pattern: PatternExpression, from: String, to: String, types: Seq[RelTypeName], dir: Direction): Boolean = pattern match {
+    // (a)-[:X]->(c)
+    case p@PatternExpression(
+        RelationshipsPattern(
+        RelationshipChain(
+        NodePattern(Some(Identifier(predicateFrom)), List(), None, false),
+        RelationshipPattern(None, false, predicateTypes, None, None, predicateDir),
+        NodePattern(Some(Identifier(predicateTo)), List(), None, false))))
+          if predicateFrom == from && predicateTo == to && predicateTypes == types && toGraphDb(predicateDir) == dir => true
+    case _ => false
+  }
 }

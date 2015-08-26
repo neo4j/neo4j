@@ -17,22 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongSet}
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.KeyNames
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{PlanDescriptionImpl, TwoChildren}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException
 import org.neo4j.graphdb.Node
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.{AbstractIterator, Iterator}
 
-case class TriadicBuildPipe(sourcePipe: Pipe, source: String, seen: String)
-                           (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(sourcePipe, pipeMonitor) with RonjaPipe with NoEffectsPipe {
-  override def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
+case class TriadicSelectionPipe(positivePredicate: Boolean, left: Pipe, source: String, seen: String, target: String, right: Pipe)
+                               (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+extends PipeWithSource(left, pipeMonitor) with RonjaPipe with NoEffectsPipe {
+
+  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
+    var triadicState: PrimitiveLongSet = null
+    // 1. Build
     new LazyGroupingIterator[ExecutionContext](input) {
       override def getKey(row: ExecutionContext) = row(source)
 
@@ -42,58 +47,38 @@ case class TriadicBuildPipe(sourcePipe: Pipe, source: String, seen: String)
         case x => throw new CypherTypeException(s"Expected a node at `$seen` but got $x")
       }
 
-      override def setState(triadicSet: PrimitiveLongSet) = if (triadicSet == null) {
-        state.triadicState.remove(seen)
-      } else {
-        state.triadicState.put(seen, triadicSet)
+      override def setState(triadicSet: PrimitiveLongSet) = triadicState = triadicSet
+
+    // 2. pass through 'right'
+    }.flatMap { (outerContext) =>
+      val original = outerContext.clone()
+      val innerState = state.withInitialContext(outerContext)
+      val innerResults = right.createResults(innerState)
+      innerResults.map { context => context ++ original }
+
+    // 3. Probe
+    }.filter { ctx =>
+      ctx(target) match {
+        case n: Node => if(positivePredicate) triadicState.contains(n.getId) else !triadicState.contains(n.getId)
+        case _ => false
       }
     }
   }
 
-  override def planDescriptionWithoutCardinality: InternalPlanDescription =
-    PlanDescriptionImpl(this.id, "TriadicBuild", SingleChild(sourcePipe.planDescription),
-      Seq(KeyNames(Seq(seen))), identifiers)
+  override def planDescriptionWithoutCardinality = new PlanDescriptionImpl(
+    id = id,
+    name = "TriadicSelection",
+    children = TwoChildren(left.planDescription, right.planDescription),
+    arguments = Seq(KeyNames(Seq(source, seen, target))),
+    identifiers = identifiers)
 
-  override def withEstimatedCardinality(estimated: Double) =
-    copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
-  override def symbols =
-    sourcePipe.symbols
-
-  override def dup(sources: List[Pipe]) = {
-    val (head :: Nil) = sources
-    copy(sourcePipe = head)(estimatedCardinality)
-  }
-}
-
-case class TriadicProbePipe(sourcePipe: Pipe, source: String, seen: String, target: String)
-                           (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(sourcePipe, pipeMonitor) with RonjaPipe with NoEffectsPipe {
-
-  override def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
-    input.filter {
-      ctx =>
-        ctx(target) match {
-          case n: Node =>
-            !state.triadicState(seen).contains(n.getId)
-          case _ => false
-        }
-    }
-  }
-
-  override def planDescriptionWithoutCardinality: InternalPlanDescription =
-    PlanDescriptionImpl(this.id, "TriadicProbe", SingleChild(sourcePipe.planDescription),
-      Seq(KeyNames(Seq(seen, target))), identifiers)
-
-  override def withEstimatedCardinality(estimated: Double) =
-    copy()(Some(estimated))
-
-  override def symbols =
-    sourcePipe.symbols
+  override def symbols: SymbolTable = left.symbols.add(right.symbols.identifiers)
 
   override def dup(sources: List[Pipe]) = {
-    val (head :: Nil) = sources
-    copy(sourcePipe = head)(estimatedCardinality)
+    val (left :: right :: Nil) = sources
+    copy(left = left, right = right)(estimatedCardinality)
   }
 }
 
