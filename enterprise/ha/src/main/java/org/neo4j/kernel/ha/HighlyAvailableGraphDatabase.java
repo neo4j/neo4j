@@ -459,9 +459,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                     TransactionCommitProcess inner =
                             defaultCommitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore,
                                     storeApplier, txValidator, indexUpdatesValidator, config );
-                    assert highAvailabilityModeSwitcher != null;
-                    new CommitProcessSwitcher( pusher, master, commitProcessDelegate, requestContextFactory,
-                            highAvailabilityModeSwitcher, txValidator, inner );
+                    paxosLife.add( new CommitProcessSwitcher( pusher, master, commitProcessDelegate,
+                            requestContextFactory, highAvailabilityModeSwitcher, txValidator, inner ) );
 
                     return (TransactionCommitProcess) Proxy
                             .newProxyInstance( TransactionCommitProcess.class.getClassLoader(),
@@ -538,8 +537,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         DelegateInvocationHandler<Locks> lockManagerDelegate = new DelegateInvocationHandler<>( Locks.class );
         Locks lockManager = (Locks) Proxy.newProxyInstance(
                 Locks.class.getClassLoader(), new Class[]{Locks.class}, lockManagerDelegate );
-        assert highAvailabilityModeSwitcher != null;
-        new LockManagerModeSwitcher( highAvailabilityModeSwitcher, lockManagerDelegate, masterDelegateInvocationHandler,
+        paxosLife.add( new LockManagerModeSwitcher( highAvailabilityModeSwitcher, lockManagerDelegate, masterDelegateInvocationHandler,
                 requestContextFactory, availabilityGuard, config, new Factory<Locks>()
         {
             @Override
@@ -547,7 +545,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             {
                 return HighlyAvailableGraphDatabase.super.createLockManager();
             }
-        } );
+        } ) );
         return lockManager;
     }
 
@@ -566,9 +564,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                     (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
                             new Class[]{TokenCreator.class}, relationshipTypeCreatorDelegate );
 
-            assert highAvailabilityModeSwitcher != null;
-            new RelationshipTypeCreatorModeSwitcher( highAvailabilityModeSwitcher, relationshipTypeCreatorDelegate,
-                    masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory );
+            paxosLife.add( new RelationshipTypeCreatorModeSwitcher( highAvailabilityModeSwitcher,
+                    relationshipTypeCreatorDelegate, masterDelegateInvocationHandler, requestContextFactory,
+                    kernelProvider, idGeneratorFactory ) );
 
             return relationshipTypeCreator;
         }
@@ -588,9 +586,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             TokenCreator propertyTokenCreator =
                     (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
                             new Class[]{TokenCreator.class}, propertyKeyCreatorDelegate );
-            assert highAvailabilityModeSwitcher != null;
-            new PropertyKeyCreatorModeSwitcher( highAvailabilityModeSwitcher, propertyKeyCreatorDelegate,
-                    masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory );
+            paxosLife.add( new PropertyKeyCreatorModeSwitcher( highAvailabilityModeSwitcher, propertyKeyCreatorDelegate,
+                    masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory ) );
             return propertyTokenCreator;
         }
     }
@@ -609,9 +606,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             TokenCreator labelIdCreator =
                     (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
                             new Class[]{TokenCreator.class}, labelIdCreatorDelegate );
-            assert highAvailabilityModeSwitcher != null;
-            new LabelTokenCreatorModeSwitcher( highAvailabilityModeSwitcher, labelIdCreatorDelegate,
-                    masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory );
+            paxosLife.add( new LabelTokenCreatorModeSwitcher( highAvailabilityModeSwitcher, labelIdCreatorDelegate,
+                    masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory ) );
             return labelIdCreator;
         }
     }
