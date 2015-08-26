@@ -20,6 +20,8 @@
 package org.neo4j.kernel.ha.com.master;
 
 
+import java.util.concurrent.locks.ReentrantLock;
+
 import org.neo4j.kernel.impl.locking.Locks;
 
 /**
@@ -28,6 +30,10 @@ import org.neo4j.kernel.impl.locking.Locks;
 public class Conversation implements AutoCloseable
 {
     private Locks.Client locks;
+    private volatile boolean active = true;
+    // since some client locks use pooling we need to be sure that
+    // there is no race between client close and stop
+    private ReentrantLock lockClientCleanupLock = new ReentrantLock();
 
     public Conversation( Locks.Client locks )
     {
@@ -42,7 +48,40 @@ public class Conversation implements AutoCloseable
     @Override
     public void close()
     {
-        locks.close();
+        lockClientCleanupLock.lock();
+        try
+        {
+            if ( locks != null )
+            {
+                locks.close();
+                locks = null;
+                active = false;
+            }
+        }
+        finally
+        {
+            lockClientCleanupLock.unlock();
+        }
     }
 
+    public boolean isActive()
+    {
+        return active;
+    }
+
+    public void stop()
+    {
+        lockClientCleanupLock.lock();
+        try
+        {
+            if ( locks != null )
+            {
+                locks.stop();
+            }
+        }
+        finally
+        {
+            lockClientCleanupLock.unlock();
+        }
+    }
 }

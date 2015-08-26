@@ -270,10 +270,10 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void close()
+    public void stop()
     {
         // closing client to prevent any new client to come
-        stateHolder.closeClient();
+        stateHolder.stopClient();
         // wake up and terminate waiters
         terminateAllWaiters();
         // wait for all active clients to go and terminate latecomers
@@ -282,6 +282,12 @@ public class CommunityLockClient implements Locks.Client
             terminateAllWaiters();
             LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 20 ) );
         }
+    }
+
+    @Override
+    public void close()
+    {
+        stop();
         // now we are only one who operate on this client
         // safe to release all the locks
         releaseLocks();

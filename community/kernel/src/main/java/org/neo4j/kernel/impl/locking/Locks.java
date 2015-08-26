@@ -102,6 +102,12 @@ public interface Locks extends Lifecycle
         /** Release all locks. */
         void releaseAll();
 
+        /**
+         * Stop all active lock waiters and release them. All already held locks remains.
+         * All new attempts to acquire any locks will cause exceptions.
+         */
+        void stop();
+
         /** Releases all locks, using the client after calling this is undefined. */
         @Override
         void close();

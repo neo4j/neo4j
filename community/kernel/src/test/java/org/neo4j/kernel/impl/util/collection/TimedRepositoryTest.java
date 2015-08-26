@@ -228,14 +228,15 @@ public class TimedRepositoryTest
     }
 
     @Test
-    public void shouldAllowBeginWithSameKeyAfterSessionRemoval() throws Exception
+    public void shouldAllowBeginWithSameKeyAfterSessionRelease() throws Exception
     {
         // Given
         repo.begin( 1l );
         repo.acquire( 1l );
 
         // when
-        repo.remove( 1l );
+        repo.release( 1l );
+        repo.end( 1l );
 
         //then
         repo.begin( 1l );

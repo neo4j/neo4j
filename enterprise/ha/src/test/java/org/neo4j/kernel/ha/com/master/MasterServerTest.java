@@ -45,8 +45,8 @@ public class MasterServerTest
                 mock( ByteCounterMonitor.class ), mock( RequestMonitor.class ), conversationManager );
         RequestContext requestContext = new RequestContext( 1l, 1, 1, 0, 0l );
 
-        masterServer.cleanConversation( requestContext );
+        masterServer.stopConversation( requestContext );
 
-        Mockito.verify( conversationManager ).remove( requestContext );
+        Mockito.verify( conversationManager ).stop( requestContext );
     }
 }

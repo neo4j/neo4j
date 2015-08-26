@@ -57,9 +57,9 @@ public class MasterServer extends Server<Master, Void>
     }
 
     @Override
-    protected void cleanConversation( RequestContext context )
+    protected void stopConversation( RequestContext context )
     {
-        conversationManager.remove( context );
+        conversationManager.stop( context );
     }
 
 }

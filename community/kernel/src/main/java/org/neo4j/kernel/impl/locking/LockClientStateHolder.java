@@ -23,15 +23,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * State control class for Locks.Clients.
- * Client state represent current Locks.Client state: OPEN/CLOSED
- * and number of active clients
+ * Client state represent current Locks.Client state: <b>ACTIVE/STOPPED </b> and number of active clients.
+ *
+ * Client states are:
+ * <ul>
+ *     <li><b>ACTIVE</b> state of fully functional locks client without any restriction or operations limitations</li>
+ *     <li><b>STOPPED</b> all current lock acquisitions will be interrupted/terminated without obtaining
+ *     corresponding lock, new acquisitions will not be possible anymore, all locks that client holds are preserved.</li>
+ * </ul>
+ *
  */
 public final class LockClientStateHolder
 {
     private static final int FLAG_BITS = 1;
     private static final int CLIENT_BITS = Integer.SIZE - FLAG_BITS;
     private static final int STATE_BIT_MASK = 1 << CLIENT_BITS;
-    private static final int CLOSED = 1 << CLIENT_BITS;
+    private static final int STOPPED = 1 << CLIENT_BITS;
     private static final int INITIAL_STATE = 0;
     private AtomicInteger clientState = new AtomicInteger( INITIAL_STATE );
 
@@ -47,19 +54,19 @@ public final class LockClientStateHolder
     /**
      * Closing current client
      */
-    public void closeClient()
+    public void stopClient()
     {
         int currentValue;
         do
         {
             currentValue = clientState.get();
         }
-        while ( !clientState.compareAndSet( currentValue, stateWithNewStatus( currentValue, CLOSED ) ) );
+        while ( !clientState.compareAndSet( currentValue, stateWithNewStatus( currentValue, STOPPED ) ) );
     }
 
     /**
      * Increment active number of clients that use current state instance.
-     * @return false if already closed and not possible to increment active clients counter, true in case if counter
+     * @return false if already stopped and not possible to increment active clients counter, true in case if counter
      * was successfully incremented.
      */
     public boolean incrementActiveClients()
@@ -68,7 +75,7 @@ public final class LockClientStateHolder
         do
         {
             currentState = clientState.get();
-            if ( isClosed( currentState ) )
+            if ( isStopped( currentState ) )
             {
                 return false;
             }
@@ -91,12 +98,12 @@ public final class LockClientStateHolder
     }
 
     /**
-     * Check if closed
-     * @return true if client is closed, false otherwise
+     * Check if stopped
+     * @return true if client is stopped, false otherwise
      */
-    public boolean isClosed()
+    public boolean isStopped()
     {
-        return isClosed( clientState.get() );
+        return isStopped( clientState.get() );
     }
 
     /**
@@ -107,9 +114,9 @@ public final class LockClientStateHolder
         clientState.set( INITIAL_STATE );
     }
 
-    private boolean isClosed( int clientState )
+    private boolean isStopped( int clientState )
     {
-        return getStatus( clientState ) == CLOSED;
+        return getStatus( clientState ) == STOPPED;
     }
 
     private int getStatus( int clientState )

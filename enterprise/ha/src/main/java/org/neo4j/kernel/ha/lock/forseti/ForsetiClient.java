@@ -160,7 +160,7 @@ public class ForsetiClient implements Locks.Client
             while(true)
             {
                 // client closed exiting
-                if ( stateHolder.isClosed() )
+                if ( stateHolder.isStopped() )
                 {
                     throw new LockClientAlreadyClosedException( String.format( "%s is already closed", this ) );
                 }
@@ -255,7 +255,7 @@ public class ForsetiClient implements Locks.Client
             while( (existingLock = lockMap.putIfAbsent( resourceId, myExclusiveLock )) != null)
             {
                 // client closed exiting
-                if ( stateHolder.isClosed() )
+                if ( stateHolder.isStopped() )
                 {
                     throw new LockClientAlreadyClosedException( String.format( "%s is already closed", this ) );
                 }
@@ -373,7 +373,7 @@ public class ForsetiClient implements Locks.Client
             while ( true )
             {
                 // client closed exiting
-                if ( stateHolder.isClosed() )
+                if ( stateHolder.isStopped() )
                 {
                     return false;
                 }
@@ -567,10 +567,10 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public void close()
+    public void stop()
     {
         // marking client as closed
-        stateHolder.closeClient();
+        stateHolder.stopClient();
         // waiting for all operations to be completed
         while ( stateHolder.hasActiveClients() )
         {
@@ -583,6 +583,12 @@ public class ForsetiClient implements Locks.Client
                 Thread.interrupted();
             }
         }
+    }
+
+    @Override
+    public void close()
+    {
+        stop();
         releaseAllClientLocks();
         clearWaitList();
         clientPool.release( this );
@@ -730,7 +736,7 @@ public class ForsetiClient implements Locks.Client
                 while(sharedLock.numberOfHolders() > 1)
                 {
                     // client closed exiting
-                    if ( stateHolder.isClosed() )
+                    if ( stateHolder.isStopped() )
                     {
                         sharedLock.releaseUpdateLock( this );
                         return false;
