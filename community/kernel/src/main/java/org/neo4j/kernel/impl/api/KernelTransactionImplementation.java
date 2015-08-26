@@ -30,6 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
@@ -382,7 +383,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private void prepareRecordChangesFromTransactionState() throws ConstraintValidationKernelException
+    private void prepareRecordChangesFromTransactionState()
+            throws ConstraintValidationKernelException, CreateConstraintFailureException
     {
         if ( hasTxStateWithChanges() )
         {
@@ -554,7 +556,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             }
             success = true;
         }
-        catch ( ConstraintValidationKernelException e )
+        catch ( ConstraintValidationKernelException | CreateConstraintFailureException e )
         {
             throw new ConstraintViolationTransactionFailureException(
                     e.getUserMessage( new KeyReadTokenNameLookup( operations.keyReadOperations() ) ), e );
@@ -606,7 +608,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         }
                     } );
                 }
-                catch ( ConstraintValidationKernelException e )
+                catch ( ConstraintValidationKernelException | CreateConstraintFailureException e )
                 {
                     throw new IllegalStateException(
                             "Releasing locks during rollback should perform no constraints checking.", e );
@@ -953,6 +955,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         @Override
         public void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
+                throws CreateConstraintFailureException
         {
             clearState = true;
             recordState.createSchemaRule( constraintSemantics.writeNodePropertyExistenceConstraint(
@@ -983,6 +986,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         @Override
         public void visitAddedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
+                throws CreateConstraintFailureException
         {
             clearState = true;
             recordState.createSchemaRule( constraintSemantics.writeRelationshipPropertyExistenceConstraint(

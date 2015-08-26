@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.constraints;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -38,14 +40,14 @@ public class StandardConstraintSemantics implements ConstraintSemantics
     public void validateNodePropertyExistenceConstraint( Cursor<NodeItem> allNodes, int label, int propertyKey )
             throws CreateConstraintFailureException
     {
-        throw propertyExistenceConstraintsNotAllowed();
+        throw propertyExistenceConstraintsNotAllowed( new NodePropertyExistenceConstraint( label, propertyKey ) );
     }
 
     @Override
     public void validateRelationshipPropertyExistenceConstraint( Cursor<RelationshipItem> allRels, int type,
-            int propertyKey ) throws CreateConstraintFailureException
+            int key ) throws CreateConstraintFailureException
     {
-        throw propertyExistenceConstraintsNotAllowed();
+        throw propertyExistenceConstraintsNotAllowed( new RelationshipPropertyExistenceConstraint( type, key ) );
     }
 
     @Override
@@ -60,14 +62,15 @@ public class StandardConstraintSemantics implements ConstraintSemantics
 
     protected PropertyConstraint readNonStandardConstraint( PropertyConstraintRule rule )
     {
-        // todo: message and new exception type
-        throw new IllegalStateException( "Property existence constraints can only be used on Neo4j enterprise" );
+        // When opening a store in Community Edition that contains a Property Existence Constraint
+        throw new IllegalStateException( "Property existence constraint requires Neo4j Enterprise Edition");
     }
 
-    private IllegalStateException propertyExistenceConstraintsNotAllowed()
+    private CreateConstraintFailureException propertyExistenceConstraintsNotAllowed( PropertyConstraint constraint )
     {
-        // todo: message and new exception type
-        return new IllegalStateException( "Property existence constraints can only be used on Neo4j enterprise" );
+        // When creating a Property Existence Constraint in Community Edition
+        return new CreateConstraintFailureException( constraint, new IllegalStateException(
+                "Property existence constraint requires Neo4j Enterprise Edition" ) );
     }
 
     @Override
@@ -77,15 +80,17 @@ public class StandardConstraintSemantics implements ConstraintSemantics
     }
 
     @Override
-    public PropertyConstraintRule writeNodePropertyExistenceConstraint( long ruleId, int type, int propertyKey )
+    public PropertyConstraintRule writeNodePropertyExistenceConstraint( long ruleId, int label, int propertyKey )
+            throws CreateConstraintFailureException
     {
-        throw propertyExistenceConstraintsNotAllowed();
+        throw propertyExistenceConstraintsNotAllowed( new NodePropertyExistenceConstraint( label, propertyKey ) );
     }
 
     @Override
-    public PropertyConstraintRule writeRelationshipPropertyExistenceConstraint( long ruleId, int type, int propertyKey )
+    public PropertyConstraintRule writeRelationshipPropertyExistenceConstraint( long ruleId, int type, int key )
+            throws CreateConstraintFailureException
     {
-        throw propertyExistenceConstraintsNotAllowed();
+        throw propertyExistenceConstraintsNotAllowed( new RelationshipPropertyExistenceConstraint( type, key ) );
     }
 
     @Override

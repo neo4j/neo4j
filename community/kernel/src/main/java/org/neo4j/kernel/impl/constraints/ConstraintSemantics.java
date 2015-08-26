@@ -46,9 +46,11 @@ public interface ConstraintSemantics
 
     PropertyConstraintRule writeUniquePropertyConstraint( long ruleId, int label, int propertyKey, long indexId );
 
-    PropertyConstraintRule writeNodePropertyExistenceConstraint( long ruleId, int label, int propertyKey );
+    PropertyConstraintRule writeNodePropertyExistenceConstraint( long ruleId, int label, int propertyKey )
+            throws CreateConstraintFailureException;
 
-    PropertyConstraintRule writeRelationshipPropertyExistenceConstraint( long ruleId, int type, int propertyKey );
+    PropertyConstraintRule writeRelationshipPropertyExistenceConstraint( long ruleId, int type, int propertyKey )
+            throws CreateConstraintFailureException;
 
     TxStateVisitor decorateTxStateVisitor( StatementOperationParts operations, StoreStatement storeStatement,
             StoreReadLayer storeLayer, TxStateHolder holder, TxStateVisitor visitor );
