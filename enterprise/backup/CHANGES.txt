@@ -1,3 +1,8 @@
+2.2.5
+-----
+o Incremental backups now will update the id files properly, fixing this way an
+  issue where deleted records in a restored database could end up being reused
+
 2.2.0
 -----
 o Introduced 'gather-forensics' functionality which allows backup to fetch

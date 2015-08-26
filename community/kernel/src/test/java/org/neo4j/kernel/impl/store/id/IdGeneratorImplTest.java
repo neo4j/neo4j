@@ -57,6 +57,21 @@ public class IdGeneratorImplTest
     }
 
     @Test
+    public void correctDefragCountWhenHaveIdsInFile()
+    {
+        IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
+        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, true, 100 );
+
+        idGenerator.freeId( 5 );
+        idGenerator.close();
+
+        IdGenerator reloadedIdGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, true, 100 );
+        assertEquals( 1, reloadedIdGenerator.getDefragCount() );
+        assertEquals( 5, reloadedIdGenerator.nextId() );
+        assertEquals( 0, reloadedIdGenerator.getDefragCount() );
+    }
+
+    @Test
     public void shouldReadHighIdUsingStaticMethod() throws Exception
     {
         // GIVEN

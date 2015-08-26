@@ -177,6 +177,7 @@ class BackupService
                     log.error( "Consistency check incomplete", e );
                 }
             }
+            removeIdFiles( targetDirectory );
             return new BackupOutcome( lastCommittedTx, consistent );
         }
         catch ( IOException e )
@@ -216,6 +217,7 @@ class BackupService
                 targetDb.shutdown();
             }
             bumpMessagesDotLogFile( targetDirectory, backupStartTime );
+            removeIdFiles( targetDirectory );
             return outcome;
         }
         catch ( IOException e )
@@ -397,6 +399,17 @@ class BackupService
             kernelExtensions.add( factory );
         }
         return kernelExtensions;
+    }
+
+    private void removeIdFiles( File targetDirectory )
+    {
+        for ( File file : fileSystem.listFiles( targetDirectory ) )
+        {
+            if ( !fileSystem.isDirectory( file ) && file.getName().endsWith( ".id" ) )
+            {
+                fileSystem.deleteFile( file );
+            }
+        }
     }
 
     private static class ProgressTxHandler implements TxHandler

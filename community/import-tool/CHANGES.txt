@@ -5,6 +5,10 @@ o Added ability to skip duplicate nodes, i.e. multiple nodes with the same ID in
   using --bad-tolerance=<max bad entries>. Skipping of bad relationships/nodes can be enabled/disabled
   individually with --skip-duplicate-nodes and --skip-bad-relationships.
 
+2.2.5
+-----
+o No longer ignores --multiline-field option
+
 2.2.4
 -----
 o Empty files are now handled gracefully and no longer infinitely loop

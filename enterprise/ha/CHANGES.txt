@@ -1,3 +1,10 @@
+2.2.5
+-----
+o Properly release local slave locks after master locks, resolving an issue
+  where deadlocks could occur on the slave but not on the master
+o Cluster state snapshots no longer build up backup availability messages,
+  which removes some ugly but harmless log messages
+
 2.2.3
 -----
 o Transactions executed on slaves will now properly invalidate the master's cache on commit
