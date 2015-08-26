@@ -17,17 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.lock.forseti;
+package org.neo4j.kernel.impl.enterprise.lock.forseti;
 
-import org.neo4j.kernel.impl.locking.LockingCompatibilityTestSuite;
+import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 
-public class ForsetiLocksCompatibility extends LockingCompatibilityTestSuite
+@Service.Implementation(Locks.Factory.class)
+public class ForsetiLocksFactory extends Locks.Factory
 {
-    @Override
-    protected Locks createLockManager()
+    public ForsetiLocksFactory()
     {
-        return new ForsetiLockManager( ResourceTypes.values());
+        super( "forseti" );
+    }
+
+    @Override
+    public Locks newInstance( Locks.ResourceType[] resourceTypes )
+    {
+        return new ForsetiLockManager( ResourceTypes.values() );
     }
 }
