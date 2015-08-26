@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -250,7 +251,8 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void accept( final TxStateVisitor visitor ) throws ConstraintValidationKernelException
+    public void accept( final TxStateVisitor visitor )
+            throws ConstraintValidationKernelException, CreateConstraintFailureException
     {
         // Created nodes
         if ( nodes != null )
@@ -409,7 +411,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         }
 
         @Override
-        public void visitAdded( PropertyConstraint element )
+        public void visitAdded( PropertyConstraint element ) throws CreateConstraintFailureException
         {
             element.added( this );
         }
@@ -434,6 +436,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
         @Override
         public void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint constraint )
+                throws CreateConstraintFailureException
         {
             visitor.visitAddedNodePropertyExistenceConstraint( constraint );
         }
@@ -446,7 +449,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
         @Override
         public void visitAddedRelationshipPropertyExistenceConstraint(
-                RelationshipPropertyExistenceConstraint constraint )
+                RelationshipPropertyExistenceConstraint constraint ) throws CreateConstraintFailureException
         {
             visitor.visitAddedRelationshipPropertyExistenceConstraint( constraint );
         }
