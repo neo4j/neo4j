@@ -24,6 +24,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
@@ -141,7 +142,7 @@ public class KernelTransactionsTest
         return new KernelTransactions( contextSupplier, mock( NeoStore.class ), locks,
                 mock( IntegrityValidator.class ), null, null, null, null, null, null, null,
                 TransactionHeaderInformationFactory.DEFAULT, readLayer, commitProcess, null,
-                null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
+                null, new TransactionHooks(), mock( ConstraintSemantics.class ), mock( TransactionMonitor.class ), life,
                 new Tracers( "null", NullLog.getInstance() ) );
     }
 

@@ -202,8 +202,8 @@ public class DataSourceModule
                 storeMigrationProcess, platformModule.transactionMonitor, kernelHealth,
                 platformModule.monitors.newMonitor( PhysicalLogFile.Monitor.class ),
                 editionModule.headerInformationFactory, startupStatistics, nodeManager, guard, indexStore,
-                editionModule.commitProcessFactory, pageCache, platformModule.monitors,
-                platformModule.tracers ) );
+                editionModule.commitProcessFactory, pageCache, editionModule.constraintSemantics,
+                platformModule.monitors, platformModule.tracers ) );
         dataSourceManager.register( neoStoreDataSource );
 
         life.add( new MonitorGc( config, logging.getInternalLog( MonitorGc.class ) ) );

@@ -82,6 +82,11 @@ public class ServerHelper
         return createServer( CommunityServerBuilder.server( logProvider ), false, null );
     }
 
+    public static NeoServer createNonPersistentServer( CommunityServerBuilder builder ) throws IOException
+    {
+        return createServer( builder, false, null );
+    }
+
     public static NeoServer createPersistentServer( File path ) throws IOException
     {
         return createServer( CommunityServerBuilder.server(), true, path );

@@ -25,7 +25,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.IndexCreator;
-import org.neo4j.graphdb.schema.RelationshipConstraintCreator;
 
 /**
  * The batch inserter drops support for transactions and concurrency in favor
@@ -282,17 +281,6 @@ public interface BatchInserter
      * a constraint for the given {@linkplain Label label}.
      */
     ConstraintCreator createDeferredConstraint( Label label );
-
-    /**
-     * Returns a {@link RelationshipConstraintCreator} where details about the constraint can be
-     * specified. When all details have been entered {@link RelationshipConstraintCreator#create()}
-     * must be called for it to actually be created.
-     *
-     * @param type the relationship type this constraint is for.
-     * @return a {@link RelationshipConstraintCreator} capable of providing details for, as well as creating
-     * a constraint for the given {@linkplain RelationshipType relationship type}.
-     */
-    RelationshipConstraintCreator createDeferredConstraint( RelationshipType type );
 
     /**
      * Shuts down this batch inserter syncing all changes that are still only

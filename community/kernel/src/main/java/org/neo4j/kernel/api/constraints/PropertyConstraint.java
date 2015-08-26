@@ -23,6 +23,7 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
 
 public abstract class PropertyConstraint
@@ -33,11 +34,13 @@ public abstract class PropertyConstraint
 
         void visitRemovedUniquePropertyConstraint( UniquenessConstraint constraint );
 
-        void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint constraint );
+        void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint constraint )
+                throws CreateConstraintFailureException;
 
         void visitRemovedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint constraint );
 
-        void visitAddedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint constraint );
+        void visitAddedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint constraint )
+                throws CreateConstraintFailureException;
 
         void visitRemovedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint constraint );
     }
@@ -49,7 +52,7 @@ public abstract class PropertyConstraint
         this.propertyKeyId = propertyKeyId;
     }
 
-    public abstract void added( ChangeVisitor visitor );
+    public abstract void added( ChangeVisitor visitor ) throws CreateConstraintFailureException;
 
     public abstract void removed( ChangeVisitor visitor );
 

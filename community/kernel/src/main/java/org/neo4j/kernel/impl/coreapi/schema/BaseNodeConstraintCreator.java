@@ -39,10 +39,4 @@ public class BaseNodeConstraintCreator extends AbstractConstraintCreator impleme
     {
         return new NodePropertyUniqueConstraintCreator( actions, label, propertyKey );
     }
-
-    @Override
-    public ConstraintCreator assertPropertyExists( String propertyKey )
-    {
-        return new NodePropertyExistsConstraintCreator( actions, label, propertyKey );
-    }
 }

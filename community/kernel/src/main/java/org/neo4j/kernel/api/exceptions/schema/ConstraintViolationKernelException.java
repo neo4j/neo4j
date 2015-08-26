@@ -25,7 +25,7 @@ package org.neo4j.kernel.api.exceptions.schema;
  *
  * @see ConstraintVerificationFailedKernelException
  */
-public class ConstraintViolationKernelException extends ConstraintValidationKernelException
+public abstract class ConstraintViolationKernelException extends ConstraintValidationKernelException
 {
     public ConstraintViolationKernelException( String message, Object... parameters )
     {

@@ -366,32 +366,6 @@ public class TransactionWrappedDatabaseActions extends DatabaseActions
     }
 
     @Override
-    public ConstraintDefinitionRepresentation createNodePropertyExistenceConstraint( String labelName,
-            Iterable<String> propertyKeys )
-    {
-        try ( Transaction transaction = graph.beginTx() )
-        {
-            ConstraintDefinitionRepresentation constraintDefinitionRepresentation =
-                    super.createNodePropertyExistenceConstraint( labelName, propertyKeys );
-            transaction.success();
-            return constraintDefinitionRepresentation;
-        }
-    }
-
-    @Override
-    public ConstraintDefinitionRepresentation createRelationshipPropertyExistenceConstraint( String typeName,
-            Iterable<String> propertyKeys )
-    {
-        try ( Transaction transaction = graph.beginTx() )
-        {
-            ConstraintDefinitionRepresentation constraintDefinitionRepresentation =
-                    super.createRelationshipPropertyExistenceConstraint( typeName, propertyKeys );
-            transaction.success();
-            return constraintDefinitionRepresentation;
-        }
-    }
-
-    @Override
     public boolean dropNodePropertyExistenceConstraint( String labelName, Iterable<String> propertyKeys )
     {
         try ( Transaction transaction = graph.beginTx() )

@@ -43,7 +43,6 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.RelationshipConstraintCreator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
@@ -87,13 +86,13 @@ import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.coreapi.schema.BaseNodeConstraintCreator;
-import org.neo4j.kernel.impl.coreapi.schema.BaseRelationshipConstraintCreator;
 import org.neo4j.kernel.impl.coreapi.schema.IndexCreatorImpl;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
 import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
+import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.NoOpClient;
@@ -285,7 +284,7 @@ public class BatchInserterImpl implements BatchInserter
         Token[] types = getRelationshipTypeStore().getTokens( Integer.MAX_VALUE );
         relationshipTypeTokens = new BatchTokenHolder( types );
         indexStore = life.add( new IndexConfigStore( this.storeDir, fileSystem ) );
-        schemaCache = new SchemaCache( neoStore.getSchemaStore() );
+        schemaCache = new SchemaCache( new StandardConstraintSemantics(), neoStore.getSchemaStore() );
 
         Dependencies deps = new Dependencies();
         deps.satisfyDependencies( fileSystem, config, logService, new NeoStoreSupplier()
@@ -638,12 +637,6 @@ public class BatchInserterImpl implements BatchInserter
     public ConstraintCreator createDeferredConstraint( Label label )
     {
         return new BaseNodeConstraintCreator( new BatchSchemaActions(), label );
-    }
-
-    @Override
-    public RelationshipConstraintCreator createDeferredConstraint( RelationshipType type )
-    {
-        return new BaseRelationshipConstraintCreator( new BatchSchemaActions(), type );
     }
 
     private void createConstraintRule( UniquenessConstraint constraint )

@@ -35,16 +35,15 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.RelationshipConstraintCreator;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -66,7 +65,6 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
@@ -284,14 +282,6 @@ public class SchemaImpl implements Schema
         assertInUnterminatedTransaction();
 
         return new BaseNodeConstraintCreator( actions, label );
-    }
-
-    @Override
-    public RelationshipConstraintCreator constraintFor( RelationshipType type )
-    {
-        assertInUnterminatedTransaction();
-
-        return new BaseRelationshipConstraintCreator( actions, type );
     }
 
     @Override

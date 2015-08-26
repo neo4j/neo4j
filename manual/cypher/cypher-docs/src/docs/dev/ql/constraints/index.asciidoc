@@ -1,0 +1,84 @@
+[[query-constraints]]
+= Constraints
+
+[abstract]
+Neo4j helps enforce data integrity with the use of constraints.
+Constraints can be applied to either nodes or relationships.
+Unique node property constraints can be created, as well as node and relationship property existence constraints.
+
+You can use unique property constraints to ensure that property values are unique for all nodes with a specific label.
+Unique constraints do not mean that all nodes have to have a unique value for the properties -- nodes without the property are not subject to this rule.
+
+You can use property existence constraints to ensure that a property exists for all nodes with a specific label or for all relationships with a specific type.
+All queries that try to create new nodes or relationships without the property, or queries that try to remove the mandatory property will now fail.
+
+[NOTE]
+Property existence constraints are only available in the Neo4j Enterprise Edition.
+Note that databases with property existence constraints cannot be opened using Neo4j Community Edition.
+
+You can have multiple constraints for a given label and you can also combine unique and property existence constraints on the same property.
+
+Remember that adding constraints is an atomic operation that can take a while -- all existing data has to be scanned before Neo4j can turn the constraint ``on''.
+
+Note that adding a unique property constraint on a property will also add an index on that property, so you cannot add such an index separately.
+Cypher will use that index for lookups just like other indexes.
+If you drop a unique property constraint and still want an index on the property, you will have to create the index.
+
+The existing constraints can be listed using the REST API, see <<rest-api-schema-constraints>>.
+
+[[query-constraints-unique-nodes]]
+== Unique node property constraints
+
+:leveloffset: 3
+
+include::create-uniqueness-constraint.asciidoc[]
+
+include::drop-uniqueness-constraint.asciidoc[]
+
+include::create-a-node-that-complies-with-unique-property-constraints.asciidoc[]
+
+include::create-a-node-that-breaks-a-unique-property-constraint.asciidoc[]
+
+include::failure-to-create-a-unique-property-constraint-due-to-conflicting-nodes.asciidoc[]
+
+:leveloffset: 2
+
+[[query-constraints-prop-exist-nodes]]
+== Node property existence constraints
+
+:leveloffset: 3
+
+include::create-node-property-existence-constraint.asciidoc[]
+
+include::drop-node-property-existence-constraint.asciidoc[]
+
+include::create-a-node-that-complies-with-property-existence-constraints.asciidoc[]
+
+include::create-a-node-that-breaks-a-property-existence-constraint.asciidoc[]
+
+include::removing-an-existence-constrained-node-property.asciidoc[]
+
+include::failure-to-create-a-node-property-existence-constraint-due-to-existing-node.asciidoc[]
+
+:leveloffset: 2
+
+[[query-constraints-prop-exist-rels]]
+== Relationship property existence constraints
+
+:leveloffset: 3
+
+include::create-relationship-property-existence-constraint.asciidoc[]
+
+include::drop-relationship-property-existence-constraint.asciidoc[]
+
+include::create-a-relationship-that-complies-with-property-existence-constraints.asciidoc[]
+
+include::create-a-relationship-that-breaks-a-property-existence-constraint.asciidoc[]
+
+include::removing-an-existence-constrained-relationship-property.asciidoc[]
+
+include::failure-to-create-a-relationship-property-existence-constraint-due-to-existing-relationship.asciidoc[]
+
+:leveloffset: 2
+
+
