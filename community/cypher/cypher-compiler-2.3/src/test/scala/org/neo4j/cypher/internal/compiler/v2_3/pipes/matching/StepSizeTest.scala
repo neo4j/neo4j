@@ -20,42 +20,42 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes.matching
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.True
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
 
 class StepSizeTest extends CypherFunSuite {
 
   test("single_step_is_1") {
-    val step = SingleStep(0, Seq(), Direction.OUTGOING, None, True(), True())
+    val step = SingleStep(0, Seq(), SemanticDirection.OUTGOING, None, True(), True())
 
     step.size should equal(Some(1))
   }
 
   test("two_single_step_is_2") {
-    val second = SingleStep(1, Seq(), Direction.OUTGOING, None, True(), True())
-    val step = SingleStep(0, Seq(), Direction.OUTGOING, Some(second), True(), True())
+    val second = SingleStep(1, Seq(), SemanticDirection.OUTGOING, None, True(), True())
+    val step = SingleStep(0, Seq(), SemanticDirection.OUTGOING, Some(second), True(), True())
     step.size should equal(Some(2))
   }
 
   test("unlimited_varlength_is_none") {
-    val step = VarLengthStep(0, Seq(), Direction.OUTGOING, 0, None, None, True(), True())
+    val step = VarLengthStep(0, Seq(), SemanticDirection.OUTGOING, 0, None, None, True(), True())
     step.size should equal(None)
   }
 
   test("limited_varlength_is_max") {
-    val step = VarLengthStep(0, Seq(), Direction.OUTGOING, 0, Some(42), None, True(), True())
+    val step = VarLengthStep(0, Seq(), SemanticDirection.OUTGOING, 0, Some(42), None, True(), True())
     step.size should equal(Some(42))
   }
 
   test("limited_varlength_plus_unlimited_is_none") {
-    val second = VarLengthStep(1, Seq(), Direction.OUTGOING, 0, None, None, True(), True())
-    val step = VarLengthStep(0, Seq(), Direction.OUTGOING, 0, Some(42), Some(second), True(), True())
+    val second = VarLengthStep(1, Seq(), SemanticDirection.OUTGOING, 0, None, None, True(), True())
+    val step = VarLengthStep(0, Seq(), SemanticDirection.OUTGOING, 0, Some(42), Some(second), True(), True())
     step.size should equal(None)
   }
 
   test("limited_varlength_plus_single_step_is_max_plus_1") {
-    val second = SingleStep(1, Seq(), Direction.OUTGOING, None, True(), True())
-    val step = VarLengthStep(0, Seq(), Direction.OUTGOING, 0, Some(42), Some(second), True(), True())
+    val second = SingleStep(1, Seq(), SemanticDirection.OUTGOING, None, True(), True())
+    val step = VarLengthStep(0, Seq(), SemanticDirection.OUTGOING, 0, Some(42), Some(second), True(), True())
     step.size should equal(Some(43))
   }
 }

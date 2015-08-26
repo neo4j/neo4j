@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.ast.{Expression, Identifier, RelTypeName}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.graphdb.Direction
 
 sealed trait ExpansionMode
 case object ExpandAll extends ExpansionMode
@@ -29,7 +29,7 @@ case object ExpandInto extends ExpansionMode
 
 case class Expand(left: LogicalPlan,
                   from: IdName,
-                  dir: Direction,
+                  dir: SemanticDirection,
                   types: Seq[RelTypeName],
                   to: IdName, relName: IdName,
                   mode: ExpansionMode = ExpandAll)(val solved: PlannerQuery with CardinalityEstimation)
@@ -41,7 +41,7 @@ case class Expand(left: LogicalPlan,
   def availableSymbols: Set[IdName] = left.availableSymbols + relName + to
 }
 
-case class OptionalExpand(left: LogicalPlan, from: IdName, dir: Direction, types: Seq[RelTypeName], to: IdName, relName: IdName, mode: ExpansionMode = ExpandAll, predicates: Seq[Expression] = Seq.empty)
+case class OptionalExpand(left: LogicalPlan, from: IdName, dir: SemanticDirection, types: Seq[RelTypeName], to: IdName, relName: IdName, mode: ExpansionMode = ExpandAll, predicates: Seq[Expression] = Seq.empty)
                          (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
   val lhs = Some(left)
   def rhs = None
@@ -56,8 +56,8 @@ case class OptionalExpand(left: LogicalPlan, from: IdName, dir: Direction, types
 // TODO: Fix cost and cardinality calculation for this
 case class VarExpand(left: LogicalPlan,
                      from: IdName,
-                     dir: Direction,
-                     projectedDir: Direction,
+                     dir: SemanticDirection,
+                     projectedDir: SemanticDirection,
                      types: Seq[RelTypeName],
                      to: IdName,
                      relName: IdName,

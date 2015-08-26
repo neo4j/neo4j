@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{NamedPath, NodeById, RelatedTo, SingleNode}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.NamedPathPipe
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection.OUTGOING
 
 class NamedPathBuilderTest extends BuilderTest {
 
@@ -32,8 +32,8 @@ class NamedPathBuilderTest extends BuilderTest {
   test("should_not_accept_if_pattern_is_not_yet_solved") {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
-      patterns = Seq(Unsolved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, Map.empty))),
-      namedPaths = Seq(Unsolved(NamedPath("p", ParsedRelation("rel", "l", "r", Seq(), Direction.OUTGOING))))
+      patterns = Seq(Unsolved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), OUTGOING, Map.empty))),
+      namedPaths = Seq(Unsolved(NamedPath("p", ParsedRelation("rel", "l", "r", Seq(), OUTGOING))))
     )
 
     val p = createPipe(nodes = Seq("l"))
@@ -42,10 +42,10 @@ class NamedPathBuilderTest extends BuilderTest {
   }
 
   test("should_accept_if_pattern_is_solved") {
-    val namedPath = NamedPath("p", ParsedRelation("rel", "l", "r", Seq(), Direction.OUTGOING))
+    val namedPath = NamedPath("p", ParsedRelation("rel", "l", "r", Seq(), OUTGOING))
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
-      patterns = Seq(Solved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, Map.empty))),
+      patterns = Seq(Solved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), OUTGOING, Map.empty))),
       namedPaths = Seq(Unsolved(namedPath))
     )
 
@@ -61,12 +61,12 @@ class NamedPathBuilderTest extends BuilderTest {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
       patterns = Seq(
-        Solved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, Map.empty)),
-        Unsolved(RelatedTo(SingleNode("r"), SingleNode("x"), "rel2", Seq(), Direction.OUTGOING, Map.empty))
+        Solved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), OUTGOING, Map.empty)),
+        Unsolved(RelatedTo(SingleNode("r"), SingleNode("x"), "rel2", Seq(), OUTGOING, Map.empty))
       ),
       namedPaths = Seq(Unsolved(NamedPath("p",
-        ParsedRelation("rel", "l", "r", Seq(), Direction.OUTGOING),
-        ParsedRelation("rel2", "r", "x", Seq(), Direction.OUTGOING))))
+        ParsedRelation("rel", "l", "r", Seq(), OUTGOING),
+        ParsedRelation("rel2", "r", "x", Seq(), OUTGOING))))
     )
 
     val p = createPipe(nodes = Seq("l", "r"), relationships = Seq("rel"))

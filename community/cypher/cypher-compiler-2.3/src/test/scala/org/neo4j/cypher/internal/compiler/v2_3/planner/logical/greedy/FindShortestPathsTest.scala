@@ -21,15 +21,15 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.greedy
 
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{PatternRelationship, ShortestPathPattern, _}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport2, QueryGraph}
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
 
 class FindShortestPathsTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("finds single shortest path") {
     val shortestPath = ShortestPathPattern(
       None,
-      PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
+      PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
       single = true
     )(null)
 
@@ -51,7 +51,7 @@ class FindShortestPathsTest extends CypherFunSuite with LogicalPlanningTestSuppo
   test("finds single named shortest path") {
     val shortestPath = ShortestPathPattern(
       Some("p"),
-      PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
+      PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
       single = true
     )(null)
 
@@ -74,7 +74,7 @@ class FindShortestPathsTest extends CypherFunSuite with LogicalPlanningTestSuppo
   test("finds all shortest path") {
     val shortestPath = ShortestPathPattern(
       None,
-      PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
+      PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
       single = false
     )(null)
 

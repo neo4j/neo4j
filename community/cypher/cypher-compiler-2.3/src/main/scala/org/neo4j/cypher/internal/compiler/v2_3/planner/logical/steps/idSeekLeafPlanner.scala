@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.frontend.v2_3.ast._
-import org.neo4j.cypher.internal.frontend.v2_3.ast.functions
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.graphdb.Direction.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
 
 object idSeekLeafPlanner extends LeafPlanner {
   def apply(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext) = {

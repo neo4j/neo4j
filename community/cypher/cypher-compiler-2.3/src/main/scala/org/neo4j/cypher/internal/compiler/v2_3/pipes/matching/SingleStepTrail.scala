@@ -23,11 +23,12 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
-import org.neo4j.graphdb.{PropertyContainer, Direction}
+import org.neo4j.graphdb.{PropertyContainer}
 
 final case class SingleStepTrail(next: Trail,
-                                 dir: Direction,
+                                 dir: SemanticDirection,
                                  relName: String,
                                  typ: Seq[String],
                                  start: String,
@@ -79,8 +80,8 @@ final case class SingleStepTrail(next: Trail,
   val patterns = next.patterns :+ pattern
 
   override def toString = {
-    val left = if (Direction.INCOMING == dir) "<" else ""
-    val right = if (Direction.OUTGOING == dir) ">" else ""
+    val left = if (SemanticDirection.INCOMING == dir) "<" else ""
+    val right = if (SemanticDirection.OUTGOING == dir) ">" else ""
     val t = typ match {
       case List() => ""
       case x      => typ.mkString(":", "|", "")

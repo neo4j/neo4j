@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compiler.v2_3
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{MatchingPair, PatternNode}
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 
 class PatternNodeTest extends GraphDatabaseFunSuite {
   test("returns pattern relationships") {
     val a = new PatternNode("a")
     val b = new PatternNode("b")
 
-    val r = a.relateTo("r", b, Seq(), Direction.BOTH)
+    val r = a.relateTo("r", b, Seq(), SemanticDirection.BOTH)
 
     val rels = a.getPRels(Seq())
 
@@ -43,7 +43,7 @@ class PatternNodeTest extends GraphDatabaseFunSuite {
     val pA = new PatternNode("a")
     val pB = new PatternNode("b")
 
-    val pRel = pA.relateTo("r", pB, Seq(), Direction.BOTH)
+    val pRel = pA.relateTo("r", pB, Seq(), SemanticDirection.BOTH)
 
     val rels = pA.getPRels(Seq(MatchingPair(pRel, rel)))
 

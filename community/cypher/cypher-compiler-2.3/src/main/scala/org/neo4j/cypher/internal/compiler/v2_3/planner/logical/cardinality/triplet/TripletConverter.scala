@@ -25,8 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.Token
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.TokenSpec.{LabelSpecs, RelTypeSpecs}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, PatternRelationship}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{QueryGraph, Selections}
-import org.neo4j.cypher.internal.frontend.v2_3.{SemanticTable, RelTypeId, LabelId}
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, SemanticTable, RelTypeId, LabelId}
 
 case class TripletConverter(qg: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable)
   extends (PatternRelationship => Triplet) {
@@ -45,7 +44,7 @@ case class TripletConverter(qg: QueryGraph, input: QueryGraphSolverInput, semant
       right = right,
       rightLabels = labelSpecs(right),
       relTypes = relTypeSpecs(name),
-      directed = pattern.dir != Direction.BOTH,
+      directed = pattern.dir != SemanticDirection.BOTH,
       length = pattern.length
     )
   }

@@ -24,16 +24,16 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.RelatedTo
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.PatternGraphBuilder
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.SimplePatternMatcherBuilder
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
-import org.neo4j.graphdb.Direction
 
 class SimplePatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuilder with QueryStateTestSupport {
   val symbols = new SymbolTable(Map("a" -> CTNode))
 
   test("should_only_return_matches_that_fulfill_the_uniqueness_constraint") {
     // Given MATCH (a)--(b)--(c)
-    val r1 = RelatedTo("a", "b", "r1", Seq.empty, Direction.BOTH)
-    val r2 = RelatedTo("b", "c", "r2", Seq.empty, Direction.BOTH)
+    val r1 = RelatedTo("a", "b", "r1", Seq.empty, SemanticDirection.BOTH)
+    val r2 = RelatedTo("b", "c", "r2", Seq.empty, SemanticDirection.BOTH)
 
     val patternGraph = buildPatternGraph(symbols, Seq(r1, r2))
     val matcher = new SimplePatternMatcherBuilder(patternGraph, Seq(), symbols, Set("a", "r1", "b", "r2", "c"))
@@ -53,7 +53,7 @@ class SimplePatternMatchingTest extends ExecutionEngineFunSuite with PatternGrap
   test("should_exclude_matches_overlapping_previously_found_relationships") {
     // Given MATCH (a)-[r1]-(b)-[r2]-(c)
     // This matcher is responsible for (b)-[r2]-(c), and needs to check the result from previous steps
-    val r2 = RelatedTo("b", "c", "r2", Seq.empty, Direction.BOTH)
+    val r2 = RelatedTo("b", "c", "r2", Seq.empty, SemanticDirection.BOTH)
 
     val symbolTable = symbols.add("b", CTNode).add("r", CTRelationship)
     val patternGraph = buildPatternGraph(symbolTable, Seq(r2))
@@ -76,7 +76,7 @@ class SimplePatternMatchingTest extends ExecutionEngineFunSuite with PatternGrap
   test("should_ignore_earlier_matches_overlapping_previously_found_relationships") {
     // Given MATCH (b)-[r2]-(c), with a and r1 already in scope
     // This matcher is responsible for (b)-[r2]-(c), and needs to check the result from previous steps
-    val r2 = RelatedTo("b", "c", "r2", Seq.empty, Direction.BOTH)
+    val r2 = RelatedTo("b", "c", "r2", Seq.empty, SemanticDirection.BOTH)
 
     val symbolTable = symbols.add("b", CTNode).add("r", CTRelationship)
     val patternGraph = buildPatternGraph(symbolTable, Seq(r2))

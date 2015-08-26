@@ -21,19 +21,19 @@ package org.neo4j.cypher.internal.compiler.v2_3.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
 
 class UniqueLinkTest extends CypherFunSuite {
   test("given both end nodes, only claims to write relationships, not nodes") {
-    val link = UniqueLink("a", "b", "r", "X", Direction.OUTGOING)
+    val link = UniqueLink("a", "b", "r", "X", SemanticDirection.OUTGOING)
     val symbols = new SymbolTable(Map("a" -> CTNode, "b" -> CTNode))
     link.effects(symbols) should equal(Effects(ReadsRelationships, WritesRelationships, ReadsAnyRelationshipProperty, WritesAnyRelationshipProperty))
   }
 
   test("given one end, creates nodes and relationships") {
-    val link = UniqueLink("a", "b", "r", "X", Direction.OUTGOING)
+    val link = UniqueLink("a", "b", "r", "X", SemanticDirection.OUTGOING)
     val symbols = new SymbolTable(Map("a" -> CTNode))
     link.effects(symbols) should equal(AllEffects)
   }

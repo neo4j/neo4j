@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, True, Predicate}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching._
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
 
 class TrailToStepTest extends CypherFunSuite {
   val A = "A"
@@ -46,27 +46,27 @@ class TrailToStepTest extends CypherFunSuite {
             v
            (e)
   */
-  val AtoB = RelatedTo(SingleNode("a"), SingleNode("b"), "pr1", Seq("A"), Direction.OUTGOING, Map.empty)
-  val BtoC = RelatedTo(SingleNode("b"), SingleNode("c"), "pr2", Seq("B"), Direction.OUTGOING, Map.empty)
-  val CtoD = RelatedTo(SingleNode("c"), SingleNode("d"), "pr3", Seq("C"), Direction.OUTGOING, Map.empty)
-  val BtoB2 = RelatedTo(SingleNode("b"), SingleNode("b2"), "pr4", Seq("D"), Direction.OUTGOING, Map.empty)
-  val BtoE = VarLengthRelatedTo("p", SingleNode("b"), SingleNode("e"), None, None, Seq("A"), Direction.OUTGOING, None, Map.empty)
+  val AtoB = RelatedTo(SingleNode("a"), SingleNode("b"), "pr1", Seq("A"), SemanticDirection.OUTGOING, Map.empty)
+  val BtoC = RelatedTo(SingleNode("b"), SingleNode("c"), "pr2", Seq("B"), SemanticDirection.OUTGOING, Map.empty)
+  val CtoD = RelatedTo(SingleNode("c"), SingleNode("d"), "pr3", Seq("C"), SemanticDirection.OUTGOING, Map.empty)
+  val BtoB2 = RelatedTo(SingleNode("b"), SingleNode("b2"), "pr4", Seq("D"), SemanticDirection.OUTGOING, Map.empty)
+  val BtoE = VarLengthRelatedTo("p", SingleNode("b"), SingleNode("e"), None, None, Seq("A"), SemanticDirection.OUTGOING, None, Map.empty)
 
   test("single_step") {
-    val expected = step(0, Seq(A), Direction.INCOMING, None)
+    val expected = step(0, Seq(A), SemanticDirection.INCOMING, None)
 
-    val steps = SingleStepTrail(EndPoint("b"), Direction.INCOMING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq()).toSteps(0).get
+    val steps = SingleStepTrail(EndPoint("b"), SemanticDirection.INCOMING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq()).toSteps(0).get
 
     steps should equal(expected)
   }
 
   test("two_steps") {
     val boundPoint = EndPoint("c")
-    val second = SingleStepTrail(boundPoint, Direction.INCOMING, "pr2", Seq("B"), "b", True(), True(), BtoC, Seq())
-    val first = SingleStepTrail(second, Direction.INCOMING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq())
+    val second = SingleStepTrail(boundPoint, SemanticDirection.INCOMING, "pr2", Seq("B"), "b", True(), True(), BtoC, Seq())
+    val first = SingleStepTrail(second, SemanticDirection.INCOMING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq())
 
-    val backward2 = step(1, Seq(B), Direction.INCOMING, None)
-    val backward1 = step(0, Seq(A), Direction.INCOMING, Some(backward2))
+    val backward2 = step(1, Seq(B), SemanticDirection.INCOMING, None)
+    val backward1 = step(0, Seq(A), SemanticDirection.INCOMING, Some(backward2))
 
     first.toSteps(0).get should equal(backward1)
   }
@@ -80,11 +80,11 @@ class TrailToStepTest extends CypherFunSuite {
     val r2Pred = Equals(Property(Identifier("pr2"), PropertyKey("prop")), Literal("FOO"))
 
     val boundPoint = EndPoint("c")
-    val second = SingleStepTrail(boundPoint, Direction.INCOMING, "pr2", Seq("B"), "b", r2Pred, True(), BtoC, Seq())
-    val first = SingleStepTrail(second, Direction.INCOMING, "pr1", Seq("A"), "a", r1Pred, True(), AtoB, Seq())
+    val second = SingleStepTrail(boundPoint, SemanticDirection.INCOMING, "pr2", Seq("B"), "b", r2Pred, True(), BtoC, Seq())
+    val first = SingleStepTrail(second, SemanticDirection.INCOMING, "pr1", Seq("A"), "a", r1Pred, True(), AtoB, Seq())
 
-    val backward2 = step(1, Seq(B), Direction.INCOMING, None, relPredicate = r2Pred)
-    val backward1 = step(0, Seq(A), Direction.INCOMING, Some(backward2), relPredicate = r1Pred)
+    val backward2 = step(1, Seq(B), SemanticDirection.INCOMING, None, relPredicate = r2Pred)
+    val backward1 = step(0, Seq(A), SemanticDirection.INCOMING, Some(backward2), relPredicate = r1Pred)
 
     first.toSteps(0).get should equal(backward1)
   }
@@ -95,12 +95,12 @@ class TrailToStepTest extends CypherFunSuite {
 
     val nodePred = Equals(Property(Identifier("b"), PropertyKey("prop")), Literal(42))
 
-    val forward2 = step(1, Seq(B), Direction.INCOMING, None, nodePredicate = nodePred)
-    val forward1 = step(0, Seq(A), Direction.INCOMING, Some(forward2))
+    val forward2 = step(1, Seq(B), SemanticDirection.INCOMING, None, nodePredicate = nodePred)
+    val forward1 = step(0, Seq(A), SemanticDirection.INCOMING, Some(forward2))
 
     val boundPoint = EndPoint("c")
-    val second = SingleStepTrail(boundPoint, Direction.INCOMING, "pr2", Seq("B"), "b", True(), nodePred, BtoC, Seq())
-    val first = SingleStepTrail(second, Direction.INCOMING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq())
+    val second = SingleStepTrail(boundPoint, SemanticDirection.INCOMING, "pr2", Seq("B"), "b", True(), nodePred, BtoC, Seq())
+    val first = SingleStepTrail(second, SemanticDirection.INCOMING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq())
 
 
     first.toSteps(0).get should equal(forward1)
@@ -114,14 +114,14 @@ class TrailToStepTest extends CypherFunSuite {
     val predForB = Equals(Property(NodeIdentifier(), PropertyKey("name")), Literal("b"))
     val predForC = Equals(Property(NodeIdentifier(), PropertyKey("name")), Literal("c"))
 
-    val forward3 = step(2, Seq(), Direction.INCOMING, None)
-    val forward2 = step(1, Seq(), Direction.OUTGOING, Some(forward3), nodePredicate = predForC)
-    val forward1 = step(0, Seq(), Direction.OUTGOING, Some(forward2), nodePredicate = predForB)
+    val forward3 = step(2, Seq(), SemanticDirection.INCOMING, None)
+    val forward2 = step(1, Seq(), SemanticDirection.OUTGOING, Some(forward3), nodePredicate = predForC)
+    val forward1 = step(0, Seq(), SemanticDirection.OUTGOING, Some(forward2), nodePredicate = predForB)
 
     val fourth = EndPoint("d")
-    val third = SingleStepTrail(fourth, Direction.INCOMING, "r3", Seq(), "c", True(), True(), null, Seq())
-    val second = SingleStepTrail(third, Direction.OUTGOING, "r2", Seq(), "b", True(), predForC, null, Seq())
-    val first = SingleStepTrail(second, Direction.OUTGOING, "r1", Seq(), "a", True(), predForB, null, Seq())
+    val third = SingleStepTrail(fourth, SemanticDirection.INCOMING, "r3", Seq(), "c", True(), True(), null, Seq())
+    val second = SingleStepTrail(third, SemanticDirection.OUTGOING, "r2", Seq(), "b", True(), predForC, null, Seq())
+    val first = SingleStepTrail(second, SemanticDirection.OUTGOING, "r1", Seq(), "a", True(), predForB, null, Seq())
 
     // WHEN
     val steps = first.toSteps(0).get
@@ -131,23 +131,23 @@ class TrailToStepTest extends CypherFunSuite {
   }
 
   test("three_steps") {
-    val pr3 = step(2, Seq(A), Direction.OUTGOING, None)
-    val pr2 = step(1, Seq(B), Direction.OUTGOING, Some(pr3))
-    val pr1 = step(0, Seq(C), Direction.OUTGOING, Some(pr2))
+    val pr3 = step(2, Seq(A), SemanticDirection.OUTGOING, None)
+    val pr2 = step(1, Seq(B), SemanticDirection.OUTGOING, Some(pr3))
+    val pr1 = step(0, Seq(C), SemanticDirection.OUTGOING, Some(pr2))
 
     val boundPoint = EndPoint("a")
-    val third = SingleStepTrail(boundPoint, Direction.OUTGOING, "pr1", Seq("A"), "b", True(), True(), AtoB, Seq())
-    val second = SingleStepTrail(third, Direction.OUTGOING, "pr2", Seq("B"), "c", True(), True(), BtoC, Seq())
-    val first = SingleStepTrail(second, Direction.OUTGOING, "pr3", Seq("C"), "d", True(), True(), CtoD, Seq())
+    val third = SingleStepTrail(boundPoint, SemanticDirection.OUTGOING, "pr1", Seq("A"), "b", True(), True(), AtoB, Seq())
+    val second = SingleStepTrail(third, SemanticDirection.OUTGOING, "pr2", Seq("B"), "c", True(), True(), BtoC, Seq())
+    val first = SingleStepTrail(second, SemanticDirection.OUTGOING, "pr3", Seq("C"), "d", True(), True(), CtoD, Seq())
 
     first.toSteps(0).get should equal(pr1)
   }
 
   test("single_varlength_step") {
-    val expected = varlengthStep(0, Seq(A), Direction.OUTGOING, 1, None, None)
+    val expected = varlengthStep(0, Seq(A), SemanticDirection.OUTGOING, 1, None, None)
 
     val boundPoint = EndPoint("e")
-    val trail = VariableLengthStepTrail(boundPoint, Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
+    val trail = VariableLengthStepTrail(boundPoint, SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
 
     val result = trail.toSteps(0).get
     result should equal(expected)
@@ -155,7 +155,7 @@ class TrailToStepTest extends CypherFunSuite {
 
   private def step(id: Int,
                    typ: Seq[String],
-                   direction: Direction,
+                   direction: SemanticDirection,
                    next: Option[ExpanderStep],
                    nodePredicate: Predicate = True(),
                    relPredicate: Predicate = True()) =
@@ -163,7 +163,7 @@ class TrailToStepTest extends CypherFunSuite {
 
   private def varlengthStep(id: Int,
                             typ: Seq[String],
-                            direction: Direction,
+                            direction: SemanticDirection,
                             min: Int,
                             max: Option[Int],
                             next: Option[ExpanderStep],

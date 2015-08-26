@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.True
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{ExpanderStep, SingleStep, VarLengthStep}
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.graphdb.Direction
 
 class VariableLengthExpanderStepExpandTest extends GraphDatabaseFunSuite with QueryStateTestSupport {
@@ -30,7 +31,7 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseFunSuite with Qu
     Given the pattern:
      ()-[:REL*1..2]->()
      */
-    val step = varStep(0, Seq("REL"), Direction.OUTGOING, 1, Some(2), None)
+    val step = varStep(0, Seq("REL"), SemanticDirection.OUTGOING, 1, Some(2), None)
 
     /*
     And the graph:
@@ -50,7 +51,7 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseFunSuite with Qu
     }
 
     /*should return r1 and next step: ()-[:A*0..1]->()*/
-    val expectedNext = Some(varStep(0, Seq("REL"), Direction.OUTGOING, 0, Some(1), None))
+    val expectedNext = Some(varStep(0, Seq("REL"), SemanticDirection.OUTGOING, 0, Some(1), None))
 
     relationships should equal(Seq(r1))
     next should equal(expectedNext)
@@ -61,8 +62,8 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseFunSuite with Qu
     Given the pattern:
      ()-[:A*0..]->()-[:B]->()
      */
-    val step2 = step(1, Seq("B"), Direction.OUTGOING, None)
-    val step1 = varStep(0, Seq("A"), Direction.OUTGOING, 0, None, Some(step2))
+    val step2 = step(1, Seq("B"), SemanticDirection.OUTGOING, None)
+    val step1 = varStep(0, Seq("A"), SemanticDirection.OUTGOING, 0, None, Some(step2))
 
     /*
     And the graph:
@@ -99,8 +100,8 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseFunSuite with Qu
     Given the pattern:
      ()-[:A*0..]->()-[:B]->()
      */
-    val step2 = step(1, Seq("B"), Direction.OUTGOING, None)
-    val step1 = varStep(0, Seq("A"), Direction.OUTGOING, 0, None, Some(step2))
+    val step2 = step(1, Seq("B"), SemanticDirection.OUTGOING, None)
+    val step1 = varStep(0, Seq("A"), SemanticDirection.OUTGOING, 0, None, Some(step2))
 
     /*
     And the graph:
@@ -128,8 +129,8 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseFunSuite with Qu
     Given the pattern:
      ()-[:A*1..1]->()-[:B]->()
      */
-    val step2 = step(1, Seq("B"), Direction.OUTGOING, None)
-    val step1 = varStep(0, Seq("A"), Direction.OUTGOING, 1, Some(1), Some(step2))
+    val step2 = step(1, Seq("B"), SemanticDirection.OUTGOING, None)
+    val step1 = varStep(0, Seq("A"), SemanticDirection.OUTGOING, 1, Some(1), Some(step2))
 
     /*
     And the graph:
@@ -155,8 +156,8 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseFunSuite with Qu
     Given the pattern:
      ()-[:A*1..2]->()-[:B]->()
      */
-    val step2 = step(1, Seq("B"), Direction.OUTGOING, None)
-    val step1 = varStep(0, Seq("A"), Direction.OUTGOING, 1, Some(2), Some(step2))
+    val step2 = step(1, Seq("B"), SemanticDirection.OUTGOING, None)
+    val step1 = varStep(0, Seq("A"), SemanticDirection.OUTGOING, 1, Some(2), Some(step2))
 
     /*
     And the graph:
@@ -173,7 +174,7 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseFunSuite with Qu
       (rels.toSeq, n)    }
 
     /*should return no relationships, and step 0, but with one less min step as the next step*/
-    val expectedNext = varStep(0, Seq("A"), Direction.OUTGOING, 0, Some(1), Some(step2))
+    val expectedNext = varStep(0, Seq("A"), SemanticDirection.OUTGOING, 0, Some(1), Some(step2))
 
     relationships should equal(Seq())
     next should equal(Some(expectedNext))
@@ -184,8 +185,8 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseFunSuite with Qu
     Given the pattern:
      ()-[:A*0..1]->()
      */
-    val step2 = step(1, Seq("B"), Direction.OUTGOING, None)
-    val step1 = varStep(0, Seq("A"), Direction.OUTGOING, 1, Some(2), Some(step2))
+    val step2 = step(1, Seq("B"), SemanticDirection.OUTGOING, None)
+    val step1 = varStep(0, Seq("A"), SemanticDirection.OUTGOING, 1, Some(2), Some(step2))
 
     /*
     And the graph:
@@ -203,7 +204,7 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseFunSuite with Qu
     }
 
     /*should return no relationships, and step 0, but with one less min step as the next step*/
-    val expectedNext = varStep(0, Seq("A"), Direction.OUTGOING, 0, Some(1), Some(step2))
+    val expectedNext = varStep(0, Seq("A"), SemanticDirection.OUTGOING, 0, Some(1), Some(step2))
 
     relationships should equal(Seq())
     next should equal(Some(expectedNext))
@@ -211,12 +212,12 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseFunSuite with Qu
 
   private def step(id: Int,
                    typ: Seq[String],
-                   direction: Direction,
+                   direction: SemanticDirection,
                    next: Option[ExpanderStep]) = SingleStep(id, typ, direction, next, True(), True())
 
   private def varStep(id: Int,
                       typ: Seq[String],
-                      direction: Direction,
+                      direction: SemanticDirection,
                       min: Int,
                       max: Option[Int],
                       next: Option[ExpanderStep]) = VarLengthStep(id, typ, direction, min, max, next, True(), True())

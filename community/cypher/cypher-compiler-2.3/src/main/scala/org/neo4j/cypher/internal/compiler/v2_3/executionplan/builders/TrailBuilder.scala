@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching._
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -58,7 +58,7 @@ final class TrailBuilder(patterns: Seq[Pattern], boundPoints: Seq[String], predi
 
       def findPredicates(k: String): Seq[Predicate] = predicates.filter(createFinder(k))
 
-      def singleStep(rel: RelatedTo, end: String, dir: Direction) = {
+      def singleStep(rel: RelatedTo, end: String, dir: SemanticDirection) = {
         val orgRelPred: Seq[Predicate] = findPredicates(rel.relName)
         val orgNodePred: Seq[Predicate] = findPredicates(end)
 
@@ -73,16 +73,16 @@ final class TrailBuilder(patterns: Seq[Pattern], boundPoints: Seq[String], predi
         done.add(start => SingleStepTrail(EndPoint(end), dir, rel.relName, rel.relTypes, start, relPred, nodePred, rel, orgNodePred ++ orgRelPred))
       }
 
-      def multiStep(rel: VarLengthRelatedTo, end: String, dir: Direction, projectedDir: Direction) =
+      def multiStep(rel: VarLengthRelatedTo, end: String, dir: SemanticDirection, projectedDir: SemanticDirection) =
         done.add(start => VariableLengthStepTrail(EndPoint(end), dir, projectedDir, rel.relTypes, rel.minHops.getOrElse(1), rel.maxHops, rel.pathName, rel.relIterator, start, rel))
 
       val patternsLeft = patternsToDo.filterNot(_ == p)
 
       val result: Trail = p match {
         case rel: RelatedTo if rel.left.name == done.end           => singleStep(rel, rel.right.name, rel.direction)
-        case rel: RelatedTo if rel.right.name == done.end          => singleStep(rel, rel.left.name, rel.direction.reverse())
-        case rel: VarLengthRelatedTo if rel.right.name == done.end   => multiStep(rel, rel.left.name, rel.direction.reverse(), rel.direction)
-        case rel: VarLengthRelatedTo if rel.left.name == done.end => multiStep(rel, rel.right.name, rel.direction, rel.direction)
+        case rel: RelatedTo if rel.right.name == done.end          => singleStep(rel, rel.left.name, rel.direction.reversed)
+        case rel: VarLengthRelatedTo if rel.right.name == done.end => multiStep(rel, rel.left.name, rel.direction.reversed, rel.direction)
+        case rel: VarLengthRelatedTo if rel.left.name == done.end  => multiStep(rel, rel.right.name, rel.direction, rel.direction)
         case _                                                     => throw new ThisShouldNotHappenError("Andres", "This pattern is not expected")
       }
 

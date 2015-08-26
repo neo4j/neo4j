@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{PathExtractor, Pattern, ShortestPath, SingleNode}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsNodes, ReadsRelationships}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
@@ -63,10 +64,10 @@ case class ShortestPathExpression(ast: ShortestPath) extends Expression with Pat
   def rewrite(f: (Expression) => Expression): Expression = f(ShortestPathExpression(ast.rewrite(f)))
 
   private lazy val expander: Expander = if (ast.relTypes.isEmpty) {
-    Traversal.expanderForAllTypes(ast.dir)
+    Traversal.expanderForAllTypes(toGraphDb(ast.dir))
   } else {
     ast.relTypes.foldLeft(Traversal.emptyExpander()) {
-      case (e, t) => e.add(DynamicRelationshipType.withName(t), ast.dir)
+      case (e, t) => e.add(DynamicRelationshipType.withName(t), toGraphDb(ast.dir))
     }
   }
 

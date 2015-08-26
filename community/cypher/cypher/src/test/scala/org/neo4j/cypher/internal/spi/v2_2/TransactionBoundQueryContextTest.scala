@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.spi.v2_3
 
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.DynamicIterable
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb._
 import org.mockito.Mockito._
@@ -79,7 +80,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val context = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, stmt)
 
     // WHEN
-    val iterable = DynamicIterable( context.getRelationshipsForIds(node, Direction.BOTH, None) )
+    val iterable = DynamicIterable( context.getRelationshipsForIds(node, SemanticDirection.BOTH, None) )
 
     // THEN
     val iteratorA: Iterator[Relationship] = iterable.iterator

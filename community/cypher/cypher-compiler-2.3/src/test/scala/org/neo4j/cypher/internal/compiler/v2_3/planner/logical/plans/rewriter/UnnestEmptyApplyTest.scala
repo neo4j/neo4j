@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Converge.iterateUntilConverged
 import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
 
 class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should unnest apply with a single SingleRow on the lhs") {
@@ -97,7 +97,7 @@ class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val lhs: LogicalPlan = newMockedLogicalPlan("a")
     val arg1: LogicalPlan = Argument(Set(IdName("a")))(solved)()
     val arg2: LogicalPlan = Argument(Set(IdName("a")))(solved)()
-    val expand: LogicalPlan = Expand(arg2, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
+    val expand: LogicalPlan = Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
     val apply2: LogicalPlan = Apply(arg1, expand)(solved)
     val apply: LogicalPlan = Apply(lhs, apply2)(solved)
 
@@ -105,7 +105,7 @@ class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = rewrite(apply)
 
     // Then
-    result should equal(Expand(lhs, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
+    result should equal(Expand(lhs, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
   }
 
   test("unnesting varlength expands should work well") {
@@ -118,14 +118,14 @@ class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSuppor
     // Given
     val lhs: LogicalPlan = newMockedLogicalPlan("a")
     val arg: LogicalPlan = Argument(Set(IdName("a")))(solved)()
-    val expand: LogicalPlan = VarExpand(arg, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), VarPatternLength(1, None), ExpandAll)(solved)
+    val expand: LogicalPlan = VarExpand(arg, IdName("a"), SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), VarPatternLength(1, None), ExpandAll)(solved)
     val apply: LogicalPlan = Apply(lhs, expand)(solved)
 
     // When
     val result = rewrite(apply)
 
     // Then
-    result should equal(VarExpand(lhs, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), VarPatternLength(1, None), ExpandAll)(solved))
+    result should equal(VarExpand(lhs, IdName("a"), SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), VarPatternLength(1, None), ExpandAll)(solved))
   }
 
   test("apply on apply on optional should be OK") {
@@ -141,7 +141,7 @@ class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val lhs: LogicalPlan = newMockedLogicalPlan("a")
     val arg1: LogicalPlan = Argument(Set(IdName("a")))(solved)()
     val arg2: LogicalPlan = Argument(Set(IdName("a")))(solved)()
-    val expand: LogicalPlan = Expand(arg2, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
+    val expand: LogicalPlan = Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
     val optional: LogicalPlan = Optional(expand)(solved)
     val apply2: LogicalPlan = Apply(arg1, optional)(solved)
     val apply: LogicalPlan = Apply(lhs, apply2)(solved)
@@ -153,7 +153,7 @@ class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSuppor
     result should equal(Apply(
       lhs,
       Optional(
-        Expand(arg2, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))(solved)
+        Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))(solved)
     )(solved))
   }
 

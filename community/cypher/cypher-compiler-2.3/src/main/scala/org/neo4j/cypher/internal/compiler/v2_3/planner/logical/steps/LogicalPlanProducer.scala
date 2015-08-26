@@ -28,8 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.Cardinali
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
-import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, ast, symbols}
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, SemanticDirection, ast, symbols}
 
 case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends CollectionSupport {
   def solvePredicate(plan: LogicalPlan, solved: Expression)(implicit context: LogicalPlanningContext) =
@@ -100,7 +99,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
   def planSimpleExpand(left: LogicalPlan,
                        from: IdName,
-                       dir: Direction,
+                       dir: SemanticDirection,
                        to: IdName,
                        pattern: PatternRelationship,
                        mode: ExpansionMode)(implicit context: LogicalPlanningContext) = {
@@ -110,15 +109,15 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
   def planVarExpand(left: LogicalPlan,
                     from: IdName,
-                    dir: Direction,
+                    dir: SemanticDirection,
                     to: IdName,
                     pattern: PatternRelationship,
                     predicates: Seq[(Identifier, Expression)],
                     allPredicates: Seq[Expression],
                     mode: ExpansionMode)(implicit context: LogicalPlanningContext) = pattern.length match {
     case l: VarPatternLength =>
-      val projectedDir = if (dir == Direction.BOTH) {
-        if (from == pattern.left) Direction.OUTGOING else Direction.INCOMING
+      val projectedDir = if (dir == SemanticDirection.BOTH) {
+        if (from == pattern.left) SemanticDirection.OUTGOING else SemanticDirection.INCOMING
       } else pattern.dir
 
       val solved = left.solved.updateGraph(_
@@ -228,7 +227,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
   def planOptionalExpand(left: LogicalPlan,
                          from: IdName,
-                         dir: Direction,
+                         dir: SemanticDirection,
                          to: IdName,
                          pattern: PatternRelationship,
                          mode: ExpansionMode = ExpandAll,
@@ -391,7 +390,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planEndpointProjection(inner: LogicalPlan, start: IdName, startInScope: Boolean, end: IdName, endInScope: Boolean, patternRel: PatternRelationship)
                             (implicit context: LogicalPlanningContext) = {
     val relTypes = patternRel.types.asNonEmptyOption
-    val directed = patternRel.dir != Direction.BOTH
+    val directed = patternRel.dir != SemanticDirection.BOTH
     val solved = inner.solved.updateGraph(_.addPatternRelationship(patternRel))
     ProjectEndpoints(inner, patternRel.name,
       start, startInScope,

@@ -23,15 +23,15 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.RelatedTo
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 
 class PatternGraphBuilderTest extends CypherFunSuite with PatternGraphBuilder {
 
   test("should_only_include_connected_patterns") {
     // given MATCH a-[r1]->b, c-[r2]->d
     val symbols = new SymbolTable(Map("a" -> CTNode, "b" -> CTNode, "c" -> CTNode, "d" -> CTNode))
-    val r1 = RelatedTo("a", "b", "r1", "FOO", Direction.OUTGOING)
-    val r2 = RelatedTo("c", "d", "r2", "FOO", Direction.OUTGOING)
+    val r1 = RelatedTo("a", "b", "r1", "FOO", SemanticDirection.OUTGOING)
+    val r2 = RelatedTo("c", "d", "r2", "FOO", SemanticDirection.OUTGOING)
 
     // when
     val graph = buildPatternGraph(symbols, Seq(r1, r2))
@@ -43,9 +43,9 @@ class PatternGraphBuilderTest extends CypherFunSuite with PatternGraphBuilder {
   test("should_include_connected_patterns") {
     // given MATCH a-[r1]->b-[r2]->c-[r2]->d
     val symbols = new SymbolTable(Map("a" -> CTNode))
-    val r1 = RelatedTo("a", "b", "r1", "FOO", Direction.OUTGOING)
-    val r2 = RelatedTo("b", "c", "r2", "FOO", Direction.OUTGOING)
-    val r3 = RelatedTo("c", "d", "r3", "FOO", Direction.OUTGOING)
+    val r1 = RelatedTo("a", "b", "r1", "FOO", SemanticDirection.OUTGOING)
+    val r2 = RelatedTo("b", "c", "r2", "FOO", SemanticDirection.OUTGOING)
+    val r3 = RelatedTo("c", "d", "r3", "FOO", SemanticDirection.OUTGOING)
 
     // when
     val graph = buildPatternGraph(symbols, Seq(r1, r2, r3))

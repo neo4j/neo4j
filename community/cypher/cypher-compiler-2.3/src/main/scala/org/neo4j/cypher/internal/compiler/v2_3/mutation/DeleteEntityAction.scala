@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression,
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, CypherTypeException}
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.graphdb
 
@@ -47,7 +47,7 @@ case class DeleteEntityAction(elementToDelete: Expression, forced: Boolean)
   private def delete(x: graphdb.PropertyContainer, state: QueryState, forced: Boolean) {
     x match {
       case n: graphdb.Node if !state.query.nodeOps.isDeleted(n) && forced =>
-        val rels = state.query.getRelationshipsForIds(n, graphdb.Direction.BOTH, None)
+        val rels = state.query.getRelationshipsForIds(n, SemanticDirection.BOTH, None)
         rels.foreach(r => delete(r, state, forced))
         state.query.nodeOps.delete(n)
 

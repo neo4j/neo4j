@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.execution
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.ast.{Collection, Expression, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.True
@@ -29,7 +30,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.Clock
 
 class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -38,7 +38,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   implicit val pipeMonitor = mock[PipeMonitor]
   implicit val LogicalPlanningContext = newMockedLogicalPlanningContext(planContext)
   implicit val pipeBuildContext = newMockedPipeExecutionPlanBuilderContext
-  val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+  val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
   val planBuilder = new PipeExecutionPlanBuilder(Clock.SYSTEM_CLOCK, monitors)
 
@@ -145,44 +145,44 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   }
 
   test("simple expand") {
-    val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Seq(), "b", "r1")_
+    val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", SemanticDirection.INCOMING, Seq(), "b", "r1")_
     val pipeInfo = build(logicalPlan)
 
-    pipeInfo.pipe should equal(ExpandAllPipe( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, LazyTypes.empty)())
+    pipeInfo.pipe should equal(ExpandAllPipe( AllNodesScanPipe("a")(), "a", "r1", "b", SemanticDirection.INCOMING, LazyTypes.empty)())
   }
 
   test("simple expand into existing identifier MATCH a-[r]->a ") {
     val logicalPlan = Expand(
-      AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Seq(), "a", "r", ExpandInto)_
+      AllNodesScan("a", Set.empty)(solved), "a", SemanticDirection.INCOMING, Seq(), "a", "r", ExpandInto)_
     val pipeInfo = build(logicalPlan)
 
-    val inner: Pipe = ExpandIntoPipe( AllNodesScanPipe("a")(), "a", "r", "a", Direction.INCOMING, LazyTypes.empty)()
+    val inner: Pipe = ExpandIntoPipe( AllNodesScanPipe("a")(), "a", "r", "a", SemanticDirection.INCOMING, LazyTypes.empty)()
 
     pipeInfo.pipe should equal(inner)
   }
 
   test("optional expand into existing identifier MATCH a OPTIONAL MATCH a-[r]->a ") {
     val logicalPlan = OptionalExpand(
-      AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Seq(), "a", "r", ExpandInto)_
+      AllNodesScan("a", Set.empty)(solved), "a", SemanticDirection.INCOMING, Seq(), "a", "r", ExpandInto)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo.pipe should equal(
-      OptionalExpandIntoPipe(AllNodesScanPipe("a")(), "a", "r", "a", Direction.INCOMING, LazyTypes.empty, True())())
+      OptionalExpandIntoPipe(AllNodesScanPipe("a")(), "a", "r", "a", SemanticDirection.INCOMING, LazyTypes.empty, True())())
   }
 
   test("simple hash join") {
     val logicalPlan =
       NodeHashJoin(
         Set(IdName("b")),
-        Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Seq(), "b", "r1")(solved),
-        Expand(AllNodesScan("c", Set.empty)(solved), "c", Direction.INCOMING, Seq(), "b", "r2")(solved)
+        Expand(AllNodesScan("a", Set.empty)(solved), "a", SemanticDirection.INCOMING, Seq(), "b", "r1")(solved),
+        Expand(AllNodesScan("c", Set.empty)(solved), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")(solved)
       )_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo.pipe should equal(NodeHashJoinPipe(
       Set("b"),
-      ExpandAllPipe( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, LazyTypes.empty)(),
-      ExpandAllPipe( AllNodesScanPipe("c")(), "c", "r2", "b", Direction.INCOMING, LazyTypes.empty)()
+      ExpandAllPipe( AllNodesScanPipe("a")(), "a", "r1", "b", SemanticDirection.INCOMING, LazyTypes.empty)(),
+      ExpandAllPipe( AllNodesScanPipe("c")(), "c", "r2", "b", SemanticDirection.INCOMING, LazyTypes.empty)()
     )())
   }
 }

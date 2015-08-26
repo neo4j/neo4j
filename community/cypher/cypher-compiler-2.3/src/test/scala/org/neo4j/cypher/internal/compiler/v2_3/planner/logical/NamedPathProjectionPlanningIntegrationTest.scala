@@ -25,14 +25,13 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
 
 class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should build plans containing outgoing path projections") {
     planFor("MATCH p = (a:X)-[r]->(b) RETURN p").plan should equal(
       Projection(
-        Expand( NodeByLabelScan("a",  LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING, Seq.empty, "b", "r")(solved),
+        Expand( NodeByLabelScan("a",  LazyLabel("X"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved),
         expressions = Map(
           "p" -> PathExpression(NodePathStep(Identifier("a")_,SingleRelationshipPathStep(Identifier("r")_, SemanticDirection.OUTGOING, NilPathStep)))_
         )
@@ -52,7 +51,7 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
           ident("a")
         ) _),
         Projection(
-          Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING, Seq.empty, "b", "r")(solved),
+          Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved),
           expressions = Map("a" -> ident("a"), "b" -> ident("b"), "p" -> pathExpr, "r" -> ident("r")))(solved)
       )(solved)
     )
@@ -76,7 +75,7 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
           ) _
         ),
         Projection(
-          Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING, Seq.empty, "b", "r")(solved),
+          Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved),
           expressions = Map("a" -> ident("a"), "b" -> ident("b"), "p" -> pathExpr, "r" -> ident("r"))
         )(solved)
       )(solved)

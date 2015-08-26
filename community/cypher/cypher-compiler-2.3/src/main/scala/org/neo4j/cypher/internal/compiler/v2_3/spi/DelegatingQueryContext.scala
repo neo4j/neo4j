@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.spi
 
-import org.neo4j.graphdb.{Relationship, PropertyContainer, Direction, Node}
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
+import org.neo4j.graphdb.{Relationship, PropertyContainer, Node}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
@@ -54,7 +55,7 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def getOrCreateLabelId(labelName: String): Int = singleDbHit(inner.getOrCreateLabelId(labelName))
 
-  def getRelationshipsForIds(node: Node, dir: Direction, types: Option[Seq[Int]]): Iterator[Relationship] = manyDbHits(inner.getRelationshipsForIds(node, dir, types))
+  def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = manyDbHits(inner.getRelationshipsForIds(node, dir, types))
 
   def nodeOps = inner.nodeOps
 
@@ -123,9 +124,9 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def relationshipEndNode(rel: Relationship) = inner.relationshipEndNode(rel)
 
-  def nodeGetDegree(node: Long, dir: Direction): Int = singleDbHit(inner.nodeGetDegree(node, dir))
+  def nodeGetDegree(node: Long, dir: SemanticDirection): Int = singleDbHit(inner.nodeGetDegree(node, dir))
 
-  def nodeGetDegree(node: Long, dir: Direction, relTypeId: Int): Int = singleDbHit(inner.nodeGetDegree(node, dir, relTypeId))
+  def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int = singleDbHit(inner.nodeGetDegree(node, dir, relTypeId))
 
   def nodeIsDense(node: Long): Boolean = singleDbHit(inner.nodeIsDense(node))
 }

@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.True
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.graphdb._
 
@@ -116,7 +117,7 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
     val src = new FakePipe(iter, "x" -> CTNode)
     val x = new PatternNode("x")
     val y = new PatternNode("y")
-    val rel = x.relateTo("r", y, Seq.empty, Direction.OUTGOING)
+    val rel = x.relateTo("r", y, Seq.empty, SemanticDirection.OUTGOING)
 
     val patternNodes = Map("x" -> x, "y" -> y)
     val patternRels = Map("r" -> rel)
@@ -127,7 +128,7 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
 
   private def shortestPathPipe = {
     val shortestPath = ShortestPath(pathName = "p", left = SingleNode("start"), right = SingleNode("end"), relTypes = Seq.empty,
-      dir = Direction.OUTGOING, allowZeroLength = true, maxDepth = None, single = true, relIterator = None)
+      dir = SemanticDirection.OUTGOING, allowZeroLength = true, maxDepth = None, single = true, relIterator = None)
     val n1 = mock[Node]
     when(n1.getRelationships).thenReturn(Iterable.empty[Relationship].asJava)
     val iter = new LazyIterator[Map[String, Any]](10, (_) => Map("start" -> n1, "end" -> n1))

@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.{namePatternPredica
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport, _}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, SemanticTable, inSequence}
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.frontend.v2_3.{SemanticTable, inSequence}
 
 class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -40,7 +40,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   val lit42: SignedIntegerLiteral = SignedDecimalIntegerLiteral("42")_
   val lit43: SignedIntegerLiteral = SignedDecimalIntegerLiteral("43")_
 
-  val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+  val patternRel = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
   val nProp: Expression = Property( Identifier( "n" ) _, PropertyKeyName( "prop" ) _ ) _
 
   def buildPlannerQuery(query: String, cleanStatement: Boolean = true): UnionQuery = {
@@ -214,8 +214,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (a)-[r]->(b)-[r2]->(c) return a,r,b, c") {
     val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("match (a)-[r]->(b)-[r2]->(c) return a,r,b")
     query.graph.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength),
-      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, SimplePatternLength),
+      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), OUTGOING, Seq.empty, SimplePatternLength)))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
     val predicate: Predicate = Predicate(Set(IdName("r"), IdName("r2")), Not(Equals(Identifier("r")_, Identifier("r2")_)_)_)
     query.graph.selections.predicates should equal(Set(predicate))
@@ -229,8 +229,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (a)-[r]->(b)-[r2]->(a) return a,r") {
     val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("match (a)-[r]->(b)-[r2]->(a) return a,r")
     query.graph.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength),
-      PatternRelationship(IdName("r2"), (IdName("b"), IdName("a")), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, SimplePatternLength),
+      PatternRelationship(IdName("r2"), (IdName("b"), IdName("a")), OUTGOING, Seq.empty, SimplePatternLength)))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     val predicate: Predicate = Predicate(Set(IdName("r"), IdName("r2")), Not(Equals(Identifier("r")_, Identifier("r2")_)_)_)
     query.graph.selections.predicates should equal(Set(predicate))
@@ -243,8 +243,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (a)<-[r]-(b)-[r2]-(c) return a,r") {
     val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("match (a)<-[r]-(b)-[r2]-(c) return a,r")
     query.graph.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, SimplePatternLength),
-      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, SimplePatternLength)))
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), INCOMING, Seq.empty, SimplePatternLength),
+      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), BOTH, Seq.empty, SimplePatternLength)))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
     val predicate: Predicate = Predicate(Set(IdName("r"), IdName("r2")), Not(Equals(Identifier("r")_, Identifier("r2")_)_)_)
     query.graph.selections.predicates should equal(Set(predicate))
@@ -257,8 +257,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (a)<-[r]-(b), (b)-[r2]-(c) return a,r") {
     val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("match (a)<-[r]-(b), (b)-[r2]-(c) return a,r")
     query.graph.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, SimplePatternLength),
-      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, SimplePatternLength)))
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), INCOMING, Seq.empty, SimplePatternLength),
+      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), BOTH, Seq.empty, SimplePatternLength)))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
     val predicate: Predicate = Predicate(Set(IdName("r"), IdName("r2")), Not(Equals(Identifier("r")_, Identifier("r2")_)_)_)
     query.graph.selections.predicates should equal(Set(predicate))
@@ -271,7 +271,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (a), (n)-[r:Type]-(c) where b:A return a,r") {
     val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("match (a), (n)-[r:Type]-(c) where n:A return a,r")
     query.graph.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("n"), IdName("c")), Direction.BOTH, Seq(relType("Type")), SimplePatternLength)))
+      PatternRelationship(IdName("r"), (IdName("n"), IdName("c")), BOTH, Seq(relType("Type")), SimplePatternLength)))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("n"), IdName("c")))
     query.graph.selections should equal(Selections(Set(
       Predicate(Set(IdName("n")), HasLabels(nIdent, Seq(A))_)
@@ -285,7 +285,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (a)-[r:Type|Foo]-(b) return a,r") {
     val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("match (a)-[r:Type|Foo]-(b) return a,r")
     query.graph.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type"), relType("Foo")), SimplePatternLength)))
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), BOTH, Seq(relType("Type"), relType("Foo")), SimplePatternLength)))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.graph.selections should equal(Selections())
     query.horizon should equal(RegularQueryProjection(Map(
@@ -297,7 +297,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (a)-[r:Type*]-(b) return a,r") {
     val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("match (a)-[r:Type*]-(b) return a,r")
     query.graph.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), VarPatternLength(1, None))))
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), BOTH, Seq(relType("Type")), VarPatternLength(1, None))))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.graph.selections should equal(Selections())
     query.horizon should equal(RegularQueryProjection(Map(
@@ -309,8 +309,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (a)-[r1:CONTAINS*0..1]->b-[r2:FRIEND*0..1]->c return a,b,c") {
     val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("match (a)-[r1:CONTAINS*0..1]->b-[r2:FRIEND*0..1]->c return a,b,c")
     query.graph.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r1"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq(relType("CONTAINS")), VarPatternLength(0, Some(1))),
-      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.OUTGOING, Seq(relType("FRIEND")), VarPatternLength(0, Some(1)))))
+      PatternRelationship(IdName("r1"), (IdName("a"), IdName("b")), OUTGOING, Seq(relType("CONTAINS")), VarPatternLength(0, Some(1))),
+      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), OUTGOING, Seq(relType("FRIEND")), VarPatternLength(0, Some(1)))))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
     query.graph.selections should equal(Selections())
     query.horizon should equal(RegularQueryProjection(Map(
@@ -323,7 +323,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (a)-[r:Type*3..]-(b) return a,r") {
     val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("match (a)-[r:Type*3..]-(b) return a,r")
     query.graph.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), VarPatternLength(3, None))))
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), BOTH, Seq(relType("Type")), VarPatternLength(3, None))))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.graph.selections should equal(Selections())
     query.horizon should equal(RegularQueryProjection(Map(
@@ -335,7 +335,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (a)-[r:Type*5]-(b) return a,r") {
     val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("match (a)-[r:Type*5]-(b) return a,r")
     query.graph.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), VarPatternLength.fixed(5))))
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), BOTH, Seq(relType("Type")), VarPatternLength.fixed(5))))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.graph.selections should equal(Selections())
     query.horizon should equal(RegularQueryProjection(Map(
@@ -347,8 +347,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (a)<-[r*]-(b)-[r2*]-(c) return a,r") {
     val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("match (a)<-[r*]-(b)-[r2*]-(c) return a,r")
     query.graph.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, VarPatternLength(1, None)),
-      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, VarPatternLength(1, None))))
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), INCOMING, Seq.empty, VarPatternLength(1, None)),
+      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), BOTH, Seq.empty, VarPatternLength(1, None))))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
 
     val identR = Identifier("r")(null)
@@ -401,7 +401,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val optMatchQG = query.graph.optionalMatches.head
     optMatchQG.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, SimplePatternLength)
     ))
     optMatchQG.patternNodes should equal(Set(IdName("a"), IdName("b")))
     optMatchQG.selections should equal(Selections(Set.empty))
@@ -425,7 +425,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val optMatchQG = query.graph.optionalMatches.head
     optMatchQG.patternNodes should equal(Set(IdName("a"), IdName("b")))
     optMatchQG.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, SimplePatternLength)
     ))
     optMatchQG.selections should equal(Selections(Set.empty))
     optMatchQG.optionalMatches should be(empty)
@@ -441,7 +441,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val nodeName = "  UNNAMED21"
     val exp: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
-      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
+      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, OUTGOING) _,
       NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
     ) _) _)
     val predicate= Predicate(Set(IdName("a")), exp)
@@ -494,7 +494,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val nodeName = "  UNNAMED36"
     val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
-      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
+      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, OUTGOING) _,
       NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
     ) _) _)
     val exp2: Expression = In(
@@ -517,7 +517,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val nodeName = "  UNNAMED21"
     val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
-      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
+      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, OUTGOING) _,
       NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
     ) _) _)
     val exp2: Expression = In(
@@ -540,7 +540,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val nodeName = "  UNNAMED37"
     val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
-      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
+      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, OUTGOING) _,
       NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
     ) _) _)
     val exp2: Expression = In(
@@ -779,7 +779,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.graph.shortestPathPatterns should equal(Set(
-      ShortestPathPattern(None, PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength), single = true)(null)
+      ShortestPathPattern(None, PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, SimplePatternLength), single = true)(null)
     ))
     query.tail should be(empty)
   }
@@ -789,7 +789,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.graph.shortestPathPatterns should equal(Set(
-      ShortestPathPattern(None, PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength), single = false)(null)
+      ShortestPathPattern(None, PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, SimplePatternLength), single = false)(null)
     ))
     query.tail should be(empty)
   }
@@ -799,7 +799,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.graph.shortestPathPatterns should equal(Set(
-      ShortestPathPattern(Some(IdName("p")), PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength), single = true)(null)
+      ShortestPathPattern(Some(IdName("p")), PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, SimplePatternLength), single = true)(null)
     ))
     query.tail should be(empty)
   }

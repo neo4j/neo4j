@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.spi
 
 import org.neo4j.cypher.internal.compiler.v2_3.InternalQueryStatistics
-import org.neo4j.graphdb._
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
+import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
@@ -47,13 +48,13 @@ trait QueryContext extends TokenContext {
 
   def getOrCreateRelTypeId(relTypeName: String): Int
 
-  def getRelationshipsForIds(node: Node, dir: Direction, types: Option[Seq[Int]]): Iterator[Relationship]
+  def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship]
 
   def getOrCreateLabelId(labelName: String): Int
 
   def getLabelsForNode(node: Long): Iterator[Int]
 
-  def isLabelSetOnNode(label: Int, node: Long): Boolean = getLabelsForNode(node).toIterator.contains(label)
+  def isLabelSetOnNode(label: Int, node: Long): Boolean = getLabelsForNode(node).contains(label)
 
   def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int
 
@@ -118,9 +119,9 @@ trait QueryContext extends TokenContext {
 
   def relationshipEndNode(rel: Relationship): Node
 
-  def nodeGetDegree(node: Long, dir: Direction): Int
+  def nodeGetDegree(node: Long, dir: SemanticDirection): Int
 
-  def nodeGetDegree(node: Long, dir: Direction, relTypeId: Int): Int
+  def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int
 
   def nodeIsDense(node: Long): Boolean
 }

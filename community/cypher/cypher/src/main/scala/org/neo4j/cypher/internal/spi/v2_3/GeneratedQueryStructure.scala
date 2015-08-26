@@ -33,6 +33,7 @@ import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen.{CompiledConversionUtils, CompiledExpandUtils, CompiledMathHelper, NodeIdWrapper, RelationshipIdWrapper}
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter
 import org.neo4j.cypher.internal.compiler.v2_3.codegen._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{GeneratedQuery, GeneratedQueryExecution, SuccessfulCloseable}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers._
@@ -40,10 +41,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, InternalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v2_3.symbols.CypherType
-import org.neo4j.cypher.internal.frontend.v2_3.{CypherExecutionException, ParameterNotFoundException, symbols}
+import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, CypherExecutionException, ParameterNotFoundException, symbols}
 import org.neo4j.function.Supplier
+import org.neo4j.graphdb.{Relationship, Node, Direction}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
-import org.neo4j.graphdb._
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.index.IndexDescriptor
@@ -245,14 +246,14 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
   override def nextNode(targetVar: String, iterVar: String) =
     generator.assign(typeRef[Long], targetVar, Expression.invoke(generator.load(iterVar), Methods.nextLong))
 
-  override def nextRelationshipAndNode(toNodeVar: String, iterVar: String, direction: Direction, fromNodeVar: String,
+  override def nextRelationshipAndNode(toNodeVar: String, iterVar: String, direction: SemanticDirection, fromNodeVar: String,
                                        relVar: String) = {
     val startNode = Expression.invoke(generator.load("rel"), Methods.startNode)
     val endNode = Expression.invoke(generator.load("rel"), Methods.endNode)
     generator.expression(Expression.invoke(generator.load(iterVar), Methods.relationshipVisit,
       Expression.invoke(generator.load(iterVar), Methods.nextLong),
       generator.load("rel")))
-    generator.assign(typeRef[Long], toNodeVar, direction match {
+    generator.assign(typeRef[Long], toNodeVar, DirectionConverter.toGraphDb(direction) match {
       case Direction.INCOMING => startNode
       case Direction.OUTGOING => endNode
       case Direction.BOTH => Expression.ternary(Expression.eq(startNode, generator.load(fromNodeVar)), endNode, startNode)
@@ -260,7 +261,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     generator.assign(typeRef[Long], relVar, Expression.invoke(generator.load("rel"), Methods.relationship))
   }
 
-  override def nextRelationship(iterVar: String, direction: Direction, relVar: String) = {
+  override def nextRelationship(iterVar: String, ignored: SemanticDirection, relVar: String) = {
     generator.expression(Expression.invoke(generator.load(iterVar), Methods.relationshipVisit,
       Expression.invoke(generator.load(iterVar), Methods.nextLong),
       generator.load("rel")))
@@ -396,14 +397,14 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
       Expression.not(Expression.eq(GeneratedQueryStructure.nullValue(cypherType), generator.load(varName)))
 
 
-  override def nodeGetAllRelationships(iterVar: String, nodeVar: String, direction: Direction) = {
+  override def nodeGetAllRelationships(iterVar: String, nodeVar: String, direction: SemanticDirection) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
     Templates.handleExceptions(generator, fields.ro) { body =>
       body.assign(local, Expression.invoke(readOperations, Methods.nodeGetAllRelationships, body.load(nodeVar), dir(direction)))
     }
   }
 
-  override def nodeGetRelationships(iterVar: String, nodeVar: String, direction: Direction, typeVars: Seq[String]) = {
+  override def nodeGetRelationships(iterVar: String, nodeVar: String, direction: SemanticDirection, typeVars: Seq[String]) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
     Templates.handleExceptions(generator, fields.ro) { body =>
       val args = Seq(body.load(nodeVar), dir(direction)) ++ typeVars.map(body.load)
@@ -411,14 +412,14 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     }
   }
 
-  override def connectingRelationships(iterVar: String, fromNode: String, direction: Direction, toNode: String) = {
+  override def connectingRelationships(iterVar: String, fromNode: String, direction: SemanticDirection, toNode: String) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
     Templates.handleExceptions(generator, fields.ro) { body =>
       body.assign(local, Expression.invoke(Methods.allConnectingRelationships, readOperations, body.load(fromNode), dir(direction), body.load(toNode)))
     }
   }
 
-  override def connectingRelationships(iterVar: String, fromNode: String, direction: Direction, typeVars: Seq[String], toNode: String) = {
+  override def connectingRelationships(iterVar: String, fromNode: String, direction: SemanticDirection, typeVars: Seq[String], toNode: String) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
     Templates.handleExceptions(generator, fields.ro) { body =>
       val args = Seq(readOperations, body.load(fromNode), dir(direction),  body.load(toNode)) ++ typeVars.map(body.load)
@@ -457,10 +458,10 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
       MethodReference.constructorReference(typeRef[ParameterNotFoundException], typeRef[String]),
       Expression.constant(s"Expected a parameter named $key"))
 
-  private def dir(dir: Direction): Expression = dir match {
-    case Direction.INCOMING => Templates.incoming
-    case Direction.OUTGOING => Templates.outgoing
-    case Direction.BOTH => Templates.both
+  private def dir(dir: SemanticDirection): Expression = dir match {
+    case SemanticDirection.INCOMING => Templates.incoming
+    case SemanticDirection.OUTGOING => Templates.outgoing
+    case SemanticDirection.BOTH => Templates.both
   }
 
   override def asList(values: Seq[Expression]) = Templates.asList(values)

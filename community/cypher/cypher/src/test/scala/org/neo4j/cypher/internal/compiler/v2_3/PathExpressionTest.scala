@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.NonEmpty
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.UnresolvedLabel
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.AllReadEffects
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.graphdb.{Direction, Path}
 
 class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSupport {
@@ -43,7 +44,7 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
       left = SingleNode("a"),
       right = SingleNode("c"),
       relTypes = Seq(),
-      dir = Direction.OUTGOING,
+      dir = SemanticDirection.OUTGOING,
       false,
       maxDepth = None,
       single = true,
@@ -69,7 +70,7 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
 
     relate(a, b)
 
-    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, Direction.OUTGOING, Map.empty)
+    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, SemanticDirection.OUTGOING, Map.empty)
     val expression = NonEmpty(PathExpression(Seq(pattern)))
     val m = ExecutionContext.from("a" -> a)
 
@@ -89,7 +90,7 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
 
     relate(a, b)
 
-    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, Direction.OUTGOING, Map.empty)
+    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, SemanticDirection.OUTGOING, Map.empty)
     val expression = NonEmpty(PathExpression(Seq(pattern)))
     val m = ExecutionContext.from("a" -> a)
 
@@ -104,7 +105,7 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
 
   test("should indicate reading nodes and rels as a side effect") {
     // GIVEN
-    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, Direction.OUTGOING, Map.empty)
+    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, SemanticDirection.OUTGOING, Map.empty)
 
     // WHEN
     val expression = PathExpression(Seq(pattern))

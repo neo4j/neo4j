@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planDescription
 
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.UnNamedNameGenerator._
 
 
@@ -53,9 +53,9 @@ object PlanDescriptionArgumentSerializer {
       case Runtime(runtime) => runtime
       case SourceCode(className, sourceCode) => sourceCode
       case RuntimeImpl(runtimeName) => runtimeName
-      case ExpandExpression(from, rel, typeNames, to, dir: Direction, varLength) =>
-        val left = if (dir == Direction.INCOMING) "<-" else "-"
-        val right = if (dir == Direction.OUTGOING) "->" else "-"
+      case ExpandExpression(from, rel, typeNames, to, dir: SemanticDirection, varLength) =>
+        val left = if (dir == SemanticDirection.INCOMING) "<-" else "-"
+        val right = if (dir == SemanticDirection.OUTGOING) "->" else "-"
         val asterisk = if (varLength) "*" else ""
         val types = typeNames.mkString(":", "|:", "")
         val relInfo = if (!varLength && typeNames.isEmpty && rel.unnamed) "" else s"[$rel$types$asterisk]"

@@ -21,20 +21,20 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes.matching
 
 import SingleStep.FilteringIterator
 import org.neo4j.cypher.internal.compiler.v2_3._
-import commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{True, And, Predicate}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.DynamicIterable
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{LazyTypes, QueryState}
-import org.neo4j.graphdb.{Node, Relationship, Direction}
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
+import org.neo4j.graphdb.{Node, Relationship}
 
 case class SingleStep(id: Int,
                       typ: Seq[String],
-                      direction: Direction,
+                      direction: SemanticDirection,
                       next: Option[ExpanderStep],
                       relPredicate: Predicate,
                       nodePredicate: Predicate) extends ExpanderStep {
 
-  def createCopy(next: Option[ExpanderStep], direction: Direction, nodePredicate: Predicate): ExpanderStep =
+  def createCopy(next: Option[ExpanderStep], direction: SemanticDirection, nodePredicate: Predicate): ExpanderStep =
     copy(next = next, direction = direction, nodePredicate = nodePredicate)
 
   private val combinedPredicate: Predicate = And(relPredicate, nodePredicate)
@@ -51,13 +51,13 @@ case class SingleStep(id: Int,
 
   override def toString = {
     val left =
-      if (direction == Direction.OUTGOING)
+      if (direction == SemanticDirection.OUTGOING)
         ""
       else
         "<"
 
     val right =
-      if (direction == Direction.INCOMING)
+      if (direction == SemanticDirection.INCOMING)
         ""
       else
         ">"

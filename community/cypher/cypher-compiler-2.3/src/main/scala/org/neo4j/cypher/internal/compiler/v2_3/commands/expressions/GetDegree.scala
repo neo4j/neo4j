@@ -24,11 +24,11 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, CypherTypeException}
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
-import org.neo4j.graphdb.{Direction, Node}
+import org.neo4j.graphdb.Node
 
-case class GetDegree(node: Expression, typ: Option[KeyToken], direction: Direction) extends NullInNullOutExpression(node) {
+case class GetDegree(node: Expression, typ: Option[KeyToken], direction: SemanticDirection) extends NullInNullOutExpression(node) {
 
   val getDegree: (QueryContext, Long) => Int = typ match {
     case None    => (qtx, node) => qtx.nodeGetDegree(node, direction)

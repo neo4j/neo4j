@@ -19,21 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CandidateGenerator, LogicalPlanningContext}
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.frontend.v2_3.ast.Expression
-import org.neo4j.graphdb.Direction
 
 object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
   override def apply(in: LogicalPlan, qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = in match {
     // MATCH (a)-[:X]->(b)-[:X]->(c) WHERE (predicate involving (a)-[:X]->(c))
     case sel@Selection(predicates,
-           exp2@Expand(
-             exp1@Expand(lhs, from1, dir1, types1, to1, rel1, ExpandAll),
-                              from2, dir2, types2, to2, rel2, ExpandAll))
+    exp2@Expand(
+    exp1@Expand(lhs, from1, dir1, types1, to1, rel1, ExpandAll),
+    from2, dir2, types2, to2, rel2, ExpandAll))
       if to1 == from2 =>
 
       val newPlan = matchingPredicateExists(qg, in.availableSymbols, from1.name, to2.name, types1, dir1) map {
@@ -49,7 +48,7 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
     case _ => Seq.empty
   }
 
-  private def matchingPredicateExists(qg: QueryGraph, availableSymbols: Set[IdName], from: String, to: String, types: Seq[RelTypeName], dir: Direction): Option[(Boolean,Expression)] =
+  private def matchingPredicateExists(qg: QueryGraph, availableSymbols: Set[IdName], from: String, to: String, types: Seq[RelTypeName], dir: SemanticDirection): Option[(Boolean,Expression)] =
     qg.selections.patternPredicatesGiven(availableSymbols).collectFirst {
       // WHERE NOT (a)-[:X]->(c)
       case predicate@Not(patternExpr: PatternExpression) if matchingRelationshipPattern(patternExpr, from, to, types, dir) => (false, predicate)
@@ -57,15 +56,15 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
       case patternExpr: PatternExpression if matchingRelationshipPattern(patternExpr, from, to, types, dir) => (true, patternExpr)
     }
 
-  private def matchingRelationshipPattern(pattern: PatternExpression, from: String, to: String, types: Seq[RelTypeName], dir: Direction): Boolean = pattern match {
+  private def matchingRelationshipPattern(pattern: PatternExpression, from: String, to: String, types: Seq[RelTypeName], dir: SemanticDirection): Boolean = pattern match {
     // (a)-[:X]->(c)
     case p@PatternExpression(
-        RelationshipsPattern(
-        RelationshipChain(
-        NodePattern(Some(Identifier(predicateFrom)), List(), None, false),
-        RelationshipPattern(None, false, predicateTypes, None, None, predicateDir),
-        NodePattern(Some(Identifier(predicateTo)), List(), None, false))))
-          if predicateFrom == from && predicateTo == to && predicateTypes == types && toGraphDb(predicateDir) == dir => true
+    RelationshipsPattern(
+    RelationshipChain(
+    NodePattern(Some(Identifier(predicateFrom)), List(), None, false),
+    RelationshipPattern(None, false, predicateTypes, None, None, predicateDir),
+    NodePattern(Some(Identifier(predicateTo)), List(), None, false))))
+      if predicateFrom == from && predicateTo == to && predicateTypes == types && predicateDir == dir => true
     case _ => false
   }
 }
