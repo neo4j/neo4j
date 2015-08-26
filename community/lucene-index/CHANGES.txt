@@ -1,3 +1,7 @@
+2.2.5
+-----
+o Fixes an issue where a race could lead to skipped entries from the lucene index
+
 2.2.4
 -----
 o Fixed an index recovery issue where an imbalanced amount of write lock acquires compared to releases would make
