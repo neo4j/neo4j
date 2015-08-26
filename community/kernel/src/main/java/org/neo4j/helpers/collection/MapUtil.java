@@ -447,4 +447,26 @@ public abstract class MapUtil
 
         return true;
     }
+
+    public static <K, V> MapBuilder<K, V> entry( K key, V value )
+    {
+        return new MapBuilder<K, V>().entry( key, value );
+    }
+
+    public static class MapBuilder<K, V>
+    {
+        private Map<K, V> map = new HashMap<>();
+
+        public MapBuilder<K, V> entry( K key, V value )
+        {
+            map.put( key, value );
+            return this;
+        }
+
+        public Map<K, V> create()
+        {
+            return map;
+        }
+    }
+
 }

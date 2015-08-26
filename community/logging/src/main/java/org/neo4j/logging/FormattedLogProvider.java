@@ -21,7 +21,6 @@ package org.neo4j.logging;
 
 import org.neo4j.function.Supplier;
 import org.neo4j.function.Suppliers;
-import org.neo4j.logging.FormattedLog.Level;
 
 import java.io.OutputStream;
 import java.io.PrintWriter;

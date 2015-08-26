@@ -27,7 +27,6 @@ import java.util.Date;
 import java.util.IllegalFormatException;
 
 import org.neo4j.function.Suppliers;
-import org.neo4j.logging.FormattedLog.Level;
 
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.equalTo;
