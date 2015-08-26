@@ -21,6 +21,8 @@ package org.neo4j.server.database;
 
 import java.io.File;
 
+import org.neo4j.graphdb.QueryExecutionException;
+import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -58,7 +60,8 @@ public class LifecycleManagingDatabase implements Database
     private boolean isRunning = false;
     private GraphDatabaseAPI graph;
 
-    public LifecycleManagingDatabase( Config config, GraphFactory dbFactory, GraphDatabaseFacadeFactory.Dependencies dependencies )
+    public LifecycleManagingDatabase( Config config, GraphFactory dbFactory,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         this.config = config;
         this.dbFactory = dbFactory;
@@ -88,6 +91,12 @@ public class LifecycleManagingDatabase implements Database
     public void start() throws Throwable
     {
         this.graph = dbFactory.newGraphDatabase( config, dependencies );
+        // in order to speed up testing, they should not run the prelod, but in production it pays to do it.
+        if ( !testing() )
+        {
+            preLoadCypherCompiler();
+        }
+
         isRunning = true;
         log.info( "Successfully started database" );
     }
@@ -113,5 +122,27 @@ public class LifecycleManagingDatabase implements Database
     public boolean isRunning()
     {
         return isRunning;
+    }
+
+    private void preLoadCypherCompiler()
+    {
+        // Execute a single Cypher query to pre-load the compiler to make the first user-query snappy
+        //noinspection EmptyTryBlock
+        try ( Result ignored = this.graph.execute(
+                "MATCH (a:` Arbitrary label name that really doesn't matter `) RETURN a LIMIT 0" ) )
+        {
+            // empty by design
+        }
+        catch ( QueryExecutionException e )
+        {
+            // Might not be a real problem, let's ignore it.
+        }
+    }
+
+    private static boolean testing()
+    {
+        boolean testing = false;
+        assert testing = true : "yes, this should be an assignment!";
+        return testing;
     }
 }
