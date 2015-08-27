@@ -27,6 +27,13 @@ case class InterpolationValue(parts: NonEmptyList[InterpolationStringPart]) {
   def interpolate[T](mode: InterpolationMode[T]): T = mode(parts)
 }
 
+object forceInterpolation extends (Any => Any) {
+  def apply(a: Any) = a match {
+    case iv: InterpolationValue => iv.interpolate(TextInterpolationMode)
+    case _ => a
+  }
+}
+
 sealed trait InterpolationStringPart {
   def value: String
 }

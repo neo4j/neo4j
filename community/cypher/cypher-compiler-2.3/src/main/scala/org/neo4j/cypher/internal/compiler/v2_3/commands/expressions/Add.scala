@@ -20,18 +20,18 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.values.InterpolationValue
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{IsCollection, TypeSafeMathSupport}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
-case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMathSupport with StringHelper {
+case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMathSupport {
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = {
-    val aVal = interpolate(a(ctx))
-    val bVal = interpolate(b(ctx))
+    val aVal = forceInterpolation(a(ctx))
+    val bVal = forceInterpolation(b(ctx))
 
     (aVal, bVal) match {
       case (null, _)                          => null
@@ -43,7 +43,8 @@ case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMat
       case (x, IsCollection(y))               => Seq(x) ++ y
       case (x: String, y: Number)             => x + y.toString
       case (x: Number, y: String)             => x.toString + y
-      case _                                  => throw new CypherTypeException("Don't know how to add `" + aVal.toString + "` and `" + bVal.toString + "`")
+      case _                                  =>
+        throw new CypherTypeException(s"Don't know how to add `$aVal` and `$bVal`")
     }
   }
 
@@ -74,8 +75,5 @@ case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMat
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 
-  private def interpolate(a: Any) = a match {
-    case iv: InterpolationValue => asString(iv)
-    case _ => a
-  }
+
 }

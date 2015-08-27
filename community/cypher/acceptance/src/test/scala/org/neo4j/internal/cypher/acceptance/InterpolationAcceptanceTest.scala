@@ -244,4 +244,44 @@ class InterpolationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
 
     result.toList should equal(List(Map("name" -> "Henry Morgan")))
   }
+
+  test("should interpolate with = operator") {
+    val node = createNode(Map("name" -> "Henry"))
+    val query = "MATCH (n) WHERE $'${n.name}' = 'Henry' RETURN n"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("n" -> node)))
+  }
+
+  test("should interpolate with <> operator") {
+    val henry = createNode(Map("name" -> "Henry"))
+    val leo = createNode(Map("name" -> "Leo"))
+    val query = "MATCH (n) WHERE $'${n.name}' <> 'Henry' RETURN n"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("n" -> leo)))
+  }
+
+  test("should interpolate with inequality operator") {
+    val eleven = createNode(Map("value" -> 11))
+    val twelve = createNode(Map("value" -> 12))
+    val thirteen = createNode(Map("value" -> 13))
+
+    executeWithAllPlanners("MATCH (n) WHERE $'${n.value}' < '12' RETURN n").toSet should equal(Set(
+      Map("n"-> eleven))
+    )
+    executeWithAllPlanners("MATCH (n) WHERE $'${n.value}' <= '12' RETURN n").toSet should equal(Set(
+      Map("n"-> eleven),
+      Map("n"-> twelve))
+    )
+    executeWithAllPlanners("MATCH (n) WHERE $'${n.value}' > '12' RETURN n").toSet should equal(Set(
+      Map("n"-> thirteen))
+    )
+    executeWithAllPlanners("MATCH (n) WHERE $'${n.value}' >= '12' RETURN n").toSet should equal(Set(
+      Map("n"-> twelve),
+      Map("n"-> thirteen))
+    )
+  }
 }

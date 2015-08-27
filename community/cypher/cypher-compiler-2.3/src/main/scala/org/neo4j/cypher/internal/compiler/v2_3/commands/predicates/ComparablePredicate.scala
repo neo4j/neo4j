@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands.predicates
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.forceInterpolation
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.IsCollection
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v2_3.IncomparableValuesException
@@ -31,14 +32,18 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
     val l: Any = left(m)
-    val r: Any = right(m)
+    if (l == null)
+      None
+    else {
+      val r: Any = right(m)
+      if (r == null)
+        None
+      else {
+        val comparisonResult: Int = compare(l, r)(state)
 
-    if (l == null || r == null)
-      return None
-
-    val comparisonResult: Int = compare(l, r)(state)
-
-    Some(compare(comparisonResult))
+        Some(compare(comparisonResult))
+      }
+    }
   }
 
   def sign: String
@@ -58,18 +63,18 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
   }
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
-    val a1 = a(m)
-    val b1 = b(m)
+    val a1 = forceInterpolation(a(m))
+    val b1 = forceInterpolation(b(m))
 
     (a1, b1) match {
-      case (null, _)                                             => None
-      case (_, null)                                             => None
-      case (IsCollection(l), IsCollection(r))                    => Some(l == r)
-      case (l: Node, r) if !r.isInstanceOf[Node]                 => incomparable(l, r)
-      case (l, r: Node) if !l.isInstanceOf[Node]                 => incomparable(l, r)
-      case (l: Relationship, r) if !r.isInstanceOf[Relationship] => incomparable(l, r)
-      case (l, r: Relationship) if !l.isInstanceOf[Relationship] => incomparable(l, r)
-      case _                                                     => Some(a1 == b1)
+      case (null, _)                                                     => None
+      case (_, null)                                                     => None
+      case (IsCollection(l), IsCollection(r))                            => Some(l == r)
+      case (l: Node, r: AnyRef) if !r.isInstanceOf[Node]                 => incomparable(l, r)
+      case (l: AnyRef, r: Node) if !l.isInstanceOf[Node]                 => incomparable(l, r)
+      case (l: Relationship, r: AnyRef) if !r.isInstanceOf[Relationship] => incomparable(l, r)
+      case (l: AnyRef, r: Relationship) if !l.isInstanceOf[Relationship] => incomparable(l, r)
+      case _                                                             => Some(a1 == b1)
     }
   }
 
