@@ -284,4 +284,21 @@ class InterpolationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
       Map("n"-> thirteen))
     )
   }
+
+  test("order by should handle interpolated strings") {
+    val query = """UNWIND ['foo', $'bar', 'baz', $'aaa'] AS key RETURN key ORDER BY key"""
+    val res = executeWithAllPlanners(query)
+
+    res.columnAs("key").toList should equal(List("aaa", "bar", "baz", "foo"))
+  }
+
+  test("should interpolate aggregation keys") {
+    val query =
+      s"""UNWIND ['foo', $$'foo'] AS key
+       |UNWIND [1, 2, 3 ,4] AS value
+       |RETURN key, count(value) AS c
+     """.stripMargin
+
+    executeWithAllPlanners(query).toList should equal(List(Map("key"-> "foo", "c" -> 8)))
+  }
 }
