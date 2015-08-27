@@ -13,9 +13,13 @@
   <version>2.2.6-SNAPSHOT</version>
 
   <description>Logs information collected from a set of monitors.</description>
-  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <packaging>jar</packaging>
+
+  <properties>
+    <license-text.header>GPL-3-header.txt</license-text.header>
+    <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
+  </properties>
 
   <scm>
 	  <url>https://github.com/neo4j/neo4j/tree/master/community/monitor-logging</url>
