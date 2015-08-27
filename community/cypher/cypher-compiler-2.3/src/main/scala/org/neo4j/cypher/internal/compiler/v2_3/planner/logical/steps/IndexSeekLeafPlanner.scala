@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.frontend.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{ManyQueryExpression, QueryExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
+import org.neo4j.cypher.internal.frontend.v2_3.notification.IndexSeekUnfulfillableNotification
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 
@@ -53,7 +54,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
 
     val arguments = qg.argumentIds.map(n => Identifier(n.name)(null))
 
-    predicates.collect {
+    val resultPlans = predicates.collect {
       // n.prop IN [ ... ]
       case predicate@AsPropertySeekable(seekable)
         if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
@@ -67,7 +68,30 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
       case predicate@AsValueRangeSeekable(seekable) =>
         producePlanFor(seekable.name, seekable.propertyKeyName, predicate, seekable.asQueryExpression)
     }.flatten
+
+    if (resultPlans.isEmpty) {
+      DynamicPropertyNotifier.process(findNonSeekableIdentifiers(predicates), IndexSeekUnfulfillableNotification, qg)
+    }
+
+    resultPlans
   }
+
+  private def findNonSeekableIdentifiers(predicates: Seq[Expression])(implicit context: LogicalPlanningContext) =
+    predicates.flatMap {
+      // n['some' + n.prop] IN [ ... ]
+      case predicate@AsDynamicPropertyNonSeekable(nonSeekableId)
+        if context.semanticTable.isNode(nonSeekableId) => Some(nonSeekableId)
+
+      // n['some' + n.prop] LIKE "prefix%..."
+      case predicate@AsStringRangeNonSeekable(nonSeekableId)
+        if context.semanticTable.isNode(nonSeekableId) => Some(nonSeekableId)
+
+      // n['some' + n.prop] <|<=|>|>= value
+      case predicate@AsValueRangeNonSeekable(nonSeekableId)
+        if context.semanticTable.isNode(nonSeekableId) => Some(nonSeekableId)
+
+      case _ => None
+    }.toSet
 
   protected def constructPlan(idName: IdName,
                               label: LabelToken,
@@ -76,8 +100,6 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
                               hint: Option[UsingIndexHint],
                               argumentIds: Set[IdName])
                              (implicit context: LogicalPlanningContext): (Seq[Expression]) => LogicalPlan
-
-
 
   protected def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext): Option[IndexDescriptor]
 }

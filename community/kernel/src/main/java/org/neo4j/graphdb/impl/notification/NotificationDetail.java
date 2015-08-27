@@ -62,18 +62,29 @@ public interface NotificationDetail
 
         public static NotificationDetail cartesianProduct( Set<String> identifiers )
         {
+            return createNotificationDetail( identifiers, "identifier", "identifiers" );
+        }
+
+        public static NotificationDetail indexSeekOrScan( Set<String> labels )
+        {
+            return createNotificationDetail( labels, "indexed label", "indexed labels" );
+        }
+
+        private static NotificationDetail createNotificationDetail( Set<String> elements, String singularTerm,
+                String pluralTerm )
+        {
             StringBuilder builder = new StringBuilder();
             builder.append( "(" );
             String separator = "";
-            for ( String identifier : identifiers )
+            for ( String element : elements )
             {
                 builder.append( separator );
-                builder.append( identifier );
+                builder.append( element );
                 separator = ", ";
             }
             builder.append( ")" );
-            boolean singular = identifiers.size() == 1;
-            return createNotificationDetail( singular ? "identifier" : "identifiers", builder.toString(), singular );
+            boolean singular = elements.size() == 1;
+            return createNotificationDetail( singular ? singularTerm : pluralTerm, builder.toString(), singular );
         }
 
         private static NotificationDetail createNotificationDetail( final String name, final String value,
