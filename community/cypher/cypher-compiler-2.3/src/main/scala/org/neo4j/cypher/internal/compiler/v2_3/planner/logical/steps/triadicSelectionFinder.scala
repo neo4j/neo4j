@@ -27,43 +27,83 @@ import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.frontend.v2_3.ast.Expression
 
 object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
-  override def apply(in: LogicalPlan, qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = in match {
+
+  override def apply(in: LogicalPlan, qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] =
+    qg.selections.patternPredicatesGiven(in.availableSymbols).collect {
+      // WHERE NOT (a)-[:X]->(c)
+      case predicate@Not(patternExpr: PatternExpression) => findMatchingRelationshipPattern(false, predicate, patternExpr, in, qg)
+      // WHERE (a)-[:X]->(c)
+      case patternExpr: PatternExpression => findMatchingRelationshipPattern(true, patternExpr, patternExpr, in, qg)
+    }.flatten
+
+  private def findMatchingRelationshipPattern(positivePredicate: Boolean, triadicPredicate: Expression,
+                                              patternExpression: PatternExpression, in: LogicalPlan, qg: QueryGraph)
+                                              (implicit context: LogicalPlanningContext): Seq[LogicalPlan] = in match {
+
     // MATCH (a)-[:X]->(b)-[:X]->(c) WHERE (predicate involving (a)-[:X]->(c))
-    case sel@Selection(predicates,
-    exp2@Expand(
-    exp1@Expand(lhs, from1, dir1, types1, to1, rel1, ExpandAll),
-    from2, dir2, types2, to2, rel2, ExpandAll))
-      if to1 == from2 =>
+    case Selection(predicates,exp:Expand) => findMatchingOuterExpand(positivePredicate, triadicPredicate, patternExpression, predicates, exp, qg)
 
-      val newPlan = matchingPredicateExists(qg, in.availableSymbols, from1.name, to2.name, types1, dir1) map {
-        case (positivePredicate, predicate) =>
-          val argument = context.logicalPlanProducer.planArgumentRowFrom(exp1)
-          val newExpand2 = Expand(argument, from2, dir2, types2, to2, rel2, ExpandAll)(exp2.solved)
-          val newSelection = context.logicalPlanProducer.planSelection(sel.predicates, newExpand2)
-          context.logicalPlanProducer.planTriadicSelection(positivePredicate, exp1, from1, to1, to2, newSelection, predicate)
-      }
-
-      newPlan.toSeq
+    // MATCH (a)-[:X]->(b)-[:Y]->(c) WHERE (predicate involving (a)-[:X]->(c))
+    case exp:Expand => findMatchingOuterExpand(positivePredicate, triadicPredicate, patternExpression, Seq.empty, exp, qg)
 
     case _ => Seq.empty
   }
 
-  private def matchingPredicateExists(qg: QueryGraph, availableSymbols: Set[IdName], from: String, to: String, types: Seq[RelTypeName], dir: SemanticDirection): Option[(Boolean,Expression)] =
-    qg.selections.patternPredicatesGiven(availableSymbols).collectFirst {
-      // WHERE NOT (a)-[:X]->(c)
-      case predicate@Not(patternExpr: PatternExpression) if matchingRelationshipPattern(patternExpr, from, to, types, dir) => (false, predicate)
-      // WHERE (a)-[:X]->(c)
-      case patternExpr: PatternExpression if matchingRelationshipPattern(patternExpr, from, to, types, dir) => (true, patternExpr)
-    }
+  private def findMatchingOuterExpand(positivePredicate: Boolean, triadicPredicate: Expression,
+                                              patternExpression: PatternExpression, incomingPredicates: Seq[Expression], expand: Expand, qg: QueryGraph)
+                                             (implicit context: LogicalPlanningContext): Seq[LogicalPlan] = expand match {
+    case exp2@Expand(exp1: Expand, _, _, _, _, _, ExpandAll) =>
+      findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, Seq.empty, exp1, exp2, qg)
 
-  private def matchingRelationshipPattern(pattern: PatternExpression, from: String, to: String, types: Seq[RelTypeName], dir: SemanticDirection): Boolean = pattern match {
+    case exp2@Expand(Selection(innerPredicates, exp1: Expand), _, _, _, _, _, ExpandAll) =>
+      findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, innerPredicates, exp1, exp2, qg)
+
+    case _ => Seq.empty
+  }
+
+  private def findMatchingInnerExpand(positivePredicate: Boolean, triadicPredicate: Expression,
+                                      patternExpression: PatternExpression, incomingPredicates: Seq[Expression],
+                                      leftPredicates: Seq[Expression], exp1: Expand, exp2: Expand, qg: QueryGraph)
+                                             (implicit context: LogicalPlanningContext): Seq[LogicalPlan] =
+    if (exp1.mode == ExpandAll && exp1.to == exp2.from &&
+      matchingLabels(positivePredicate, exp1.to, exp2.to, qg) &&
+      matchingRelationshipPattern(patternExpression, exp1.from.name, exp2.to.name, exp1.types, exp1.dir)) {
+
+      val left = if (leftPredicates.length > 0)
+        context.logicalPlanProducer.planSelection(leftPredicates, exp1)
+      else
+        exp1
+
+      val argument = context.logicalPlanProducer.planArgumentRowFrom(left)
+      val newExpand2 = Expand(argument, exp2.from, exp2.dir, exp2.types, exp2.to, exp2.relName, ExpandAll)(exp2.solved)
+      val right = if (incomingPredicates.length > 0)
+        context.logicalPlanProducer.planSelection(incomingPredicates, newExpand2)
+      else
+        newExpand2
+
+      Seq(context.logicalPlanProducer.planTriadicSelection(positivePredicate, left, exp1.from, exp2.from, exp2.to, right, triadicPredicate))
+    }
+    else
+      Seq.empty
+
+  private def matchingLabels(positivePredicate: Boolean, node1: IdName, node2: IdName, qg: QueryGraph): Boolean = {
+    val labels1 = qg.selections.labelsOnNode(node1)
+    val labels2 = qg.selections.labelsOnNode(node2)
+    if (positivePredicate)
+      labels1 == labels2
+    else
+      labels1.isEmpty || !labels2.isEmpty && labels2.forall(labels1.contains)
+  }
+
+  private def matchingRelationshipPattern(pattern: PatternExpression, from: String, to: String,
+                                          types: Seq[RelTypeName], dir: SemanticDirection): Boolean = pattern match {
     // (a)-[:X]->(c)
     case p@PatternExpression(
-    RelationshipsPattern(
-    RelationshipChain(
-    NodePattern(Some(Identifier(predicateFrom)), List(), None, false),
-    RelationshipPattern(None, false, predicateTypes, None, None, predicateDir),
-    NodePattern(Some(Identifier(predicateTo)), List(), None, false))))
+      RelationshipsPattern(
+        RelationshipChain(
+          NodePattern(Some(Identifier(predicateFrom)), List(), None, false),
+          RelationshipPattern(None, false, predicateTypes, None, None, predicateDir),
+          NodePattern(Some(Identifier(predicateTo)), List(), None, false))))
       if predicateFrom == from && predicateTo == to && predicateTypes == types && predicateDir == dir => true
     case _ => false
   }
