@@ -2,10 +2,15 @@ For Release Notes, see http://neo4j.com/release-notes/neo4j-${project.version}/
 
 2.2.5
 -----
+Csv:
+o Detects and uses BOM (byte-order mark) headers in input streams
+
 Cypher:
 o Fixes #4907 - Result.columnAs should throw exception on invalid column name
 o Fixes #4988 - predicate exceptions should be ignored for non-matching rows
 o Fixes #5114 - lower case exponent e unsupported
+o Fixes #4937 - ORDER BY scope bug
+o Detects and uses BOM (byte-order-mark) headers in CSV files when running LOAD CSV
 
 Graph algo:
 o Fixes #5086 - path.reverseNodes bug

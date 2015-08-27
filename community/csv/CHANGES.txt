@@ -1,3 +1,7 @@
+2.2.5
+-----
+o Detects and uses BOM (byte-order mark) headers in input streams
+
 2.2.3
 -----
 o Detects and uses BOM (byte-order mark) headers in text files
