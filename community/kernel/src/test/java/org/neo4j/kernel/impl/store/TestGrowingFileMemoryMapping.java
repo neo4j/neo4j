@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -39,7 +40,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.helpers.Settings.osIsWindows;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestGrowingFileMemoryMapping
@@ -50,7 +50,7 @@ public class TestGrowingFileMemoryMapping
     public void shouldGrowAFileWhileContinuingToMemoryMapNewRegions() throws Exception
     {
         // don't run on windows because memory mapping doesn't work properly there
-        assumeTrue( !osIsWindows() );
+        assumeTrue( !SystemUtils.IS_OS_WINDOWS );
 
         // given
         int NUMBER_OF_RECORDS = 1000000;

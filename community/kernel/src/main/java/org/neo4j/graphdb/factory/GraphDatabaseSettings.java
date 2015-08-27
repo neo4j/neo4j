@@ -19,13 +19,14 @@
  */
 package org.neo4j.graphdb.factory;
 
+import org.apache.commons.lang3.SystemUtils;
+
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.configuration.Internal;
@@ -245,7 +246,7 @@ public abstract class GraphDatabaseSettings
     @Deprecated
     @Obsoleted( "This setting has been obsoleted. Neo4j no longer relies on the memory-mapping capabilities of the operating system." )
     @Description( "Use memory mapped buffers for accessing the native storage layer." )
-    public static final Setting<Boolean> use_memory_mapped_buffers = setting( "use_memory_mapped_buffers", BOOLEAN, Boolean.toString(!Settings.osIsWindows()));
+    public static final Setting<Boolean> use_memory_mapped_buffers = setting( "use_memory_mapped_buffers", BOOLEAN, Boolean.toString(!SystemUtils.IS_OS_WINDOWS));
 
     @Description("Target size for pages of mapped memory. If set to 0, then a reasonable default is chosen, " +
                  "depending on the storage device used.")

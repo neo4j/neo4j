@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -318,7 +319,7 @@ public class BlockTypeTest
     @Test
     public void should_replace_filenames_in_queries() throws Exception
     {
-        assumeFalse( System.getProperty( "os.name" ).toLowerCase().startsWith( "win" ) );
+        assumeFalse( SystemUtils.IS_OS_WINDOWS );
         // given
         List<String> myQuery = Arrays.asList( "[source, cypher]", "----", "LOAD CSV FROM \"my_file.csv\" AS line",
                 "RETURN line;", "----" );

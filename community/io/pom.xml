@@ -58,6 +58,10 @@ the relevant Commercial Agreement.
       <artifactId>neo4j-primitive-collections</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
 
     <!-- Test dependencies -->
     <dependency>

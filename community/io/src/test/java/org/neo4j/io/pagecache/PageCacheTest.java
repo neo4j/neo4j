@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -3540,7 +3541,7 @@ public abstract class PageCacheTest<T extends PageCache>
     @Test( timeout = 30000 )
     public void backgroundThreadsMustGracefullyShutDown() throws Exception
     {
-        assumeTrue( "For some reason, this test is very flaky on Windows", !FileUtils.OS_IS_WINDOWS );
+        assumeTrue( "For some reason, this test is very flaky on Windows", !SystemUtils.IS_OS_WINDOWS );
 
         int iterations = 1000;
         List<WeakReference<PageCache>> refs = new LinkedList<>();

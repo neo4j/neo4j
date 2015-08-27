@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v2_3.helpers
 
+import org.apache.commons.lang3.SystemUtils
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
 class StringHelperTest extends CypherFunSuite {
@@ -34,7 +35,7 @@ class StringHelperTest extends CypherFunSuite {
   test("should fix positions on Windows after line breaks") {
     val text = "(line 3, column 8 (offset: 7))"
 
-    if (System.getProperty("os.name").contains("win")) {
+    if (SystemUtils.IS_OS_WINDOWS) {
       text.fixPosition should equal("(line 3, column 8 (offset: 9))")
     } else {
       text.fixPosition should equal("(line 3, column 8 (offset: 7))")

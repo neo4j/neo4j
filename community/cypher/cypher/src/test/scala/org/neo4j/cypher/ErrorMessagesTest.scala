@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher
 
+import org.apache.commons.lang3.SystemUtils
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.StringHelper
-import org.neo4j.helpers.Platforms
 
 class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
 
@@ -448,7 +448,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     assertThat(error.offset, equalTo(Some(fixPosition(query, expectedOffset)): Option[Int]))
   }
 
-  private def fixPosition(q: String, originalOffset: Int): Int = if (Platforms.platformIsWindows()) {
+  private def fixPosition(q: String, originalOffset: Int): Int = if (SystemUtils.IS_OS_WINDOWS) {
     val subString = q.replaceAll("\n\r", "\n").substring(0, originalOffset)
     val numberOfNewLines = subString.filter(_ == '\n').length
     originalOffset + numberOfNewLines
