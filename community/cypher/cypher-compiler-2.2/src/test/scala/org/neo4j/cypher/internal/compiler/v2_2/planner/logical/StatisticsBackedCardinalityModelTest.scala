@@ -33,15 +33,39 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
   val relCount = 50
   val rel2Count = 78
 
-  test("query containing a WITH and LIMIT") {
+  test("query containing a WITH and LIMIT on low/fractional cardinality") {
     val i = .1
     givenPattern("MATCH (a:Person) WITH a LIMIT 10 MATCH (a)-[:REL]->()").
-    withGraphNodes(allNodes).
-    withLabel('Person -> i).
-    withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
-    shouldHavePlannerQueryCardinality(produceCardinalityModel)(
+      withGraphNodes(allNodes).
+      withLabel('Person -> i).
+      withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
+      shouldHavePlannerQueryCardinality(produceCardinalityModel)(
         Math.min(allNodes * (i / allNodes), 10.0) *
-        allNodes * (relCount / (i * allNodes))
+          allNodes * (relCount / (i * allNodes))
+      )
+  }
+
+  test("query containing a WITH and LIMIT on high cardinality") {
+    val i = personCount
+    givenPattern("MATCH (a:Person) WITH a LIMIT 10 MATCH (a)-[:REL]->()").
+      withGraphNodes(allNodes).
+      withLabel('Person -> i).
+      withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
+      shouldHavePlannerQueryCardinality(produceCardinalityModel)(
+        Math.min(allNodes * (i / allNodes), 10.0) *
+          allNodes * (relCount / (i * allNodes))
+      )
+  }
+
+  test("query containing a WITH and LIMIT on parameterized cardinality") {
+    val i = personCount
+    givenPattern("MATCH (a:Person) WITH a LIMIT {limit} MATCH (a)-[:REL]->()").
+      withGraphNodes(allNodes).
+      withLabel('Person -> i).
+      withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
+      shouldHavePlannerQueryCardinality(produceCardinalityModel)(
+        Math.min(allNodes * (i / allNodes), GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount) *
+          allNodes * (relCount / (i * allNodes))
       )
   }
 
