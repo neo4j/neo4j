@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.MinMaxOrdering.{BY_NUMBER, BY_STR
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.forceInterpolation
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
@@ -310,7 +311,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     }
 
     def setProperty(id: Long, propertyKeyId: Int, value: Any) {
-      statement.dataWriteOperations().nodeSetProperty(id, properties.Property.property(propertyKeyId, value) )
+      statement.dataWriteOperations().nodeSetProperty(id, properties.Property.property(propertyKeyId, forceInterpolation(value)) )
     }
 
     def getById(id: Long) = try {
@@ -350,7 +351,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     }
 
     def setProperty(id: Long, propertyKeyId: Int, value: Any) {
-      statement.dataWriteOperations().relationshipSetProperty(id, properties.Property.property(propertyKeyId, value) )
+      statement.dataWriteOperations().relationshipSetProperty(id, properties.Property.property(propertyKeyId, forceInterpolation(value)) )
     }
 
     def getById(id: Long) = try {

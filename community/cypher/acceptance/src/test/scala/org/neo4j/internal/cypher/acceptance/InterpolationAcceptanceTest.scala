@@ -301,4 +301,34 @@ class InterpolationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
 
     executeWithAllPlanners(query).toList should equal(List(Map("key"-> "foo", "c" -> 8)))
   }
+
+  test("should be able to use interpolated strings with SET") {
+    eengine.execute("CREATE (n) SET n.prop=$'foo'")
+
+    executeScalarWithAllPlanners[String]("MATCH n return n.prop") should equal("foo")
+  }
+
+  test("should be able to use interpolated strings with CREATE node") {
+    eengine.execute("CREATE (n {prop: $'foo'})")
+
+    executeScalarWithAllPlanners[String]("MATCH n return n.prop") should equal("foo")
+  }
+
+  test("should be able to use interpolated strings with CREATE relationship") {
+    eengine.execute("CREATE ()-[:T {prop: $'foo'}]->()")
+
+    executeScalarWithAllPlanners[String]("MATCH ()-[r:T]->() return r.prop") should equal("foo")
+  }
+
+  test("should be able to use interpolated strings with MERGE node") {
+    eengine.execute("MERGE (n {prop: $'foo'})")
+
+    executeScalarWithAllPlanners[String]("MATCH n return n.prop") should equal("foo")
+  }
+
+  test("should be able to use interpolated strings with MERGE relationship") {
+    eengine.execute("MERGE ()-[:T {prop: $'foo'}]->()")
+
+    executeScalarWithAllPlanners[String]("MATCH ()-[r:T]->() return r.prop") should equal("foo")
+  }
 }
