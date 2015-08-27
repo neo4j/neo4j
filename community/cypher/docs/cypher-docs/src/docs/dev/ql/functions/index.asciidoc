@@ -76,8 +76,6 @@ include::toint.asciidoc[]
 
 include::tofloat.asciidoc[]
 
-include::tostring.asciidoc[]
-
 :leveloffset: 1
 
 [[query-functions-collection]]
@@ -214,3 +212,5 @@ include::upper.asciidoc[]
 include::split.asciidoc[]
 
 include::reverse.asciidoc[]
+
+include::tostring.asciidoc[]
