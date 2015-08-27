@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.frontend.v2_3.parser
 
-import org.neo4j.cypher.internal.frontend.v2_3.ast
+import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition, ast}
 import org.parboiled.scala._
+
+import scala.collection.mutable.ListBuffer
 
 trait Expressions extends Parser
   with Literals
@@ -29,48 +31,71 @@ trait Expressions extends Parser
 
   // Precedence loosely based on http://en.wikipedia.org/wiki/Operators_in_C_and_C%2B%2B#Operator_precedence
 
-  def Expression = Expression14
-
-  private def Expression14: Rule1[ast.Expression] = rule("an expression") {
-    Expression13 ~ zeroOrMore(WS ~ (
-        group(keyword("OR") ~~ Expression13) ~~>> (ast.Or(_: ast.Expression, _))
-    ): ReductionRule1[ast.Expression, ast.Expression])
-  }
-
-  private def Expression13: Rule1[ast.Expression] = rule("an expression") {
-    Expression12 ~ zeroOrMore(WS ~ (
-        group(keyword("XOR") ~~ Expression12) ~~>> (ast.Xor(_: ast.Expression, _))
-    ): ReductionRule1[ast.Expression, ast.Expression])
-  }
+  def Expression = Expression12
 
   private def Expression12: Rule1[ast.Expression] = rule("an expression") {
     Expression11 ~ zeroOrMore(WS ~ (
-        group(keyword("AND") ~~ Expression11) ~~>> (ast.And(_: ast.Expression, _))
+        group(keyword("OR") ~~ Expression11) ~~>> (ast.Or(_: ast.Expression, _))
     ): ReductionRule1[ast.Expression, ast.Expression])
   }
 
-  private def Expression11 = Expression10
-
-  private def Expression10: Rule1[ast.Expression] = rule("an expression") (
-      group(keyword("NOT") ~~ Expression10) ~~>> (ast.Not(_))
-    | Expression9
-  )
-
-  private def Expression9: Rule1[ast.Expression] = rule("an expression") {
-    Expression8 ~ zeroOrMore(WS ~ (
-        group(operator("=") ~~ Expression8) ~~>> (ast.Equals(_: ast.Expression, _))
-      | group(operator("<>") ~~ Expression8) ~~>> (ast.NotEquals(_: ast.Expression, _))
-      | group(operator("!=") ~~ Expression8) ~~>> (ast.InvalidNotEquals(_: ast.Expression, _))
-    ))
+  private def Expression11: Rule1[ast.Expression] = rule("an expression") {
+    Expression10 ~ zeroOrMore(WS ~ (
+        group(keyword("XOR") ~~ Expression10) ~~>> (ast.Xor(_: ast.Expression, _))
+    ): ReductionRule1[ast.Expression, ast.Expression])
   }
 
-  private def Expression8: Rule1[ast.Expression] = rule("an expression") {
-    Expression7 ~ zeroOrMore(WS ~ (
-        group(operator("<") ~~ Expression7) ~~>> (ast.LessThan(_: ast.Expression, _))
-      | group(operator(">") ~~ Expression7) ~~>> (ast.GreaterThan(_: ast.Expression, _))
-      | group(operator("<=") ~~ Expression7) ~~>> (ast.LessThanOrEqual(_: ast.Expression, _))
-      | group(operator(">=") ~~ Expression7) ~~>> (ast.GreaterThanOrEqual(_: ast.Expression, _))
-    ))
+  private def Expression10: Rule1[ast.Expression] = rule("an expression") {
+    Expression9 ~ zeroOrMore(WS ~ (
+        group(keyword("AND") ~~ Expression9) ~~>> (ast.And(_: ast.Expression, _))
+    ): ReductionRule1[ast.Expression, ast.Expression])
+  }
+
+  private def Expression9: Rule1[ast.Expression] = rule("an expression") (
+      group(keyword("NOT") ~~ Expression9) ~~>> (ast.Not(_))
+    | Expression8
+  )
+
+  private def Expression8: Rule1[ast.Expression] = rule("comparison expression") {
+    val produceComparisons: (ast.Expression, List[PartialComparison]) => (InputPosition)=>ast.Expression = comparisons
+    Expression7 ~ zeroOrMore(WS ~ PartialComparisonExpression) ~~>> produceComparisons
+  }
+
+  private case class PartialComparison(op:(ast.Expression,ast.Expression)=>(InputPosition)=>ast.Expression,
+                                          expr:ast.Expression, pos:InputPosition) {
+    def apply(lhs:ast.Expression)= op(lhs,expr)(pos)
+  }
+
+  private def PartialComparisonExpression: Rule1[PartialComparison] = (
+      group(operator("=") ~~ Expression7) ~~>> { expr: ast.Expression => pos: InputPosition => PartialComparison(eq, expr, pos) }
+    | group(operator("<>") ~~ Expression7) ~~>> { expr: ast.Expression => pos: InputPosition => PartialComparison(ne, expr, pos) }
+    | group(operator("!=") ~~ Expression7) ~~>> { expr: ast.Expression => pos: InputPosition => PartialComparison(bne, expr, pos) }
+    | group(operator("<") ~~ Expression7) ~~>> { expr: ast.Expression => pos: InputPosition => PartialComparison(lt, expr, pos) }
+    | group(operator(">") ~~ Expression7) ~~>> { expr: ast.Expression => pos: InputPosition => PartialComparison(gt, expr, pos) }
+    | group(operator("<=") ~~ Expression7) ~~>> { expr: ast.Expression => pos: InputPosition => PartialComparison(lte, expr, pos) }
+    | group(operator(">=") ~~ Expression7) ~~>> { expr: ast.Expression => pos: InputPosition => PartialComparison(gte, expr, pos) } )
+
+  private def eq(lhs:ast.Expression, rhs:ast.Expression): (InputPosition) => ast.Expression = ast.Equals(lhs, rhs)
+  private def ne(lhs:ast.Expression, rhs:ast.Expression): (InputPosition) => ast.Expression = ast.NotEquals(lhs, rhs)
+  private def bne(lhs:ast.Expression, rhs:ast.Expression): (InputPosition) => ast.Expression = ast.InvalidNotEquals(lhs, rhs)
+  private def lt(lhs:ast.Expression, rhs:ast.Expression): (InputPosition) => ast.Expression = ast.LessThan(lhs, rhs)
+  private def gt(lhs:ast.Expression, rhs:ast.Expression): (InputPosition) => ast.Expression = ast.GreaterThan(lhs, rhs)
+  private def lte(lhs:ast.Expression, rhs:ast.Expression): (InputPosition) => ast.Expression = ast.LessThanOrEqual(lhs, rhs)
+  private def gte(lhs:ast.Expression, rhs:ast.Expression): (InputPosition) => ast.Expression = ast.GreaterThanOrEqual(lhs, rhs)
+
+  private def comparisons(first: ast.Expression, rest: List[PartialComparison]): (InputPosition)=>ast.Expression = {
+    rest match {
+      case Nil => _ => first
+      case second :: Nil => _ => second(first)
+      case more =>
+        var lhs = first
+        val result = ListBuffer.empty[ast.Expression]
+        for (rhs <- more) {
+          result.append(rhs(lhs))
+          lhs = rhs.expr
+        }
+        ast.Ands(Set(result:_*))
+    }
   }
 
   private def Expression7: Rule1[ast.Expression] = rule("an expression") {

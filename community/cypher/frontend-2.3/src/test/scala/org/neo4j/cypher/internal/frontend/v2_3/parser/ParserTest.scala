@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v2_3.parser
 
+import org.neo4j.cypher.internal.frontend.v2_3.InputPosition
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.parboiled.errors.InvalidInputError
 import org.parboiled.scala._
@@ -38,11 +39,17 @@ trait ParserTest[T, J] extends CypherFunSuite {
       }
     }
 
+    def shouldGive(expected: ((InputPosition) => J)) {
+      shouldGive(expected(InputPosition(0,0,0)))
+    }
+
     def shouldMatch(expected: PartialFunction[J, Unit]) {
       actuals foreach {
         actual => expected.isDefinedAt(actual) should equal(true)
       }
     }
+
+    override def toString: String = s"ResultCheck( $text -> $actuals )"
   }
 
   def parsing(s: String)(implicit p: Rule1[T]): ResultCheck = convertResult(parseRule(p ~ EOI, s), s)

@@ -49,3 +49,18 @@ abstract class CypherFunSuite
     ArgumentCaptor.forClass(manifest.runtimeClass.asInstanceOf[Class[T]])
   }
 }
+
+trait TestName extends Suite {
+  final def testName = __testName.get
+
+  private var __testName: Option[String] = None
+
+  override protected def runTest(testName: String, args: Args): Status = {
+    __testName = Some(testName)
+    try {
+      super.runTest(testName, args)
+    } finally {
+      __testName = None
+    }
+  }
+}
