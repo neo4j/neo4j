@@ -158,14 +158,15 @@ case class CypherCompiler(parser: CypherParser,
     val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException),
                                                                              normalizeWithClauses(mkException)))
     val originalSemanticState = closing(tracer.beginPhase(SEMANTIC_CHECK)) {
-      semanticChecker.check(queryText, cleanedStatement, notificationLogger, mkException)
+      semanticChecker.check(queryText, cleanedStatement, mkException)
     }
+    originalSemanticState.notifications.foreach(notificationLogger += _)
 
     val (rewrittenStatement, extractedParams, postConditions) = closing(tracer.beginPhase(AST_REWRITE)) {
       astRewriter.rewrite(queryText, cleanedStatement, originalSemanticState)
     }
     val postRewriteSemanticState = closing(tracer.beginPhase(SEMANTIC_CHECK)) {
-      semanticChecker.check(queryText, rewrittenStatement, devNullLogger, mkException)
+      semanticChecker.check(queryText, rewrittenStatement, mkException)
     }
 
     val table = SemanticTable(types = postRewriteSemanticState.typeTable, recordedScopes = postRewriteSemanticState.recordedScopes)

@@ -138,4 +138,12 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     result.notifications shouldBe empty
   }
+
+  test("Warnings should work on potentially cached queries") {
+    val resultWithoutExplain = executeWithAllPlannersAndRuntimes("match (a)-->(b), (c)-->(d) return *")
+    val resultWithExplain = executeWithAllPlannersAndRuntimes("explain match (a)-->(b), (c)-->(d) return *")
+
+    resultWithoutExplain shouldBe empty
+    resultWithExplain.notifications.toList should equal(List(CartesianProductNotification(InputPosition(0, 1, 1), Set("c", "d"))))
+  }
 }

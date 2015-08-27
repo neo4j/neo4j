@@ -37,11 +37,6 @@ object CypherCompiler {
   val DEFAULT_QUERY_PLAN_TTL: Long = 1000 // 1 second
   val CLOCK = Clock.SYSTEM_CLOCK
   val DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD = 0.1
-
-  def notificationLoggerBuilder(executionMode: CypherExecutionMode): InternalNotificationLogger = executionMode  match {
-      case CypherExecutionMode.explain => new RecordingNotificationLogger()
-      case _ => devNullLogger
-    }
 }
 
 case class PreParsedQuery(statement: String, rawStatement: String, version: CypherVersion,
@@ -88,9 +83,11 @@ class CypherCompiler(graph: GraphDatabaseService,
 
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String): PreParsedQuery = {
+    val logger = new RecordingNotificationLogger
     val preParsedStatement = CypherPreParser(queryText)
-    val statementWithOptions = CypherStatementWithOptions(preParsedStatement)
-    val CypherStatementWithOptions(statement, offset, version, planner, runtime, mode, notifications) = statementWithOptions
+    val CypherStatementWithOptions(statement, offset, version, planner, runtime, mode, notifications) = CypherStatementWithOptions(
+      preParsedStatement)
+    notifications.foreach( logger += _ )
 
     val cypherVersion = version.getOrElse(configuredVersion)
     val pickedExecutionMode = mode.getOrElse(CypherExecutionMode.default)
@@ -98,10 +95,7 @@ class CypherCompiler(graph: GraphDatabaseService,
     val pickedPlanner = pick(planner, CypherPlanner, if (cypherVersion == configuredVersion) Some(configuredPlanner) else None)
     val pickedRuntime = pick(runtime, CypherRuntime, if (cypherVersion == configuredVersion) Some(configuredRuntime) else None)
 
-    assertValidOptions(statementWithOptions, cypherVersion, pickedExecutionMode, pickedPlanner, pickedRuntime)
-
-    val logger = notificationLoggerBuilder(pickedExecutionMode)
-    notifications.foreach( logger += _ )
+    assertValidOptions(CypherStatementWithOptions(preParsedStatement), cypherVersion, pickedExecutionMode, pickedPlanner, pickedRuntime)
 
     PreParsedQuery(statement, queryText, cypherVersion, pickedExecutionMode, pickedPlanner, pickedRuntime, logger)(offset)
   }

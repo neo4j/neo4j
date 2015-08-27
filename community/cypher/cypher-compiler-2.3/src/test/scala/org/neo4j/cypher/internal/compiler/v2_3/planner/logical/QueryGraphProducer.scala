@@ -38,7 +38,7 @@ trait QueryGraphProducer extends MockitoSugar {
     val mkException = new SyntaxExceptionCreator(query, Some(pos))
     val semanticChecker = new SemanticChecker
     val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
-    val semanticState = semanticChecker.check(query, cleanedStatement, devNullLogger, mkException)
+    val semanticState = semanticChecker.check(query, cleanedStatement, mkException)
 
     val (firstRewriteStep, _, postConditions) = astRewriter.rewrite(query, cleanedStatement, semanticState)
     val semanticTable = SemanticTable(types = semanticState.typeTable, recordedScopes = semanticState.recordedScopes)
