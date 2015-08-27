@@ -100,7 +100,7 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
   private def transformTraversableToArray(a: Any): Any = {
     val seq: Seq[Any] = a.asInstanceOf[Traversable[_]].toSeq
 
-    if (seq.size == 0) {
+    if (seq.isEmpty) {
       Array[String]()
     } else {
       val typeValue = seq.reduce(CastSupport.merge)

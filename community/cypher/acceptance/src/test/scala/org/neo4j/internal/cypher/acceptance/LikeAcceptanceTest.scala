@@ -71,6 +71,32 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     result.toList should equal(List(Map("l" -> london)))
   }
 
+  test("should work with interpolated strings that evaluate to null when there is an index") {
+    val london = createLabeledNode(Map("name" -> "London"), "Location")
+    createLabeledNode(Map("name" -> "london"), "Location")
+    graph.createIndex("Location", "name")
+    graph.inTx {
+      (1 to 100).foreach { _ =>
+        createLabeledNode("Location")
+      }
+      (1 to 300).map { i =>
+        createLabeledNode(Map("name" -> i.toString), "Location")
+      }
+    }
+
+    val query =
+      """WITH null as prefix
+        |MATCH (l:Location)
+        |WHERE l.name LIKE $'${prefix}%'
+        |RETURN l
+      """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.executionPlanDescription().toString should include(IndexSeekByRange.name)
+    result.toList shouldBe empty
+  }
+
   test("should work with dynamic interpolated strings when there is no index") {
     val london = createLabeledNode(Map("name" -> "London"), "Location")
     createLabeledNode(Map("name" -> "london"), "Location")

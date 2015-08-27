@@ -54,7 +54,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       calculateSelectivityForPropertyEquality(seekable.name, seekable.args.sizeHint, selections, seekable.propertyKey)
 
     // WHERE x.prop LIKE "..."
-    case AsStringRangeSeekable(seekable@PrefixRangeSeekable(range, _, _, _)) =>
+    case AsPrefixRangeSeekable(seekable@PrefixRangeSeekable(range, _, _, _)) =>
       calculateSelectivityForPrefixRangeSeekable(seekable.name, selections, seekable.propertyKey, range.prefixLength)
 
     // WHERE x.prop LIKE $"..."

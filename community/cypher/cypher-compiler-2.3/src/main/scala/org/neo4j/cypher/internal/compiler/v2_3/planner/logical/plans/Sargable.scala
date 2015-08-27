@@ -98,11 +98,10 @@ object AsPropertyScannable {
   }
 }
 
-object AsStringRangeSeekable {
+object AsPrefixRangeSeekable {
   def unapply(v: Any): Option[PrefixRangeSeekable] = v match {
     case like@Like(Property(ident: Identifier, propertyKey), LikePattern(lit@StringLiteral(value)), _)
       if !like.caseInsensitive =>
-        val likePattern = LikePatternParser(value).compact.ops
 
         for ((range, prefix) <- getRange(value))
           yield {

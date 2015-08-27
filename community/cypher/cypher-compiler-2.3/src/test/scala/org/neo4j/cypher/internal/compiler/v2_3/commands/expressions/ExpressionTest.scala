@@ -22,10 +22,12 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{CoercedPredicate, Not, True}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{InterpolatedStringPart, LiteralStringPart, InterpolationValue}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{QueryStateHelper, QueryState}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -108,6 +110,32 @@ class ExpressionTest extends CypherFunSuite {
     // then
     expression.localEffects(SymbolTable()) should equal(Effects())
     expression.effects(SymbolTable()) should equal(Effects())
+  }
+
+  test("should evaluate interpolation evaluating to null as null") {
+    // given
+    val expression = Interpolation(NonEmptyList(Left(Identifier("x")), Right("value"), Left(Null())))
+
+    // then
+    expression(ExecutionContext.from("x" -> "a "))(QueryStateHelper.empty) shouldBe null.asInstanceOf[AnyRef]
+  }
+
+  test("should evaluate interpolation") {
+    // given
+    val expression = Interpolation(NonEmptyList(Left(Identifier("x")), Right("value")))
+
+    // then
+    expression(ExecutionContext.from("x" -> "a "))(QueryStateHelper.empty) should equal(
+      InterpolationValue(NonEmptyList(InterpolatedStringPart("a "), LiteralStringPart("value"))))
+  }
+
+  test("should evaluate interpolation involving numeric expression") {
+    // given
+    val expression = Interpolation(NonEmptyList(Left(Identifier("x")), Right("value")))
+
+    // then
+    expression(ExecutionContext.from("x" -> 5))(QueryStateHelper.empty) should equal(
+      InterpolationValue(NonEmptyList(InterpolatedStringPart("5"), LiteralStringPart("value"))))
   }
 
   private def testMerge(a: Map[String, CypherType], b: Map[String, CypherType], expected: Map[String, CypherType]) {

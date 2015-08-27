@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v2_3.parser.{LikePatternParser, MatchT
 
 // See ast.Interpolation for the role of this class
 case class InterpolationValue(parts: NonEmptyList[InterpolationStringPart]) {
-  def interpolate[T](mode: InterpolationMode[T]): T = mode(parts)
+  def interpolate[T](implicit mode: InterpolationMode[T]): T = mode(parts)
 }
 
 object forceInterpolation extends (Any => Any) {

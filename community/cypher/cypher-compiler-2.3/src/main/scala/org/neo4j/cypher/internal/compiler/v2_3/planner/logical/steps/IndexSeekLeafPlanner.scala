@@ -60,7 +60,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
         producePlanFor(seekable.name, seekable.propertyKey, predicate, seekable.args.asQueryExpression)
 
       // n.prop LIKE "prefix%..."
-      case predicate@AsStringRangeSeekable(seekable)
+      case predicate@AsPrefixRangeSeekable(seekable)
         if !arguments(seekable.ident) =>
         producePlanFor(seekable.name, seekable.propertyKey, PartialPredicate(seekable.expr, predicate), seekable.asQueryExpression)
 
