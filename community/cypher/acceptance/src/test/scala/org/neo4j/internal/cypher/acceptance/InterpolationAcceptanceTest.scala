@@ -235,4 +235,13 @@ class InterpolationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
 
     result.toList should equal(List(Map("n" -> node)))
   }
+
+  test("should interpolate with + operator") {
+    createNode(Map("first" -> "Henry", "last" -> "Morgan"))
+    val query = "MATCH (n) RETURN $'${n.first}' + ' ' +  $'${n.last}' AS name"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("name" -> "Henry Morgan")))
+  }
 }
