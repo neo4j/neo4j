@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
-import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{Limit, _}
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
 
 class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -41,8 +41,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       }
     } planFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b").plan should equal(
         OuterHashJoin(Set("b"),
-          Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING, Seq(), "b", "r1")(solved),
-          Expand(NodeByLabelScan("c", LazyLabel("Y"), Set.empty)(solved), "c", Direction.INCOMING, Seq(), "b", "r2")(solved)
+          Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1")(solved),
+          Expand(NodeByLabelScan("c", LazyLabel("Y"), Set.empty)(solved), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")(solved)
         )(solved)
     )
   }
@@ -57,7 +57,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       case OptionalExpand(
       AllNodesScan(IdName("n"), _),
       IdName("n"),
-      Direction.OUTGOING,
+      SemanticDirection.OUTGOING,
       _,
       IdName("x"),
       _,
@@ -125,8 +125,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       OptionalExpand(
         OptionalExpand(
           AllNodesScan(IdName("a"), Set.empty)(solved),
-          IdName("a"), Direction.OUTGOING, List(RelTypeName("R1") _), IdName("x1"), IdName("  UNNAMED27"), ExpandAll, Seq.empty)(solved),
-        IdName("a"), Direction.OUTGOING, List(RelTypeName("R2") _), IdName("x2"), IdName("  UNNAMED58"), ExpandAll, Seq.empty)(solved)
+          IdName("a"), SemanticDirection.OUTGOING, List(RelTypeName("R1") _), IdName("x1"), IdName("  UNNAMED27"), ExpandAll, Seq.empty)(solved),
+        IdName("a"), SemanticDirection.OUTGOING, List(RelTypeName("R2") _), IdName("x2"), IdName("  UNNAMED58"), ExpandAll, Seq.empty)(solved)
     )
   }
 
@@ -139,7 +139,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
     val allNodesN:LogicalPlan = AllNodesScan(IdName("n"),Set())(s)
     val predicate: Expression = In(Property(ident("m"), PropertyKeyName("prop") _) _, Collection(List(SignedDecimalIntegerLiteral("42") _)) _) _
     plan should equal(
-      OptionalExpand(allNodesN, IdName("n"), Direction.BOTH, Seq.empty, IdName("m"), IdName("r"), ExpandAll,
+      OptionalExpand(allNodesN, IdName("n"), SemanticDirection.BOTH, Seq.empty, IdName("m"), IdName("r"), ExpandAll,
         Vector(predicate))(s)
     )
   }

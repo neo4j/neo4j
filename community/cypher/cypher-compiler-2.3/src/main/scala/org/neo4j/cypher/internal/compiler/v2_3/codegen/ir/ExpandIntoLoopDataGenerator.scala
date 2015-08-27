@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure, Variable}
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 
-case class ExpandIntoLoopDataGenerator(opName: String, fromVar: Variable, dir: Direction,
+case class ExpandIntoLoopDataGenerator(opName: String, fromVar: Variable, dir: SemanticDirection,
                    types: Map[String, String], toVar: Variable)
   extends LoopDataGenerator {
 

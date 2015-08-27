@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Cost
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.idSeekLeafPlanner
-import org.neo4j.cypher.internal.frontend.v2_3.RelTypeId
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.frontend.v2_3.{RelTypeId, SemanticDirection}
 
 import scala.collection.mutable
 
@@ -180,7 +179,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )_
     val from = IdName("from")
     val end = IdName("to")
-    val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+    val patternRel = PatternRelationship(IdName("r"), (from, end), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set(IdName("r")), expr))),
       patternNodes = Set(from, end),
@@ -218,7 +217,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )_
     val from = IdName("from")
     val end = IdName("to")
-    val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.BOTH, Seq.empty, SimplePatternLength)
+    val patternRel = PatternRelationship(IdName("r"), (from, end), SemanticDirection.BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set(IdName("r")), expr))),
       patternNodes = Set(from, end),
@@ -258,7 +257,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     when(semanticTable.resolvedRelTypeNames).thenReturn(mutable.Map("X" -> RelTypeId(1)))
 
     val patternRel = PatternRelationship(
-      IdName("r"), (from, end), Direction.BOTH,
+      IdName("r"), (from, end), SemanticDirection.BOTH,
       Seq(RelTypeName("X")_),
       SimplePatternLength
     )
@@ -305,7 +304,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     when(semanticTable.resolvedRelTypeNames).thenReturn(mutable.Map("X" -> RelTypeId(1), "Y" -> RelTypeId(2)))
 
     val patternRel = PatternRelationship(
-      IdName("r"), (from, end), Direction.BOTH,
+      IdName("r"), (from, end), SemanticDirection.BOTH,
       Seq[RelTypeName](RelTypeName("X")_, RelTypeName("Y")_),
       SimplePatternLength
     )

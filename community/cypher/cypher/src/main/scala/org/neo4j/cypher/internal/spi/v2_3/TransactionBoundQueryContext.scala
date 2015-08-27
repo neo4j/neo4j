@@ -24,10 +24,12 @@ import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_3.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
-import org.neo4j.cypher.internal.frontend.v2_3.{Bound, EntityNotFoundException, FailedIndexException}
+import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, Bound, EntityNotFoundException, FailedIndexException}
 import org.neo4j.graphdb.DynamicRelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -127,9 +129,13 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def getOrCreateLabelId(labelName: String) =
     statement.tokenWriteOperations().labelGetOrCreateForName(labelName)
 
-  def getRelationshipsForIds(node: Node, dir: Direction, types: Option[Seq[Int]]): Iterator[Relationship] = types match {
-    case None => new BeansAPIRelationshipIterator(statement.readOperations().nodeGetRelationships(node.getId, dir), relationshipActions)
-    case Some(typeIds) => new BeansAPIRelationshipIterator(statement.readOperations().nodeGetRelationships(node.getId, dir, typeIds: _* ), relationshipActions)
+  def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = types match {
+    case None =>
+      val relationships = statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir))
+      new BeansAPIRelationshipIterator(relationships, relationshipActions)
+    case Some(typeIds) =>
+      val relationships = statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeIds: _*)
+      new BeansAPIRelationshipIterator(relationships, relationshipActions)
   }
 
   def indexSeek(index: IndexDescriptor, value: Any) =
@@ -268,9 +274,11 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def getNodesByLabel(id: Int): Iterator[Node] =
     JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().nodesGetForLabel(id))(nodeOps.getById)
 
-  def nodeGetDegree(node: Long, dir: Direction): Int = statement.readOperations().nodeGetDegree(node, dir)
+  def nodeGetDegree(node: Long, dir: SemanticDirection): Int =
+    statement.readOperations().nodeGetDegree(node, toGraphDb(dir))
 
-  def nodeGetDegree(node: Long, dir: Direction, relTypeId: Int): Int = statement.readOperations().nodeGetDegree(node, dir, relTypeId)
+  def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int =
+    statement.readOperations().nodeGetDegree(node, toGraphDb(dir), relTypeId)
 
   override def nodeIsDense(node: Long): Boolean = statement.readOperations().nodeIsDense(node)
 

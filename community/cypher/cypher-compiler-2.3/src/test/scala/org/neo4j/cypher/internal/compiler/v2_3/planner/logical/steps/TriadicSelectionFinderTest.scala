@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.QueryGraphProduce
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
 
 class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTestSupport with QueryGraphProducer {
 
@@ -42,7 +42,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
 
   test("MATCH (a:X)-->(b)-->(c) WHERE NOT (a)-->(c)") {
     implicit val (plannerQuery, semanticTable) = producePlannerQueryForPattern("MATCH (a:X)-[r1]->(b)-[r2]->(c) WHERE NOT (a)-->(c)")
-    val (expand1, selection) = produceTriadicTestCase("X", Seq.empty, null, Seq.empty, Direction.OUTGOING, null)
+    val (expand1, selection) = produceTriadicTestCase("X", Seq.empty, null, Seq.empty, SemanticDirection.OUTGOING, null)
     val triadic = produceTriadicTestPlan(expand1)
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) should equal(Seq(triadic))
@@ -50,21 +50,21 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
 
   test("MATCH (a:X)-[:A]->(b)-[:B]->(c) WHERE NOT (a)-->(c) passes through") {
     implicit val (plannerQuery, semanticTable) = producePlannerQueryForPattern("MATCH (a:X)-[:A]->(b)-[:B]->(c) WHERE NOT (a)-->(c)")
-    val (expand1, selection) = produceTriadicTestCase("X", Seq("A"), null, Seq("B"), Direction.OUTGOING, null)
+    val (expand1, selection) = produceTriadicTestCase("X", Seq("A"), null, Seq("B"), SemanticDirection.OUTGOING, null)
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) should equal(Seq.empty)
   }
 
   test("MATCH (a:X)-[:A]->(b)-[:A]->(c) WHERE NOT (a)<-[:A]-(c) passes through") {
     implicit val (plannerQuery, semanticTable) = producePlannerQueryForPattern("MATCH (a:X)-[:A]->(b)-[:A]->(c) WHERE NOT (a)<-[:A]-(c)")
-    val (expand1, selection) = produceTriadicTestCase("X", Seq("A"), null, Seq("A"), Direction.OUTGOING, null)
+    val (expand1, selection) = produceTriadicTestCase("X", Seq("A"), null, Seq("A"), SemanticDirection.OUTGOING, null)
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) should equal(Seq.empty)
   }
 
   test("MATCH (a:X)-[:A]->(b)-[:A]->(c) WHERE NOT (a:X)-[:A]->(c)") {
     implicit val (plannerQuery, semanticTable) = producePlannerQueryForPattern("MATCH (a:X)-[r1:A]->(b)-[r2:A]->(c) WHERE NOT (a)-[:A]->(c)")
-    val (expand1, selection) = produceTriadicTestCase("X", Seq("A"), null, Seq("A"), Direction.OUTGOING, null)
+    val (expand1, selection) = produceTriadicTestCase("X", Seq("A"), null, Seq("A"), SemanticDirection.OUTGOING, null)
     val triadic = produceTriadicTestPlan(expand1, r1Types = Seq("A"), r2Types = Seq("A"))
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) should equal(Seq(triadic))
@@ -72,7 +72,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
 
   test("MATCH (a:X)-[:A]->(b)-[:B]->(c) WHERE NOT (a:X)-[:A]->(c)") {
     implicit val (plannerQuery, semanticTable) = producePlannerQueryForPattern("MATCH (a:X)-[r1:A]->(b)-[r2:B]->(c) WHERE NOT (a)-[:A]->(c)")
-    val (expand1, selection) = produceTriadicTestCase("X", Seq("A"), null, Seq("B"), Direction.OUTGOING, null)
+    val (expand1, selection) = produceTriadicTestCase("X", Seq("A"), null, Seq("B"), SemanticDirection.OUTGOING, null)
     val triadic = produceTriadicTestPlan(expand1, r1Types = Seq("A"), r2Types = Seq("B"))
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) should equal(Seq(triadic))
@@ -80,8 +80,8 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
 
   test("MATCH (a:X)-[:A]->(b)<-[:B]-(c) WHERE NOT (a:X)-[:A]->(c)") {
     implicit val (plannerQuery, semanticTable) = producePlannerQueryForPattern("MATCH (a:X)-[r1:A]->(b)<-[r2:B]-(c) WHERE NOT (a)-[:A]->(c)")
-    val (expand1, selection) = produceTriadicTestCase("X", Seq("A"), null, Seq("B"), Direction.INCOMING, null)
-    val triadic = produceTriadicTestPlan(expand1, r1Types = Seq("A"), r2Types = Seq("B"), r2Direction = Direction.INCOMING)
+    val (expand1, selection) = produceTriadicTestCase("X", Seq("A"), null, Seq("B"), SemanticDirection.INCOMING, null)
+    val triadic = produceTriadicTestPlan(expand1, r1Types = Seq("A"), r2Types = Seq("B"), r2Direction = SemanticDirection.INCOMING)
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) should equal(Seq(triadic))
   }
@@ -90,14 +90,14 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
 
   test("MATCH (a:X)-->(b)-[:A]->(c) WHERE (a:X)-[:A]->(c)") {
     implicit val (plannerQuery, semanticTable) = producePlannerQueryForPattern("MATCH (a:X)-[r1]->(b)-[r2:A]->(c) WHERE (a)-[:A]->(c)")
-    val (expand1, selection) = produceTriadicTestCase("X", Seq.empty, null, Seq("A"), Direction.OUTGOING, null)
+    val (expand1, selection) = produceTriadicTestCase("X", Seq.empty, null, Seq("A"), SemanticDirection.OUTGOING, null)
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) shouldBe empty
   }
 
   test("MATCH (a:X)-->(b)-->(c) WHERE (a)-->(c)") {
     implicit val (plannerQuery, semanticTable) = producePlannerQueryForPattern("MATCH (a:X)-[r1]->(b)-[r2]->(c) WHERE (a)-->(c)")
-    val (expand1, selection) = produceTriadicTestCase("X", Seq.empty, null, Seq.empty, Direction.OUTGOING, null)
+    val (expand1, selection) = produceTriadicTestCase("X", Seq.empty, null, Seq.empty, SemanticDirection.OUTGOING, null)
     val triadic = produceTriadicTestPlan(expand1, predicateExpressionCase = true)
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) should contain only triadic
@@ -105,21 +105,21 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
 
   test("MATCH (a:X)-[:A]->(b)-[:B]->(c) WHERE (a)-->(c) passes through") {
     implicit val (plannerQuery, semanticTable) = producePlannerQueryForPattern("MATCH (a:X)-[r1:A]->(b)-[r2:B]->(c) WHERE (a)-->(c)")
-    val (expand1, selection) = produceTriadicTestCase("X", Seq("A"), null, Seq("B"), Direction.OUTGOING, null)
+    val (expand1, selection) = produceTriadicTestCase("X", Seq("A"), null, Seq("B"), SemanticDirection.OUTGOING, null)
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) should equal(Seq.empty)
   }
 
   test("MATCH (a:X)-[:A]->(b)-[:A]->(c) WHERE (a)<-[:A]-(c) passes through") {
     implicit val (plannerQuery, semanticTable) = producePlannerQueryForPattern("MATCH (a:X)-[r1:A]->(b)-[r2:A]->(c) WHERE (a)<-[:A]-(c)")
-    val (expand1, selection) = produceTriadicTestCase("X", Seq("A"), null, Seq("A"), Direction.OUTGOING, null)
+    val (expand1, selection) = produceTriadicTestCase("X", Seq("A"), null, Seq("A"), SemanticDirection.OUTGOING, null)
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) should equal(Seq.empty)
   }
 
   test("MATCH (a:X)-[:A]->(b)-[:A]->(c) WHERE (a:X)-[:A]->(c)") {
     implicit val (plannerQuery, semanticTable) = producePlannerQueryForPattern("MATCH (a:X)-[r1:A]->(b)-[r2:A]->(c) WHERE (a)-[:A]->(c)")
-    val (expand1, selection) = produceTriadicTestCase("X", Seq("A"), null, Seq("A"), Direction.OUTGOING, null)
+    val (expand1, selection) = produceTriadicTestCase("X", Seq("A"), null, Seq("A"), SemanticDirection.OUTGOING, null)
     val triadic = produceTriadicTestPlan(expand1, predicateExpressionCase = true, r1Types = Seq("A"), r2Types = Seq("A"))
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) should equal(Seq(triadic))
@@ -127,7 +127,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
 
   test("MATCH (a:X)-[:A]->(b)-[:B]->(c) WHERE (a:X)-[:A]->(c)") {
     implicit val (plannerQuery, semanticTable) = producePlannerQueryForPattern("MATCH (a:X)-[r1:A]->(b)-[r2:B]->(c) WHERE (a)-[:A]->(c)")
-    val (expand1, selection) = produceTriadicTestCase("X", Seq("A"), null, Seq("B"), Direction.OUTGOING, null)
+    val (expand1, selection) = produceTriadicTestCase("X", Seq("A"), null, Seq("B"), SemanticDirection.OUTGOING, null)
     val triadic = produceTriadicTestPlan(expand1, predicateExpressionCase = true, r1Types = Seq("A"), r2Types = Seq("B"))
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) should equal(Seq(triadic))
@@ -135,15 +135,15 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
 
   test("MATCH (a:X)-[:A]->(b)<-[:B]-(c) WHERE (a:X)-[:A]->(c)") {
     implicit val (plannerQuery, semanticTable) = producePlannerQueryForPattern("MATCH (a:X)-[r1:A]->(b)<-[r2:B]-(c) WHERE (a)-[:A]->(c)")
-    val (expand1, selection) = produceTriadicTestCase("X", Seq("A"), null, Seq("B"), Direction.INCOMING, null)
-    val triadic = produceTriadicTestPlan(expand1, predicateExpressionCase = true, r1Types = Seq("A"), r2Types = Seq("B"), r2Direction = Direction.INCOMING)
+    val (expand1, selection) = produceTriadicTestCase("X", Seq("A"), null, Seq("B"), SemanticDirection.INCOMING, null)
+    val triadic = produceTriadicTestPlan(expand1, predicateExpressionCase = true, r1Types = Seq("A"), r2Types = Seq("B"), r2Direction = SemanticDirection.INCOMING)
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) should equal(Seq(triadic))
   }
 
-  private def produceTriadicTestCase(aLabel: String, r1Types: Seq[String], bLabel: String, r2Types: Seq[String], r2Direction: Direction, cLabel: String): (Expand, Selection) = {
+  private def produceTriadicTestCase(aLabel: String, r1Types: Seq[String], bLabel: String, r2Types: Seq[String], r2Direction: SemanticDirection, cLabel: String): (Expand, Selection) = {
     val lblScan = NodeByLabelScan(IdName("a"), LazyLabel(aLabel), Set.empty)(solved)
-    val expand1 = Expand(lblScan, IdName("a"), Direction.OUTGOING, r1Types.map(RelTypeName(_)(pos)), IdName("b"), IdName("r1"), ExpandAll)(solved)
+    val expand1 = Expand(lblScan, IdName("a"), SemanticDirection.OUTGOING, r1Types.map(RelTypeName(_)(pos)), IdName("b"), IdName("r1"), ExpandAll)(solved)
     val expand2 = Expand(expand1, IdName("b"), r2Direction, r2Types.map(RelTypeName(_)(pos)), IdName("c"), IdName("r2"), ExpandAll)(solved)
     val relationshipUniqueness = Not(Equals(Identifier("r1")(pos), Identifier("r2")(pos))(pos))(pos)
     val selection = Selection(Seq(relationshipUniqueness), expand2)(solved)
@@ -152,8 +152,8 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
 
   private def produceTriadicTestPlan(expand1: Expand,
                                      predicateExpressionCase: Boolean = false,
-                                     r1Types: Seq[String] = Seq.empty, r1Direction: Direction = Direction.OUTGOING,
-                                     r2Types: Seq[String] = Seq.empty, r2Direction: Direction = Direction.OUTGOING) = {
+                                     r1Types: Seq[String] = Seq.empty, r1Direction: SemanticDirection = SemanticDirection.OUTGOING,
+                                     r2Types: Seq[String] = Seq.empty, r2Direction: SemanticDirection = SemanticDirection.OUTGOING) = {
     val argument = Argument(expand1.availableSymbols)(solved)()
     val expand2B = Expand(argument, IdName("b"), r2Direction, r2Types.map(RelTypeName(_)(pos)), IdName("c"), IdName("r2"), ExpandAll)(solved)
     val relationshipUniqueness = Not(Equals(Identifier("r1")(pos), Identifier("r2")(pos))(pos))(pos)

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier,
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, HasLabel}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{UnresolvedLabel, UnresolvedProperty}
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v2_3.{LabelId, PropertyKeyId, ast}
+import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, LabelId, PropertyKeyId, ast}
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
@@ -114,7 +114,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   private def hashJoin(l: Pipe, r: Pipe) = new NodeHashJoinPipe(Set("x"), l, r)()
 
-  private def expand(l: Pipe, t: String) = new ExpandAllPipe(l, "x", "r", "n", Direction.OUTGOING, LazyTypes(Seq(t)))()
+  private def expand(l: Pipe, t: String) = new ExpandAllPipe(l, "x", "r", "n", SemanticDirection.OUTGOING, LazyTypes(Seq(t)))()
 
   private def allNodes() = new AllNodesScanPipe("x")()
 

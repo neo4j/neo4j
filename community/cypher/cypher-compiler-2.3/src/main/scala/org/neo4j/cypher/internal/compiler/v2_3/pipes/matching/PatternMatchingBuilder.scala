@@ -22,7 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes.matching
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
-import org.neo4j.graphdb.{Direction, Node, PropertyContainer, Relationship}
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection.{INCOMING, OUTGOING, BOTH}
+import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 import scala.collection.Map
 
@@ -37,7 +39,7 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
       filter(z => patternGraph.contains(z)).
       filter(patternGraph(_).isInstanceOf[PatternRelationship]).
       map(patternGraph(_).asInstanceOf[PatternRelationship]).
-      filter(_.dir == Direction.BOTH)
+      filter(_.dir == SemanticDirection.BOTH)
 
     val mandatoryPattern: Traversable[ExecutionContext] = if (undirectedBoundRelationships.isEmpty) {
       createPatternMatcher(boundPairs, includeOptionals = false, sourceRow, state)
@@ -99,10 +101,10 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
       }
 
       pRel.dir match {
-        case Direction.OUTGOING                            => extractMatchingPairs(pRel.startNode, pRel.endNode)
-        case Direction.INCOMING                            => extractMatchingPairs(pRel.endNode, pRel.startNode)
-        case Direction.BOTH if bindings.contains(pRel.key) => Seq(pRel.key -> MatchingPair(pRel, rel))
-        case Direction.BOTH                                => Seq.empty
+        case OUTGOING                            => extractMatchingPairs(pRel.startNode, pRel.endNode)
+        case INCOMING                            => extractMatchingPairs(pRel.endNode, pRel.startNode)
+        case BOTH if bindings.contains(pRel.key) => Seq(pRel.key -> MatchingPair(pRel, rel))
+        case BOTH                                => Seq.empty
       }
 
     case (key, _) => Nil

@@ -23,30 +23,29 @@ import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{RelatedTo, SingleNode, VarLengthRelatedTo}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryStateHelper
-import org.neo4j.cypher.internal.frontend.v2_3.InvalidSemanticsException
+import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, InvalidSemanticsException}
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 class MergePatternActionNullPropertyHandlingTest extends CypherFunSuite {
   import MergePatternAction.ensureNoNullRelationshipPropertiesInPatterns
 
   test("should detect null properties in plain patterns") {
-    val pattern = RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq("X"), Direction.OUTGOING, Map("props" -> Literal(null)))
+    val pattern = RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq("X"), SemanticDirection.OUTGOING, Map("props" -> Literal(null)))
     evaluating {
       ensureNoNullRelationshipPropertiesInPatterns(Seq(pattern), ExecutionContext.empty, QueryStateHelper.empty)
     } should produce[InvalidSemanticsException]
   }
 
   test("should throw when given a var length pattern") {
-    val pattern = VarLengthRelatedTo("p", SingleNode("a"), SingleNode("b"), None, None, Seq("X"), Direction.OUTGOING, Some("r"), Map("props" -> Literal(null)))
+    val pattern = VarLengthRelatedTo("p", SingleNode("a"), SingleNode("b"), None, None, Seq("X"), SemanticDirection.OUTGOING, Some("r"), Map("props" -> Literal(null)))
     evaluating {
       ensureNoNullRelationshipPropertiesInPatterns(Seq(pattern), ExecutionContext.empty, QueryStateHelper.empty)
     } should produce[ThisShouldNotHappenError]
   }
 
   test("should throw when given a unique link") {
-    val pattern = UniqueLink(NamedExpectation("a"), NamedExpectation("b"), NamedExpectation("r"), "X", Direction.OUTGOING)
+    val pattern = UniqueLink(NamedExpectation("a"), NamedExpectation("b"), NamedExpectation("r"), "X", SemanticDirection.OUTGOING)
     evaluating {
       ensureNoNullRelationshipPropertiesInPatterns(Seq(pattern), ExecutionContext.empty, QueryStateHelper.empty)
     } should produce[ThisShouldNotHappenError]

@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes.matching
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.True
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
 
 class VariableLengthExpanderStepReversalTest extends CypherFunSuite {
   val A = "A"
@@ -30,10 +30,10 @@ class VariableLengthExpanderStepReversalTest extends CypherFunSuite {
 
   test("reverse_single_step") {
     // ()-[:A*]->()
-    val step = varStep(0, Seq(A), Direction.OUTGOING, 1, None, None)
+    val step = varStep(0, Seq(A), SemanticDirection.OUTGOING, 1, None, None)
 
     // ()<-[:A*]-()
-    val reversed = varStep(0, Seq(A), Direction.INCOMING, 1, None, None)
+    val reversed = varStep(0, Seq(A), SemanticDirection.INCOMING, 1, None, None)
 
     step.reverse() should equal(reversed)
     reversed.reverse() should equal(step)
@@ -41,12 +41,12 @@ class VariableLengthExpanderStepReversalTest extends CypherFunSuite {
 
   test("reverse_two_steps") {
     // ()-[:A*]->()<-[:B*]-()
-    val step2 = varStep(1, Seq(B), Direction.INCOMING, 1, None, None)
-    val step1 = varStep(0, Seq(A), Direction.OUTGOING, 1, None, Some(step2))
+    val step2 = varStep(1, Seq(B), SemanticDirection.INCOMING, 1, None, None)
+    val step1 = varStep(0, Seq(A), SemanticDirection.OUTGOING, 1, None, Some(step2))
 
     // ()-[:B*]->()<-[:A*]-()
-    val reversed2 = varStep(0, Seq(A), Direction.INCOMING, 1, None, None)
-    val reversed1 = varStep(1, Seq(B), Direction.OUTGOING, 1, None, Some(reversed2))
+    val reversed2 = varStep(0, Seq(A), SemanticDirection.INCOMING, 1, None, None)
+    val reversed1 = varStep(1, Seq(B), SemanticDirection.OUTGOING, 1, None, Some(reversed2))
 
     step1.reverse() should equal(reversed1)
     reversed1.reverse() should equal(step1)
@@ -54,12 +54,12 @@ class VariableLengthExpanderStepReversalTest extends CypherFunSuite {
 
   test("reverse_mixed_steps") {
     // ()-[:A*]->()-[:B]-()
-    val step2 = step(1, Seq(B), Direction.INCOMING, None)
-    val step1 = varStep(0, Seq(A), Direction.OUTGOING, 1, None, Some(step2))
+    val step2 = step(1, Seq(B), SemanticDirection.INCOMING, None)
+    val step1 = varStep(0, Seq(A), SemanticDirection.OUTGOING, 1, None, Some(step2))
 
     // ()-[:B]-()<-[:A*]-()
-    val reversed2 = varStep(0, Seq(A), Direction.INCOMING, 1, None, None)
-    val reversed1 = step(1, Seq(B), Direction.OUTGOING, Some(reversed2))
+    val reversed2 = varStep(0, Seq(A), SemanticDirection.INCOMING, 1, None, None)
+    val reversed1 = step(1, Seq(B), SemanticDirection.OUTGOING, Some(reversed2))
 
     step1.reverse() should equal(reversed1)
     reversed1.reverse() should equal(step1)
@@ -67,12 +67,12 @@ class VariableLengthExpanderStepReversalTest extends CypherFunSuite {
 
   private def step(id: Int,
                    typ: Seq[String],
-                   direction: Direction,
+                   direction: SemanticDirection,
                    next: Option[ExpanderStep]) = SingleStep(id, typ, direction, next, True(), True())
 
   private def varStep(id: Int,
                       typ: Seq[String],
-                      direction: Direction,
+                      direction: SemanticDirection,
                       min: Int,
                       max: Option[Int],
                       next: Option[ExpanderStep]) = VarLengthStep(id, typ, direction, min, max, next, True(), True())

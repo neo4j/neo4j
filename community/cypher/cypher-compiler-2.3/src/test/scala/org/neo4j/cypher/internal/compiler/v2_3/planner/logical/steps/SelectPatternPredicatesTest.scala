@@ -28,12 +28,11 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, SemanticTable}
-import org.neo4j.graphdb.Direction
 
 class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   val sdir = SemanticDirection.OUTGOING
-  val dir = Direction.OUTGOING
+  val dir = SemanticDirection.OUTGOING
   val types = Seq.empty[RelTypeName]
   val relName = "  UNNAMED1"
   val nodeName = "  UNNAMED2"

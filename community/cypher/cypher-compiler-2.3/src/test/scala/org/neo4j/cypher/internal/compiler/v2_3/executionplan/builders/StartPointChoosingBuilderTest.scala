@@ -30,11 +30,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenT
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.FakePipe
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v2_3.ast
+import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, ast}
 import org.neo4j.cypher.internal.frontend.v2_3.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
-import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
 
@@ -475,7 +474,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
         Equals(Property(Identifier(otherIdentifier), propertyKey), expression2)),
 
       patterns = Seq(
-        ShortestPath("p", SingleNode(identifier), SingleNode(otherIdentifier), Nil, Direction.OUTGOING, allowZeroLength = false, None, single = true, None))
+        ShortestPath("p", SingleNode(identifier), SingleNode(otherIdentifier), Nil, SemanticDirection.OUTGOING, allowZeroLength = false, None, single = true, None))
     )
 
     when(context.getIndexRule(label, property)).thenReturn(None)
@@ -497,8 +496,8 @@ class StartPointChoosingBuilderTest extends BuilderTest {
     val query = newQuery(
       start = Seq(NodeById("a", 0)),
       patterns = Seq(
-        RelatedTo(SingleNode("a"),SingleNode("b"), "x", Seq.empty, Direction.OUTGOING, Map.empty),
-        RelatedTo(SingleNode("c"), SingleNode("d"), "x", Seq.empty, Direction.OUTGOING, Map.empty)
+        RelatedTo(SingleNode("a"),SingleNode("b"), "x", Seq.empty, SemanticDirection.OUTGOING, Map.empty),
+        RelatedTo(SingleNode("c"), SingleNode("d"), "x", Seq.empty, SemanticDirection.OUTGOING, Map.empty)
       )
     )
 
@@ -527,7 +526,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
     // Given
     val query = newQuery(
       start = Seq(RelationshipById("r", 123)),
-      patterns = Seq(RelatedTo(identifier, otherIdentifier, "r", "KNOWS", Direction.BOTH))
+      patterns = Seq(RelatedTo(identifier, otherIdentifier, "r", "KNOWS", SemanticDirection.BOTH))
     )
 
     // When + Then

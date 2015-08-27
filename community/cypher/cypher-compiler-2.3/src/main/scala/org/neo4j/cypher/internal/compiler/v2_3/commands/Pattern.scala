@@ -25,16 +25,17 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.TypeSafe
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection.{INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
-import org.neo4j.graphdb.Direction
 
 import scala.collection.{Map, Seq}
 trait Pattern extends TypeSafe with AstNode[Pattern] {
   def possibleStartPoints: Seq[(String,CypherType)]
   def relTypes:Seq[String]
 
-  protected def leftArrow(dir: Direction) = if (dir == Direction.INCOMING) "<-" else "-"
-  protected def rightArrow(dir: Direction) = if (dir == Direction.OUTGOING) "->" else "-"
+  protected def leftArrow(dir: SemanticDirection) = if (dir == INCOMING) "<-" else "-"
+  protected def rightArrow(dir: SemanticDirection) = if (dir == OUTGOING) "->" else "-"
 
   def rewrite( f : Expression => Expression) : Pattern
 
@@ -88,10 +89,10 @@ case class SingleNode(name: String,
 }
 
 object RelatedTo {
-  def apply(left: String, right: String, relName: String, relType: String, direction: Direction) =
+  def apply(left: String, right: String, relName: String, relType: String, direction: SemanticDirection) =
     new RelatedTo(SingleNode(left), SingleNode(right), relName, Seq(relType), direction, Map.empty)
 
-  def apply(left: String, right: String, relName: String, types: Seq[String], direction: Direction) =
+  def apply(left: String, right: String, relName: String, types: Seq[String], direction: SemanticDirection) =
     new RelatedTo(SingleNode(left), SingleNode(right), relName, types, direction, Map.empty)
 }
 
@@ -99,7 +100,7 @@ case class RelatedTo(left: SingleNode,
                      right: SingleNode,
                      relName: String,
                      relTypes: Seq[String],
-                     direction: Direction,
+                     direction: SemanticDirection,
                      properties: Map[String, Expression])
   extends Pattern with RelationshipPattern with GraphElementPropertyFunctions {
   override def toString = left + leftArrow(direction) + relInfo + rightArrow(direction) + right
@@ -140,7 +141,7 @@ abstract class PathPattern extends Pattern with RelationshipPattern {
 
 object VarLengthRelatedTo {
   def apply(pathName: String, left: String, right: String, minHops: Option[Int], maxHops: Option[Int], relTypes: String,
-            direction: Direction, relIterator:Option[String]=None) =
+            direction: SemanticDirection, relIterator:Option[String]=None) =
     new VarLengthRelatedTo(pathName, SingleNode(left), SingleNode(right), minHops, maxHops, Seq(relTypes), direction, relIterator, Map.empty)
 }
 
@@ -150,7 +151,7 @@ case class VarLengthRelatedTo(pathName: String,
                               minHops: Option[Int],
                               maxHops: Option[Int],
                               relTypes: Seq[String],
-                              direction: Direction,
+                              direction: SemanticDirection,
                               relIterator: Option[String],
                               properties: Map[String, Expression]) extends PathPattern with GraphElementPropertyFunctions {
 
@@ -200,7 +201,7 @@ case class ShortestPath(pathName: String,
                         left: SingleNode,
                         right: SingleNode,
                         relTypes: Seq[String],
-                        dir: Direction,
+                        dir: SemanticDirection,
                         allowZeroLength: Boolean,
                         maxDepth: Option[Int],
                         single: Boolean,

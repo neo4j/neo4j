@@ -24,21 +24,21 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression,
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, True, Predicate}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
 
 class ExpanderStepReversalTest extends CypherFunSuite {
   val A = "A"
   val B = "B"
   val C = "C"
 
-  val _c = step(2, Seq(C), Direction.INCOMING, None)
-  val _b = step(1, Seq(B), Direction.BOTH, Some(_c))
-  val _a = step(0, Seq(A), Direction.OUTGOING, Some(_b))
+  val _c = step(2, Seq(C), SemanticDirection.INCOMING, None)
+  val _b = step(1, Seq(B), SemanticDirection.BOTH, Some(_c))
+  val _a = step(0, Seq(A), SemanticDirection.OUTGOING, Some(_b))
 
-  val _aR = step(0, Seq(A), Direction.INCOMING, None)
-  val _bR = step(1, Seq(B), Direction.BOTH, Some(_aR))
-  val _cR = step(2, Seq(C), Direction.OUTGOING, Some(_bR))
+  val _aR = step(0, Seq(A), SemanticDirection.INCOMING, None)
+  val _bR = step(1, Seq(B), SemanticDirection.BOTH, Some(_aR))
+  val _cR = step(2, Seq(C), SemanticDirection.OUTGOING, Some(_bR))
 
   test("reverse") {
     _a.reverse() should equal(_cR)
@@ -47,8 +47,8 @@ class ExpanderStepReversalTest extends CypherFunSuite {
 
   test("reverse_single_predicate") {
     //Given
-    val step1 = step(0, A, Direction.OUTGOING, None, "pr1")
-    val step1R = step(0, A, Direction.INCOMING, None, "pr1")
+    val step1 = step(0, A, SemanticDirection.OUTGOING, None, "pr1")
+    val step1R = step(0, A, SemanticDirection.INCOMING, None, "pr1")
 
     //When&Then
     step1.reverse() should equal(step1R)
@@ -59,7 +59,7 @@ class ExpanderStepReversalTest extends CypherFunSuite {
 
     def step(id: Int,
                      typ: Seq[String],
-                     direction: Direction,
+                     direction: SemanticDirection,
                      next: Option[ExpanderStep],
                      nodePredicate: Predicate = True(),
                      relPredicate: Predicate = True()) =
@@ -72,13 +72,13 @@ class ExpanderStepReversalTest extends CypherFunSuite {
     val predForB = Equals(Property(Identifier("b"), PropertyKey("name")), Literal("b"))
     val predForC = Equals(Property(Identifier("c"), PropertyKey("name")), Literal("c"))
 
-    val forward3 = step(2, Seq(), Direction.INCOMING, None)
-    val forward2 = step(1, Seq(), Direction.OUTGOING, Some(forward3), nodePredicate = predForC)
-    val forward1 = step(0, Seq(), Direction.OUTGOING, Some(forward2), nodePredicate = predForB)
+    val forward3 = step(2, Seq(), SemanticDirection.INCOMING, None)
+    val forward2 = step(1, Seq(), SemanticDirection.OUTGOING, Some(forward3), nodePredicate = predForC)
+    val forward1 = step(0, Seq(), SemanticDirection.OUTGOING, Some(forward2), nodePredicate = predForB)
 
-    val reverse1 = step(0, Seq(), Direction.INCOMING, None)
-    val reverse2 = step(1, Seq(), Direction.INCOMING, Some(reverse1), nodePredicate = predForB)
-    val reverse3 = step(2, Seq(), Direction.OUTGOING, Some(reverse2), nodePredicate = predForC)
+    val reverse1 = step(0, Seq(), SemanticDirection.INCOMING, None)
+    val reverse2 = step(1, Seq(), SemanticDirection.INCOMING, Some(reverse1), nodePredicate = predForB)
+    val reverse3 = step(2, Seq(), SemanticDirection.OUTGOING, Some(reverse2), nodePredicate = predForC)
 
     //When&Then
     forward1.reverse() should equal(reverse3)
@@ -88,11 +88,11 @@ class ExpanderStepReversalTest extends CypherFunSuite {
   test("reverse_two_steps") {
     //()-[pr1:A]->(a)-[pr2:B]->()
 
-    val step1 = step(1, B, Direction.OUTGOING, None, "pr2")
-    val step0 = step(0, A, Direction.OUTGOING, Some(step1), "pr1", "a")
+    val step1 = step(1, B, SemanticDirection.OUTGOING, None, "pr2")
+    val step0 = step(0, A, SemanticDirection.OUTGOING, Some(step1), "pr1", "a")
 
-    val step0R = step(0, A, Direction.INCOMING, None, "pr1")
-    val step1R = step(1, B, Direction.INCOMING, Some(step0R), "pr2", "a")
+    val step0R = step(0, A, SemanticDirection.INCOMING, None, "pr1")
+    val step1R = step(1, B, SemanticDirection.INCOMING, Some(step0R), "pr2", "a")
 
     step0.reverse() should equal(step1R)
     step1R.reverse() should equal(step0)
@@ -101,13 +101,13 @@ class ExpanderStepReversalTest extends CypherFunSuite {
   test("reverse_with_three_steps") {
     //()-[pr0:A]->(a)-[pr1:B]->(b)-[pr2:C]->()
 
-    val step2 = step(2, C, Direction.OUTGOING, None, "pr2")
-    val step1 = step(1, B, Direction.OUTGOING, Some(step2), "pr1", "b")
-    val step0 = step(0, A, Direction.OUTGOING, Some(step1), "pr0", "a")
+    val step2 = step(2, C, SemanticDirection.OUTGOING, None, "pr2")
+    val step1 = step(1, B, SemanticDirection.OUTGOING, Some(step2), "pr1", "b")
+    val step0 = step(0, A, SemanticDirection.OUTGOING, Some(step1), "pr0", "a")
 
-    val step0R = step(0, A, Direction.INCOMING, None, "pr0")
-    val step1R = step(1, B, Direction.INCOMING, Some(step0R), "pr1", "a")
-    val step2R = step(2, C, Direction.INCOMING, Some(step1R), "pr2", "b")
+    val step0R = step(0, A, SemanticDirection.INCOMING, None, "pr0")
+    val step1R = step(1, B, SemanticDirection.INCOMING, Some(step0R), "pr1", "a")
+    val step2R = step(2, C, SemanticDirection.INCOMING, Some(step1R), "pr2", "b")
 
     step0.reverse() should equal(step2R)
     step2R.reverse() should equal(step0)
@@ -116,25 +116,25 @@ class ExpanderStepReversalTest extends CypherFunSuite {
   test("reverse_predicates_with_mixed_directions") {
     //(a)-[pr0:A]->(b)-[pr1:B]-(c)<-[pr2:C]-(d)
 
-    val step3 = step(2, C, Direction.INCOMING, None, "pr2")
-    val step2 = step(1, B, Direction.BOTH, Some(step3), "pr1", "c")
-    val step1 = step(0, A, Direction.OUTGOING, Some(step2), "pr0", "b")
+    val step3 = step(2, C, SemanticDirection.INCOMING, None, "pr2")
+    val step2 = step(1, B, SemanticDirection.BOTH, Some(step3), "pr1", "c")
+    val step1 = step(0, A, SemanticDirection.OUTGOING, Some(step2), "pr0", "b")
 
-    val step1R = step(0, A, Direction.INCOMING, None, "pr0")
-    val step2R = step(1, B, Direction.BOTH, Some(step1R), "pr1", "b")
-    val step3R = step(2, C, Direction.OUTGOING, Some(step2R), "pr2", "c")
+    val step1R = step(0, A, SemanticDirection.INCOMING, None, "pr0")
+    val step2R = step(1, B, SemanticDirection.BOTH, Some(step1R), "pr1", "b")
+    val step3R = step(2, C, SemanticDirection.OUTGOING, Some(step2R), "pr2", "c")
 
     step1.reverse() should equal(step3R)
     step3R.reverse() should equal(step1)
   }
 
-  private def step(id: Int, typ: Seq[String], direction: Direction, next: Option[ExpanderStep]) =
+  private def step(id: Int, typ: Seq[String], direction: SemanticDirection, next: Option[ExpanderStep]) =
     SingleStep(id, typ, direction, next, True(), True())
 
-  def step(id: Int, t: String, dir: Direction, next: Option[ExpanderStep], relName: String, nodeName: String): ExpanderStep =
+  def step(id: Int, t: String, dir: SemanticDirection, next: Option[ExpanderStep], relName: String, nodeName: String): ExpanderStep =
     SingleStep(id, Seq(t), dir, next, relPredicate = Pred(relName), nodePredicate = Pred(nodeName))
 
-  def step(id: Int, t: String, dir: Direction, next: Option[ExpanderStep], relName: String): ExpanderStep =
+  def step(id: Int, t: String, dir: SemanticDirection, next: Option[ExpanderStep], relName: String): ExpanderStep =
     SingleStep(id, Seq(t), dir, next, relPredicate = Pred(relName), nodePredicate = True())
 }
 

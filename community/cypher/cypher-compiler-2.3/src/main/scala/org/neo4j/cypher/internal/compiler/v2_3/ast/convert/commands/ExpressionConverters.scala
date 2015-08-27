@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{InequalitySeekRangeWrapper, NestedPipeExpression, PrefixSeekRangeWrapper}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.ProjectedPath._
@@ -320,7 +319,7 @@ object ExpressionConverters {
 
   private def getDegree(original: ast.GetDegree) = {
     val typ = original.relType.map(relType => UnresolvedRelType(relType.name))
-    commandexpressions.GetDegree(toCommandExpression(original.node), typ, toGraphDb(original.dir))
+    commandexpressions.GetDegree(toCommandExpression(original.node), typ, original.dir)
   }
 
 

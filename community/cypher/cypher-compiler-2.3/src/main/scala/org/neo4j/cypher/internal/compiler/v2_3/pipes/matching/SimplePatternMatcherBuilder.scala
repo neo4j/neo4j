@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes.matching
 
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.graphdb.{Relationship, Node, DynamicRelationshipType}
 import org.neo4j.graphmatching.{PatternMatcher => SimplePatternMatcher, PatternNode => SimplePatternNode,
 PatternRelationship => SimplePatternRelationship, PatternMatch}
@@ -46,15 +46,15 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph,
 
   def createPatternRels(patternNodes:immutable.Map[String, SimplePatternNode]):immutable.Map[String, SimplePatternRelationship]  = pattern.patternRels.map {
     case (key, pr) => {
-      val start = patternNodes(pr.startNode.key)
+      val start: SimplePatternNode = patternNodes(pr.startNode.key)
       val end = patternNodes(pr.endNode.key)
 
       val patternRel = if (pr.relTypes.isEmpty)
-        start.createRelationshipTo(end, pr.dir)
+        start.createRelationshipTo(end, toGraphDb(pr.dir))
       else {
         // The SimplePatternMatcher does not support multiple relationship types
         // re-visit this if it ever does
-        start.createRelationshipTo(end, DynamicRelationshipType.withName(pr.relTypes.head), pr.dir)
+        start.createRelationshipTo(end, DynamicRelationshipType.withName(pr.relTypes.head), toGraphDb(pr.dir))
       }
 
       patternRel.setLabel(pr.key)

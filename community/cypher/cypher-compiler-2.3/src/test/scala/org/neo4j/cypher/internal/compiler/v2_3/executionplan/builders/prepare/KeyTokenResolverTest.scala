@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.{BuilderTe
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.{CreateUniqueAction, NamedExpectation, UniqueLink}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v2_3.parser.{MatchMany, MatchText, ParsedLikePattern}
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 
 class KeyTokenResolverTest extends BuilderTest {
 
@@ -72,29 +72,29 @@ class KeyTokenResolverTest extends BuilderTest {
 
   test("should_resolve_label_keytoken_on_related_to_pattern") {
     val q = Query.
-      matches(RelatedTo(SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), "r", Seq("KNOWS"), Direction.OUTGOING, Map.empty)).
+      matches(RelatedTo(SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), "r", Seq("KNOWS"), SemanticDirection.OUTGOING, Map.empty)).
       returns()
 
     val result = assertAccepts(q)
-    result.query.patterns should equal(Seq(Unsolved(RelatedTo(SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), "r", Seq("KNOWS"), Direction.OUTGOING, Map.empty))))
+    result.query.patterns should equal(Seq(Unsolved(RelatedTo(SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), "r", Seq("KNOWS"), SemanticDirection.OUTGOING, Map.empty))))
   }
 
   test("should_resolve_label_keytoken_on_var_length_pattern") {
     val q = Query.
-      matches(VarLengthRelatedTo("p", SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), None, None, Seq.empty, Direction.OUTGOING, None, Map.empty)).
+      matches(VarLengthRelatedTo("p", SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), None, None, Seq.empty, SemanticDirection.OUTGOING, None, Map.empty)).
       returns()
 
     val result = assertAccepts(q)
-    result.query.patterns should equal(Seq(Unsolved(VarLengthRelatedTo("p", SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), None, None, Seq.empty, Direction.OUTGOING, None, Map.empty))))
+    result.query.patterns should equal(Seq(Unsolved(VarLengthRelatedTo("p", SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), None, None, Seq.empty, SemanticDirection.OUTGOING, None, Map.empty))))
   }
 
   test("should_resolve_label_keytoken_on_shortest_path_length_pattern") {
     val q = Query.
-      matches(ShortestPath("p", SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), Seq.empty, Direction.OUTGOING, false, None, single = false, relIterator = None)).
+      matches(ShortestPath("p", SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), Seq.empty, SemanticDirection.OUTGOING, false, None, single = false, relIterator = None)).
       returns()
 
     val result = assertAccepts(q)
-    result.query.patterns should equal(Seq(Unsolved(ShortestPath("p", SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), Seq.empty, Direction.OUTGOING, false, None, single = false, relIterator = None))))
+    result.query.patterns should equal(Seq(Unsolved(ShortestPath("p", SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), Seq.empty, SemanticDirection.OUTGOING, false, None, single = false, relIterator = None))))
   }
 
   test("should resolve property key for LIKE expressions") {
@@ -113,11 +113,11 @@ class KeyTokenResolverTest extends BuilderTest {
     val rel = NamedExpectation("r")
 
     val q = Query.
-      start(CreateUniqueStartItem(CreateUniqueAction(UniqueLink(aNode, bNode, rel, "KNOWS", Direction.OUTGOING)))).
+      start(CreateUniqueStartItem(CreateUniqueAction(UniqueLink(aNode, bNode, rel, "KNOWS", SemanticDirection.OUTGOING)))).
       returns()
 
     val result = assertAccepts(q)
-    val resolvedLink = UniqueLink(aNode.copy(labels = Seq(resolvedFoo)), bNode.copy(labels = Seq(resolvedBar)), rel, "KNOWS", Direction.OUTGOING)
+    val resolvedLink = UniqueLink(aNode.copy(labels = Seq(resolvedFoo)), bNode.copy(labels = Seq(resolvedBar)), rel, "KNOWS", SemanticDirection.OUTGOING)
     result.query.start should equal(Seq(Unsolved(CreateUniqueStartItem(CreateUniqueAction(resolvedLink)))))
   }
 

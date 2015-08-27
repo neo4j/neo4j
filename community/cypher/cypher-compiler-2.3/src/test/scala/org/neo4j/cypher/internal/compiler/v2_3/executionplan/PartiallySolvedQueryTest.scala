@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Identifier
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.Unsolved
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.{CreateNode, DeleteEntityAction, MergeNodeAction, MergePatternAction}
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
 
 class PartiallySolvedQueryTest extends CypherFunSuite {
 
@@ -103,7 +103,7 @@ class PartiallySolvedQueryTest extends CypherFunSuite {
 
   test("merge pattern followed by merge node should not be compacted together") {
     // MATCH (n) MERGE (n)-[t:T]->(n) MERGE (a:A)
-    val pattern = mergePattern(RelatedTo("n", "n", "t", "T", Direction.OUTGOING))
+    val pattern = mergePattern(RelatedTo("n", "n", "t", "T", SemanticDirection.OUTGOING))
     val q3 = Query.updates(mergeNode("a")).returns()
     val q2 = Query.updates(pattern).tail(q3).returns(AllIdentifiers())
     val q1 = Query.matches(SingleNode("a")).tail(q2).returns(AllIdentifiers())

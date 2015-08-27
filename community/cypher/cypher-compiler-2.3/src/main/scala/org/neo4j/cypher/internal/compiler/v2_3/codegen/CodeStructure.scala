@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v2_3.symbols.CypherType
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 
 /**
  * This constitutes the SPI for code generation.
@@ -107,13 +107,13 @@ trait MethodStructure[E] {
   def allNodesScan(iterVar: String): Unit
   def lookupLabelId(labelIdVar: String, labelName: String): Unit
   def lookupRelationshipTypeId(typeIdVar: String, typeName: String): Unit
-  def nodeGetAllRelationships(iterVar: String, nodeVar: String, direction: Direction): Unit
-  def nodeGetRelationships(iterVar: String, nodeVar: String, direction: Direction, typeVars: Seq[String]): Unit
-  def connectingRelationships(iterVar: String, fromNode: String, dir: Direction, toNode:String)
-  def connectingRelationships(iterVar: String, fromNode: String, dir: Direction, types: Seq[String], toNode: String)
+  def nodeGetAllRelationships(iterVar: String, nodeVar: String, direction: SemanticDirection): Unit
+  def nodeGetRelationships(iterVar: String, nodeVar: String, direction: SemanticDirection, typeVars: Seq[String]): Unit
+  def connectingRelationships(iterVar: String, fromNode: String, dir: SemanticDirection, toNode:String)
+  def connectingRelationships(iterVar: String, fromNode: String, dir: SemanticDirection, types: Seq[String], toNode: String)
   def nextNode(targetVar: String, iterVar: String): Unit
-  def nextRelationshipAndNode(toNodeVar: String, iterVar: String, direction: Direction, fromNodeVar: String, relVar: String): Unit
-  def nextRelationship(iterVar: String, direction: Direction, relVar: String): Unit
+  def nextRelationshipAndNode(toNodeVar: String, iterVar: String, direction: SemanticDirection, fromNodeVar: String, relVar: String): Unit
+  def nextRelationship(iterVar: String, direction: SemanticDirection, relVar: String): Unit
   def hasNext(iterVar: String): E
   def nodeGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String): Unit
   def nodeGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String): Unit

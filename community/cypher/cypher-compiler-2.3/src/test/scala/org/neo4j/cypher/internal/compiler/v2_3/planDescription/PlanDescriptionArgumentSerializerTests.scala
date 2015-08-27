@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.planDescription
 
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{ExpandExpression,
 EstimatedRows, DbHits, Rows}
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
 
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
 
@@ -35,6 +35,6 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   }
 
   test("ExpandExpression should look like Cypher syntax") {
-    serialize(new ExpandExpression("a", "r", Seq("LIKES", "LOVES"), "b", Direction.OUTGOING, false)) should equal ("(a)-[r:LIKES|:LOVES]->(b)")
+    serialize(new ExpandExpression("a", "r", Seq("LIKES", "LOVES"), "b", SemanticDirection.OUTGOING, false)) should equal ("(a)-[r:LIKES|:LOVES]->(b)")
   }
 }

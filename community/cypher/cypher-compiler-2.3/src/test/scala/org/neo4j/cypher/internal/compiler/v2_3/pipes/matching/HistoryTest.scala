@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes.matching
 
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{Direction, DynamicRelationshipType, Relationship}
+import org.neo4j.graphdb.{DynamicRelationshipType, Relationship}
 
 class HistoryTest extends CypherFunSuite {
 
@@ -30,7 +31,7 @@ class HistoryTest extends CypherFunSuite {
   test("excludingPatternRelsWorksAsExpected") {
     val a = new PatternNode("a")
     val b = new PatternNode("b")
-    val pr: PatternRelationship = a.relateTo("r", b, Seq(), Direction.BOTH)
+    val pr: PatternRelationship = a.relateTo("r", b, Seq(), SemanticDirection.BOTH)
     val r: Relationship = mock[Relationship]
     val mp = new MatchingPair(pr, r)
     val history = new InitialHistory(ExecutionContext.empty, Seq.empty).add(mp)

@@ -21,16 +21,14 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.assu
 
 import org.mockito.Matchers.any
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.frontend.v2_3.ast.{AstConstructionTestSupport, HasLabels, LabelName}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.IndependenceCombiner
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{VarPatternLength, IdName, PatternRelationship, SimplePatternLength}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength, VarPatternLength}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanConstructionTestSupport, Predicate, Selections}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.frontend.v2_3.{SemanticTable, LabelId}
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{AstConstructionTestSupport, HasLabels, LabelName}
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.frontend.v2_3.{LabelId, SemanticDirection, SemanticTable}
 
 import scala.collection.mutable
 
@@ -42,7 +40,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
     when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(42))
 
     val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
-    val relationship = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+    val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
     val label = LabelName("L")(pos)
 
@@ -59,7 +57,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
     when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(42))
 
     val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
-    val relationship = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+    val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
     val label = LabelName("L")(pos)
 
@@ -76,7 +74,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
     when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(3))
 
     val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
-    val relationship = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, VarPatternLength(33, Some(33)))
+    val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength(33, Some(33)))
 
     val label = LabelName("L")(pos)
 

@@ -26,9 +26,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, LogicalPlanningContext, Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, LogicalPlanConstructionTestSupport, PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v2_3.SemanticTable
+import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, SemanticTable}
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
 
 class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
 
@@ -39,8 +38,8 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
   when(plan1.solved).thenReturn(solved)
   when(plan2.solved).thenReturn(solved)
 
-  private val pattern1 = PatternRelationship('r1, ('a, 'b), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-  private val pattern2 = PatternRelationship('r2, ('b, 'c), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+  private val pattern1 = PatternRelationship('r1, ('a, 'b), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+  private val pattern2 = PatternRelationship('r2, ('b, 'c), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
   private val table = new IDPTable[LogicalPlan]()
   private val qg = mock[QueryGraph]
@@ -60,7 +59,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
     table.put(register(pattern1), plan1)
 
     expandSolverStep(qg)(registry, register(pattern1, pattern2), table).toSet should equal(Set(
-      Expand(plan1, 'b, Direction.OUTGOING, Seq.empty, 'c, 'r2, ExpandAll)(solved)
+      Expand(plan1, 'b, SemanticDirection.OUTGOING, Seq.empty, 'c, 'r2, ExpandAll)(solved)
     ))
   }
 
@@ -70,11 +69,11 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
     table.put(register(pattern1), plan1)
 
-    val patternX = PatternRelationship('r2, ('a, 'b), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+    val patternX = PatternRelationship('r2, ('a, 'b), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
     expandSolverStep(qg)(registry, register(pattern1, patternX), table).toSet should equal(Set(
-      Expand(plan1, 'a, Direction.OUTGOING, Seq.empty, 'b, 'r2, ExpandInto)(solved),
-      Expand(plan1, 'b, Direction.INCOMING, Seq.empty, 'a, 'r2, ExpandInto)(solved)
+      Expand(plan1, 'a, SemanticDirection.OUTGOING, Seq.empty, 'b, 'r2, ExpandInto)(solved),
+      Expand(plan1, 'b, SemanticDirection.INCOMING, Seq.empty, 'a, 'r2, ExpandInto)(solved)
     ))
   }
 
@@ -84,7 +83,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
     table.put(register(pattern1), plan1)
 
-    val patternX = PatternRelationship('r2, ('x, 'y), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+    val patternX = PatternRelationship('r2, ('x, 'y), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
     expandSolverStep(qg)(registry, register(pattern1, patternX), table).toSet should be(empty)
   }
@@ -95,11 +94,11 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b, 'c, 'r2, 'd))
     table.put(register(pattern1, pattern2), plan1)
 
-    val pattern3 = PatternRelationship('r3, ('b, 'c), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+    val pattern3 = PatternRelationship('r3, ('b, 'c), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
     expandSolverStep(qg)(registry, register(pattern1, pattern2, pattern3), table).toSet should equal(Set(
-      Expand(plan1, 'b, Direction.OUTGOING, Seq.empty, 'c, 'r3, ExpandInto)(solved),
-      Expand(plan1, 'c, Direction.INCOMING, Seq.empty, 'b, 'r3, ExpandInto)(solved)
+      Expand(plan1, 'b, SemanticDirection.OUTGOING, Seq.empty, 'c, 'r3, ExpandInto)(solved),
+      Expand(plan1, 'c, SemanticDirection.INCOMING, Seq.empty, 'b, 'r3, ExpandInto)(solved)
     ))
   }
 

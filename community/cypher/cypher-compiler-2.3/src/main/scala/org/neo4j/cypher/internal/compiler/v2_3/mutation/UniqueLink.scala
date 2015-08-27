@@ -29,20 +29,21 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers.{IsMap, MapSupport, UnNam
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.{CypherTypeException, SyntaxException, UniquePathNotUniqueException}
-import org.neo4j.graphdb.{Direction, Node}
+import org.neo4j.graphdb.{Node}
 
 import scala.collection.Map
 
 object UniqueLink {
-  def apply(start: String, end: String, relName: String, relType: String, dir: Direction): UniqueLink =
+  def apply(start: String, end: String, relName: String, relType: String, dir: SemanticDirection): UniqueLink =
     new UniqueLink(
       NamedExpectation(start, Map.empty),
       NamedExpectation(end, Map.empty),
       NamedExpectation(relName, Map.empty), relType, dir)
 }
 
-case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: NamedExpectation, relType: String, dir: Direction)
+case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: NamedExpectation, relType: String, dir: SemanticDirection)
   extends GraphElementPropertyFunctions with Pattern with MapSupport {
 
   def exec(context: ExecutionContext, state: QueryState): Option[(UniqueLink, CreateUniqueResult)] = {
@@ -81,11 +82,11 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     // When only one node exists in the context, we'll traverse all the relationships of that node
     // and try to find a matching node/rel. If matches are found, they are returned. If nothing is
     // found, we'll create it and return it
-    def oneNode(startNode: Node, dir: Direction, other: NamedExpectation): Option[(UniqueLink, CreateUniqueResult)] = {
+    def oneNode(startNode: Node, dir: SemanticDirection, other: NamedExpectation): Option[(UniqueLink, CreateUniqueResult)] = {
 
       def createUpdateActions(): Seq[UpdateWrapper] = {
         val relExpectations = rel.getExpectations(context, state)
-        val createRel = if (dir == Direction.OUTGOING) {
+        val createRel = if (dir == SemanticDirection.OUTGOING) {
           CreateRelationship(rel.name,
             RelationshipEndpoint(Literal(startNode), Map(), Seq.empty),
             RelationshipEndpoint(Identifier(other.name), Map(), Seq.empty), relType, relExpectations.properties)
@@ -123,7 +124,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
 
     (s, e) match {
       case (Some(startNode), None) => oneNode(startNode, dir, end)
-      case (None, Some(startNode)) => oneNode(startNode, dir.reverse(), start)
+      case (None, Some(startNode)) => oneNode(startNode, dir.reversed, start)
 
       case (Some(startNode), Some(endNode)) => {
         if (context.contains(rel.name))

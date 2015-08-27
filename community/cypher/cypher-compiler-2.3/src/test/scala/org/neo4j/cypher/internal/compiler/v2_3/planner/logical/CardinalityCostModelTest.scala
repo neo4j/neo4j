@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
-import org.neo4j.cypher.internal.frontend.v2_3.ast.{HasLabels, LabelName}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
+import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, LogicalPlanningTestSupport, PlannerQuery}
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{HasLabels, LabelName}
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
 
 class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -36,8 +36,8 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
           Selection(List(HasLabels(ident("a"), Seq(LabelName("Awesome") _)) _),
             Expand(
               Argument(Set("a"))(solvedWithEstimation(10.0))(),
-              "a", Direction.OUTGOING, Seq.empty, "b", "r1")(solvedWithEstimation(100.0))
-          )(solvedWithEstimation(10.0)), "a", Direction.OUTGOING, Seq.empty, "b", "r1")(solvedWithEstimation(100.0))
+              "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1")(solvedWithEstimation(100.0))
+          )(solvedWithEstimation(10.0)), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1")(solvedWithEstimation(100.0))
       )(solvedWithEstimation(10.0))
 
     CardinalityCostModel(plan, QueryGraphSolverInput.empty) should equal(Cost(221))
@@ -48,7 +48,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
       NodeByLabelScan("a", LazyLabel("A"), Set.empty)(solvedWithEstimation(10.0)),
       Expand(
         NodeByLabelScan("b", LazyLabel("B"), Set.empty)(solvedWithEstimation(5.0)),
-        "b", Direction.OUTGOING, Seq.empty, "a", "r", ExpandAll)(solvedWithEstimation(15.0))
+        "b", SemanticDirection.OUTGOING, Seq.empty, "a", "r", ExpandAll)(solvedWithEstimation(15.0))
     )(solvedWithEstimation(10.0))
 
     val pleaseLazy = QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode)
@@ -66,9 +66,9 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
         Expand(
           Expand(
             NodeByLabelScan("a1", LazyLabel("A"), Set.empty)(solvedWithEstimation(10.0)),
-            "a1", Direction.OUTGOING, Seq.empty, "b", "r1", ExpandAll
+            "a1", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandAll
           )(solvedWithEstimation(50.0)),
-          "b", Direction.INCOMING, Seq.empty, "a2", "r2", ExpandAll
+          "b", SemanticDirection.INCOMING, Seq.empty, "a2", "r2", ExpandAll
         )(solvedWithEstimation(250.0))
       )(solvedWithEstimation(250.0)), Map("b" -> ident("b"))
     )(solvedWithEstimation(250.0))
@@ -77,11 +77,11 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
       NodeHashJoin(Set("b"),
         Expand(
           NodeByLabelScan("a1", LazyLabel("A"), Set.empty)(solvedWithEstimation(10.0)),
-          "a1", Direction.OUTGOING, Seq.empty, "b", "r1", ExpandAll
+          "a1", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandAll
         )(solvedWithEstimation(50.0)),
         Expand(
           NodeByLabelScan("a2", LazyLabel("A"), Set.empty)(solvedWithEstimation(10.0)),
-          "a2", Direction.OUTGOING, Seq.empty, "b", "r2", ExpandAll
+          "a2", SemanticDirection.OUTGOING, Seq.empty, "b", "r2", ExpandAll
         )(solvedWithEstimation(50.0))
       )(solvedWithEstimation(250.0)), Map("b" -> ident("b"))
     )(solvedWithEstimation(250.0))

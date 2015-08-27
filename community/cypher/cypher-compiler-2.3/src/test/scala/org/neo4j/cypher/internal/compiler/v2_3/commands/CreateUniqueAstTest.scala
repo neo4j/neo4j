@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.{CreateUniqueAction, NamedExpectation, UniqueLink}
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
 
 class CreateUniqueAstTest extends CypherFunSuite {
 
@@ -31,19 +31,19 @@ class CreateUniqueAstTest extends CypherFunSuite {
 
   test("testNextStepOnCreateUniqueAst") {
     // "a-[r:REL]->b"
-    Seq(ParsedRelation("r", "a", "b", Seq("REL"), Direction.OUTGOING)) -->(
-      expectedLinks = Seq(UniqueLink("a", "b", "r", "REL", Direction.OUTGOING)),
+    Seq(ParsedRelation("r", "a", "b", Seq("REL"), OUTGOING)) -->(
+      expectedLinks = Seq(UniqueLink("a", "b", "r", "REL", OUTGOING)),
       expectedNamedPaths = Seq()
     )
 
     // "a-[r:REL]->b-[r2:REL]->c"
     Seq(
-      ParsedRelation("r", "a", "b", Seq("REL"), Direction.OUTGOING),
-      ParsedRelation("r2", "b", "c", Seq("REL"), Direction.OUTGOING)
+      ParsedRelation("r", "a", "b", Seq("REL"), OUTGOING),
+      ParsedRelation("r2", "b", "c", Seq("REL"), OUTGOING)
     ) -->(
       expectedLinks = Seq(
-        UniqueLink("a", "b", "r", "REL", Direction.OUTGOING),
-        UniqueLink("b", "c", "r2", "REL", Direction.OUTGOING)
+        UniqueLink("a", "b", "r", "REL", OUTGOING),
+        UniqueLink("b", "c", "r2", "REL", OUTGOING)
       ),
       expectedNamedPaths = Seq()
     )
@@ -54,19 +54,19 @@ class CreateUniqueAstTest extends CypherFunSuite {
         props = simplePropMap,
         start = ParsedEntity("a"),
         end = ParsedEntity("b"), typ = Seq("REL"),
-        dir = Direction.OUTGOING, optional = false)) -->(
+        dir = OUTGOING, optional = false)) -->(
       expectedLinks = Seq(UniqueLink(
         start = NamedExpectation("a"),
         end = NamedExpectation("b"),
         rel = NamedExpectation("r", simplePropMap),
-        relType = "REL", dir = Direction.OUTGOING)),
+        relType = "REL", dir = OUTGOING)),
       expectedNamedPaths = Seq()
     )
 
     // "p = a-[r:REL]->b"
-    Seq(ParsedNamedPath("p", Seq(ParsedRelation("r", "a", "b", Seq("REL"), Direction.OUTGOING)))) -->(
-      expectedLinks = Seq(UniqueLink("a", "b", "r", "REL", Direction.OUTGOING)),
-      expectedNamedPaths = Seq(NamedPath("p", ParsedRelation("r", "a", "b", Seq("REL"), Direction.OUTGOING)))
+    Seq(ParsedNamedPath("p", Seq(ParsedRelation("r", "a", "b", Seq("REL"), OUTGOING)))) -->(
+      expectedLinks = Seq(UniqueLink("a", "b", "r", "REL", OUTGOING)),
+      expectedNamedPaths = Seq(NamedPath("p", ParsedRelation("r", "a", "b", Seq("REL"), OUTGOING)))
     )
   }
 

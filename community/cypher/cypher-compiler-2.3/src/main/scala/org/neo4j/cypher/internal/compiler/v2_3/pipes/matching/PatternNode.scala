@@ -23,9 +23,10 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{RelatedTo, SingleNode}
 import commands.expressions.Expression
 import commands.values.{UnresolvedProperty, KeyToken}
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import pipes.QueryState
 import spi.QueryContext
-import org.neo4j.graphdb.{Direction, Node}
+import org.neo4j.graphdb.Node
 import collection.Map
 
 class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty, val properties: Map[KeyToken, Expression] = Map.empty)
@@ -48,7 +49,8 @@ class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty, val proper
   def getGraphRelationships(node: Node, pRel: PatternRelationship, state: QueryState, f: => ExecutionContext): Seq[GraphRelationship] =
     pRel.getGraphRelationships(this, node, state, f)
 
-  def relateTo(key: String, other: PatternNode, relType: Seq[String], dir: Direction, props: Map[String, Expression] = Map.empty): PatternRelationship = {
+  def relateTo(key: String, other: PatternNode, relType: Seq[String], dir: SemanticDirection,
+               props: Map[String, Expression] = Map.empty): PatternRelationship = {
     val relProps = props.map { case (k,v) => UnresolvedProperty(k)->v }.toMap
     val rel = new PatternRelationship(key, this, other, relType, relProps, dir)
     relationships.add(rel)
@@ -64,7 +66,7 @@ class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty, val proper
                                     minHops: Option[Int],
                                     maxHops: Option[Int],
                                     relType: Seq[String],
-                                    dir: Direction,
+                                    dir: SemanticDirection,
                                     collectionOfRels: Option[String],
                                     props: Map[String, Expression] = Map.empty): PatternRelationship = {
     val relProps = props.map { case (k,v) => UnresolvedProperty(k)->v }.toMap

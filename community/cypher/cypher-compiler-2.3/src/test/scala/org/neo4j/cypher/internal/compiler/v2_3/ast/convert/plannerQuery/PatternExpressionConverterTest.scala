@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSuppo
 import org.neo4j.cypher.internal.frontend.v2_3.ast.{Expression, Identifier}
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, ast}
-import org.neo4j.graphdb.Direction
 
 class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -37,8 +36,8 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
   val TYP: ast.RelTypeName = ast.RelTypeName("TYP")_
 
   val rRelWithType: ast.RelationshipPattern = rRel.copy(types = Seq(TYP)) _
-  val planRel = PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-  val planRelWithType = PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq(TYP), SimplePatternLength)
+  val planRel = PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+  val planRelWithType = PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), SemanticDirection.OUTGOING, Seq(TYP), SimplePatternLength)
 
   private def projections(names: String*): Map[String, Expression] = names.map {
     case x => x -> Identifier(x)(pos)

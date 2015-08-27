@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.spi
 
-import org.neo4j.graphdb.{PropertyContainer, Relationship, Direction, Node}
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
+import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 
@@ -36,12 +37,12 @@ final class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) exte
     inner.getLabelsForNode(node)
   }
 
-  override def nodeGetDegree(node: Long, dir: Direction): Int = {
+  override def nodeGetDegree(node: Long, dir: SemanticDirection): Int = {
     lockNode(node)
     inner.nodeGetDegree(node, dir)
   }
 
-  override def nodeGetDegree(node: Long, dir: Direction, relTypeId: Int): Int = {
+  override def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int = {
     lockNode(node)
     inner.nodeGetDegree(node, dir, relTypeId)
   }

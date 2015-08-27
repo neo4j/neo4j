@@ -27,9 +27,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Not, Predicate, True}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{Direction, Node, Relationship}
+import org.neo4j.graphdb.{Node, Relationship}
 
 class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
@@ -52,7 +53,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
       row("a" -> startNode, "b" -> endNode1))
 
     // when
-    val result = OptionalExpandIntoPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -66,7 +67,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
       row("a" -> startNode, "b" -> endNode1))
 
     // when
-    val result = OptionalExpandIntoPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -80,7 +81,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
       row("a" -> startNode, "b" -> endNode2))
 
     // when
-    val result = OptionalExpandIntoPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -95,7 +96,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
       row("a" -> startNode, "b" -> endNode2))
 
     // when
-    val result = OptionalExpandIntoPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -110,7 +111,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
     val falsePredicate: Predicate = Not(True())
     // when
-    val result = OptionalExpandIntoPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, falsePredicate)().createResults(queryState).toList
+    val result = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, falsePredicate)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -125,7 +126,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
       row("a" -> startNode, "b" -> endNode2))
 
     // when
-    val result = OptionalExpandIntoPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
 
     // then
     val (first :: second :: Nil) = result
@@ -142,7 +143,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     )
 
     // when
-    val result = OptionalExpandIntoPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
 
     // then
     val (first :: second :: Nil) = result
@@ -156,7 +157,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     val left = newMockedPipe("a")
 
     // when
-    val result = OptionalExpandIntoPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
 
     // then
     result shouldBe 'empty
@@ -168,7 +169,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     val input = new FakePipe(Iterator(Map("a" -> node, "b" -> null)))
 
     // when
-    val result: List[ExecutionContext] = OptionalExpandIntoPipe(input, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result: List[ExecutionContext] = OptionalExpandIntoPipe(input, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
 
     // then
     result should equal(List(Map("a" -> node, "r" -> null, "b" -> null)))
@@ -180,7 +181,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     val input = new FakePipe(Iterator(Map("a" -> null, "b" -> node)))
 
     // when
-    val result: List[ExecutionContext] = OptionalExpandIntoPipe(input, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result: List[ExecutionContext] = OptionalExpandIntoPipe(input, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
 
     // then
     result should equal(List(Map("a" -> null, "r" -> null, "b" -> node)))
@@ -191,7 +192,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     val input = new FakePipe(Iterator(Map("a" -> null, "b" -> null)))
 
     // when
-    val result: List[ExecutionContext] = OptionalExpandIntoPipe(input, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result: List[ExecutionContext] = OptionalExpandIntoPipe(input, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
 
     // then
     result should equal(List(Map("a" -> null, "r" -> null, "b" -> null)))

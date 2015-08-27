@@ -23,6 +23,7 @@ import java.lang.Iterable
 import java.util
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.{CreateUniqueAction, UniqueLink}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._
@@ -57,7 +58,7 @@ class DoubleCheckCreateUniqueTest extends CypherFunSuite {
     }
   }
 
-  val relateAction = CreateUniqueAction(UniqueLink("a", "b", "r", "X", Direction.OUTGOING))
+  val relateAction = CreateUniqueAction(UniqueLink("a", "b", "r", "X", SemanticDirection.OUTGOING))
 
   private def createExecutionContext(state:QueryState, a: Node): ExecutionContext = {
     ExecutionContext().newWith(Map("a" -> a))

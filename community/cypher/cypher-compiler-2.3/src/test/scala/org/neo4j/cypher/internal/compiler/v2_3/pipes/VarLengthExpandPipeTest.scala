@@ -26,9 +26,10 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{Direction, Node, Relationship}
+import org.neo4j.graphdb.{Node, Relationship}
 
 class VarLengthExpandPipeTest extends CypherFunSuite {
 
@@ -53,7 +54,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)()
+      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)()
       .createResults(queryState).toList
 
     // then
@@ -82,7 +83,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
+      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
       .createResults(queryState).toList
 
     // then
@@ -111,7 +112,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
+      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
       .createResults(queryState).toList
 
     // then
@@ -137,7 +138,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
+      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
       .createResults(queryState).toList
 
     // then
@@ -166,7 +167,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
+      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
       .createResults(queryState).toList
 
     // then
@@ -185,13 +186,13 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val rightRelationship = newMockedRelationship(2, middleNode, endNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-        (startNode, Direction.OUTGOING) -> Seq(leftRelationship),
-        (middleNode, Direction.INCOMING) -> Seq(leftRelationship),
-        (middleNode, Direction.OUTGOING) -> Seq(rightRelationship),
-        (endNode, Direction.INCOMING) -> Seq(rightRelationship)
-      ).withDefaultValue(Seq.empty)
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (startNode, SemanticDirection.OUTGOING) -> Seq(leftRelationship),
+      (middleNode, SemanticDirection.INCOMING) -> Seq(leftRelationship),
+      (middleNode, SemanticDirection.OUTGOING) -> Seq(rightRelationship),
+      (endNode, SemanticDirection.INCOMING) -> Seq(rightRelationship)
     )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
@@ -199,7 +200,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)().
+      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)().
         createResults(queryState).toList
 
     // then
@@ -221,13 +222,13 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val rightRelationship = newMockedRelationship(2, middleNode, endNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-        (startNode, Direction.OUTGOING) -> Seq(leftRelationship),
-        (middleNode, Direction.INCOMING) -> Seq(leftRelationship),
-        (middleNode, Direction.OUTGOING) -> Seq(rightRelationship),
-        (endNode, Direction.INCOMING) -> Seq(rightRelationship)
-      ).withDefaultValue(Seq.empty)
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (startNode, SemanticDirection.OUTGOING) -> Seq(leftRelationship),
+      (middleNode, SemanticDirection.INCOMING) -> Seq(leftRelationship),
+      (middleNode, SemanticDirection.OUTGOING) -> Seq(rightRelationship),
+      (endNode, SemanticDirection.INCOMING) -> Seq(rightRelationship)
     )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
@@ -235,7 +236,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)().
+      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)().
         createResults(queryState).toList
 
     // then
@@ -257,13 +258,13 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val rightRelationship = newMockedRelationship(2, middleNode, endNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-        (startNode, Direction.OUTGOING) -> Seq(leftRelationship),
-        (middleNode, Direction.INCOMING) -> Seq(leftRelationship),
-        (middleNode, Direction.OUTGOING) -> Seq(rightRelationship),
-        (endNode, Direction.INCOMING) -> Seq(rightRelationship)
-      ).withDefaultValue(Seq.empty)
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (startNode, SemanticDirection.OUTGOING) -> Seq(leftRelationship),
+      (middleNode, SemanticDirection.INCOMING) -> Seq(leftRelationship),
+      (middleNode, SemanticDirection.OUTGOING) -> Seq(rightRelationship),
+      (endNode, SemanticDirection.INCOMING) -> Seq(rightRelationship)
     )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
@@ -272,7 +273,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)().
+      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)().
         createResults(queryState).toList
 
     // then
@@ -289,20 +290,20 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val rightRelationship = newMockedRelationship(3, middleNode, endNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-        (startNode, Direction.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
-        (middleNode, Direction.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
-        (middleNode, Direction.OUTGOING) -> Seq(rightRelationship),
-        (endNode, Direction.INCOMING) -> Seq(rightRelationship)
-      ).withDefaultValue(Seq.empty)
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (startNode, SemanticDirection.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, SemanticDirection.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, SemanticDirection.OUTGOING) -> Seq(rightRelationship),
+      (endNode, SemanticDirection.INCOMING) -> Seq(rightRelationship)
     )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)().
       createResults(queryState).toList
 
     // then
@@ -331,20 +332,20 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val rightRelationship = newMockedRelationship(3, middleNode, endNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-        (startNode, Direction.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
-        (middleNode, Direction.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
-        (middleNode, Direction.OUTGOING) -> Seq(rightRelationship),
-        (endNode, Direction.INCOMING) -> Seq(rightRelationship)
-      ).withDefaultValue(Seq.empty)
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (startNode, SemanticDirection.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, SemanticDirection.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, SemanticDirection.OUTGOING) -> Seq(rightRelationship),
+      (endNode, SemanticDirection.INCOMING) -> Seq(rightRelationship)
     )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode, "b" -> endNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)().
       createResults(queryState).toList
 
     // then
@@ -367,13 +368,13 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val rightRelationship = newMockedRelationship(3, middleNode, endNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-        (startNode, Direction.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
-        (middleNode, Direction.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
-        (middleNode, Direction.OUTGOING) -> Seq(rightRelationship),
-        (endNode, Direction.INCOMING) -> Seq(rightRelationship)
-      ).withDefaultValue(Seq.empty)
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (startNode, SemanticDirection.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, SemanticDirection.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, SemanticDirection.OUTGOING) -> Seq(rightRelationship),
+      (endNode, SemanticDirection.INCOMING) -> Seq(rightRelationship)
     )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
@@ -381,7 +382,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode, "b" -> badNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)().
       createResults(queryState).toList
 
     // then
@@ -398,20 +399,20 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val rightRelationship = newMockedRelationship(3, middleNode, endNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-        (startNode, Direction.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
-        (middleNode, Direction.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
-        (middleNode, Direction.OUTGOING) -> Seq(rightRelationship),
-        (endNode, Direction.INCOMING) -> Seq(rightRelationship)
-      ).withDefaultValue(Seq.empty)
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (startNode, SemanticDirection.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, SemanticDirection.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, SemanticDirection.OUTGOING) -> Seq(rightRelationship),
+      (endNode, SemanticDirection.INCOMING) -> Seq(rightRelationship)
     )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, Some(1), nodeInScope = false)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, Some(1), nodeInScope = false)().
       createResults(queryState).toList
 
     // then
@@ -435,20 +436,20 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val rightRelationship = newMockedRelationship(3, middleNode, endNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-        (startNode, Direction.OUTGOING) -> Seq(leftRelationship1, leftRelationship2, leftRelationship3),
-        (middleNode, Direction.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
-        (middleNode, Direction.OUTGOING) -> Seq(rightRelationship),
-        (endNode, Direction.INCOMING) -> Seq(rightRelationship, leftRelationship3)
-      ).withDefaultValue(Seq.empty)
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (startNode, SemanticDirection.OUTGOING) -> Seq(leftRelationship1, leftRelationship2, leftRelationship3),
+      (middleNode, SemanticDirection.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, SemanticDirection.OUTGOING) -> Seq(rightRelationship),
+      (endNode, SemanticDirection.INCOMING) -> Seq(rightRelationship, leftRelationship3)
     )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode, "b" -> endNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, Some(1), nodeInScope = true)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, Some(1), nodeInScope = true)().
       createResults(queryState).toList
 
     // then
@@ -468,20 +469,20 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val rightRelationship = newMockedRelationship(3, middleNode, endNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-        (startNode, Direction.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
-        (middleNode, Direction.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
-        (middleNode, Direction.OUTGOING) -> Seq(rightRelationship),
-        (endNode, Direction.INCOMING) -> Seq(rightRelationship)
-      ).withDefaultValue(Seq.empty)
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (startNode, SemanticDirection.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, SemanticDirection.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, SemanticDirection.OUTGOING) -> Seq(rightRelationship),
+      (endNode, SemanticDirection.INCOMING) -> Seq(rightRelationship)
     )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().
       createResults(queryState).toList
 
     // then
@@ -506,13 +507,14 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val otherRelationship = newMockedRelationship(4, middleNode, otherNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-        (startNode, Direction.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
-        (middleNode, Direction.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
-        (middleNode, Direction.OUTGOING) -> Seq(rightRelationship, otherRelationship),
-        (endNode, Direction.INCOMING) -> Seq(rightRelationship),
-        (otherNode, Direction.INCOMING) -> Seq(otherRelationship)
-      ).withDefaultValue(Seq.empty)
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (startNode, SemanticDirection.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, SemanticDirection.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, SemanticDirection.OUTGOING) -> Seq(rightRelationship, otherRelationship),
+      (endNode, SemanticDirection.INCOMING) -> Seq(rightRelationship),
+      (otherNode, SemanticDirection.INCOMING) -> Seq(otherRelationship)
+    )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty)
     )
     val queryState = QueryStateHelper.emptyWith(query = query)
 
@@ -520,7 +522,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode, "b" -> endNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = true)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = true)().
       createResults(queryState).toList
 
     // then
@@ -545,14 +547,15 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val rightRelationship = newMockedRelationship(3, middleNode, endNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-        (firstNode, Direction.OUTGOING) -> Seq(initialRelationship),
-        (startNode, Direction.INCOMING) -> Seq(initialRelationship),
-        (startNode, Direction.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
-        (middleNode, Direction.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
-        (middleNode, Direction.OUTGOING) -> Seq(rightRelationship),
-        (endNode, Direction.INCOMING) -> Seq(rightRelationship)
-      ).withDefaultValue(Seq.empty)
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (firstNode, SemanticDirection.OUTGOING) -> Seq(initialRelationship),
+      (startNode, SemanticDirection.INCOMING) -> Seq(initialRelationship),
+      (startNode, SemanticDirection.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, SemanticDirection.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, SemanticDirection.OUTGOING) -> Seq(rightRelationship),
+      (endNode, SemanticDirection.INCOMING) -> Seq(rightRelationship)
+    )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty)
     )
     val queryState = QueryStateHelper.emptyWith(query = query)
 
@@ -560,7 +563,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> firstNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 2, Some(3), nodeInScope = false)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(3), nodeInScope = false)().
       createResults(queryState).toList
 
     // then
@@ -593,15 +596,16 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val otherRelationship = newMockedRelationship(5, middleNode, otherNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-        (firstNode, Direction.OUTGOING) -> Seq(initialRelationship),
-        (startNode, Direction.INCOMING) -> Seq(initialRelationship),
-        (startNode, Direction.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
-        (middleNode, Direction.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
-        (middleNode, Direction.OUTGOING) -> Seq(rightRelationship, otherRelationship),
-        (endNode, Direction.INCOMING) -> Seq(rightRelationship),
-        (otherNode, Direction.INCOMING) -> Seq(otherRelationship)
-      ).withDefaultValue(Seq.empty)
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (firstNode, SemanticDirection.OUTGOING) -> Seq(initialRelationship),
+      (startNode, SemanticDirection.INCOMING) -> Seq(initialRelationship),
+      (startNode, SemanticDirection.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, SemanticDirection.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, SemanticDirection.OUTGOING) -> Seq(rightRelationship, otherRelationship),
+      (endNode, SemanticDirection.INCOMING) -> Seq(rightRelationship),
+      (otherNode, SemanticDirection.INCOMING) -> Seq(otherRelationship)
+    )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty)
     )
     val queryState = QueryStateHelper.emptyWith(query = query)
 
@@ -609,7 +613,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> firstNode, "b" -> endNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 2, Some(3), nodeInScope = true)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(3), nodeInScope = true)().
       createResults(queryState).toList
 
     // then
@@ -631,13 +635,13 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val rightRelationship = newMockedRelationship(2, middleNode, endNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-      (startNode, Direction.OUTGOING) -> Seq(leftRelationship),
-      (middleNode, Direction.INCOMING) -> Seq(leftRelationship),
-      (middleNode, Direction.OUTGOING) -> Seq(rightRelationship),
-      (endNode, Direction.INCOMING) -> Seq(rightRelationship)
-    ).withDefaultValue(Seq.empty)
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (startNode, SemanticDirection.OUTGOING) -> Seq(leftRelationship),
+      (middleNode, SemanticDirection.INCOMING) -> Seq(leftRelationship),
+      (middleNode, SemanticDirection.OUTGOING) -> Seq(rightRelationship),
+      (endNode, SemanticDirection.INCOMING) -> Seq(rightRelationship)
     )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
@@ -646,7 +650,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     // (b)-[r]->(a)
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.INCOMING, LazyTypes.empty, 1, None, nodeInScope = false)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.INCOMING, LazyTypes.empty, 1, None, nodeInScope = false)().
       createResults(queryState).toList
 
     // then
@@ -670,14 +674,15 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val leftRelationship2 = newMockedRelationship(2, startNode, middleNode)
     val rightRelationship = newMockedRelationship(3, middleNode, endNode)
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-      (firstNode, Direction.OUTGOING) -> Seq(initialRelationship),
-      (startNode, Direction.INCOMING) -> Seq(initialRelationship),
-      (startNode, Direction.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
-      (middleNode, Direction.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
-      (middleNode, Direction.OUTGOING) -> Seq(rightRelationship),
-      (endNode, Direction.INCOMING) -> Seq(rightRelationship)
-    ).withDefaultValue(Seq.empty)
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (firstNode, SemanticDirection.OUTGOING) -> Seq(initialRelationship),
+      (startNode, SemanticDirection.INCOMING) -> Seq(initialRelationship),
+      (startNode, SemanticDirection.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, SemanticDirection.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, SemanticDirection.OUTGOING) -> Seq(rightRelationship),
+      (endNode, SemanticDirection.INCOMING) -> Seq(rightRelationship)
+    )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty)
     )
     val queryState = QueryStateHelper.emptyWith(query = query)
 
@@ -687,7 +692,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     def filteringStep(context: ExecutionContext, q: QueryState, rel: Relationship): Boolean = rel.getId != 2
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING,
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING,
                                      LazyTypes.empty, 3, None, nodeInScope = false, filteringStep)().createResults(queryState).toList
 
     // then
@@ -708,12 +713,13 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val relationship2 = newNamedMockedRelationship(2, "r2", middleNode, endNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-      (startNode, Direction.OUTGOING) -> Seq(relationship1),
-      (middleNode, Direction.INCOMING) -> Seq(relationship1),
-      (middleNode, Direction.OUTGOING) -> Seq(relationship2),
-      (endNode, Direction.INCOMING) -> Seq(relationship2)
-    ).withDefaultValue(Seq.empty))
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (startNode, SemanticDirection.OUTGOING) -> Seq(relationship1),
+      (middleNode, SemanticDirection.INCOMING) -> Seq(relationship1),
+      (middleNode, SemanticDirection.OUTGOING) -> Seq(relationship2),
+      (endNode, SemanticDirection.INCOMING) -> Seq(relationship2)
+    )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
@@ -721,7 +727,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ Direction.OUTGOING, /* projectedDir */ Direction.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.OUTGOING, /* projectedDir */ SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -741,12 +747,13 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val relationship1 = newNamedMockedRelationship(1, "r1", startNode, middleNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-      (startNode, Direction.OUTGOING) -> Seq(relationship1),
-      (middleNode, Direction.INCOMING) -> Seq(relationship1),
-      (middleNode, Direction.OUTGOING) -> Seq(relationship2),
-      (endNode, Direction.INCOMING) -> Seq(relationship2)
-    ).withDefaultValue(Seq.empty))
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (startNode, SemanticDirection.OUTGOING) -> Seq(relationship1),
+      (middleNode, SemanticDirection.INCOMING) -> Seq(relationship1),
+      (middleNode, SemanticDirection.OUTGOING) -> Seq(relationship2),
+      (endNode, SemanticDirection.INCOMING) -> Seq(relationship2)
+    )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
@@ -754,7 +761,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> endNode)))
 
     // when
-    val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ Direction.INCOMING, /* projectedDir */ Direction.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.INCOMING, /* projectedDir */ SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -774,12 +781,13 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val relationship2 = newNamedMockedRelationship(2, "r2", endNode, middleNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-      (startNode, Direction.INCOMING) -> Seq(relationship1),
-      (middleNode, Direction.OUTGOING) -> Seq(relationship1),
-      (middleNode, Direction.INCOMING) -> Seq(relationship2),
-      (endNode, Direction.OUTGOING) -> Seq(relationship2)
-    ).withDefaultValue(Seq.empty))
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (startNode, SemanticDirection.INCOMING) -> Seq(relationship1),
+      (middleNode, SemanticDirection.OUTGOING) -> Seq(relationship1),
+      (middleNode, SemanticDirection.INCOMING) -> Seq(relationship2),
+      (endNode, SemanticDirection.OUTGOING) -> Seq(relationship2)
+    )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
@@ -787,7 +795,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ Direction.INCOMING, /* projectedDir */ Direction.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.INCOMING, /* projectedDir */ SemanticDirection.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -807,12 +815,13 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val relationship2 = newNamedMockedRelationship(2, "r2", endNode, middleNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-      (startNode, Direction.INCOMING) -> Seq(relationship1),
-      (middleNode, Direction.OUTGOING) -> Seq(relationship1),
-      (middleNode, Direction.INCOMING) -> Seq(relationship2),
-      (endNode, Direction.OUTGOING) -> Seq(relationship2)
-    ).withDefaultValue(Seq.empty))
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (startNode, SemanticDirection.INCOMING) -> Seq(relationship1),
+      (middleNode, SemanticDirection.OUTGOING) -> Seq(relationship1),
+      (middleNode, SemanticDirection.INCOMING) -> Seq(relationship2),
+      (endNode, SemanticDirection.OUTGOING) -> Seq(relationship2)
+    )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
@@ -820,7 +829,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> endNode)))
 
     // when
-    val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ Direction.OUTGOING, /* projectedDir */ Direction.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.OUTGOING, /* projectedDir */ SemanticDirection.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -844,11 +853,12 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val relationship2 = newNamedMockedRelationship(2, "r2", middleNode, endNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-      (startNode, Direction.BOTH) -> Seq(relationship1),
-      (middleNode, Direction.BOTH) -> Seq(relationship1, relationship2),
-      (endNode, Direction.BOTH) -> Seq(relationship2)
-    ).withDefaultValue(Seq.empty))
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (startNode, SemanticDirection.BOTH) -> Seq(relationship1),
+      (middleNode, SemanticDirection.BOTH) -> Seq(relationship1, relationship2),
+      (endNode, SemanticDirection.BOTH) -> Seq(relationship2)
+    )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
@@ -856,7 +866,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ Direction.BOTH, /* projectedDir */ Direction.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -876,11 +886,12 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val relationship1 = newNamedMockedRelationship(1, "r1", startNode, middleNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-      (startNode, Direction.BOTH) -> Seq(relationship1),
-      (middleNode, Direction.BOTH) -> Seq(relationship1, relationship2),
-      (endNode, Direction.BOTH) -> Seq(relationship2)
-    ).withDefaultValue(Seq.empty))
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (startNode, SemanticDirection.BOTH) -> Seq(relationship1),
+      (middleNode, SemanticDirection.BOTH) -> Seq(relationship1, relationship2),
+      (endNode, SemanticDirection.BOTH) -> Seq(relationship2)
+    )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
@@ -888,7 +899,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> endNode)))
 
     // when
-    val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ Direction.BOTH, /* projectedDir */ Direction.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -908,11 +919,12 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val relationship2 = newNamedMockedRelationship(2, "r2", endNode, middleNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-      (startNode, Direction.BOTH) -> Seq(relationship1),
-      (middleNode, Direction.BOTH) -> Seq(relationship1, relationship2),
-      (endNode, Direction.BOTH) -> Seq(relationship2)
-    ).withDefaultValue(Seq.empty))
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (startNode, SemanticDirection.BOTH) -> Seq(relationship1),
+      (middleNode, SemanticDirection.BOTH) -> Seq(relationship1, relationship2),
+      (endNode, SemanticDirection.BOTH) -> Seq(relationship2)
+    )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
@@ -920,7 +932,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ Direction.BOTH, /* projectedDir */ Direction.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -940,11 +952,12 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val relationship2 = newNamedMockedRelationship(2, "r2", endNode, middleNode)
 
     val query = mock[QueryContext]
-    replyWithMap(query, Map(
-      (startNode, Direction.BOTH) -> Seq(relationship1),
-      (middleNode, Direction.BOTH) -> Seq(relationship1, relationship2),
-      (endNode, Direction.BOTH) -> Seq(relationship2)
-    ).withDefaultValue(Seq.empty))
+    val nodeMapping: Map[(Node, SemanticDirection), Seq[Relationship]] = Map(
+      (startNode, SemanticDirection.BOTH) -> Seq(relationship1),
+      (middleNode, SemanticDirection.BOTH) -> Seq(relationship1, relationship2),
+      (endNode, SemanticDirection.BOTH) -> Seq(relationship2)
+    )
+    replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
@@ -952,7 +965,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> endNode)))
 
     // when
-    val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ Direction.BOTH, /* projectedDir */ Direction.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -970,7 +983,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(source.createResults(queryState)).thenReturn(Iterator(row("a" -> null)))
 
     // when
-    val result = VarLengthExpandPipe(source, "a", "r", "b", Direction.BOTH, Direction.INCOMING, LazyTypes.empty, 1, None, nodeInScope = false)().createResults(queryState).toList
+    val result = VarLengthExpandPipe(source, "a", "r", "b", SemanticDirection.BOTH, SemanticDirection.INCOMING, LazyTypes.empty, 1, None, nodeInScope = false)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -1003,11 +1016,11 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     relationship
   }
 
-  private def replyWithMap(query: QueryContext, mapping: Map[(Node, Direction), Seq[Relationship]]) {
+  private def replyWithMap(query: QueryContext, mapping: Map[(Node, _ <: SemanticDirection), Seq[Relationship]]) {
     when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
       def answer(invocation: InvocationOnMock): Iterator[Relationship] = {
         val (startNode :: dir :: _ :: Nil) = invocation.getArguments.toList
-        mapping((startNode.asInstanceOf[Node], dir.asInstanceOf[Direction])).iterator
+        mapping((startNode.asInstanceOf[Node], dir.asInstanceOf[SemanticDirection])).iterator
       }
     })
   }

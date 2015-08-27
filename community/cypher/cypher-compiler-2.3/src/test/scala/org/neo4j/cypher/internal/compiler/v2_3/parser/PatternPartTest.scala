@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.parser
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{Pattern => LegacyPattern, _}
-import org.neo4j.cypher.internal.frontend.v2_3.ast
+import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, ast}
 import org.neo4j.cypher.internal.frontend.v2_3.parser.{Expressions, ParserTest, Patterns}
-import org.neo4j.graphdb.Direction
 import org.parboiled.scala._
 
 class PatternPartTest extends ParserTest[ast.PatternPart, Seq[LegacyPattern]] with Patterns with Expressions {
@@ -35,7 +34,7 @@ class PatternPartTest extends ParserTest[ast.PatternPart, Seq[LegacyPattern]] wi
   test("label_literal_list_parsing") {
     parsing("(a)-[r:FOO|BAR]->(b)") or
     parsing("a-[r:FOO|:BAR]->b") shouldGive
-      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq("FOO", "BAR"), Direction.OUTGOING, Map.empty))
+      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq("FOO", "BAR"), SemanticDirection.OUTGOING, Map.empty))
   }
 
   test("properties_in_node_patterns") {
@@ -51,18 +50,18 @@ class PatternPartTest extends ParserTest[ast.PatternPart, Seq[LegacyPattern]] wi
 
   test("properties_in_relationship_patterns") {
     parsing("(a)-[{foo:'bar'}]->(b)") shouldGive
-      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED3", Seq.empty, Direction.OUTGOING, properties = Map("foo" -> Literal("bar"))))
+      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED3", Seq.empty, SemanticDirection.OUTGOING, properties = Map("foo" -> Literal("bar"))))
 
     parsing("(a)-[{}]->(b)") shouldGive
-      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED3", Seq.empty, Direction.OUTGOING, properties = Map.empty))
+      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED3", Seq.empty, SemanticDirection.OUTGOING, properties = Map.empty))
 
     parsing("(a)-[? {foo:'bar'}]->(b)") shouldGive
-      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED3", Seq.empty, Direction.OUTGOING, properties = Map("foo" -> Literal("bar"))))
+      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED3", Seq.empty, SemanticDirection.OUTGOING, properties = Map("foo" -> Literal("bar"))))
 
     parsing("(a)-[r {foo:'bar'}]->(b)") shouldGive
-      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq.empty, Direction.OUTGOING, properties = Map("foo" -> Literal("bar"))))
+      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq.empty, SemanticDirection.OUTGOING, properties = Map("foo" -> Literal("bar"))))
 
     parsing("(a)-[r {foo:'bar', bar:'baz'}]->(b)") shouldGive
-      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq.empty, Direction.OUTGOING, properties = Map("foo" -> Literal("bar"), "bar" -> Literal("baz"))))
+      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq.empty, SemanticDirection.OUTGOING, properties = Map("foo" -> Literal("bar"), "bar" -> Literal("baz"))))
   }
 }

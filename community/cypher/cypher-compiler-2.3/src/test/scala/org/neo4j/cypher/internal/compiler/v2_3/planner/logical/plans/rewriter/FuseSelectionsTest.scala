@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.frontend.v2_3.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{PlannerQuery, LogicalPlanningTestSupport}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
+import org.neo4j.cypher.internal.frontend.v2_3.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Direction
 
 class FuseSelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
   test("merges two selections into one") {

@@ -23,7 +23,7 @@ import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathImpl
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.True
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{EndPoint, SingleStepTrail, VariableLengthStepTrail}
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 
 class TrailDecomposeTest extends GraphDatabaseFunSuite {
   test("decompose_simple_path") {
@@ -32,7 +32,7 @@ class TrailDecomposeTest extends GraphDatabaseFunSuite {
     val rel = relate(nodeA, nodeB, "LINK_T")
 
     val kernPath = Seq(nodeA, rel, nodeB)
-    val path = SingleStepTrail(EndPoint("b"), Direction.OUTGOING, "link", Seq("LINK_T"), "a", True(), True(), null, Seq())
+    val path = SingleStepTrail(EndPoint("b"), SemanticDirection.OUTGOING, "link", Seq("LINK_T"), "a", True(), True(), null, Seq())
 
     val resultMap = path.decompose(kernPath).toList
     resultMap should equal(List(Map("a" -> nodeA, "b" -> nodeB, "link" -> rel)))
@@ -50,8 +50,8 @@ class TrailDecomposeTest extends GraphDatabaseFunSuite {
     val kernPath = Seq(nodeA, rel1, nodeB, rel2, nodeC)
 
     val aPoint = EndPoint("c")
-    val bToA = SingleStepTrail(aPoint, Direction.OUTGOING, "link2", Seq("LINK_T"), "b", True(), True(), null, Seq())
-    val cToB = SingleStepTrail(bToA, Direction.OUTGOING, "link1", Seq("LINK_T"), "a", True(), True(), null, Seq())
+    val bToA = SingleStepTrail(aPoint, SemanticDirection.OUTGOING, "link2", Seq("LINK_T"), "b", True(), True(), null, Seq())
+    val cToB = SingleStepTrail(bToA, SemanticDirection.OUTGOING, "link1", Seq("LINK_T"), "a", True(), True(), null, Seq())
 
     val resultMap = cToB.decompose(kernPath).toList
 
@@ -79,9 +79,9 @@ class TrailDecomposeTest extends GraphDatabaseFunSuite {
     val kernPath = Seq(nodeA, rel1, nodeB, rel2, nodeC, rel3, nodeD)
 
     val cPoint = EndPoint("b")
-    val cToB = SingleStepTrail(cPoint, Direction.OUTGOING, "r3", Seq(), "c", True(), True(), null, Seq())
-    val bToC = SingleStepTrail(cToB, Direction.OUTGOING, "r2", Seq(), "b", True(), True(), null, Seq())
-    val aToB = SingleStepTrail(bToC, Direction.OUTGOING, "r1", Seq(), "a", True(), True(), null, Seq())
+    val cToB = SingleStepTrail(cPoint, SemanticDirection.OUTGOING, "r3", Seq(), "c", True(), True(), null, Seq())
+    val bToC = SingleStepTrail(cToB, SemanticDirection.OUTGOING, "r2", Seq(), "b", True(), True(), null, Seq())
+    val aToB = SingleStepTrail(bToC, SemanticDirection.OUTGOING, "r1", Seq(), "a", True(), True(), null, Seq())
 
     val resultMap = aToB.decompose(kernPath).toList
 
@@ -108,10 +108,10 @@ class TrailDecomposeTest extends GraphDatabaseFunSuite {
     val kernPath = Seq(nodeA, rel1, nodeB, rel2, nodeC, rel3, nodeD, rel4, nodeX)
 
     val dPoint = EndPoint("x")
-    val bToD = SingleStepTrail(dPoint, Direction.OUTGOING, "r4", Seq(), "b", True(), True(), null, Seq())
-    val cToB = SingleStepTrail(bToD, Direction.OUTGOING, "r3", Seq(), "c", True(), True(), null, Seq())
-    val bToC = SingleStepTrail(cToB, Direction.OUTGOING, "r2", Seq(), "b", True(), True(), null, Seq())
-    val aToB = SingleStepTrail(bToC, Direction.OUTGOING, "r1", Seq(), "a", True(), True(), null, Seq())
+    val bToD = SingleStepTrail(dPoint, SemanticDirection.OUTGOING, "r4", Seq(), "b", True(), True(), null, Seq())
+    val cToB = SingleStepTrail(bToD, SemanticDirection.OUTGOING, "r3", Seq(), "c", True(), True(), null, Seq())
+    val bToC = SingleStepTrail(cToB, SemanticDirection.OUTGOING, "r2", Seq(), "b", True(), True(), null, Seq())
+    val aToB = SingleStepTrail(bToC, SemanticDirection.OUTGOING, "r1", Seq(), "a", True(), True(), null, Seq())
 
     val resultMap = aToB.decompose(kernPath).toList
 
@@ -129,7 +129,7 @@ class TrailDecomposeTest extends GraphDatabaseFunSuite {
 
     val kernPath = Seq(nodeA, rel1, nodeB)
     val path =
-      VariableLengthStepTrail(EndPoint("b"), Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
+      VariableLengthStepTrail(EndPoint("b"), SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
 
     //Then
     graph.inTx {
@@ -150,7 +150,7 @@ class TrailDecomposeTest extends GraphDatabaseFunSuite {
 
     val kernPath = Seq(nodeA, rel0, nodeB)
     val path =
-      VariableLengthStepTrail(EndPoint("b"), Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 1, Some(2), "p", Some("r"), "a", null)
+      VariableLengthStepTrail(EndPoint("b"), SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq("A"), 1, Some(2), "p", Some("r"), "a", null)
 
     //Then
     graph.inTx {
@@ -175,8 +175,8 @@ class TrailDecomposeTest extends GraphDatabaseFunSuite {
     val expectedPath = PathImpl(node1, rel2, node2)
 
     val point = EndPoint("b")
-    val lastStep = VariableLengthStepTrail(point, Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
-    val firstStep = SingleStepTrail(lastStep, Direction.OUTGOING, "r1", Seq("B"), "x", True(), True(), null, Seq())
+    val lastStep = VariableLengthStepTrail(point, SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
+    val firstStep = SingleStepTrail(lastStep, SemanticDirection.OUTGOING, "r1", Seq("B"), "x", True(), True(), null, Seq())
 
     //Then
     graph.inTx {
@@ -200,8 +200,8 @@ class TrailDecomposeTest extends GraphDatabaseFunSuite {
     val kernPath = Seq(node0, rel0, node1, rel1, node2)
     val expectedPath = PathImpl(node0, rel0, node1)
     val bound = EndPoint("x")
-    val single = SingleStepTrail(bound, Direction.INCOMING, "r1", Seq("B"), "b", True(), True(), null, Seq())
-    val path = VariableLengthStepTrail(single, Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
+    val single = SingleStepTrail(bound, SemanticDirection.INCOMING, "r1", Seq("B"), "b", True(), True(), null, Seq())
+    val path = VariableLengthStepTrail(single, SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
 
     //Then
     graph.inTx {
@@ -226,7 +226,7 @@ class TrailDecomposeTest extends GraphDatabaseFunSuite {
     val expectedPath = input
 
     val bound = EndPoint("b")
-    val path = VariableLengthStepTrail(bound, Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
+    val path = VariableLengthStepTrail(bound, SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
 
     //Then
     graph.inTx {
@@ -249,8 +249,8 @@ class TrailDecomposeTest extends GraphDatabaseFunSuite {
     val expectedPath = PathImpl(node0)
 
     val bound = EndPoint("c")
-    val single = SingleStepTrail(bound, Direction.INCOMING, "r", Seq("B"), "b", True(), True(), null, Seq())
-    val path = VariableLengthStepTrail(single, Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 0, Some(1), "p", None, "a", null)
+    val single = SingleStepTrail(bound, SemanticDirection.INCOMING, "r", Seq("B"), "b", True(), True(), null, Seq())
+    val path = VariableLengthStepTrail(single, SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq("A"), 0, Some(1), "p", None, "a", null)
 
     //Then
     graph.inTx {
@@ -279,8 +279,8 @@ class TrailDecomposeTest extends GraphDatabaseFunSuite {
     val input = Seq(node0, rel0, node1, rel1, node2, rel2, node3, rel3, node4)
 
     val bound = EndPoint("b")
-    val first = VariableLengthStepTrail(bound, Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 0, None, "p2", None, "x", null)
-    val second = VariableLengthStepTrail(first, Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 0, None, "p1", None, "a", null)
+    val first = VariableLengthStepTrail(bound, SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq("A"), 0, None, "p2", None, "x", null)
+    val second = VariableLengthStepTrail(first, SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq("A"), 0, None, "p1", None, "a", null)
 
     //Then
     graph.inTx{

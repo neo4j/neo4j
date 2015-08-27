@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{LabelAction, LabelSetOp}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{IdempotentResult, LockingQueryContext, QueryContext}
-import org.neo4j.graphdb.{Direction, Node, Relationship}
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
+import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
@@ -97,7 +98,7 @@ class SnitchingQueryContext extends QueryContext {
 
   def getLabelsForNode(node: Long) = ???
 
-  def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]) = ???
+  def getRelationshipsFor(node: Node, dir: SemanticDirection, types: Seq[String]) = ???
 
   def nodeOps = ???
 
@@ -169,11 +170,11 @@ class SnitchingQueryContext extends QueryContext {
 
   def relationshipEndNode(rel: Relationship) = ???
 
-  def getRelationshipsForIds(node: Node, dir: Direction, types: Option[Seq[Int]]): Iterator[Relationship] = ???
+  def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = ???
 
-  def nodeGetDegree(node: Long, dir: Direction): Int = ???
+  def nodeGetDegree(node: Long, dir: SemanticDirection): Int = ???
 
-  def nodeGetDegree(node: Long, dir: Direction, relTypeId: Int): Int = ???
+  def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int = ???
 
   def nodeIsDense(node: Long): Boolean = ???
 }

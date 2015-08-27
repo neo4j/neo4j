@@ -21,13 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_3.docgen
 
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.frontend.v2_3.perty.DocFormatters
 import org.neo4j.cypher.internal.frontend.v2_3.perty.gen.DocHandlerTestSuite
 import org.neo4j.cypher.internal.frontend.v2_3.perty.handler.DefaultDocHandler
 import org.neo4j.cypher.internal.frontend.v2_3.perty.print.{PrintNewLine, PrintText, condense}
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 
 class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTestSupport {
 
@@ -36,10 +35,10 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
     AstDocHandler.docGen.lift[Any] orElse
     DefaultDocHandler.docGen
 
-  val rel1 = PatternRelationship(IdName("r1"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq(), SimplePatternLength)
-  val rel2 = PatternRelationship(IdName("r2"), (IdName("b"), IdName("a")), Direction.INCOMING, Seq(RelTypeName("X")(null)), SimplePatternLength)
-  val rel3 = PatternRelationship(IdName("r3"), (IdName("c"), IdName("d")), Direction.OUTGOING, Seq(RelTypeName("X")(null), RelTypeName("Y")(null)), VarPatternLength(1, None))
-  val rel4 = PatternRelationship(IdName("r4"), (IdName("d"), IdName("c")), Direction.INCOMING, Seq(RelTypeName("X")(null), RelTypeName("Y")(null)), VarPatternLength(0, Some(2)))
+  val rel1 = PatternRelationship(IdName("r1"), (IdName("a"), IdName("b")), OUTGOING, Seq(), SimplePatternLength)
+  val rel2 = PatternRelationship(IdName("r2"), (IdName("b"), IdName("a")), INCOMING, Seq(RelTypeName("X")(null)), SimplePatternLength)
+  val rel3 = PatternRelationship(IdName("r3"), (IdName("c"), IdName("d")), OUTGOING, Seq(RelTypeName("X")(null), RelTypeName("Y")(null)), VarPatternLength(1, None))
+  val rel4 = PatternRelationship(IdName("r4"), (IdName("d"), IdName("c")), INCOMING, Seq(RelTypeName("X")(null), RelTypeName("Y")(null)), VarPatternLength(0, Some(2)))
 
   test("IdName(a) => a") {
     pprintToString(IdName("a")) should equal("a")
@@ -85,7 +84,7 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
   }
 
   test("PatternRelationship(rel, (a, b), ->, Seq(), SimplePatternLength) => (a)-[rel]->(b)") {
-    val phrase = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+    val phrase = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, SimplePatternLength)
 
     val result = pprintToString(phrase)
 
@@ -93,7 +92,7 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
   }
 
   test("PatternRelationship(rel, (a, b), <-, Seq(), SimplePatternLength) => (a)<-[rel]-(b)") {
-    val phrase = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, SimplePatternLength)
+    val phrase = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), INCOMING, Seq.empty, SimplePatternLength)
 
     val result = pprintToString(phrase)
 
@@ -102,7 +101,7 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
 
 
   test("PatternRelationship(rel, (a, b), <->, Seq(), SimplePatternLength) => (a)-[rel]-(b)") {
-    val phrase = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), Direction.BOTH, Seq.empty, SimplePatternLength)
+    val phrase = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), BOTH, Seq.empty, SimplePatternLength)
 
     val result = pprintToString(phrase)
 
@@ -110,7 +109,7 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
   }
 
   test("PatternRelationship(rel, (a, b), ->, [R], SimplePatternLength) => (a)-[rel:R]-(b)") {
-    val phrase = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), Direction.OUTGOING,
+    val phrase = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), OUTGOING,
       Seq(RelTypeName("R")_), SimplePatternLength)
 
     val result = pprintToString(phrase)
@@ -119,7 +118,7 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
   }
 
   test("PatternRelationship(rel, (a, b), ->, [R1,R2], SimplePatternLength) => (a)-[rel:R1|R2]-(b)") {
-    val phrase = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), Direction.OUTGOING,
+    val phrase = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), OUTGOING,
       Seq(RelTypeName("R1")_, RelTypeName("R2")_), SimplePatternLength)
 
     val result = pprintToString(phrase)
@@ -128,12 +127,12 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
   }
 
   test("sp = shortestPath((a)-[rel*1..]->(b))") {
-    val patRel = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, VarPatternLength(1, None))
+    val patRel = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, VarPatternLength(1, None))
     val nodeA = NodePattern(identifier = Some(ident("a")), Seq.empty, None, naked = false)_
     val nodeB = NodePattern(identifier = Some(ident("b")), Seq.empty, None, naked = false)_
     val length: Some[Some[Range]] = Some(Some(Range(Some(UnsignedDecimalIntegerLiteral("1")_), None)_))
 
-    val relPat = RelationshipPattern(Some(ident("rel")), optional = false, Seq.empty, length, None, SemanticDirection.OUTGOING)_
+    val relPat = RelationshipPattern(Some(ident("rel")), optional = false, Seq.empty, length, None, OUTGOING)_
     val ast = ShortestPaths(RelationshipChain(nodeA, relPat, nodeB)_, single = true)_
     val sp = ShortestPathPattern(Some(IdName("sp")), patRel, single = true)(ast)
 
@@ -143,12 +142,12 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
   }
 
   test("shortestPath((a)-[rel*1..]->(b))") {
-    val patRel = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, VarPatternLength(1, None))
+    val patRel = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, VarPatternLength(1, None))
     val nodeA = NodePattern(identifier = Some(ident("a")), Seq.empty, None, naked = false)_
     val nodeB = NodePattern(identifier = Some(ident("b")), Seq.empty, None, naked = false)_
     val length: Some[Some[Range]] = Some(Some(Range(Some(UnsignedDecimalIntegerLiteral("1")_), None)_))
 
-    val relPat = RelationshipPattern(Some(ident("rel")), optional = false, Seq.empty, length, None, SemanticDirection.OUTGOING)_
+    val relPat = RelationshipPattern(Some(ident("rel")), optional = false, Seq.empty, length, None, OUTGOING)_
     val ast = ShortestPaths(RelationshipChain(nodeA, relPat, nodeB)_, single = true)_
     val sp = ShortestPathPattern(None, patRel, single = true)(ast)
 
@@ -158,12 +157,12 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
   }
 
   test("sp = allShortestPath((a)-[rel*1..]->(b))") {
-    val patRel = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, VarPatternLength(1, None))
+    val patRel = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, VarPatternLength(1, None))
     val nodeA = NodePattern(identifier = Some(ident("a")), Seq.empty, None, naked = false)_
     val nodeB = NodePattern(identifier = Some(ident("b")), Seq.empty, None, naked = false)_
     val length: Some[Some[Range]] = Some(Some(Range(Some(UnsignedDecimalIntegerLiteral("1")_), None)_))
 
-    val relPat = RelationshipPattern(Some(ident("rel")), optional = false, Seq.empty, length, None, SemanticDirection.OUTGOING)_
+    val relPat = RelationshipPattern(Some(ident("rel")), optional = false, Seq.empty, length, None, OUTGOING)_
     val ast = ShortestPaths(RelationshipChain(nodeA, relPat, nodeB)_, single = false)_
     val sp = ShortestPathPattern(Some(IdName("sp")), patRel, single = false)(ast)
 

@@ -19,18 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes.matching
 
-import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathImpl
 import org.neo4j.cypher.internal.compiler.v2_3.commands.Pattern
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathImpl
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.True
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.MutableMaps
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
-import org.neo4j.graphdb.{Direction, Node, PropertyContainer, Relationship}
+import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 final case class VariableLengthStepTrail(next: Trail,
-                                         dir: Direction,
-                                         projectedDir: Direction,
+                                         dir: SemanticDirection,
+                                         projectedDir: SemanticDirection,
                                          typ: Seq[String],
                                          min: Int,
                                          max: Option[Int],
@@ -46,8 +46,8 @@ final case class VariableLengthStepTrail(next: Trail,
     var left: Seq[PropertyContainer] = null
 
     def checkRel(last: Node, r: Relationship) = (typ.contains(r.getType.name()) || typ.isEmpty) && (dir match {
-      case Direction.OUTGOING => r.getStartNode == last
-      case Direction.INCOMING => r.getEndNode == last
+      case SemanticDirection.OUTGOING => r.getStartNode == last
+      case SemanticDirection.INCOMING => r.getEndNode == last
       case _                  => true
     })
 
@@ -136,8 +136,8 @@ final case class VariableLengthStepTrail(next: Trail,
   }
 
   override def toString = {
-    val left = if (Direction.INCOMING == dir) "<" else ""
-    val right = if (Direction.OUTGOING == dir) ">" else ""
+    val left = if (SemanticDirection.INCOMING == dir) "<" else ""
+    val right = if (SemanticDirection.OUTGOING == dir) ">" else ""
     val t = typ match {
       case List() => ""
       case x      => typ.mkString(":", "|", "")

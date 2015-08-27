@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planDescription
 import org.neo4j.cypher.internal.compiler.v2_3.commands
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{SeekArgs => PipeEntityByIdRhs}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.frontend.v2_3.ast
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, ast}
 
 /**
  * Abstract description of an execution plan
@@ -106,7 +105,8 @@ object InternalPlanDescription {
     case class RuntimeImpl(value: String) extends Argument{
       override def name = "runtime-impl"
     }
-    case class ExpandExpression(from: String, relName: String, relTypes:Seq[String], to: String, direction: Direction, varLength: Boolean = false) extends Argument
+    case class ExpandExpression(from: String, relName: String, relTypes:Seq[String], to: String,
+                                direction: SemanticDirection, varLength: Boolean = false) extends Argument
     case class SourceCode(className: String, sourceCode: String) extends Argument {
       override def name = className
     }
