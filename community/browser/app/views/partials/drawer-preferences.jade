@@ -1,0 +1,105 @@
+.inner
+  h4 Configuration
+  
+  form(ng-controller="SettingsCtrl")  
+    h5.folder#messaging(ng-click='expandedPersonalization = !expandedPersonalization', ng-class="{folded: !expandedPersonalization}")
+      i.fa.fa-caret-right(ng-class="{'fa-rotate-90': expandedPersonalization}") 
+      | Personalization
+    .folder-items.form-folder.form-horizontal(ng-class="{hidden: !expandedPersonalization}")
+      .panel
+        .panel-heading 
+          .checkbox
+            label(for="enableMessaging")
+              input#enableMessaging(type="checkbox", ng-model="settings.enableMessaging", ng-change="save()")
+              | Enable Messaging
+        .panel-body
+          .form-group
+            label.col-sm-3(for="userName") Name
+            .col-sm-9
+              input.form-control.input-sm#userName(type='text', ng-model="settings.userName", ng-change="save()", ng-disabled="!settings.enableMessaging")
+          .form-group
+            label.col-sm-3(for="email") Email
+            .col-sm-9
+              input.form-control.input-sm#email(type='email', ng-model="settings.email", ng-change="save()", ng-disabled="!settings.enableMessaging")
+      .panel
+        .panel-heading
+          label Permissions
+        .panel-body
+          .checkbox
+            label(for="shouldReportUdc")
+              input#shouldReportUdc(type="checkbox", ng-model="settings.shouldReportUdc", ng-change="save()")
+              | &nbsp; Allow feedback reporting?
+          .checkbox 
+            label(for="storeCredentials") 
+              input#storeCredentials(type='checkbox', ng-model="settings.storeCredentials", ng-change="save()")
+              | &nbsp; Save login credentials?
+          .checkbox 
+            label(for="enableMotd") 
+              input#enableMotd(type='checkbox', ng-model="settings.enableMotd", ng-change="save()")
+              | &nbsp; Enable MOTD feed?
+      .panel
+        .panel-heading
+          label Appearance
+        .panel-body
+          label.radio-inline
+            input(type="radio", name="themeRadio", id="theme1", value="normal", ng-model="settings.theme", ng-change="save()", checked) 
+            | Normal
+          label.radio-inline
+            input(type="radio", name="themeRadio", id="theme2", value="dark", ng-model="settings.theme", ng-change="save()") 
+            | Dark
+          label.radio-inline
+            input(type="radio", name="themeRadio", id="theme3", value="outline", ng-model="settings.theme", ng-change="save()") 
+            | Outline
+
+    h5.folder#networking(ng-click='expandedNetworking = !expandedNetworking', ng-class="{folded: !expandedNetworking}")
+      i.fa.fa-caret-right(ng-class="{'fa-rotate-90': expandedNetworking}") 
+      | Network Connection
+    .folder-items.form-folder(ng-class="{hidden: !expandedNetworking}")
+      .form-group 
+        label(for="maxExecutionTime") Max Execution Time
+          input.form-control.input#maxExecutionTime(type='number', ng-model="settings.maxExecutionTime", ng-change="save()")
+      .form-group 
+        label(for="heartbeat") Heartbeat
+          input.form-control.input#heartbeat(type='number', ng-model="settings.heartbeat", ng-change="save()")
+      .form-group 
+        label(for="refreshInterval") Refresh Interval
+          input.form-control.input#refreshInterval(type='number', ng-model="settings.refreshInterval", ng-change="save()")
+
+    h5.folder#framing(ng-click='expandedFraming = !expandedFraming',ng-class="{folded: !expandedFraming}")
+      i.fa.fa-caret-right(ng-class="{'fa-rotate-90': expandedFraming}") 
+      | Result Frames 
+    .folder-items.form-folder(ng-class="{hidden: !expandedFraming}")
+      .form-group 
+        label(for="maxFrames") Max Frames
+          input.form-control.input#maxFrames(type='number', ng-model="settings.maxFrames", ng-change="save()")
+      .form-group 
+        label(for="maxHistory") Max History
+          input.form-control.input#maxHistory(type='number', ng-model="settings.maxHistory", ng-change="save()")
+      .checkbox 
+        label(for="scrollToTop") 
+          input#scrollToTop(type='checkbox', ng-model="settings.scrollToTop", ng-change="save()")
+          | &nbsp; Scroll To Top
+      .form-group 
+        label(for="initCmd") Initial Command
+          input.form-control.input#initCmd(type='text', ng-model="settings.initCmd", ng-change="save()")
+            
+    h5.folder#visualization(ng-click='expandedVisualization = !expandedVisualization',ng-class="{folded: !expandedVisualization}")
+      i.fa.fa-caret-right(ng-class="{'fa-rotate-90': expandedVisualization}") 
+      | Graph Visualization
+    .folder-items.form-folder(ng-class="{hidden: !expandedVisualization}")
+      .form-group 
+        label(for="maxNeighbours") Max Neighbors
+          input.form-control.input#maxNeighbours(type='number', ng-model="settings.maxNeighbours", ng-change="save()")
+      .form-group 
+        label(for="maxNodes") Max Nodes
+          input.form-control.input#maxNodes(type='number', ng-model="settings.maxNodes", ng-change="save()")
+      .form-group 
+        label(for="maxRows") Max Rows
+          input.form-control.input#maxRows(type='number', ng-model="settings.maxRows", ng-change="save()")
+      //- .form-group 
+      //-   label(for="filemode") File Mode
+      //-     input.form-control.input#filemode(type='number', ng-model="settings.filemode", ng-change="save()")
+      .form-group 
+        label(for="maxRawSize") Max Raw Size
+          input.form-control.input#maxRawSize(type='number', ng-model="settings.maxRawSize", ng-change="save()")
+        

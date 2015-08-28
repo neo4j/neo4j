@@ -41,7 +41,6 @@ angular.module('neo4jApp.settings', ['neo4jApp.utils'])
     maxNeighbours: 100
     maxNodes: 1000
     maxRows: 1000
-    filemode: false
     maxRawSize: 5000 # bytes
     scrollToTop: yes # When new frames are inserted in to the stream
     showVizDiagnostics: false
@@ -50,8 +49,12 @@ angular.module('neo4jApp.settings', ['neo4jApp.utils'])
     initCmd: ":play start"
     refreshInterval: 10 # in seconds
     userName: "Graph Friend"
+    email: ""
     theme: "normal"
     storeCredentials: yes
+    enableMessaging: no
+    receiveProductUpdates: no
+    showMessenger: yes
   })
 
 angular.module('neo4jApp.settings')
