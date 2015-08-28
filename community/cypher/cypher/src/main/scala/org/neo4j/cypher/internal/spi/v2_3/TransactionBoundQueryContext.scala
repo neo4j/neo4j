@@ -140,7 +140,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   }
 
   def indexSeek(index: IndexDescriptor, value: Any) =
-    JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().nodesGetFromIndexSeek(index, value))(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().nodesGetFromIndexSeek(index, forceInterpolation(value)))(nodeOps.getById)
 
   def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
 
