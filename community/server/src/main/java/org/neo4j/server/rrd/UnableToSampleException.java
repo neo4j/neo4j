@@ -24,4 +24,8 @@ public class UnableToSampleException extends RuntimeException
 
     private static final long serialVersionUID = 112443232112435425L;
 
+    public UnableToSampleException( String s, Exception e )
+    {
+        super( s, e );
+    }
 }
