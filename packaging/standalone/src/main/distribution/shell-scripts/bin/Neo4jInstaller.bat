@@ -136,15 +136,14 @@ rem end function remove
   set "JAVAVER=%JAVAVER:~0,3%"
 
   if "%JAVAVER%"=="1.7" goto:eof
-  if "%JAVAVER%"=="1.8" (
-    echo ERROR! You are using an unsupported version of Java, please use Oracle HotSpot 1.7.
-    goto:eof
-  )
-  set javaVersionError=ERROR! You are using an unsupported version of Java, please use Oracle HotSpot 1.7.
+  if "%JAVAVER%"=="1.8" goto:eof
+
+  set javaVersionError=ERROR! You are using an unsupported version of Java, please use Oracle HotSpot 1.7 or Oracle HotSpot 1.8.
   goto:eof
 
 :instructions
-  echo * Please use Oracle(R) Java(TM) 7 to run Neo4j Server. Download "Java Platform (JDK) 7" from:
+  echo * Please use Oracle(R) Java(TM) 7 or Oracle(R) Java(TM) 8 to run Neo4j Server.
+  echo * Download "Java Platform (JDK) 7" or "Java Platform (JDK) 8" from:
   echo   http://www.oracle.com/technetwork/java/javase/downloads/index.html
   echo * Please see http://neo4j.com/docs/ for Neo4j Server installation instructions.
   goto:eof
