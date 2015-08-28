@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, InequalitySeekRangeExpression, PrefixSeekRangeExpression, _}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.forceInterpolation
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.IsCollection
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
@@ -61,7 +62,8 @@ object indexQuery extends GraphElementPropertyFunctions with StringHelper {
 
         // ValueSeekRange(RangeGT(InclusiveBound(n.prop + 12)) => RangeGT(InclusiveBound(15)))
         case InequalitySeekRangeExpression(innerRange) =>
-          innerRange.mapBounds(_(m)(state)).mapBounds(makeValueNeoSafe)
+          innerRange.mapBounds(_(m)(state))
+            .mapBounds(forceInterpolation andThen makeValueNeoSafe)
       }
       index(range).toIterator
   }
