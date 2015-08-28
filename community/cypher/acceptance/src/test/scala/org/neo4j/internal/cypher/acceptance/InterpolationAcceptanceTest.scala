@@ -331,4 +331,49 @@ class InterpolationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
 
     executeScalarWithAllPlanners[String]("MATCH ()-[r:T]->() return r.prop") should equal("foo")
   }
+
+  test("should be able to use interpolated strings in legacy node index") {
+    val node = createNode()
+    graph.inTx {
+      graph.index.forNodes("index").add(node, "key", "value")
+    }
+
+    val result = executeWithAllPlanners("START n=node:index(key = $'value') RETURN n").toList
+
+    result should equal(List(Map("n"-> node)))
+  }
+
+  test("should be able to use interpolated strings in legacy node index queries") {
+    val node = createNode()
+    graph.inTx {
+      graph.index.forNodes("index").add(node, "key", "value")
+    }
+
+    val result = executeWithAllPlanners("START n=node:index($'key:value') RETURN n").toList
+
+    result should equal(List(Map("n"-> node)))
+  }
+
+  test("should be able to use interpolated strings in legacy relationship index") {
+    val rel = relate(createNode(), createNode())
+    graph.inTx {
+      graph.index.forRelationships("index").add(rel, "key", "value")
+    }
+
+    val result = executeWithRulePlanner("START r=rel:index(key = $'value') RETURN r").toList
+
+    result should equal(List(Map("r"-> rel)))
+  }
+
+  test("should be able to use interpolated strings in legacy relationship index queries") {
+    val rel = relate(createNode(), createNode())
+    graph.inTx {
+      graph.index.forRelationships("index").add(rel, "key", "value")
+    }
+
+    val result = executeWithRulePlanner("START r=rel:index($'key:value') RETURN r").toList
+
+    result should equal(List(Map("r"-> rel)))
+  }
+
 }

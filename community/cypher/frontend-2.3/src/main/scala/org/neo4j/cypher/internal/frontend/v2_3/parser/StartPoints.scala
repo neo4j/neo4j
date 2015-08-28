@@ -75,11 +75,11 @@ trait StartPoints extends Parser
   }
 
   private def IdentifiedIndexLookup: Rule3[ast.Identifier, ast.Identifier, ast.Expression] = rule {
-    ":" ~~ Identifier ~~ "(" ~~ Identifier ~~ operator("=") ~~ (StringLiteral | Parameter) ~~ ")"
+    ":" ~~ Identifier ~~ "(" ~~ Identifier ~~ operator("=") ~~ (StringLiteral | InterpolationLiteral | Parameter) ~~ ")"
   }
 
   private def IndexQuery: Rule2[ast.Identifier, ast.Expression] = rule {
-    ":" ~~ Identifier ~~ "(" ~~ (StringLiteral | Parameter) ~~ ")"
+    ":" ~~ Identifier ~~ "(" ~~ (StringLiteral | InterpolationLiteral | Parameter) ~~ ")"
   }
 
   private def LiteralIds: Rule1[Seq[ast.UnsignedIntegerLiteral]] = rule("an unsigned integer") {

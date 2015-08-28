@@ -323,10 +323,10 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     def all: Iterator[Node] = GlobalGraphOperations.at(graph).getAllNodes.iterator().asScala
 
     def indexGet(name: String, key: String, value: Any): Iterator[Node] =
-      graph.index.forNodes(name).get(key, value).iterator().asScala
+      graph.index.forNodes(name).get(key, forceInterpolation(value)).iterator().asScala
 
     def indexQuery(name: String, query: Any): Iterator[Node] =
-      graph.index.forNodes(name).query(query).iterator().asScala
+      graph.index.forNodes(name).query(forceInterpolation(query)).iterator().asScala
 
     def isDeleted(n: Node): Boolean =
       kernelStatement.txState().nodeIsDeletedInThisTx(n.getId)
@@ -364,10 +364,10 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       GlobalGraphOperations.at(graph).getAllRelationships.iterator().asScala
 
     def indexGet(name: String, key: String, value: Any): Iterator[Relationship] =
-      graph.index.forRelationships(name).get(key, value).iterator().asScala
+      graph.index.forRelationships(name).get(key, forceInterpolation(value)).iterator().asScala
 
     def indexQuery(name: String, query: Any): Iterator[Relationship] =
-      graph.index.forRelationships(name).query(query).iterator().asScala
+      graph.index.forRelationships(name).query(forceInterpolation(query)).iterator().asScala
 
     def isDeleted(r: Relationship): Boolean =
       kernelStatement.txState().relationshipIsDeletedInThisTx(r.getId)
