@@ -92,11 +92,9 @@ goto:eof
   set "JAVAVER=%JAVAVER:~0,3%"
 
   if "%JAVAVER%"=="1.7" goto:eof
-  if "%JAVAVER%"=="1.8" (
-    echo ERROR! You are using an unsupported version of Java, please use Oracle HotSpot 1.7.
-    goto:eof
-  )
-  set javaVersionError=ERROR! You are using an unsupported version of Java, please use Oracle HotSpot 1.7.
+  if "%JAVAVER%"=="1.8" goto:eof
+  
+  set javaVersionError=ERROR! You are using an unsupported version of Java, please use Oracle HotSpot 1.7 or 1.8.
   goto:eof
 
 :checkSettings
