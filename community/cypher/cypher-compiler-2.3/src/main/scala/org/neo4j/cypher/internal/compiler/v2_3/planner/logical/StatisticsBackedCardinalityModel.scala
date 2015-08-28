@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
-import org.neo4j.cypher.internal.frontend.v2_3.ast.IntegerLiteral
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
+import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticTable
+import org.neo4j.cypher.internal.frontend.v2_3.ast.IntegerLiteral
 
 class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel) extends CardinalityModel {
 
@@ -42,6 +43,10 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
     // Normal projection with LIMIT
     case RegularQueryProjection(_, QueryShuffle(_, None, Some(limit: IntegerLiteral))) =>
       Cardinality.min(in, limit.value.toDouble)
+
+    // Normal projection with LIMIT
+    case RegularQueryProjection(_, QueryShuffle(_, None, Some(unknownLimit))) =>
+      Cardinality.min(in, GraphStatistics.DEFAULT_LIMIT_CARDINALITY)
 
     // Distinct
     case projection: AggregatingQueryProjection if projection.aggregationExpressions.isEmpty =>
