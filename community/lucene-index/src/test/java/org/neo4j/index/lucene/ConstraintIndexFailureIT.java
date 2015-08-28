@@ -31,6 +31,7 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.index.util.FolderLayout;
@@ -41,6 +42,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.test.TargetDirectory.testDirForTest;
 
@@ -104,7 +106,7 @@ public class ConstraintIndexFailureIT
     private void storeIndexFailure( String failure ) throws IOException
     {
         File luceneRootDirectory = new File( storeDir.directory(), "schema/index/lucene" );
-        new FailureStorage( new FolderLayout( luceneRootDirectory ) )
+        new FailureStorage( new DefaultFileSystemAbstraction(), new FolderLayout( luceneRootDirectory ) )
                 .storeIndexFailure( singleIndexId( luceneRootDirectory ), failure );
     }
 

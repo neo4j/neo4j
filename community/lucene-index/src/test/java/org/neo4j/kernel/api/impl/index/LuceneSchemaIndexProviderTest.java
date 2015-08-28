@@ -27,6 +27,6 @@ public class LuceneSchemaIndexProviderTest extends IndexProviderCompatibilityTes
     protected LuceneSchemaIndexProvider createIndexProvider()
     {
         DirectoryFactory.InMemoryDirectoryFactory factory = new DirectoryFactory.InMemoryDirectoryFactory();
-        return new LuceneSchemaIndexProvider( factory, graphDbDir );
+        return new LuceneSchemaIndexProvider( fs, factory, graphDbDir );
     }
 }

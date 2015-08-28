@@ -26,6 +26,8 @@ import org.junit.runners.Suite;
 
 import java.io.File;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.TargetDirectory;
 
 @RunWith( ParameterizedSuiteRunner.class )
@@ -41,6 +43,7 @@ public abstract class IndexProviderCompatibilityTestSuite
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
     protected File graphDbDir;
+    protected FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Before
     public void setup()
