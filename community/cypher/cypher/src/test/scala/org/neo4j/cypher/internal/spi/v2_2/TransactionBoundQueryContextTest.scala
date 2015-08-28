@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.spi.v2_3
 
+import org.neo4j.cypher.internal.compiler.v2_3.PrefixRange
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.DynamicIterable
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb._
 import org.mockito.Mockito._
 import org.neo4j.kernel.api._
+import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.kernel.impl.api.{StatementOperationParts, KernelTransactionImplementation, KernelStatement}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.test.ImpermanentGraphDatabase
@@ -89,6 +91,21 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     iteratorA.toList should equal (iteratorB.toList)
     2 should equal (iterable.size)
 
+    tx.success()
+    tx.close()
+  }
+
+  test ("should return empty iterator for index range search") {
+    // GIVEN
+    val tx = graph.beginTx()
+    val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
+    val context = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, stmt)
+
+    // WHEN
+    val iterable = DynamicIterable( context.indexSeekByRange(mock[IndexDescriptor], PrefixRange(null)) )
+
+    // THEN
+    iterable shouldBe empty
     tx.success()
     tx.close()
   }

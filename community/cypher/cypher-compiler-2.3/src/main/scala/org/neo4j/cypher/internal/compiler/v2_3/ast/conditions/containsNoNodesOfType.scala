@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.Condition
 import scala.reflect.ClassTag
 
 case class containsNoNodesOfType[T <: ASTNode](implicit tag: ClassTag[T]) extends Condition {
-  def apply(that: Any): Seq[String] = collectNodesOfType[T].apply(that).map {
+  def apply(that: Any): Seq[String] = collectNodesOfType[T]().apply(that).map {
     node => s"Expected none but found ${node.getClass.getSimpleName} at position ${node.position}"
   }
 

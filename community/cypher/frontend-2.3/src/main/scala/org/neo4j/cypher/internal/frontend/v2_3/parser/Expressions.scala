@@ -104,7 +104,7 @@ trait Expressions extends Parser
     Expression2 ~ zeroOrMore(WS ~ (
         "[" ~~ Expression ~~ "]" ~~>> (ast.ContainerIndex(_: ast.Expression, _))
       | "[" ~~ optional(Expression) ~~ ".." ~~ optional(Expression) ~~ "]" ~~>> (ast.CollectionSlice(_: ast.Expression, _, _))
-      | group(operator("=~") ~~ Expression2) ~~>> (ast.RegexMatch(_: ast.Expression, _))
+      | group(operator("=~") ~~ Expression2) ~~>> (ast.MatchRegex(_: ast.Expression, _))
       | group(keyword("IN") ~~ Expression2) ~~>> (ast.In(_: ast.Expression, _))
       | group(keyword("LIKE") ~~ LikePattern) ~~>> (ast.Like(_: ast.Expression, _))
       | group(keyword("NOT LIKE") ~~ LikePattern) ~~>> (ast.NotLike(_: ast.Expression, _))
@@ -127,6 +127,7 @@ trait Expressions extends Parser
   private def Expression1: Rule1[ast.Expression] = rule("an expression") (
       NumberLiteral
     | StringLiteral
+    | InterpolationLiteral
     | Parameter
     | keyword("TRUE") ~ push(ast.True()(_))
     | keyword("FALSE") ~ push(ast.False()(_))
@@ -194,3 +195,5 @@ trait Expressions extends Parser
     keyword("WHEN") ~~ Expression ~~ keyword("THEN") ~~ Expression
   }
 }
+
+

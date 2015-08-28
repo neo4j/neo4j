@@ -38,7 +38,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   val ltPredicate: Expression = LessThan(property, SignedDecimalIntegerLiteral("12")_)_
   val neqPredicate: Expression = NotEquals(property, SignedDecimalIntegerLiteral("12")_)_
   val eqPredicate: Expression = Equals(property, SignedDecimalIntegerLiteral("12")_)_
-  val regexPredicate: Expression = RegexMatch(property, StringLiteral("Johnny")_)_
+  val regexPredicate: Expression = MatchRegex(property, StringLiteral("Johnny")_)_
 
   test("does not plan index scan when no index exist") {
     new given {

@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.frontend.v2_3.parser
 
 import java.util.regex.Pattern._
 
+import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, CypherTypeException}
+
 /**
  * Converts [[ParsedLikePattern]] into a regular expression string
  */
@@ -32,5 +34,6 @@ case object convertLikePatternToRegex {
     case MatchText(s) => quote(s)
     case MatchMany => ".*"
     case MatchSingle => "."
+    case _: MatchExpression => throw new InternalException("Don't know how to convert MatchExpression")//TODO solve this with types
   }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{InterpolationValue, TextInterpolationMode}
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v2_3.{CypherException, NodeStillHasRelationshipsException}
 import org.neo4j.graphdb.TransactionFailureException
@@ -81,10 +82,11 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
   }
 
   private def materialize(v: Any): Any = v match {
-    case (x: Stream[_])   => x.map(materialize).toList
-    case (x: Map[_, _])   => Eagerly.immutableMapValues(x, materialize)
-    case (x: Iterable[_]) => x.map(materialize)
-    case x => x
+    case (x: Stream[_])        => x.map(materialize).toList
+    case (x: Map[_, _])        => Eagerly.immutableMapValues(x, materialize)
+    case (x: Iterable[_])      => x.map(materialize)
+    case x: InterpolationValue => x.interpolate(TextInterpolationMode)
+    case x                     => x
   }
 
   def close() {

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.AggregationExpression
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.forceInterpolation
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
@@ -40,7 +41,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
   private def createSymbols() = {
     val keyIdentifiers = keyExpressions.map(id => id -> source.symbols.evaluateType(id, CTAny)).toMap
     val aggrIdentifiers = aggregations.map {
-      case (id, exp) => id -> exp.getType(source.symbols)
+      case (identifier, exp) => identifier -> exp.getType(source.symbols)
     }
 
     SymbolTable(keyIdentifiers ++ aggrIdentifiers)
@@ -78,7 +79,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
     }
 
     input.foreach(ctx => {
-      val groupValues: NiceHasher = new NiceHasher(keyNames.map(ctx))
+      val groupValues: NiceHasher = new NiceHasher(keyNames.map(ctx).map(forceInterpolation))
       val aggregateFunctions: Seq[AggregationFunction] = aggregations.map(_._2.createAggregationFunction).toSeq
       val (_, functions) = result.getOrElseUpdate(groupValues, (ctx, aggregateFunctions))
       functions.foreach(func => func(ctx)(state))

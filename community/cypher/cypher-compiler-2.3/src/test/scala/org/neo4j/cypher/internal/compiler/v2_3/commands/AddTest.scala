@@ -21,8 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Add, Literal}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{InterpolatedStringPart, InterpolationValue}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
 class AddTest extends CypherFunSuite {
@@ -60,5 +62,20 @@ class AddTest extends CypherFunSuite {
   test("numberPlusBool") {
     val expr = Add(Literal("1"), Literal(true))
     intercept[CypherTypeException](expr(m)(s))
+  }
+
+  test("adding interpolated values") {
+    val interpolated = Literal(InterpolationValue(NonEmptyList(InterpolatedStringPart("foo"))))
+    val combinations = Map(
+      (interpolated, interpolated) -> "foofoo",
+      (interpolated, Literal("bar")) -> "foobar",
+      (Literal("bar"), interpolated) -> "barfoo",
+      (interpolated, Literal(42)) -> "foo42",
+      (Literal(42), interpolated) -> "42foo"
+    )
+
+    combinations.foreach {
+      case ((lhs, rhs), expected) => Add(lhs,rhs)(m)(s) should equal(expected)
+    }
   }
 }

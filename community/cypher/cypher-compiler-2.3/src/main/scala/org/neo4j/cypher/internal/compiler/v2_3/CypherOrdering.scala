@@ -21,12 +21,14 @@ package org.neo4j.cypher.internal.compiler.v2_3
 
 import java.util.Comparator
 
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.forceInterpolation
 import org.neo4j.kernel.impl.api.PropertyValueComparison
 
 import MinMaxOrdering._
 
 object CypherOrdering {
-  val DEFAULT = Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_VALUES.asInstanceOf[Comparator[Any]]).withNullsLast
+  val DEFAULT: Ordering[Any] =
+    Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_VALUES.asInstanceOf[Comparator[Any]]).withForcedInterpolation.withNullsLast
 }
 
 case class MinMaxOrdering[T](ordering: Ordering[T]) {
@@ -35,11 +37,15 @@ case class MinMaxOrdering[T](ordering: Ordering[T]) {
 }
 
 object MinMaxOrdering {
-  val BY_VALUE = MinMaxOrdering(Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_VALUES.asInstanceOf[Comparator[Any]]))
-  val BY_NUMBER = MinMaxOrdering(Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_NUMBERS))
-  val BY_STRING = MinMaxOrdering(Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_STRINGS))
+  val BY_VALUE: MinMaxOrdering[Any] =
+    MinMaxOrdering(Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_VALUES.asInstanceOf[Comparator[Any]]).withForcedInterpolation)
+  val BY_NUMBER: MinMaxOrdering[Number] =
+    MinMaxOrdering(Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_NUMBERS))
+  val BY_STRING: MinMaxOrdering[Any] =
+    MinMaxOrdering(Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_STRINGS.asInstanceOf[Comparator[Any]]).withForcedInterpolation)
 
-  implicit class NullOrdering[T](ordering: Ordering[T]) {
+  implicit class NullOrdering[T](val ordering: Ordering[T]) extends AnyVal {
+
     def withNullsFirst = new Ordering[T] {
       override def compare(x: T, y: T): Int = {
         if (x == null) {
@@ -62,6 +68,12 @@ object MinMaxOrdering {
           ordering.compare(x, y)
         }
       }
+    }
+  }
+
+  implicit class AnyInterpolationOrdering(val ordering: Ordering[Any]) extends AnyVal {
+    def withForcedInterpolation = new Ordering[Any] {
+      override def compare(x: Any, y: Any): Int = ordering.compare(forceInterpolation(x), forceInterpolation(y))
     }
   }
 }

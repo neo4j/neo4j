@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.Condition
 
 case object orderByOnlyOnIdentifiers extends Condition {
   def apply(that: Any): Seq[String] = {
-    val orderBys = collectNodesOfType[OrderBy].apply(that)
+    val orderBys = collectNodesOfType[OrderBy]().apply(that)
     orderBys.flatMap { orderBy =>
       orderBy.sortItems.collect {
         case item: SortItem if !item.expression.isInstanceOf[Identifier] =>

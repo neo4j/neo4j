@@ -40,6 +40,7 @@ class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, shouldEx
       enableCondition(containsNoNodesOfType[UnaliasedReturnItem]),
       enableCondition(orderByOnlyOnIdentifiers),
       enableCondition(noDuplicatesInReturnItems),
+      enableCondition(noUntypedExpressions),
       expandStar(semanticState),
       enableCondition(containsNoReturnAll),
       foldConstants,

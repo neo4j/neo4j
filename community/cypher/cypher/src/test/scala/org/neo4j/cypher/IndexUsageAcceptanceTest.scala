@@ -183,19 +183,45 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     result.executionPlanDescription().toString should include("NodeIndexScan")
   }
 
-  test("should use index on exists") {
+  test("should use index with <,<=,>,>= and interpolated strings") {
     // Given
-    val person = createLabeledNode(Map("name" -> "Smith"), "Person")
-    1 to 100 foreach (_ => createLabeledNode("Person"))
+    val person1 = createLabeledNode(Map("name" -> "Smith1"), "Person")
+    val person2 = createLabeledNode(Map("name" -> "Smith2"), "Person")
+    val person3 = createLabeledNode(Map("name" -> "Smith3"), "Person")
+    1 to 300 foreach (_ => createLabeledNode("Person"))
     graph.createIndex("Person", "name")
 
     // When
-    val result = executeWithCostPlannerOnly(
-      "MATCH (p:Person) WHERE exists(p.name) RETURN p")
+    val lt = executeWithAllPlanners("MATCH (p:Person) WHERE p.name < $'Smith2' RETURN p")
+    val lte = executeWithAllPlanners("MATCH (p:Person) WHERE p.name <= $'Smith2' RETURN p")
+    val gt = executeWithAllPlanners("MATCH (p:Person) WHERE p.name > $'Smith2' RETURN p")
+    val gte = executeWithAllPlanners("MATCH (p:Person) WHERE p.name >= $'Smith2' RETURN p")
 
     // Then
-    result.toList should equal(List(Map("p" -> person)))
-    result.executionPlanDescription().toString should include("NodeIndexScan")
+    lt.toList should equal(List(Map("p" -> person1)))
+    lt.executionPlanDescription().toString should include("NodeIndexSeekByRange")
+    lte.toList should equal(List(Map("p" -> person1), Map("p" -> person2)))
+    lte.executionPlanDescription().toString should include("NodeIndexSeekByRange")
+    gt.toList should equal(List(Map("p" -> person3)))
+    gt.executionPlanDescription().toString should include("NodeIndexSeekByRange")
+    gte.toList should equal(List(Map("p" -> person2), Map("p" -> person3)))
+    gte.executionPlanDescription().toString should include("NodeIndexSeekByRange")
+  }
+
+  test("should use index with = and interpolated strings") {
+    // Given
+    val person1 = createLabeledNode(Map("name" -> "Smith1"), "Person")
+    createLabeledNode(Map("name" -> "Smith2"), "Person")
+    createLabeledNode(Map("name" -> "Smith3"), "Person")
+    1 to 300 foreach (_ => createLabeledNode("Person"))
+    graph.createIndex("Person", "name")
+
+    // When
+    val lt = executeWithAllPlanners("MATCH (p:Person) WHERE p.name = $'Smith1' RETURN p")
+
+    // Then
+    lt.toList should equal(List(Map("p" -> person1)))
+    lt.executionPlanDescription().toString should include("NodeIndexSeek")
   }
 
   private def setUpDatabaseForTests() {

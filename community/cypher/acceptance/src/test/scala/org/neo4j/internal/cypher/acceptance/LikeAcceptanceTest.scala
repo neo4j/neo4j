@@ -20,6 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{IndexSeekByRange, UniqueIndexSeekByRange}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.NodeIndexScan
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.{Node, ResourceIterator}
 
@@ -40,6 +41,104 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     dNode = createLabeledNode(Map("name" -> "ab"), "LABEL")
     eNode = createLabeledNode(Map("name" -> ""), "LABEL")
     fNode = createLabeledNode("LABEL")
+  }
+
+  // *** TESTS OF INTERPOLATED LIKE PREFIX SEARCHES
+
+  test("should work with interpolated prefix strings when there is an index") {
+    val london = createLabeledNode(Map("name" -> "London"), "Location")
+    createLabeledNode(Map("name" -> "london"), "Location")
+    graph.createIndex("Location", "name")
+    graph.inTx {
+      (1 to 100).foreach { _ =>
+        createLabeledNode("Location")
+      }
+      (1 to 300).map { i =>
+        createLabeledNode(Map("name" -> i.toString), "Location")
+      }
+    }
+
+    val query =
+      """WITH 'Lon' as prefix
+        |MATCH (l:Location)
+//        |USING INDEX l:Location(name)
+        |WHERE l.name LIKE $'${prefix}%'
+        |RETURN l
+      """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.executionPlanDescription().toString should include(IndexSeekByRange.name)
+    result.toList should equal(List(Map("l" -> london)))
+  }
+
+  test("should work with interpolated equality strings when there is an index") {
+    val london = createLabeledNode(Map("name" -> "London"), "Location")
+    createLabeledNode(Map("name" -> "london"), "Location")
+    graph.createIndex("Location", "name")
+    graph.inTx {
+      (1 to 100).foreach { _ =>
+        createLabeledNode("Location")
+      }
+      (1 to 300).map { i =>
+        createLabeledNode(Map("name" -> i.toString), "Location")
+      }
+    }
+
+    val query =
+      """WITH 'London' as city
+        |MATCH (l:Location)
+        |WHERE l.name LIKE $'${city}'
+        |RETURN l
+      """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.executionPlanDescription().toString should include("NodeIndexScan")
+    result.toList should equal(List(Map("l" -> london)))
+  }
+
+  test("should work with interpolated strings that evaluate to null when there is an index") {
+    val london = createLabeledNode(Map("name" -> "London"), "Location")
+    createLabeledNode(Map("name" -> "london"), "Location")
+    graph.createIndex("Location", "name")
+    graph.inTx {
+      (1 to 100).foreach { _ =>
+        createLabeledNode("Location")
+      }
+      (1 to 300).map { i =>
+        createLabeledNode(Map("name" -> i.toString), "Location")
+      }
+    }
+
+    val query =
+      """WITH null as prefix
+        |MATCH (l:Location)
+        |WHERE l.name LIKE $'${prefix}%'
+        |RETURN l
+      """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.executionPlanDescription().toString should include(IndexSeekByRange.name)
+    result.toList shouldBe empty
+  }
+
+  test("should work with dynamic interpolated strings when there is no index") {
+    val london = createLabeledNode(Map("name" -> "London"), "Location")
+    createLabeledNode(Map("name" -> "london"), "Location")
+
+    val query =
+      """WITH 'Lon' as prefix
+        |MATCH (l:Location)
+        |WITH l AS l, $'${prefix}%' as pat
+        |WHERE l.name LIKE pat
+        |RETURN l
+      """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("l" -> london)))
   }
 
   // *** TESTS OF PREFIX SEARCH

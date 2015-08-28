@@ -295,13 +295,13 @@ class CypherParserTest extends CypherFunSuite {
       "start a = node(1) where \"Andres\" =~ 'And.*' return a",
       Query.
         start(NodeById("a", 1)).
-        where(LiteralRegularExpression(Literal("Andres"), Literal("And.*"))).
+        where(MatchLiteralRegex(Literal("Andres"), Literal("And.*"))).
         returns(ReturnItem(Identifier("a"), "a"))
     )
   }
 
   test("should translate LIKE to a regular expression") {
-    val regExp = LiteralRegularExpression(Literal("Pontus"), Literal("""\QPont\E.*"""))
+    val regExp = MatchLiteralRegex(Literal("Pontus"), Literal("""\QPont\E.*"""))
     val likePredicate = LiteralLikePattern(regExp, ParsedLikePattern(List(MatchText("Pont"), MatchMany)))
 
     expectQuery(
@@ -313,7 +313,7 @@ class CypherParserTest extends CypherFunSuite {
   }
 
   test("should translate NOT LIKE to a negated regular expression") {
-    val regExp = LiteralRegularExpression(Literal("Pontus"), Literal("""\QPont\E.*"""))
+    val regExp = MatchLiteralRegex(Literal("Pontus"), Literal("""\QPont\E.*"""))
     val likePredicate = LiteralLikePattern(regExp, ParsedLikePattern(List(MatchText("Pont"), MatchMany)))
 
     expectQuery(
@@ -325,7 +325,7 @@ class CypherParserTest extends CypherFunSuite {
   }
 
   test("should translate ILIKE to a regular expression") {
-    val regExp = LiteralRegularExpression(Literal("Pontus"), Literal("""(?i)\QPont\E.*"""))
+    val regExp = MatchLiteralRegex(Literal("Pontus"), Literal("""(?i)\QPont\E.*"""))
     val likePredicate = LiteralLikePattern(regExp, ParsedLikePattern(List(MatchText("Pont"), MatchMany)), caseInsensitive = true)
 
     expectQuery(
@@ -337,7 +337,7 @@ class CypherParserTest extends CypherFunSuite {
   }
 
   test("should translate NOT ILIKE to a negated regular expression") {
-    val regExp = LiteralRegularExpression(Literal("Pontus"), Literal("""(?i)\QPont\E.*"""))
+    val regExp = MatchLiteralRegex(Literal("Pontus"), Literal("""(?i)\QPont\E.*"""))
     val likePredicate = LiteralLikePattern(regExp, ParsedLikePattern(List(MatchText("Pont"), MatchMany)), caseInsensitive = true)
 
     expectQuery(
@@ -349,7 +349,7 @@ class CypherParserTest extends CypherFunSuite {
   }
 
   test("should handle LIKE when using escaped character") {
-    val regExp = LiteralRegularExpression(Literal("Pontus"), Literal("""\QPon%\E."""))
+    val regExp = MatchLiteralRegex(Literal("Pontus"), Literal("""\QPon%\E."""))
     val likePredicate = LiteralLikePattern(regExp, ParsedLikePattern(List(MatchText("Pon%"), MatchSingle)))
 
     expectQuery(
@@ -365,7 +365,7 @@ class CypherParserTest extends CypherFunSuite {
       """start a = node(1) where a.name =~ 'And.*' AnD a.name =~ 'And.*' return a""",
       Query.
         start(NodeById("a", 1)).
-        where(And(LiteralRegularExpression(Property(Identifier("a"), PropertyKey("name")), Literal("And.*")), LiteralRegularExpression(Property(Identifier("a"), PropertyKey("name")), Literal("And.*")))).
+        where(And(MatchLiteralRegex(Property(Identifier("a"), PropertyKey("name")), Literal("And.*")), MatchLiteralRegex(Property(Identifier("a"), PropertyKey("name")), Literal("And.*")))).
         returns(ReturnItem(Identifier("a"), "a"))
     )
   }
@@ -375,7 +375,7 @@ class CypherParserTest extends CypherFunSuite {
       """start a = node(1) where a.name =~ 'And\\/.*' return a""",
       Query.
         start(NodeById("a", 1)).
-        where(LiteralRegularExpression(Property(Identifier("a"), PropertyKey("name")), Literal("And\\/.*"))).
+        where(MatchLiteralRegex(Property(Identifier("a"), PropertyKey("name")), Literal("And\\/.*"))).
         returns(ReturnItem(Identifier("a"), "a"))
     )
   }
@@ -1242,7 +1242,7 @@ class CypherParserTest extends CypherFunSuite {
       """start pA = node({`id`}) where pA.name =~ {`regex`} return pA skip {`ski``pper`} limit {`stop`}""",
       Query.
         start(NodeById("pA", ParameterExpression("id"))).
-        where(RegularExpression(Property(Identifier("pA"), PropertyKey("name")), ParameterExpression("regex")))
+        where(MatchDynamicRegex(Property(Identifier("pA"), PropertyKey("name")), ParameterExpression("regex")))
         skip("ski`pper")
         limit ("stop")
         returns (ReturnItem(Identifier("pA"), "pA"))
@@ -1254,7 +1254,7 @@ class CypherParserTest extends CypherFunSuite {
       """start pA = node(0) where pA.name =~ {regex} return pA""",
       Query.
         start(NodeById("pA", 0)).
-        where(RegularExpression(Property(Identifier("pA"), PropertyKey("name")), ParameterExpression("regex")))
+        where(MatchDynamicRegex(Property(Identifier("pA"), PropertyKey("name")), ParameterExpression("regex")))
         returns (ReturnItem(Identifier("pA"), "pA"))
     )
   }

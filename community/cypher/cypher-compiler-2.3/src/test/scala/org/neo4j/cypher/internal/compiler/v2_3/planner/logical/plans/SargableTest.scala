@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
 import org.mockito.Mockito
-import org.neo4j.cypher.internal.compiler.v2_3.PrefixRange
+import org.neo4j.cypher.internal.compiler.v2_3.{InterpolatedPrefixRange, PrefixRange}
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
 class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -36,7 +37,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     val leftExpr: Property = Property(nodeA, propKey) _
     val like: Like = Like(leftExpr, LikePattern(StringLiteral("prefix%") _)) _
     assertMatches(like) {
-      case AsStringRangeSeekable(PrefixRangeSeekable(range, expr, ident, propertyKey)) =>
+      case AsPrefixRangeSeekable(PrefixRangeSeekable(range, expr, ident, propertyKey)) =>
         range should equal(PrefixRange("prefix"))
         expr should equal(like)
         ident should equal(nodeA)
@@ -50,7 +51,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     val originalLike: Like = Like(leftExpr, LikePattern(StringLiteral("prefix%suffix") _)) _
     val prefixLike: Like = Like(leftExpr, LikePattern(StringLiteral("prefix%") _)) _
     assertMatches(originalLike) {
-      case AsStringRangeSeekable(PrefixRangeSeekable(range, expr, ident, propertyKey)) =>
+      case AsPrefixRangeSeekable(PrefixRangeSeekable(range, expr, ident, propertyKey)) =>
         range should equal(PrefixRange("prefix"))
         expr should equal(prefixLike)
         ident should equal(nodeA)
@@ -165,6 +166,48 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
         scannable.property should equal(propertyExpr)
         scannable.ident should equal(nodeA)
         scannable.propertyKey should equal(propertyExpr.propertyKey)
+    }
+  }
+
+  test("InterpolatedPrefixRangeSeekable finds n.prop LIKE [DOLLAR]'prefix%'") {
+    val propKey: PropertyKeyName = PropertyKeyName("prop") _
+    val leftExpr: Property = Property(nodeA, propKey) _
+    val inputLike: Like = Like(leftExpr, LikePattern(Interpolation(NonEmptyList(Right("prefix%"))) _)) _
+    val expectedLike: Like = Like(leftExpr, LikePattern(Interpolation(NonEmptyList(Right("prefix"), Right("%"))) _)) _
+    assertMatches(inputLike) {
+      case AsInterpolatedPrefixRangeSeekable(InterpolatedPrefixRangeSeekable(range, actualLike, ident, propertyKey)) =>
+        range should equal(InterpolatedPrefixRange(Interpolation(NonEmptyList(Right("prefix"))) _))
+        actualLike should equal(expectedLike)
+        ident should equal(nodeA)
+        propertyKey should equal(propKey)
+    }
+  }
+
+  test("InterpolatedPrefixRangeSeekable finds n.prop LIKE [DOLLAR]'[DOLLAR]{x}%suffix'") {
+    val propKey: PropertyKeyName = PropertyKeyName("prop") _
+    val leftExpr: Property = Property(nodeA, propKey) _
+    val inputLike: Like = Like(leftExpr, LikePattern(Interpolation(NonEmptyList(Left(ident("x")), Right("%suffix"))) _)) _
+    val expectedLike: Like = Like(leftExpr, LikePattern(Interpolation(NonEmptyList(Left(ident("x")), Right("%"))) _)) _
+    assertMatches(inputLike) {
+      case AsInterpolatedPrefixRangeSeekable(InterpolatedPrefixRangeSeekable(range, actualLike, ident, propertyKey)) =>
+        range should equal(InterpolatedPrefixRange(Interpolation(NonEmptyList(Left(Identifier("x")_))) _))
+        actualLike should equal(expectedLike)
+        ident should equal(nodeA)
+        propertyKey should equal(propKey)
+    }
+  }
+
+  test("InterpolatedPrefixRangeSeekable finds n.prop LIKE [DOLLAR]'prefix[DOLLAR]{x}%suffix'") {
+    val propKey: PropertyKeyName = PropertyKeyName("prop") _
+    val leftExpr: Property = Property(nodeA, propKey) _
+    val inputLike: Like = Like(leftExpr, LikePattern(Interpolation(NonEmptyList(Right("prefix"), Left(ident("x")), Right("%suffix"))) _)) _
+    val expectedLike: Like = Like(leftExpr, LikePattern(Interpolation(NonEmptyList(Right("prefix"), Left(ident("x")), Right("%"))) _)) _
+    assertMatches(inputLike) {
+      case AsInterpolatedPrefixRangeSeekable(InterpolatedPrefixRangeSeekable(range, actualLike, ident, propertyKey)) =>
+        range should equal(InterpolatedPrefixRange(Interpolation(NonEmptyList(Right("prefix"), Left(Identifier("x")_))) _))
+        actualLike should equal(expectedLike)
+        ident should equal(nodeA)
+        propertyKey should equal(propKey)
     }
   }
 

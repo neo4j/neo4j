@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.prepare
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier, Literal, Property}
-import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{HasLabel, LiteralLikePattern, LiteralRegularExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{HasLabel, LiteralLikePattern, MatchLiteralRegex}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken.Resolved
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType, UnresolvedLabel, UnresolvedProperty}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PlanBuilder
@@ -100,11 +100,11 @@ class KeyTokenResolverTest extends BuilderTest {
   test("should resolve property key for LIKE expressions") {
     val q = Query.
       matches(SingleNode("n")).
-      where(LiteralLikePattern(LiteralRegularExpression(Property(Identifier("x"), UnresolvedProperty("APA")), Literal("A.*")), ParsedLikePattern(List(MatchText("A"), MatchMany)))).
+      where(LiteralLikePattern(MatchLiteralRegex(Property(Identifier("x"), UnresolvedProperty("APA")), Literal("A.*")), ParsedLikePattern(List(MatchText("A"), MatchMany)))).
       returns()
 
     val result = assertAccepts(q)
-    result.query.where should equal(Seq(Unsolved(LiteralLikePattern(LiteralRegularExpression(Property(Identifier("x"), Resolved("APA", 0, TokenType.PropertyKey)), Literal("A.*")), ParsedLikePattern(List(MatchText("A"), MatchMany))))))
+    result.query.where should equal(Seq(Unsolved(LiteralLikePattern(MatchLiteralRegex(Property(Identifier("x"), Resolved("APA", 0, TokenType.PropertyKey)), Literal("A.*")), ParsedLikePattern(List(MatchText("A"), MatchMany))))))
   }
 
   test("should_resolve_label_keytoken_on_unique_link_pattern") {

@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v2_3.{DummyPosition, SemanticState}
 
-class StringLiteralTest extends CypherFunSuite {
+class StringLiteralTest extends CypherFunSuite with AstConstructionTestSupport {
   test("has type CTString") {
-    val literal = StringLiteral("foo")(DummyPosition(0))
+    val literal = StringLiteral("foo")(pos)
     val result = literal.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     val expressionType = result.state.expressionType(literal).actual
 

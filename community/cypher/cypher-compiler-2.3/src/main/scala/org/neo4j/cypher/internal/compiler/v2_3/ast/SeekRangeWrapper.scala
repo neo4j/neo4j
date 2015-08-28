@@ -19,12 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast
 
-import org.neo4j.cypher.internal.compiler.v2_3.{InequalitySeekRange, PrefixRange}
+import org.neo4j.cypher.internal.compiler.v2_3.{InterpolatedPrefixRange, InequalitySeekRange, PrefixRange}
 import org.neo4j.cypher.internal.frontend.v2_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v2_3.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition, SemanticCheck, SemanticCheckResult}
 
 case class PrefixSeekRangeWrapper(range: PrefixRange)(val position: InputPosition) extends Expression {
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
+}
+
+case class InterpolatedPrefixSeekRangeWrapper(range: InterpolatedPrefixRange)(val position: InputPosition) extends Expression {
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 }
 

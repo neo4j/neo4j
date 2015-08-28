@@ -27,6 +27,23 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
   def Expression: Rule1[ast.Expression] = ???
   val t = DummyPosition(0)
 
+  test("should parse interpolated strings") {
+    implicit val parserToTest: Rule1[ast.InterpolationLiteral] = InterpolationLiteral
+
+    // We use scala string interpolations here to produce Cypher string interpolations in order to get around
+    // a really annoying scalac warning about possibly having forgotten to interpolate a string literal that
+    // contains a '$' (warning cannot be disables as of 25-08-2015)
+
+    parsing(s"$$'string'") shouldGive ast.InterpolationLiteral("string")(t)
+    parsing(s"$$" +"\"string\"") shouldGive ast.InterpolationLiteral("string")(t)
+    parsing(s"$$''") shouldGive ast.InterpolationLiteral("")(t)
+    parsing(s"$$' '") shouldGive ast.InterpolationLiteral(" ")(t)
+    parsing(s"$$'$$$$'") shouldGive ast.InterpolationLiteral(s"$$$$")(t)
+    parsing(s"$$'$${thing}'") shouldGive ast.InterpolationLiteral(s"$${thing}")(t)
+    parsing(s"$$'$$'") shouldGive ast.InterpolationLiteral(s"$$")(t)
+    parsing(s"$$'$${}'") shouldGive ast.InterpolationLiteral(s"$${}")(t)
+  }
+
   test("testIdentifierCanContainASCII") {
     implicit val parserToTest = Identifier
 

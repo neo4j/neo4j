@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.InterpolationValue
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v2_3.IncomparableValuesException
 
@@ -46,6 +47,7 @@ trait Comparer extends StringHelper {
 object Comparer {
   def isString(value: Any): Boolean = value match {
     case _: String => true
+    case _: InterpolationValue => true
     case _: Character => true
     case _ => value == null
   }

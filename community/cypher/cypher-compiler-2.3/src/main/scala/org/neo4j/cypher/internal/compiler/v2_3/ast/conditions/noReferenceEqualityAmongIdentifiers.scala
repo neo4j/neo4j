@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v2_3.ast.Identifier
 
 case object noReferenceEqualityAmongIdentifiers extends Condition {
   def apply(that: Any): Seq[String] = {
-    val ids = collectNodesOfType[Identifier].apply(that).map(Ref[Identifier])
+    val ids = collectNodesOfType[Identifier]().apply(that).map(Ref[Identifier])
     ids.groupBy(x => x).collect {
       case (id, others) if others.size > 1 => s"The instance ${id.value} is used ${others.size} times"
     }.toSeq

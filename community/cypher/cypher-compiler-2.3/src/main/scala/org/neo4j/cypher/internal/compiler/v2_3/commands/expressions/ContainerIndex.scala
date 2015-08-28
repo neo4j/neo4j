@@ -27,13 +27,13 @@ import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
 case class ContainerIndex(expression: Expression, index: Expression) extends NullInNullOutExpression(expression)
-with CollectionSupport {
+with CollectionSupport with StringHelper {
   def arguments = Seq(expression, index)
 
   def compute(value: Any, ctx: ExecutionContext)(implicit state: QueryState): Any = {
     value match {
       case IsMap(m) =>
-        val idx = CastSupport.castOrFail[String](index(ctx))
+        val idx = asString(index(ctx))
         m(state.query).getOrElse(idx, null)
 
       case IsCollection(collection) =>

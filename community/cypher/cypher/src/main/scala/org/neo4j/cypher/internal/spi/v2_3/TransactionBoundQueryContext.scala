@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.MinMaxOrdering.{BY_NUMBER, BY_STR
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.forceInterpolation
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
@@ -139,12 +140,12 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   }
 
   def indexSeek(index: IndexDescriptor, value: Any) =
-    JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().nodesGetFromIndexSeek(index, value))(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().nodesGetFromIndexSeek(index, forceInterpolation(value)))(nodeOps.getById)
 
   def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
 
     case PrefixRange(prefix) =>
-      indexSeekByPrefixRange(index, prefix)
+      if (prefix == null) Iterator.empty else indexSeekByPrefixRange(index, prefix)
 
     case range: InequalitySeekRange[Any] =>
       val groupedRanges = range.groupBy { (bound: Bound[Any]) =>
@@ -310,7 +311,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     }
 
     def setProperty(id: Long, propertyKeyId: Int, value: Any) {
-      statement.dataWriteOperations().nodeSetProperty(id, properties.Property.property(propertyKeyId, value) )
+      statement.dataWriteOperations().nodeSetProperty(id, properties.Property.property(propertyKeyId, forceInterpolation(value)) )
     }
 
     def getById(id: Long) = try {
@@ -322,10 +323,10 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     def all: Iterator[Node] = GlobalGraphOperations.at(graph).getAllNodes.iterator().asScala
 
     def indexGet(name: String, key: String, value: Any): Iterator[Node] =
-      graph.index.forNodes(name).get(key, value).iterator().asScala
+      graph.index.forNodes(name).get(key, forceInterpolation(value)).iterator().asScala
 
     def indexQuery(name: String, query: Any): Iterator[Node] =
-      graph.index.forNodes(name).query(query).iterator().asScala
+      graph.index.forNodes(name).query(forceInterpolation(query)).iterator().asScala
 
     def isDeleted(n: Node): Boolean =
       kernelStatement.txState().nodeIsDeletedInThisTx(n.getId)
@@ -350,7 +351,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     }
 
     def setProperty(id: Long, propertyKeyId: Int, value: Any) {
-      statement.dataWriteOperations().relationshipSetProperty(id, properties.Property.property(propertyKeyId, value) )
+      statement.dataWriteOperations().relationshipSetProperty(id, properties.Property.property(propertyKeyId, forceInterpolation(value)) )
     }
 
     def getById(id: Long) = try {
@@ -363,10 +364,10 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       GlobalGraphOperations.at(graph).getAllRelationships.iterator().asScala
 
     def indexGet(name: String, key: String, value: Any): Iterator[Relationship] =
-      graph.index.forRelationships(name).get(key, value).iterator().asScala
+      graph.index.forRelationships(name).get(key, forceInterpolation(value)).iterator().asScala
 
     def indexQuery(name: String, query: Any): Iterator[Relationship] =
-      graph.index.forRelationships(name).query(query).iterator().asScala
+      graph.index.forRelationships(name).query(forceInterpolation(query)).iterator().asScala
 
     def isDeleted(r: Relationship): Boolean =
       kernelStatement.txState().relationshipIsDeletedInThisTx(r.getId)

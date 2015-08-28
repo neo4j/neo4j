@@ -25,7 +25,7 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
   test("shouldRaiseErrorWhenMissingIndexValue") {
     test(
       "start s = node:index(key=) return s",
-      "Invalid input ')': expected whitespace, \"...string...\" or a parameter (line 1, column 26)"
+      "Invalid input ')': expected whitespace, \"...string...\", string interpolation or a parameter (line 1, column 26)"
     )
   }
 
@@ -39,7 +39,7 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
   test("shouldRaiseErrorWhenMissingIndexKey") {
     test(
       "start s = node:index(=\"value\") return s",
-      "Invalid input '=': expected whitespace, an identifier, \"...string...\" or a parameter (line 1, column 22)"
+      "Invalid input '=': expected whitespace, an identifier, \"...string...\", string interpolation or a parameter (line 1, column 22)"
     )
   }
 
@@ -88,7 +88,7 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
   test("shouldComplainAboutAStringBeingExpected") {
     test(
       "start s=node:index(key = value) return s",
-      "Invalid input 'v': expected whitespace, comment, \"...string...\" or a parameter (line 1, column 26)"
+      "Invalid input 'v': expected whitespace, comment, \"...string...\", string interpolation or a parameter (line 1, column 26)"
     )
   }
 
@@ -180,7 +180,7 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
          f=node(0),
          g=node(0),
          s=node:index(key = value) return s""",
-      "Invalid input 'v': expected whitespace, comment, \"...string...\" or a parameter (line 9, column 29)"
+      "Invalid input 'v': expected whitespace, comment, \"...string...\", string interpolation or a parameter (line 9, column 29)"
     )
   }
 
@@ -195,7 +195,7 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
          f=node(0),
          g=node(0),
          s=node:index(key = value) return s""",
-      "Invalid input 'v': expected whitespace, comment, \"...string...\" or a parameter (line 9, column 29)"
+      "Invalid input 'v': expected whitespace, comment, \"...string...\", string interpolation or a parameter (line 9, column 29)"
     )
   }
 

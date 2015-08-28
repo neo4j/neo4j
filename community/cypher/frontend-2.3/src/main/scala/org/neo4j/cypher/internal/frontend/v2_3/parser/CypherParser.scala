@@ -26,10 +26,17 @@ class CypherParser extends Parser
   with Statement
   with Expressions {
 
-
   @throws(classOf[SyntaxException])
-  def parse(queryText: String, offset: Option[InputPosition] = None): ast.Statement =
-    parseOrThrow(queryText, offset, CypherParser.Statements)
+  def parse(queryText: String, offset: Option[InputPosition] = None): ast.Statement = {
+    val results = parseOrThrow(queryText, offset, CypherParser.Statements)
+
+    if (results.size == 1) {
+      val statement = results.head
+      statement
+    } else {
+      throw new SyntaxException(s"Expected exactly one statement per query but got: ${results.size}")
+    }
+  }
 }
 
 object CypherParser extends Parser with Statement with Expressions {

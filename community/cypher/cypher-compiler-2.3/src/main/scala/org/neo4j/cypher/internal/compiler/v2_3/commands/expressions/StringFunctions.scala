@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{InterpolationValue, KeyToken, TextInterpolationMode}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{CollectionSupport, IsCollection, IsMap}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
@@ -43,10 +43,15 @@ abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(a
 }
 
 trait StringHelper {
+
   protected def asString(a: Any): String = a match {
-    case null      => null
+    case null => null
     case x: String => x
-    case _         => throw new CypherTypeException("Expected a string value for %s, but got: %s; perhaps you'd like to cast to a string it with str().".format(toString, a.toString))
+    case x: InterpolationValue => x.interpolate(TextInterpolationMode)
+    case _  =>
+      throw new CypherTypeException(
+        "Expected a string value for %s, but got: %s; perhaps you'd like to cast it to a string with toString() or str().".format(toString, a.toString)
+      )
   }
 
   protected def props(x: PropertyContainer, qtx: QueryContext): String = {
@@ -62,15 +67,16 @@ trait StringHelper {
   }
 
   protected def text(a: Any, qtx: QueryContext): String = a match {
-    case x: Node            => x.toString + props(x, qtx)
-    case x: Relationship    => ":" + x.getType.name() + "[" + x.getId + "]" + props(x, qtx)
-    case IsMap(m)           => makeString(m, qtx)
-    case IsCollection(coll) => coll.map(elem => text(elem, qtx)).mkString("[", ",", "]")
-    case x: String          => "\"" + x + "\""
-    case v: KeyToken        => v.name
-    case Some(x)            => x.toString
-    case null               => "<null>"
-    case x                  => x.toString
+    case x: Node               => x.toString + props(x, qtx)
+    case x: Relationship       => ":" + x.getType.name() + "[" + x.getId + "]" + props(x, qtx)
+    case IsMap(m)              => makeString(m, qtx)
+    case IsCollection(coll)    => coll.map(elem => text(elem, qtx)).mkString("[", ",", "]")
+    case x: String             => "\"" + x + "\""
+    case x: InterpolationValue => text(x.interpolate(TextInterpolationMode), qtx)
+    case v: KeyToken           => v.name
+    case Some(x)               => x.toString
+    case null                  => "<null>"
+    case x                     => x.toString
   }
 
   protected def textWithType(x: Any)(implicit qs: QueryState) = s"${text(x, qs.query)} (${x.getClass.getSimpleName})"
