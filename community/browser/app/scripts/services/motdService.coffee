@@ -104,6 +104,8 @@ angular.module('neo4jApp.services')
                 return hit or val is 'neo4j'
             item = motdFeedParser.getFirstMatch(feed, match_filter)
           item.bang = motdFeedParser.explodeTags(item.t).combo?.replace(/[^a-z]*/ig, '')
+          if (item?.u and item.u.indexOf('blog') >= 0)
+            item.d = "Latest Blog: " + item.d
           item
 
         refresh: ->
