@@ -33,6 +33,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -50,9 +51,11 @@ import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TargetDirectory;
 
-import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
+
+import static java.util.Collections.singletonList;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -148,7 +151,8 @@ public class NonUniqueIndexTests
     private List<Long> nodeIdsInIndex( int indexId, String value ) throws IOException
     {
         Config config = new Config();
-        SchemaIndexProvider indexProvider = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, directory.graphDbDir() );
+        SchemaIndexProvider indexProvider = new LuceneSchemaIndexProvider( new DefaultFileSystemAbstraction(),
+                DirectoryFactory.PERSISTENT, directory.graphDbDir() );
         IndexConfiguration indexConfig = new IndexConfiguration( false );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId, indexConfig, samplingConfig );

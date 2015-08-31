@@ -85,7 +85,7 @@ public class SlaveLocksClientConcurrentTest
                 .thenReturn( RequestContext.anonymous( 1 ) );
     }
 
-    @Test(timeout = 1000)
+    @Test( timeout = 1000 )
     public void readersCanAcquireLockAsSoonAsItReleasedOnMaster() throws InterruptedException
     {
         reader = createClient();
@@ -94,17 +94,18 @@ public class SlaveLocksClientConcurrentTest
         CountDownLatch readerCompletedLatch = new CountDownLatch( 1 );
         CountDownLatch resourceLatch = new CountDownLatch( 1 );
 
-        when( master.endLockSession( any(RequestContext.class), anyBoolean() ) ).then(
+        when( master.endLockSession( any( RequestContext.class ), anyBoolean() ) ).then(
                 new WaitLatchAnswer( resourceLatch, readerCompletedLatch ) );
 
         long nodeId = 10l;
-        ResourceReader resourceReader = new ResourceReader( reader, ResourceTypes.NODE, nodeId, resourceLatch, readerCompletedLatch);
-        ResourceWriter resourceWriter = new ResourceWriter( writer, ResourceTypes.NODE, nodeId, resourceLatch );
+        ResourceReader resourceReader =
+                new ResourceReader( reader, ResourceTypes.NODE, nodeId, resourceLatch, readerCompletedLatch );
+        ResourceWriter resourceWriter = new ResourceWriter( writer, ResourceTypes.NODE, nodeId );
 
         executor.submit( resourceReader );
         executor.submit( resourceWriter );
 
-        assertTrue( "Reader should wait for writer to release local and master lock before acquire",
+        assertTrue( "Reader should wait for writer to release locks before acquire",
                 readerCompletedLatch.await( 1000, TimeUnit.MILLISECONDS ) );
     }
 
@@ -145,10 +146,11 @@ public class SlaveLocksClientConcurrentTest
         @Override
         public Void answer( InvocationOnMock invocation ) throws Throwable
         {
+            // releasing reader after local lock released
             resourceLatch.countDown();
             // waiting here for reader to finish read lock acquisition.
-            // by this we check that local lock where released before releasing it on
-            // master
+            // by this we check that local exclusive lock where released before releasing it on
+            // master otherwise reader will be blocked forever
             resourceReleaseLatch.await();
             return null;
         }
@@ -156,29 +158,29 @@ public class SlaveLocksClientConcurrentTest
 
     private class ResourceWriter extends ResourceWorker
     {
-        public ResourceWriter(SlaveLocksClient locksClient, Locks.ResourceType resourceType, long id, CountDownLatch
-                readerStartLatch )
+        public ResourceWriter( SlaveLocksClient locksClient, Locks.ResourceType resourceType, long id )
         {
-            super(locksClient, resourceType, id, readerStartLatch);
+            super( locksClient, resourceType, id );
         }
 
         @Override
         public void run()
         {
             locksClient.acquireExclusive( resourceType, id );
-            resourceLatch.countDown();
             locksClient.close();
         }
     }
 
     private class ResourceReader extends ResourceWorker
     {
-        private CountDownLatch resourceReleaseLatch;
+        private final CountDownLatch resourceLatch;
+        private final CountDownLatch resourceReleaseLatch;
 
         public ResourceReader( SlaveLocksClient locksClient, Locks.ResourceType resourceType, long id, CountDownLatch
                 resourceLatch, CountDownLatch resourceReleaseLatch )
         {
-            super( locksClient, resourceType, id, resourceLatch );
+            super( locksClient, resourceType, id );
+            this.resourceLatch = resourceLatch;
             this.resourceReleaseLatch = resourceReleaseLatch;
         }
 
@@ -190,8 +192,9 @@ public class SlaveLocksClientConcurrentTest
                 resourceLatch.await();
                 locksClient.acquireShared( resourceType, id );
                 resourceReleaseLatch.countDown();
+                locksClient.close();
             }
-            catch ( InterruptedException e )
+            catch ( Exception e )
             {
                 throw new RuntimeException( e );
             }
@@ -200,17 +203,15 @@ public class SlaveLocksClientConcurrentTest
 
     private abstract class ResourceWorker implements Runnable
     {
-        protected SlaveLocksClient locksClient;
-        protected Locks.ResourceType resourceType;
-        protected long id;
-        protected CountDownLatch resourceLatch;
+        protected final SlaveLocksClient locksClient;
+        protected final Locks.ResourceType resourceType;
+        protected final long id;
 
-        public ResourceWorker( SlaveLocksClient locksClient, Locks.ResourceType resourceType, long id, CountDownLatch resourceLatch )
+        public ResourceWorker( SlaveLocksClient locksClient, Locks.ResourceType resourceType, long id )
         {
             this.locksClient = locksClient;
             this.resourceType = resourceType;
             this.id = id;
-            this.resourceLatch = resourceLatch;
         }
     }
 

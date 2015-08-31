@@ -21,11 +21,12 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription}
+import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CreateTempFileTestSupport
-import org.neo4j.cypher.internal.helpers.TxCounts
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.StringHelper.RichString
+import org.neo4j.cypher.internal.helpers.TxCounts
 
 class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFileTestSupport with NewPlannerTestSupport {
 
@@ -208,6 +209,18 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(2)(result)("AllNodesScan")
 
     result.executionPlanDescription()
+  }
+
+  test("LIMIT should influence cardinality estimation even when auto-parameterized") {
+    (0 until 100).map(i => createLabeledNode("Person"))
+    val result = executeWithAllPlanners(s"PROFILE MATCH (p:Person) RETURN p LIMIT 10")
+    assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
+  }
+
+  test("LIMIT should influence cardinality estimation with literal") {
+    (0 until 100).map(i => createLabeledNode("Person"))
+    val result = executeWithAllPlanners(s"PROFILE MATCH (p:Person) WHERE 50 = {fifty} RETURN p LIMIT 10", "fifty" -> 50)
+    assertEstimatedRows(10)(result)("Limit")
   }
 
   test ("should support profiling union queries") {
@@ -513,6 +526,12 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
       plan => assert(expectedRows === getArgument[Rows](plan).value, s" wrong row count for plan: ${plan.name}")
+    }
+  }
+
+  private def assertEstimatedRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
+    getPlanDescriptions(result, names).foreach {
+      plan => assert(expectedRows === getArgument[EstimatedRows](plan).value, s" wrong estiamted row count for plan: ${plan.name}")
     }
   }
 

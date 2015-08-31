@@ -27,6 +27,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -46,11 +47,14 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.test.EphemeralFileSystemRule;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 import static java.lang.Long.parseLong;
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class LuceneSchemaIndexPopulatorTest
@@ -222,6 +226,7 @@ public class LuceneSchemaIndexPopulatorTest
         return NodePropertyUpdate.remove( nodeId, 0, removedValue, new long[0] );
     }
 
+    public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private IndexDescriptor indexDescriptor;
     private IndexStoreView indexStoreView;
     private LuceneSchemaIndexProvider provider;
@@ -230,7 +235,7 @@ public class LuceneSchemaIndexPopulatorTest
     private IndexReader reader;
     private IndexSearcher searcher;
     private final long indexId = 0;
-    private int propertyKeyId = 666;
+    private final int propertyKeyId = 666;
     private final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
 
     @Before
@@ -239,7 +244,7 @@ public class LuceneSchemaIndexPopulatorTest
         directory = new RAMDirectory();
         DirectoryFactory directoryFactory = new DirectoryFactory.Single(
                 new DirectoryFactory.UncloseableDirectory( directory ) );
-        provider = new LuceneSchemaIndexProvider( directoryFactory, new File( "target/whatever" ) );
+        provider = new LuceneSchemaIndexProvider( fs.get(), directoryFactory, new File( "target/whatever" ) );
         indexDescriptor = new IndexDescriptor( 42, propertyKeyId );
         indexStoreView = mock( IndexStoreView.class );
         IndexConfiguration indexConfig = new IndexConfiguration( false );

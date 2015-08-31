@@ -58,13 +58,14 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     private final FolderLayout folderLayout;
     private final Map<Long, String> failures = new HashMap<>();
 
-    public LuceneSchemaIndexProvider( DirectoryFactory directoryFactory, File storeDir )
+    public LuceneSchemaIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
+            File storeDir )
     {
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
         this.directoryFactory = directoryFactory;
         File rootDirectory = getRootDirectory( storeDir, LuceneSchemaIndexProviderFactory.KEY );
         this.folderLayout = new FolderLayout( rootDirectory );
-        this.failureStorage = new FailureStorage( folderLayout );
+        this.failureStorage = new FailureStorage( fileSystem, folderLayout );
     }
 
     @Override
