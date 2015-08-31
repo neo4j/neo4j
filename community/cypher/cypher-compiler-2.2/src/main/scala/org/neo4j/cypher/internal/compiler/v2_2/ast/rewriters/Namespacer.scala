@@ -58,7 +58,8 @@ object Namespacer {
         (acc, children) => children(acc ++ Seq(Ref(index)))
       case RelationshipByIndexQuery(_, index, _) =>
         (acc, children) => children(acc ++ Seq(Ref(index)))
-
+      case UsingIndexHint(_, _, prop) =>
+        (acc, children) => children(acc ++ Seq(Ref(prop)))
       case Return(_, ReturnItems(_, items), _, _, _) =>
         val identifiers = items.map(_.alias.map(Ref[Identifier]).get)
         (acc, children) => children(acc ++ identifiers)

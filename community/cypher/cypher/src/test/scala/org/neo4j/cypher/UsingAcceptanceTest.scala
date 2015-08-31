@@ -208,4 +208,17 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     e.getMessage should startWith("Multiple hints for same identifier are not supported")
   }
+
+  test("USING INDEX hint should not clash with used identifiers") {
+    graph.createIndex("PERSON", "id")
+
+    val result = executeWithAllPlanners(
+      """MATCH (actor:PERSON {id: 1})
+        |USING INDEX actor:PERSON(id)
+        |WITH 14 as id
+        |RETURN 13 as id""".stripMargin)
+
+    result.toList should be(empty)
+  }
+
 }
