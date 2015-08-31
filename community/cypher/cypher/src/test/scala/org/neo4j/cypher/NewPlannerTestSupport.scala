@@ -150,13 +150,13 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
   def executeWithAllPlanners(queryText: String, params: (String, Any)*): InternalExecutionResult = {
     val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
-    val idpResult = innerExecute(s"CYPHER planner=idp $queryText", params: _*)
-    val costResult = executeWithCostPlannerOnly(queryText, params: _*)
+    val greedyResult = innerExecute(s"CYPHER planner=greedy $queryText", params: _*)
+    val idpResult = executeWithCostPlannerOnly(queryText, params: _*)
 
-    assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners")
-    assertResultsAreSame(idpResult, costResult, queryText, "Diverging results between IDP and greedy planner")
+    assertResultsAreSame(ruleResult, idpResult, queryText, "Diverging results between rule and cost planners")
+    assertResultsAreSame(greedyResult, idpResult, queryText, "Diverging results between IDP and greedy planner")
     ruleResult.close()
-    costResult
+    idpResult
   }
 
   def executeWithAllPlannersReplaceNaNs(queryText: String, params: (String, Any)*): InternalExecutionResult = {
@@ -164,21 +164,12 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     val idpResult = innerExecute(s"CYPHER planner=idp $queryText", params: _*)
     val costResult = executeWithCostPlannerOnly(queryText, params: _*)
 
-    assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners", true)
-    assertResultsAreSame(idpResult, costResult, queryText, "Diverging results between IDP and greedy planner", true)
+    assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners", replaceNaNs = true)
+    assertResultsAreSame(idpResult, costResult, queryText, "Diverging results between IDP and greedy planner", replaceNaNs = true)
     ruleResult.close()
     costResult
   }
 
-  //TODO remove as soon compiled plans support dumpToString and PROFILE
-  def executeWithAllPlannersOnInterpretedRuntime(queryText: String, params: (String, Any)*): InternalExecutionResult = {
-    val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
-    val costResult = innerExecute(s"CYPHER planner=cost runtime=interpreted $queryText", params: _*)
-
-    assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners")
-
-    costResult
-  }
 
   def executeWithCostPlannerOnly(queryText: String, params: (String, Any)*): InternalExecutionResult =
     monitoringNewPlanner(innerExecute(queryText, params: _*))(failedToUseNewPlanner(queryText))(unexpectedlyUsedNewRuntime(queryText))
