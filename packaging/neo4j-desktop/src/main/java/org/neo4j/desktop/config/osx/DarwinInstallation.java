@@ -48,7 +48,7 @@ public class DarwinInstallation extends UnixInstallation
                     "echo",
                     "echo Available commands:",
                     "echo Neo4jShell",
-                    "echo Neo4jImport" +
+                    "echo Neo4jImport",
                     "bash"};
 
             FileWriter fileWriter = new FileWriter( new File( filename ), false );
