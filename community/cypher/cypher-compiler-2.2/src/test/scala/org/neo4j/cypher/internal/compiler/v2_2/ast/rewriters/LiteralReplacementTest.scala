@@ -46,8 +46,8 @@ class LiteralReplacementTest extends CypherFunSuite  {
   test("should extract literals in skip limit clause") {
     assertRewrite(
       s"RETURN 0 as x SKIP 1 limit 2",
-      s"RETURN {`  AUTOINT0`} as x SKIP {`  AUTOINT1`} LIMIT {`  AUTOINT2`}",
-      Map("  AUTOINT0" -> 0, "  AUTOINT1" -> 1, "  AUTOINT2" -> 2)
+      s"RETURN {`  AUTOINT0`} as x SKIP {`  AUTOINT1`} LIMIT 2",
+      Map("  AUTOINT0" -> 0, "  AUTOINT1" -> 1)
     )
   }
 
