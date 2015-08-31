@@ -64,15 +64,15 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class NeoStoreDataSourceRule extends ExternalResource
 {
-    private NeoStoreDataSource theDs;
+    private NeoStoreDataSource dataSource;
 
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
                                              PageCache pageCache, Map<String, String> additionalConfig, KernelHealth kernelHealth )
     {
-        if ( theDs != null )
+        if ( dataSource != null )
         {
-            theDs.stop();
-            theDs.shutdown();
+            dataSource.stop();
+            dataSource.shutdown();
         }
         final Config config = new Config( stringMap( additionalConfig ),
                 GraphDatabaseSettings.class );
@@ -83,7 +83,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
         Locks locks = mock( Locks.class );
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
 
-        theDs = new NeoStoreDataSource( storeDir, config, sf, NullLogProvider.getInstance(),
+        dataSource = new NeoStoreDataSource( storeDir, config, sf, NullLogProvider.getInstance(),
                 mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
                 dependencyResolverForNoIndexProvider(), mock( PropertyKeyTokenHolder.class ),
                 mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), locks,
@@ -94,7 +94,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 CommunityEditionModule.createCommitProcessFactory(), mock( PageCache.class ),
                 new Monitors(), new Tracers( "null", NullLog.getInstance() ) );
 
-        return theDs;
+        return dataSource;
     }
 
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,

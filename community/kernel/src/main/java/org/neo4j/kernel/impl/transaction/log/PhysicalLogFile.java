@@ -109,8 +109,11 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         writer = new PhysicalWritableLogChannel( channel );
     }
 
+    // In order to be able to write into a logfile after life.stop during shutdown sequence
+    // we will close channel and writer only during shutdown phase when all pending changes (like last
+    // checkpoint) are already in
     @Override
-    public void stop() throws Throwable
+    public void shutdown() throws Throwable
     {
         writer.close();
         channel.close();
