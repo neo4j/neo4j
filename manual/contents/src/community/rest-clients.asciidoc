@@ -1,5 +1,0 @@
-
-[[rest-clients]]
-.Neo4j REST clients contributed by the community.
-Please see http://www.neo4j.org/drivers for the current set of REST clients!
-

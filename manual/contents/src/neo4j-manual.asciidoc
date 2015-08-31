@@ -1,4 +1,4 @@
-= The Neo4j Manual v{neo4j-version} =
+= The Neo4j Manual v{neo4j-version}
 
 :neo4j-buildnumber: {neo4j-version}
 :neo4j-git-tag: {gitversion}
@@ -37,10 +37,6 @@ include::operations/index.asciidoc[]
 :leveloffset: 0
 
 include::tools/index.asciidoc[]
-
-:leveloffset: 0
-
-include::community/index.asciidoc[]
 
 :leveloffset: 0
 
