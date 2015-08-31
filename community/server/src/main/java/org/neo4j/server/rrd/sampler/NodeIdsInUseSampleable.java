@@ -43,7 +43,7 @@ public class NodeIdsInUseSampleable extends DatabasePrimitivesSampleableBase
         }
         catch ( Exception e )
         {
-            throw new UnableToSampleException();
+            throw new UnableToSampleException( "Unexpected exception caught while sampling", e );
         }
     }
 }
