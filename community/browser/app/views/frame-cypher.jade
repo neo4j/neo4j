@@ -26,8 +26,8 @@ div(ng-controller="CypherResultCtrl", fullscreen)
             br
           .button-holder(ng-show="isAvailable('messages')")
             button.btn(ng-class='{active: isActive("messages")}', ng-click='setActive("messages")')
-              i.fa.fa-file-text-o
-              span.mini-menu-item-text Notifs
+              i.fa.fa-exclamation-triangle
+              span.mini-menu-item-text Warn
             br
           .button-holder
             button.btn(ng-class='{active: isActive("raw")}', ng-click='setActive("raw")')
