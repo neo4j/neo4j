@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.util.List;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.web.RestfulGraphDatabase;
@@ -32,7 +31,6 @@ import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
-import org.neo4j.test.TestData.Title;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
@@ -46,7 +44,6 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      * <p/>
      * See Find node by query for the actual query syntax.
      */
-    @Documented
     @Test
     @Graph( nodes = {@NODE( name = "I", setNameProperty = true )}, autoIndexNodes = true )
     public void shouldRetrieveFromAutoIndexByQuery()
@@ -68,7 +65,6 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      * Automatic index nodes can be found via exact lookups with normal Index
      * REST syntax.
      */
-    @Documented
     @Test
     @Graph( nodes = {@NODE( name = "I", setNameProperty = true )}, autoIndexNodes = true )
     public void find_node_by_exact_match_from_an_automatic_index()
@@ -85,8 +81,6 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      * The automatic relationship index can not be removed.
      */
     @Test
-    @Documented
-    @Title( "Relationship AutoIndex is not removable" )
     @Graph( nodes = {@NODE( name = "I", setNameProperty = true )}, autoIndexNodes = true )
     public void Relationship_AutoIndex_is_not_removable()
     {
@@ -102,8 +96,6 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      * The automatic node index can not be removed.
      */
     @Test
-    @Documented
-    @Title( "Node AutoIndex is not removable" )
     @Graph( nodes = {@NODE( name = "I", setNameProperty = true )}, autoIndexNodes = true )
     public void AutoIndex_is_not_removable()
     {
@@ -119,8 +111,6 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      */
     @Test
     @Graph( nodes = {@NODE( name = "I", setNameProperty = true )}, autoIndexNodes = true )
-    @Documented
-    @Title( "Items can not be added manually to an node AutoIndex" )
     public void items_can_not_be_added_manually_to_an_AutoIndex() throws Exception
     {
         data.get();
@@ -152,8 +142,6 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
     @Test
     @Graph( nodes = {@NODE( name = "I" ), @NODE( name = "you" )}, relationships = {@REL( start = "I", end = "you",
             type = "know", properties = {@PROP( key = "since", value = "today" )} )}, autoIndexRelationships = true )
-    @Documented
-    @Title( "Items can not be added manually to a relationship AutoIndex" )
     public void items_can_not_be_added_manually_to_a_Relationship_AutoIndex() throws Exception
     {
         data.get();
@@ -182,9 +170,7 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      * It is not allowed to remove entries manually from automatic indexes.
      */
     @Test
-    @Documented
     @Graph( nodes = {@NODE( name = "I", setNameProperty = true )}, autoIndexNodes = true )
-    @Title( "Automatically indexed nodes cannot be removed from the index manually" )
     public void autoindexed_items_cannot_be_removed_manually()
     {
         long id = data.get()
@@ -217,10 +203,8 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      * It is not allowed to remove entries manually from automatic indexes.
      */
     @Test
-    @Documented
     @Graph( nodes = {@NODE( name = "I" ), @NODE( name = "you" )}, relationships = {@REL( start = "I", end = "you",
             type = "know", properties = {@PROP( key = "since", value = "today" )} )}, autoIndexRelationships = true )
-    @Title( "Automatically indexed relationships cannot be removed from the index manually" )
     public void autoindexed_relationships_cannot_be_removed_manually()
     {
         try ( Transaction tx = graphdb().beginTx() )
@@ -262,8 +246,6 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
     /**
      * See the example request.
      */
-    @Documented
-    @Title( "Find relationship by query from an automatic index" )
     @Test
     @Graph( nodes = {@NODE( name = "I" ), @NODE( name = "you" )}, relationships = {@REL( start = "I", end = "you",
             type = "know", properties = {@PROP( key = "since", value = "today" )} )}, autoIndexRelationships = true )
@@ -280,8 +262,6 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
     /**
      * See the example request.
      */
-    @Documented
-    @Title( "Find relationship by exact match from an automatic index" )
     @Test
     @Graph( nodes = {@NODE( name = "I" ), @NODE( name = "you" )}, relationships = {@REL( start = "I", end = "you",
             type = "know", properties = {@PROP( key = "since", value = "today" )} )}, autoIndexRelationships = true )
@@ -299,7 +279,6 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      * Get current status for autoindexing on nodes.
      */
     @Test
-    @Documented
     public void getCurrentStatusForNodes()
     {
         setEnabledAutoIndexingForType( "node", false );
@@ -310,7 +289,6 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      * Enable node autoindexing.
      */
     @Test
-    @Documented
     public void enableNodeAutoIndexing()
     {
         setEnabledAutoIndexingForType( "node", true );
@@ -321,7 +299,6 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      * Add a property for autoindexing on nodes.
      */
     @Test
-    @Documented
     public void addAutoIndexingPropertyForNodes()
     {
         gen.get()
@@ -335,7 +312,6 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      * Lookup list of properties being autoindexed.
      */
     @Test
-    @Documented
     public void listAutoIndexingPropertiesForNodes() throws JsonParseException
     {
         int initialPropertiesSize = getAutoIndexedPropertiesForType( "node" ).size();
@@ -353,7 +329,6 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      * Remove a property for autoindexing on nodes.
      */
     @Test
-    @Documented
     public void removeAutoIndexingPropertyForNodes()
     {
         gen.get()

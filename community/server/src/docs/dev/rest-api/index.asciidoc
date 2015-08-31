@@ -44,10 +44,6 @@ include::legacy-indexes.asciidoc[]
 
 include::indexes-unique.asciidoc[]
 
-include::indexes-auto.asciidoc[]
-
-include::indexes-configurable-auto.asciidoc[]
-
 include::wadl.asciidoc[]
 
 include::weblogic.asciidoc[]

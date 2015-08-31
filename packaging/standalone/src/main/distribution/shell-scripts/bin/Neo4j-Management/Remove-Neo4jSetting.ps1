@@ -39,11 +39,6 @@ The name of the property to remove
 .PARAMETER Force
 Allow the function to set the contents of the configuration file, even if the file is read-only
 
-.EXAMPLE
-'C:\Neo4j\neo4j-community' | Remove-Neo4jSetting -ConfigurationFile 'neo4j.properties' -Name 'node_auto_indexing'
-
-Remove the node_auto_indexing property in the neo4j.properties file for the Neo4j installation at C:\Neo4j\neo4j-community
-
 .OUTPUTS
 System.Management.Automation.PSCustomObject
 This is a Neo4j Setting Object
@@ -67,11 +62,11 @@ Function Remove-Neo4jSetting
   param (
     [Parameter(Mandatory=$false,ValueFromPipeline=$true,ParameterSetName='ByServerObject')]
     [object]$Neo4jServer = ''
-  
+
     ,[Parameter(Mandatory=$true,ValueFromPipelineByPropertyName=$true,ParameterSetName='BySettingObject')]
     [alias('Home')]
     [string]$Neo4jHome
-    
+
     ,[Parameter(Mandatory=$true,ParameterSetName='ByServerObject')]
     [Parameter(Mandatory=$true,ValueFromPipelineByPropertyName=$true,ParameterSetName='BySettingObject')]
     [alias('File')]
@@ -85,7 +80,7 @@ Function Remove-Neo4jSetting
     ,[Parameter(Mandatory=$false)]
     [switch]$Force = $false
   )
-  
+
   Begin
   {
   }
@@ -108,7 +103,7 @@ Function Remove-Neo4jSetting
               return
             }
             $thisServer = $Neo4jServer
-          }      
+          }
           default
           {
             $thisServer = Get-Neo4jServer -Neo4jHome $Neo4jServer
@@ -126,7 +121,7 @@ Function Remove-Neo4jSetting
       }
     }
     if ($thisServer -eq $null) { return }
-    
+
     # Check if the configuration file exists
     $filePath = Join-Path -Path $thisServer.Home -ChildPath "conf\$ConfigurationFile"
     if (Test-Path -Path $filePath)
@@ -139,7 +134,7 @@ Function Remove-Neo4jSetting
         $line = $originalLine
         $misc = $line.IndexOf('#')
         if ($misc -ge 0) { $line = $line.SubString(0,$misc) }
-    
+
         if ($matches -ne $null) { $matches.Clear() }
         if ($line -match "^$($Name)=(.+)`$")
         {
@@ -154,11 +149,11 @@ Function Remove-Neo4jSetting
       if ($settingFound)
       {
         if ($PSCmdlet.ShouldProcess( ("Item: $($filePath) Setting: $($Name)", 'Write configuration file')))
-        {  
+        {
           Set-Content -Path "$filePath" -Encoding ASCII -Value $newContent -Force:$Force -Confirm:$false | Out-Null
-        }  
-      }  
-    }  
+        }
+      }
+    }
 
     $properties = @{
       'Name' = $Name;
@@ -169,7 +164,7 @@ Function Remove-Neo4jSetting
     }
     Write-Output (New-Object -TypeName PSCustomObject -Property $properties)
   }
-  
+
   End
   {
   }
