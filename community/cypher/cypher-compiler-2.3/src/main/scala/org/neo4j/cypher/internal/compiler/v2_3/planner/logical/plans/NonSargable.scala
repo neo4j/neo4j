@@ -37,7 +37,7 @@ object AsDynamicPropertyNonScannable {
   def unapply(v: Any) = v match {
 
     case func@FunctionInvocation(_, _, IndexedSeq(ContainerIndex(identifier: Identifier, _)))
-      if func.function.contains(functions.Has) =>
+      if  func.function.contains(functions.Exists) =>
       Some(identifier)
 
     case Equals(ContainerIndex(identifier: Identifier, _), _) =>

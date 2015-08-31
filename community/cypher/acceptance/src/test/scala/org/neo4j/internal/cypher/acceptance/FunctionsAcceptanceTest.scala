@@ -103,4 +103,23 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     // Then
     result should equal("Oskar")
   }
+
+  test("exists should work with dynamic property look up") {
+    val node = createLabeledNode(Map("prop" -> "foo"), "Person")
+    createLabeledNode("Person")
+
+    val result = executeWithAllPlanners("MATCH (n:Person) WHERE exists(n['prop']) RETURN n")
+    result.toList should equal(List(Map("n" -> node)))
+  }
+
+  test("has should work with dynamic property look up") {
+    val node = createLabeledNode(Map("prop" -> "foo"), "Person")
+    createLabeledNode("Person")
+
+    val result = executeWithAllPlanners("MATCH (n:Person) WHERE has(n['prop']) RETURN n")
+    result.toList should equal(List(Map("n" -> node)))
+  }
+
+
+
 }

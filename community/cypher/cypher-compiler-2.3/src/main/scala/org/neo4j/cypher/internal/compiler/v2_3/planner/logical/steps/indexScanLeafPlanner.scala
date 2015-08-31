@@ -32,7 +32,7 @@ object indexScanLeafPlanner extends LeafPlanner {
     val labelPredicates: Map[IdName, Set[HasLabels]] = qg.selections.labelPredicates
 
     val resultPlans = predicates.collect {
-      // MATCH (n:User) WHERE has(n.prop) RETURN n
+      // MATCH (n:User) WHERE exists(n.prop) RETURN n
       case predicate@AsPropertyScannable(scannable) =>
         val name = scannable.name
         val propertyKey = scannable.propertyKey

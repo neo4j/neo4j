@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v2_3.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v2_3.ast.Function
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{ContainerIndex, Function}
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.cypher.internal.frontend.v2_3.{SemanticError, ast}
 
@@ -32,7 +32,9 @@ case object Exists extends Function {
         (invocation.arguments.head match {
           case _: ast.Property => None
           case _: ast.PatternExpression => None
-          case e => Some(SemanticError(s"Argument to ${invocation.name}(...) is not a property or pattern", e.position, invocation.position))
+          case _: ContainerIndex => None
+          case e =>
+            Some(SemanticError(s"Argument to ${invocation.name}(...) is not a property or pattern", e.position, invocation.position))
         })
     } chain invocation.specifyType(CTBoolean)
 }
