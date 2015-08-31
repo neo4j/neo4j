@@ -74,6 +74,16 @@ public enum NotificationCode
         Status.Statement.DeprecationWarning,
         "Using 'length' on anything that is not a path is deprecated, please use 'size' instead"
     ),
+    INDEX_SEEK_FOR_DYNAMIC_PROPERTY(
+        SeverityLevel.WARNING,
+        Status.Statement.DynamicPropertyWarning,
+        "Using a dynamic property makes it impossible to use an index seek for this query"
+    ),
+    INDEX_SCAN_FOR_DYNAMIC_PROPERTY(
+        SeverityLevel.WARNING,
+        Status.Statement.DynamicPropertyWarning,
+        "Using a dynamic property makes it impossible to use an index scan for this query"
+    ),
     BARE_NODE_SYNTAX_DEPRECATED(
         SeverityLevel.WARNING,
         Status.Statement.DeprecationWarning,

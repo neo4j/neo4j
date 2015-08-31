@@ -42,4 +42,8 @@ case class JoinHintUnfulfillableNotification(identified: Seq[String]) extends In
 
 case class JoinHintUnsupportedNotification(identified: Seq[String]) extends InternalNotification
 
+case class IndexSeekUnfulfillableNotification(labels: Set[String]) extends InternalNotification
+
+case class IndexScanUnfulfillableNotification(labels: Set[String]) extends InternalNotification
+
 case class BareNodeSyntaxDeprecatedNotification(position: InputPosition) extends InternalNotification

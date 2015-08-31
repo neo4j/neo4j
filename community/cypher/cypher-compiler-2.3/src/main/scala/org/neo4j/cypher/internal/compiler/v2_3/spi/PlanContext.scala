@@ -33,6 +33,8 @@ trait PlanContext extends TokenContext {
 
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor]
 
+  def hasIndexRule(labelName: String): Boolean
+
   def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor]
 
   def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint]

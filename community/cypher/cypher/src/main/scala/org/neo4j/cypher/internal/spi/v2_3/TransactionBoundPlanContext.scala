@@ -30,6 +30,8 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
+import scala.collection.JavaConverters._
+
 class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDatabaseService)
   extends TransactionBoundTokenContext(initialStatement) with PlanContext {
 
@@ -41,10 +43,20 @@ class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDat
     getOnlineIndex(statement.readOperations().indexesGetForLabelAndPropertyKey(labelId, propertyKeyId))
   }
 
+  def hasIndexRule(labelName: String): Boolean = {
+    val labelId = statement.readOperations().labelGetForName(labelName)
+
+    val indexDescriptors = statement.readOperations().indexesGetForLabel(labelId).asScala
+    val onlineIndexDescriptors = indexDescriptors.flatMap(getOnlineIndex)
+
+    onlineIndexDescriptors.nonEmpty
+  }
+
   def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
     val labelId = statement.readOperations().labelGetForName(labelName)
     val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
 
+    // here we do not need to use getOnlineIndex method because uniqueness constraint creation is synchronous
     Some(statement.readOperations().uniqueIndexGetForLabelAndPropertyKey(labelId, propertyKeyId))
   }
 

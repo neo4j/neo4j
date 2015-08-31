@@ -146,4 +146,125 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     resultWithoutExplain shouldBe empty
     resultWithExplain.notifications.toList should equal(List(CartesianProductNotification(InputPosition(0, 1, 1), Set("c", "d"))))
   }
+
+  test("warn for unfulfillable index seek when using dynamic property lookup with a single label") {
+    graph.createIndex("Person", "name")
+
+    val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] = 'value' RETURN n")
+
+    result.notifications should equal(Set(IndexSeekUnfulfillableNotification(Set("Person")), IndexScanUnfulfillableNotification(Set("Person"))))
+  }
+
+  test("warn for unfulfillable index seek when using dynamic property lookup with explicit label check") {
+    graph.createIndex("Person", "name")
+
+    val result = innerExecute("EXPLAIN MATCH (n) WHERE n['key-' + n.name] = 'value' AND (n:Person) RETURN n")
+
+    result.notifications should equal(Set(IndexSeekUnfulfillableNotification(Set("Person")), IndexScanUnfulfillableNotification(Set("Person"))))
+  }
+
+  test("warn for unfulfillable index seek when using dynamic property lookup with a single label and negative predicate") {
+    graph.createIndex("Person", "name")
+
+    val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] <> 'value' RETURN n")
+
+    result.notifications shouldBe empty
+  }
+
+  test("warn for unfulfillable index seek when using dynamic property lookup with range seek") {
+    graph.createIndex("Person", "name")
+
+    val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] > 10 RETURN n")
+
+    result.notifications should equal(Set(IndexSeekUnfulfillableNotification(Set("Person")), IndexScanUnfulfillableNotification(Set("Person"))))
+  }
+
+  test("warn for unfulfillable index seek when using dynamic property lookup with range seek (reverse)") {
+    graph.createIndex("Person", "name")
+
+    val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE 10 > n['key-' + n.name] RETURN n")
+
+    result.notifications should equal(Set(IndexSeekUnfulfillableNotification(Set("Person"))))
+  }
+
+  ignore("warn for unfulfillable index seek when using dynamic property lookup with a single label and property existence check") {
+    graph.createIndex("Person", "name")
+
+    val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE exists(n['prop']) RETURN n")
+
+    result.notifications shouldBe empty
+  }
+
+  test("warn for unfulfillable index seek when using dynamic property lookup with a single label and like") {
+    graph.createIndex("Person", "name")
+
+    val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] LIKE 'Foo%' RETURN n")
+
+    result.notifications should equal(Set(IndexSeekUnfulfillableNotification(Set("Person")), IndexScanUnfulfillableNotification(Set("Person"))))
+  }
+
+  test("warn for unfulfillable index seek when using dynamic property lookup with a single label and like - suffix") {
+    graph.createIndex("Person", "name")
+
+    val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] LIKE '%Foo' RETURN n")
+
+    result.notifications should equal(Set(IndexScanUnfulfillableNotification(Set("Person"))))
+  }
+
+  test("warn for unfulfillable index seek when using dynamic property lookup with a single label and regex") {
+    graph.createIndex("Person", "name")
+
+    val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] =~ 'Foo*' RETURN n")
+
+    result.notifications should equal(Set(IndexScanUnfulfillableNotification(Set("Person"))))
+  }
+
+  test("warn for unfulfillable index seek when using dynamic property lookup with a single label and IN") {
+    graph.createIndex("Person", "name")
+
+    val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] IN ['Foo', 'Bar'] RETURN n")
+
+    result.notifications should equal(Set(IndexSeekUnfulfillableNotification(Set("Person"))))
+  }
+
+  test("warn for unfulfillable index seek when using dynamic property lookup with multiple labels") {
+    graph.createIndex("Person", "name")
+
+    val result = innerExecute("EXPLAIN MATCH (n:Person:Foo) WHERE n['key-' + n.name] = 'value' RETURN n")
+
+    result.notifications should equal(Set(IndexSeekUnfulfillableNotification(Set("Person")), IndexScanUnfulfillableNotification(Set("Person"))))
+  }
+
+  test("warn for unfulfillable index seek when using dynamic property lookup with multiple indexed labels") {
+    graph.createIndex("Person", "name")
+    graph.createIndex("Jedi", "weapon")
+
+    val result = innerExecute("EXPLAIN MATCH (n:Person:Jedi) WHERE n['key-' + n.name] = 'value' RETURN n")
+
+    result.notifications should equal(Set(IndexSeekUnfulfillableNotification(Set("Person", "Jedi")), IndexScanUnfulfillableNotification(Set("Person", "Jedi"))))
+  }
+
+  test("should not warn when using dynamic property lookup with no labels") {
+    graph.createIndex("Person", "name")
+
+    val result = innerExecute("EXPLAIN MATCH (n) WHERE n['key-' + n.name] = 'value' RETURN n")
+
+    result.notifications shouldBe empty
+  }
+
+  test("should warn when using dynamic property lookup with both a static and a dynamic property") {
+    graph.createIndex("Person", "name")
+
+    val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n.name = 'Tobias' AND n['key-' + n.name] = 'value' RETURN n")
+
+    result.notifications should equal(Set(IndexSeekUnfulfillableNotification(Set("Person")), IndexScanUnfulfillableNotification(Set("Person"))))
+  }
+
+  test("should not warn when using dynamic property lookup with a label having no index") {
+    graph.createIndex("Person", "name")
+
+    val result = innerExecute("EXPLAIN MATCH (n:Foo) WHERE n['key-' + n.name] = 'value' RETURN n")
+
+    result.notifications shouldBe empty
+  }
 }

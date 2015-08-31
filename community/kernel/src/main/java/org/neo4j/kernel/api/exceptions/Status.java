@@ -164,6 +164,8 @@ public interface Status
         DeprecationWarning( ClientNotification, "This feature is deprecated and will be removed in future versions." ),
         JoinHintUnfulfillableWarning( ClientNotification, "The database was unable to plan a hinted join." ),
         JoinHintUnsupportedWarning( ClientNotification, "Queries with join hints are not supported by the RULE planner." ),
+        DynamicPropertyWarning( ClientNotification, "Queries using dynamic properties will use neither index seeks " +
+                                                    "nor index scans for those properties" ),
         ;
 
         private final Code code;

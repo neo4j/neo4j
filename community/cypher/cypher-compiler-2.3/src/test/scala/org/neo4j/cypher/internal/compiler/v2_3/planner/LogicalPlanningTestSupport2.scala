@@ -115,6 +115,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         else
           None
 
+      def hasIndexRule(labelName: String): Boolean =
+        config.indexes.exists(_._1 == labelName) || config.uniqueIndexes.exists(_._1 == labelName)
+
       def getOptPropertyKeyId(propertyKeyName: String) =
         semanticTable.resolvedPropertyKeyNames.get(propertyKeyName).map(_.id)
 

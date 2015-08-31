@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{AsPropertyScannable, IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LeafPlanner, LogicalPlanningContext}
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
+import org.neo4j.cypher.internal.frontend.v2_3.notification.IndexScanUnfulfillableNotification
 
 object indexScanLeafPlanner extends LeafPlanner {
   override def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
@@ -30,7 +31,7 @@ object indexScanLeafPlanner extends LeafPlanner {
     val predicates: Seq[Expression] = qg.selections.flatPredicates
     val labelPredicates: Map[IdName, Set[HasLabels]] = qg.selections.labelPredicates
 
-    predicates.collect {
+    val resultPlans = predicates.collect {
       // MATCH (n:User) WHERE has(n.prop) RETURN n
       case predicate@AsPropertyScannable(scannable) =>
         val name = scannable.name
@@ -52,7 +53,20 @@ object indexScanLeafPlanner extends LeafPlanner {
           }
 
     }.flatten
+
+    if (resultPlans.isEmpty) {
+      DynamicPropertyNotifier.process(findNonScannableIdentifiers(predicates), IndexScanUnfulfillableNotification, qg)
+    }
+
+    resultPlans
   }
+
+  private def findNonScannableIdentifiers(predicates: Seq[Expression])(implicit context: LogicalPlanningContext) =
+    predicates.flatMap {
+      case predicate@AsDynamicPropertyNonScannable(nonScannableId)
+        if context.semanticTable.isNode(nonScannableId) => Some(nonScannableId)
+      case _ => None
+    }.toSet
 
   private def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext) =
     context.planContext.getIndexRule(label, property) orElse context.planContext.getUniqueIndexRule(label, property)
