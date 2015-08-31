@@ -37,7 +37,7 @@ object literalReplacement {
   private val literalMatcher: PartialFunction[Any, (LiteralReplacements, LiteralReplacements => LiteralReplacements) => LiteralReplacements] = {
     case _: ast.Match | _: ast.Create | _: ast.CreateUnique | _: ast.Merge | _: ast.SetClause | _: ast.Return | _: ast.With =>
       (acc, children) => children(acc)
-    case _: ast.Clause | _: ast.PeriodicCommitHint =>
+    case _: ast.Clause | _: ast.PeriodicCommitHint | _: ast.Limit =>
       (acc, _) => acc
     case n: ast.NodePattern =>
       (acc, _) => n.properties.treeFold(acc)(literalMatcher)

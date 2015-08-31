@@ -62,11 +62,11 @@ class LiteralReplacementTest extends CypherFunSuite  {
     assertRewrite("MATCH ({a:\"apa\"})", "MATCH ({a:{`  AUTOSTRING0`}})", Map("  AUTOSTRING0" -> "apa"))
   }
 
-  test("should extract literals in skip limit clause") {
+  test("should extract literals in skip clause") {
     assertRewrite(
       s"RETURN 0 as x SKIP 1 limit 2",
-      s"RETURN {`  AUTOINT0`} as x SKIP {`  AUTOINT1`} LIMIT {`  AUTOINT2`}",
-      Map("  AUTOINT0" -> 0, "  AUTOINT1" -> 1, "  AUTOINT2" -> 2)
+      s"RETURN {`  AUTOINT0`} as x SKIP {`  AUTOINT1`} LIMIT 2",
+      Map("  AUTOINT0" -> 0, "  AUTOINT1" -> 1)
     )
   }
 

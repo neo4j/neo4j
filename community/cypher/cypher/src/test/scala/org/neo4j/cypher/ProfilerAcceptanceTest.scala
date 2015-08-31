@@ -211,13 +211,19 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result.executionPlanDescription()
   }
 
-  test("LIMIT should influence cardinality estimation even when auto-parameterized") {
+  test("LIMIT should influence cardinality estimation even when parameterized") {
     (0 until 100).map(i => createLabeledNode("Person"))
-    val result = executeWithAllPlanners(s"PROFILE MATCH (p:Person) RETURN p LIMIT 10")
+    val result = executeWithAllPlanners(s"PROFILE MATCH (p:Person) RETURN p LIMIT {limit}", "limit" -> 10)
     assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
   }
 
   test("LIMIT should influence cardinality estimation with literal") {
+    (0 until 100).map(i => createLabeledNode("Person"))
+    val result = executeWithAllPlanners(s"PROFILE MATCH (p:Person) RETURN p LIMIT 10")
+    assertEstimatedRows(10)(result)("Limit")
+  }
+
+  test("LIMIT should influence cardinality estimation with literal and parameters") {
     (0 until 100).map(i => createLabeledNode("Person"))
     val result = executeWithAllPlanners(s"PROFILE MATCH (p:Person) WHERE 50 = {fifty} RETURN p LIMIT 10", "fifty" -> 50)
     assertEstimatedRows(10)(result)("Limit")
