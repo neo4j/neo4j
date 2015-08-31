@@ -3,19 +3,18 @@ This package contains software licensed under different
 licenses, please refer to the NOTICE.txt file for further
 information and LICENSES.txt for full license texts.
 
-The software ("Software") developed and owned by Network Engine for
-Objects in Lund AB (referred to in this notice as "Neo Technology") is
-licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
-third parties and that license is included below.
+The software ("Software") is developed and owned by Network Engine
+for Objects in Lund AB (referred to in this notice as "Neo Technology").
+If you have executed an End User Software License and Services Agreement,
+an OEM Software License and Support Services Agreement, or another
+commercial license agreement (including an Evaluation Agreement) with
+Neo Technology or one of its affiliates (each, a "Commercial Agreement"),
+you may use the Software solely pursuant to the terms of the relevant
+Commercial Agreement.
 
-However, if you have executed an End User Software License and Services
-Agreement or an OEM Software License and Support Services Agreement, or
-another commercial license agreement with Neo Technology or one of its
-affiliates (each, a "Commercial Agreement"), the terms of the license in
-such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
-LICENSE Version 3 and you may use the Software solely pursuant to the
-terms of the relevant Commercial Agreement.
-
+If you have not executed a Commercial Agreement with Neo Technology, the
+Software is subject to the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+Version 3, as follows:
 
 
                     GNU AFFERO GENERAL PUBLIC LICENSE
@@ -85,7 +84,7 @@ License.
 
   "Copyright" also means copyright-like laws that apply to other kinds
 of works, such as semiconductor masks.
-
+ 
   "The Program" refers to any copyrightable work licensed under this
 License.  Each licensee is addressed as "you".  "Licensees" and
 "recipients" may be individuals or organizations.

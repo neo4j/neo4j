@@ -15,11 +15,6 @@
   <packaging>jar</packaging>
   <description>A package for cross-module integration tests.</description>
 
-  <properties>
-    <license-text.header>GPL-3-header.txt</license-text.header>
-    <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
-  </properties>
-
   <scm>
     <url>https://github.com/neo4j/neo4j/tree/master/integrationtests</url>
   </scm>
