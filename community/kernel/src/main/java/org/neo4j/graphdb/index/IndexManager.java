@@ -189,7 +189,15 @@ public interface IndexManager
      */
     String removeConfiguration( Index<? extends PropertyContainer> index, String key );
 
+    /**
+     * @deprecated this feature will be removed in a future release, please consider using schema indexes instead
+     */
+    @Deprecated
     AutoIndexer<Node> getNodeAutoIndexer();
 
+    /**
+     * @deprecated this feature will be removed in a future release, please consider using schema indexes instead
+     */
+    @Deprecated
     RelationshipAutoIndexer getRelationshipAutoIndexer();
 }
