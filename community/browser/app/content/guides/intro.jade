@@ -43,11 +43,24 @@ article.guide
           li Special frames like data visualization
           li Expand a frame to full screen
           li Remove a specific frame from the stream
-          li Clear the stream with the
+          li Clear the stream with the &nbsp;
              code :clear
              |  command
       .col-sm-4
         img.img-responsive(src='images/screen_stream.png')
+    slide.row-fluid
+      .col-sm-3
+        h3 Frame code view
+        p.lead Viewing requests and responses
+      .col-sm-5
+        p On every Cypher query result frame a code view option is available
+          | displaying everything sent to and received from the Neo4j server.
+        ul
+          li Info about request path, method and response status
+          li View full headers
+          li Export JSON response
+      .col-sm-4
+        img.img-responsive(src='images/screen_code_frame.png')
     slide.row-fluid
       .col-sm-3
         h3 Sidebar
