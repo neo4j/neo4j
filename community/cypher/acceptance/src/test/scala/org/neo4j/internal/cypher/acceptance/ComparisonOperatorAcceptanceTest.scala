@@ -19,8 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
-import org.neo4j.graphdb.Node
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
 class ComparisonOperatorAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -76,6 +75,4 @@ class ComparisonOperatorAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
     executeWithAllPlanners("MATCH (n)-->(m) WHERE n.prop1 < m.prop1 = n.prop2 <> m.prop2 RETURN m").toSet should equal(Set(Map("m" -> node2)))
   }
-
-
 }

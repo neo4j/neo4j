@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.compiler.v2_3.{RangeBetween, _}
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{InequalitySeekRangeWrapper, PrefixSeekRangeWrapper}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{ManyQueryExpression, RangeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v2_3.{ExclusiveBound, InclusiveBound, LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.frontend.v2_3._
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -164,6 +164,29 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         RangeQueryExpression(InequalitySeekRangeWrapper(
           RangeLessThan(NonEmptyList(ExclusiveBound(SignedDecimalIntegerLiteral("12")_)))
         )_),
+        Set.empty)(solved)
+    )
+  }
+
+  test("should plan index seek by numeric range for numeric chained operator") {
+    val than: RangeGreaterThan[SignedDecimalIntegerLiteral] =  RangeGreaterThan(NonEmptyList(ExclusiveBound(SignedDecimalIntegerLiteral("6") _)))
+    val than1: RangeLessThan[SignedDecimalIntegerLiteral] = RangeLessThan(NonEmptyList(ExclusiveBound(SignedDecimalIntegerLiteral("12") _)))
+    (new given {
+      indexOn("Person", "age")
+      cost = nodeIndexScanCost
+    } planFor "MATCH (a:Person) WHERE 6 < a.age < 12 RETURN a").plan should equal(
+      NodeIndexSeek(
+        "a",
+        LabelToken("Person", LabelId(0)),
+        PropertyKeyToken(PropertyKeyName("age") _, PropertyKeyId(0)),
+        RangeQueryExpression(
+          InequalitySeekRangeWrapper(
+            RangeBetween(
+               than,
+               than1
+            )
+          )(pos)
+        ),
         Set.empty)(solved)
     )
   }

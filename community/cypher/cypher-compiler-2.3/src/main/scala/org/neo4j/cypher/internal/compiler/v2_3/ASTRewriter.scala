@@ -64,5 +64,3 @@ class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, shouldEx
     (rewrittenStatement, extractedParameters, contract.postConditions)
   }
 }
-
-

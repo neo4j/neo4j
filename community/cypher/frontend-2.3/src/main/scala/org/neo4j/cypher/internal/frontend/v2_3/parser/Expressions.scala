@@ -57,13 +57,13 @@ trait Expressions extends Parser
   )
 
   private def Expression8: Rule1[ast.Expression] = rule("comparison expression") {
-    val produceComparisons: (ast.Expression, List[PartialComparison]) => (InputPosition)=>ast.Expression = comparisons
+    val produceComparisons: (ast.Expression, List[PartialComparison]) => InputPosition => ast.Expression = comparisons
     Expression7 ~ zeroOrMore(WS ~ PartialComparisonExpression) ~~>> produceComparisons
   }
 
-  private case class PartialComparison(op:(ast.Expression,ast.Expression)=>(InputPosition)=>ast.Expression,
-                                          expr:ast.Expression, pos:InputPosition) {
-    def apply(lhs:ast.Expression)= op(lhs,expr)(pos)
+  private case class PartialComparison(op: (ast.Expression, ast.Expression) => (InputPosition) => ast.Expression,
+                                       expr: ast.Expression, pos: InputPosition) {
+    def apply(lhs: ast.Expression) = op(lhs, expr)(pos)
   }
 
   private def PartialComparisonExpression: Rule1[PartialComparison] = (
@@ -75,15 +75,15 @@ trait Expressions extends Parser
     | group(operator("<=") ~~ Expression7) ~~>> { expr: ast.Expression => pos: InputPosition => PartialComparison(lte, expr, pos) }
     | group(operator(">=") ~~ Expression7) ~~>> { expr: ast.Expression => pos: InputPosition => PartialComparison(gte, expr, pos) } )
 
-  private def eq(lhs:ast.Expression, rhs:ast.Expression): (InputPosition) => ast.Expression = ast.Equals(lhs, rhs)
-  private def ne(lhs:ast.Expression, rhs:ast.Expression): (InputPosition) => ast.Expression = ast.NotEquals(lhs, rhs)
-  private def bne(lhs:ast.Expression, rhs:ast.Expression): (InputPosition) => ast.Expression = ast.InvalidNotEquals(lhs, rhs)
-  private def lt(lhs:ast.Expression, rhs:ast.Expression): (InputPosition) => ast.Expression = ast.LessThan(lhs, rhs)
-  private def gt(lhs:ast.Expression, rhs:ast.Expression): (InputPosition) => ast.Expression = ast.GreaterThan(lhs, rhs)
-  private def lte(lhs:ast.Expression, rhs:ast.Expression): (InputPosition) => ast.Expression = ast.LessThanOrEqual(lhs, rhs)
-  private def gte(lhs:ast.Expression, rhs:ast.Expression): (InputPosition) => ast.Expression = ast.GreaterThanOrEqual(lhs, rhs)
+  private def eq(lhs:ast.Expression, rhs:ast.Expression): InputPosition => ast.Expression = ast.Equals(lhs, rhs)
+  private def ne(lhs:ast.Expression, rhs:ast.Expression): InputPosition => ast.Expression = ast.NotEquals(lhs, rhs)
+  private def bne(lhs:ast.Expression, rhs:ast.Expression): InputPosition => ast.Expression = ast.InvalidNotEquals(lhs, rhs)
+  private def lt(lhs:ast.Expression, rhs:ast.Expression): InputPosition => ast.Expression = ast.LessThan(lhs, rhs)
+  private def gt(lhs:ast.Expression, rhs:ast.Expression): InputPosition => ast.Expression = ast.GreaterThan(lhs, rhs)
+  private def lte(lhs:ast.Expression, rhs:ast.Expression): InputPosition => ast.Expression = ast.LessThanOrEqual(lhs, rhs)
+  private def gte(lhs:ast.Expression, rhs:ast.Expression): InputPosition => ast.Expression = ast.GreaterThanOrEqual(lhs, rhs)
 
-  private def comparisons(first: ast.Expression, rest: List[PartialComparison]): (InputPosition)=>ast.Expression = {
+  private def comparisons(first: ast.Expression, rest: List[PartialComparison]): InputPosition => ast.Expression = {
     rest match {
       case Nil => _ => first
       case second :: Nil => _ => second(first)
@@ -94,7 +94,7 @@ trait Expressions extends Parser
           result.append(rhs(lhs))
           lhs = rhs.expr
         }
-        ast.Ands(Set(result:_*))
+        ast.Ands(Set(result: _*))
     }
   }
 
