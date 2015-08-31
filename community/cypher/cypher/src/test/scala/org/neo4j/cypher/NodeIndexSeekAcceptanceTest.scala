@@ -19,17 +19,14 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{UniqueIndexSeekByRange, IndexSeekByRange}
 
-class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
-  test("should be able to use indexes") {
-    setUpDatabaseForTests()
-
-    // When
-    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Crew) WHERE n.name = 'Neo' RETURN n")
-
-    // Then
-    result.executionPlanDescription().toString should include("NodeIndexSeek")
-  }
+/**
+ * These tests are testing the actual index implementation, thus they should all check the actual result.
+ * If you only want to verify that plans using indexes are actually planned, please use
+ * [[org.neo4j.cypher.internal.compiler.v2_3.planner.logical.LeafPlanningIntegrationTest]]
+ */
+class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
 
   test("should not forget predicates") {
     setUpDatabaseForTests()
@@ -38,19 +35,9 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     val result = executeWithAllPlannersAndRuntimes("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
 
     // Then
-    result shouldBe empty
-    result.executionPlanDescription().toString should include("NodeIndexSeek")
+    result should (use("NodeIndexSeek") and be(empty))
   }
 
-  test("should use index when there are multiple labels on the node") {
-    setUpDatabaseForTests()
-
-    // When
-    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Matrix:Crew) WHERE n.name = 'Neo' RETURN n")
-
-    // Then
-    result.executionPlanDescription().toString should include("NodeIndexSeek")
-  }
 
   test("should be able to use value coming from UNWIND for index seek") {
     // Given
@@ -64,8 +51,8 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     val result = executeWithAllPlanners("unwind [1,2,3] as x match (n:Prop) where n.id = x return n;")
 
     // Then
-    result.toList should equal(List(Map("n" -> n1), Map("n" -> n2), Map("n" -> n3)))
-    result.executionPlanDescription().toString should include("NodeIndexSeek")
+    val expected = List(Map("n" -> n1), Map("n" -> n2), Map("n" -> n3))
+    result should (use("NodeIndexSeek") and evaluateTo(expected))
   }
 
   test("should use index selectivity when planning") {
@@ -89,11 +76,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     graph.createIndex("R", "r")
 
     val result = executeWithAllPlannersAndRuntimes("MATCH (l:L {l: 9})-[:REL]->(r:R {r: 23}) RETURN l, r")
-    result.toList should have size 100
-
-    val found = result.executionPlanDescription().find("NodeIndexSeek")
-
-    found.map(_.identifiers).toList should equal(List(Set("l")))
+    result should (use("NodeIndexSeek") and have size 100)
   }
 
   test("should handle nulls in index lookup") {
@@ -118,84 +101,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
       """.stripMargin)
 
     // Then
-    result.toList should equal(List(Map("p" -> null, "placeName" -> null)))
-  }
-
-  test("should handle comparing large integers") {
-    // Given
-    val person = createLabeledNode(Map("age" -> 5987523281782486379L), "Person")
-
-
-    graph.createIndex("Person", "age")
-
-    // When
-    val result = executeWithCostPlannerOnly(
-      "MATCH (p:Person) USING INDEX p:Person(age) WHERE p.age > 5987523281782486378 RETURN p")
-
-    // Then
-    result.toList should equal(List(Map("p" -> person)))
-    result.executionPlanDescription().toString should include("NodeIndexSeek")
-  }
-
-  test("should handle comparing large integers 2") {
-    // Given
-    val person = createLabeledNode(Map("age" -> 5987523281782486379L), "Person")
-
-
-    graph.createIndex("Person", "age")
-
-    // When
-    val result = executeWithCostPlannerOnly(
-      "MATCH (p:Person) USING INDEX p:Person(age) WHERE p.age > 5987523281782486379 RETURN p")
-
-    // Then
-    result.toList shouldBe empty
-    result.executionPlanDescription().toString should include("NodeIndexSeek")
-  }
-
-  test("should use index on has") {
-    // Given
-    val person = createLabeledNode(Map("name" -> "Smith"), "Person")
-     1 to 100 foreach (_ => createLabeledNode("Person"))
-    graph.createIndex("Person", "name")
-
-    // When
-    val result = executeWithCostPlannerOnly(
-      "MATCH (p:Person) WHERE has(p.name) RETURN p")
-
-    // Then
-    result.toList should equal(List(Map("p" -> person)))
-    result.executionPlanDescription().toString should include("NodeIndexScan")
-  }
-
-  test("should use index on IS NOT NULL") {
-    // Given
-    val person = createLabeledNode(Map("name" -> "Smith"), "Person")
-    1 to 100 foreach (_ => createLabeledNode("Person"))
-    graph.createIndex("Person", "name")
-
-    // When
-    val result = executeWithCostPlannerOnly(
-      "MATCH (p:Person) WHERE p.name IS NOT NULL RETURN p")
-
-    // Then
-    result.toList should equal(List(Map("p" -> person)))
-    result.executionPlanDescription().toString should include("NodeIndexScan")
-  }
-
-  test("should use index on exists") {
-    // Given
-    val person = createLabeledNode(Map("name" -> "Smith"), "Person")
-    1 to 100 foreach (_ => createLabeledNode("Person"))
-    graph.createIndex("Person", "name")
-
-    // When
-    val result = executeWithCostPlannerOnly(
-      "MATCH (p:Person) WHERE exists(p.name) RETURN p")
-
-    // Then
-    result.toList should equal(List(Map("p" -> person)))
-    result.executionPlanDescription().toString should include("NodeIndexScan")
+    result should (use("NodeIndexSeek") and evaluateTo(List(Map("p" -> null, "placeName" -> null))))
   }
 
   private def setUpDatabaseForTests() {

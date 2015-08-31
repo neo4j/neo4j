@@ -22,7 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.QueryGraphCardinalityModel
@@ -35,13 +37,16 @@ import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.frontend.v2_3.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.cypher.internal.frontend.v2_3.{PropertyKeyId, SemanticTable, inSequence}
+import org.neo4j.cypher.internal.frontend.v2_3.{Foldable, PropertyKeyId, SemanticTable, inSequence}
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
+import org.scalatest.matchers.{BeMatcher, MatchResult, Matcher}
+import org.scalatest.verb.ShouldVerb
 
 import scala.language.reflectiveCalls
+import scala.reflect.ClassTag
 
 case class SemanticPlan(plan: LogicalPlan, semanticTable: SemanticTable)
 
@@ -225,4 +230,17 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   implicit def propertyKeyId(label: String)(implicit plan: SemanticPlan): PropertyKeyId =
     plan.semanticTable.resolvedPropertyKeyNames(label)
+
+  def using[T <: LogicalPlan](implicit tag: ClassTag[T]): BeMatcher[SemanticPlan] = new BeMatcher[SemanticPlan] {
+    import Foldable._
+    override def apply(actual: SemanticPlan): MatchResult = {
+      val matches = actual.treeFold(false) {
+        case lp if tag.runtimeClass.isInstance(lp) => (acc, children) => true
+      }
+      MatchResult(
+        matches = matches,
+        rawFailureMessage = s"Plan should use ${tag.runtimeClass.getSimpleName}",
+        rawNegatedFailureMessage = s"Plan should not use ${tag.runtimeClass.getSimpleName}")
+    }
+  }
 }

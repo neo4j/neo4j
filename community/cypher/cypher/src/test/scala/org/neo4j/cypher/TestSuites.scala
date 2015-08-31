@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, PropertyContainer}
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -71,6 +73,25 @@ abstract class ExecutionEngineFunSuite
         s"Expected node to have labels $expectedLabels, but it was ${labels.mkString}",
         s"Expected node to not have labels $expectedLabels, but it did."
       )
+    }
+  }
+
+  def use(operators: String*): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
+    override def apply(result: InternalExecutionResult): MatchResult = {
+      val plan: InternalPlanDescription = result.executionPlanDescription()
+      MatchResult(
+        matches = operators.exists(plan.find(_).nonEmpty),
+        rawFailureMessage = s"Plan should use ${operators.mkString(",")}:\n$plan",
+        rawNegatedFailureMessage = s"Plan should not use ${operators.mkString(",")}:\n$plan")
+    }
+  }
+
+  def haveCount(count: Int): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
+    override def apply(result: InternalExecutionResult): MatchResult = {
+      MatchResult(
+        matches = count == result.toList.length,
+        rawFailureMessage = s"Result should have $count rows",
+        rawNegatedFailureMessage = s"Plan should not have $count rows")
     }
   }
 }
