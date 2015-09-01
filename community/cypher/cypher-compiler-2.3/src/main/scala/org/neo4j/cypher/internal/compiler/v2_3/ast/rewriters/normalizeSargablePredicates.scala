@@ -37,6 +37,10 @@ case object normalizeSargablePredicates extends Rewriter {
     case func@FunctionInvocation(_, _, IndexedSeq(property@Property(_, _))) if func.function.contains(Has)  =>
       Exists.asInvocation(property)(func.position)
 
+    // turn has(n[prop]) to exists(n[prop])
+    case func@FunctionInvocation(_, _, IndexedSeq(ci@ContainerIndex(_, _))) if func.function.contains(Has)  =>
+      Exists.asInvocation(ci)(func.position)
+
     // remove not from inequality expressions by negating them
     case Not(inequality: InequalityExpression) =>
       inequality.negated
