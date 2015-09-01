@@ -24,32 +24,26 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
-import org.neo4j.graphdb.TransientDatabaseFailureException;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransientDatabaseFailureException;
 import org.neo4j.kernel.impl.util.LazySingleReference;
 
 /**
  * InvocationHandler for dynamic proxies that delegate calls to a given backing implementation. This is mostly
  * used to present a single object to others, while being able to switch implementation at runtime.
- * 
- * There are concepts of {@link #snapshot(Object)} and {@link #cement()} in here, which serves different purposes:
- * <ol>
- * <li>{@link #snapshot(Object)}: acquire the actual delegate at this particular point in time, pulling it out
- * from the proxy and using it directly. This is used for acquiring a snapshot and keep using that particular
- * instance, even if a new delegate is assigned for this handler.</li>
- * <li>{@link #cement()}: acquire a proxy that will have its delegate assigned the next call to
+ *
+ * {@link #cement()}: acquire a proxy that will have its delegate assigned the next call to
  * {@link #setDelegate(Object)}. This is useful if one {@link DelegateInvocationHandler} depends on
- * another which will have its delegate set later than this one.</li>
- * </ol>
+ * another which will have its delegate set later than this one.
  */
 public class DelegateInvocationHandler<T> implements InvocationHandler
 {
     private volatile T delegate;
-    
+
     // A concrete version of delegate, where a user can request to cement this delegate so that it gets concrete
     // the next call to setDelegate and will never change since.
     private final LazySingleReference<T> concrete;
-    
+
     public DelegateInvocationHandler( final Class<T> interfaceClass )
     {
         concrete = new LazySingleReference<T>()
@@ -89,7 +83,7 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
     {
         ((Concrete<T>)Proxy.getInvocationHandler( concrete.instance() )).set( delegate );
     }
-    
+
     @Override
     public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
     {
@@ -112,7 +106,7 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
             throw e.getCause();
         }
     }
-    
+
     /**
      * Cements this delegate, i.e. returns an instance which will have its delegate assigned and hardened
      * later on so that it never will change after that point.
@@ -121,44 +115,35 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
     {
         return concrete.instance();
     }
-    
-    /**
-     * Takes a snapshot of the current delegate and returns that.
-     */
-    @SuppressWarnings( "unchecked" )
-    public static <T> T snapshot( T proxiedInstance )
-    {
-        DelegateInvocationHandler<T> delegateHandler =
-                (DelegateInvocationHandler<T>) Proxy.getInvocationHandler( proxiedInstance );
-        return delegateHandler.delegate;
-    }
-    
+
     @Override
     public String toString()
     {
         return "Delegate[" + delegate + "]";
     }
-    
+
     private static class Concrete<T> implements InvocationHandler
     {
         private volatile T delegate;
-        
+
         void set( T delegate )
         {
             this.delegate = delegate;
         }
-        
+
         @Override
         public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
         {
             if ( delegate == null )
             {
-                throw new TransientDatabaseFailureException( "Transaction state is not valid. Perhaps a state change of the database has happened while this transaction was running?" );
+                throw new TransientDatabaseFailureException(
+                        "Transaction state is not valid. Perhaps a state change of" +
+                        "the database has happened while this transaction was running?" );
             }
-            
+
             return proxyInvoke( delegate, method, args );
         }
-        
+
         @Override
         public String toString()
         {

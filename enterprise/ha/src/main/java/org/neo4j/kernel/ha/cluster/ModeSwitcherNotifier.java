@@ -17,18 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.com.slave;
+package org.neo4j.kernel.ha.cluster;
 
-public interface InvalidEpochExceptionHandler
+public interface ModeSwitcherNotifier
 {
-    void handle();
-
-    InvalidEpochExceptionHandler NONE = new  InvalidEpochExceptionHandler()
-    {
-        @Override
-        public void handle()
-        {
-
-        }
-    };
+    void addModeSwitcher( ModeSwitcher modeSwitcher );
+    void removeModeSwitcher( ModeSwitcher modeSwitcher );
 }
