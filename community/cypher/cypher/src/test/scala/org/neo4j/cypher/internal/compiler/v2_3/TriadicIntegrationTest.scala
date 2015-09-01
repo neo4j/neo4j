@@ -79,6 +79,30 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
     result should (use("TriadicSelection") and be(empty))
   }
 
+  test("triadic should handle complex incoming predicates") {
+//    System.setProperty("pickBestPlan.VERBOSE", "true")
+    // given
+    execute("CREATE INDEX ON :Person(name)")
+    execute( """CREATE (a:Person{name:"a"}), (b:Person{name:"b"}), (c:Person{name:"c",age:39}), (d:Person{name:"d"}), (e:Person{name:"e"})
+               |CREATE (a)-[:FRIEND]->(b), (b)-[:FRIEND]->(c), (b)-[:FRIEND]->(d), (b)-[:FRIEND]->(e)
+               |CREATE (a)-[:FRIEND]->(c), (a)-[:FRIEND]->(d), (c)-[:FRIEND]->(d)""".stripMargin)
+
+    // when
+    val queryWithPredicates = """
+               |MATCH (a:Person)-[:FRIEND]->(b:Person)-[:FRIEND]->(c:Person)
+               |USING INDEX a:Person(name)
+               |WHERE a.name = 'a' AND b.age = 39 AND exists(c.name) AND (a)-[:FRIEND]->(c)
+               |RETURN a.name AS l, b.name as m, c.name AS r""".stripMargin
+    val result = profile(queryWithPredicates)
+    println(result.toList)
+    println(result.executionPlanDescription)
+
+    // then
+    result.toSet should equal(Set(Map("l" -> "a", "m" -> "c", "r" -> "d")))
+//    result should use("TriadicSelection")
+
+  }
+
   test("Triadic should support StackOverflow example") {
     val create_contraints =
       """
@@ -164,7 +188,7 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
 
     Seq(create_contraints, create_model) foreach { queries =>
       queries.split(";").collect {
-        case q if (q.trim.length > 0) => q.trim
+        case q if q.trim.nonEmpty => q.trim
       }.foreach { query =>
         execute(query)
       }
@@ -227,7 +251,7 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
   def haveCount(count: Int): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
     override def apply(result: InternalExecutionResult): MatchResult = {
       MatchResult(
-        matches = (count == result.toList.length),
+        matches = count == result.toList.length,
         rawFailureMessage = s"Result should have $count rows",
         rawNegatedFailureMessage = s"Plan should not have $count rows")
     }

@@ -29,12 +29,20 @@ import org.neo4j.cypher.internal.frontend.v2_3.ast.Expression
 object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
 
   override def apply(in: LogicalPlan, qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] =
-    qg.selections.patternPredicatesGiven(in.availableSymbols).collect {
+    unsolvedPredicates(in, qg).collect {
       // WHERE NOT (a)-[:X]->(c)
-      case predicate@Not(patternExpr: PatternExpression) => findMatchingRelationshipPattern(false, predicate, patternExpr, in, qg)
+      case predicate@Not(patternExpr: PatternExpression) => findMatchingRelationshipPattern(positivePredicate = false, predicate, patternExpr, in, qg)
       // WHERE (a)-[:X]->(c)
-      case patternExpr: PatternExpression => findMatchingRelationshipPattern(true, patternExpr, patternExpr, in, qg)
+      case patternExpr: PatternExpression => findMatchingRelationshipPattern(positivePredicate = true, patternExpr, patternExpr, in, qg)
     }.flatten
+
+  def unsolvedPredicates(in: LogicalPlan, qg: QueryGraph) = {
+    val patternPredicates: Seq[Expression] = qg.selections.patternPredicatesGiven(in.availableSymbols)
+    val solvedPredicates: Seq[Expression] = in.solved.lastQueryGraph.selections.flatPredicates
+    patternPredicates.filter { patternPredicate =>
+      !(solvedPredicates contains patternPredicate)
+    }
+  }
 
   private def findMatchingRelationshipPattern(positivePredicate: Boolean, triadicPredicate: Expression,
                                               patternExpression: PatternExpression, in: LogicalPlan, qg: QueryGraph)
@@ -67,16 +75,17 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
                                              (implicit context: LogicalPlanningContext): Seq[LogicalPlan] =
     if (exp1.mode == ExpandAll && exp1.to == exp2.from &&
       matchingLabels(positivePredicate, exp1.to, exp2.to, qg) &&
+      leftPredicatesAcceptable(exp1.to, leftPredicates) &&
       matchingRelationshipPattern(patternExpression, exp1.from.name, exp2.to.name, exp1.types, exp1.dir)) {
 
-      val left = if (leftPredicates.length > 0)
+      val left = if (leftPredicates.nonEmpty)
         context.logicalPlanProducer.planSelection(leftPredicates, exp1)
       else
         exp1
 
       val argument = context.logicalPlanProducer.planArgumentRowFrom(left)
       val newExpand2 = Expand(argument, exp2.from, exp2.dir, exp2.types, exp2.to, exp2.relName, ExpandAll)(exp2.solved)
-      val right = if (incomingPredicates.length > 0)
+      val right = if (incomingPredicates.nonEmpty)
         context.logicalPlanProducer.planSelection(incomingPredicates, newExpand2)
       else
         newExpand2
@@ -86,13 +95,18 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
     else
       Seq.empty
 
+  private def leftPredicatesAcceptable(leftId: IdName, leftPredicates: Seq[Expression]) = leftPredicates.forall {
+    case HasLabels(Identifier(id),List(_)) if(id == leftId.name) => true
+    case a => false
+  }
+
   private def matchingLabels(positivePredicate: Boolean, node1: IdName, node2: IdName, qg: QueryGraph): Boolean = {
     val labels1 = qg.selections.labelsOnNode(node1)
     val labels2 = qg.selections.labelsOnNode(node2)
     if (positivePredicate)
       labels1 == labels2
     else
-      labels1.isEmpty || !labels2.isEmpty && labels2.forall(labels1.contains)
+      labels1.isEmpty || labels2.nonEmpty && (labels2 subsetOf labels1)
   }
 
   private def matchingRelationshipPattern(pattern: PatternExpression, from: String, to: String,
