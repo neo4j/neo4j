@@ -32,7 +32,6 @@ import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
@@ -43,7 +42,7 @@ import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTRE
  */
 public class NodeStage extends Stage
 {
-    public NodeStage( Configuration config, IoMonitor writeMonitor, WriterFactory writerFactory,
+    public NodeStage( Configuration config, IoMonitor writeMonitor,
             InputIterable<InputNode> nodes, IdMapper idMapper, IdGenerator idGenerator,
             BatchingNeoStore neoStore, InputCache inputCache, LabelScanStore labelScanStore,
             EntityStoreUpdaterStep.Monitor storeUpdateMonitor,
@@ -64,6 +63,6 @@ public class NodeStage extends Stage
                 neoStore.getLabelRepository(), nodeStore, memoryUsage ) );
         add( new LabelScanStorePopulationStep( control(), config, labelScanStore ) );
         add( new EntityStoreUpdaterStep<>( control(), config, nodeStore, propertyStore,
-                writeMonitor, writerFactory, storeUpdateMonitor ) );
+                writeMonitor, storeUpdateMonitor ) );
     }
 }

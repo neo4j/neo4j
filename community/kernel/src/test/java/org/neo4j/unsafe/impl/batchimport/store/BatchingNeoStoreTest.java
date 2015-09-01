@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -39,8 +40,6 @@ import static org.junit.Assert.fail;
 
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
-import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
-import static org.neo4j.unsafe.impl.batchimport.store.io.Monitor.NO_MONITOR;
 
 public class BatchingNeoStoreTest
 {
@@ -51,21 +50,16 @@ public class BatchingNeoStoreTest
         someDataInTheDatabase();
 
         // WHEN
-        PageCache pageCache = new BatchingPageCache( fsr.get(), 10_000, 1, SYNCHRONOUS, NO_MONITOR );
-        try
+        try ( PageCache pageCache = pageCacheRule.getPageCache( fsr.get() ) )
         {
-            new BatchingNeoStore( fsr.get(), storeDir, DEFAULT, NO_MONITOR,
-                    new DevNullLoggingService(), new Monitors(), SYNCHRONOUS, EMPTY );
+            new BatchingNeoStore( fsr.get(), storeDir, DEFAULT,
+                    new DevNullLoggingService(), new Monitors(), EMPTY );
             fail( "Should fail on existing data" );
         }
         catch ( IllegalStateException e )
         {
             // THEN
             assertThat( e.getMessage(), containsString( "already contains" ) );
-        }
-        finally
-        {
-            pageCache.close();
         }
     }
 
@@ -85,5 +79,6 @@ public class BatchingNeoStoreTest
     }
 
     public final @Rule EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
-    private final File storeDir = new File( "dir" );
+    public final @Rule PageCacheRule pageCacheRule = new PageCacheRule();
+    private final File storeDir = new File( "dir" ).getAbsoluteFile();
 }

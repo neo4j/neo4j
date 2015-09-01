@@ -103,7 +103,6 @@ import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
-import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
 /**
@@ -342,7 +341,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsolutePath(), fileSystem,
                 importConfig, logging, withDynamicProcessorAssignment( migrationBatchImporterMonitor(
                         legacyStore, progressMonitor ), importConfig ),
-                parallel(), readAdditionalIds( storeDir, lastTxId, lastTxChecksum ) );
+                readAdditionalIds( storeDir, lastTxId, lastTxChecksum ) );
         InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         InputIterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
         importer.doImport( Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(), true, 0 ) );
