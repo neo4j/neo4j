@@ -1,0 +1,124 @@
+/*
+ * Copyright (c) 2002-2015 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.metrics.source;
+
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricRegistry;
+
+import java.io.Closeable;
+import java.io.IOException;
+
+import org.neo4j.com.storecopy.ToNetworkStoreWriter;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.ha.MasterClient210;
+import org.neo4j.kernel.ha.com.master.MasterServer;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.metrics.MetricsSettings;
+
+import static com.codahale.metrics.MetricRegistry.name;
+
+public class NetworkMetrics implements Closeable
+{
+    private Config config;
+    private Monitors monitors;
+    private MetricRegistry registry;
+    private final ByteCountsMetric masterNetworkTransactionWrites;
+    private final ByteCountsMetric masterNetworkStoreWrites;
+    private final ByteCountsMetric slaveNetworkTransactionWrites;
+    private final ByteCountsMetric networkTransactionReads;
+    /*
+     * COM: Server.class -> Writes transaction streams (writes)
+     *      ToNetworkStoreWriter.class, "storeCopier -> Storage files write to network (writes)
+     *
+     * HA: MasterClientXXX.class -> Transactions written to network for commit (writes)
+     *
+     * KERNEL: "logdeserializer"  -> Bytes read from network (read - updates for slaves, commits from slaves for master)
+     */
+
+    public NetworkMetrics( Config config, Monitors monitors, MetricRegistry registry )
+    {
+        this.config = config;
+        this.monitors = monitors;
+        this.registry = registry;
+
+        masterNetworkTransactionWrites = new ByteCountsMetric();
+        masterNetworkStoreWrites = new ByteCountsMetric();
+        slaveNetworkTransactionWrites = new ByteCountsMetric();
+        networkTransactionReads = new ByteCountsMetric();
+
+        if ( config.get( MetricsSettings.neoNetworkEnabled ) )
+        {
+            monitors.addMonitorListener( masterNetworkTransactionWrites, MasterServer.class.getName() );
+            monitors.addMonitorListener( masterNetworkStoreWrites, ToNetworkStoreWriter.class.getName(),
+                    "storeCopier" );
+            monitors.addMonitorListener( slaveNetworkTransactionWrites, MasterClient210.class.getName() );
+            // logBufferWrites was registered above - same monitor, remember?
+            monitors.addMonitorListener( networkTransactionReads, "logdeserializer" );
+
+            registry.register( name( "neo4j.network", "master_network_tx_writes" ), new Gauge<Long>()
+            {
+                public Long getValue()
+                {
+                    return masterNetworkTransactionWrites.getBytesWritten();
+                }
+            } );
+
+            registry.register( name( "neo4j.network", "master_network_store_writes" ), new Gauge<Long>()
+            {
+                public Long getValue()
+                {
+                    return masterNetworkStoreWrites.getBytesWritten();
+                }
+            } );
+
+            registry.register( name( "neo4j.network", "slave_network_tx_writes" ), new Gauge<Long>()
+            {
+                public Long getValue()
+                {
+                    return slaveNetworkTransactionWrites.getBytesWritten();
+                }
+            } );
+
+            registry.register( name( "neo4j.network", "transaction_reads" ), new Gauge<Long>()
+            {
+                public Long getValue()
+                {
+                    return networkTransactionReads.getBytesRead();
+                }
+            } );
+        }
+    }
+
+    public void close() throws IOException
+    {
+        if ( config.get( MetricsSettings.neoNetworkEnabled ) )
+        {
+            registry.remove( name( "neo4j.network", "master_network_tx_writes" ) );
+            registry.remove( name( "neo4j.network", "master_network_store_writes" ) );
+            registry.remove( name( "neo4j.network", "slave_network_tx_writes" ) );
+            registry.remove( name( "neo4j.network", "transaction_reads" ) );
+
+            monitors.removeMonitorListener( masterNetworkTransactionWrites );
+            monitors.removeMonitorListener( masterNetworkStoreWrites );
+            monitors.removeMonitorListener( slaveNetworkTransactionWrites );
+            monitors.removeMonitorListener( networkTransactionReads );
+        }
+    }
+}
