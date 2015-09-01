@@ -82,6 +82,8 @@ object ExpressionConverters {
             toCommandPredicate(expression)
           case expression: NestedPipeExpression =>
             toCommandPredicate(expression)
+          case e: ast.ContainerIndex=>
+            commandexpressions.ContainerIndex(toCommandExpression(e.expr), toCommandExpression(e.idx))
         }
       case Exp => commandexpressions.ExpFunction(toCommandExpression(invocation.arguments.head))
       case Floor => commandexpressions.FloorFunction(toCommandExpression(invocation.arguments.head))
