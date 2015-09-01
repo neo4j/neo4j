@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -52,10 +53,10 @@ import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
+import org.neo4j.kernel.api.impl.index.DocValuesCollector;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
 import static org.neo4j.collection.primitive.Primitive.longSet;
-import static org.neo4j.index.impl.lucene.DocToIdIterator.idFromDoc;
 
 public abstract class LuceneIndex implements LegacyIndex
 {
@@ -287,12 +288,13 @@ public abstract class LuceneIndex implements LegacyIndex
             return PrimitiveLongCollections.emptySet();
         }
         // There's potentially some state
-        Hits hits = null;
+        DocValuesCollector docValuesCollector = null;
         int fulltextSize = 0;
         if ( fulltextTransactionStateSearcher != null )
         {
-            hits = new Hits( fulltextTransactionStateSearcher, query, null, null, false );
-            fulltextSize = hits.length();
+            docValuesCollector = new DocValuesCollector();
+            fulltextTransactionStateSearcher.search( query, docValuesCollector );
+            fulltextSize = docValuesCollector.getTotalHits();
             // Nah, no state
             if ( simpleTransactionStateIds.isEmpty() && fulltextSize == 0 )
             {
@@ -308,10 +310,13 @@ public abstract class LuceneIndex implements LegacyIndex
             set.add( id.id() );
         }
 
-        // Add from fulltext tx state
-        for ( int i = 0; i < fulltextSize; i++ )
+        if ( docValuesCollector != null )
         {
-            set.add( idFromDoc( hits.doc( i ) ) );
+            // Add from fulltext tx state
+            PrimitiveLongIterator valuesIterator = docValuesCollector.getValuesIterator( LuceneIndex.KEY_DOC_ID );
+            while (valuesIterator.hasNext()) {
+                set.add( valuesIterator.next() );
+            }
         }
         return set;
     }
@@ -338,8 +343,9 @@ public abstract class LuceneIndex implements LegacyIndex
                     additionalParametersOrNull.getSorting() : null;
             boolean forceScore = additionalParametersOrNull == null ||
                     !additionalParametersOrNull.getTradeCorrectnessForSpeed();
-            Hits hits = new Hits( searcher, query, null, sorting, forceScore );
-            result = new HitsIterator( hits );
+            DocValuesCollector collector = new DocValuesCollector( forceScore );
+            searcher.search( query, collector );
+            return collector.getIndexHits( sorting );
         }
         return result;
     }
@@ -347,13 +353,17 @@ public abstract class LuceneIndex implements LegacyIndex
     private void letThroughAdditions( IndexSearcher additionsSearcher, Query query, Collection<EntityId> removed )
             throws IOException
     {
-        Hits hits = new Hits( additionsSearcher, query, null );
-        HitsIterator iterator = new HitsIterator( hits );
+        // This could be improved further by doing a term-dict lookup for every term in removed
+        // and retaining only those that did not match.
+        // This is getting quite low-level though
+        DocValuesCollector collector = new DocValuesCollector( false );
+        additionsSearcher.search( query, collector );
+        PrimitiveLongIterator valuesIterator = collector.getValuesIterator( KEY_DOC_ID );
         EntityId.LongCostume id = new EntityId.LongCostume();
-        while ( iterator.hasNext() )
+        while ( valuesIterator.hasNext() )
         {
-            String idString = iterator.next().getField( KEY_DOC_ID ).stringValue();
-            removed.remove( id.setId( Long.parseLong( idString ) ) );
+            long value = valuesIterator.next();
+            removed.remove( id.setId( value ) );
         }
     }
 

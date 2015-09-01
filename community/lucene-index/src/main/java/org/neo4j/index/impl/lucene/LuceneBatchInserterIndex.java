@@ -26,6 +26,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 
@@ -46,6 +47,7 @@ import org.neo4j.index.impl.lucene.EntityId.IdData;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
+import org.neo4j.kernel.api.impl.index.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.IndexWriterFactories;
 import org.neo4j.kernel.api.impl.index.LuceneIndexWriter;
 import org.neo4j.kernel.impl.cache.LruCache;
@@ -335,8 +337,9 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         }
         try
         {
-            Hits hits = new Hits( searcher, query, null );
-            HitsIterator result = new HitsIterator( hits );
+            DocValuesCollector collector = new DocValuesCollector( true );
+            searcher.search( query, collector );
+            IndexHits<Document> result = collector.getIndexHits( Sort.RELEVANCE );
             LegacyIndexHits primitiveHits = null;
             if ( key == null || this.cache == null || !this.cache.containsKey( key ) )
             {

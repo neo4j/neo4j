@@ -50,8 +50,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.index.impl.lucene.EntityId.IdData;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.index.lucene.QueryContext;
+import org.neo4j.kernel.api.impl.index.DocValuesCollector;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.index.impl.lucene.LuceneIndex.KEY_DOC_ID;
@@ -227,11 +228,13 @@ class FullTxData extends TxData
             boolean prioritizeCorrectness = contextOrNull == null || !contextOrNull.getTradeCorrectnessForSpeed();
             IndexSearcher theSearcher = searcher( prioritizeCorrectness );
             query = includeOrphans( query );
-            Hits hits = new Hits( theSearcher, query, null, sorting, prioritizeCorrectness );
+            DocValuesCollector docValuesCollector = new DocValuesCollector( prioritizeCorrectness );
+            theSearcher.search( query, docValuesCollector );
             Collection<EntityId> result = new ArrayList<>();
-            for ( int i = 0; i < hits.length(); i++ )
+            PrimitiveLongIterator valuesIterator = docValuesCollector.getSortedValuesIterator( KEY_DOC_ID, sorting );
+            while ( valuesIterator.hasNext() )
             {
-                result.add( new IdData( Long.valueOf( hits.doc( i ).get( KEY_DOC_ID ) ) ) );
+                result.add( new EntityId.IdData( valuesIterator.next() ) );
             }
             return result;
         }

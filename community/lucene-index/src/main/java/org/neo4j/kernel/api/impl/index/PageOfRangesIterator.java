@@ -87,9 +87,7 @@ class PageOfRangesIterator extends PrefetchingIterator<PrimitiveLongIterator>
         {
             DocValuesCollector docValuesCollector = new DocValuesCollector();
             searcher.search( query, docValuesCollector );
-            rangesIterator = new LongValuesIterator(
-                    docValuesCollector.getMatchingDocs(), docValuesCollector.getTotalHits(), BitmapDocumentFormat
-                    .RANGE );
+            rangesIterator = docValuesCollector.getValuesIterator( BitmapDocumentFormat.RANGE );
             return rangesIterator;
         }
         catch ( IOException e )
