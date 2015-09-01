@@ -151,6 +151,8 @@ public class Args
 
     /**
      * Suitable for main( String[] args )
+     * @param flags list of possible flags (e.g -v or -skip-bad). A flag differs from an option in that it
+     * has no value after it. This list of flags is used for distinguishing between the two.
      * @param args the arguments to parse.
      */
     private Args( Function<String,Option<String>> optionParser, String[] flags, String[] args )

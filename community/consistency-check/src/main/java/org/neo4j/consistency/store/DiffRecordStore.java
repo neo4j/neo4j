@@ -94,6 +94,12 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     }
 
     @Override
+    public int getRecordsPerPage()
+    {
+        return actual.getRecordsPerPage();
+    }
+
+    @Override
     public int getRecordSize()
     {
         return actual.getRecordSize();

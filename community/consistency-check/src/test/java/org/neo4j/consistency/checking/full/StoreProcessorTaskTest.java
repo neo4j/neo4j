@@ -19,26 +19,22 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import static org.junit.Assert.assertNotSame;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.same;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-
-import static org.neo4j.consistency.checking.full.TaskExecutionOrder.MULTI_PASS;
-import static org.neo4j.consistency.checking.full.TaskExecutionOrder.SINGLE_THREADED;
+import org.junit.Test;
 
 import java.io.File;
 
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-
+import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.same;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @SuppressWarnings("unchecked")
 public class StoreProcessorTaskTest
@@ -48,71 +44,20 @@ public class StoreProcessorTaskTest
     {
         // given
         StoreProcessor singlePassProcessor = mock( StoreProcessor.class );
-        StoreProcessor multiPassProcessor1 = mock( StoreProcessor.class );
-        StoreProcessor multiPassProcessor2 = mock( StoreProcessor.class );
+        when( singlePassProcessor.getStage() ).thenReturn( Stage.SEQUENTIAL_FORWARD );
 
         NodeStore store = mock( NodeStore.class );
         when( store.getStorageFileName() ).thenReturn( new File("node-store") );
 
-        StoreProcessorTask<NodeRecord> task = new StoreProcessorTask<NodeRecord>(
-                store, ProgressMonitorFactory.NONE.multipleParts( "check" ), SINGLE_THREADED,
-                singlePassProcessor, multiPassProcessor1, multiPassProcessor2 );
+        StoreProcessorTask<NodeRecord> task = new StoreProcessorTask<>( "nodes", Statistics.NONE, 1,
+                store, null, "nodes", ProgressMonitorFactory.NONE.multipleParts( "check" ),
+                CacheAccess.EMPTY,
+                singlePassProcessor );
 
         // when
         task.run();
 
         // then
         verify( singlePassProcessor ).applyFiltered( same( store ), any( ProgressListener.class ) );
-        verifyZeroInteractions( multiPassProcessor1, multiPassProcessor2 );
-    }
-
-    @Test
-    public void multiPassShouldProcessTheStoreOnceForEachOfTheSuppliedProcessors() throws Exception
-    {
-        // given
-        StoreProcessor singlePassProcessor = mock( StoreProcessor.class );
-        StoreProcessor multiPassProcessor1 = mock( StoreProcessor.class );
-        StoreProcessor multiPassProcessor2 = mock( StoreProcessor.class );
-
-        NodeStore store = mock( NodeStore.class );
-        when( store.getStorageFileName() ).thenReturn( new File("node-store") );
-
-        StoreProcessorTask<NodeRecord> task = new StoreProcessorTask<NodeRecord>(
-                store, ProgressMonitorFactory.NONE.multipleParts( "check" ), MULTI_PASS,
-                singlePassProcessor, multiPassProcessor1, multiPassProcessor2 );
-
-        // when
-        task.run();
-
-        // then
-        verify( multiPassProcessor1 ).applyFiltered( same( store ), any( ProgressListener.class ) );
-        verify( multiPassProcessor2 ).applyFiltered( same( store ), any( ProgressListener.class ) );
-        verifyZeroInteractions( singlePassProcessor );
-    }
-
-    @Test
-    public void multiPassShouldBuildProgressListenersForEachPass() throws Exception
-    {
-        // given
-        StoreProcessor multiPassProcessor1 = mock( StoreProcessor.class );
-        StoreProcessor multiPassProcessor2 = mock( StoreProcessor.class );
-
-        NodeStore store = mock( NodeStore.class );
-        when( store.getStorageFileName() ).thenReturn( new File("node-store") );
-
-        StoreProcessorTask<NodeRecord> task = new StoreProcessorTask<NodeRecord>(
-                store, ProgressMonitorFactory.NONE.multipleParts( "check" ), MULTI_PASS,
-                mock( StoreProcessor.class ), multiPassProcessor1, multiPassProcessor2 );
-
-        // when
-        task.run();
-
-        // then
-        ArgumentCaptor<ProgressListener> listener1 = ArgumentCaptor.forClass( ProgressListener.class );
-        ArgumentCaptor<ProgressListener> listener2 = ArgumentCaptor.forClass( ProgressListener.class );
-        verify( multiPassProcessor1 ).applyFiltered( same( store ), listener1.capture() );
-        verify( multiPassProcessor2 ).applyFiltered( same( store ), listener2.capture() );
-
-        assertNotSame(listener1.getValue(), listener2.getValue());
     }
 }

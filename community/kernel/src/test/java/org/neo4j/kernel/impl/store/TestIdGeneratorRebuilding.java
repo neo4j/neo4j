@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -221,7 +221,7 @@ public class TestIdGeneratorRebuilding
         store.makeStoreOk();
 
         // ... that contain enough records to fill several file pages ...
-        int recordsPerPage = store.recordsPerPage();
+        int recordsPerPage = store.getRecordsPerPage();
         NodeRecord record = new NodeRecord( 0 );
         record.setInUse( true );
         int highestId = recordsPerPage * 3; // 3 pages worth of records

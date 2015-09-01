@@ -23,6 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.consistency.checking.CheckDecorator;
+import org.neo4j.consistency.checking.NodeRecordCheck;
+import org.neo4j.consistency.checking.RelationshipRecordCheck;
+import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.report.InconsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
@@ -97,25 +100,17 @@ public enum MultiPassStore
                 }
             };
 
-    public static boolean recordInCurrentPass( long id, int iPass, long recordsPerPass )
-    {
-        return id >= iPass * recordsPerPass && id < (iPass + 1) * recordsPerPass;
-    }
-
-    public List<DiffRecordAccess> multiPassFilters( long memoryPerPass, StoreAccess storeAccess,
-            DiffRecordAccess recordAccess, MultiPassStore[] stores )
+    public List<DiffRecordAccess> multiPassFilters( DiffRecordAccess recordAccess, MultiPassStore[] stores )
     {
         List<DiffRecordAccess> filteringStores = new ArrayList<>();
-        RecordStore<?> recordStore = getRecordStore( storeAccess );
-        long recordsPerPass = memoryPerPass / recordStore.getRecordSize();
-        long highId = recordStore.getHighId();
-        for ( int iPass = 0; iPass * recordsPerPass <= highId; iPass++ )
-        {
-            filteringStores.add( new FilteringRecordAccess( recordAccess, iPass, recordsPerPass, this, stores ) );
-        }
+        filteringStores.add( new FilteringRecordAccess( recordAccess, this, stores ) );
         return filteringStores;
     }
 
+    public DiffRecordAccess multiPassFilter( DiffRecordAccess recordAccess, MultiPassStore... stores )
+    {
+        return new FilteringRecordAccess( recordAccess, this, stores );
+    }
 
     abstract RecordStore<?> getRecordStore( StoreAccess storeAccess );
 
@@ -123,30 +118,16 @@ public enum MultiPassStore
     {
         private final CheckDecorator decorator;
         private final DiffRecordAccess recordAccess;
-        private final long totalMappedMemory;
-        private final StoreAccess storeAccess;
         private final InconsistencyReport report;
+        private final CacheAccess cacheAccess;
 
-        Factory( CheckDecorator decorator, long totalMappedMemory,
-                 StoreAccess storeAccess, DiffRecordAccess recordAccess, InconsistencyReport report )
+        Factory( CheckDecorator decorator,
+                DiffRecordAccess recordAccess, CacheAccess cacheAccess, InconsistencyReport report )
         {
             this.decorator = decorator;
-            this.totalMappedMemory = totalMappedMemory;
-            this.storeAccess = storeAccess;
             this.recordAccess = recordAccess;
+            this.cacheAccess = cacheAccess;
             this.report = report;
-        }
-
-        ConsistencyReporter[] reporters( TaskExecutionOrder order, MultiPassStore... stores )
-        {
-            if ( order == TaskExecutionOrder.MULTI_PASS )
-            {
-                return reporters( stores );
-            }
-            else
-            {
-                return new ConsistencyReporter[]{new ConsistencyReporter( recordAccess, report )};
-            }
         }
 
         ConsistencyReporter[] reporters( MultiPassStore... stores )
@@ -154,8 +135,7 @@ public enum MultiPassStore
             List<ConsistencyReporter> result = new ArrayList<>();
             for ( MultiPassStore store : stores )
             {
-                List<DiffRecordAccess> filters = store.multiPassFilters( totalMappedMemory, storeAccess,
-                        recordAccess, stores );
+                List<DiffRecordAccess> filters = store.multiPassFilters( recordAccess, stores );
                 for ( DiffRecordAccess filter : filters )
                 {
                     result.add( new ConsistencyReporter( filter, report ) );
@@ -164,14 +144,35 @@ public enum MultiPassStore
             return result.toArray( new ConsistencyReporter[result.size()] );
         }
 
-        StoreProcessor[] processors( MultiPassStore... stores )
+        StoreProcessor[] processors( Stage stage, MultiPassStore... stores )
         {
             List<StoreProcessor> result = new ArrayList<>();
             for ( ConsistencyReporter reporter : reporters( stores ) )
             {
-                result.add( new StoreProcessor( decorator, reporter ) );
+                result.add( new StoreProcessor( decorator, reporter, stage, cacheAccess ) );
             }
             return result.toArray( new StoreProcessor[result.size()] );
+        }
+
+        ConsistencyReporter reporter( MultiPassStore store )
+        {
+            DiffRecordAccess filter = store.multiPassFilter( recordAccess, store );
+            return new ConsistencyReporter( filter, report ) ;
+        }
+
+        StoreProcessor processor( Stage stage, MultiPassStore store )
+        {
+            return new StoreProcessor( decorator, reporter(store), stage, cacheAccess );
+        }
+
+        public void reDecorateNode( StoreProcessor processer, NodeRecordCheck newChecker, boolean sparseNode )
+        {
+            processer.reDecorateNode(decorator, newChecker, sparseNode);
+        }
+
+        public void reDecorateRelationship( StoreProcessor processer, RelationshipRecordCheck newChecker )
+        {
+            processer.reDecorateRelationship(decorator, newChecker );
         }
     }
 }

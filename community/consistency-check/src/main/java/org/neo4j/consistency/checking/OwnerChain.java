@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 // TODO: it would be great if this also checked for cyclic chains. (we would also need cycle checking for full check, and for relationships)
-enum OwnerChain
+public enum OwnerChain
         implements ComparativeRecordChecker<PropertyRecord, PropertyRecord, ConsistencyReport.PropertyConsistencyReport>
 {
     OLD
@@ -143,7 +143,7 @@ enum OwnerChain
         }
     }
 
-    void check( PropertyRecord record,
+    public void check( PropertyRecord record,
                 CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
                 DiffRecordAccess records )
     {

@@ -19,30 +19,62 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import java.util.concurrent.ArrayBlockingQueue;
+
+import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
+import org.neo4j.consistency.statistics.Statistics;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.BoundedIterable;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
 
-public class RecordScanner<RECORD> implements StoppableRunnable
+public class RecordScanner<RECORD> extends ConsistencyCheckerTask
 {
     private final ProgressListener progress;
     private final BoundedIterable<RECORD> store;
     private final RecordProcessor<RECORD> processor;
+    private final Stage stage;
+    private final IterableStore[] warmUpStores;
+    private final CacheAccess cacheAccess;
 
-    private volatile boolean continueScanning = true;
-
-    public RecordScanner( BoundedIterable<RECORD> store,
-                          String taskName,
-                          ProgressMonitorFactory.MultiPartBuilder builder,
-                          RecordProcessor<RECORD> processor )
+    public RecordScanner( String name, Statistics statistics, int threads, BoundedIterable<RECORD> store,
+            ProgressMonitorFactory.MultiPartBuilder builder, RecordProcessor<RECORD> processor, Stage stage,
+            CacheAccess cacheAccess, IterableStore... warmUpStores )
     {
+        super( name, statistics, threads );
         this.store = store;
         this.processor = processor;
-        this.progress = builder.progressForPart( taskName, store.maxCount() );
+        this.cacheAccess = cacheAccess;
+        this.progress = builder.progressForPart( name, store.maxCount() );
+        this.stage = stage;
+        this.warmUpStores = warmUpStores;
     }
 
     @Override
     public void run()
+    {
+        statistics.reset();
+        if ( warmUpStores != null )
+        {
+            for ( IterableStore store : warmUpStores )
+            {
+                store.warmUpCache();
+            }
+        }
+        if ( !stage.isParallel() )
+        {
+            runSequential();
+        }
+        else
+        {
+            runParallel();
+        }
+        statistics.print( name );
+    }
+
+    public void runSequential()
     {
         try
         {
@@ -66,15 +98,66 @@ public class RecordScanner<RECORD> implements StoppableRunnable
             catch ( Exception e )
             {
                 progress.failed( e );
+                throw Exceptions.launderedException( e );
             }
             processor.close();
             progress.done();
         }
     }
 
-    @Override
-    public void stopScanning()
+    public void runParallel()
     {
-        continueScanning = false;
+        Workers<Worker<RECORD>> workers = new Workers<>( getClass().getSimpleName() );
+        ArrayBlockingQueue<RECORD>[] recordQ = new ArrayBlockingQueue[numberOfThreads];
+        for ( int threadId = 0; threadId < numberOfThreads; threadId++ )
+        {
+            recordQ[threadId] = new ArrayBlockingQueue<>( DefaultCacheAccess.DEFAULT_QUEUE_SIZE );
+            workers.start( new Worker<>( recordQ[threadId], processor ) );
+        }
+
+        long recordsPerCPU = (store.maxCount() / numberOfThreads) + 1;
+        cacheAccess.prepareForProcessingOfSingleStore( recordsPerCPU );
+        int[] recsProcessed = new int[numberOfThreads];
+        int qIndex = 0;
+        int entryCount = 0;
+        for ( RECORD record : store )
+        {
+            try
+            {
+                // do a round robin distribution to maintain physical locality
+                recordQ[qIndex++].put( record );
+                qIndex %= numberOfThreads;
+                recsProcessed[qIndex]++;
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread().interrupt();
+                break;
+            }
+            progress.set( entryCount++ );
+        }
+        progress.done();
+        for ( Worker<RECORD> worker : workers )
+        {
+            worker.done();
+        }
+        workers.awaitAndThrowOnErrorStrict( RuntimeException.class );
+    }
+
+    private static class Worker<RECORD> extends RecordCheckWorker<RECORD>
+    {
+        private final RecordProcessor<RECORD> processor;
+
+        Worker( ArrayBlockingQueue<RECORD> recordsQ, RecordProcessor<RECORD> processor )
+        {
+            super( recordsQ );
+            this.processor = processor;
+        }
+
+        @Override
+        protected void process( RECORD record )
+        {
+            processor.process( record );
+        }
     }
 }

@@ -48,28 +48,30 @@ import org.neo4j.kernel.monitoring.Monitors;
 /**
  * Not thread safe (since DiffRecordStore is not thread safe), intended for
  * single threaded use.
+ *
+ * Make sure to call {@link #initialize()} after constructor has been run.
  */
 public class StoreAccess
 {
     // Top level stores
-    private final RecordStore<DynamicRecord> schemaStore;
-    private final RecordStore<NodeRecord> nodeStore;
-    private final RecordStore<RelationshipRecord> relStore;
-    private final RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore;
-    private final RecordStore<LabelTokenRecord> labelTokenStore;
-    private final RecordStore<DynamicRecord> nodeDynamicLabelStore;
-    private final RecordStore<PropertyRecord> propStore;
+    private RecordStore<DynamicRecord> schemaStore;
+    private RecordStore<NodeRecord> nodeStore;
+    private RecordStore<RelationshipRecord> relStore;
+    private RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore;
+    private RecordStore<LabelTokenRecord> labelTokenStore;
+    private RecordStore<DynamicRecord> nodeDynamicLabelStore;
+    private RecordStore<PropertyRecord> propStore;
     // Transitive stores
-    private final RecordStore<DynamicRecord> stringStore, arrayStore;
-    private final RecordStore<PropertyKeyTokenRecord> propertyKeyTokenStore;
-    private final RecordStore<DynamicRecord> relationshipTypeNameStore;
-    private final RecordStore<DynamicRecord> labelNameStore;
-    private final RecordStore<DynamicRecord> propertyKeyNameStore;
-    private final RecordStore<RelationshipGroupRecord> relGroupStore;
+    private RecordStore<DynamicRecord> stringStore, arrayStore;
+    private RecordStore<PropertyKeyTokenRecord> propertyKeyTokenStore;
+    private RecordStore<DynamicRecord> relationshipTypeNameStore;
+    private RecordStore<DynamicRecord> labelNameStore;
+    private RecordStore<DynamicRecord> propertyKeyNameStore;
+    private RecordStore<RelationshipGroupRecord> relGroupStore;
     private final CountsAccessor counts;
     // internal state
     private boolean closeable;
-    private NeoStore neoStore;
+    private final NeoStore neoStore;
 
     public StoreAccess( GraphDatabaseAPI graphdb )
     {
@@ -85,20 +87,6 @@ public class StoreAccess
     public StoreAccess( NeoStore store )
     {
         this.neoStore = store;
-        this.schemaStore = wrapStore( store.getSchemaStore() );
-        this.nodeStore = wrapStore( store.getNodeStore() );
-        this.relStore = wrapStore( store.getRelationshipStore() );
-        this.propStore = wrapStore( store.getPropertyStore() );
-        this.stringStore = wrapStore( store.getPropertyStore().getStringStore() );
-        this.arrayStore = wrapStore( store.getPropertyStore().getArrayStore() );
-        this.relationshipTypeTokenStore = wrapStore( store.getRelationshipTypeTokenStore() );
-        this.labelTokenStore = wrapStore( store.getLabelTokenStore() );
-        this.nodeDynamicLabelStore = wrapStore( wrapNodeDynamicLabelStore( store.getNodeStore().getDynamicLabelStore() ) );
-        this.propertyKeyTokenStore = wrapStore( store.getPropertyStore().getPropertyKeyTokenStore() );
-        this.relationshipTypeNameStore = wrapStore( store.getRelationshipTypeTokenStore().getNameStore() );
-        this.labelNameStore = wrapStore( store.getLabelTokenStore().getNameStore() );
-        this.propertyKeyNameStore = wrapStore( store.getPropertyStore().getPropertyKeyTokenStore().getNameStore() );
-        this.relGroupStore = wrapStore( store.getRelationshipGroupStore() );
         this.counts = store.getCounts();
     }
 
@@ -119,7 +107,34 @@ public class StoreAccess
         this.closeable = true;
     }
 
-    private static Map<String, String> requiredParams( Map<String, String> params, String path )
+    /**
+     * This method exists since {@link #wrapStore(RecordStore)} might depend on the existence of a variable
+     * that gets set in a subclass' constructor <strong>after</strong> this constructor of {@link StoreAccess}
+     * has been executed. I.e. a correct creation of a {@link StoreAccess} instance must be the creation of the
+     * object plus a call to {@link #initialize()}.
+     *
+     * @return this
+     */
+    public StoreAccess initialize()
+    {
+        this.schemaStore = wrapStore( neoStore.getSchemaStore() );
+        this.nodeStore = wrapStore( neoStore.getNodeStore() );
+        this.relStore = wrapStore( neoStore.getRelationshipStore() );
+        this.propStore = wrapStore( neoStore.getPropertyStore() );
+        this.stringStore = wrapStore( neoStore.getPropertyStore().getStringStore() );
+        this.arrayStore = wrapStore( neoStore.getPropertyStore().getArrayStore() );
+        this.relationshipTypeTokenStore = wrapStore( neoStore.getRelationshipTypeTokenStore() );
+        this.labelTokenStore = wrapStore( neoStore.getLabelTokenStore() );
+        this.nodeDynamicLabelStore = wrapStore( wrapNodeDynamicLabelStore( neoStore.getNodeStore().getDynamicLabelStore() ) );
+        this.propertyKeyTokenStore = wrapStore( neoStore.getPropertyStore().getPropertyKeyTokenStore() );
+        this.relationshipTypeNameStore = wrapStore( neoStore.getRelationshipTypeTokenStore().getNameStore() );
+        this.labelNameStore = wrapStore( neoStore.getLabelTokenStore().getNameStore() );
+        this.propertyKeyNameStore = wrapStore( neoStore.getPropertyStore().getPropertyKeyTokenStore().getNameStore() );
+        this.relGroupStore = wrapStore( neoStore.getRelationshipGroupStore() );
+        return this;
+    }
+
+    public static Map<String, String> requiredParams( Map<String, String> params, String path )
     {
         return StoreFactory.configForStoreDir( new Config(), new File( path ) ).getParams();
     }

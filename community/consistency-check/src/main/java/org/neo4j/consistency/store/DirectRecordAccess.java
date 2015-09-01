@@ -19,6 +19,11 @@
  */
 package org.neo4j.consistency.store;
 
+import java.util.Iterator;
+
+import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.checking.full.MultiPassStore;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -28,6 +33,7 @@ import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
@@ -35,10 +41,12 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 public class DirectRecordAccess implements DiffRecordAccess
 {
     final StoreAccess access;
+    final CacheAccess cacheAccess;
 
-    public DirectRecordAccess( StoreAccess access )
+    public DirectRecordAccess( StoreAccess access, CacheAccess cacheAccess )
     {
         this.access = access;
+        this.cacheAccess = cacheAccess;
     }
 
     @Override
@@ -69,6 +77,28 @@ public class DirectRecordAccess implements DiffRecordAccess
     public RecordReference<PropertyRecord> property( long id )
     {
         return referenceTo( access.getPropertyStore(), id );
+    }
+
+    @Override
+    public Iterator<PropertyRecord> rawPropertyChain( final long firstId )
+    {
+        return new PrefetchingIterator<PropertyRecord>()
+        {
+            private long next = firstId;
+
+            @Override
+            protected PropertyRecord fetchNextOrNull()
+            {
+                if ( Record.NO_NEXT_PROPERTY.is( next ) )
+                {
+                    return null;
+                }
+
+                PropertyRecord record = referenceTo( access.getPropertyStore(), next ).record();
+                next = record.getNextProp();
+                return record;
+            }
+        };
     }
 
     @Override
@@ -125,10 +155,6 @@ public class DirectRecordAccess implements DiffRecordAccess
         return referenceTo( access.getPropertyKeyNameStore(), id );
     }
 
-    <RECORD extends AbstractBaseRecord> RecordReference<RECORD> referenceTo( RecordStore<RECORD> store, long id )
-    {
-        return new DirectRecordReference<>( store.forceGetRecord( id ), this );
-    }
 
     @Override
     public RecordReference<NeoStoreRecord> graph()
@@ -200,5 +226,22 @@ public class DirectRecordAccess implements DiffRecordAccess
     public RelationshipGroupRecord changedRelationshipGroup( long id )
     {
         return null;
+    }
+
+    @Override
+    public boolean shouldSkip( long id, MultiPassStore store )
+    {
+        return false;
+    }
+
+    <RECORD extends AbstractBaseRecord> DirectRecordReference<RECORD> referenceTo( RecordStore<RECORD> store, long id )
+    {
+        return new DirectRecordReference<>( store.forceGetRecord( id ), this);
+    }
+
+    @Override
+    public CacheAccess cacheAccess()
+    {
+        return cacheAccess;
     }
 }

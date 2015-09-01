@@ -169,7 +169,7 @@ class BackupService
                 {
                     consistent = new ConsistencyCheckService().runFullConsistencyCheck(
                             targetDirectory, tuningConfiguration, ProgressMonitorFactory.textual( System.err ),
-                            logger, fileSystem, pageCache ).isSuccessful();
+                            logger, fileSystem, pageCache, false ).isSuccessful();
                 }
                 catch ( ConsistencyCheckIncompleteException e )
                 {

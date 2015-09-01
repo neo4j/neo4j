@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
-class DynamicRecordCheck
+public class DynamicRecordCheck
         implements RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport>,
         ComparativeRecordChecker<DynamicRecord, DynamicRecord, ConsistencyReport.DynamicConsistencyReport>
 {
@@ -34,7 +34,7 @@ class DynamicRecordCheck
     private final DynamicStore dereference;
     private final RecordStore<DynamicRecord> store;
 
-    DynamicRecordCheck( RecordStore<DynamicRecord> store, DynamicStore dereference )
+    public DynamicRecordCheck( RecordStore<DynamicRecord> store, DynamicStore dereference )
     {
         this.blockSize = store.getRecordSize() - store.getRecordHeaderSize();
         this.dereference = dereference;

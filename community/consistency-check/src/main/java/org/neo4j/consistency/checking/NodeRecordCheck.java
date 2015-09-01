@@ -36,27 +36,47 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static java.util.Arrays.sort;
 
-class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport>
+public class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport>
 {
     static NodeRecordCheck forSparseNodes()
     {
-        return new NodeRecordCheck( RelationshipField.NEXT_REL, LabelsField.LABELS );
+        return new NodeRecordCheck( true, LabelsField.LABELS );
+    }
+
+    static NodeRecordCheck forSparseNodes( boolean firstProperty )
+    {
+        return new NodeRecordCheck( firstProperty, LabelsField.LABELS );
     }
 
     static NodeRecordCheck forDenseNodes()
     {
-        return new NodeRecordCheck( RelationshipGroupField.NEXT_GROUP, LabelsField.LABELS );
+        return new NodeRecordCheck( true, RelationshipGroupField.NEXT_GROUP, LabelsField.LABELS );
+    }
+
+    static NodeRecordCheck forDenseNodes(boolean firstProperty)
+    {
+        return new NodeRecordCheck( firstProperty, RelationshipGroupField.NEXT_GROUP, LabelsField.LABELS );
+    }
+
+    public static NodeRecordCheck toCheckNextRel( boolean firstProperty )
+    {
+        return new NodeRecordCheck( firstProperty, RelationshipField.NEXT_REL );
+    }
+
+    public static NodeRecordCheck toCheckNextRelationshipGroup( boolean firstProperty )
+    {
+        return new NodeRecordCheck(firstProperty, RelationshipGroupField.NEXT_GROUP );
     }
 
     @SafeVarargs
-    private NodeRecordCheck( RecordField<NodeRecord, ConsistencyReport.NodeConsistencyReport>... fields )
+	NodeRecordCheck( boolean firstProperty, RecordField<NodeRecord, ConsistencyReport.NodeConsistencyReport>... fields )
     {
-        super( fields );
+        super( firstProperty, fields );
     }
 
-    NodeRecordCheck()
+    public NodeRecordCheck()
     {
-        super( RelationshipField.NEXT_REL, LabelsField.LABELS );
+        super( true, RelationshipField.NEXT_REL, LabelsField.LABELS );
     }
 
     private enum RelationshipGroupField implements RecordField<NodeRecord, ConsistencyReport.NodeConsistencyReport>,
@@ -218,8 +238,7 @@ class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport
                     long firstRecordId = dynamicNodeLabels.getFirstDynamicRecordId();
                     RecordReference<DynamicRecord> firstRecordReference = records.nodeLabels( firstRecordId );
                     engine.comparativeCheck( firstRecordReference,
-                            new LabelChainWalker<NodeRecord, ConsistencyReport.NodeConsistencyReport>(
-                                    new NodeLabelsComparativeRecordChecker() ) );
+                            new LabelChainWalker<>( new NodeLabelsComparativeRecordChecker() ) );
                 }
                 else
                 {

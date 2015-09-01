@@ -19,29 +19,41 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.neo4j.consistency.checking.PropertyRecordCheck;
 import org.neo4j.consistency.checking.RecordCheck;
+import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
-public class NodeToLabelIndexesProcessor implements RecordProcessor<NodeRecord>
+/**
+ * Processor of node records with the context of how they're indexed.
+ */
+public class PropertyAndNode2LabelIndexProcessor implements RecordProcessor<NodeRecord>
 {
     private final ConsistencyReporter reporter;
     private final RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> nodeIndexCheck;
+    private final RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> propertyCheck;
+    private final CacheAccess cacheAccess;
 
-    public NodeToLabelIndexesProcessor( ConsistencyReporter reporter,
+    public PropertyAndNode2LabelIndexProcessor( ConsistencyReporter reporter,
                                         IndexAccessors indexes,
-                                        PropertyReader propertyReader )
+                                        PropertyReader propertyReader,
+                                        CacheAccess cacheAccess )
     {
         this.reporter = reporter;
-        this.nodeIndexCheck = new NodeCorrectlyIndexedCheck( indexes, propertyReader );
+        this.cacheAccess = cacheAccess;
+        this.nodeIndexCheck = new PropertyAndNodeIndexedCheck( indexes, propertyReader, cacheAccess );
+        this.propertyCheck = new PropertyRecordCheck();
     }
 
     @Override
     public void process( NodeRecord nodeRecord )
     {
         reporter.forNode( nodeRecord, nodeIndexCheck );
+        cacheAccess.client().processProperties( nodeRecord, propertyCheck, reporter );
     }
 
     @Override

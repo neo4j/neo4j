@@ -19,12 +19,18 @@
  */
 package org.neo4j.consistency.checking;
 
+import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.checking.full.MultiPassStore;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
+import org.neo4j.consistency.store.DirectRecordReference;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+
+import static org.neo4j.consistency.checking.RelationshipRecordCheck.CACHE_SLOT_RELATIONSHIP_ID;
+import static org.neo4j.consistency.checking.RelationshipRecordCheck.CACHE_SLOT_SOURCE_OR_TARGET;
 
 enum NodeField implements
         RecordField<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport>,
@@ -201,7 +207,16 @@ enum NodeField implements
         }
         else
         {
-            engine.comparativeCheck( records.node( valueFrom( relationship ) ), this );
+            // build the node record from cached values with only valid fields as id, inUse, and nextRel.
+            NodeRecord node = new NodeRecord(valueFrom( relationship ));
+            CacheAccess.Client client = records.cacheAccess().client();
+            node.setInUse( client.getFromCache( node.getId(), CACHE_SLOT_SOURCE_OR_TARGET ) != RelationshipRecordCheck.SOURCE );
+            node.setNextRel( client.getFromCache( node.getId(), CACHE_SLOT_RELATIONSHIP_ID ) );
+            node.setReal( false );
+            if ( !records.shouldSkip( node.getId(), MultiPassStore.NODES ) )
+            {
+                engine.comparativeCheck( new DirectRecordReference<>( node, records ), this );
+            }
         }
     }
 
@@ -218,8 +233,11 @@ enum NodeField implements
         {
             if ( isFirst( relationship ) )
             {
+                CacheAccess.Client cacheAccess = records.cacheAccess().client();
                 if ( node.getNextRel() != relationship.getId() )
                 {
+                    node = ((DirectRecordReference<NodeRecord>)records.node( node.getId())).record();
+
                     if ( node.isDense() )
                     {
                         // TODO verify that the appropriate group refers back to the relationship
@@ -227,6 +245,13 @@ enum NodeField implements
                     else
                     {
                         noBackReference( engine.report(), node );
+                    }
+                }
+                else
+                {
+                    if ( relationship.getFirstNode() != relationship.getSecondNode() )
+                    {
+                        cacheAccess.putToCacheSingle( node.getId(), 1, 1 );
                     }
                 }
             }

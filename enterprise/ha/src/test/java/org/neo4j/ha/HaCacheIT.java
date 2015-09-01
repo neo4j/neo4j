@@ -41,6 +41,7 @@ import org.neo4j.test.ha.ClusterManager;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
@@ -192,7 +193,7 @@ public class HaCacheIT
         String masterStoreDir = new File( storeDir, "neo4j.ha/server1" ).getAbsolutePath();
         ConsistencyCheckService.Result result =
                 new ConsistencyCheckService().runFullConsistencyCheck( masterStoreDir, new Config(),
-                        ProgressMonitorFactory.NONE, StringLogger.SYSTEM_ERR );
+                        ProgressMonitorFactory.NONE, StringLogger.SYSTEM_ERR, false );
 
         assertTrue( result.isSuccessful() );
     }

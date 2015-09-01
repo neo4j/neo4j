@@ -19,14 +19,14 @@
  */
 package org.neo4j.consistency;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.GraphStoreFixture;
@@ -69,8 +69,7 @@ public class ConsistencyCheckServiceIntegrationTest
         Config configuration = new Config( settings(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
 
         // when
-        ConsistencyCheckService.Result result = service.runFullConsistencyCheck( fixture.directory().getPath(),
-                configuration, ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+        ConsistencyCheckService.Result result = runFullConsistencyCheck( service, configuration );
 
         // then
         assertEquals( ConsistencyCheckService.Result.SUCCESS, result );
@@ -88,8 +87,7 @@ public class ConsistencyCheckServiceIntegrationTest
         Config configuration = new Config( settings(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
 
         // when
-        ConsistencyCheckService.Result result = service.runFullConsistencyCheck( fixture.directory().getPath(),
-                configuration, ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+        ConsistencyCheckService.Result result = runFullConsistencyCheck( service, configuration );
 
         // then
         assertEquals( ConsistencyCheckService.Result.FAILURE, result );
@@ -110,8 +108,7 @@ public class ConsistencyCheckServiceIntegrationTest
         );
 
         // when
-        service.runFullConsistencyCheck( fixture.directory().getPath(), configuration,
-                ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+        runFullConsistencyCheck( service, configuration );
 
         // then
         assertTrue( "Inconsistency report file " + specificLogFile + " not generated", specificLogFile.exists() );
@@ -141,8 +138,7 @@ public class ConsistencyCheckServiceIntegrationTest
         db.shutdown();
 
         // when
-        Result result = service.runFullConsistencyCheck( testDirectory.absolutePath(), configuration,
-                ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+        Result result = runFullConsistencyCheck( service, configuration );
 
         // then
         assertEquals( ConsistencyCheckService.Result.SUCCESS, result );
@@ -167,8 +163,7 @@ public class ConsistencyCheckServiceIntegrationTest
                 Settings.FALSE ) );
 
         // when
-        Result result = service.runFullConsistencyCheck( testDirectory.absolutePath(), configuration,
-                ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+        Result result = runFullConsistencyCheck( service, configuration );
 
         // then
         assertEquals( ConsistencyCheckService.Result.SUCCESS, result );
@@ -192,6 +187,13 @@ public class ConsistencyCheckServiceIntegrationTest
                 tx.create( new NodeRecord( next.node(), false, next.relationship(), -1 ) );
             }
         } );
+    }
+
+    private Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration )
+            throws ConsistencyCheckIncompleteException
+    {
+        return service.runFullConsistencyCheck( fixture.directory().getPath(),
+                configuration, ProgressMonitorFactory.NONE, StringLogger.DEV_NULL, false );
     }
 
     @Rule

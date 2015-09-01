@@ -230,7 +230,7 @@ public class ParallelBatchImporterTest
         Result result = consistencyChecker.runFullConsistencyCheck( storeDir,
                 new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) ),
                 ProgressMonitorFactory.NONE,
-                StringLogger.DEV_NULL );
+                StringLogger.DEV_NULL, false );
         assertTrue( "Database contains inconsistencies, there should be a report in " + storeDir,
                 result.isSuccessful() );
     }

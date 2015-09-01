@@ -33,7 +33,7 @@ public class NeoStoreCheckTest
 {
     public NeoStoreCheckTest()
     {
-        super( new NeoStoreCheck(), ConsistencyReport.NeoStoreConsistencyReport.class );
+        super( new NeoStoreCheck( true ), ConsistencyReport.NeoStoreConsistencyReport.class, new int[0] );
     }
 
     @Test

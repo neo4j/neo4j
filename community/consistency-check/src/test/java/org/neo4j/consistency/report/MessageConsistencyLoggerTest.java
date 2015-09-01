@@ -19,12 +19,12 @@
  */
 package org.neo4j.consistency.report;
 
-import java.io.StringWriter;
-
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
+
+import java.io.StringWriter;
 
 import org.neo4j.consistency.RecordType;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;

@@ -20,9 +20,12 @@
 package org.neo4j.consistency.store;
 
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.consistency.checking.full.MultiPassStore;
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -33,23 +36,17 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static java.util.Arrays.asList;
 
-import static org.neo4j.consistency.checking.full.MultiPassStore.recordInCurrentPass;
 import static org.neo4j.consistency.store.RecordReference.SkippingReference.skipReference;
 
 public class FilteringRecordAccess extends DelegatingRecordAccess
 {
     private final Set<MultiPassStore> potentiallySkippableStores = EnumSet.noneOf( MultiPassStore.class );
-    private final int iPass;
-    private final long recordsPerPass;
     private final MultiPassStore currentStore;
 
-    public FilteringRecordAccess( DiffRecordAccess delegate, final int iPass,
-                                  final long recordsPerPass, MultiPassStore currentStore,
-                                  MultiPassStore... potentiallySkippableStores )
+    public FilteringRecordAccess( DiffRecordAccess delegate,
+            MultiPassStore currentStore, MultiPassStore... potentiallySkippableStores )
     {
         super( delegate );
-        this.iPass = iPass;
-        this.recordsPerPass = recordsPerPass;
         this.currentStore = currentStore;
         this.potentiallySkippableStores.addAll( asList( potentiallySkippableStores ) );
     }
@@ -97,6 +94,20 @@ public class FilteringRecordAccess extends DelegatingRecordAccess
             return skipReference();
         }
         return super.property( id );
+    }
+
+    @Override
+    public Iterator<PropertyRecord> rawPropertyChain( long firstId )
+    {
+        return new FilteringIterator<>( super.rawPropertyChain( firstId ), new Predicate<PropertyRecord>()
+        {
+            @Override
+            public boolean accept( PropertyRecord item )
+            {
+                return !shouldSkip( item.getId() /*for some reason we don't care about the id*/,
+                        MultiPassStore.PROPERTIES );
+            }
+        } );
     }
 
     @Override
@@ -149,14 +160,9 @@ public class FilteringRecordAccess extends DelegatingRecordAccess
         return super.nodeLabels( id );
     }
 
-    private boolean shouldSkip( long id, MultiPassStore store )
+    @Override
+    public boolean shouldSkip( long id, MultiPassStore store )
     {
-        return potentiallySkippableStores.contains( store ) &&
-                (!isCurrentStore( store ) || !recordInCurrentPass( id, iPass, recordsPerPass ));
-    }
-
-    private boolean isCurrentStore( MultiPassStore store )
-    {
-        return currentStore == store;
+        return potentiallySkippableStores.contains( store ) && (currentStore != store);
     }
 }

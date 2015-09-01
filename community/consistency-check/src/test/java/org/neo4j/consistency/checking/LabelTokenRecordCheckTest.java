@@ -33,7 +33,7 @@ public class LabelTokenRecordCheckTest extends
 {
     public LabelTokenRecordCheckTest()
     {
-        super( new LabelTokenRecordCheck(), ConsistencyReport.LabelTokenConsistencyReport.class );
+        super( new LabelTokenRecordCheck(), ConsistencyReport.LabelTokenConsistencyReport.class, new int[0] );
     }
 
     @Test
