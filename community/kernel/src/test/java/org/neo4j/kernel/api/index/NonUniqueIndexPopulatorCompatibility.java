@@ -76,6 +76,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         String failure = "The contrived failure";
+        populator.create();
 
         // WHEN
         populator.markAsFailed( failure );
@@ -92,6 +93,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         String failure = "The contrived failure";
+        populator.create();
 
         // WHEN
         populator.markAsFailed( failure );
