@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import java.net.URI;
-
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -32,19 +30,18 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  *
  * @param <T>
  */
-public abstract class AbstractModeSwitcher<T> implements Lifecycle
+public abstract class AbstractModeSwitcher<T> implements ModeSwitcher, Lifecycle
 {
     private final DelegateInvocationHandler<T> delegate;
-    private LifeSupport life;
-    private final HighAvailability highAvailability;
-    private DelegateStateSwitcher delegateStateSwitcher;
+    private final ModeSwitcherNotifier notifier;
+    private T current = null;
 
-    protected AbstractModeSwitcher( HighAvailability highAvailability, DelegateInvocationHandler<T> delegate )
+    private LifeSupport life = new LifeSupport();
+
+    protected AbstractModeSwitcher( ModeSwitcherNotifier notifier, DelegateInvocationHandler<T> delegate )
     {
+        this.notifier = notifier;
         this.delegate = delegate;
-        this.life = new LifeSupport();
-        this.highAvailability = highAvailability;
-        highAvailability.addHighAvailabilityMemberListener( delegateStateSwitcher = new DelegateStateSwitcher() );
     }
 
     @Override
@@ -57,13 +54,14 @@ public abstract class AbstractModeSwitcher<T> implements Lifecycle
     public void start() throws Throwable
     {
         life.start();
+        notifier.addModeSwitcher( this );
     }
 
     @Override
     public void stop() throws Throwable
     {
         life.stop();
-        highAvailability.removeHighAvailabilityMemberListener( delegateStateSwitcher );
+        notifier.removeModeSwitcher( this );
     }
 
     @Override
@@ -72,69 +70,37 @@ public abstract class AbstractModeSwitcher<T> implements Lifecycle
         life.shutdown();
     }
 
-    protected abstract T getSlaveImpl( URI serverHaUri );
-
-    protected abstract T getMasterImpl();
-
-    private class DelegateStateSwitcher implements HighAvailabilityMemberListener
+    @Override
+    public void switchToMaster()
     {
-        private T current = null;
+        shutdownCurrent();
+        delegate.setDelegate( current = life.add( getMasterImpl() ) );
+        life.start();
+    }
 
-        @Override
-        public void masterIsElected( HighAvailabilityMemberChangeEvent event )
+    @Override
+    public void switchToSlave()
+    {
+        shutdownCurrent();
+        delegate.setDelegate( current = life.add( getSlaveImpl() ) );
+        life.start();
+    }
+
+    @Override
+    public void switchToPending()
+    {
+        shutdownCurrent();
+    }
+
+    private void shutdownCurrent()
+    {
+        if ( current != null )
         {
-            stateChanged( event );
-        }
-
-        @Override
-        public void masterIsAvailable( HighAvailabilityMemberChangeEvent event )
-        {
-            stateChanged( event );
-        }
-
-        @Override
-        public void slaveIsAvailable( HighAvailabilityMemberChangeEvent event )
-        {
-        }
-
-        @Override
-        public void instanceStops( HighAvailabilityMemberChangeEvent event )
-        {
-            stateChanged( event );
-        }
-
-        private void stateChanged( HighAvailabilityMemberChangeEvent event )
-        {
-            if ( event.getNewState() == event.getOldState() )
-            {
-                return;
-            }
-
-            switch ( event.getNewState() )
-            {
-                case TO_MASTER:
-                    shutdownCurrent();
-                    delegate.setDelegate( current = life.add( getMasterImpl() ) );
-                    life.start();
-                    break;
-                case TO_SLAVE:
-                    shutdownCurrent();
-                    delegate.setDelegate( current = life.add( getSlaveImpl( event.getServerHaUri() ) ) );
-                    life.start();
-                    break;
-                case PENDING:
-                    shutdownCurrent();
-                    break;
-            }
-        }
-
-        private void shutdownCurrent()
-        {
-            if ( current != null )
-            {
-                life.shutdown();
-                life = new LifeSupport();
-            }
+            life.shutdown();
+            life = new LifeSupport();
         }
     }
+
+    protected abstract T getSlaveImpl();
+    protected abstract T getMasterImpl();
 }

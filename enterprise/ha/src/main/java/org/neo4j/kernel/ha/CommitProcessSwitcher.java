@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.net.URI;
-
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
+import org.neo4j.kernel.ha.cluster.ModeSwitcherNotifier;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
@@ -38,17 +36,17 @@ public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommi
                                   Master master,
                                   DelegateInvocationHandler<TransactionCommitProcess> delegate,
                                   RequestContextFactory requestContextFactory,
-                                  HighAvailabilityMemberStateMachine memberStateMachine,
+                                  ModeSwitcherNotifier modeSwitcherNotifier,
                                   NeoStoreInjectedTransactionValidator validator,
                                   TransactionCommitProcess innerCommitProcess )
     {
-        super( memberStateMachine, delegate );
+        super( modeSwitcherNotifier, delegate );
         this.masterImpl = new MasterTransactionCommitProcess( innerCommitProcess, pusher, validator );
         this.slaveImpl = new SlaveTransactionCommitProcess( master, requestContextFactory );
     }
 
     @Override
-    protected TransactionCommitProcess getSlaveImpl( URI serverHaUri )
+    protected TransactionCommitProcess getSlaveImpl()
     {
         return slaveImpl;
     }

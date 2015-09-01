@@ -86,10 +86,9 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.first;
+import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
 import static org.neo4j.kernel.ha.cluster.member.ClusterMembers.inRole;
@@ -273,7 +272,12 @@ public class SwitchToSlave
             }
 
             // no exception were thrown and we can proceed
-            slaveUri = startHaCommunication( haCommunicationLife, nioneoDataSource, me, masterUri, myStoreId );
+            slaveUri = startHaCommunication( haCommunicationLife, nioneoDataSource, me, masterUri, myStoreId, cancellationRequest );
+            if ( slaveUri == null )
+            {
+                msgLog.info( "Switch to slave unable to connect." );
+                return null;
+            }
 
             success = true;
             userLog.info( "ServerId %s, successfully moved to slave for master %s", myId, masterUri );
@@ -404,7 +408,8 @@ public class SwitchToSlave
     {
         if ( !masterIsOld )
         {
-            ClusterMember master = first( filter( inRole( MASTER ), clusterMembers.getMembers() ) );
+            ClusterMembers clusterMembers = resolver.resolveDependency( ClusterMembers.class );
+            ClusterMember master = single( filter( inRole( MASTER ), clusterMembers.getMembers() ) );
             StoreId masterStoreId = master.getStoreId();
 
             if ( !myStoreId.equals( masterStoreId ) )
@@ -420,7 +425,8 @@ public class SwitchToSlave
     }
 
     private URI startHaCommunication( LifeSupport haCommunicationLife, NeoStoreDataSource neoDataSource,
-            URI me, URI masterUri, StoreId storeId ) throws IllegalArgumentException, InterruptedException
+            URI me, URI masterUri, StoreId storeId, CancellationRequest cancellationRequest )
+            throws IllegalArgumentException, InterruptedException
     {
         MasterClient master = newMasterClient( masterUri, neoDataSource.getStoreId(), haCommunicationLife );
 
@@ -428,7 +434,10 @@ public class SwitchToSlave
 
         SlaveServer server = slaveServerFactory.apply(slaveImpl);
 
-        ;
+        if ( cancellationRequest.cancellationRequested() )
+        {
+            return null;
+        }
 
         masterDelegateHandler.setDelegate( master );
 
@@ -440,7 +449,10 @@ public class SwitchToSlave
          * Take the opportunity to catch up with master, now that we're alone here, right before we
          * drop the availability guard, so that other transactions might start.
          */
-        catchUpWithMaster();
+        if ( !catchUpWithMaster() )
+        {
+            return null;
+        }
 
         URI slaveHaURI = createHaURI( me, server );
         clusterMemberAvailability.memberIsAvailable( HighAvailabilityModeSwitcher.SLAVE, slaveHaURI, storeId );
@@ -448,7 +460,8 @@ public class SwitchToSlave
         return slaveHaURI;
     }
 
-    private void catchUpWithMaster() throws IllegalArgumentException, InterruptedException
+    private boolean catchUpWithMaster()
+            throws IllegalArgumentException, InterruptedException
     {
         monitor.catchupStarted();
         RequestContext catchUpRequestContext = requestContextFactory.newRequestContext();
@@ -456,10 +469,19 @@ public class SwitchToSlave
 
         // Unpause the update puller, because we know that we are a slave that just started communication with master.
         updatePuller.unpause();
-        updatePuller.await( UpdatePuller.NEXT_TICKET, true );
+        /*
+         * We cannot assume here that the updatePuller is unpaused. Another master switch could have happened in the
+         * meanwhile and paused the updatePuller again. In such a case we simple bail out since that event is gonna
+         * rerun this code again.
+         */
+        if ( !updatePuller.await( UpdatePuller.NEXT_TICKET, false ) )
+        {
+            return false;
+        }
 
         userLog.info( "Now caught up with master" );
         monitor.catchupCompleted();
+        return true;
     }
 
     private URI createHaURI( URI me, Server<?, ?> server )

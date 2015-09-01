@@ -35,6 +35,7 @@ import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.function.Supplier;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Functions;
+import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.ha.store.HighAvailabilityStoreFailureException;
 import org.neo4j.kernel.ha.store.InconsistentlyUpgradedClusterException;
 import org.neo4j.kernel.ha.store.UnableToCopyStoreFromOldMasterException;
@@ -57,14 +58,16 @@ import static org.neo4j.helpers.Uris.parameter;
  * {@link ClusterMemberAvailability#memberIsAvailable(String, URI, StoreId)} to announce it's new status to the
  * cluster.
  */
-public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListener, BindingListener, Lifecycle
+public class HighAvailabilityModeSwitcher
+        implements HighAvailabilityMemberListener, ModeSwitcherNotifier, BindingListener, Lifecycle
 {
-
     public static final String MASTER = "master";
     public static final String SLAVE = "slave";
     public static final String UNKNOWN = "UNKNOWN";
 
     public static final String INADDR_ANY = "0.0.0.0";
+
+    private Iterable<ModeSwitcher> modeSwitchListeners = Listeners.newListeners();
 
     private volatile URI masterHaURI;
     private volatile URI slaveHaURI;
@@ -196,6 +199,18 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         stateChanged( event );
     }
 
+    @Override
+    public void addModeSwitcher( ModeSwitcher modeSwitcher )
+    {
+        modeSwitchListeners = Listeners.addListener( modeSwitcher, modeSwitchListeners );
+    }
+
+    @Override
+    public void removeModeSwitcher( ModeSwitcher modeSwitcher )
+    {
+        modeSwitchListeners = Listeners.removeListener( modeSwitcher, modeSwitchListeners );
+    }
+
     public void forceElections()
     {
         if ( canAskForElections.compareAndSet( true, false ) )
@@ -262,15 +277,30 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             @Override
             public void run()
             {
-                // We just got scheduled. Maybe we are already obsolete - test
-                if ( cancellationHandle.cancellationRequested() )
+                if ( currentTargetState != HighAvailabilityMemberState.TO_MASTER )
                 {
-                    msgLog.info( "Switch to master cancelled in the beginning of switching to master." );
                     return;
                 }
 
-                if ( currentTargetState != HighAvailabilityMemberState.TO_MASTER )
+                // We just got scheduled. Maybe we are already obsolete - test
+                if ( cancellationHandle.cancellationRequested() )
                 {
+                    msgLog.info( "Switch to master cancelled on start." );
+                    return;
+                }
+
+                Listeners.notifyListeners( modeSwitchListeners, new Listeners.Notification<ModeSwitcher>()
+                {
+                    @Override
+                    public void notify( ModeSwitcher listener )
+                    {
+                        listener.switchToMaster();
+                    }
+                } );
+
+                if ( cancellationHandle.cancellationRequested() )
+                {
+                    msgLog.info( "Switch to master cancelled before ha communication started." );
                     return;
                 }
 
@@ -305,7 +335,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
          */
         if ( getServerId( availableMasterId ).equals( instanceId ) )
         {
-            msgLog.error( "I (" + me + ") tried to switch to slave for myself as master (" + availableMasterId + ")"  );
+            msgLog.error( "I (" + me + ") tried to switch to slave for myself as master (" + availableMasterId + ")" );
             return;
         }
         final AtomicLong wait = new AtomicLong();
@@ -320,8 +350,29 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     return; // Already switched - this can happen if a second master becomes available while waiting
                 }
 
+                if ( cancellationHandle.cancellationRequested() )
+                {
+                    msgLog.info( "Switch to slave cancelled on start." );
+                    return;
+                }
+
+                Listeners.notifyListeners( modeSwitchListeners, new Listeners.Notification<ModeSwitcher>()
+                {
+                    @Override
+                    public void notify( ModeSwitcher listener )
+                    {
+                        listener.switchToSlave();
+                    }
+                } );
+
                 try
                 {
+                    if ( cancellationHandle.cancellationRequested() )
+                    {
+                        msgLog.info( "Switch to slave cancelled before ha communication started." );
+                        return;
+                    }
+
                     haCommunicationLife.shutdown();
                     haCommunicationLife = new LifeSupport();
 
@@ -394,6 +445,27 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             @Override
             public void run()
             {
+                if ( cancellationHandle.cancellationRequested() )
+                {
+                    msgLog.info( "Switch to pending cancelled on start." );
+                    return;
+                }
+
+                Listeners.notifyListeners( modeSwitchListeners, new Listeners.Notification<ModeSwitcher>()
+                {
+                    @Override
+                    public void notify( ModeSwitcher listener )
+                    {
+                        listener.switchToPending();
+                    }
+                } );
+
+                if ( cancellationHandle.cancellationRequested() )
+                {
+                    msgLog.info( "Switch to pending cancelled before ha communication shutdown." );
+                    return;
+                }
+
                 haCommunicationLife.shutdown();
                 haCommunicationLife = new LifeSupport();
             }

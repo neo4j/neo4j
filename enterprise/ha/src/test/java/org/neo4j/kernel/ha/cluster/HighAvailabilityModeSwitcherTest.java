@@ -609,7 +609,7 @@ public class HighAvailabilityModeSwitcherTest
         verify( election ).demote( instanceId );
     }
 
-    private static Supplier<StoreId> storeSupplierMock()
+    public static Supplier<StoreId> storeSupplierMock()
     {
         Supplier<StoreId> supplier = mock( Supplier.class );
         when( supplier.get() ).thenReturn( StoreId.DEFAULT );

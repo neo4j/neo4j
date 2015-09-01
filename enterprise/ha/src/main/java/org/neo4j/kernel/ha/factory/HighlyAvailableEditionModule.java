@@ -512,25 +512,25 @@ public class HighlyAvailableEditionModule
 
         // Create HA services
         lockManager = dependencies.satisfyDependency(
-                createLockManager(memberStateMachine, config, masterDelegateInvocationHandler, requestContextFactory,
-                        platformModule.availabilityGuard, logging ) );
+                createLockManager( highAvailabilityModeSwitcher, paxosLife, config, masterDelegateInvocationHandler,
+                        requestContextFactory, platformModule.availabilityGuard, logging ) );
 
-        propertyKeyTokenHolder = life.add( dependencies.satisfyDependency( new PropertyKeyTokenHolder(
-                createPropertyKeyCreator( config, memberStateMachine, masterDelegateInvocationHandler,
-                        requestContextFactory, kernelProvider ) ) ) );
-        labelTokenHolder = life.add( dependencies.satisfyDependency( new LabelTokenHolder( createLabelIdCreator( config,
-                memberStateMachine, masterDelegateInvocationHandler, requestContextFactory, kernelProvider ) ) ) );
-        relationshipTypeTokenHolder = life.add( dependencies.satisfyDependency( new RelationshipTypeTokenHolder(
-                createRelationshipTypeCreator( config, memberStateMachine, masterDelegateInvocationHandler,
-                        requestContextFactory, kernelProvider ) ) ) );
+        propertyKeyTokenHolder = dependencies.satisfyDependency( new PropertyKeyTokenHolder(
+                createPropertyKeyCreator( config, paxosLife, highAvailabilityModeSwitcher, masterDelegateInvocationHandler,
+                        requestContextFactory, kernelProvider ) ) );
+        labelTokenHolder = dependencies.satisfyDependency( new LabelTokenHolder( createLabelIdCreator( config,
+                paxosLife, highAvailabilityModeSwitcher, masterDelegateInvocationHandler, requestContextFactory, kernelProvider ) ) );
+        relationshipTypeTokenHolder = dependencies.satisfyDependency( new RelationshipTypeTokenHolder(
+                createRelationshipTypeCreator( config, paxosLife, highAvailabilityModeSwitcher, masterDelegateInvocationHandler,
+                        requestContextFactory, kernelProvider ) ) );
 
         life.add( dependencies.satisfyDependency(
                 createKernelData( config, platformModule.graphDatabaseFacade, members, fs, platformModule.pageCache,
                         storeDir, lastUpdateTime, dependencies.provideDependency( NeoStore.class ) ) ) );
 
-        commitProcessFactory = createCommitProcessFactory(dependencies, logging, monitors, config, life,
+        commitProcessFactory = createCommitProcessFactory( dependencies, logging, monitors, config, paxosLife,
                 clusterClient, members, platformModule.jobScheduler, master, requestContextFactory,
-                memberStateMachine );
+                highAvailabilityModeSwitcher );
 
         headerInformationFactory = createHeaderInformationFactory( memberContext );
 
@@ -582,12 +582,11 @@ public class HighlyAvailableEditionModule
     }
 
     protected CommitProcessFactory createCommitProcessFactory( Dependencies dependencies, LogService logging,
-                                                               Monitors monitors, Config config, LifeSupport life,
+                                                               Monitors monitors, Config config, final LifeSupport paxosLife,
                                                                ClusterClient clusterClient, ClusterMembers members,
                                                                JobScheduler jobScheduler, final Master master,
                                                                final RequestContextFactory requestContextFactory,
-                                                               final HighAvailabilityMemberStateMachine
-                                                                       memberStateMachine )
+                                                               final HighAvailabilityModeSwitcher highAvailabilityModeSwitcher )
     {
         final DelegateInvocationHandler<TransactionCommitProcess> commitProcessDelegate =
                 new DelegateInvocationHandler<>( TransactionCommitProcess.class );
@@ -597,9 +596,9 @@ public class HighlyAvailableEditionModule
                         config.get( HaSettings.com_chunk_size ).intValue() ) );
 
         Slaves slaves = dependencies.satisfyDependency(
-                life.add( new HighAvailabilitySlaves( members, clusterClient, slaveFactory ) ) );
+                paxosLife.add( new HighAvailabilitySlaves( members, clusterClient, slaveFactory ) ) );
 
-        final TransactionPropagator pusher = life.add( new TransactionPropagator( TransactionPropagator.from( config ),
+        final TransactionPropagator pusher = paxosLife.add( new TransactionPropagator( TransactionPropagator.from( config ),
                 logging.getInternalLog( TransactionPropagator.class ), slaves, new CommitPusher( jobScheduler ) ) );
 
         return new CommitProcessFactory()
@@ -620,8 +619,8 @@ public class HighlyAvailableEditionModule
                 {
                     TransactionCommitProcess inner = new TransactionRepresentationCommitProcess( appender, storeApplier,
                             indexUpdatesValidator );
-                    new CommitProcessSwitcher( pusher, master, commitProcessDelegate, requestContextFactory,
-                            memberStateMachine, txValidator, inner );
+                    paxosLife.add( new CommitProcessSwitcher( pusher, master, commitProcessDelegate, requestContextFactory,
+                            highAvailabilityModeSwitcher, txValidator, inner ) );
 
                     return (TransactionCommitProcess)
                             newProxyInstance( TransactionCommitProcess.class.getClassLoader(),
@@ -650,7 +649,8 @@ public class HighlyAvailableEditionModule
         return idGeneratorFactory;
     }
 
-    protected Locks createLockManager( HighAvailabilityMemberStateMachine memberStateMachine, final Config config,
+    protected Locks createLockManager( final HighAvailabilityModeSwitcher highAvailabilityModeSwitcher,
+                                       final LifeSupport paxosLife, final Config config,
                                        DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
                                        RequestContextFactory requestContextFactory,
                                        AvailabilityGuard availabilityGuard, final LogService logging )
@@ -659,7 +659,8 @@ public class HighlyAvailableEditionModule
         final Locks lockManager = (Locks) newProxyInstance( Locks.class.getClassLoader(),
                 new Class[]{Locks.class},
                 lockManagerDelegate );
-        new LockManagerModeSwitcher( memberStateMachine, lockManagerDelegate, masterDelegateInvocationHandler,
+        paxosLife.add( new LockManagerModeSwitcher( highAvailabilityModeSwitcher, lockManagerDelegate,
+                masterDelegateInvocationHandler,
                 requestContextFactory, availabilityGuard, config, new Factory<Locks>()
         {
             @Override
@@ -667,12 +668,12 @@ public class HighlyAvailableEditionModule
             {
                 return CommunityEditionModule.createLockManager( config, logging );
             }
-        } );
+        } ) );
         return lockManager;
     }
 
-    protected TokenCreator createRelationshipTypeCreator( Config config,
-                                                          HighAvailabilityMemberStateMachine memberStateMachine,
+    protected TokenCreator createRelationshipTypeCreator( Config config, final LifeSupport paxosLife,
+                                                          final HighAvailabilityModeSwitcher highAvailabilityModeSwitcher,
                                                           DelegateInvocationHandler<Master>
                                                                   masterDelegateInvocationHandler,
                                                           RequestContextFactory requestContextFactory,
@@ -689,15 +690,16 @@ public class HighlyAvailableEditionModule
             TokenCreator relationshipTypeCreator = (TokenCreator) newProxyInstance( TokenCreator.class.getClassLoader(),
                     new Class[]{TokenCreator.class}, relationshipTypeCreatorDelegate );
 
-            new RelationshipTypeCreatorModeSwitcher( memberStateMachine, relationshipTypeCreatorDelegate,
-                    masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory );
+            paxosLife.add( new RelationshipTypeCreatorModeSwitcher( highAvailabilityModeSwitcher,
+                    relationshipTypeCreatorDelegate,
+                    masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory ) );
 
             return relationshipTypeCreator;
         }
     }
 
-    protected TokenCreator createPropertyKeyCreator( Config config,
-                                                     HighAvailabilityMemberStateMachine memberStateMachine,
+    protected TokenCreator createPropertyKeyCreator( Config config, final LifeSupport paxosLife,
+                                                     final HighAvailabilityModeSwitcher highAvailabilityModeSwitcher,
                                                      DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
                                                      RequestContextFactory requestContextFactory,
                                                      Supplier<KernelAPI> kernelProvider )
@@ -712,13 +714,14 @@ public class HighlyAvailableEditionModule
                     new DelegateInvocationHandler<>( TokenCreator.class );
             TokenCreator propertyTokenCreator = (TokenCreator) newProxyInstance( TokenCreator.class.getClassLoader(),
                     new Class[]{TokenCreator.class}, propertyKeyCreatorDelegate );
-            new PropertyKeyCreatorModeSwitcher( memberStateMachine, propertyKeyCreatorDelegate,
-                    masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory );
+            paxosLife.add( new PropertyKeyCreatorModeSwitcher( highAvailabilityModeSwitcher, propertyKeyCreatorDelegate,
+                    masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory ) );
             return propertyTokenCreator;
         }
     }
 
-    protected TokenCreator createLabelIdCreator( Config config, HighAvailabilityMemberStateMachine memberStateMachine,
+    protected TokenCreator createLabelIdCreator( Config config, final LifeSupport paxosLife,
+                                                 final HighAvailabilityModeSwitcher highAvailabilityModeSwitcher,
                                                  DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
                                                  RequestContextFactory requestContextFactory,
                                                  Supplier<KernelAPI> kernelProvider )
@@ -733,8 +736,8 @@ public class HighlyAvailableEditionModule
                     new DelegateInvocationHandler<>( TokenCreator.class );
             TokenCreator labelIdCreator = (TokenCreator) newProxyInstance( TokenCreator.class.getClassLoader(),
                     new Class[]{TokenCreator.class}, labelIdCreatorDelegate );
-            new LabelTokenCreatorModeSwitcher( memberStateMachine, labelIdCreatorDelegate,
-                    masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory );
+            paxosLife.add( new LabelTokenCreatorModeSwitcher( highAvailabilityModeSwitcher, labelIdCreatorDelegate,
+                    masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory ) );
             return labelIdCreator;
         }
     }

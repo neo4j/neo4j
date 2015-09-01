@@ -145,9 +145,8 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
 
 
                     context.setElectedMasterId( coordinatorId );
-                    final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState,
-                            state, coordinatorId,
-                            null );
+                    final HighAvailabilityMemberChangeEvent event =
+                            new HighAvailabilityMemberChangeEvent( oldState, state, coordinatorId, null );
                     Listeners.notifyListeners( memberListeners,
                             new Listeners.Notification<HighAvailabilityMemberListener>()
                             {

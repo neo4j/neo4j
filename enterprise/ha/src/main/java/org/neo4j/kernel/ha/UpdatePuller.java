@@ -225,7 +225,7 @@ public class UpdatePuller implements Runnable, Lifecycle
         }
     }
 
-    interface Condition
+    public interface Condition
     {
         boolean evaluate( int currentTicket, int targetTicket );
     }
