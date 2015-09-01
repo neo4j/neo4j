@@ -30,7 +30,7 @@ public interface StoreVersionMismatchHandler
      */
     String trailerToWrite( String currentVersionTrailer, String readVersionTrailer );
 
-    public static final StoreVersionMismatchHandler FORCE_CURRENT_VERSION = new StoreVersionMismatchHandler()
+    StoreVersionMismatchHandler FORCE_CURRENT_VERSION = new StoreVersionMismatchHandler()
     {
         @Override
         public void mismatch( String expected, String found )
@@ -45,7 +45,7 @@ public interface StoreVersionMismatchHandler
         }
     };
 
-    public static final StoreVersionMismatchHandler ALLOW_OLD_VERSION = new StoreVersionMismatchHandler()
+    StoreVersionMismatchHandler ALLOW_OLD_VERSION = new StoreVersionMismatchHandler()
     {
         @Override
         public void mismatch( String expected, String found )
