@@ -28,18 +28,22 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.bolt.transport.socket.client.Connection;
 import org.neo4j.bolt.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.bolt.transport.socket.integration.Neo4jWithSocket;
+import org.neo4j.bolt.v1.messaging.message.Message;
+import org.neo4j.helpers.HostnamePort;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.kernel.impl.util.HexPrinter.hex;
 import static org.neo4j.bolt.docs.v1.DocExchangeExample.exchange_example;
 import static org.neo4j.bolt.docs.v1.DocSerialization.packAndChunk;
 import static org.neo4j.bolt.docs.v1.DocsRepository.docs;
+import static org.neo4j.bolt.messaging.v1.util.MessageMatchers.message;
+import static org.neo4j.bolt.transport.socket.integration.TransportTestUtil.dechunk;
+import static org.neo4j.bolt.transport.socket.integration.TransportTestUtil.recvOneMessage;
+import static org.neo4j.kernel.impl.util.HexPrinter.hex;
 
 @RunWith( Parameterized.class )
 public class BoltFullExchangesDocTest
@@ -128,7 +132,6 @@ public class BoltFullExchangesDocTest
             else if ( event.from().equalsIgnoreCase( "server" ) )
             {
                 // Assert that the server does what the docs say
-                // Play out a client action
                 switch ( event.type() )
                 {
                 case DISCONNECT:
@@ -139,17 +142,28 @@ public class BoltFullExchangesDocTest
                 case SEND:
                     if ( event.hasHumanReadableValue() )
                     {
+                        // Ensure the documented binary representation matches the human-readable version in the docs
                         assertThat( "'" + event.humanReadableMessage() + "' should serialize to the documented " +
                                     "binary data.",
                                 hex( event.payload() ),
                                 equalTo( hex( packAndChunk( event.humanReadableMessage(), 512 ) ) ) );
+
+                        // Ensure that the server replies as documented
+                        Message serverMessage = recvOneMessage( client );
+                        assertThat(
+                                "The message recieved from the server should match the documented binary representation. " +
+                                "Human-readable message is <" + event.humanReadableMessage() + ">, received message was: " + serverMessage,
+                                serverMessage,
+                                equalTo( message( dechunk( event.payload() ) ) ) );
+                    }
+                    else
+                    {
+                        // Raw data assertions - used for documenting the version negotiation, for instance
+                        assertThat( "The data recieved from the server should match the documented binary representation.",
+                                hex( client.recv( event.payload().length ) ),
+                                equalTo( hex( event.payload() ) ) );
                     }
 
-                    byte[] recieved = client.recv( event.payload().length );
-
-                    assertThat(
-                            hex( recieved ),
-                            equalTo( hex( event.payload() ) ) );
                     break;
                 default:
                     throw new RuntimeException( "Unknown server event: " + event.type() );

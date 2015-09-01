@@ -303,7 +303,7 @@ A0
 .Tiny map
 [source,bolt_packstream_type]
 ----
-Value: {a:1}
+Value: {"a":1}
 
 A1 81 61 01
 ----
@@ -311,7 +311,7 @@ A1 81 61 01
 .Regular map
 [source,bolt_packstream_type]
 ----
-Value: {a:1,b:1,c:3,d:4,e:5,f:6,g:7,h:8,i:9,j:0,k:1,l:2,m:3,n:4,o:5,p:6}
+Value: {"a":1,"b":1,"c":3,"d":4,"e":5,"f":6,"g":7,"h":8,"i":9,"j":0,"k":1,"l":2,"m":3,"n":4,"o":5,"p":6}
 
 D8 10 81 61  01 81 62 01  81 63 03 81  64 04 81 65
 05 81 66 06  81 67 07 81  68 08 81 69  09 81 6A 00

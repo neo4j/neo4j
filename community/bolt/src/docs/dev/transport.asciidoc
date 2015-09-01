@@ -50,11 +50,11 @@ If none of the proposed protocols are supported, the server responds with zero (
 ----
 Client: <connect>
 Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
-         Version 1      None         None         None
+      #  Version 1      None         None         None
 
 Server: 00 00 00 01
-          Choose
-         version 1
+      #   Choose
+      #  version 1
 ----
 
 .No supported version
@@ -62,11 +62,11 @@ Server: 00 00 00 01
 ----
 Client: <connect>
 Client: 00 00 00 06  00 00 00 00  00 00 00 00  00 00 00 00
-         Version 6      None         None         None
+      #   Version 6      None         None         None
 
 Server: 00 00 00 00
-           None
-         supported
+      #    None
+      #  supported
 
 Server: <disconnect>
 ----

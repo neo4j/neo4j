@@ -39,6 +39,21 @@ import static org.neo4j.bolt.messaging.v1.util.MessageMatchers.serialize;
 
 public class TransportTestUtil
 {
+    public static byte[] dechunk( byte[] chunked ) throws IOException
+    {
+        ByteBuffer in = ByteBuffer.wrap( chunked );
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        while(in.hasRemaining())
+        {
+            int chunkSize = in.getShort();
+            if( chunkSize == 0) continue;
+
+            byte[] chunk = new byte[chunkSize];
+            in.get( chunk );
+            out.write( chunk );
+        }
+        return out.toByteArray();
+    }
 
     public static byte[] chunk( Message... messages ) throws IOException
     {
@@ -101,25 +116,10 @@ public class TransportTestUtil
             {
                 try
                 {
-                    int messageNo = 0;
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    while ( messageNo < messages.length )
+                    for ( Matcher<Message> matchesMessage : messages )
                     {
-                        int size = recvChunkHeader( conn );
-
-                        if ( size > 0 )
-                        {
-                            baos.write( conn.recv( size ) );
-                        }
-                        else
-                        {
-                            Message message = message( baos.toByteArray() );
-                            assertThat( message, messages[messageNo] );
-                            baos = new ByteArrayOutputStream();
-                            messageNo++;
-                        }
+                        assertThat( recvOneMessage( conn ), matchesMessage );
                     }
-
                     return true;
                 }
                 catch ( Exception e )
@@ -134,6 +134,25 @@ public class TransportTestUtil
                 description.appendValueList( "Messages[", ",", "]", messages );
             }
         };
+    }
+
+    public static Message recvOneMessage( Connection conn ) throws Exception
+    {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        while ( true )
+        {
+            int size = recvChunkHeader( conn );
+
+            if ( size > 0 )
+            {
+                byte[] recv = conn.recv( size );
+                baos.write( recv );
+            }
+            else
+            {
+                return message( baos.toByteArray() );
+            }
+        }
     }
 
     public static int recvChunkHeader( Connection conn ) throws Exception

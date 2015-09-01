@@ -137,7 +137,7 @@ public class DocExchangeExample implements Iterable<DocExchangeExample.Event>
         // Parse all the lines, breaking them into events
         for ( String line : raw.split( "\n" ) )
         {
-            if ( line.matches( "[a-zA-Z]+\\s*:.*" ) )
+            if ( line.matches( "^[a-zA-Z]+\\s*:.*" ) )
             {
                 if ( currentActor != null )
                 {
@@ -166,6 +166,10 @@ public class DocExchangeExample implements Iterable<DocExchangeExample.Event>
             else if ( line.equals( "<disconnect>" ) )
             {
                 type = Type.DISCONNECT;
+            }
+            else if ( line.matches( "^\\s*[^#\\s].*$" ) )
+            {
+                currentMessage += line;
             }
         }
 

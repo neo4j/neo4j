@@ -33,7 +33,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.impl.util.HexPrinter;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -56,7 +55,6 @@ public class Neo4jPackTest
 
     private Object unpacked( byte[] bytes ) throws IOException
     {
-        System.out.println( HexPrinter.hex( bytes ) );
         PackedInputArray input = new PackedInputArray( bytes );
         Neo4jPack.Unpacker unpacker = new Neo4jPack.Unpacker( input );
         return unpacker.unpack();
