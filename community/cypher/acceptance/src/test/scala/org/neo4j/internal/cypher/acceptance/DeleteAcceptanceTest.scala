@@ -55,20 +55,4 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     assertStats(result, nodesDeleted = 1, relationshipsDeleted = 3)
   }
-
-  test("should handle force deleting paths") {
-    val x = createLabeledNode("X")
-    val n1 = createNode()
-    val n2 = createNode()
-    val n3 = createNode()
-    relate(x, n1)
-    relate(n1, n2)
-    relate(n2, n3)
-
-    val result = execute(
-      s"match p = (:X)-->()-->()-->() detach delete p"
-    )
-
-    assertStats(result, nodesDeleted = 4, relationshipsDeleted = 3)
-  }
 }

@@ -291,18 +291,6 @@ return distinct center""")
     }
   }
 
-  test("delete_path") {
-    val a = createNode()
-    val b = createNode()
-    relate(a,b)
-
-    execute("""match (n) where id(n) = 0 match p=n-->() delete p""")
-
-    graph.inTx {
-      GlobalGraphOperations.at(graph).getAllNodes.asScala shouldBe empty
-    }
-  }
-
   test("string_literals_should_not_be_mistaken_for_identifiers") {
     //https://github.com/neo4j/community/issues/523
     val result = executeScalar[List[Node]]("create (tag1 {name:'tag2'}), (tag2 {name:'tag1'}) return [tag1,tag2] as tags")

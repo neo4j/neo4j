@@ -189,10 +189,16 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("should fail type check when deleting") {
-    //TODO: Why does the error message claim an error at column 36, but it looks like it should be column 34?
     executeAndEnsureError(
       "match (a) where id(a) = 0 delete 1 + 1",
-      "Type mismatch: expected Node, Path or Relationship but was Integer (line 1, column 36 (offset: 35))"
+      "Type mismatch: expected Node or Relationship but was Integer (line 1, column 36 (offset: 35))"
+    )
+  }
+
+  test("should fail type check when trying to delete a path") {
+    executeAndEnsureError(
+      "match p = (a)-->(b) delete p",
+      "Type mismatch: expected Node or Relationship but was Path (line 1, column 28 (offset: 27))"
     )
   }
 
