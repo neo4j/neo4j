@@ -12,6 +12,12 @@ o Prefer size() over length() for collections and pattern predicates
 o Accept lower case 'e' in cypher exponent double literals
 o Added support for join hints: USING JOIN ON n
 o Added "DETACH DELETE" to Cypher
+o Fixes a bug where input positions could become wrong on Windows platforms
+o The compiler is now preloaded on db startup, minimizing delay of initial query
+o Triadic selection is now supported
+o Function exists() can now make use of index scans
+o LIMIT now properly influence planning costs
+o Generates a warning when dynamic property lookup makes index plans impossible
 
 2.3-M02
 -------
