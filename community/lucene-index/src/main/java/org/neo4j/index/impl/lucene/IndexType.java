@@ -28,6 +28,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
@@ -395,7 +396,7 @@ public abstract class IndexType
         List<IndexableField> numericFields = new ArrayList<>();
         for ( IndexableField field : document.getFields() )
         {
-            if ( field.numericValue() != null )
+            if ( field.numericValue() != null && !field.name().equals( LuceneIndex.KEY_DOC_ID ) )
             {
                 numericFields.add( field );
             }
@@ -411,6 +412,7 @@ public abstract class IndexType
     {
         Document doc = new Document();
         doc.add( new StringField( LuceneIndex.KEY_DOC_ID, "" + entityId, Store.YES ) );
+        doc.add( new NumericDocValuesField( LuceneIndex.KEY_DOC_ID, entityId ) );
         return doc;
     }
 
