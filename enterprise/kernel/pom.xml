@@ -85,12 +85,7 @@
     <!-- Neo4j dependencies -->
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-advanced</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher</artifactId>
+      <artifactId>neo4j-kernel</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -100,6 +95,12 @@
       <artifactId>neo4j-kernel</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
