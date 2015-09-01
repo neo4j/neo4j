@@ -77,6 +77,8 @@ public class IdMappers
 
     /**
      * An {@link IdMapper} that doesn't touch the input ids, but just asserts that node ids arrive in ascending order.
+     * This is for advanced usage and puts constraints on the input in that all node ids given as input
+     * must be valid. There will not be further checks, other than that for order of the ids.
      */
     public static IdMapper actual()
     {

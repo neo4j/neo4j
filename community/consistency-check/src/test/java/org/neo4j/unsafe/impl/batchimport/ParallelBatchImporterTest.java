@@ -81,7 +81,7 @@ import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators.fromInput;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators.startingFromTheBeginning;
-import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.actual;
+import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.longs;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.strings;
 import static org.neo4j.unsafe.impl.batchimport.staging.ProcessorAssignmentStrategies.eagerRandomSaturation;
 
@@ -125,14 +125,13 @@ public class ParallelBatchImporterTest
         return Arrays.<Object[]>asList(
 
                 // synchronous I/O, actual node id input
-                new Object[]{new LongInputIdGenerator(), actual(), fromInput(), true},
+                new Object[]{new LongInputIdGenerator(), longs( AUTO ), fromInput(), true},
                 // synchronous I/O, string id input
                 new Object[]{new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning(), true},
                 // synchronous I/O, string id input
                 new Object[]{new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning(), false},
                 // extra slow parallel I/O, actual node id input
-                new Object[]{new LongInputIdGenerator(), actual(), fromInput(), false}
-
+                new Object[]{new LongInputIdGenerator(), longs( AUTO ), fromInput(), false}
         );
     }
 
