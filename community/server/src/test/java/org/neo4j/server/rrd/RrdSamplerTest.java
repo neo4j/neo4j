@@ -19,18 +19,18 @@
  */
 package org.neo4j.server.rrd;
 
+import org.junit.Test;
+import org.rrd4j.DsType;
+import org.rrd4j.core.RrdDb;
+import org.rrd4j.core.Sample;
+
+import java.io.IOException;
+
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import java.io.IOException;
-
-import org.junit.Test;
-import org.rrd4j.DsType;
-import org.rrd4j.core.RrdDb;
-import org.rrd4j.core.Sample;
 
 public class RrdSamplerTest
 {
@@ -108,7 +108,7 @@ public class RrdSamplerTest
 
         public double getValue()
         {
-            throw new UnableToSampleException();
+            throw new UnableToSampleException( "Failing operation" );
         }
 
         public DsType getType()
