@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint;
@@ -333,5 +334,26 @@ public class LatestCheckPointFinderTest
 
         // then
         assertEquals( new LatestCheckPoint( checkPoint, false, logVersion ), latestCheckPoint );
+    }
+
+    @Test
+    public void latestLogEmptyStartEntryBeforeAndAfterCheckPointInTheLastButOneLog() throws Throwable
+    {
+        // given
+        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
+        LogEntry firstStart = new LogEntryStart(  0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 20 ) );
+        LogEntry secondStart = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 27 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 25 ) );
+
+        when( reader.readLogEntry( any( ReadableVersionableLogChannel.class ) ) ).thenReturn(
+                null, // first file
+                firstStart, checkPoint, secondStart, null // second file
+        );
+
+        // when
+        LatestCheckPoint latestCheckPoint = finder.find( logVersion );
+
+        // then
+        assertEquals( new LatestCheckPoint( checkPoint, true, olderLogVersion ), latestCheckPoint );
     }
 }
