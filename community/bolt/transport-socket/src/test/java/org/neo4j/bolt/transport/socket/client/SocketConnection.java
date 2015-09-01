@@ -24,8 +24,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.impl.util.HexPrinter;
 
 public class SocketConnection implements Connection
 {
@@ -46,7 +48,7 @@ public class SocketConnection implements Connection
     @Override
     public Connection connect( HostnamePort address ) throws Exception
     {
-        socket.setSoTimeout( 30 * 1000 );
+        socket.setSoTimeout( 30000 * 1000 ); // TOOD
 
         socket.connect( new InetSocketAddress( address.getHost(), address.getPort() ) );
         in = socket.getInputStream();
@@ -67,9 +69,15 @@ public class SocketConnection implements Connection
         byte[] bytes = new byte[length];
         int left = length, read;
 
-        while ( (read = in.read( bytes, length - left, left )) != -1 && left > 0 )
+        try
         {
-            left -= read;
+            while ( (read = in.read( bytes, length - left, left )) != -1 && left > 0 )
+            {
+                left -= read;
+            }
+        } catch( SocketTimeoutException e )
+        {
+            throw new SocketTimeoutException( "Reading data timed out, missing " + left + " bytes. Buffer: " + HexPrinter.hex( bytes ) );
         }
         return bytes;
     }

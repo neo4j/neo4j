@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.runtime.internal;
 
+import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.bolt.runtime.spi.Record;
 import org.neo4j.bolt.runtime.spi.RecordStream;
@@ -60,6 +61,12 @@ public class CypherAdapterStream implements RecordStream
                 return true;
             }
         } );
+
+        QueryExecutionType qt = delegate.getQueryExecutionType();
+        if ( qt.requestedExecutionPlanDescription() )
+        {
+            visitor.addMetadata( "plan", ExecutionPlanConverter.convert( delegate.getExecutionPlanDescription() ) );
+        }
     }
 
     private static class CypherAdapterRecord implements Record

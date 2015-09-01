@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.Node;
@@ -105,7 +104,7 @@ public class Neo4jPack
             }
             else if ( obj instanceof Collection )
             {
-                List list = (List) obj;
+                Collection list = (Collection) obj;
                 packListHeader( list.size() );
                 for ( Object item : list )
                 {
@@ -235,6 +234,7 @@ public class Neo4jPack
 
     }
 
+
     public static class Unpacker extends PackStream.Unpacker
     {
         private IdentityPack.Unpacker identityUnpacker = new IdentityPack.Unpacker();
@@ -316,7 +316,7 @@ public class Neo4jPack
                         }
                         default:
                             throw new BoltIOException( Status.Request.InvalidFormat,
-                                    "Unknown struct type: " + signature );
+                                    "Unknown struct type: " + Integer.toHexString(signature) );
                     }
                 }
                 default:

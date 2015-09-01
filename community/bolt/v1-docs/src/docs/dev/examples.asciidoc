@@ -28,7 +28,7 @@ Client: RUN "RETURN 1 AS num" {}
   00 13 b2 10  8f 52 45 54  55 52 4e 20  31 20 41 53
   20 6e 75 6d  a0 00 00
 
-Server: SUCCESS { fields: ['num'] }
+Server: SUCCESS { "fields": ["num"] }
 
   00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75
   6d 00 00
@@ -89,7 +89,7 @@ Client: PULL_ALL
   00 02 B0 3F  00 00
 
 # Server responses
-Server: SUCCESS { fields: ['num'] }
+Server: SUCCESS { "fields": ["num"] }
 
   00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75
   6d 00 00
@@ -102,7 +102,7 @@ Server: SUCCESS {}
 
   00 03 b1 70  a0 00 00
 
-Server: SUCCESS { fields: ['num'] }
+Server: SUCCESS { "fields": ["num"] }
 
   00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75
   6d 00 00
@@ -146,8 +146,8 @@ Client: RUN "This will cause a syntax error" {}
 
 
 # Server responds with failure
-Server: FAILURE {code:"Neo.ClientError.Statement.InvalidSyntax",
-                 message:"Invalid input 'T': expected <init> (line 1, column 1 (offset: 0))
+Server: FAILURE { "code": "Neo.ClientError.Statement.InvalidSyntax",
+                  "message": "Invalid input 'T': expected <init> (line 1, column 1 (offset: 0))
                           "This will cause a syntax error"
                            ^"}
 
@@ -190,8 +190,163 @@ Client: RUN "RETURN 1 AS num" {}
   00 13 b2 10  8f 52 45 54  55 52 4e 20  31 20 41 53
   20 6e 75 6d  a0 00 00
 
-Server: SUCCESS { fields: ['num'] }
+Server: SUCCESS { "fields": ["num"] }
 
   00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75
   6d 00 00
+----
+
+=== Explaining and profiling a query
+
+Profiling and query explanation is a mechanism of the underlying query engine, meaning there is no explicit protocol mechanism to trigger these.
+Instead, profiling is triggered by prefixing your query with `PROFILE`, and explaining is triggered by prefixing your query with `EXPLAIN`.
+The resulting query plan is returned at the end of the result stream, with the profiling information embedded if you ran `PROFILE`.
+
+.Profile query
+[source,ndp_exchange]
+----
+# Handshake
+Client: <connect>
+Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
+Server: 00 00 00 01
+
+Client: INITIALIZE "MyClient/1.0"
+
+  00 0F B1 01 8C 4D 79 43    6C 69 65 6E 74 2F 31 2E    30 00 00
+
+Server: SUCCESS {}
+
+  00 03 b1 70  a0 00 00
+
+# Explaining the query will not execute it, so it returns an empty result and the query plan
+Client: RUN "EXPLAIN RETURN 1 AS num" {}
+
+  00 1C B2 10  D0 17 45 58  50 4C 41 49  4E 20 52 45
+  54 55 52 4E  20 31 20 41  53 20 6E 75  6D A0 00 00
+
+Server: SUCCESS { "fields": [] }
+
+  00 0B B1 70  A1 86 66 69  65 6C 64 73  90 00 00
+
+Client: PULL_ALL
+
+  00 02 B0 3F  00 00
+
+Server: SUCCESS {
+          "plan": {
+            "args": {
+              "runtime-impl": "INTERPRETED",
+              "planner-impl": "IDP",
+              "version": "CYPHER 2.3",
+              "KeyNames": "num",
+              "EstimatedRows": 1.0,
+              "planner": "COST",
+              "runtime": "INTERPRETED"
+            },
+            "children": [{
+              "args": {
+                "LegacyExpression": "{  AUTOINT0}",
+                "EstimatedRows": 1.0},
+              "children": [],
+              "identifiers": ["num"],
+              "operatorType": "Projection"
+            }],
+            "identifiers": ["num"],
+            "operatorType": "ProduceResults"
+          }
+        }
+
+  01 38 B1 70  A1 84 70 6C  61 6E A4 84  61 72 67 73
+  A7 8C 72 75  6E 74 69 6D  65 2D 69 6D  70 6C 8B 49
+  4E 54 45 52  50 52 45 54  45 44 8C 70  6C 61 6E 6E
+  65 72 2D 69  6D 70 6C 83  49 44 50 87  76 65 72 73
+  69 6F 6E 8A  43 59 50 48  45 52 20 32  2E 33 88 4B
+  65 79 4E 61  6D 65 73 83  6E 75 6D 8D  45 73 74 69
+  6D 61 74 65  64 52 6F 77  73 C1 3F F0  00 00 00 00
+  00 00 87 70  6C 61 6E 6E  65 72 84 43  4F 53 54 87
+  72 75 6E 74  69 6D 65 8B  49 4E 54 45  52 50 52 45
+  54 45 44 88  63 68 69 6C  64 72 65 6E  91 A4 84 61
+  72 67 73 A2  D0 10 4C 65  67 61 63 79  45 78 70 72
+  65 73 73 69  6F 6E 8C 7B  20 20 41 55  54 4F 49 4E
+  54 30 7D 8D  45 73 74 69  6D 61 74 65  64 52 6F 77
+  73 C1 3F F0  00 00 00 00  00 00 88 63  68 69 6C 64
+  72 65 6E 90  8B 69 64 65  6E 74 69 66  69 65 72 73
+  91 83 6E 75  6D 8C 6F 70  65 72 61 74  6F 72 54 79
+  70 65 8A 50  72 6F 6A 65  63 74 69 6F  6E 8B 69 64
+  65 6E 74 69  66 69 65 72  73 91 83 6E  75 6D 8C 6F
+  70 65 72 61  74 6F 72 54  79 70 65 8E  50 72 6F 64
+  75 63 65 52  65 73 75 6C  74 73 00 00
+
+# Profiling the query will execute it, and the returned plan now includes the number of rows emitted from
+# each part of the plan, as well as the number of database primitive operations that were executed.
+Client: RUN "PROFILE RETURN 1 AS num" {}
+
+  00 1C B2 10  D0 17 50 52  4F 46 49 4C  45 20 52 45
+  54 55 52 4E  20 31 20 41  53 20 6E 75  6D A0 00 00
+
+Server: SUCCESS { "fields": ["num"] }
+
+  00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75
+  6d 00 00
+
+Client: PULL_ALL
+
+  00 02 B0 3F  00 00
+
+Server: RECORD [1]
+
+  00 04 b1 71  91 01 00 00
+
+# Notice how this time, the response includes the 'DbHits' and 'Rows' metrics in the plan description:
+Server: SUCCESS {
+          "plan": {
+            "args": {
+              "runtime-impl": "INTERPRETED",
+              "planner-impl": "IDP",
+              "version": "CYPHER 2.3",
+              "KeyNames": "num",
+              "EstimatedRows": 1.0,
+              "planner": "COST",
+              "runtime": "INTERPRETED",
+              "DbHits": 0,
+              "Rows": 1
+            },
+            "children": [{
+              "args": {
+                "LegacyExpression": "{  AUTOINT0}",
+                "EstimatedRows": 1.0,
+                "DbHits": 0,
+                "Rows": 1
+              },
+              "children": [],
+              "identifiers": ["num"],
+              "operatorType": "Projection"
+            }],
+            "identifiers": ["num"],
+            "operatorType": "ProduceResults"
+          }
+        }
+
+  01 54 B1 70  A1 84 70 6C  61 6E A4 84  61 72 67 73
+  A9 8C 72 75  6E 74 69 6D  65 2D 69 6D  70 6C 8B 49
+  4E 54 45 52  50 52 45 54  45 44 8C 70  6C 61 6E 6E
+  65 72 2D 69  6D 70 6C 83  49 44 50 87  76 65 72 73
+  69 6F 6E 8A  43 59 50 48  45 52 20 32  2E 33 88 4B
+  65 79 4E 61  6D 65 73 83  6E 75 6D 8D  45 73 74 69
+  6D 61 74 65  64 52 6F 77  73 C1 3F F0  00 00 00 00
+  00 00 87 70  6C 61 6E 6E  65 72 84 43  4F 53 54 87
+  72 75 6E 74  69 6D 65 8B  49 4E 54 45  52 50 52 45
+  54 45 44 86  44 62 48 69  74 73 00 84  52 6F 77 73
+  01 88 63 68  69 6C 64 72  65 6E 91 A4  84 61 72 67
+  73 A4 D0 10  4C 65 67 61  63 79 45 78  70 72 65 73
+  73 69 6F 6E  8C 7B 20 20  41 55 54 4F  49 4E 54 30
+  7D 8D 45 73  74 69 6D 61  74 65 64 52  6F 77 73 C1
+  3F F0 00 00  00 00 00 00  86 44 62 48  69 74 73 00
+  84 52 6F 77  73 01 88 63  68 69 6C 64  72 65 6E 90
+  8B 69 64 65  6E 74 69 66  69 65 72 73  91 83 6E 75
+  6D 8C 6F 70  65 72 61 74  6F 72 54 79  70 65 8A 50
+  72 6F 6A 65  63 74 69 6F  6E 8B 69 64  65 6E 74 69
+  66 69 65 72  73 91 83 6E  75 6D 8C 6F  70 65 72 61
+  74 6F 72 54  79 70 65 8E  50 72 6F 64  75 63 65 52
+  65 73 75 6C  74 73 00 00
 ----

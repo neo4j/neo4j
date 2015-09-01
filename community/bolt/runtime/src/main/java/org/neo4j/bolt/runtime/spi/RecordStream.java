@@ -38,6 +38,11 @@ public interface RecordStream extends AutoCloseable
     interface Visitor
     {
         void visit( Record record ) throws Exception;
+
+        /**
+         * Associate arbitrary metadata with the result stream. This will get transferred at the end of the stream.
+         * Please stick to Neo4j type system types (Map, List, Integer, Float, Boolean, String etc) */
+        void addMetadata( String key, Object value );
     }
 
     RecordStream EMPTY = new RecordStream()
