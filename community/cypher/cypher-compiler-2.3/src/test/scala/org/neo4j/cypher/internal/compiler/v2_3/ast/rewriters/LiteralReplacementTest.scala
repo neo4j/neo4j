@@ -26,20 +26,6 @@ class LiteralReplacementTest extends CypherFunSuite  {
 
   import parser.ParserFixture.parser
 
-  test("should not extract literal like patterns") {
-    assertDoesNotRewrite("RETURN x LIKE \"Pattern%\"")
-    assertDoesNotRewrite("RETURN x NOT LIKE \"Pattern%\"")
-    assertDoesNotRewrite("RETURN x ILIKE \"Pattern%\"")
-    assertDoesNotRewrite("RETURN x NOT ILIKE \"Pattern%\"")
-  }
-
-  test("should extract non-literal like patterns") {
-    assertRewrite("RETURN (x LIKE (\"P_ttern\" + x.name)) AS result", "RETURN (x LIKE ({`  AUTOSTRING0`} + x.name)) AS result", Map("  AUTOSTRING0" -> "P_ttern"))
-    assertRewrite("RETURN (x NOT LIKE (\"P_ttern\" + x.name)) AS result", "RETURN (x NOT LIKE ({`  AUTOSTRING0`} + x.name)) AS result", Map("  AUTOSTRING0" -> "P_ttern"))
-    assertRewrite("RETURN (x ILIKE (\"P_ttern\" + x.name)) AS result", "RETURN (x ILIKE ({`  AUTOSTRING0`} + x.name)) AS result", Map("  AUTOSTRING0" -> "P_ttern"))
-    assertRewrite("RETURN (x NOT ILIKE (\"P_ttern\" + x.name)) AS result", "RETURN (x NOT ILIKE ({`  AUTOSTRING0`} + x.name)) AS result", Map("  AUTOSTRING0" -> "P_ttern"))
-  }
-
   test("should not extract literal dynamic property lookups") {
     assertDoesNotRewrite("MATCH n RETURN n[\"name\"]")
   }

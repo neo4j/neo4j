@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.frontend.v2_3.{ExclusiveBound, InclusiveBound, 
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  test("should plan index seek by prefix for simple prefix search based on LIKE with %") {
+  ignore("should plan index seek by prefix for simple prefix search based on LIKE with %") {
     (new given {
       indexOn("Person", "name")
       cost = nodeIndexScanCost
@@ -48,7 +48,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
-  test("should plan index seek by prefix for empty prefix search based on LIKE with %") {
+  ignore("should plan index seek by prefix for empty prefix search based on LIKE with %") {
     val result = (new given {
       indexOn("Person", "name")
       cost = nodeIndexScanCost
@@ -65,7 +65,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       )(solved))
   }
 
-  test("should plan index seek by prefix for prefix search based on multiple LIKEs combined with AND, and choose the longer prefix") {
+  ignore("should plan index seek by prefix for prefix search based on multiple LIKEs combined with AND, and choose the longer prefix") {
     (new given {
       indexOn("Person", "name")
       indexOn("Person", "lastname")
@@ -83,7 +83,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       )(solved))
   }
 
-  test("should plan index seek by prefix for prefix search based on multiple LIKEs combined with AND NOT") {
+  ignore("should plan index seek by prefix for prefix search based on multiple LIKEs combined with AND NOT") {
     (new given {
       indexOn("Person", "name")
       indexOn("Person", "lastname")
@@ -101,7 +101,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       )(solved))
   }
 
-  test("should plan index seek by prefix for complex prefix search based on LIKE with %") {
+  ignore("should plan index seek by prefix for complex prefix search based on LIKE with %") {
     (new given {
       indexOn("Person", "name")
       cost = nodeIndexScanCost
@@ -118,7 +118,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
-  test("should plan property equality index seek instead of index seek by prefix") {
+  ignore("should plan property equality index seek instead of index seek by prefix") {
     val like: Like = Like(Property(Identifier("a") _, PropertyKeyName("name") _) _,
                           LikePattern(StringLiteral("prefix%") _)) _
     (new given {
@@ -135,7 +135,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       )(solved))
   }
 
-  test("should plan property equality index seek using IN instead of index seek by prefix") {
+  ignore("should plan property equality index seek using IN instead of index seek by prefix") {
     val like: Like = Like(Property(Identifier("a") _, PropertyKeyName("name") _) _,
                           LikePattern(StringLiteral("prefix%") _)) _
     (new given {
