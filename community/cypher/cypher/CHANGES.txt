@@ -39,6 +39,10 @@ o Added new warning mechanism. The first supported warning is generated for quer
   unintended cartesian product
 o Cypher may now use full index scans to solve queries containing has(n.prop) if appropriate
 
+2.2.6
+-----
+o Fixes #5195 - USING INDEX hints breaks some queries
+
 2.2.5
 -----
 o Fixes #4907 - Result.columnAs should throw exception on invalid column name

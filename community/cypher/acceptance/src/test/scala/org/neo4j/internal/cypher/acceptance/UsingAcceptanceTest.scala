@@ -437,6 +437,18 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     result should equal(List(Map("m" -> m)))
   }
 
+  test("USING INDEX hint should not clash with used identifiers") {
+    graph.createIndex("PERSON", "id")
+
+    val result = executeWithAllPlanners(
+      """MATCH (actor:PERSON {id: 1})
+        |USING INDEX actor:PERSON(id)
+        |WITH 14 as id
+        |RETURN 13 as id""".stripMargin)
+
+    result.toList should be(empty)
+  }
+
   case class includeHashJoinOn(nodeIdentifier: String) extends Matcher[InternalPlanDescription] {
 
     private val hashJoinStr = classOf[NodeHashJoin].getSimpleName
