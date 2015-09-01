@@ -10,7 +10,7 @@
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-cypher-refcard</artifactId>
   <version>2.3-SNAPSHOT</version>
-  <name>Neo4j Cypher Reference Card</name>
+  <name>Neo4j - Cypher Reference Card</name>
   <description>Reference Card for the Neo4j Cypher Query Language.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
   <packaging>jar</packaging>
@@ -164,34 +164,30 @@
 
   <profiles>
     <profile>
-      <id>print</id>
+      <id>neo-full-build-with-javadoc</id>
       <activation>
         <activeByDefault>false</activeByDefault>
         <property>
-          <name>print</name>
+          <name>fullBuild</name>
         </property>
       </activation>
       <build>
         <plugins>
           <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
             <executions>
               <execution>
-                <id>execute-asciidoc-html5-print</id>
-                <phase>compile</phase>
+                <id>generate-dummy-javadocs-jar</id>
+                <phase>package</phase>
                 <goals>
-                  <goal>exec</goal>
+                  <goal>jar</goal>
                 </goals>
                 <configuration>
-                  <executable>make</executable>
-                  <arguments>
-                    <argument>init</argument>
-                    <argument>preview</argument>
-                    <argument>VERSION=${refcard.version}</argument>
-                    <argument>HTML5_DIR_NAME=html5/print</argument>
-                    <argument>HTML5_DOCINFO=docinfo</argument>
-                  </arguments>
+                  <classifier>javadoc</classifier>
+                  <excludes>
+                    <exclude>**</exclude>
+                  </excludes>
                 </configuration>
               </execution>
             </executions>
@@ -201,28 +197,4 @@
     </profile>
   </profiles>
 
-  <repositories>
-    <repository>
-      <id>neo4j-release-repository</id>
-      <name>Neo4j Maven 2 release repository</name>
-      <url>http://m2.neo4j.org/content/repositories/releases</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>neo4j-snapshot-repository</id>
-      <name>Neo4j Maven 2 snapshot repository</name>
-      <url>http://m2.neo4j.org/content/repositories/snapshots</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-    </repository>
-  </repositories>
 </project>

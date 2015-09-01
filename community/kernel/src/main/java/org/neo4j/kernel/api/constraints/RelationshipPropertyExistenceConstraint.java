@@ -25,6 +25,7 @@ import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
 import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
 
@@ -36,7 +37,7 @@ public class RelationshipPropertyExistenceConstraint extends RelationshipPropert
     }
 
     @Override
-    public void added( ChangeVisitor visitor )
+    public void added( ChangeVisitor visitor ) throws CreateConstraintFailureException
     {
         visitor.visitAddedRelationshipPropertyExistenceConstraint( this );
     }

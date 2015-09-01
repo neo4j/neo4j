@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 

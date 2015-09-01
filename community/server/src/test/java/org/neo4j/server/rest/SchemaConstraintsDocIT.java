@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
@@ -79,60 +78,6 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Create node property existence constraint.
-     * Create a node property existence constraint for a label and a property.
-     */
-    @Documented
-    @Test
-    @GraphDescription.Graph( nodes = {} )
-    public void createNodePropertyExistenceConstraint() throws JsonParseException
-    {
-        data.get();
-
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
-        Map<String, Object> definition = map( "property_keys", singletonList( propertyKey ) );
-
-        String result = gen.get().noGraph().expectedStatus( 200 ).payload( createJsonFrom( definition ) ).post(
-                getSchemaConstraintLabelExistenceUri( labelName ) ).entity();
-
-        Map<String, Object> serialized = jsonToMap( result );
-
-        Map<String, Object> constraint = new HashMap<>(  );
-        constraint.put( "type", ConstraintType.NODE_PROPERTY_EXISTENCE.name() );
-        constraint.put( "label", labelName );
-        constraint.put( "property_keys", singletonList( propertyKey ) );
-
-        assertThat( serialized, equalTo( constraint ) );
-    }
-
-    /**
-     * Create relationship property existence constraint.
-     * Create a relationship property existence constraint for a relationship type and a property.
-     */
-    @Documented
-    @Test
-    @GraphDescription.Graph( nodes = {} )
-    public void createRelationshipPropertyExistenceConstraint() throws JsonParseException
-    {
-        data.get();
-
-        String relationshipTypeName = relationshipTypes.newInstance(), propertyKey = properties.newInstance();
-        Map<String, Object> definition = map( "property_keys", singletonList( propertyKey ) );
-
-        String result = gen.get().noGraph().expectedStatus( 200 ).payload( createJsonFrom( definition ) ).post(
-                getSchemaRelationshipConstraintTypeExistenceUri( relationshipTypeName ) ).entity();
-
-        Map<String, Object> serialized = jsonToMap( result );
-
-        Map<String, Object> constraint = new HashMap<>(  );
-        constraint.put( "type", ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE.name() );
-        constraint.put( "relationshipType", relationshipTypeName );
-        constraint.put( "property_keys", singletonList( propertyKey ) );
-
-        assertThat( serialized, equalTo( constraint ) );
-    }
-
-    /**
      * Get a specific uniqueness constraint.
      * Get a specific uniqueness constraint for a label and a property.
      */
@@ -154,60 +99,6 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> constraint = new HashMap<>(  );
         constraint.put( "type", ConstraintType.UNIQUENESS.name() );
         constraint.put( "label", labelName );
-        constraint.put( "property_keys", singletonList( propertyKey ) );
-
-        assertThat( serializedList, hasItem( constraint ) );
-    }
-
-    /**
-     * Get a specific node property existence constraint.
-     * Get a specific node property existence constraint for a label and a property.
-     */
-    @Documented
-    @Test
-    @GraphDescription.Graph( nodes = {} )
-    public void getLabelPropertyExistenceConstraint() throws JsonParseException
-    {
-        data.get();
-
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
-        createLabelPropertyExistenceConstraint( labelName, propertyKey );
-
-        String result = gen.get().noGraph().expectedStatus( 200 ).get(
-                getSchemaConstraintLabelExistencePropertyUri( labelName, propertyKey ) ).entity();
-
-        List<Map<String, Object>> serializedList = jsonToList( result );
-
-        Map<String, Object> constraint = new HashMap<>(  );
-        constraint.put( "type", ConstraintType.NODE_PROPERTY_EXISTENCE.name() );
-        constraint.put( "label", labelName );
-        constraint.put( "property_keys", singletonList( propertyKey ) );
-
-        assertThat( serializedList, hasItem( constraint ) );
-    }
-
-    /**
-     * Get a specific relationship property existence constraint.
-     * Get a specific relationship property existence constraint for a label and a property.
-     */
-    @Documented
-    @Test
-    @GraphDescription.Graph( nodes = {} )
-    public void getRelationshipTypePropertyExistenceConstraint() throws JsonParseException
-    {
-        data.get();
-
-        String typeName = relationshipTypes.newInstance(), propertyKey = properties.newInstance();
-        createRelationshipTypePropertyExistenceConstraint( typeName, propertyKey );
-
-        String result = gen.get().noGraph().expectedStatus( 200 ).get(
-                getSchemaRelationshipConstraintTypeExistencePropertyUri( typeName, propertyKey ) ).entity();
-
-        List<Map<String, Object>> serializedList = jsonToList( result );
-
-        Map<String, Object> constraint = new HashMap<>(  );
-        constraint.put( "type", ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE.name() );
-        constraint.put( "relationshipType", typeName );
         constraint.put( "property_keys", singletonList( propertyKey ) );
 
         assertThat( serializedList, hasItem( constraint ) );
@@ -246,72 +137,6 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Get all node property existence constraints for a label.
-     */
-    @SuppressWarnings( "unchecked" )
-    @Documented
-    @Test
-    @GraphDescription.Graph( nodes = {} )
-    public void getLabelPropertyExistenceConstraints() throws JsonParseException
-    {
-        data.get();
-
-        String labelName = labels.newInstance(), propertyKey1 = properties.newInstance(), propertyKey2 = properties.newInstance();
-        createLabelPropertyExistenceConstraint( labelName, propertyKey1 );
-        createLabelPropertyExistenceConstraint( labelName, propertyKey2 );
-
-        String result = gen.get().noGraph().expectedStatus( 200 ).get( getSchemaConstraintLabelExistenceUri( labelName ) ).entity();
-
-        List<Map<String, Object>> serializedList = jsonToList( result );
-
-        Map<String, Object> constraint1 = new HashMap<>(  );
-        constraint1.put( "type", ConstraintType.NODE_PROPERTY_EXISTENCE.name() );
-        constraint1.put( "label", labelName );
-        constraint1.put( "property_keys", singletonList( propertyKey1 ) );
-
-        Map<String, Object> constraint2 = new HashMap<>(  );
-        constraint2.put( "type", ConstraintType.NODE_PROPERTY_EXISTENCE.name() );
-        constraint2.put( "label", labelName );
-        constraint2.put( "property_keys", singletonList( propertyKey2 ) );
-
-        assertThat( serializedList, hasItems( constraint1, constraint2 ) );
-    }
-
-    /**
-     * Get all relationship property existence constraints for a type.
-     */
-    @SuppressWarnings( "unchecked" )
-    @Documented
-    @Test
-    @GraphDescription.Graph( nodes = {} )
-    public void getRelationshipTypePropertyExistenceConstraints() throws JsonParseException
-    {
-        data.get();
-
-        String typeName = relationshipTypes.newInstance(), propertyKey1 = properties.newInstance(),
-                propertyKey2 = properties.newInstance();
-        createRelationshipTypePropertyExistenceConstraint( typeName, propertyKey1 );
-        createRelationshipTypePropertyExistenceConstraint( typeName, propertyKey2 );
-
-        String result = gen.get().noGraph().expectedStatus( 200 )
-                .get( getSchemaRelationshipConstraintTypeExistenceUri( typeName ) ).entity();
-
-        List<Map<String, Object>> serializedList = jsonToList( result );
-
-        Map<String, Object> constraint1 = new HashMap<>(  );
-        constraint1.put( "type", ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE.name() );
-        constraint1.put( "relationshipType", typeName );
-        constraint1.put( "property_keys", singletonList( propertyKey1 ) );
-
-        Map<String, Object> constraint2 = new HashMap<>(  );
-        constraint2.put( "type", ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE.name() );
-        constraint2.put( "relationshipType", typeName );
-        constraint2.put( "property_keys", singletonList( propertyKey2 ) );
-
-        assertThat( serializedList, hasItems( constraint1, constraint2 ) );
-    }
-
-    /**
      * Get all constraints for a label.
      */
     @SuppressWarnings( "unchecked" )
@@ -322,9 +147,8 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = labels.newInstance(), propertyKey1 = properties.newInstance(), propertyKey2 = properties.newInstance();
+        String labelName = labels.newInstance(), propertyKey1 = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName, propertyKey1 );
-        createLabelPropertyExistenceConstraint( labelName, propertyKey2 );
 
         String result = gen.get().noGraph().expectedStatus( 200 ).get( getSchemaConstraintLabelUri( labelName ) ).entity();
 
@@ -335,12 +159,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         constraint1.put( "label", labelName );
         constraint1.put( "property_keys", singletonList( propertyKey1 ) );
 
-        Map<String, Object> constraint2 = new HashMap<>(  );
-        constraint2.put( "type", ConstraintType.NODE_PROPERTY_EXISTENCE.name() );
-        constraint2.put( "label", labelName );
-        constraint2.put( "property_keys", singletonList( propertyKey2 ) );
-
-        assertThat( serializedList, hasItems( constraint1, constraint2 ) );
+        assertThat( serializedList, hasItems( constraint1 ) );
     }
 
     /**
@@ -355,25 +174,18 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         data.get();
 
         String labelName1 = labels.newInstance(), propertyKey1 = properties.newInstance();
-        String labelName2 = labels.newInstance(), propertyKey2 = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName1, propertyKey1 );
-        createLabelPropertyExistenceConstraint( labelName2, propertyKey2 );
 
         String result = gen.get().noGraph().expectedStatus( 200 ).get( getSchemaConstraintUri() ).entity();
 
-        List<Map<String, Object>> serializedList = jsonToList( result );
+        List<Map<String,Object>> serializedList = jsonToList( result );
 
-        Map<String, Object> constraint1 = new HashMap<>(  );
+        Map<String, Object> constraint1 = new HashMap<>();
         constraint1.put( "type", ConstraintType.UNIQUENESS.name() );
         constraint1.put( "label", labelName1 );
         constraint1.put( "property_keys", singletonList( propertyKey1 ) );
 
-        Map<String, Object> constraint2 = new HashMap<>(  );
-        constraint2.put( "type", ConstraintType.NODE_PROPERTY_EXISTENCE.name() );
-        constraint2.put( "label", labelName2 );
-        constraint2.put( "property_keys", singletonList( propertyKey2 ) );
-
-        assertThat( serializedList, hasItems( constraint1, constraint2 ) );
+        assertThat( serializedList, hasItems( constraint1 ) );
     }
 
     /**
@@ -394,49 +206,6 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         gen.get().noGraph().expectedStatus( 204 ).delete( getSchemaConstraintLabelUniquenessPropertyUri( labelName, propertyKey ) ).entity();
 
         assertThat( getConstraints( graphdb(), label( labelName ) ), isEmpty() );
-    }
-
-    /**
-     * Drop node property existence constraint.
-     * Drop node property existence constraint for a label and a property.
-     */
-    @Documented
-    @Test
-    @GraphDescription.Graph( nodes = {} )
-    public void drop_node_property_existence_constraint() throws Exception
-    {
-        data.get();
-
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
-        ConstraintDefinition constraintDefinition = createLabelPropertyExistenceConstraint( labelName, propertyKey );
-        assertThat( getConstraints( graphdb(), label( labelName ) ), containsOnly( constraintDefinition ) );
-
-        gen.get().noGraph().expectedStatus( 204 ).delete( getSchemaConstraintLabelExistencePropertyUri( labelName, propertyKey ) ).entity();
-
-        assertThat( getConstraints( graphdb(), label( labelName ) ), isEmpty() );
-    }
-
-    /**
-     * Drop relationship property existence constraint.
-     * Drop relationship property existence constraint for a relationship type and a property.
-     */
-    @Documented
-    @Test
-    @GraphDescription.Graph( nodes = {} )
-    public void drop_relationship_property_existence_constraint() throws Exception
-    {
-        data.get();
-
-        String typeName = relationshipTypes.newInstance(), propertyKey = properties.newInstance();
-        DynamicRelationshipType type = DynamicRelationshipType.withName( typeName );
-        ConstraintDefinition constraintDefinition = createRelationshipTypePropertyExistenceConstraint( typeName,
-                propertyKey );
-        assertThat( getConstraints( graphdb(), type ), containsOnly( constraintDefinition ) );
-
-        gen.get().noGraph().expectedStatus( 204 ).delete(
-                getSchemaRelationshipConstraintTypeExistencePropertyUri( typeName, propertyKey ) ).entity();
-
-        assertThat( getConstraints( graphdb(), label( typeName ) ), isEmpty() );
     }
 
     /**
@@ -481,30 +250,6 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         {
             ConstraintDefinition constraintDefinition = graphdb().schema().constraintFor( label( labelName ) )
                     .assertPropertyIsUnique( propertyKey ).create();
-            tx.success();
-            return constraintDefinition;
-        }
-    }
-
-    private ConstraintDefinition createLabelPropertyExistenceConstraint( String labelName, String propertyKey )
-    {
-        try ( Transaction tx = graphdb().beginTx() )
-        {
-            ConstraintDefinition constraintDefinition = graphdb().schema().constraintFor( label( labelName ) )
-                    .assertPropertyExists( propertyKey ).create();
-            tx.success();
-            return constraintDefinition;
-        }
-    }
-
-    private ConstraintDefinition createRelationshipTypePropertyExistenceConstraint( String typeName,
-            String propertyKey )
-    {
-        try ( Transaction tx = graphdb().beginTx() )
-        {
-            DynamicRelationshipType type = DynamicRelationshipType.withName( typeName );
-            ConstraintDefinition constraintDefinition = graphdb().schema().constraintFor( type )
-                    .assertPropertyExists( propertyKey ).create();
             tx.success();
             return constraintDefinition;
         }

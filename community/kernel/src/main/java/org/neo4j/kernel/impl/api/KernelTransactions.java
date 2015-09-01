@@ -29,6 +29,7 @@ import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.helpers.Clock;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
@@ -81,6 +82,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
     private final IndexConfigStore indexConfigStore;
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
     private final TransactionHooks hooks;
+    private final ConstraintSemantics constraintSemantics;
     private final TransactionMonitor transactionMonitor;
     private final LifeSupport dataSourceLife;
     private final Tracers tracers;
@@ -112,7 +114,9 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
                                TransactionCommitProcess transactionCommitProcess,
                                IndexConfigStore indexConfigStore,
                                LegacyIndexProviderLookup legacyIndexProviderLookup,
-                               TransactionHooks hooks, TransactionMonitor transactionMonitor,
+                               TransactionHooks hooks,
+                               ConstraintSemantics constraintSemantics,
+                               TransactionMonitor transactionMonitor,
                                LifeSupport dataSourceLife,
                                Tracers tracers )
     {
@@ -133,6 +137,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
         this.indexConfigStore = indexConfigStore;
         this.legacyIndexProviderLookup = legacyIndexProviderLookup;
         this.hooks = hooks;
+        this.constraintSemantics = constraintSemantics;
         this.transactionMonitor = transactionMonitor;
         this.dataSourceLife = dataSourceLife;
         this.tracers = tracers;
@@ -156,8 +161,8 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
                     statementOperations, schemaWriteGuard,
                     labelScanStore, indexingService, updateableSchemaState, recordState, providerMap,
                     neoStore, locksClient, hooks, constraintIndexCreator, transactionHeaderInformationFactory,
-                    transactionCommitProcess, transactionMonitor, storeLayer,
-                    legacyIndexTransactionState, localTxPool, Clock.SYSTEM_CLOCK, tracers.transactionTracer );
+                    transactionCommitProcess, transactionMonitor, storeLayer, legacyIndexTransactionState,
+                    localTxPool, constraintSemantics, Clock.SYSTEM_CLOCK, tracers.transactionTracer );
 
             allTransactions.add( tx );
 

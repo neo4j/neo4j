@@ -65,4 +65,10 @@ public class UniquenessConstraintVerificationFailedKernelException extends Const
         }
         return message.toString();
     }
+
+    @Override
+    public UniquenessConstraint constraint()
+    {
+        return constraint;
+    }
 }

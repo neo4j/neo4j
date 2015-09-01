@@ -52,7 +52,8 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class SchemaAcceptanceTest
 {
-    public @Rule ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    @Rule
+    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 
     private GraphDatabaseService db;
     private Label label = Labels.MY_LABEL;
@@ -74,7 +75,7 @@ public class SchemaAcceptanceTest
     public void addingAnIndexingRuleShouldSucceed() throws Exception
     {
         // WHEN
-        IndexDefinition index = createIndex( db, label , propertyKey );
+        IndexDefinition index = createIndex( db, label, propertyKey );
 
         // THEN
         assertThat( getIndexes( db, label ), containsOnly( index ) );
@@ -87,7 +88,7 @@ public class SchemaAcceptanceTest
 
         // WHEN
         IndexDefinition indexDef;
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             try ( Transaction nestedTransaction = db.beginTx() )
             {
@@ -120,7 +121,7 @@ public class SchemaAcceptanceTest
             catch ( ConstraintViolationException e )
             {
                 assertEquals( "There already exists an index for label 'MY_LABEL' on property 'my_property_key'.",
-                              e.getMessage() );
+                        e.getMessage() );
             }
             tx.success();
         }
@@ -140,7 +141,7 @@ public class SchemaAcceptanceTest
 
         // WHEN
         ConstraintViolationException caught = null;
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             schema.indexFor( label ).on( propertyKey ).create();
             tx.success();
@@ -151,7 +152,7 @@ public class SchemaAcceptanceTest
         }
 
         // THEN
-        assertThat(caught, not(nullValue()));
+        assertThat( caught, not( nullValue() ) );
     }
 
     @Test
@@ -191,12 +192,12 @@ public class SchemaAcceptanceTest
             assertThat( e.getMessage(), containsString( "can only create one unique constraint" ) );
         }
     }
-    
+
     @Test
     public void droppingExistingIndexRuleShouldSucceed() throws Exception
     {
         // GIVEN
-        IndexDefinition index = createIndex( db, label , propertyKey );
+        IndexDefinition index = createIndex( db, label, propertyKey );
 
         // WHEN
         dropIndex( index );
@@ -209,7 +210,7 @@ public class SchemaAcceptanceTest
     public void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSameTransaction() throws Exception
     {
         // GIVEN
-        IndexDefinition index = createIndex( db, label , propertyKey );
+        IndexDefinition index = createIndex( db, label, propertyKey );
 
         // WHEN
         try ( Transaction tx = db.beginTx() )
@@ -236,7 +237,7 @@ public class SchemaAcceptanceTest
     public void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSeparateTransactions() throws Exception
     {
         // GIVEN
-        IndexDefinition index = createIndex( db, label , propertyKey );
+        IndexDefinition index = createIndex( db, label, propertyKey );
         dropIndex( index );
 
         // WHEN
@@ -272,15 +273,15 @@ public class SchemaAcceptanceTest
             assertEquals( Schema.IndexState.ONLINE, db.schema().getIndexState( index ) );
         }
     }
-    
+
     @Test
     public void awaitingAllIndexesComingOnlineWorks()
     {
         // GIVEN
 
         // WHEN
-        IndexDefinition index = createIndex( db, label , propertyKey );
-        createIndex( db, label , "other_property" );
+        IndexDefinition index = createIndex( db, label, propertyKey );
+        createIndex( db, label, "other_property" );
 
         // PASS
         waitForIndex( db, index );
@@ -300,7 +301,7 @@ public class SchemaAcceptanceTest
         Node node = createNode( db, propertyKey, "Neo", label );
 
         // create an index
-        IndexDefinition index = createIndex( db, label , propertyKey );
+        IndexDefinition index = createIndex( db, label, propertyKey );
         waitForIndex( db, index );
 
         // delete the index right away
@@ -333,58 +334,25 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldCreateNodePropertyExistenceConstraint()
-    {
-        // When
-        ConstraintDefinition constraint = createNodePropertyExistenceConstraint( label, propertyKey );
-
-        // Then
-        assertThat( getConstraints( db ), containsOnly( constraint ) );
-    }
-
-    @Test
-    public void shouldCreateRelationshipPropertyExistenceConstraint()
-    {
-        // When
-        ConstraintDefinition constraint = createRelationshipPropertyExistenceConstraint( Types.MY_TYPE, propertyKey );
-
-        // Then
-        assertThat( getConstraints( db ), containsOnly( constraint ) );
-    }
-
-    @Test
     public void shouldListAddedConstraintsByLabel() throws Exception
     {
         // GIVEN
         ConstraintDefinition constraint1 = createUniquenessConstraint( label, propertyKey );
-        ConstraintDefinition constraint2 = createNodePropertyExistenceConstraint( label, propertyKey );
-        createNodePropertyExistenceConstraint( Labels.MY_OTHER_LABEL, propertyKey );
+        createUniquenessConstraint( Labels.MY_OTHER_LABEL, propertyKey );
 
         // WHEN THEN
-        assertThat( getConstraints( db, label ), containsOnly( constraint1, constraint2 ) );
-    }
-
-    @Test
-    public void shouldListAddedConstraintsByRelationshipType() throws Exception
-    {
-        // GIVEN
-        ConstraintDefinition constraint1 = createRelationshipPropertyExistenceConstraint( Types.MY_TYPE, propertyKey );
-        createRelationshipPropertyExistenceConstraint( Types.MY_OTHER_TYPE, propertyKey );
-
-        // WHEN THEN
-        assertThat( getConstraints( db, Types.MY_TYPE ), containsOnly( constraint1 ) );
+        assertThat( getConstraints( db, label ), containsOnly( constraint1 ) );
     }
 
     @Test
     public void shouldListAddedConstraints() throws Exception
     {
         // GIVEN
-        ConstraintDefinition constraint1 = createUniquenessConstraint( label, propertyKey );
-        ConstraintDefinition constraint2 = createNodePropertyExistenceConstraint( label, propertyKey );
-        ConstraintDefinition constraint3 = createRelationshipPropertyExistenceConstraint( Types.MY_TYPE, propertyKey );
+        ConstraintDefinition constraint1 = createUniquenessConstraint( Labels.MY_LABEL, propertyKey );
+        ConstraintDefinition constraint2 = createUniquenessConstraint( Labels.MY_OTHER_LABEL, propertyKey );
 
         // WHEN THEN
-        assertThat( getConstraints( db ), containsOnly( constraint1, constraint2, constraint3 ) );
+        assertThat( getConstraints( db ), containsOnly( constraint1, constraint2 ) );
     }
 
     @Test
@@ -395,7 +363,7 @@ public class SchemaAcceptanceTest
 
         // WHEN
         dropConstraint( db, constraint );
-        
+
         // THEN
         assertThat( getConstraints( db, label ), isEmpty() );
     }
@@ -415,7 +383,7 @@ public class SchemaAcceptanceTest
         catch ( ConstraintViolationException e )
         {
             assertEquals( "There already exists an index for label 'MY_LABEL' on property 'my_property_key'. " +
-                                  "A constraint cannot be created until the index has been dropped.", e.getMessage() );
+                          "A constraint cannot be created until the index has been dropped.", e.getMessage() );
         }
     }
 
@@ -439,11 +407,11 @@ public class SchemaAcceptanceTest
         catch ( ConstraintViolationException e )
         {
             assertEquals(
-                format( "Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key " +
-                        "IS UNIQUE:%nMultiple nodes with label `MY_LABEL` have property `my_property_key` = " +
-                        "'value1':%n" +
-                        "  node(0)%n" +
-                        "  node(1)" ), e.getMessage() );
+                    format( "Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key " +
+                            "IS UNIQUE:%nMultiple nodes with label `MY_LABEL` have property `my_property_key` = " +
+                            "'value1':%n" +
+                            "  node(0)%n" +
+                            "  node(1)" ), e.getMessage() );
         }
     }
 
@@ -462,7 +430,8 @@ public class SchemaAcceptanceTest
         catch ( ConstraintViolationException e )
         {
             assertEquals(
-                    "Constraint already exists: CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key IS UNIQUE",
+                    "Constraint already exists: CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key " +
+                    "IS UNIQUE",
                     e.getMessage() );
         }
     }
@@ -482,7 +451,8 @@ public class SchemaAcceptanceTest
         catch ( ConstraintViolationException e )
         {
             assertEquals(
-                    "Label 'MY_LABEL' and property 'my_property_key' have a unique constraint defined on them, so an index is " +
+                    "Label 'MY_LABEL' and property 'my_property_key' have a unique constraint defined on them, so an " +
+                    "index is " +
                     "already created that matches this.", e.getMessage() );
         }
     }
@@ -502,7 +472,7 @@ public class SchemaAcceptanceTest
         catch ( ConstraintViolationException e )
         {
             assertEquals( "There already exists an index for label 'MY_LABEL' on property 'my_property_key'.",
-                          e.getMessage() );
+                    e.getMessage() );
         }
     }
 
@@ -542,31 +512,12 @@ public class SchemaAcceptanceTest
 
     private ConstraintDefinition createUniquenessConstraint( Label label, String prop )
     {
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
-            ConstraintDefinition constraint = db.schema().constraintFor( label ).assertPropertyIsUnique( prop ).create();
+            ConstraintDefinition constraint =
+                    db.schema().constraintFor( label ).assertPropertyIsUnique( prop ).create();
             tx.success();
             return constraint;
-        }
-    }
-
-    private ConstraintDefinition createNodePropertyExistenceConstraint( Label label, String prop )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            ConstraintDefinition cd = db.schema().constraintFor( label ).assertPropertyExists( prop ).create();
-            tx.success();
-            return cd;
-        }
-    }
-
-    private ConstraintDefinition createRelationshipPropertyExistenceConstraint( RelationshipType type, String prop )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            ConstraintDefinition cd = db.schema().constraintFor( type ).assertPropertyExists( prop ).create();
-            tx.success();
-            return cd;
         }
     }
 

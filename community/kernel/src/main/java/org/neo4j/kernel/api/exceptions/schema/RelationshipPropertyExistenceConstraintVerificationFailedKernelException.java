@@ -44,4 +44,10 @@ public class RelationshipPropertyExistenceConstraintVerificationFailedKernelExce
                 tokenNameLookup.relationshipTypeGetName( constraint.relationshipType() ),
                 tokenNameLookup.propertyKeyGetName( constraint.propertyKey() ) );
     }
+
+    @Override
+    public RelationshipPropertyExistenceConstraint constraint()
+    {
+        return constraint;
+    }
 }

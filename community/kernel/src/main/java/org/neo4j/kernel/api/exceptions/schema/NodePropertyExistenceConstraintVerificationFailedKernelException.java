@@ -44,4 +44,10 @@ public class NodePropertyExistenceConstraintVerificationFailedKernelException
                 tokenNameLookup.labelGetName( constraint.label() ),
                 tokenNameLookup.propertyKeyGetName( constraint.propertyKey() ) );
     }
+
+    @Override
+    public NodePropertyExistenceConstraint constraint()
+    {
+        return constraint;
+    }
 }

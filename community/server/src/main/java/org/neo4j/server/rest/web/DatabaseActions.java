@@ -57,12 +57,11 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.graphdb.index.UniqueFactory;
 import org.neo4j.graphdb.index.UniqueFactory.UniqueEntity;
+import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.ConstraintCreator;
-import org.neo4j.graphdb.schema.RelationshipConstraintCreator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IterableWrapper;
@@ -1536,31 +1535,6 @@ public class DatabaseActions
         for ( String key : propertyKeys )
         {
             constraintCreator = constraintCreator.assertPropertyIsUnique( key );
-        }
-        ConstraintDefinition constraintDefinition = constraintCreator.create();
-        return new ConstraintDefinitionRepresentation( constraintDefinition );
-    }
-
-    public ConstraintDefinitionRepresentation createNodePropertyExistenceConstraint( String labelName,
-            Iterable<String> propertyKeys )
-    {
-        ConstraintCreator constraintCreator = graphDb.schema().constraintFor( label( labelName ) );
-        for ( String key : propertyKeys )
-        {
-            constraintCreator = constraintCreator.assertPropertyExists( key );
-        }
-        ConstraintDefinition constraintDefinition = constraintCreator.create();
-        return new ConstraintDefinitionRepresentation( constraintDefinition );
-    }
-
-    public ConstraintDefinitionRepresentation createRelationshipPropertyExistenceConstraint( String typeName,
-            Iterable<String> propertyKeys )
-    {
-        RelationshipType type = DynamicRelationshipType.withName( typeName );
-        RelationshipConstraintCreator constraintCreator = graphDb.schema().constraintFor( type );
-        for ( String key : propertyKeys )
-        {
-            constraintCreator = constraintCreator.assertPropertyExists( key );
         }
         ConstraintDefinition constraintDefinition = constraintCreator.create();
         return new ConstraintDefinitionRepresentation( constraintDefinition );

@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -53,7 +54,7 @@ import org.neo4j.kernel.impl.util.diffsets.ReadableRelationshipDiffSets;
  */
 public interface ReadableTxState
 {
-    void accept( TxStateVisitor visitor ) throws ConstraintValidationKernelException;
+    void accept( TxStateVisitor visitor ) throws ConstraintValidationKernelException, CreateConstraintFailureException;
 
     boolean hasChanges();
 

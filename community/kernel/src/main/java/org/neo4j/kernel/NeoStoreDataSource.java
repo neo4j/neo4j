@@ -25,6 +25,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -81,6 +82,7 @@ import org.neo4j.kernel.impl.api.store.DiskLayer;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -314,6 +316,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
     private final Map<String,IndexImplementation> indexProviders = new HashMap<>();
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
     private final IndexConfigStore indexConfigStore;
+    private final ConstraintSemantics constraintSemantics;
 
     private Dependencies dependencies;
     private LifeSupport life;
@@ -360,6 +363,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             NodeManager nodeManager, Guard guard,
             IndexConfigStore indexConfigStore, CommitProcessFactory commitProcessFactory,
             PageCache pageCache,
+            ConstraintSemantics constraintSemantics,
             Monitors monitors,
             Tracers tracers )
     {
@@ -386,6 +390,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         this.nodeManager = nodeManager;
         this.guard = guard;
         this.indexConfigStore = indexConfigStore;
+        this.constraintSemantics = constraintSemantics;
         this.monitors = monitors;
         this.tracers = tracers;
 
@@ -468,7 +473,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             // TODO The only reason this is here is because of the provider-stuff for DiskLayer. Remove when possible:
             this.neoStoreModule = neoStoreModule;
 
-            CacheModule cacheModule = buildCaches( neoStoreModule.neoStore(), nodeManager,
+            CacheModule cacheModule = buildCaches(
                     labelTokens, relationshipTypeTokens, propertyKeyTokenHolder );
 
             IndexingModule indexingModule = buildIndexing( config, scheduler, indexProvider, lockService,
@@ -603,13 +608,12 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         };
     }
 
-    private CacheModule buildCaches( final NeoStore neoStore, NodeManager nodeManager,
-            LabelTokenHolder labelTokens, RelationshipTypeTokenHolder relationshipTypeTokens,
+    private CacheModule buildCaches( LabelTokenHolder labelTokens, RelationshipTypeTokenHolder relationshipTypeTokens,
             PropertyKeyTokenHolder propertyKeyTokenHolder )
     {
         final UpdateableSchemaState updateableSchemaState = new KernelSchemaStateStore( logProvider );
 
-        final SchemaCache schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
+        final SchemaCache schemaCache = new SchemaCache( constraintSemantics, Collections.<SchemaRule>emptyList() );
 
         final CacheAccessBackDoor cacheAccess = new BridgingCacheAccess( schemaCache, updateableSchemaState,
                 propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
@@ -964,8 +968,9 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                 nodeManager.getNodePropertyTrackers(), nodeManager.getRelationshipPropertyTrackers(), nodeManager );
         NeoStoreTransactionContextFactory neoStoreTxContextFactory = new NeoStoreTransactionContextFactory( neoStore );
 
-        StatementOperationParts statementOperations = buildStatementOperations( storeLayer, legacyPropertyTrackers,
-                constraintIndexCreator, updateableSchemaState, guard, legacyIndexStore );
+        StatementOperationParts statementOperations = dependencies.satisfyDependency( buildStatementOperations(
+                storeLayer, legacyPropertyTrackers, constraintIndexCreator, updateableSchemaState, guard,
+                legacyIndexStore ) );
 
         final TransactionHooks hooks = new TransactionHooks();
         final KernelTransactions kernelTransactions =
@@ -973,8 +978,8 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                         neoStore, locks, integrityValidator, constraintIndexCreator, indexingService, labelScanStore,
                         statementOperations, updateableSchemaState, schemaWriteGuard, schemaIndexProviderMap,
                         transactionHeaderInformationFactory, storeLayer, transactionCommitProcess,
-                        indexConfigStore,
-                        legacyIndexProviderLookup, hooks, transactionMonitor, life, tracers ) );
+                        indexConfigStore, legacyIndexProviderLookup, hooks, constraintSemantics,
+                        transactionMonitor, life, tracers ) );
 
         final Kernel kernel = new Kernel( kernelTransactions, hooks, kernelHealth, transactionMonitor );
 
@@ -1036,7 +1041,8 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
     // Startup sequence done
     private void loadSchemaCache()
     {
-        cacheModule.schemaCache().load( neoStoreModule.neoStore().getSchemaStore().loadAllSchemaRules() );
+        List<SchemaRule> schemaRules = toList( neoStoreModule.neoStore().getSchemaStore().loadAllSchemaRules() );
+        cacheModule.schemaCache().load( schemaRules );
     }
 
     public NeoStore getNeoStore()
@@ -1057,11 +1063,6 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
     public LabelScanStore getLabelScanStore()
     {
         return indexingModule.labelScanStore();
-    }
-
-    public LockService getLockService()
-    {
-        return lockService;
     }
 
     @Override
@@ -1215,7 +1216,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                 stateHandlingContext );
         // + Constraints
         ConstraintEnforcingEntityOperations constraintEnforcingEntityOperations =
-                new ConstraintEnforcingEntityOperations( parts.entityWriteOperations(), parts.entityReadOperations(),
+                new ConstraintEnforcingEntityOperations( constraintSemantics, parts.entityWriteOperations(), parts.entityReadOperations(),
                         parts.schemaWriteOperations(), parts.schemaReadOperations() );
         // + Data integrity
         DataIntegrityValidatingStatementOperations dataIntegrityContext =

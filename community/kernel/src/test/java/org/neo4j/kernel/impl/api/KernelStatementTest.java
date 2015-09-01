@@ -87,9 +87,8 @@ public class KernelStatementTest
 
         when( scanStore.newReader() ).thenReturn( scanReader );
         KernelStatement statement =
-                new KernelStatement(
-                        mock( KernelTransactionImplementation.class ),
-                        mock( IndexReaderFactory.class ), scanStore, null, null, null, null );
+                new KernelStatement( mock( KernelTransactionImplementation.class ), mock( IndexReaderFactory.class ),
+                        scanStore, null, null, null, null );
 
         statement.acquire();
 
