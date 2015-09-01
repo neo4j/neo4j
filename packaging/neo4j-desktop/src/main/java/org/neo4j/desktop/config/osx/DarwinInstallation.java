@@ -61,7 +61,7 @@ public class DarwinInstallation extends UnixInstallation
             fileWriter.flush();
             fileWriter.close();
 
-            String commands[] = { "bash", "-c", "ch", "chmod a+x " + filename };
+            String commands[] = { "bash", "-c", "chmod a+x " + filename };
 
             Runtime.getRuntime().exec( commands );
         }
