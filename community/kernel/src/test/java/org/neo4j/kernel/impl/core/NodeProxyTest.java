@@ -19,34 +19,41 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
+
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.NamedThreadFactory.named;
 
-public class NodeProxyTest
+public class NodeProxyTest extends PropertyContainerProxyTest
 {
-    public final
-    @Rule
-    DatabaseRule dbRule = new ImpermanentDatabaseRule();
     private final String PROPERTY_KEY = "PROPERTY_KEY";
-    private GraphDatabaseService db;
 
-    @Before
-    public void init()
+    @Override
+    protected long createPropertyContainer()
     {
-        db = dbRule.getGraphDatabaseService();
+        return db.createNode().getId();
+    }
 
+    @Override
+    protected PropertyContainer lookupPropertyContainer( long id )
+    {
+        return db.getNodeById( id );
     }
 
     @Test
@@ -145,6 +152,90 @@ public class NodeProxyTest
         try ( Transaction tx = db.beginTx() )
         {
             node.delete(); // should throw NotFoundException as this node is already deleted
+            tx.success();
+        }
+    }
+
+    @Test( timeout = 10_000 )
+    public void getAllPropertiesShouldWorkFineWithConcurrentPropertyModifications() throws Exception
+    {
+        // Given
+        ExecutorService executor = cleanup.add( Executors.newFixedThreadPool( 2, named( "Test-executor-thread" ) ) );
+
+        final int propertiesCount = 1000;
+
+        final long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            nodeId = node.getId();
+            for ( int i = 0; i < propertiesCount; i++ )
+            {
+                node.setProperty( "property-" + i, i );
+            }
+            tx.success();
+        }
+
+        final AtomicBoolean start = new AtomicBoolean();
+        final AtomicBoolean writerDone = new AtomicBoolean();
+
+        Runnable writer = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    Node node = db.getNodeById( nodeId );
+                    while ( !start.get() )
+                    {
+                        // busy wait
+                    }
+                    for ( int i = 0; i < propertiesCount; i++ )
+                    {
+                        node.setProperty( "property-" + i, UUID.randomUUID().toString() );
+                    }
+                    tx.success();
+                }
+                writerDone.set( true );
+            }
+        };
+        Runnable reader = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    Node node = db.getNodeById( nodeId );
+                    while ( !start.get() )
+                    {
+                        // busy wait
+                    }
+                    while ( !writerDone.get() )
+                    {
+                        int size = node.getAllProperties().size();
+                        assertThat( size, greaterThan( 0 ) );
+                    }
+                    tx.success();
+                }
+            }
+        };
+
+
+        Future<?> readerFuture = executor.submit( reader );
+        Future<?> writerFuture = executor.submit( writer );
+
+        start.set( true );
+
+        // When
+        writerFuture.get();
+        readerFuture.get();
+
+        // Then
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertEquals( propertiesCount, db.getNodeById( nodeId ).getAllProperties().size() );
             tx.success();
         }
     }
