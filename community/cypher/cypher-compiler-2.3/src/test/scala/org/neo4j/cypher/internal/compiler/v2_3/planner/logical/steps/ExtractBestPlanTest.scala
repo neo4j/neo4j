@@ -35,7 +35,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
 
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
-  private def newIndexHint(): Hint = { UsingIndexHint(ident("a"), LabelName("User")_, ident("name"))_ }
+  private def newIndexHint(): Hint = { UsingIndexHint(ident("a"), LabelName("User")_, PropertyKeyName("name")(pos))_ }
 
   private def newJoinHint(): Hint = { UsingJoinHint(Seq(ident("a")))_ }
 

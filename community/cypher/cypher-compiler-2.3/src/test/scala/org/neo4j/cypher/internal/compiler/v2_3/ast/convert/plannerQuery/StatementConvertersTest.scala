@@ -771,7 +771,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("MATCH (n:Awesome {prop: 42}) USING INDEX n:Awesome(prop) RETURN n") {
     val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("MATCH (n:Awesome {prop: 42}) USING INDEX n:Awesome(prop) RETURN n")
 
-    query.graph.hints should equal(Set[Hint](UsingIndexHint(ident("n"), LabelName("Awesome")_, ident("prop"))_))
+    query.graph.hints should equal(Set[Hint](UsingIndexHint(ident("n"), LabelName("Awesome")_, PropertyKeyName("prop")(pos))_))
   }
 
   test("MATCH shortestPath(a-[r]->b) RETURN r") {
@@ -1095,7 +1095,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val UnionQuery(query :: Nil, _, _) =
       buildPlannerQuery("START n=node:nodes(name = \"A\") RETURN n")
 
-    val hint: LegacyIndexHint = NodeByIdentifiedIndex(ident("n"), ident("nodes"), ident("name"), StringLiteral("A")_)_
+    val hint: LegacyIndexHint = NodeByIdentifiedIndex(ident("n"), "nodes", "name", StringLiteral("A")_)_
 
     query.graph.hints should equal(Set(hint))
     query.tail should equal(None)
@@ -1105,7 +1105,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val UnionQuery(query :: Nil, _, _) =
       buildPlannerQuery("START n=node:nodes(\"name:A\") RETURN n")
 
-    val hint: LegacyIndexHint = NodeByIndexQuery(ident("n"), ident("nodes"), StringLiteral("name:A")_)_
+    val hint: LegacyIndexHint = NodeByIndexQuery(ident("n"), "nodes", StringLiteral("name:A")_)_
 
     query.graph.hints should equal(Set(hint))
     query.tail should equal(None)
