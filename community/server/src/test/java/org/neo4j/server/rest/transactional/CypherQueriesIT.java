@@ -19,15 +19,20 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import org.junit.Test;
-
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.Test;
+
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
+
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
@@ -47,6 +52,26 @@ public class CypherQueriesIT extends AbstractRestFunctionalTestBase
         // Then
         Map<String, Object> result = jsonToMap( response.entity() );
         assertNoErrors( result );
+    }
+
+    @Test
+    public void includeServerExecutionTime() throws Exception
+    {
+        // when
+        ResponseEntity response = gen.get()
+                .noGraph()
+                .expectedStatus( 200 )
+                .payload( quotedJson(
+                        "{ 'statements': [ { 'statement': 'MATCH (n) RETURN n' } ] }" ) )
+                .post( getDataUri() + "transaction/commit" );
+
+        // then
+        Map<String, Object> result = jsonToMap( response.entity() );
+        assertNoErrors( result );
+        Object serverTime = result.get( "serverTimeNanos" );
+        assertThat( serverTime, anyOf( instanceOf( Integer.class ), instanceOf( Long.class ) ) );
+        long nanos = ((Number) serverTime).longValue();
+        assertTrue( "serverTimeNanos should be positive", nanos > 0 );
     }
 
 
