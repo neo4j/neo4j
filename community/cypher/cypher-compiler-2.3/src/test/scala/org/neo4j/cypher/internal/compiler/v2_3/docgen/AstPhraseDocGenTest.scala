@@ -87,7 +87,7 @@ class AstPhraseDocGenTest extends DocHandlerTestSuite[ASTNode] with AstConstruct
   }
 
   test("USING INDEX n:Person(name)") {
-    val astNode: ASTNode = UsingIndexHint(ident("n"), LabelName("Person")_, ident("name"))_
+    val astNode: ASTNode = UsingIndexHint(ident("n"), LabelName("Person")_, PropertyKeyName("name")(pos))_
     pprintToString(astNode) should equal("USING INDEX n:Person(name)")
   }
 

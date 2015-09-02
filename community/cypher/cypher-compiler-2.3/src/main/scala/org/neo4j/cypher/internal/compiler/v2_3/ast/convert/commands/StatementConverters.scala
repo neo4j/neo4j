@@ -192,9 +192,9 @@ object StatementConverters {
       case ast.AllNodes(identifier) =>
         commands.AllNodes(identifier.name)
       case ast.NodeByIdentifiedIndex(identifier, index, key, value) =>
-        commands.NodeByIndex(identifier.name, index.name, commandexpressions.Literal(key.name), toCommandExpression(value))
+        commands.NodeByIndex(identifier.name, index, commandexpressions.Literal(key), toCommandExpression(value))
       case ast.NodeByIndexQuery(identifier, index, query) =>
-        commands.NodeByIndexQuery(identifier.name, index.name, toCommandExpression(query))
+        commands.NodeByIndexQuery(identifier.name, index, toCommandExpression(query))
       case ast.RelationshipByIds(identifier, ids) =>
         commands.RelationshipById(identifier.name, commandexpressions.Literal(ids.map(_.value)))
       case ast.RelationshipByParameter(identifier, parameter) =>
@@ -202,9 +202,9 @@ object StatementConverters {
       case ast.AllRelationships(identifier) =>
         commands.AllRelationships(identifier.name)
       case ast.RelationshipByIdentifiedIndex(identifier, index, key, value) =>
-        commands.RelationshipByIndex(identifier.name, index.name, commandexpressions.Literal(key.name), toCommandExpression(value))
+        commands.RelationshipByIndex(identifier.name, index, commandexpressions.Literal(key), toCommandExpression(value))
       case ast.RelationshipByIndexQuery(identifier, index, query) =>
-        commands.RelationshipByIndexQuery(identifier.name, index.name, toCommandExpression(query))
+        commands.RelationshipByIndexQuery(identifier.name, index, toCommandExpression(query))
     }
   }
 

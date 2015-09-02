@@ -274,7 +274,7 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
     }
 
     test("renders hints") {
-      val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Person")_, ident("name"))_
+      val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Person")_, PropertyKeyName("name")(pos))_
 
       pprintToString(QueryGraph(hints = Set(hint))) should equal("GIVEN * USING INDEX n:Person(name)")
     }

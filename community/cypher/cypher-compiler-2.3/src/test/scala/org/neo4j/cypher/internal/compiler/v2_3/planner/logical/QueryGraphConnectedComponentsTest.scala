@@ -202,7 +202,7 @@ class QueryGraphConnectedComponentsTest
   test("a pattern node with a hint") {
     val graph = QueryGraph.empty.
       addPatternNodes(A).
-      addHints(Set(NodeByIdentifiedIndex(ident("a"), ident("index"), ident("key"), mock[Expression])(pos)))
+      addHints(Set(NodeByIdentifiedIndex(ident("a"), "index", "key", mock[Expression])(pos)))
 
     graph.connectedComponents should equal(Seq(graph))
   }

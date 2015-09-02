@@ -74,12 +74,12 @@ trait StartPoints extends Parser
     IndexQuery ~~> ((i: ast.Identifier, p: InputPosition, index, query) => ast.RelationshipByIndexQuery(i, index, query)(p))
   }
 
-  private def IdentifiedIndexLookup: Rule3[ast.Identifier, ast.Identifier, ast.Expression] = rule {
-    ":" ~~ Identifier ~~ "(" ~~ Identifier ~~ operator("=") ~~ (StringLiteral | Parameter) ~~ ")"
+  private def IdentifiedIndexLookup: Rule3[String, String, ast.Expression] = rule {
+    ":" ~~ SymbolicNameString ~~ "(" ~~ SymbolicNameString ~~ operator("=") ~~ (StringLiteral | Parameter) ~~ ")"
   }
 
-  private def IndexQuery: Rule2[ast.Identifier, ast.Expression] = rule {
-    ":" ~~ Identifier ~~ "(" ~~ (StringLiteral | Parameter) ~~ ")"
+  private def IndexQuery: Rule2[String, ast.Expression] = rule {
+    ":" ~~ SymbolicNameString ~~ "(" ~~ (StringLiteral | Parameter) ~~ ")"
   }
 
   private def LiteralIds: Rule1[Seq[ast.UnsignedIntegerLiteral]] = rule("an unsigned integer") {
