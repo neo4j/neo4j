@@ -22,7 +22,11 @@ package org.neo4j.backup;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.Callable;
+
+import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
@@ -52,8 +56,8 @@ public class BackupServiceStressTesting
 
         Callable<Integer> callable = new BackupServiceStressTestingBuilder()
                 .until( untilTimeExpired( durationInMinutes, MINUTES ) )
-                .withStore( ensureExists( new File( directory, "store" ) ) )
-                .withBackupDirectory( ensureExists( new File( directory, "work" ) ) )
+                .withStore( prepare( new File( directory, "store" ) ) )
+                .withBackupDirectory( prepare( new File( directory, "work" ) ) )
                 .withBackupAddress( backupHostname, backupPort )
                 .build();
 
@@ -62,9 +66,20 @@ public class BackupServiceStressTesting
         assertEquals( 0, brokenStores );
     }
 
-    private File ensureExists( File directory )
+    private static File prepare( File directory )
     {
-        directory.mkdirs();
+        try
+        {
+            FileUtils.deleteRecursively( directory );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Unable delete directory: '" + directory.getAbsolutePath() + "'", e );
+        }
+        if ( !directory.mkdirs() )
+        {
+            throw new UnderlyingStorageException( "Unable to create directory: '" + directory.getAbsolutePath() + "'" );
+        }
         return directory;
     }
 
