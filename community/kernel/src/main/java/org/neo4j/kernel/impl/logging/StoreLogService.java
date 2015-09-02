@@ -23,6 +23,8 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executor;
 
 import org.neo4j.function.Consumer;
@@ -50,6 +52,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         private int internalLogRotationDelay = 0;
         private int maxInternalLogArchives = 0;
         private Consumer<LogProvider> rotationListener = Consumers.noop();
+        private Map<String, Level> logLevels = new HashMap<>();
         private Level defaultLevel = Level.INFO;
 
         private Builder()
@@ -85,6 +88,12 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
             return this;
         }
 
+        public Builder withLevel( String context, Level level )
+        {
+            this.logLevels.put( context, level );
+            return this;
+        }
+
         public Builder withDefaultLevel( Level defaultLevel )
         {
             this.defaultLevel = defaultLevel;
@@ -100,7 +109,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         {
             return new StoreLogService(
                     userLogProvider,
-                    fileSystem, internalLogPath, defaultLevel,
+                    fileSystem, internalLogPath, logLevels, defaultLevel,
                     internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives, rotationExecutor, rotationListener );
         }
     }
@@ -126,6 +135,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
     private StoreLogService( LogProvider userLogProvider,
             FileSystemAbstraction fileSystem,
             File internalLog,
+            Map<String, Level> logLevels,
             Level defaultLevel,
             long internalLogRotationThreshold,
             int internalLogRotationDelay,
@@ -138,7 +148,8 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
             internalLog.getParentFile().mkdirs();
         }
 
-        final FormattedLogProvider.Builder internalLogBuilder = FormattedLogProvider.withUTCTimeZone().withDefaultLogLevel( defaultLevel );
+        final FormattedLogProvider.Builder internalLogBuilder = FormattedLogProvider.withUTCTimeZone()
+                .withDefaultLogLevel( defaultLevel ).withLogLevels( logLevels );
 
         FormattedLogProvider internalLogProvider;
         if ( internalLogRotationThreshold == 0 )

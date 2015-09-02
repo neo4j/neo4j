@@ -25,6 +25,7 @@ import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
+import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
@@ -50,6 +51,7 @@ import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.TRUE;
 import static org.neo4j.helpers.Settings.basePath;
 import static org.neo4j.helpers.Settings.illegalValueMessage;
+import static org.neo4j.helpers.Settings.list;
 import static org.neo4j.helpers.Settings.matches;
 import static org.neo4j.helpers.Settings.max;
 import static org.neo4j.helpers.Settings.min;
@@ -146,6 +148,11 @@ public abstract class GraphDatabaseSettings
 
     @Description( "Threshold for rotation of the internal log." )
     public static final Setting<Long> store_internal_log_rotation_threshold = setting("store.internal_log.rotation_threshold", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
+
+    @Description( "Internal log contexts that should output debug level logging" )
+    @Internal
+    public static final Setting<List<String>> store_internal_debug_contexts = setting( "store.internal_log.debug_contexts",
+            list( ",", STRING ), "" );
 
     @Description("Log level threshold.")
     public static final Setting<Level> store_internal_log_level = setting( "store.internal_log.level",
