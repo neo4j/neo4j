@@ -56,8 +56,8 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 public class BackupServiceStressTestingBuilder
 {
     private BooleanSupplier untilCondition;
-    private File storeDir;
-    private File workingDirectory;
+    private File storeDirectory;
+    private File backupDirectory;
     private String backupHostname = "localhost";
     private int backupPort = 8200;
 
@@ -81,19 +81,19 @@ public class BackupServiceStressTestingBuilder
         return this;
     }
 
-    public BackupServiceStressTestingBuilder withStore( File storeDir )
+    public BackupServiceStressTestingBuilder withStore( File storeDirectory )
     {
-        Objects.requireNonNull( storeDir );
-        assert storeDir.exists() && storeDir.isDirectory();
-        this.storeDir = storeDir;
+        Objects.requireNonNull( storeDirectory );
+        assert storeDirectory.exists() && storeDirectory.isDirectory();
+        this.storeDirectory = storeDirectory;
         return this;
     }
 
-    public BackupServiceStressTestingBuilder withWorkingDirectory( File workingDirectory )
+    public BackupServiceStressTestingBuilder withBackupDirectory( File backupDirectory )
     {
-        Objects.requireNonNull( workingDirectory );
-        assert workingDirectory.exists() && workingDirectory.isDirectory();
-        this.workingDirectory = workingDirectory;
+        Objects.requireNonNull( backupDirectory );
+        assert backupDirectory.exists() && backupDirectory.isDirectory();
+        this.backupDirectory = backupDirectory;
         return this;
     }
 
@@ -108,9 +108,9 @@ public class BackupServiceStressTestingBuilder
     public Callable<Integer> build()
     {
         Objects.requireNonNull( untilCondition, "must specify a condition" );
-        Objects.requireNonNull( storeDir, "must specify a directory containing the db to backup from" );
-        Objects.requireNonNull( workingDirectory, "must specify a directory where to save backups/broken stores" );
-        return new RunTest( untilCondition, storeDir, workingDirectory, backupHostname, backupPort );
+        Objects.requireNonNull( storeDirectory, "must specify a directory containing the db to backup from" );
+        Objects.requireNonNull( backupDirectory, "must specify a directory where to save backups/broken stores" );
+        return new RunTest( untilCondition, storeDirectory, backupDirectory, backupHostname, backupPort );
     }
 
     private static class RunTest implements Callable<Integer>
@@ -124,15 +124,15 @@ public class BackupServiceStressTestingBuilder
         private final File backupDir;
         private final File brokenDir;
 
-        private RunTest( BooleanSupplier until, File storeDir, File workingDir, String backupHostname, int backupPort )
+        private RunTest( BooleanSupplier until, File storeDir, File backupDir, String backupHostname, int backupPort )
         {
             this.until = until;
             this.storeDir = storeDir;
             this.backupHostname = backupHostname;
             this.backupPort = backupPort;
-            this.backupDir = new File( workingDir, "backup" );
-            fileSystem.mkdir( backupDir );
-            this.brokenDir = new File( workingDir, "broken_stores" );
+            this.backupDir = new File( backupDir, "backup" );
+            fileSystem.mkdir( this.backupDir );
+            this.brokenDir = new File( backupDir, "broken_stores" );
             fileSystem.mkdir( brokenDir );
         }
 
@@ -154,14 +154,15 @@ public class BackupServiceStressTestingBuilder
                 final AtomicBoolean keepGoing = new AtomicBoolean( true );
 
                 // when
-                Dependencies dependencies = new Dependencies(db.getDependencyResolver());
+                Dependencies dependencies = new Dependencies( db.getDependencyResolver() );
                 dependencies.satisfyDependencies( new Config(), NullLogProvider.getInstance(), new Monitors() );
 
                 OnlineBackupKernelExtension backup;
                 try
                 {
                     backup = (OnlineBackupKernelExtension) new OnlineBackupExtensionFactory().newKernelExtension(
-                            DependenciesProxy.dependencies(dependencies, OnlineBackupExtensionFactory.Dependencies.class));
+                            DependenciesProxy.dependencies( dependencies, OnlineBackupExtensionFactory.Dependencies
+                                    .class ) );
 
                     backup.init();
                     backup.start();
