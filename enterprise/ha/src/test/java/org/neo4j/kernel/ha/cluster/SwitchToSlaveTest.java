@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-
-import org.junit.Ignore;
-import org.junit.Test;
 
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Response;
@@ -66,7 +65,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -144,7 +142,6 @@ public class SwitchToSlaveTest
     }
 
     @Test
-    @Ignore
     public void shouldReturnNullIfWhenFailingToPullingUpdatesFromMaster() throws Throwable
     {
         // Given

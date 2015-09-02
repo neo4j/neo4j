@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
@@ -76,12 +75,12 @@ import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.transaction.TransactionCounters;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -98,7 +97,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.AvailabilityGuard.AvailabilityRequirement;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
@@ -506,7 +504,6 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    @Ignore
     public void whenHAModeSwitcherSwitchesToSlaveTheOtherModeSwitcherDoNotGetTheOldMasterClient() throws Throwable
     {
         InstanceId me = new InstanceId( 1 );
@@ -628,7 +625,7 @@ public class HighAvailabilityMemberStateMachineTest
                 members,
                 config, dependencyResolver,
                 mock( HaIdGeneratorFactory.class ),
-                mock( DelegateInvocationHandler.class ),
+                handler,
                 mock( ClusterMemberAvailability.class ), mock( RequestContextFactory.class ),
                 Iterables.<KernelExtensionFactory<?>>empty(), masterClientResolver,
                 monitor,
