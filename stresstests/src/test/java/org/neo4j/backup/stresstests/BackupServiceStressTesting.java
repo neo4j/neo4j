@@ -22,9 +22,11 @@ package org.neo4j.backup.stresstests;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.Callable;
 
 import org.neo4j.backup.BackupServiceStressTestingBuilder;
+import org.neo4j.io.fs.FileUtils;
 
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
@@ -64,9 +66,13 @@ public class BackupServiceStressTesting
         assertEquals( 0, brokenStores );
     }
 
-    private File ensureExists( File directory )
+    private static File ensureExists( File directory ) throws IOException
     {
-        directory.mkdirs();
+        FileUtils.deleteRecursively( directory );
+        if ( !directory.mkdirs() )
+        {
+            throw new IOException( "Unable to create directory: '" + directory.getAbsolutePath() + "'" );
+        }
         return directory;
     }
 

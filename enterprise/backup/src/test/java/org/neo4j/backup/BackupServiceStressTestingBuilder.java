@@ -21,6 +21,7 @@ package org.neo4j.backup;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -32,8 +33,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.function.BooleanSupplier;
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -50,8 +55,6 @@ import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class BackupServiceStressTestingBuilder
 {
@@ -84,7 +87,7 @@ public class BackupServiceStressTestingBuilder
     public BackupServiceStressTestingBuilder withStore( File storeDirectory )
     {
         Objects.requireNonNull( storeDirectory );
-        assert storeDirectory.exists() && storeDirectory.isDirectory();
+        assertDirectoryExistsAndIsEmpty( storeDirectory );
         this.storeDirectory = storeDirectory;
         return this;
     }
@@ -92,7 +95,7 @@ public class BackupServiceStressTestingBuilder
     public BackupServiceStressTestingBuilder withBackupDirectory( File backupDirectory )
     {
         Objects.requireNonNull( backupDirectory );
-        assert backupDirectory.exists() && backupDirectory.isDirectory();
+        assertDirectoryExistsAndIsEmpty( backupDirectory );
         this.backupDirectory = backupDirectory;
         return this;
     }
@@ -113,8 +116,30 @@ public class BackupServiceStressTestingBuilder
         return new RunTest( untilCondition, storeDirectory, backupDirectory, backupHostname, backupPort );
     }
 
+    private static void assertDirectoryExistsAndIsEmpty( File directory )
+    {
+        String path = directory.getAbsolutePath();
+
+        if ( !directory.exists() )
+        {
+            throw new IllegalArgumentException( "Directory does not exist: '" + path + "'" );
+        }
+        if ( !directory.isDirectory() )
+        {
+            throw new IllegalArgumentException( "Given File is not a directory: '" + path + "'" );
+        }
+        if ( directory.list().length > 0 )
+        {
+            throw new IllegalArgumentException( "Given directory is not empty: '" + path + "' " +
+                                                Arrays.toString( directory.list() ) );
+        }
+    }
+
     private static class RunTest implements Callable<Integer>
     {
+        private static final int NUMBER_OF_LABELS = 3;
+        private static final int NUMBER_OF_RELATIONSHIP_TYPES = 5;
+
         private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 
         private final BooleanSupplier until;
@@ -266,13 +291,11 @@ public class BackupServiceStressTestingBuilder
             }
         }
 
-
         private void createIndex( GraphDatabaseAPI db )
         {
-            Random random = ThreadLocalRandom.current();
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().indexFor( label( "" + random.nextInt( 3 ) ) ).on( "name" ).create();
+                db.schema().indexFor( randomLabel() ).on( "name" ).create();
                 tx.success();
             }
         }
@@ -282,11 +305,11 @@ public class BackupServiceStressTestingBuilder
             Random random = ThreadLocalRandom.current();
             try ( Transaction tx = db.beginTx() )
             {
-                Node start = db.createNode( label( "" + random.nextInt( 3 ) ) );
+                Node start = db.createNode( randomLabel() );
                 start.setProperty( "name", "name " + random.nextInt() );
-                Node end = db.createNode( label( "" + random.nextInt( 3 ) ) );
+                Node end = db.createNode( randomLabel() );
                 end.setProperty( "name", "name " + random.nextInt() );
-                Relationship rel = start.createRelationshipTo( end, withName( "" + random.nextInt( 5 ) ) );
+                Relationship rel = start.createRelationshipTo( end, randomRelationshipType() );
                 rel.setProperty( "something", "some " + random.nextInt() );
                 tx.success();
             }
@@ -298,5 +321,15 @@ public class BackupServiceStressTestingBuilder
             db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint();
         }
 
+        private static Label randomLabel()
+        {
+            return DynamicLabel.label( "" + ThreadLocalRandom.current().nextInt( NUMBER_OF_LABELS ) );
+        }
+
+        private static RelationshipType randomRelationshipType()
+        {
+            String name = "" + ThreadLocalRandom.current().nextInt( NUMBER_OF_RELATIONSHIP_TYPES );
+            return DynamicRelationshipType.withName( name );
+        }
     }
 }
