@@ -46,7 +46,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     {
         private boolean renderContext = true;
         private TimeZone timezone = TimeZone.getDefault();
-        private Level level = Level.INFO;
+        private Level defaultLevel = Level.INFO;
         private boolean autoFlush = true;
 
         private Builder()
@@ -92,9 +92,9 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
          * @param level the log level to use as a default
          * @return this builder
          */
-        public Builder withLogLevel( Level level )
+        public Builder withDefaultLogLevel( Level level )
         {
-            this.level = level;
+            this.defaultLevel = level;
             return this;
         }
 
@@ -163,7 +163,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
          */
         public FormattedLogProvider toPrintWriter( Supplier<PrintWriter> writerSupplier )
         {
-            return new FormattedLogProvider( DEFAULT_CURRENT_DATE_SUPPLIER, writerSupplier, timezone, renderContext, level, autoFlush );
+            return new FormattedLogProvider( DEFAULT_CURRENT_DATE_SUPPLIER, writerSupplier, timezone, renderContext, defaultLevel, autoFlush );
         }
     }
 
@@ -171,7 +171,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     private final Supplier<PrintWriter> writerSupplier;
     private final TimeZone timezone;
     private final boolean renderContext;
-    private final Level level;
+    private final Level defaultLevel;
     private final boolean autoFlush;
 
     /**
@@ -213,9 +213,9 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
      * @param level the log level to use as a default
      * @return a builder for a {@link FormattedLogProvider}
      */
-    public static Builder withLogLevel( Level level )
+    public static Builder withDefaultLogLevel( Level level )
     {
-        return new Builder().withLogLevel( level );
+        return new Builder().withDefaultLogLevel( level );
     }
 
     /**
@@ -286,13 +286,13 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
         return new Builder().toPrintWriter( writerSupplier );
     }
 
-    FormattedLogProvider( Supplier<Date> currentDateSupplier, Supplier<PrintWriter> writerSupplier, TimeZone timezone, boolean renderContext, Level level, boolean autoFlush )
+    FormattedLogProvider( Supplier<Date> currentDateSupplier, Supplier<PrintWriter> writerSupplier, TimeZone timezone, boolean renderContext, Level defaultLevel, boolean autoFlush )
     {
         this.currentDateSupplier = currentDateSupplier;
         this.writerSupplier = writerSupplier;
         this.timezone = timezone;
         this.renderContext = renderContext;
-        this.level = level;
+        this.defaultLevel = defaultLevel;
         this.autoFlush = autoFlush;
     }
 
@@ -306,6 +306,6 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     @Override
     protected FormattedLog buildLog( String context )
     {
-        return new FormattedLog( currentDateSupplier, writerSupplier, timezone, this, renderContext ? context : null, level, autoFlush );
+        return new FormattedLog( currentDateSupplier, writerSupplier, timezone, this, renderContext ? context : null, defaultLevel, autoFlush );
     }
 }

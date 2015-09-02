@@ -227,7 +227,7 @@ public class PlatformModule
             }
         } );
 
-        builder.withLevel( config.get( GraphDatabaseSettings.store_internal_log_level ) );
+        builder.withDefaultLevel( config.get( GraphDatabaseSettings.store_internal_log_level ) );
 
         File internalLog = config.get( GraphDatabaseSettings.store_internal_log_location );
         LogService logService;
