@@ -695,7 +695,7 @@ public class BackupServiceIT
         Callable<Integer> callable = new BackupServiceStressTestingBuilder()
                 .until( untilTimeExpired( 10, SECONDS ) )
                 .withStore( storeDir )
-                .withWorkingDirectory( backupDir )
+                .withBackupDirectory( backupDir )
                 .withBackupAddress( BACKUP_HOST, backupPort )
                 .build();
 

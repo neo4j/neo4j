@@ -37,9 +37,8 @@ import static org.neo4j.backup.BackupServiceStressTestingBuilder.untilTimeExpire
  */
 public class BackupServiceStressTesting
 {
-    private static final String DEFAULT_DURATION_IN_MINUTES = "10";
-    private static final String DEFAULT_STORE_DIR = new File( getProperty( "java.io.tmpdir" ), "store" ).getPath();
-    private static final String DEFAULT_WORKING_DIR = new File( getProperty( "java.io.tmpdir" ), "work" ).getPath();
+    private static final String DEFAULT_DURATION_IN_MINUTES = "1";
+    private static final String DEFAULT_WORKING_DIR = new File( getProperty( "java.io.tmpdir" ) ).getPath();
     private static final String DEFAULT_HOSTNAME = "localhost";
     private static final String DEFAULT_PORT = "8200";
 
@@ -47,15 +46,14 @@ public class BackupServiceStressTesting
     public void shouldBehaveCorrectlyUnderStress() throws Exception
     {
         long durationInMinutes = parseLong( fromEnv( "BACKUP_SERVICE_STRESS_DURATION", DEFAULT_DURATION_IN_MINUTES ) );
-        String storeDirectory = fromEnv( "BACKUP_SERVICE_STRESS_STORE_DIRECTORY", DEFAULT_STORE_DIR );
-        String workingDirectory = fromEnv( "BACKUP_SERVICE_STRESS_WORKING_DIRECTORY", DEFAULT_WORKING_DIR );
+        String directory = fromEnv( "BACKUP_SERVICE_STRESS_WORKING_DIRECTORY", DEFAULT_WORKING_DIR );
         String backupHostname = fromEnv( "BACKUP_SERVICE_STRESS_BACKUP_HOSTNAME", DEFAULT_HOSTNAME );
         int backupPort = parseInt( fromEnv( "BACKUP_SERVICE_STRESS_BACKUP_PORT", DEFAULT_PORT ) );
 
         Callable<Integer> callable = new BackupServiceStressTestingBuilder()
                 .until( untilTimeExpired( durationInMinutes, MINUTES ) )
-                .withStore( ensureExists( storeDirectory ) )
-                .withWorkingDirectory( ensureExists( workingDirectory ) )
+                .withStore( ensureExists( new File( directory, "store" ) ) )
+                .withBackupDirectory( ensureExists( new File( directory, "work" ) ) )
                 .withBackupAddress( backupHostname, backupPort )
                 .build();
 
@@ -64,11 +62,10 @@ public class BackupServiceStressTesting
         assertEquals( 0, brokenStores );
     }
 
-    private File ensureExists( String directory )
+    private File ensureExists( File directory )
     {
-        File dir = new File( directory );
-        dir.mkdirs();
-        return dir;
+        directory.mkdirs();
+        return directory;
     }
 
     private static String fromEnv( String environmentVariableName, String defaultValue )
