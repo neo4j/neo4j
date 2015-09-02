@@ -295,13 +295,12 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         {
             if ( readTypeDescriptorAndVersion.startsWith( getTypeDescriptor() ) )
             {
-                versionMismatchHandler.mismatch( ALL_STORES_VERSION, readTypeDescriptorAndVersion );
+                versionMismatchHandler.mismatch( expectedTypeDescriptorAndVersion, readTypeDescriptorAndVersion );
             }
             else
             {
-                setStoreNotOk( new IllegalStateException(
-                        "Unexpected version " + readTypeDescriptorAndVersion + ", expected " +
-                        expectedTypeDescriptorAndVersion ) );
+                setStoreNotOk( new IllegalStateException( "Unexpected version " + readTypeDescriptorAndVersion +
+                                                          ", expected " + expectedTypeDescriptorAndVersion ) );
             }
         }
     }
