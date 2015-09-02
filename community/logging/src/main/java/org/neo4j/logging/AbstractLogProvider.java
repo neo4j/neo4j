@@ -45,25 +45,25 @@ public abstract class AbstractLogProvider<T extends Log> implements LogProvider
     }
 
     @Override
-    public T getLog( final String context )
+    public T getLog( final String name )
     {
-        return getLog( context, new Supplier<T>()
+        return getLog( name, new Supplier<T>()
         {
             @Override
             public T get()
             {
-                return buildLog( context );
+                return buildLog( name );
             }
         } );
     }
 
-    private T getLog( String context, Supplier<T> logSupplier )
+    private T getLog( String name, Supplier<T> logSupplier )
     {
-        T log = logCache.get( context );
+        T log = logCache.get( name );
         if ( log == null )
         {
             T newLog = logSupplier.get();
-            log = logCache.putIfAbsent( context, newLog );
+            log = logCache.putIfAbsent( name, newLog );
             if ( log == null )
             {
                 log = newLog;
@@ -82,13 +82,13 @@ public abstract class AbstractLogProvider<T extends Log> implements LogProvider
 
     /**
      * @param loggingClass the context for the returned {@link Log}
-     * @return a {@link Log} that logs messages with the {@code loggingClass} as context
+     * @return a {@link Log} that logs messages with the {@code loggingClass} as the context
      */
     protected abstract T buildLog( Class loggingClass );
 
     /**
-     * @param context the named context for the returned {@link Log}
-     * @return a {@link Log} that logs messages with the given context
+     * @param name the context for the returned {@link Log}
+     * @return a {@link Log} that logs messages with the specified name as the context
      */
-    protected abstract T buildLog( String context );
+    protected abstract T buildLog( String name );
 }

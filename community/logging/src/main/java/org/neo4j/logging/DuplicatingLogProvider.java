@@ -79,14 +79,14 @@ public class DuplicatingLogProvider extends AbstractLogProvider<DuplicatingLog>
     }
 
     @Override
-    protected DuplicatingLog buildLog( final String context )
+    protected DuplicatingLog buildLog( final String name )
     {
         return buildLog( new Function<LogProvider, Log>()
         {
             @Override
             public Log apply( LogProvider logProvider )
             {
-                return logProvider.getLog( context );
+                return logProvider.getLog( name );
             }
         } );
     }

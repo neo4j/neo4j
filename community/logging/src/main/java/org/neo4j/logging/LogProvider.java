@@ -26,13 +26,13 @@ public interface LogProvider
 {
     /**
      * @param loggingClass the context for the returned {@link Log}
-     * @return a {@link Log} that logs messages with the {@code loggingClass} as context
+     * @return a {@link Log} that logs messages with the {@code loggingClass} as the context
      */
     Log getLog( Class loggingClass );
 
     /**
-     * @param context the named context for the returned {@link Log}
-     * @return a {@link Log} that logs messages with the given context
+     * @param name the context for the returned {@link Log}
+     * @return a {@link Log} that logs messages with the specified name as the context
      */
-    Log getLog( String context );
+    Log getLog( String name );
 }

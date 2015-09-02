@@ -45,7 +45,7 @@ public class NullLogProvider implements LogProvider
     }
 
     @Override
-    public Log getLog( String context )
+    public Log getLog( String name )
     {
         return NullLog.getInstance();
     }

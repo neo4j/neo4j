@@ -54,7 +54,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
         }
 
         /**
-         * Disable rendering of the context (or class name) in each output line.
+         * Disable rendering of the context (the class name or log name) in each output line.
          *
          * @return this builder
          */
@@ -175,7 +175,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     private final boolean autoFlush;
 
     /**
-     * Start creating a {@link FormattedLogProvider} which will not render the context (or class name) in each output line.
+     * Start creating a {@link FormattedLogProvider} which will not render the context (the class name or log name) in each output line.
      * Use {@link Builder#toOutputStream} to complete.
      *
      * @return a builder for a {@link FormattedLogProvider}
@@ -304,8 +304,8 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     }
 
     @Override
-    protected FormattedLog buildLog( String context )
+    protected FormattedLog buildLog( String name )
     {
-        return new FormattedLog( currentDateSupplier, writerSupplier, timezone, this, renderContext ? context : null, defaultLevel, autoFlush );
+        return new FormattedLog( currentDateSupplier, writerSupplier, timezone, this, renderContext ? name : null, defaultLevel, autoFlush );
     }
 }
