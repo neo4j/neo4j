@@ -72,7 +72,6 @@ public class WrappingNeoServer extends CommunityNeoServer
                 GraphDatabaseDependencies.newDependencies().userLogProvider(
                         logProvider
                 ).monitors( db.getDependencyResolver().resolveDependency( Monitors.class ) ), logProvider );
-        init();
     }
 
     static Config toConfig( ConfigurationBuilder configurator )

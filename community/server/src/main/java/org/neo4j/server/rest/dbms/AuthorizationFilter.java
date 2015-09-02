@@ -21,6 +21,7 @@ package org.neo4j.server.rest.dbms;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.regex.Pattern;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -38,7 +39,6 @@ import org.neo4j.kernel.impl.util.Charsets;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.security.UriPathWildcardMatcher;
 import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.web.XForwardUtil;
 
@@ -51,22 +51,17 @@ import static org.neo4j.server.web.XForwardUtil.X_FORWARD_PROTO_HEADER_KEY;
 
 public class AuthorizationFilter implements Filter
 {
-    private final UriPathWildcardMatcher[] whitelist = new UriPathWildcardMatcher[]
-            {
-                    new UriPathWildcardMatcher( "/browser*" ),
-                    new UriPathWildcardMatcher( "/webadmin*" ),
-                    new UriPathWildcardMatcher( "/" ),
-            };
-
-    private final UriPathWildcardMatcher passwordChangeWhitelist = new UriPathWildcardMatcher( "/user/*" );
+    private static final Pattern PASSWORD_CHANGE_WHITELIST = Pattern.compile( "/user/.*" );
 
     private final AuthManager authManager;
     private final Log log;
+    private final Pattern[] uriWhitelist;
 
-    public AuthorizationFilter( AuthManager authManager, LogProvider logProvider )
+    public AuthorizationFilter( AuthManager authManager, LogProvider logProvider, Pattern... uriWhitelist )
     {
         this.authManager = authManager;
         this.log = logProvider.getLog( getClass() );
+        this.uriWhitelist = uriWhitelist;
     }
 
     @Override
@@ -111,7 +106,7 @@ public class AuthorizationFilter implements Filter
         switch ( authManager.authenticate( username, password ) )
         {
             case PASSWORD_CHANGE_REQUIRED:
-                if ( !passwordChangeWhitelist.matches( path ) )
+                if ( !PASSWORD_CHANGE_WHITELIST.matcher( path ).matches() )
                 {
                     passwordChangeRequired( username, baseURL( request ) ).writeResponse( response );
                     return;
@@ -267,9 +262,9 @@ public class AuthorizationFilter implements Filter
 
     private boolean whitelisted( String path )
     {
-        for ( UriPathWildcardMatcher pattern : whitelist )
+        for ( Pattern pattern : uriWhitelist )
         {
-            if ( pattern.matches( path ) )
+            if ( pattern.matcher( path ).matches() )
             {
                 return true;
             }

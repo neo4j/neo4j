@@ -68,6 +68,9 @@ public class HaSettings
     public static final Setting<BranchedDataPolicy> branched_data_policy = setting( "ha.branched_data_policy",
             options( BranchedDataPolicy.class ), "keep_all" );
 
+    @Description( "Enable public access to the HA status endpoints." )
+    public static final Setting<Boolean> ha_status_auth_enabled = setting( "dbms.security.ha_status_auth_enabled", BOOLEAN, Settings.TRUE );
+
     @Description( "Max size of the data chunks that flows between master and slaves in HA. Bigger size may increase " +
             "throughput, but may also be more sensitive to variations in bandwidth, whereas lower size increases tolerance" +
             " for bandwidth variations." )

@@ -28,6 +28,7 @@ import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.regex.Pattern;
 import javax.servlet.Filter;
 
 import org.neo4j.function.Function;
@@ -111,6 +112,14 @@ public abstract class AbstractNeoServer implements NeoServer
      */
     private static final long ROUNDING_SECOND = 1000L;
 
+    private static final Pattern[] DEFAULT_URI_WHITELIST = new Pattern[]{
+            Pattern.compile( "/browser.*" ),
+            Pattern.compile( "/webadmin.*" ),
+            Pattern.compile( "/" )
+    };
+
+    private final Database.Factory dbFactory;
+    private final GraphDatabaseFacadeFactory.Dependencies dependencies;
     protected final LogProvider logProvider;
     protected final Log log;
 
@@ -134,6 +143,8 @@ public abstract class AbstractNeoServer implements NeoServer
     private TransactionFacade transactionFacade;
     private TransactionHandleRegistry transactionRegistry;
 
+    private boolean initialized = false;
+
     protected abstract Iterable<ServerModule> createServerModules();
 
     protected abstract WebServer createWebServer();
@@ -142,8 +153,19 @@ public abstract class AbstractNeoServer implements NeoServer
             GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
     {
         this.config = config;
+        this.dbFactory = dbFactory;
+        this.dependencies = dependencies;
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
+    }
+
+    @Override
+    public void init()
+    {
+        if ( initialized )
+        {
+            return;
+        }
 
         this.database = life.add( dependencyResolver.satisfyDependency(dbFactory.newDatabase( config, dependencies)) );
 
@@ -158,17 +180,14 @@ public abstract class AbstractNeoServer implements NeoServer
         {
             registerModule( moduleClass );
         }
-    }
 
-    @Override
-    public void init()
-    {
-
+        this.initialized = true;
     }
 
     @Override
     public void start() throws ServerStartupException
     {
+        init();
         try
         {
             life.start();
@@ -429,6 +448,11 @@ public abstract class AbstractNeoServer implements NeoServer
     protected String getWebServerAddress()
     {
         return config.get( ServerSettings.webserver_address );
+    }
+
+    protected Pattern[] getUriWhitelist()
+    {
+        return DEFAULT_URI_WHITELIST;
     }
 
     protected KeyStoreInformation createKeyStore()

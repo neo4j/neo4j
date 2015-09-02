@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.modules;
 
+import java.util.regex.Pattern;
+
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
@@ -32,13 +34,15 @@ public class AuthorizationModule implements ServerModule
     private final Config config;
     private final AuthManager authManager;
     private final LogProvider logProvider;
+    private final Pattern[] uriWhitelist;
 
-    public AuthorizationModule( WebServer webServer, AuthManager authManager, Config config, LogProvider logProvider )
+    public AuthorizationModule( WebServer webServer, AuthManager authManager, LogProvider logProvider, Config config, Pattern[] uriWhitelist )
     {
         this.webServer = webServer;
         this.config = config;
         this.authManager = authManager;
         this.logProvider = logProvider;
+        this.uriWhitelist = uriWhitelist;
     }
 
     @Override
@@ -46,7 +50,8 @@ public class AuthorizationModule implements ServerModule
     {
         if ( config.get( ServerSettings.auth_enabled ) )
         {
-            webServer.addFilter( new AuthorizationFilter( authManager, logProvider ), "/*" );
+            final AuthorizationFilter authorizationFilter = new AuthorizationFilter( authManager, logProvider, uriWhitelist );
+            webServer.addFilter( authorizationFilter, "/*" );
         }
     }
 
