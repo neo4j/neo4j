@@ -25,6 +25,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Callable;
 
+import org.neo4j.io.fs.FileUtils;
+
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.lang.System.getProperty;
@@ -65,6 +67,7 @@ public class BackupServiceStressTesting
 
     private static File ensureExists( File directory ) throws IOException
     {
+        FileUtils.deleteRecursively( directory );
         if ( !directory.mkdirs() )
         {
             throw new IOException( "Unable to create directory: '" + directory.getAbsolutePath() + "'" );
