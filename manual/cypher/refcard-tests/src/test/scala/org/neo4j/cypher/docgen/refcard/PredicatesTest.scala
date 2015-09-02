@@ -101,6 +101,16 @@ RETURN n,m###
 Use boolean operators to combine predicates.
 
 ###assertion=returns-one
+MATCH (n)-->(m)
+WHERE id(n) = %A% AND id(m) = %B% AND
+
+1 <= n.number <= 10
+
+RETURN n,m###
+
+Use chained operators to combine predicates.
+
+###assertion=returns-one
 MATCH (n:Person)
 WHERE
 
