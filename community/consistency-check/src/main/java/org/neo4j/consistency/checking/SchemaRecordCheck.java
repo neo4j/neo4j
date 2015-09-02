@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
@@ -125,13 +124,6 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
                     engine.report().unsupportedSchemaRuleKind( kind );
             }
         }
-    }
-
-    @Override
-    public void checkChange( DynamicRecord oldRecord, DynamicRecord newRecord,
-            CheckerEngine<DynamicRecord, ConsistencyReport.SchemaConsistencyReport> engine,
-            DiffRecordAccess records )
-    {
     }
 
     private interface CheckStrategy

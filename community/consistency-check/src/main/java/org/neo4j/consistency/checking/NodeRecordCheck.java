@@ -21,7 +21,6 @@ package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
@@ -78,29 +77,6 @@ class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport
             public long valueFrom( NodeRecord node )
             {
                 return node.getNextRel();
-            }
-
-            @Override
-            public void checkChange( NodeRecord oldRecord, NodeRecord newRecord,
-                    CheckerEngine<NodeRecord, NodeConsistencyReport> engine, DiffRecordAccess records )
-            {
-                if ( !newRecord.inUse() || valueFrom( oldRecord ) != valueFrom( newRecord ) )
-                {
-                    if ( oldRecord.isDense() == newRecord.isDense() )
-                    {
-                        // TODO we can do this check if/when relationship group records gets prev pointers,
-                        // until then the previous group is actually unchanged when adding a new in front.
-//                        if ( !Record.NO_NEXT_RELATIONSHIP.is( valueFrom( oldRecord ) )
-//                                && records.changedRelationshipGroup( valueFrom( oldRecord ) ) == null )
-//                        {
-//                            engine.report().relationshipGroupNotUpdated();
-//                        }
-                    }
-                    else
-                    {
-                        // TODO the node just got upgraded to dense in this transaction
-                    }
-                }
             }
 
             @Override
@@ -179,21 +155,6 @@ class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport
             }
 
             @Override
-            public void checkChange( NodeRecord oldRecord, NodeRecord newRecord,
-                                     CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine,
-                                     DiffRecordAccess records )
-            {
-                if ( !newRecord.inUse() || valueFrom( oldRecord ) != valueFrom( newRecord ) )
-                {
-                    if ( !Record.NO_NEXT_RELATIONSHIP.is( valueFrom( oldRecord ) )
-                         && records.changedRelationship( valueFrom( oldRecord ) ) == null )
-                    {
-                        engine.report().relationshipNotUpdated();
-                    }
-                }
-            }
-
-            @Override
             public long valueFrom( NodeRecord record )
             {
                 return record.getNextRel();
@@ -267,14 +228,6 @@ class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport
                 {
                     engine.report().labelNotInUse( labelTokenRecord );
                 }
-            }
-
-            @Override
-            public void checkChange( NodeRecord oldRecord, NodeRecord newRecord,
-                                     CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine,
-                                     DiffRecordAccess records )
-            {
-                // nothing to check: no back references from labels to nodes
             }
 
             @Override

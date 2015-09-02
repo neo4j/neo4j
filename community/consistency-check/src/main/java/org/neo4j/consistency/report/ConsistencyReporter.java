@@ -31,7 +31,6 @@ import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
@@ -49,6 +48,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Exceptions.withCause;
 
@@ -83,10 +83,10 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     private static final ProxyFactory<ConsistencyReport.CountsConsistencyReport> COUNTS_REPORT =
             ProxyFactory.create( ConsistencyReport.CountsConsistencyReport.class );
 
-    private final DiffRecordAccess records;
+    private final RecordAccess records;
     private final InconsistencyReport report;
 
-    public ConsistencyReporter( DiffRecordAccess records, InconsistencyReport report )
+    public ConsistencyReporter( RecordAccess records, InconsistencyReport report )
     {
         this.records = records;
         this.report = report;
@@ -103,23 +103,6 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         catch ( Exception e )
         {
             handler.report.error( type, record, "Failed to check record: " + e.getMessage(), new Object[0] );
-        }
-        handler.updateSummary();
-    }
-
-    private <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
-    void dispatchChange( RecordType type, ProxyFactory<REPORT> factory, RECORD oldRecord, RECORD newRecord,
-                         RecordCheck<RECORD, REPORT> checker )
-    {
-        ReportInvocationHandler<RECORD,REPORT> handler = new DiffReportHandler<>( report, factory, type, oldRecord, newRecord );
-        try
-        {
-            checker.checkChange( oldRecord, newRecord, handler, records );
-        }
-        catch ( Exception e )
-        {
-            handler.report.error( type, oldRecord, newRecord, "Failed to check record: " + e.getMessage(),
-                    new Object[0] );
         }
         handler.updateSummary();
     }
@@ -369,24 +352,10 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public void forSchemaChange( DynamicRecord oldSchema, DynamicRecord newSchema, RecordCheck<DynamicRecord,
-            ConsistencyReport.SchemaConsistencyReport> checker )
-    {
-        dispatchChange( RecordType.SCHEMA, SCHEMA_REPORT, oldSchema, newSchema, checker );
-    }
-
-    @Override
     public void forNode( NodeRecord node,
                          RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> checker )
     {
         dispatch( RecordType.NODE, NODE_REPORT, node, checker );
-    }
-
-    @Override
-    public void forNodeChange( NodeRecord oldNode, NodeRecord newNode,
-                               RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> checker )
-    {
-        dispatchChange( RecordType.NODE, NODE_REPORT, oldNode, newNode, checker );
     }
 
     @Override
@@ -397,24 +366,10 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public void forRelationshipChange( RelationshipRecord oldRelationship, RelationshipRecord newRelationship,
-                                       RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> checker )
-    {
-        dispatchChange( RecordType.RELATIONSHIP, RELATIONSHIP_REPORT, oldRelationship, newRelationship, checker );
-    }
-
-    @Override
     public void forProperty( PropertyRecord property,
                              RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> checker )
     {
         dispatch( RecordType.PROPERTY, PROPERTY_REPORT, property, checker );
-    }
-
-    @Override
-    public void forPropertyChange( PropertyRecord oldProperty, PropertyRecord newProperty,
-                                   RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> checker )
-    {
-        dispatchChange( RecordType.PROPERTY, PROPERTY_REPORT, oldProperty, newProperty, checker );
     }
 
     @Override
@@ -423,14 +378,6 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
                                          ConsistencyReport.RelationshipTypeConsistencyReport> checker )
     {
         dispatch( RecordType.RELATIONSHIP_TYPE, RELATIONSHIP_TYPE_REPORT, relationshipTypeTokenRecord, checker );
-    }
-
-    @Override
-    public void forRelationshipTypeNameChange( RelationshipTypeTokenRecord oldType, RelationshipTypeTokenRecord newType,
-                                               RecordCheck<RelationshipTypeTokenRecord,
-                                               ConsistencyReport.RelationshipTypeConsistencyReport> checker )
-    {
-        dispatchChange( RecordType.RELATIONSHIP_TYPE, RELATIONSHIP_TYPE_REPORT, oldType, newType, checker );
     }
 
     @Override
@@ -461,24 +408,10 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public void forLabelNameChange( LabelTokenRecord oldLabel, LabelTokenRecord newLabel, RecordCheck<LabelTokenRecord,
-            ConsistencyReport.LabelTokenConsistencyReport> checker )
-    {
-        dispatchChange( RecordType.LABEL, LABEL_KEY_REPORT, oldLabel, newLabel, checker );
-    }
-
-    @Override
     public void forPropertyKey( PropertyKeyTokenRecord key,
                                 RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> checker )
     {
         dispatch( RecordType.PROPERTY_KEY, PROPERTY_KEY_REPORT, key, checker );
-    }
-
-    @Override
-    public void forPropertyKeyChange( PropertyKeyTokenRecord oldKey, PropertyKeyTokenRecord newKey,
-                                      RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> checker )
-    {
-        dispatchChange( RecordType.PROPERTY_KEY, PROPERTY_KEY_REPORT, oldKey, newKey, checker );
     }
 
     @Override
@@ -489,13 +422,6 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public void forDynamicBlockChange( RecordType type, DynamicRecord oldRecord, DynamicRecord newRecord,
-                                       RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> checker )
-    {
-        dispatchChange( type, DYNAMIC_REPORT, oldRecord, newRecord, checker );
-    }
-
-    @Override
     public void forDynamicLabelBlock( RecordType type, DynamicRecord record,
                                       RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker )
     {
@@ -503,24 +429,10 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public void forDynamicLabelBlockChange( RecordType type, DynamicRecord oldRecord, DynamicRecord newRecord,
-                                            RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker )
-    {
-        dispatchChange( type, DYNAMIC_LABEL_REPORT, oldRecord, newRecord, checker );
-    }
-
-    @Override
     public void forRelationshipGroup( RelationshipGroupRecord record,
             RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker )
     {
         dispatch( RecordType.RELATIONSHIP_GROUP, RELATIONSHIP_GROUP_REPORT, record, checker );
-    }
-
-    @Override
-    public void forRelationshipGroupChange( RelationshipGroupRecord oldRecord, RelationshipGroupRecord newRecord,
-            RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker )
-    {
-        dispatchChange( RecordType.RELATIONSHIP_GROUP, RELATIONSHIP_GROUP_REPORT, oldRecord, newRecord, checker );
     }
 
     @Override

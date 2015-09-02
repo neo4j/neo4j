@@ -20,7 +20,6 @@
 package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -34,61 +33,28 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 enum OwnerChain
         implements ComparativeRecordChecker<PropertyRecord, PropertyRecord, ConsistencyReport.PropertyConsistencyReport>
 {
-    OLD
-    {
-        @Override
-        RecordReference<PropertyRecord> property( DiffRecordAccess records, long id )
-        {
-            return records.previousProperty( id );
-        }
-
-        @Override
-        RecordReference<NodeRecord> node( DiffRecordAccess records, long id )
-        {
-            return records.previousNode( id );
-        }
-
-        @Override
-        RecordReference<RelationshipRecord> relationship( DiffRecordAccess records, long id )
-        {
-            return records.previousRelationship( id );
-        }
-
-        @Override
-        RecordReference<NeoStoreRecord> graph( DiffRecordAccess records )
-        {
-            return records.previousGraph();
-        }
-
-        @Override
-        void wrongOwner( ConsistencyReport.PropertyConsistencyReport report )
-        {
-            report.changedForWrongOwner();
-        }
-    },
-
     NEW
     {
         @Override
-        RecordReference<PropertyRecord> property( DiffRecordAccess records, long id )
+        RecordReference<PropertyRecord> property( RecordAccess records, long id )
         {
             return records.property( id );
         }
 
         @Override
-        RecordReference<NodeRecord> node( DiffRecordAccess records, long id )
+        RecordReference<NodeRecord> node( RecordAccess records, long id )
         {
             return records.node( id );
         }
 
         @Override
-        RecordReference<RelationshipRecord> relationship( DiffRecordAccess records, long id )
+        RecordReference<RelationshipRecord> relationship( RecordAccess records, long id )
         {
             return records.relationship( id );
         }
 
         @Override
-        RecordReference<NeoStoreRecord> graph( DiffRecordAccess records )
+        RecordReference<NeoStoreRecord> graph( RecordAccess records )
         {
             return records.graph();
         }
@@ -119,7 +85,7 @@ enum OwnerChain
                     }
                     else if ( owner.getNextProp() != record.getId() )
                     {
-                        engine.comparativeCheck( property( (DiffRecordAccess) records, owner.getNextProp() ),
+                        engine.comparativeCheck( property( records, owner.getNextProp() ),
                                                  OwnerChain.this );
                     }
                 }
@@ -138,19 +104,19 @@ enum OwnerChain
             }
             else if ( property.getNextProp() != record.getId() )
             {
-                engine.comparativeCheck( property( (DiffRecordAccess) records, property.getNextProp() ), this );
+                engine.comparativeCheck( property( records, property.getNextProp() ), this );
             }
         }
     }
 
     void check( PropertyRecord record,
                 CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
-                DiffRecordAccess records )
+                RecordAccess records )
     {
         engine.comparativeCheck( ownerOf( record, records ), OWNER_CHECK );
     }
 
-    private RecordReference<? extends PrimitiveRecord> ownerOf( PropertyRecord record, DiffRecordAccess records )
+    private RecordReference<? extends PrimitiveRecord> ownerOf( PropertyRecord record, RecordAccess records )
     {
         if ( record.getNodeId() != -1 )
         {
@@ -166,13 +132,13 @@ enum OwnerChain
         }
     }
 
-    abstract RecordReference<PropertyRecord> property( DiffRecordAccess records, long id );
+    abstract RecordReference<PropertyRecord> property( RecordAccess records, long id );
 
-    abstract RecordReference<NodeRecord> node( DiffRecordAccess records, long id );
+    abstract RecordReference<NodeRecord> node( RecordAccess records, long id );
 
-    abstract RecordReference<RelationshipRecord> relationship( DiffRecordAccess records, long id );
+    abstract RecordReference<RelationshipRecord> relationship( RecordAccess records, long id );
 
-    abstract RecordReference<NeoStoreRecord> graph( DiffRecordAccess records );
+    abstract RecordReference<NeoStoreRecord> graph( RecordAccess records );
 
     abstract void wrongOwner( ConsistencyReport.PropertyConsistencyReport report );
 }

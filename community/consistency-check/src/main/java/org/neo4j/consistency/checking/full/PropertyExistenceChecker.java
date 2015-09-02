@@ -33,19 +33,18 @@ import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.checking.OwningRecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
-import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
-import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
-import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static org.neo4j.consistency.checking.full.NodeLabelReader.getListOfLabels;
@@ -198,13 +197,6 @@ public class PropertyExistenceChecker extends CheckDecorator.Adapter
         public ComparativeRecordChecker<RECORD,PrimitiveRecord,REPORT> ownerCheck()
         {
             return next.ownerCheck();
-        }
-
-        @Override
-        public void checkChange( RECORD oldRecord, RECORD newRecord, CheckerEngine<RECORD,REPORT> engine,
-                DiffRecordAccess records )
-        {
-            next.checkChange( oldRecord, newRecord, engine, records );
         }
     }
 

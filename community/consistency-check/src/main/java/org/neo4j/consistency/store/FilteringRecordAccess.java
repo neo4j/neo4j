@@ -43,7 +43,7 @@ public class FilteringRecordAccess extends DelegatingRecordAccess
     private final long recordsPerPass;
     private final MultiPassStore currentStore;
 
-    public FilteringRecordAccess( DiffRecordAccess delegate, final int iPass,
+    public FilteringRecordAccess( RecordAccess delegate, final int iPass,
                                   final long recordsPerPass, MultiPassStore currentStore,
                                   MultiPassStore... potentiallySkippableStores )
     {

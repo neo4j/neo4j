@@ -30,7 +30,6 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.function.Predicate;
@@ -217,14 +216,6 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
             }
             inner.check( record, engine, records );
         }
-
-        @Override
-        public void checkChange( NodeRecord oldRecord, NodeRecord newRecord,
-                                 CheckerEngine<NodeRecord,NodeConsistencyReport> engine,
-                                 DiffRecordAccess records )
-        {
-            inner.checkChange( oldRecord, newRecord, engine, records );
-        }
     }
 
     private static class RelationshipCounts implements OwningRecordCheck<RelationshipRecord, RelationshipConsistencyReport>
@@ -294,14 +285,6 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                 }
             }
             inner.check( record, engine, records );
-        }
-
-        @Override
-        public void checkChange( RelationshipRecord oldRecord, RelationshipRecord newRecord,
-                                 CheckerEngine<RelationshipRecord,RelationshipConsistencyReport> engine,
-                                 DiffRecordAccess records )
-        {
-            inner.checkChange( oldRecord, newRecord, engine, records );
         }
     }
 

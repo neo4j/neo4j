@@ -38,11 +38,12 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+import static java.util.Arrays.asList;
 
 public class NodeRecordCheckTest
         extends RecordCheckTestBase<NodeRecord, ConsistencyReport.NodeConsistencyReport, NodeRecordCheck>
@@ -441,173 +442,6 @@ public class NodeRecordCheckTest
         // then
         verify( report ).dynamicLabelRecordNotInUse( labelsRecord1 );
         verify( report ).dynamicLabelRecordNotInUse( labelsRecord2 );
-    }
-
-    @Test
-    public void shouldNotReportAnythingForConsistentlyChangedNode() throws Exception
-    {
-        // given
-        NodeRecord oldNode = inUse( new NodeRecord( 42, false, 11, 1 ) );
-        NodeRecord newNode = inUse( new NodeRecord( 42, false, 12, 2 ) );
-
-        addChange( inUse( new RelationshipRecord( 11, 42, 0, 0 ) ),
-                notInUse( new RelationshipRecord( 11, 0, 0, 0 ) ) );
-        addChange( notInUse( new RelationshipRecord( 12, 0, 0, 0 ) ),
-                inUse( new RelationshipRecord( 12, 42, 0, 0 ) ) );
-
-        addChange( inUse( new PropertyRecord( 1 ) ),
-                notInUse( new PropertyRecord( 1 ) ) );
-        addChange( notInUse( new PropertyRecord( 2 ) ),
-                inUse( new PropertyRecord( 2 ) ) );
-
-        // when
-        ConsistencyReport.NodeConsistencyReport report = checkChange( oldNode, newNode );
-
-        // then
-        verifyNoMoreInteractions( report );
-    }
-
-    @Test
-    public void shouldReportProblemsWithTheNewStateWhenCheckingChanges() throws Exception
-    {
-        // given
-        NodeRecord oldNode = notInUse( new NodeRecord( 42, false, 0, 0 ) );
-        NodeRecord newNode = inUse( new NodeRecord( 42, false, 1, 2 ) );
-        RelationshipRecord relationship = add( notInUse( new RelationshipRecord( 1, 0, 0, 0 ) ) );
-        PropertyRecord property = add( notInUse( new PropertyRecord( 2 ) ) );
-
-        // when
-        ConsistencyReport.NodeConsistencyReport report = checkChange( oldNode, newNode );
-
-        // then
-        verify( report ).relationshipNotInUse( relationship );
-        verify( report ).propertyNotInUse( property );
-        verifyNoMoreInteractions( report );
-    }
-
-    @Test
-    public void shouldNotReportAnythingWhenAddingAnInitialProperty() throws Exception
-    {
-        // given
-        NodeRecord oldNode = inUse( new NodeRecord( 42, false, NONE, NONE ) );
-        NodeRecord newNode = inUse( new NodeRecord( 42, false, NONE, 10 ) );
-
-        addChange( notInUse( new PropertyRecord( 10 ) ), inUse( new PropertyRecord( 10 ) ) );
-
-        // when
-        ConsistencyReport.NodeConsistencyReport report = checkChange( oldNode, newNode );
-
-        // then
-        verifyNoMoreInteractions( report );
-    }
-
-    @Test
-    public void shouldNotReportAnythingWhenChangingProperty() throws Exception
-    {
-        // given
-        NodeRecord oldNode = inUse( new NodeRecord( 42, false, NONE, 10 ) );
-        NodeRecord newNode = inUse( new NodeRecord( 42, false, NONE, 11 ) );
-
-        PropertyRecord oldProp = addChange( inUse( new PropertyRecord( 10 ) ),
-                inUse( new PropertyRecord( 10 ) ) );
-        PropertyRecord newProp = addChange( notInUse( new PropertyRecord( 11 ) ),
-                inUse( new PropertyRecord( 11 ) ) );
-        oldProp.setPrevProp( newProp.getId() );
-        newProp.setNextProp( oldProp.getId() );
-
-        // when
-        ConsistencyReport.NodeConsistencyReport report = checkChange( oldNode, newNode );
-
-        // then
-        verifyNoMoreInteractions( report );
-    }
-
-    @Test
-    public void shouldNotReportAnythingWhenAddingAnInitialRelationship() throws Exception
-    {
-        // given
-        NodeRecord oldNode = inUse( new NodeRecord( 42, false, NONE, NONE ) );
-        NodeRecord newNode = inUse( new NodeRecord( 42, false, 10, NONE ) );
-
-        addChange( notInUse( new RelationshipRecord( 10, 0, 0, 0 ) ),
-                inUse( new RelationshipRecord( 10, 42, 1, 0 ) ) );
-
-        // when
-        ConsistencyReport.NodeConsistencyReport report = checkChange( oldNode, newNode );
-
-        // then
-        verifyNoMoreInteractions( report );
-    }
-
-    @Test
-    public void shouldNotReportAnythingWhenChangingRelationship() throws Exception
-    {
-        // given
-        NodeRecord oldNode = inUse( new NodeRecord( 42, false, 9, NONE ) );
-        NodeRecord newNode = inUse( new NodeRecord( 42, false, 10, NONE ) );
-
-        RelationshipRecord rel1 = addChange( inUse( new RelationshipRecord( 9, 42, 0, 0 ) ),
-                inUse( new RelationshipRecord( 9, 42, 0, 0 ) ) );
-        RelationshipRecord rel2 = addChange( notInUse( new RelationshipRecord( 10, 0, 0, 0 ) ),
-                inUse( new RelationshipRecord( 10, 42, 1, 0 ) ) );
-        rel1.setFirstPrevRel( rel2.getId() );
-        rel2.setFirstNextRel( rel1.getId() );
-
-        // when
-        ConsistencyReport.NodeConsistencyReport report = checkChange( oldNode, newNode );
-
-        // then
-        verifyNoMoreInteractions( report );
-    }
-
-    @Test
-    public void shouldReportPropertyChainReplacedButNotUpdated() throws Exception
-    {
-        // given
-        NodeRecord oldNode = inUse( new NodeRecord( 42, false, NONE, 1 ) );
-        NodeRecord newNode = inUse( new NodeRecord( 42, false, NONE, 2 ) );
-        addChange( notInUse( new PropertyRecord( 2 ) ),
-                inUse( new PropertyRecord( 2 ) ) );
-
-        // when
-        ConsistencyReport.NodeConsistencyReport report = checkChange( oldNode, newNode );
-
-        // then
-        verify( report ).propertyNotUpdated();
-        verifyNoMoreInteractions( report );
-    }
-
-    @Test
-    public void shouldReportRelationshipChainReplacedButNotUpdated() throws Exception
-    {
-        // given
-        NodeRecord oldNode = inUse( new NodeRecord( 42, false, 1, NONE ) );
-        NodeRecord newNode = inUse( new NodeRecord( 42, false, 2, NONE ) );
-        addChange( notInUse( new RelationshipRecord( 2, 0, 0, 0 ) ),
-                inUse( new RelationshipRecord( 2, 42, 0, 0 ) ) );
-
-        // when
-        ConsistencyReport.NodeConsistencyReport report = checkChange( oldNode, newNode );
-
-        // then
-        verify( report ).relationshipNotUpdated();
-        verifyNoMoreInteractions( report );
-    }
-
-    @Test
-    public void shouldReportDeletedButReferencesNotUpdated() throws Exception
-    {
-        // given
-        NodeRecord oldNode = inUse( new NodeRecord( 42, false, 1, 10 ) );
-        NodeRecord newNode = notInUse( new NodeRecord( 42, false, 1, 10 ) );
-
-        // when
-        ConsistencyReport.NodeConsistencyReport report = checkChange( oldNode, newNode );
-
-        // then
-        verify( report ).relationshipNotUpdated();
-        verify( report ).propertyNotUpdated();
-        verifyNoMoreInteractions( report );
     }
 
     private long[] createLabels( int labelCount )

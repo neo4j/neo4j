@@ -28,7 +28,6 @@ import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.LookupFilter;
@@ -163,13 +162,5 @@ public class NodeCorrectlyIndexedCheck implements RecordCheck<NodeRecord, Consis
             }
         }
         return null;
-    }
-
-    @Override
-    public void checkChange( NodeRecord oldRecord, NodeRecord newRecord,
-                             CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine,
-                             DiffRecordAccess records )
-    {
-        check( newRecord, engine, records );
     }
 }

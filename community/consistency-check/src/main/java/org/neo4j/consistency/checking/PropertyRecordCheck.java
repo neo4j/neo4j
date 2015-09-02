@@ -19,11 +19,7 @@
  */
 package org.neo4j.consistency.checking;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -35,79 +31,6 @@ import org.neo4j.kernel.impl.store.record.Record;
 class PropertyRecordCheck
         implements RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport>
 {
-    @Override
-    public void checkChange( PropertyRecord oldRecord, PropertyRecord newRecord,
-                             CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
-                             DiffRecordAccess records )
-    {
-        check( newRecord, engine, records );
-        if ( oldRecord.inUse() )
-        {
-            for ( PropertyField field : PropertyField.values() )
-            {
-                field.checkChange( oldRecord, newRecord, engine, records );
-            }
-        }
-        // Did this record belong to the marked owner before it changed? - does it belong to it now?
-        if ( oldRecord.inUse() )
-        {
-            OwnerChain.OLD.check( newRecord, engine, records );
-        }
-        if ( newRecord.inUse() )
-        {
-            OwnerChain.NEW.check( newRecord, engine, records );
-        }
-        // Previously referenced dynamic records should either still be referenced, or be deleted
-        Map<Long, PropertyBlock> prevStrings = new HashMap<>();
-        Map<Long, PropertyBlock> prevArrays = new HashMap<>();
-        for ( PropertyBlock block : oldRecord )
-        {
-            PropertyType type = block.getType();
-            if ( type != null )
-            {
-                switch ( type )
-                {
-                case STRING:
-                    prevStrings.put( block.getSingleValueLong(), block );
-                    break;
-                case ARRAY:
-                    prevArrays.put( block.getSingleValueLong(), block );
-                    break;
-                }
-            }
-        }
-        for ( PropertyBlock block : newRecord )
-        {
-            PropertyType type = block.getType();
-            if ( type != null )
-            {
-                switch ( type )
-                {
-                case STRING:
-                    prevStrings.remove( block.getSingleValueLong() );
-                    break;
-                case ARRAY:
-                    prevArrays.remove( block.getSingleValueLong() );
-                    break;
-                }
-            }
-        }
-        for ( PropertyBlock block : prevStrings.values() )
-        {
-            if ( records.changedString( block.getSingleValueLong() ) == null )
-            {
-                engine.report().stringUnreferencedButNotDeleted( block );
-            }
-        }
-        for ( PropertyBlock block : prevArrays.values() )
-        {
-            if ( records.changedArray( block.getSingleValueLong() ) == null )
-            {
-                engine.report().arrayUnreferencedButNotDeleted( block );
-            }
-        }
-    }
-
     @Override
     public void check( PropertyRecord record,
                        CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
@@ -198,12 +121,6 @@ class PropertyRecordCheck
             {
                 report.previousDoesNotReferenceBack( property );
             }
-
-            @Override
-            void reportNotUpdated( ConsistencyReport.PropertyConsistencyReport report )
-            {
-                report.prevNotUpdated();
-            }
         },
         NEXT( Record.NO_NEXT_PROPERTY )
         {
@@ -229,12 +146,6 @@ class PropertyRecordCheck
             void noBackReference( ConsistencyReport.PropertyConsistencyReport report, PropertyRecord property )
             {
                 report.nextDoesNotReferenceBack( property );
-            }
-
-            @Override
-            void reportNotUpdated( ConsistencyReport.PropertyConsistencyReport report )
-            {
-                report.nextNotUpdated();
             }
         };
         private final Record NONE;
@@ -274,22 +185,6 @@ class PropertyRecordCheck
                 }
             }
         }
-        @Override
-        public void checkChange( PropertyRecord oldRecord, PropertyRecord newRecord,
-                                 CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
-                                 DiffRecordAccess records )
-        {
-            if ( !newRecord.inUse() || valueFrom( oldRecord ) != valueFrom( newRecord ) )
-            {
-                if ( !NONE.is( valueFrom( oldRecord ) )
-                     && records.changedProperty( valueFrom( oldRecord ) ) == null )
-                {
-                    reportNotUpdated( engine.report() );
-                }
-            }
-        }
-
-        abstract void reportNotUpdated( ConsistencyReport.PropertyConsistencyReport report );
 
         abstract void notInUse( ConsistencyReport.PropertyConsistencyReport report, PropertyRecord property );
 

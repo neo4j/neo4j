@@ -187,65 +187,6 @@ public abstract class DynamicRecordCheckTest
         verifyNoMoreInteractions( report );
     }
 
-    // change checking
-
-    @Test
-    public void shouldNotReportAnythingForConsistentlyChangedRecord() throws Exception
-    {
-        // given
-        DynamicRecord oldProperty = fill( inUse( record( 42 ) ) );
-        DynamicRecord newProperty = fill( inUse( record( 42 ) ) );
-
-        DynamicRecord oldNext = fill( inUse( record( 10 ) ), 1 );
-        addChange( oldNext, notInUse( record( 10 ) ) );
-
-        DynamicRecord newNext = addChange( notInUse( record( 20 ) ),
-                                           fill( inUse( record( 20 ) ), 1 ) );
-
-        oldProperty.setNextBlock( oldNext.getId() );
-        newProperty.setNextBlock( newNext.getId() );
-
-        // when
-        ConsistencyReport.DynamicConsistencyReport report = checkChange( oldProperty, newProperty );
-
-        // then
-        verifyNoMoreInteractions( report );
-    }
-
-    @Test
-    public void shouldReportProblemsWithTheNewStateWhenCheckingChanges() throws Exception
-    {
-        // given
-        DynamicRecord oldProperty = notInUse( record( 42 ) );
-        DynamicRecord newProperty = inUse( record( 42 ) );
-
-        // when
-        ConsistencyReport.DynamicConsistencyReport report = checkChange( oldProperty, newProperty );
-
-        // then
-        verify( report ).emptyBlock();
-        verifyNoMoreInteractions( report );
-    }
-
-    @Test
-    public void shouldReportNextReferenceChangedButPreviouslyReferencedRecordNotUpdated() throws Exception
-    {
-        // given
-        DynamicRecord oldProperty = fill( inUse( record( 42 ) ) );
-        DynamicRecord newProperty = fill( inUse( record( 42 ) ) );
-
-        oldProperty.setNextBlock( add( fill( inUse( record( 1 ) ) ) ).getId() );
-        newProperty.setNextBlock( addChange( notInUse( record( 2 ) ),
-                                             fill( inUse( record( 2 ) ) ) ).getId() );
-
-        // when
-        ConsistencyReport.DynamicConsistencyReport report = checkChange( oldProperty, newProperty );
-
-        // then
-        verify( report ).nextNotUpdated();
-        verifyNoMoreInteractions( report );
-    }
-
     // utilities
 
     DynamicRecord fill( DynamicRecord record )

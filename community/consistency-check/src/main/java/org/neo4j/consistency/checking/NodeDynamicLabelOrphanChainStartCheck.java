@@ -20,7 +20,6 @@
 package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -89,14 +88,6 @@ public class NodeDynamicLabelOrphanChainStartCheck
                 engine.comparativeCheck( records.node( ownerId ), VALID_NODE_RECORD );
             }
         }
-    }
-
-    @Override
-    public void checkChange( DynamicRecord oldRecord, DynamicRecord newRecord,
-                             CheckerEngine<DynamicRecord, DynamicLabelConsistencyReport> engine,
-                             DiffRecordAccess records )
-    {
-        check( newRecord, engine, records );
     }
 
     @Override

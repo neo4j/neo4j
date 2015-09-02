@@ -19,13 +19,13 @@
  */
 package org.neo4j.consistency.store;
 
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
-
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
@@ -43,13 +43,13 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-import static java.util.Collections.singletonMap;
-
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
-public class RecordAccessStub implements RecordAccess, DiffRecordAccess
+import static java.util.Collections.singletonMap;
+
+public class RecordAccessStub implements RecordAccess
 {
     public static final int SCHEMA_RECORD_TYPE = 255;
 
@@ -497,71 +497,5 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
     public RecordReference<RelationshipGroupRecord> relationshipGroup( long id )
     {
         return reference( relationshipGroups, id, Version.LATEST );
-    }
-
-    @Override
-    public RecordReference<NodeRecord> previousNode( long id )
-    {
-        return reference( nodes, id, Version.PREV );
-    }
-
-    @Override
-    public RecordReference<RelationshipRecord> previousRelationship( long id )
-    {
-        return reference( relationships, id, Version.PREV );
-    }
-
-    @Override
-    public RecordReference<PropertyRecord> previousProperty( long id )
-    {
-        return reference( properties, id, Version.PREV );
-    }
-
-    @Override
-    public DynamicRecord changedSchema( long id )
-    {
-        return record( schemata, id, Version.NEW );
-    }
-
-    @Override
-    public NodeRecord changedNode( long id )
-    {
-        return record( nodes, id, Version.NEW );
-    }
-
-    @Override
-    public RelationshipRecord changedRelationship( long id )
-    {
-        return record( relationships, id, Version.NEW );
-    }
-
-    @Override
-    public PropertyRecord changedProperty( long id )
-    {
-        return record( properties, id, Version.NEW );
-    }
-
-    @Override
-    public DynamicRecord changedString( long id )
-    {
-        return record( strings, id, Version.NEW );
-    }
-
-    @Override
-    public DynamicRecord changedArray( long id )
-    {
-        return record( arrays, id, Version.NEW );
-    }
-
-    @Override
-    public RecordReference<NeoStoreRecord> previousGraph()
-    {
-        return reference( singletonMap( -1L, graph ), -1, Version.PREV );
-    }
-
-    @Override
-    public RelationshipGroupRecord changedRelationshipGroup( long id )
-    {
-        return record( relationshipGroups, id, Version.NEW );
     }
 }

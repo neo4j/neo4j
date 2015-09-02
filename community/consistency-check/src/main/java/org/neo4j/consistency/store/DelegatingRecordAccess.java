@@ -29,73 +29,13 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-public class DelegatingRecordAccess implements DiffRecordAccess
+public class DelegatingRecordAccess implements RecordAccess
 {
-    private final DiffRecordAccess delegate;
+    private final RecordAccess delegate;
 
-    public DelegatingRecordAccess( DiffRecordAccess delegate )
+    public DelegatingRecordAccess( RecordAccess delegate )
     {
         this.delegate = delegate;
-    }
-
-    @Override
-    public RecordReference<NodeRecord> previousNode( long id )
-    {
-        return delegate.previousNode( id );
-    }
-
-    @Override
-    public RecordReference<RelationshipRecord> previousRelationship( long id )
-    {
-        return delegate.previousRelationship( id );
-    }
-
-    @Override
-    public RecordReference<PropertyRecord> previousProperty( long id )
-    {
-        return delegate.previousProperty( id );
-    }
-
-    @Override
-    public RecordReference<NeoStoreRecord> previousGraph()
-    {
-        return delegate.previousGraph();
-    }
-
-    @Override
-    public DynamicRecord changedSchema( long id )
-    {
-        return delegate.changedSchema( id );
-    }
-
-    @Override
-    public NodeRecord changedNode( long id )
-    {
-        return delegate.changedNode( id );
-    }
-
-    @Override
-    public RelationshipRecord changedRelationship( long id )
-    {
-        return delegate.changedRelationship( id );
-    }
-
-    @Override
-    public PropertyRecord changedProperty( long id )
-    {
-        return delegate.changedProperty( id );
-    }
-
-    @Override
-    public DynamicRecord changedString( long id )
-    {
-        return delegate.changedString( id );
-    }
-
-    @Override
-    public DynamicRecord changedArray( long id )
-    {
-        return delegate.changedArray( id );
     }
 
     @Override
@@ -186,11 +126,5 @@ public class DelegatingRecordAccess implements DiffRecordAccess
     public RecordReference<RelationshipGroupRecord> relationshipGroup( long id )
     {
         return delegate.relationshipGroup( id );
-    }
-
-    @Override
-    public RelationshipGroupRecord changedRelationshipGroup( long id )
-    {
-        return delegate.changedRelationshipGroup( id );
     }
 }

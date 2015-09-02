@@ -40,7 +40,7 @@ public class CacheSmallStoresRecordAccessTest
     public void shouldDelegateLookupForMostStores() throws Exception
     {
         // given
-        DiffRecordAccess delegate = mock( DiffRecordAccess.class );
+        RecordAccess delegate = mock( RecordAccess.class );
         CacheSmallStoresRecordAccess recordAccess = new CacheSmallStoresRecordAccess( delegate, null, null, null );
 
         // when
@@ -62,7 +62,7 @@ public class CacheSmallStoresRecordAccessTest
     public void shouldServePropertyKeysAndRelationshipLabelsFromSuppliedArrayCaches() throws Exception
     {
         // given
-        DiffRecordAccess delegate = mock( DiffRecordAccess.class );
+        RecordAccess delegate = mock( RecordAccess.class );
         PropertyKeyTokenRecord propertyKey0 = new PropertyKeyTokenRecord( 0 );
         PropertyKeyTokenRecord propertyKey2 = new PropertyKeyTokenRecord( 2 );
         PropertyKeyTokenRecord propertyKey1 = new PropertyKeyTokenRecord( 1 );
@@ -117,7 +117,7 @@ public class CacheSmallStoresRecordAccessTest
         @SuppressWarnings("unchecked")
         DirectReferenceMatcher( T record )
         {
-            super( (Class) DirectRecordReference.class );
+            super( DirectRecordReference.class );
             this.record = record;
         }
 

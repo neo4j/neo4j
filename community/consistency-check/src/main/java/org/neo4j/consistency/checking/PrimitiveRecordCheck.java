@@ -22,7 +22,6 @@ package org.neo4j.consistency.checking;
 import java.util.Arrays;
 
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -91,20 +90,6 @@ public abstract class PrimitiveRecordCheck
         }
 
         @Override
-        public void checkChange( RECORD oldRecord, RECORD newRecord, CheckerEngine<RECORD, REPORT> engine,
-                                 DiffRecordAccess records )
-        {
-            if ( !newRecord.inUse() || valueFrom( oldRecord ) != valueFrom( newRecord ) )
-            {
-                if ( !Record.NO_NEXT_PROPERTY.is( valueFrom( oldRecord ) )
-                     && records.changedProperty( valueFrom( oldRecord ) ) == null )
-                {
-                    engine.report().propertyNotUpdated();
-                }
-            }
-        }
-
-        @Override
         public void checkReference( RECORD record, PropertyRecord property, CheckerEngine<RECORD, REPORT> engine,
                                     RecordAccess records )
         {
@@ -133,20 +118,6 @@ public abstract class PrimitiveRecordCheck
         for ( RecordField<RECORD, REPORT> field : fields )
         {
             field.checkConsistency( record, engine, records );
-        }
-    }
-
-    @Override
-    public void checkChange( RECORD oldRecord, RECORD newRecord, CheckerEngine<RECORD, REPORT> engine,
-                             DiffRecordAccess records )
-    {
-        check( newRecord, engine, records );
-        if ( oldRecord.inUse() )
-        {
-            for ( RecordField<RECORD, REPORT> field : fields )
-            {
-                field.checkChange( oldRecord, newRecord, engine, records );
-            }
         }
     }
 

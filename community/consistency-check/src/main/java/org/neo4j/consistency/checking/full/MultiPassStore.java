@@ -25,8 +25,8 @@ import java.util.List;
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.report.InconsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.FilteringRecordAccess;
+import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 
@@ -102,10 +102,10 @@ public enum MultiPassStore
         return id >= iPass * recordsPerPass && id < (iPass + 1) * recordsPerPass;
     }
 
-    public List<DiffRecordAccess> multiPassFilters( long memoryPerPass, StoreAccess storeAccess,
-            DiffRecordAccess recordAccess, MultiPassStore[] stores )
+    public List<RecordAccess> multiPassFilters( long memoryPerPass, StoreAccess storeAccess,
+            RecordAccess recordAccess, MultiPassStore[] stores )
     {
-        List<DiffRecordAccess> filteringStores = new ArrayList<>();
+        List<RecordAccess> filteringStores = new ArrayList<>();
         RecordStore<?> recordStore = getRecordStore( storeAccess );
         long recordsPerPass = memoryPerPass / recordStore.getRecordSize();
         long highId = recordStore.getHighId();
@@ -122,13 +122,13 @@ public enum MultiPassStore
     static class Factory
     {
         private final CheckDecorator decorator;
-        private final DiffRecordAccess recordAccess;
+        private final RecordAccess recordAccess;
         private final long totalMappedMemory;
         private final StoreAccess storeAccess;
         private final InconsistencyReport report;
 
         Factory( CheckDecorator decorator, long totalMappedMemory,
-                 StoreAccess storeAccess, DiffRecordAccess recordAccess, InconsistencyReport report )
+                 StoreAccess storeAccess, RecordAccess recordAccess, InconsistencyReport report )
         {
             this.decorator = decorator;
             this.totalMappedMemory = totalMappedMemory;
@@ -154,9 +154,9 @@ public enum MultiPassStore
             List<ConsistencyReporter> result = new ArrayList<>();
             for ( MultiPassStore store : stores )
             {
-                List<DiffRecordAccess> filters = store.multiPassFilters( totalMappedMemory, storeAccess,
+                List<RecordAccess> filters = store.multiPassFilters( totalMappedMemory, storeAccess,
                         recordAccess, stores );
-                for ( DiffRecordAccess filter : filters )
+                for ( RecordAccess filter : filters )
                 {
                     result.add( new ConsistencyReporter( filter, report ) );
                 }

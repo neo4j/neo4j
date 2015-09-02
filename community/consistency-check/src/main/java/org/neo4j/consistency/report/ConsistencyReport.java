@@ -56,57 +56,29 @@ public interface ConsistencyReport
         void forSchema( DynamicRecord schema,
                         RecordCheck<DynamicRecord, SchemaConsistencyReport> checker );
 
-        void forSchemaChange( DynamicRecord oldSchema, DynamicRecord newSchema,
-                              RecordCheck<DynamicRecord, SchemaConsistencyReport> checker );
-
         void forNode( NodeRecord node,
                       RecordCheck<NodeRecord, NodeConsistencyReport> checker );
-
-        void forNodeChange( NodeRecord oldNode, NodeRecord newNode,
-                            RecordCheck<NodeRecord, NodeConsistencyReport> checker );
 
         void forRelationship( RelationshipRecord relationship,
                               RecordCheck<RelationshipRecord, RelationshipConsistencyReport> checker );
 
-        void forRelationshipChange( RelationshipRecord oldRelationship, RelationshipRecord newRelationship,
-                                    RecordCheck<RelationshipRecord, RelationshipConsistencyReport> checker );
-
         void forProperty( PropertyRecord property,
                           RecordCheck<PropertyRecord, PropertyConsistencyReport> checker );
-
-        void forPropertyChange( PropertyRecord oldProperty, PropertyRecord newProperty,
-                                RecordCheck<PropertyRecord, PropertyConsistencyReport> checker );
 
         void forRelationshipTypeName( RelationshipTypeTokenRecord relationshipType,
                                       RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> checker );
 
-        void forRelationshipTypeNameChange( RelationshipTypeTokenRecord oldType, RelationshipTypeTokenRecord newType,
-                                            RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> checker );
-
         void forLabelName( LabelTokenRecord label,
-                           RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker );
-
-        void forLabelNameChange( LabelTokenRecord oldLabel, LabelTokenRecord newLabel,
                            RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker );
 
         void forPropertyKey( PropertyKeyTokenRecord key,
                              RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> checker );
 
-        void forPropertyKeyChange( PropertyKeyTokenRecord oldKey, PropertyKeyTokenRecord newKey,
-                                   RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> checker );
-
         void forDynamicBlock( RecordType type, DynamicRecord record,
                               RecordCheck<DynamicRecord, DynamicConsistencyReport> checker );
 
-        void forDynamicBlockChange( RecordType type, DynamicRecord oldRecord, DynamicRecord newRecord,
-                                    RecordCheck<DynamicRecord, DynamicConsistencyReport> checker );
-
-
         void forDynamicLabelBlock( RecordType type, DynamicRecord record,
                                    RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker );
-
-        void forDynamicLabelBlockChange( RecordType type, DynamicRecord oldRecord, DynamicRecord newRecord,
-                                         RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker );
 
         void forNodeLabelScan( LabelScanDocument document,
                                RecordCheck<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> checker );
@@ -117,9 +89,6 @@ public interface ConsistencyReport
         void forNodeLabelMatch( NodeRecord nodeRecord, RecordCheck<NodeRecord, LabelsMatchReport> nodeLabelCheck );
 
         void forRelationshipGroup( RelationshipGroupRecord record,
-                RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> checker );
-
-        void forRelationshipGroupChange( RelationshipGroupRecord oldRecord, RelationshipGroupRecord newRecord,
                 RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> checker );
 
         void forCounts( CountsEntry countsEntry,

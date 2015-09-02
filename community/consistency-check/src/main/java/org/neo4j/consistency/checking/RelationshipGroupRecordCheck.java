@@ -25,7 +25,6 @@ import java.util.List;
 
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -84,13 +83,6 @@ public class RelationshipGroupRecordCheck implements
         {
             return record.getOwningNode();
         }
-
-        @Override
-        public void checkChange( RelationshipGroupRecord oldRecord, RelationshipGroupRecord newRecord,
-                CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine,
-                DiffRecordAccess records )
-        {   // nothing to check
-        }
     }
 
     private enum RelationshipTypeField implements
@@ -118,13 +110,6 @@ public class RelationshipGroupRecordCheck implements
         public long valueFrom( RelationshipGroupRecord record )
         {
             return record.getType();
-        }
-
-        @Override
-        public void checkChange( RelationshipGroupRecord oldRecord, RelationshipGroupRecord newRecord,
-                CheckerEngine<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> engine,
-                DiffRecordAccess records )
-        {   // nothing to check
         }
 
         @Override
@@ -160,14 +145,6 @@ public class RelationshipGroupRecordCheck implements
         public long valueFrom( RelationshipGroupRecord record )
         {
             return record.getNext();
-        }
-
-        @Override
-        public void checkChange( RelationshipGroupRecord oldRecord, RelationshipGroupRecord newRecord,
-                CheckerEngine<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> engine,
-                DiffRecordAccess records )
-        {
-            // Can't easily verify since we have no prev pointers on relationship groups
         }
 
         @Override
@@ -307,14 +284,6 @@ public class RelationshipGroupRecordCheck implements
         }
 
         @Override
-        public void checkChange( RelationshipGroupRecord oldRecord, RelationshipGroupRecord newRecord,
-                CheckerEngine<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> engine,
-                DiffRecordAccess records )
-        {
-            // Check anything here?
-        }
-
-        @Override
         public void checkReference( RelationshipGroupRecord record, RelationshipRecord referred,
                 CheckerEngine<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> engine,
                 RecordAccess records )
@@ -356,20 +325,6 @@ public class RelationshipGroupRecordCheck implements
         for ( RecordField<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> field : fields )
         {
             field.checkConsistency( record, engine, records );
-        }
-    }
-
-    @Override
-    public void checkChange( RelationshipGroupRecord oldRecord, RelationshipGroupRecord newRecord,
-            CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine, DiffRecordAccess records )
-    {
-        check( newRecord, engine, records );
-        if ( oldRecord.inUse() )
-        {
-            for ( RecordField<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> field : fields )
-            {
-                field.checkChange( oldRecord, newRecord, engine, records );
-            }
         }
     }
 }

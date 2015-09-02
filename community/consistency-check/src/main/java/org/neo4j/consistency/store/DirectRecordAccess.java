@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-public class DirectRecordAccess implements DiffRecordAccess
+public class DirectRecordAccess implements RecordAccess
 {
     final StoreAccess access;
 
@@ -134,71 +134,5 @@ public class DirectRecordAccess implements DiffRecordAccess
     public RecordReference<NeoStoreRecord> graph()
     {
         return new DirectRecordReference<>( access.getRawNeoStores().getMetaDataStore().asRecord(), this );
-    }
-
-    @Override
-    public RecordReference<NodeRecord> previousNode( long id )
-    {
-        return null;
-    }
-
-    @Override
-    public RecordReference<RelationshipRecord> previousRelationship( long id )
-    {
-        return null;
-    }
-
-    @Override
-    public RecordReference<PropertyRecord> previousProperty( long id )
-    {
-        return null;
-    }
-
-    @Override
-    public RecordReference<NeoStoreRecord> previousGraph()
-    {
-        return null;
-    }
-
-    @Override
-    public DynamicRecord changedSchema( long id )
-    {
-        return null;
-    }
-
-    @Override
-    public NodeRecord changedNode( long id )
-    {
-        return null;
-    }
-
-    @Override
-    public RelationshipRecord changedRelationship( long id )
-    {
-        return null;
-    }
-
-    @Override
-    public PropertyRecord changedProperty( long id )
-    {
-        return null;
-    }
-
-    @Override
-    public DynamicRecord changedString( long id )
-    {
-        return null;
-    }
-
-    @Override
-    public DynamicRecord changedArray( long id )
-    {
-        return null;
-    }
-
-    @Override
-    public RelationshipGroupRecord changedRelationshipGroup( long id )
-    {
-        return null;
     }
 }

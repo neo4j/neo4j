@@ -20,7 +20,6 @@
 package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -32,34 +31,11 @@ class DynamicRecordCheck
 {
     private final int blockSize;
     private final DynamicStore dereference;
-    private final RecordStore<DynamicRecord> store;
 
     DynamicRecordCheck( RecordStore<DynamicRecord> store, DynamicStore dereference )
     {
         this.blockSize = store.getRecordSize() - store.getRecordHeaderSize();
         this.dereference = dereference;
-        this.store = store;
-    }
-
-    @Override
-    public void checkChange( DynamicRecord oldRecord, DynamicRecord newRecord,
-                             CheckerEngine<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> engine,
-                             DiffRecordAccess records )
-    {
-        check( newRecord, engine, records );
-        if ( oldRecord.inUse() && !Record.NO_NEXT_BLOCK.is( oldRecord.getNextBlock() ) )
-        {
-            if ( !newRecord.inUse() || oldRecord.getNextBlock() != newRecord.getNextBlock() )
-            {
-                DynamicRecord next = dereference.changed( records, oldRecord.getNextBlock() );
-                if ( next == null )
-                {
-                    engine.report().nextNotUpdated();
-                }
-                // TODO: how to check that the owner of 'next' is now a different property record.
-                // TODO: implement previous logic? DynamicRecord must change from used to unused or from unused to used
-            }
-        }
     }
 
     @Override

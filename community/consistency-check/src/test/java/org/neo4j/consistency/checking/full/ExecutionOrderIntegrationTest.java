@@ -43,7 +43,6 @@ import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.report.InconsistencyLogger;
 import org.neo4j.consistency.report.InconsistencyReport;
 import org.neo4j.consistency.report.PendingReferenceCheck;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -65,12 +64,14 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.withSettings;
+
+import static java.lang.String.format;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -100,7 +101,7 @@ public class ExecutionOrderIntegrationTest
     {
         // given
         StoreAccess store = fixture.directStoreAccess().nativeStores();
-        DiffRecordAccess access = FullCheck.recordAccess( store );
+        RecordAccess access = FullCheck.recordAccess( store );
 
         FullCheck singlePass = new FullCheck( config( TaskExecutionOrder.SINGLE_THREADED ),
                 ProgressMonitorFactory.NONE );
@@ -319,14 +320,7 @@ public class ExecutionOrderIntegrationTest
         @Override
         public void check( REC record, CheckerEngine<REC, REP> engine, RecordAccess records )
         {
-            checker.check( record, engine, new ComparativeLogging( (DiffRecordAccess) records, log ) );
-        }
-
-        @Override
-        public void checkChange( REC oldRecord, REC newRecord, CheckerEngine<REC, REP> engine,
-                                 DiffRecordAccess records )
-        {
-            checker.checkChange( oldRecord, newRecord, engine, new ComparativeLogging( records, log ) );
+            checker.check( record, engine, new ComparativeLogging( records, log ) );
         }
 
         @SuppressWarnings( "unchecked" )
@@ -387,12 +381,12 @@ public class ExecutionOrderIntegrationTest
         }
     }
 
-    private static class ComparativeLogging implements DiffRecordAccess
+    private static class ComparativeLogging implements RecordAccess
     {
-        private final DiffRecordAccess access;
+        private final RecordAccess access;
         private final InvocationLog log;
 
-        ComparativeLogging( DiffRecordAccess access, InvocationLog log )
+        ComparativeLogging( RecordAccess access, InvocationLog log )
         {
             this.access = access;
             this.log = log;
@@ -401,72 +395,6 @@ public class ExecutionOrderIntegrationTest
         private <T extends AbstractBaseRecord> LoggingReference<T> logging( RecordReference<T> actual )
         {
             return new LoggingReference<>( actual, log );
-        }
-
-        @Override
-        public RecordReference<NodeRecord> previousNode( long id )
-        {
-            return logging( access.previousNode( id ) );
-        }
-
-        @Override
-        public RecordReference<RelationshipRecord> previousRelationship( long id )
-        {
-            return logging( access.previousRelationship( id ) );
-        }
-
-        @Override
-        public RecordReference<PropertyRecord> previousProperty( long id )
-        {
-            return logging( access.previousProperty( id ) );
-        }
-
-        @Override
-        public RecordReference<NeoStoreRecord> previousGraph()
-        {
-            return logging( access.previousGraph() );
-        }
-
-        @Override
-        public DynamicRecord changedSchema( long id )
-        {
-            return access.changedSchema( id );
-        }
-
-        @Override
-        public NodeRecord changedNode( long id )
-        {
-            return access.changedNode( id );
-        }
-
-        @Override
-        public RelationshipRecord changedRelationship( long id )
-        {
-            return access.changedRelationship( id );
-        }
-
-        @Override
-        public RelationshipGroupRecord changedRelationshipGroup( long id )
-        {
-            return access.changedRelationshipGroup( id );
-        }
-
-        @Override
-        public PropertyRecord changedProperty( long id )
-        {
-            return access.changedProperty( id );
-        }
-
-        @Override
-        public DynamicRecord changedString( long id )
-        {
-            return access.changedString( id );
-        }
-
-        @Override
-        public DynamicRecord changedArray( long id )
-        {
-            return access.changedArray( id );
         }
 
         @Override

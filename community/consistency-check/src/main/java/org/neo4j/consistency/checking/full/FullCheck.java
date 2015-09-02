@@ -30,8 +30,8 @@ import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.report.InconsistencyMessageLogger;
 import org.neo4j.consistency.report.InconsistencyReport;
 import org.neo4j.consistency.store.CacheSmallStoresRecordAccess;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.DirectRecordAccess;
+import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
@@ -81,7 +81,7 @@ public class FullCheck
                 new CountsBuilderDecorator( stores.nativeStores().getRawNeoStores().getNodeStore() );
         PropertyExistenceChecker mpc = new PropertyExistenceChecker( stores.nativeStores().getSchemaStore() );
         CheckDecorator decorator = new CheckDecorator.ChainCheckDecorator( ownerCheck, countsBuilder, mpc );
-        DiffRecordAccess records = recordAccess( stores.nativeStores() );
+        RecordAccess records = recordAccess( stores.nativeStores() );
         execute( stores, decorator, records, report );
         ownerCheck.scanForOrphanChains( progressFactory );
 
@@ -111,7 +111,7 @@ public class FullCheck
     }
 
     void execute( final DirectStoreAccess directStoreAccess, CheckDecorator decorator,
-            final DiffRecordAccess recordAccess, final InconsistencyReport report )
+            final RecordAccess recordAccess, final InconsistencyReport report )
             throws ConsistencyCheckIncompleteException
     {
         final ConsistencyReporter reporter = new ConsistencyReporter( recordAccess, report );
@@ -145,7 +145,7 @@ public class FullCheck
 
     }
 
-    static DiffRecordAccess recordAccess( StoreAccess store )
+    static RecordAccess recordAccess( StoreAccess store )
     {
         return new CacheSmallStoresRecordAccess(
                 new DirectRecordAccess( store ),

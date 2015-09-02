@@ -93,40 +93,4 @@ public class RelationshipTypeTokenRecordCheckTest extends
         verify( report ).emptyName( name );
         verifyNoMoreInteractions( report );
     }
-
-    // change checking
-
-    @Test
-    public void shouldNotReportAnythingForConsistentlyChangedRecord() throws Exception
-    {
-        // given
-        RelationshipTypeTokenRecord oldRecord = notInUse( new RelationshipTypeTokenRecord( 42 ) );
-        RelationshipTypeTokenRecord newRecord = inUse( new RelationshipTypeTokenRecord( 42 ) );
-        DynamicRecord name = addRelationshipTypeName( inUse( new DynamicRecord( 6 ) ) );
-        name.setData( new byte[1] );
-        newRecord.setNameId( (int) name.getId()  );
-
-        // when
-        ConsistencyReport.RelationshipTypeConsistencyReport report = checkChange( oldRecord, newRecord );
-
-        // then
-        verifyNoMoreInteractions( report );
-    }
-
-    @Test
-    public void shouldReportProblemsWithTheNewStateWhenCheckingChanges() throws Exception
-    {
-        // given
-        RelationshipTypeTokenRecord oldRecord = notInUse( new RelationshipTypeTokenRecord( 42 ) );
-        RelationshipTypeTokenRecord newRecord = inUse( new RelationshipTypeTokenRecord( 42 ) );
-        DynamicRecord name = addRelationshipTypeName( notInUse( new DynamicRecord( 6 ) ) );
-        newRecord.setNameId( (int) name.getId()  );
-
-        // when
-        ConsistencyReport.RelationshipTypeConsistencyReport report = checkChange( oldRecord, newRecord );
-
-        // then
-        verify( report ).nameBlockNotInUse( name );
-        verifyNoMoreInteractions( report );
-    }
 }

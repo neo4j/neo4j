@@ -19,14 +19,14 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import java.util.List;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.junit.runners.Suite;
 
-import org.neo4j.consistency.store.DiffRecordAccess;
+import java.util.List;
+
+import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -60,12 +60,12 @@ public abstract class MultiPassStoreTest
     {
         // given
         StoreAccess storeAccess = storeAccess( 1000L, 9 );
-        DiffRecordAccess recordAccess = mock( DiffRecordAccess.class );
+        RecordAccess recordAccess = mock( RecordAccess.class );
 
         long memoryPerPass = 900L;
 
         // when
-        List<DiffRecordAccess> filters = multiPassStore().multiPassFilters(
+        List<RecordAccess> filters = multiPassStore().multiPassFilters(
                 memoryPerPass, storeAccess, recordAccess, MultiPassStore.values() );
 
         // then
@@ -93,16 +93,16 @@ public abstract class MultiPassStoreTest
     {
         // given
         StoreAccess storeAccess = storeAccess( 1000L, 9 );
-        DiffRecordAccess recordAccess = mock( DiffRecordAccess.class );
+        RecordAccess recordAccess = mock( RecordAccess.class );
 
         long memoryPerPass = 900L;
 
         // when
-        List<DiffRecordAccess> filters = multiPassStore().multiPassFilters(
+        List<RecordAccess> filters = multiPassStore().multiPassFilters(
                 memoryPerPass, storeAccess, recordAccess, MultiPassStore.values() );
 
         // then
-        for ( DiffRecordAccess filter : filters )
+        for ( RecordAccess filter : filters )
         {
             for ( long id : new long[] {0, 100, 200, 300, 400, 500, 600, 700, 800, 900} )
             {
@@ -136,9 +136,9 @@ public abstract class MultiPassStoreTest
 
     protected abstract MultiPassStore multiPassStore();
 
-    protected abstract RecordReference<? extends AbstractBaseRecord> record( DiffRecordAccess filter, long id );
+    protected abstract RecordReference<? extends AbstractBaseRecord> record( RecordAccess filter, long id );
 
-    protected abstract void otherRecords( DiffRecordAccess filter, long id );
+    protected abstract void otherRecords( RecordAccess filter, long id );
 
     @RunWith(JUnit4.class)
     public static class Nodes extends MultiPassStoreTest
@@ -150,12 +150,13 @@ public abstract class MultiPassStoreTest
         }
 
         @Override
-        protected RecordReference<NodeRecord> record( DiffRecordAccess filter, long id )
+        protected RecordReference<NodeRecord> record( RecordAccess filter, long id )
         {
             return filter.node( id );
         }
 
-        protected void otherRecords( DiffRecordAccess filter, long id )
+        @Override
+        protected void otherRecords( RecordAccess filter, long id )
         {
             filter.relationship( id );
             filter.property( id );
@@ -174,12 +175,13 @@ public abstract class MultiPassStoreTest
         }
 
         @Override
-        protected RecordReference<RelationshipRecord> record( DiffRecordAccess filter, long id )
+        protected RecordReference<RelationshipRecord> record( RecordAccess filter, long id )
         {
             return filter.relationship( id );
         }
 
-        protected void otherRecords( DiffRecordAccess filter, long id )
+        @Override
+        protected void otherRecords( RecordAccess filter, long id )
         {
             filter.node( id );
             filter.property( id );
@@ -198,12 +200,13 @@ public abstract class MultiPassStoreTest
         }
 
         @Override
-        protected RecordReference<PropertyRecord> record( DiffRecordAccess filter, long id )
+        protected RecordReference<PropertyRecord> record( RecordAccess filter, long id )
         {
             return filter.property( id );
         }
 
-        protected void otherRecords( DiffRecordAccess filter, long id )
+        @Override
+        protected void otherRecords( RecordAccess filter, long id )
         {
             filter.node( id );
             filter.relationship( id );
@@ -222,12 +225,13 @@ public abstract class MultiPassStoreTest
         }
 
         @Override
-        protected RecordReference<DynamicRecord> record( DiffRecordAccess filter, long id )
+        protected RecordReference<DynamicRecord> record( RecordAccess filter, long id )
         {
             return filter.string( id );
         }
 
-        protected void otherRecords( DiffRecordAccess filter, long id )
+        @Override
+        protected void otherRecords( RecordAccess filter, long id )
         {
             filter.node( id );
             filter.relationship( id );
@@ -246,12 +250,13 @@ public abstract class MultiPassStoreTest
         }
 
         @Override
-        protected RecordReference<DynamicRecord> record( DiffRecordAccess filter, long id )
+        protected RecordReference<DynamicRecord> record( RecordAccess filter, long id )
         {
             return filter.array( id );
         }
 
-        protected void otherRecords( DiffRecordAccess filter, long id )
+        @Override
+        protected void otherRecords( RecordAccess filter, long id )
         {
             filter.node( id );
             filter.relationship( id );

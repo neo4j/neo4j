@@ -20,7 +20,6 @@
 package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -61,14 +60,6 @@ class RelationshipRecordCheck
         public long valueFrom( RelationshipRecord record )
         {
             return record.getType();
-        }
-
-        @Override
-        public void checkChange( RelationshipRecord oldRecord, RelationshipRecord newRecord,
-                                 CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> engine,
-                                 DiffRecordAccess records )
-        {
-            // nothing to check
         }
 
         @Override
@@ -115,12 +106,6 @@ class RelationshipRecordCheck
             }
 
             @Override
-            void notUpdated( ConsistencyReport.RelationshipConsistencyReport report )
-            {
-                report.sourcePrevNotUpdated();
-            }
-
-            @Override
             boolean endOfChain( RelationshipRecord record )
             {
                 return NODE.isFirst( record );
@@ -151,12 +136,6 @@ class RelationshipRecordCheck
                                   RelationshipRecord relationship )
             {
                 report.sourceNextDoesNotReferenceBack( relationship );
-            }
-
-            @Override
-            void notUpdated( ConsistencyReport.RelationshipConsistencyReport report )
-            {
-                report.sourceNextNotUpdated();
             }
 
             @Override
@@ -193,12 +172,6 @@ class RelationshipRecordCheck
             }
 
             @Override
-            void notUpdated( ConsistencyReport.RelationshipConsistencyReport report )
-            {
-                report.targetPrevNotUpdated();
-            }
-
-            @Override
             boolean endOfChain( RelationshipRecord record )
             {
                 return NODE.isFirst( record );
@@ -229,12 +202,6 @@ class RelationshipRecordCheck
                                   RelationshipRecord relationship )
             {
                 report.targetNextDoesNotReferenceBack( relationship );
-            }
-
-            @Override
-            void notUpdated( ConsistencyReport.RelationshipConsistencyReport report )
-            {
-                report.targetNextNotUpdated();
             }
 
             @Override
@@ -281,24 +248,7 @@ class RelationshipRecordCheck
             }
         }
 
-        @Override
-        public void checkChange( RelationshipRecord oldRecord, RelationshipRecord newRecord,
-                                 CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> engine,
-                                 DiffRecordAccess records )
-        {
-            if ( !newRecord.inUse() || valueFrom( oldRecord ) != valueFrom( newRecord ) )
-            {   // if we're deleting or creating this relationship record
-                if ( !endOfChain( oldRecord )
-                     && records.changedRelationship( valueFrom( oldRecord ) ) == null )
-                {   // and we didn't update an expected pointer --> report
-                    notUpdated( engine.report() );
-                }
-            }
-        }
-
         abstract boolean endOfChain( RelationshipRecord record );
-
-        abstract void notUpdated( ConsistencyReport.RelationshipConsistencyReport report );
 
         abstract long other( NodeField field, RelationshipRecord relationship );
 

@@ -20,7 +20,6 @@
 package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -85,12 +84,6 @@ enum NodeField implements
         {
             report.relationshipNotFirstInSourceChain( relationship );
         }
-
-        @Override
-        void notUpdated( ConsistencyReport.RelationshipConsistencyReport report )
-        {
-            report.sourceNodeNotUpdated();
-        }
     },
     TARGET
     {
@@ -146,12 +139,6 @@ enum NodeField implements
         void notFirstInChain( ConsistencyReport.NodeConsistencyReport report, RelationshipRecord relationship )
         {
             report.relationshipNotFirstInTargetChain( relationship );
-        }
-
-        @Override
-        void notUpdated( ConsistencyReport.RelationshipConsistencyReport report )
-        {
-            report.targetNodeNotUpdated();
         }
     };
 
@@ -239,27 +226,6 @@ enum NodeField implements
             }
         }
     }
-
-    @Override
-    public void checkChange( RelationshipRecord oldRecord, RelationshipRecord newRecord,
-                             CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> engine,
-                             DiffRecordAccess records )
-    {
-        if ( isFirst( oldRecord ) )
-        {
-            if ( !newRecord.inUse()
-                 || valueFrom( oldRecord ) != valueFrom( newRecord )
-                 || prev( oldRecord ) != prev( newRecord ) )
-            {
-                if ( records.changedNode( valueFrom( oldRecord ) ) == null )
-                {
-                    notUpdated( engine.report() );
-                }
-            }
-        }
-    }
-
-    abstract void notUpdated( ConsistencyReport.RelationshipConsistencyReport report );
 
     abstract void illegalNode( ConsistencyReport.RelationshipConsistencyReport report );
 
