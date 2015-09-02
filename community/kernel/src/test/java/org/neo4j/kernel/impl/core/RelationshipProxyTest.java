@@ -24,6 +24,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
 
@@ -32,9 +33,22 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
-public class RelationshipProxyTest
+public class RelationshipProxyTest extends PropertyContainerProxyTest
 {
+    @Override
+    protected long createPropertyContainer()
+    {
+        return db.createNode().createRelationshipTo( db.createNode(), withName( "FOO" ) ).getId();
+    }
+
+    @Override
+    protected PropertyContainer lookupPropertyContainer( long id )
+    {
+        return db.getRelationshipById( id );
+    }
+
     @Test
     public void shouldBeAbleToReferToIdsBeyondMaxInt() throws Exception
     {
@@ -45,7 +59,7 @@ public class RelationshipProxyTest
             @Override
             public Node answer( InvocationOnMock invocation ) throws Throwable
             {
-                return nodeWithId( (Long)invocation.getArguments()[0] );
+                return nodeWithId( (Long) invocation.getArguments()[0] );
             }
         } );
         when( actions.getRelationshipTypeById( anyInt() ) ).then( new Answer<RelationshipType>()
@@ -53,11 +67,11 @@ public class RelationshipProxyTest
             @Override
             public RelationshipType answer( InvocationOnMock invocation ) throws Throwable
             {
-                return new RelationshipTypeToken( "whatever", (Integer)invocation.getArguments()[0] );
+                return new RelationshipTypeToken( "whatever", (Integer) invocation.getArguments()[0] );
             }
         } );
 
-        long[] ids = new long[] {
+        long[] ids = new long[]{
                 1437589437,
                 2047587483,
                 2147496246L,
@@ -67,7 +81,7 @@ public class RelationshipProxyTest
                 57587348738L,
                 59892898932L
         };
-        int[] types = new int[] {
+        int[] types = new int[]{
                 0,
                 10,
                 101,
@@ -77,11 +91,11 @@ public class RelationshipProxyTest
         };
 
         // WHEN/THEN
-        for ( int i = 0; i < ids.length-2; i++ )
+        for ( int i = 0; i < ids.length - 2; i++ )
         {
             long id = ids[i];
-            long nodeId1 = ids[i+1];
-            long nodeId2 = ids[i+2];
+            long nodeId1 = ids[i + 1];
+            long nodeId2 = ids[i + 2];
             int type = types[i];
             verifyIds( actions, id, nodeId1, type, nodeId2 );
             verifyIds( actions, id, nodeId2, type, nodeId1 );
@@ -93,7 +107,7 @@ public class RelationshipProxyTest
         RelationshipProxy proxy = new RelationshipProxy( actions, relationshipId, nodeId1, typeId, nodeId2 );
         assertEquals( relationshipId, proxy.getId() );
         // our mock above is known to return RelationshipTypeToken
-        assertEquals( typeId, ((RelationshipTypeToken)proxy.getType()).id() );
+        assertEquals( typeId, ((RelationshipTypeToken) proxy.getType()).id() );
         assertEquals( nodeId1, proxy.getStartNode().getId() );
         assertEquals( nodeId2, proxy.getEndNode().getId() );
         assertEquals( nodeId2, proxy.getOtherNode( nodeWithId( nodeId1 ) ).getId() );

@@ -23,13 +23,39 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.StringDescription;
 import org.neo4j.function.ThrowingSupplier;
+import org.neo4j.helpers.ArrayUtil;
+import org.neo4j.helpers.Strings;
 
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 public final class Assert
 {
     private Assert()
     {
+    }
+
+    public static void assertObjectOrArrayEquals( Object expected, Object actual )
+    {
+        assertObjectOrArrayEquals( "", expected, actual );
+    }
+
+    public static void assertObjectOrArrayEquals( String message, Object expected, Object actual )
+    {
+        if ( expected.getClass().isArray() )
+        {
+            if ( !ArrayUtil.equals( expected, actual ) )
+            {
+                throw newAssertionError( message, expected, actual );
+            }
+        }
+        else
+        {
+            if ( !Objects.equals( expected, actual ) )
+            {
+                throw newAssertionError( message, expected, actual );
+            }
+        }
     }
 
     public static <T, E extends Exception> void assertEventually(
@@ -61,5 +87,12 @@ public final class Assert
             throw new AssertionError( "Timeout hit (" + timeout + " " + timeUnit.toString().toLowerCase() +
                     ") while waiting for condition to match: " + description.toString() );
         }
+    }
+
+    private static AssertionError newAssertionError( String message, Object expected, Object actual )
+    {
+        return new AssertionError( ((message == null || message.isEmpty()) ? "" : message + "\n") +
+                                   "Expected: " + Strings.prettyPrint( expected ) +
+                                   ", actual: " + Strings.prettyPrint( actual ) );
     }
 }

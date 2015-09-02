@@ -629,7 +629,7 @@ public enum ShortArray
         return array.getClass().getComponentType().isPrimitive();
     }
 
-    private final static Map<Class, ShortArray> all = new IdentityHashMap<Class, ShortArray>( values().length * 2 );
+    private static final Map<Class<?>, ShortArray> all = new IdentityHashMap<>( values().length * 2 );
 
     static
     {
@@ -646,7 +646,7 @@ public enum ShortArray
     private final Class<?> primitiveClass;
     private final PropertyType type;
 
-    private ShortArray( PropertyType type, int maxBits, Class<?> boxedClass, Class<?> primitiveClass)
+    ShortArray( PropertyType type, int maxBits, Class<?> boxedClass, Class<?> primitiveClass )
     {
         this.type = type;
         this.maxBits = maxBits;
