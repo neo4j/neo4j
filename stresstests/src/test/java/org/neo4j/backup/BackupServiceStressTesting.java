@@ -22,6 +22,7 @@ package org.neo4j.backup;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.Callable;
 
 import static java.lang.Integer.parseInt;
@@ -62,9 +63,12 @@ public class BackupServiceStressTesting
         assertEquals( 0, brokenStores );
     }
 
-    private File ensureExists( File directory )
+    private static File ensureExists( File directory ) throws IOException
     {
-        directory.mkdirs();
+        if ( !directory.mkdirs() )
+        {
+            throw new IOException( "Unable to create directory: '" + directory.getAbsolutePath() + "'" );
+        }
         return directory;
     }
 
