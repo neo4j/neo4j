@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_3
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
-import org.scalatest.matchers.{MatchResult, Matcher}
 
 class TriadicIntegrationTest extends ExecutionEngineFunSuite {
   private val QUERY: String = """MATCH (p1:Person)-[:FRIEND]-()-[:FRIEND]-(p2:Person)
@@ -79,8 +77,7 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
     result should (use("TriadicSelection") and be(empty))
   }
 
-  test("triadic should handle complex incoming predicates") {
-//    System.setProperty("pickBestPlan.VERBOSE", "true")
+  test("triadic should not handle complex incoming predicates for now") {
     // given
     execute("CREATE INDEX ON :Person(name)")
     execute( """CREATE (a:Person{name:"a"}), (b:Person{name:"b"}), (c:Person{name:"c",age:39}), (d:Person{name:"d"}), (e:Person{name:"e"})
@@ -94,13 +91,10 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
                |WHERE a.name = 'a' AND b.age = 39 AND exists(c.name) AND (a)-[:FRIEND]->(c)
                |RETURN a.name AS l, b.name as m, c.name AS r""".stripMargin
     val result = profile(queryWithPredicates)
-    println(result.toList)
-    println(result.executionPlanDescription)
 
     // then
     result.toSet should equal(Set(Map("l" -> "a", "m" -> "c", "r" -> "d")))
-//    result should use("TriadicSelection")
-
+    result shouldNot use("TriadicSelection")
   }
 
   test("Triadic should support StackOverflow example") {
