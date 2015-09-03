@@ -49,7 +49,7 @@ import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureSource;
 import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -148,8 +148,8 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     private DiffSets<IndexDescriptor> constraintIndexChanges;
     private DiffSets<PropertyConstraint> constraintsChanges;
 
-    private DiffSets<ProcedureDescriptor> procedureChanges;
-    private Map<ProcedureSignature.ProcedureName, ProcedureDescriptor> addedProcedures;
+    private DiffSets<ProcedureSource> procedureChanges;
+    private Map<ProcedureSignature.ProcedureName,ProcedureSource> addedProcedures;
 
     private PropertyChanges propertyChangesForNodes;
 
@@ -472,18 +472,18 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         }
     }
 
-    private static DiffSetsVisitor<ProcedureDescriptor> procedureVisitor( final TxStateVisitor visitor )
+    private static DiffSetsVisitor<ProcedureSource> procedureVisitor( final TxStateVisitor visitor )
     {
-        return new DiffSetsVisitor<ProcedureDescriptor>()
+        return new DiffSetsVisitor<ProcedureSource>()
         {
             @Override
-            public void visitAdded( ProcedureDescriptor element )
+            public void visitAdded( ProcedureSource element )
             {
                 visitor.visitCreatedProcedure( element );
             }
 
             @Override
-            public void visitRemoved( ProcedureDescriptor element )
+            public void visitRemoved( ProcedureSource element )
             {
                 visitor.visitDroppedProcedure( element );
             }
@@ -959,27 +959,26 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return LABEL_STATE.get( this, labelId ).nodeDiffSets();
     }
 
-    private DiffSets<ProcedureDescriptor> procedureChanges()
+    private DiffSets<ProcedureSource> procedureChanges()
     {
         return procedureChanges == null ? procedureChanges = new DiffSets<>() : procedureChanges;
     }
 
-    private Map<ProcedureSignature.ProcedureName, ProcedureDescriptor> addedProcedures()
+    private Map<ProcedureSignature.ProcedureName,ProcedureSource> addedProcedures()
     {
         return addedProcedures == null ? addedProcedures = new HashMap<>() : addedProcedures;
     }
 
     @Override
-    public void procedureDoCreate( ProcedureSignature signature, String language, String body )
+    public void procedureDoCreate( ProcedureSource source )
     {
-        ProcedureDescriptor descriptor = new ProcedureDescriptor( signature, language, body );
-        procedureChanges().add( descriptor );
-        addedProcedures().put( signature.name(), descriptor );
+        procedureChanges().add( source );
+        addedProcedures().put( source.signature().name(), source );
         hasChanges = true;
     }
 
     @Override
-    public void procedureDoDrop( ProcedureDescriptor descriptor )
+    public void procedureDoDrop( ProcedureSource descriptor )
     {
         procedureChanges().remove( descriptor );
         if( addedProcedures != null )
@@ -990,13 +989,13 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public Iterator<ProcedureDescriptor> augmentProcedures( Iterator<ProcedureDescriptor> procedures )
+    public Iterator<ProcedureSource> augmentProcedures( Iterator<ProcedureSource> procedures )
     {
         return procedureChanges != null ? procedureChanges.apply( procedures ) : procedures;
     }
 
     @Override
-    public ProcedureDescriptor getProcedure( ProcedureSignature.ProcedureName name )
+    public ProcedureSource getProcedure( ProcedureSignature.ProcedureName name )
     {
         return addedProcedures != null ? addedProcedures.get( name ) : null;
     }

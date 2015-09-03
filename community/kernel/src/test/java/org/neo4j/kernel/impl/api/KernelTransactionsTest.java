@@ -45,6 +45,8 @@ import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
+import org.neo4j.kernel.procedure.ProcedureCompiler;
+import org.neo4j.kernel.procedure.impl.StandardProcedureCompiler;
 import org.neo4j.logging.NullLog;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -140,10 +142,13 @@ public class KernelTransactionsTest
         StoreReadLayer readLayer = mock( StoreReadLayer.class );
         when( readLayer.acquireStatement() ).thenReturn( mock( StoreStatement.class ) );
 
+        ProcedureCompiler procedureCompiler = new StandardProcedureCompiler();
+        ProcedureCache procedureCache = new ProcedureCache(procedureCompiler);
         return new KernelTransactions( contextSupplier, mock( NeoStore.class ), locks,
                 mock( IntegrityValidator.class ), null, null, null, null, null, null, null,
                 TransactionHeaderInformationFactory.DEFAULT, readLayer, commitProcess, null,
-                null, new TransactionHooks(), mock( ConstraintSemantics.class ), mock( TransactionMonitor.class ), life, new ProcedureCache(),
+                null, new TransactionHooks(), mock( ConstraintSemantics.class ), mock( TransactionMonitor.class ), life,
+                procedureCache,
                 new Tracers( "null", NullLog.getInstance() ));
     }
 

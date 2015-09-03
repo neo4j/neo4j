@@ -58,7 +58,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureSource;
 import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -331,15 +331,15 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<ProcedureDescriptor> proceduresGetAll()
+    public Iterator<ProcedureSource> proceduresGetAll()
     {
         return procedureCache.getAll();
     }
 
     @Override
-    public ProcedureDescriptor procedureGet( ProcedureSignature.ProcedureName name )
+    public ProcedureSource procedureGet( ProcedureSignature.ProcedureName name )
     {
-        return procedureCache.get( name );
+        return procedureCache.getSource( name );
     }
 
     @Override

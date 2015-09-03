@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -28,6 +29,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.ReadOperations;
@@ -58,14 +60,14 @@ import org.neo4j.kernel.api.exceptions.schema.DuplicateIndexSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexSchemaRuleNotFoundException;
+import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
 import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
+import org.neo4j.kernel.api.procedures.ProcedureSource;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
@@ -78,6 +80,7 @@ import org.neo4j.kernel.impl.api.operations.LegacyIndexWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
+import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -88,11 +91,13 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 {
     final KernelStatement statement;
     private final StatementOperationParts operations;
+    private final ProcedureCache procedures;
 
-    OperationsFacade( KernelStatement statement, StatementOperationParts operations )
+    OperationsFacade( KernelStatement statement, StatementOperationParts operations, ProcedureCache procedures )
     {
         this.statement = statement;
         this.operations = operations;
+        this.procedures = procedures;
     }
 
     final KeyReadOperations tokenRead()
@@ -628,18 +633,18 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         // There is a mapping layer here because "inside" the kernel we use the definition object, rather than the signature,
         // but we prefer to avoid leaking that outside the kernel.
-        return map( new Function<ProcedureDescriptor,ProcedureSignature>()
+        return map( new Function<ProcedureSource,ProcedureSignature>()
+        {
+            @Override
+            public ProcedureSignature apply( ProcedureSource o )
             {
-                @Override
-                public ProcedureSignature apply( ProcedureDescriptor o )
-                {
-                    return o.signature();
-                }
-            }, schemaRead().proceduresGetAll( statement ) );
+                return o.signature();
+            }
+        }, schemaRead().proceduresGetAll( statement ) );
     }
 
     @Override
-    public ProcedureDescriptor procedureGet( ProcedureName signature ) throws ProcedureException
+    public ProcedureSource procedureGet( ProcedureName signature ) throws ProcedureException
     {
         statement.assertOpen();
         return schemaRead().procedureGet( statement, signature );
@@ -931,6 +936,13 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         return dataWrite().graphRemoveProperty( statement, propertyKeyId );
     }
+
+    @Override
+    public void procedureCall( ProcedureName signature, List<Object> args, Visitor<List<Object>,ProcedureException> visitor ) throws ProcedureException
+    {
+        statement.assertOpen();
+        procedures.getCompiled( signature ).call( args, visitor );
+    }
     // </DataWrite>
 
     // <SchemaWrite>
@@ -996,11 +1008,11 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public void procedureCreate( ProcedureSignature signature, String language, String body )
+    public void procedureCreate( ProcedureSource source )
             throws ProcedureException, ProcedureConstraintViolation
     {
         statement.assertOpen();
-        schemaWrite().procedureCreate( statement, signature, language, body );
+        schemaWrite().procedureCreate( statement, source );
     }
 
     @Override

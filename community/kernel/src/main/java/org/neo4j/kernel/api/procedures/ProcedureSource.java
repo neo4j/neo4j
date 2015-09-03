@@ -20,13 +20,13 @@
 package org.neo4j.kernel.api.procedures;
 
 /** Describes a procedure stored in the database */
-public class ProcedureDescriptor
+public class ProcedureSource
 {
     private final ProcedureSignature signature;
     private final String language;
     private final String procedureBody;
 
-    public ProcedureDescriptor( ProcedureSignature signature, String language, String procedureBody )
+    public ProcedureSource( ProcedureSignature signature, String language, String procedureBody )
     {
         this.signature = signature;
         this.language = language;
@@ -62,7 +62,7 @@ public class ProcedureDescriptor
             return false;
         }
 
-        ProcedureDescriptor that = (ProcedureDescriptor) o;
+        ProcedureSource that = (ProcedureSource) o;
 
         return signature.equals( that.signature );
 

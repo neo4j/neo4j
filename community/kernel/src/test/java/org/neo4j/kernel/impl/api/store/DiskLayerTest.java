@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.DynamicLabel.label;
 
 /**
@@ -86,7 +85,7 @@ public class DiskLayerTest
                 indexingService );
         this.state = new KernelStatement( null, new IndexReaderFactory.Caching( indexingService ),
                 resolver.resolveDependency( LabelScanStore.class ), null,
-                null, null, disk.acquireStatement() );
+                null, null, disk.acquireStatement(), null );
     }
 
     protected GraphDatabaseService createGraphDatabase()

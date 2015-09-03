@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.procedure.impl.StandardProcedureCompiler;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -41,7 +42,7 @@ public class CacheLayerTest
 {
     private final DiskLayer diskLayer = mock( DiskLayer.class );
     private final SchemaCache schemaCache = mock( SchemaCache.class );
-    private final CacheLayer context = new CacheLayer( diskLayer, schemaCache, new ProcedureCache() );
+    private final CacheLayer context = new CacheLayer( diskLayer, schemaCache, new ProcedureCache( new StandardProcedureCompiler() ) );
 
     @Test
     public void shouldLoadAllConstraintsFromCache() throws Exception

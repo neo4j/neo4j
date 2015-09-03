@@ -30,10 +30,6 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
-import org.neo4j.kernel.impl.api.store.ProcedureCache;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
@@ -48,12 +44,14 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.procedures.ProcedureSource;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -63,8 +61,10 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -179,23 +179,25 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TransactionEvent transactionEvent;
     private CloseListener closeListener;
 
-    public KernelTransactionImplementation( StatementOperationParts operations,
-                                            SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
-                                            IndexingService indexService,
-                                            UpdateableSchemaState schemaState,
-                                            TransactionRecordState recordState,
-                                            SchemaIndexProviderMap providerMap, NeoStore neoStore,
-                                            Locks.Client locks, TransactionHooks hooks,
-                                            ConstraintIndexCreator constraintIndexCreator,
-                                            TransactionHeaderInformationFactory headerInformationFactory,
-                                            TransactionCommitProcess commitProcess,
-                                            TransactionMonitor transactionMonitor,
-                                            StoreReadLayer storeLayer,
-                                            LegacyIndexTransactionState legacyIndexTransactionState,
-                                            Pool<KernelTransactionImplementation> pool,
-                                            ConstraintSemantics constraintSemantics,
-                                            Clock clock,
-                                            TransactionTracer tracer, ProcedureCache procedureCache )
+    public KernelTransactionImplementation(
+            StatementOperationParts operations,
+            SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
+            IndexingService indexService,
+            UpdateableSchemaState schemaState,
+            TransactionRecordState recordState,
+            SchemaIndexProviderMap providerMap, NeoStore neoStore,
+            Locks.Client locks, TransactionHooks hooks,
+            ConstraintIndexCreator constraintIndexCreator,
+            TransactionHeaderInformationFactory headerInformationFactory,
+            TransactionCommitProcess commitProcess,
+            TransactionMonitor transactionMonitor,
+            StoreReadLayer storeLayer,
+            LegacyIndexTransactionState legacyIndexTransactionState,
+            Pool<KernelTransactionImplementation> pool,
+            ConstraintSemantics constraintSemantics,
+            Clock clock,
+            TransactionTracer tracer,
+            ProcedureCache procedureCache )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -285,7 +287,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( currentStatement == null )
         {
             currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),
-                    labelScanStore, this, locks, operations, storeStatement );
+                    labelScanStore, this, locks, operations, storeStatement, procedureCache );
         }
         currentStatement.acquire();
         return currentStatement;
@@ -1051,17 +1053,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         @Override
-        public void visitCreatedProcedure( ProcedureDescriptor procedureDescriptor )
+        public void visitCreatedProcedure( ProcedureSource procedureSource )
         {
             // TODO: This is a temporary measure to allow trialing procedures without changing the store format. Clearly, this is not safe or useful for
             // production. This will need to be changed before we release a useful 3.x series release.
-            procedureCache.createProcedure( procedureDescriptor );
+            procedureCache.createProcedure( procedureSource );
         }
 
         @Override
-        public void visitDroppedProcedure( ProcedureDescriptor procedureDescriptor )
+        public void visitDroppedProcedure( ProcedureSource procedureSource )
         {
-            procedureCache.dropProcedure( procedureDescriptor );
+            procedureCache.dropProcedure( procedureSource );
         }
     }
 

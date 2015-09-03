@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.exceptions.schema.DuplicateIndexSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureSource;
 import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
 
@@ -107,5 +107,5 @@ interface SchemaRead
     Iterator<ProcedureSignature> proceduresGetAll();
 
     /** Fetch a procedure given its signature. */
-    ProcedureDescriptor procedureGet( ProcedureName name ) throws ProcedureException;
+    ProcedureSource procedureGet( ProcedureName name ) throws ProcedureException;
 }

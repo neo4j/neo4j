@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureSource;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode;
 
@@ -90,9 +90,9 @@ public interface TxStateVisitor
 
     void visitCreatedRelationshipLegacyIndex( String name, Map<String,String> config );
 
-    void visitCreatedProcedure( ProcedureDescriptor procedureDescriptor );
+    void visitCreatedProcedure( ProcedureSource procedureSource );
 
-    void visitDroppedProcedure( ProcedureDescriptor procedureDescriptor );
+    void visitDroppedProcedure( ProcedureSource procedureSource );
 
     class Adapter implements TxStateVisitor
     {
@@ -318,20 +318,20 @@ public interface TxStateVisitor
         }
 
         @Override
-        public void visitCreatedProcedure( ProcedureDescriptor procedureDescriptor )
+        public void visitCreatedProcedure( ProcedureSource procedureSource )
         {
             if( next != null )
             {
-                next.visitCreatedProcedure( procedureDescriptor );
+                next.visitCreatedProcedure( procedureSource );
             }
         }
 
         @Override
-        public void visitDroppedProcedure( ProcedureDescriptor procedureDescriptor )
+        public void visitDroppedProcedure( ProcedureSource procedureSource )
         {
             if( next != null )
             {
-                next.visitDroppedProcedure( procedureDescriptor );
+                next.visitDroppedProcedure( procedureSource );
             }
         }
     }

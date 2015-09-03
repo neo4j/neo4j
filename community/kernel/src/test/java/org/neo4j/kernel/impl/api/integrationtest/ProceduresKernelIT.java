@@ -27,15 +27,22 @@ import org.junit.rules.ExpectedException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.procedures.ProcedureSignature;
+import org.neo4j.kernel.api.procedures.ProcedureSource;
 
 import static java.util.Arrays.asList;
 import static junit.framework.TestCase.assertNull;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.kernel.api.Neo4jTypes.NTText;
 import static org.neo4j.kernel.api.procedures.ProcedureSignature.procedureSignature;
@@ -56,7 +63,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
         SchemaWriteOperations ops = schemaWriteOperationsInNewTransaction();
 
         // When
-        ops.procedureCreate( signature, "javascript", "emit(1);" );
+        ops.procedureCreate( new ProcedureSource( signature, "javascript", "emit(1);" ) );
 
         // Then
         Iterator<ProcedureSignature> all = ops.proceduresGetAll();
@@ -76,7 +83,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     {
         // Given
         SchemaWriteOperations ops = schemaWriteOperationsInNewTransaction();
-        ops.procedureCreate( signature, "javascript", "emit(1);" );
+        ops.procedureCreate( new ProcedureSource( signature, "javascript", "emit(1);" ) );
         commit();
 
         // When
@@ -101,7 +108,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     {
         // Given
         SchemaWriteOperations ops = schemaWriteOperationsInNewTransaction();
-        ops.procedureCreate( signature, "javascript", "emit(1);" );
+        ops.procedureCreate( new ProcedureSource(signature, "javascript", "emit(1);") );
 
         // When
         ops.procedureDrop( signature.name() );
@@ -150,6 +157,35 @@ public class ProceduresKernelIT extends KernelIntegrationTest
 
         // When
         schemaWriteOperationsInNewTransaction().procedureDrop( new ProcedureSignature.ProcedureName( new String[]{"example"}, "exampleProc" ) );
+    }
+
+    @Test
+    public void shouldBeAbleToCallSimpleProcedure() throws Throwable
+    {
+        // Given
+        {
+            SchemaWriteOperations ops = schemaWriteOperationsInNewTransaction();
+
+            ops.procedureCreate( new ProcedureSource(signature, "javascript", "emit(name);"));
+            commit();
+        }
+
+        DataWriteOperations ops = dataWriteOperationsInNewTransaction();
+
+        // When
+        final List<List<Object>> records = new LinkedList<>();
+        ops.procedureCall( signature.name(), asList( (Object) "hello" ), new Visitor<List<Object>,ProcedureException>()
+        {
+            @Override
+            public boolean visit( List<Object> record ) throws ProcedureException
+            {
+                records.add( record );
+                return true;
+            }
+        } );
+
+        // Then
+        assertEquals( asList( asList( "hello" ) ), records );
     }
 
 }

@@ -206,6 +206,14 @@
             </dependency>
           </dependencies>
         </plugin>
+
+        <plugin>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <configuration>
+            <!-- Temporary until the javadocs are java-8 compatible -->
+            <additionalparam>-Xdoclint:none</additionalparam>
+          </configuration>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>

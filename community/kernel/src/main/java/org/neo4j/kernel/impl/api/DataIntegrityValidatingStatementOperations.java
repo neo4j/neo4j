@@ -23,11 +23,11 @@ import java.util.Iterator;
 
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -39,14 +39,16 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
+import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.procedures.ProcedureSignature;
+import org.neo4j.kernel.api.procedures.ProcedureSource;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.procedure.ProcedureCompiler;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
@@ -57,15 +59,17 @@ public class DataIntegrityValidatingStatementOperations implements
     private final KeyWriteOperations keyWriteDelegate;
     private final SchemaReadOperations schemaReadDelegate;
     private final SchemaWriteOperations schemaWriteDelegate;
+    private final ProcedureCompiler compiler;
 
     public DataIntegrityValidatingStatementOperations(
             KeyWriteOperations keyWriteDelegate,
             SchemaReadOperations schemaReadDelegate,
-            SchemaWriteOperations schemaWriteDelegate )
+            SchemaWriteOperations schemaWriteDelegate, ProcedureCompiler compiler )
     {
         this.keyWriteDelegate = keyWriteDelegate;
         this.schemaReadDelegate = schemaReadDelegate;
         this.schemaWriteDelegate = schemaWriteDelegate;
+        this.compiler = compiler;
     }
 
     @Override
@@ -231,15 +235,18 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public void procedureCreate( KernelStatement state, ProcedureSignature signature, String language, String code )
+    public void procedureCreate( KernelStatement state, ProcedureSource source )
             throws ProcedureException, ProcedureConstraintViolation
     {
-        if( schemaReadDelegate.procedureGet( state, signature.name() ) != null )
+        if( schemaReadDelegate.procedureGet( state, source.signature().name() ) != null )
         {
             throw new ProcedureConstraintViolation("%s cannot be created because there is already a procedure with the same " +
-                                                                  "name in the graph.",  signature.toString() );
+                                                                  "name in the graph.",  source.signature().toString() );
         }
-        schemaWriteDelegate.procedureCreate( state, signature, language, code );
+
+        compiler.compile( source ); // Verify procedure compiles
+
+        schemaWriteDelegate.procedureCreate( state, source );
     }
 
     @Override

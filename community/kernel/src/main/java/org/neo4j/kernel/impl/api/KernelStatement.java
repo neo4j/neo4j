@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.locking.Locks;
 
@@ -52,8 +53,8 @@ public class KernelStatement implements TxStateHolder, Statement
     private boolean closed;
 
     public KernelStatement( KernelTransactionImplementation transaction, IndexReaderFactory indexReaderFactory,
-            LabelScanStore labelScanStore, TxStateHolder txStateHolder, Locks.Client locks,
-            StatementOperationParts operations, StoreStatement storeStatement )
+                            LabelScanStore labelScanStore, TxStateHolder txStateHolder, Locks.Client locks,
+                            StatementOperationParts operations, StoreStatement storeStatement, ProcedureCache procedures )
     {
         this.transaction = transaction;
         this.locks = locks;
@@ -61,7 +62,7 @@ public class KernelStatement implements TxStateHolder, Statement
         this.txStateHolder = txStateHolder;
         this.labelScanStore = labelScanStore;
         this.storeStatement = storeStatement;
-        this.facade = new OperationsFacade( this, operations );
+        this.facade = new OperationsFacade( this, operations, procedures );
     }
 
     @Override

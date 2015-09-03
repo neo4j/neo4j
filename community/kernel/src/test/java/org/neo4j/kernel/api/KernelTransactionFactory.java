@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.kernel.procedure.impl.StandardProcedureCompiler;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -61,6 +62,6 @@ public class KernelTransactionFactory
                 mock(Pool.class),
                 mock( ConstraintSemantics.class ),
                 Clock.SYSTEM_CLOCK,
-                TransactionTracer.NULL, new ProcedureCache() );
+                TransactionTracer.NULL, new ProcedureCache( new StandardProcedureCompiler() ) );
     }
 }
