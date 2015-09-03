@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryExceptio
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherTestSupport
 import org.neo4j.helpers.Exceptions
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.util.{Failure, Success, Try}
 
@@ -271,6 +272,15 @@ trait NewPlannerTestSupport extends CypherTestSupport {
       res.map((map: Map[String, Any]) => map.map {
         case (k, v) => k -> convert(v)
       })
+    }
+  }
+
+  def evaluateTo(expected: Seq[Map[String, Any]]): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
+    override def apply(actual: InternalExecutionResult): MatchResult = {
+      MatchResult(
+        matches = actual.toComparableResult == expected.toCompararableSeq(replaceNaNs = false),
+        rawFailureMessage = s"Results differ: ${actual.toComparableResult} did not equal to $expected",
+        rawNegatedFailureMessage = s"Results are equal")
     }
   }
 }

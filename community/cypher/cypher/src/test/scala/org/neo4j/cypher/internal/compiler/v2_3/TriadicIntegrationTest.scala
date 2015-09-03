@@ -237,23 +237,4 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
         result should use(command)
     }
   }
-
-  def use(operator: String): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
-    override def apply(result: InternalExecutionResult): MatchResult = {
-      val plan: InternalPlanDescription = result.executionPlanDescription()
-      MatchResult(
-        matches = plan.find(operator).nonEmpty,
-        rawFailureMessage = s"Plan should use $operator:\n$plan",
-        rawNegatedFailureMessage = s"Plan should not use $operator:\n$plan")
-    }
-  }
-
-  def haveCount(count: Int): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
-    override def apply(result: InternalExecutionResult): MatchResult = {
-      MatchResult(
-        matches = count == result.toList.length,
-        rawFailureMessage = s"Result should have $count rows",
-        rawNegatedFailureMessage = s"Plan should not have $count rows")
-    }
-  }
 }
