@@ -68,12 +68,6 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
       "MATCH (a:A) WHERE a.prop = 42"
         -> A * Aprop,
 
-      "MATCH (a:A) WHERE a.prop LIKE 'p%'"
-        -> {
-        val equalitySelectivity = orTimes(DEFAULT_NUMBER_OF_INDEX_LOOKUPS, Aprop)
-        A * (equalitySelectivity + ((1d - equalitySelectivity) * DEFAULT_RANGE_SEEK_FACTOR))
-      },
-
       "MATCH (a:B) WHERE a.bar = 42"
         -> B * DEFAULT_EQUALITY_SELECTIVITY,
 

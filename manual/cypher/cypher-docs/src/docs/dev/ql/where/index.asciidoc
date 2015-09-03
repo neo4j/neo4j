@@ -49,24 +49,6 @@ include::escaping-in-regular-expressions.asciidoc[]
 
 include::case-insensitive-regular-expressions.asciidoc[]
 
-
-
-:leveloffset: 2
-
-== String pattern matching using LIKE ==
-
-:leveloffset: 3
-
-include::case-sensitive-pattern-matching.asciidoc[]
-
-include::case-insensitive-pattern-matching.asciidoc[]
-
-include::pattern-matching-negation.asciidoc[]
-
-include::escaping-in-pattern-matching.asciidoc[]
-
-
-
 :leveloffset: 2
 
 [[query-where-patterns]]

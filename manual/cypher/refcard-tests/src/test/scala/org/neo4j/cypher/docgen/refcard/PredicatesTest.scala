@@ -162,17 +162,6 @@ RETURN n###
 
 Properties may also be accessed using a dynamically computed property name.
 
-###assertion=returns-two
-MATCH n
-WHERE HAS(n.property) AND
-
-n.property LIKE "Tob%" OR
-n.property ILIKE "ANDR_S"
-
-RETURN n###
-
-String pattern matching. `%` matches zero or more characters, `_` matches exactly one character. `LIKE` is case sensitive, while `ILIKE` is not.
-
 ###assertion=returns-one parameters=regex
 MATCH n
 WHERE HAS(n.property) AND

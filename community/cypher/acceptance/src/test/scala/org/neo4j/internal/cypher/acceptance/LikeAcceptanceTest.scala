@@ -22,7 +22,9 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{IndexSeekByRange, UniqueIndexSeekByRange}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.{Node, ResourceIterator}
+import org.scalatest.Ignore
 
+@Ignore// "Rework this for startsWith instead"
 class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
   var aNode: Node = null

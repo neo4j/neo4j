@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.junit.Test
+import org.junit.{Ignore, Test}
 import org.junit.Assert._
 import org.neo4j.graphdb.{Relationship, Node}
 import org.neo4j.visualization.graphviz.GraphStyle
@@ -106,7 +106,7 @@ class WhereTest extends DocumentingTestBase {
       assertions = (p) => assertEquals(List(Map("n" -> node("Andres"))), p.toList))
   }
 
-  @Test def string_pattern_matching_case_sensitive() {
+  @Ignore("Should use startsWith instead") def string_pattern_matching_case_sensitive() {
     testQuery(
       title = "Case-sensitive pattern matching",
       text = "The `LIKE` keyword can be used to perform case-sensitive matching on strings. Two wildcards are supported: `%` matches zero or more characters, `_` matches exactly one character. " +
@@ -116,7 +116,7 @@ class WhereTest extends DocumentingTestBase {
       assertions = (p) => assertEquals(List(node("Peter")), p.columnAs[Node]("n").toList))
   }
 
-  @Test def string_pattern_matching_case_insensitive() {
+  @Ignore("Should use startsWith instead") def string_pattern_matching_case_insensitive() {
     testQuery(
       title = "Case-insensitive pattern matching",
       text = "The `ILIKE` keyword can be used to perform case-insensitive matching on strings. Two wildcards are supported: `%` matches zero or more characters, `_` matches exactly one character.",
@@ -125,7 +125,7 @@ class WhereTest extends DocumentingTestBase {
       assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
   }
 
-  @Test def string_pattern_matching_negation() {
+  @Ignore("Should use startsWith instead") def string_pattern_matching_negation() {
     testQuery(
       title = "Pattern matching negation",
       text = "Use the `NOT` keyword to exclude all matches on given string from your result:",
@@ -134,7 +134,7 @@ class WhereTest extends DocumentingTestBase {
       assertions = (p) => assertEquals(List(node("Peter")), p.columnAs[Node]("n").toList))
   }
 
-  @Test def string_pattern_matching_escaped() {
+  @Ignore("Should use startsWith instead") def string_pattern_matching_escaped() {
     testQuery(
       title = "Escaping in pattern matching",
       text = "If one of the wildcard characters (`%` or `_`) is needed inside your string, escape it. Remember that backslash needs " +
