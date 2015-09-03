@@ -231,11 +231,6 @@ public class LuceneLabelScanStore
     {
         monitor.init();
         directory = directoryFactory.open( directoryLocation );
-        if ( !indexExists() )
-        {   // This is the first time we start up this scan store, prepare to rebuild from scratch later.
-            monitor.noIndex();
-            prepareRebuildOfIndex();
-        }
 
         try
         {
@@ -313,16 +308,6 @@ public class LuceneLabelScanStore
         // onto the writer to release in its close()
         lock.lock();
         return strategy.acquireWriter( this, lock );
-    }
-
-    private boolean indexExists()
-    {
-        if ( !fs.fileExists( directoryLocation ) )
-        {
-            return false;
-        }
-        File[] files = fs.listFiles( directoryLocation );
-        return files != null && files.length > 0;
     }
 
     private void prepareRebuildOfIndex() throws IOException
