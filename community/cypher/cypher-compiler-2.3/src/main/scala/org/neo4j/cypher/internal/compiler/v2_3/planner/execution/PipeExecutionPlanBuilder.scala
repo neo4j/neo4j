@@ -199,10 +199,9 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
             Eagerly.immutableMapValues[String, ast.Expression, AggregationExpression](aggregatingExpressions, buildExpression(_).asInstanceOf[AggregationExpression])
           )()
 
-        case FindShortestPaths(source, shortestPath) =>
-          val legacyShortestPaths = shortestPath.expr.asLegacyPatterns(shortestPath.name.map(_.name))
-          val legacyShortestPath = legacyShortestPaths.head
-          new ShortestPathPipe(buildPipe(source), legacyShortestPath)()
+        case FindShortestPaths(source, shortestPathPattern, predicates) =>
+          val legacyShortestPath = shortestPathPattern.expr.asLegacyPatterns(shortestPathPattern.name.map(_.name)).head
+          new ShortestPathPipe(buildPipe(source), legacyShortestPath, predicates.map(toCommandPredicate))()
 
         case Union(lhs, rhs) =>
           NewUnionPipe(buildPipe(lhs), buildPipe(rhs))()

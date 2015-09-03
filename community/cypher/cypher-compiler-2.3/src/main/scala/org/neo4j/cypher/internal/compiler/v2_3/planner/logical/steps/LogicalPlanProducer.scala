@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{Limit => L
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, SemanticDirection, ast, symbols}
+import org.neo4j.function
+import org.neo4j.graphdb.Relationship
 
 case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends CollectionSupport {
   def solvePredicate(plan: LogicalPlan, solved: Expression)(implicit context: LogicalPlanningContext) =
@@ -381,10 +383,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     planSkip(sortedLimit, skip)
   }
 
-  def planShortestPaths(inner: LogicalPlan, shortestPaths: ShortestPathPattern)
+  def planShortestPaths(inner: LogicalPlan, shortestPaths: ShortestPathPattern, predicates: Seq[Expression])
                        (implicit context: LogicalPlanningContext) = {
+    // TODO: Tell the planner that the shortestPath predicates are solved in shortestPath
     val solved = inner.solved.updateGraph(_.addShortestPath(shortestPaths))
-    FindShortestPaths(inner, shortestPaths)(solved)
+    FindShortestPaths(inner, shortestPaths, predicates)(solved)
   }
 
   def planEndpointProjection(inner: LogicalPlan, start: IdName, startInScope: Boolean, end: IdName, endInScope: Boolean, patternRel: PatternRelationship)

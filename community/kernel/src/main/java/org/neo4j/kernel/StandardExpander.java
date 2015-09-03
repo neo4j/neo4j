@@ -311,8 +311,7 @@ public abstract class StandardExpander implements Expander, PathExpander
         {
             Map<String, Exclusion> exclude = new HashMap<String, Exclusion>();
             exclude.put( type.name(), Exclusion.ALL );
-            return new ExcludingExpander( Exclusion.include( direction ),
-                    exclude );
+            return new ExcludingExpander( Exclusion.include( direction ), exclude );
         }
 
         @Override

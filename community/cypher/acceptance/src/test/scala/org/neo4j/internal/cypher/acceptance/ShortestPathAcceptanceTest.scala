@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathImpl
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
 import org.neo4j.graphdb.Node
 
@@ -35,6 +36,123 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     nodeB = createLabeledNode("B")
     nodeC = createLabeledNode("C")
     nodeD = createLabeledNode("D")
+  }
+
+  test("finds shortest path that fulfills predicate on nodes") {
+    /* a-b-c-d */
+    relate(nodeA, nodeB)
+    relate(nodeB, nodeC)
+    relate(nodeC, nodeD)
+
+    /* a-x-d */
+    val nodeX = createLabeledNode("X")
+    relate(nodeA, nodeX)
+    relate(nodeX, nodeD)
+
+    val result = executeWithAllPlanners(
+      """MATCH p = shortestPath((src:A)-[*]->(dst:D))
+        | WHERE NONE(n in nodes(p) WHERE n:X)
+        |RETURN nodes(p) AS nodes""".stripMargin)
+      .columnAs[List[Node]]("nodes").toList
+
+    result should equal(List(List(nodeA, nodeB, nodeC, nodeD)))
+  }
+
+  test("finds shortest path that fulfills predicate on relationships 1") {
+    /* a-b-c-d */
+    relate(nodeA, nodeB)
+    relate(nodeB, nodeC)
+    relate(nodeC, nodeD)
+
+    /* a-x-d */
+    val nodeX = createLabeledNode("X")
+    relate(nodeA, nodeX, "blocked" -> true)
+    relate(nodeX, nodeD, "blocked" -> true)
+
+    val result = executeWithAllPlanners(
+      """MATCH p = shortestPath((src:A)-[*]->(dst:D))
+        | WHERE NONE(r in rels(p) WHERE exists(r.blocked))
+        |RETURN nodes(p) AS nodes""".stripMargin)
+      .columnAs[List[Node]]("nodes").toList
+
+    result should equal(List(List(nodeA, nodeB, nodeC, nodeD)))
+  }
+
+  test("finds shortest path that fulfills predicate on relationships 2") {
+    /* a-b-c-d */
+    relate(nodeA, nodeB, "blocked" -> false)
+    relate(nodeB, nodeC, "blocked" -> false)
+    relate(nodeC, nodeD, "blocked" -> false)
+
+    /* a-x-d */
+    val nodeX = createLabeledNode("X")
+    relate(nodeA, nodeX, "blocked" -> true)
+    relate(nodeX, nodeD, "blocked" -> true)
+
+    val result = executeWithAllPlanners(
+      """MATCH p = shortestPath((src:A)-[rs*]->(dst:D))
+        | WHERE NONE(r in rs WHERE r.blocked)
+        |RETURN nodes(p) AS nodes""".stripMargin)
+
+    result.columnAs[List[Node]]("nodes").toList should equal(List(List(nodeA, nodeB, nodeC, nodeD)))
+  }
+
+  test("finds shortest path that fulfills predicate on path") {
+    /* a-b-c-d */
+    relate(nodeA, nodeB)
+    relate(nodeB, nodeC)
+    relate(nodeC, nodeD)
+
+    /* a-x-d */
+    val nodeX = createLabeledNode("X")
+    relate(nodeA, nodeX)
+    relate(nodeX, nodeD)
+
+    val result = executeWithAllPlanners(
+      """MATCH p = shortestPath((src:A)-[rs*]->(dst:D))
+        | WHERE length(p) % 2 = 1 // Only uneven paths wanted!
+        |RETURN nodes(p) AS nodes""".stripMargin)
+
+    result.columnAs[List[Node]]("nodes").toList should equal(List(List(nodeA, nodeB, nodeC, nodeD)))
+
+  }
+
+  test("should still be able to return shortest path expression") {
+    /* a-b-c-d */
+    relate(nodeA, nodeB)
+    relate(nodeB, nodeC)
+    relate(nodeC, nodeD)
+
+    /* a-x-d */
+    val nodeX = createLabeledNode("X")
+    val r1 = relate(nodeA, nodeX)
+    var r2 = relate(nodeX, nodeD)
+
+    val result = executeWithAllPlanners("MATCH (src:A), (dst:D) RETURN shortestPath((src:A)-[*]->(dst:D)) as path")
+
+    graph.inTx {
+      result.columnAs("path").toList should equal(List(PathImpl(nodeA, r1, nodeX, r2, nodeD)))
+    }
+  }
+
+  test("finds shortest path that fulfills predicate on all relationships") {
+    /* a-b-c-d */
+    relate(nodeA, nodeB, "X")
+    relate(nodeB, nodeC, "X")
+    relate(nodeC, nodeD, "X")
+
+    /* a-x-d */
+    val nodeX = createLabeledNode("X")
+    relate(nodeA, nodeX, "A")
+    relate(nodeX, nodeD, "B")
+
+    val result = executeWithAllPlanners(
+      """MATCH p = shortestPath((src:A)-[rs*]->(dst:D))
+        | WHERE ALL(r in rs WHERE type(rs[0]) = type(r) )
+        |RETURN nodes(p) AS nodes""".stripMargin)
+      .columnAs[List[Node]]("nodes").toList
+
+    result should equal(List(List(nodeA, nodeB, nodeC, nodeD)))
   }
 
   test("finds shortest path") {
@@ -121,7 +239,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     relate(nodeB, nodeC)
     relate(nodeC, nodeD)
 
-    val result = executeWithCostPlannerOnly("OPTIONAL MATCH (src:Y) WITH src MATCH p = shortestPath(src-[*..1]->dst) RETURN nodes(p) AS nodes").columnAs[List[Node]]("nodes").toList
+    val result = executeWithAllPlanners("OPTIONAL MATCH (src:Y) WITH src MATCH p = shortestPath(src-[*..1]->dst) RETURN nodes(p) AS nodes").columnAs[List[Node]]("nodes").toList
 
     result should equal(List())
   }
@@ -210,5 +328,84 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
                   |RETURN length((c)-[:R]-(:B)-[:R]-(:B)-[:R]-(p)) AS res""".stripMargin
 
     executeWithAllPlanners(query).toList should equal(List(Map("res" -> 1)))
+  }
+
+  test("shortest path should work with predicates that can be applied to relationship expanders") {
+    val nodes = shortestPathModel()
+
+    val query = """PROFILE CYPHER
+                  |MATCH (a:X), (b:Y)
+                  |MATCH p = shortestPath((a)-[r:REL*]->(b))
+                  |WHERE ALL(r in rels(p) WHERE NOT exists(r.blocked))
+                  |RETURN nodes(p) AS nodes
+                """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("nodes" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")))))
+  }
+
+  test("shortest path should work with predicates that can be applied to relationship expanders and include dependencies on execution context") {
+    val nodes = shortestPathModel()
+
+    val query = """PROFILE CYPHER
+                  |MATCH (a:X), (b:Y)
+                  |MATCH p = shortestPath((a)-[r:REL*]->(b))
+                  |WHERE ALL(r in rels(p) WHERE NOT exists(r.blocked) AND a:X) AND NOT has(b.property)
+                  |RETURN nodes(p) AS nodes
+                """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+    println(result.executionPlanDescription)
+
+    result.toList should equal(List(Map("nodes" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")))))
+  }
+
+  test("shortest path should work with predicates that reference shortestPath relationship identifier") {
+    val nodes = shortestPathModel()
+
+    val query = """PROFILE CYPHER
+                  |MATCH p = shortestPath((a:X)-[rs:REL*]->(b:Y))
+                  |WHERE ALL(r in rs WHERE NOT exists(r.blocked))
+                  |RETURN nodes(p) AS nodes
+                """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("nodes" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")))))
+  }
+
+  test("shortest path should work with predicates that reference the path and cannot be applied to expanders") {
+    val nodes = shortestPathModel()
+
+    val query = """PROFILE CYPHER
+                  |MATCH p = shortestPath((a:X)-[:REL*]->(b:Y))
+                  |WHERE length(p) > 2
+                  |RETURN nodes(p) AS nodes
+                """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("nodes" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")))))
+  }
+
+  def shortestPathModel(): Map[String, Node] = {
+    val nodes = Map[String, Node](
+      "source" -> createLabeledNode(Map("name" -> "x"), "X"),
+      "target" -> createLabeledNode("Y"),
+      "node3" -> createNode(),
+      "node4" -> createNode(),
+      "node5" -> createNode())
+    relate(createLabeledNode("X"), createLabeledNode("Y"), "NOTAREL")
+
+    relate(nodes("source"), nodes("target"), "REL", Map("blocked" -> true))
+    relate(nodes("source"), nodes("node3"))
+    relate(nodes("node3"), nodes("target"), "REL", Map("blocked" -> true))
+    relate(nodes("node3"), nodes("node4"))
+    relate(nodes("node4"), nodes("target"))
+    relate(nodes("node4"), nodes("node5"))
+    relate(nodes("node5"), nodes("target"))
+
+    nodes
   }
 }
