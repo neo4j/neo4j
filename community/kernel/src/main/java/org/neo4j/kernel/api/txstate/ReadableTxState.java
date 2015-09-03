@@ -36,6 +36,8 @@ import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.state.NodeState;
@@ -183,6 +185,10 @@ public interface ReadableTxState
     Cursor<NodeItem> augmentNodesGetAllCursor( Cursor<NodeItem> cursor );
 
     Cursor<RelationshipItem> augmentRelationshipsGetAllCursor( Cursor<RelationshipItem> cursor );
+
+    Iterator<ProcedureDescriptor> augmentProcedures( Iterator<ProcedureDescriptor> procs );
+
+    ProcedureDescriptor getProcedure( ProcedureName name );
 
     /**
      * The way tokens are created is that the first time a token is needed it gets created in its own little

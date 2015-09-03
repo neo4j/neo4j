@@ -24,11 +24,15 @@ import java.util.Iterator;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateIndexSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureSignature;
+import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
 
 interface SchemaRead
 {
@@ -98,4 +102,10 @@ interface SchemaRead
      * Get the owning constraint for a constraint index. Returns null if the index does not have an owning constraint.
      */
     Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException;
+
+    /** Get all procedures defined in the system */
+    Iterator<ProcedureSignature> proceduresGetAll();
+
+    /** Fetch a procedure given its signature. */
+    ProcedureDescriptor procedureGet( ProcedureName name ) throws ProcedureException;
 }

@@ -20,14 +20,11 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 /**
- * Constraint violation happens when a user attempts to perform an action that violates
- * an existing constraint.
- *
- * @see ConstraintVerificationFailedKernelException
+ * Caused by creating a procedure that would not be distinguishable from an already existing procedure.
  */
-public abstract class ConstraintViolationKernelException extends ConstraintValidationKernelException
+public class ProcedureConstraintViolation extends ConstraintViolationKernelException
 {
-    public ConstraintViolationKernelException( String message, Object... parameters )
+    public ProcedureConstraintViolation( String message, Object... parameters )
     {
         super( message, parameters );
     }

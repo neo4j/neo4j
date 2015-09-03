@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -40,7 +41,9 @@ import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
@@ -225,6 +228,28 @@ public class DataIntegrityValidatingStatementOperations implements
             throw new DropConstraintFailureException( constraint, e );
         }
         schemaWriteDelegate.constraintDrop( state, constraint );
+    }
+
+    @Override
+    public void procedureCreate( KernelStatement state, ProcedureSignature signature, String language, String code )
+            throws ProcedureException, ProcedureConstraintViolation
+    {
+        if( schemaReadDelegate.procedureGet( state, signature.name() ) != null )
+        {
+            throw new ProcedureConstraintViolation("%s cannot be created because there is already a procedure with the same " +
+                                                                  "name in the graph.",  signature.toString() );
+        }
+        schemaWriteDelegate.procedureCreate( state, signature, language, code );
+    }
+
+    @Override
+    public void procedureDrop( KernelStatement statement, ProcedureSignature.ProcedureName name ) throws ProcedureException, ProcedureConstraintViolation
+    {
+        if( schemaReadDelegate.procedureGet( statement, name ) == null )
+        {
+            throw new ProcedureConstraintViolation("%s cannot be dropped because there is no such procedure in the graph.",  name );
+        }
+        schemaWriteDelegate.procedureDrop( statement, name );
     }
 
     private void checkIndexExistence( KernelStatement state, OperationContext context, int labelId, int propertyKey )

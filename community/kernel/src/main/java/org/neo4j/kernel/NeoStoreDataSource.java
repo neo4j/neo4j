@@ -79,6 +79,7 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.store.CacheLayer;
 import org.neo4j.kernel.impl.api.store.DiskLayer;
+import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
@@ -186,6 +187,8 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         CacheAccessBackDoor cacheAccess();
 
         SchemaCache schemaCache();
+
+        ProcedureCache procedureCache();
     }
 
     private interface IndexingModule
@@ -482,7 +485,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
 
             StoreLayerModule storeLayerModule = buildStoreLayer( neoStoreModule.neoStore(),
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
-                    indexingModule.indexingService(), cacheModule.schemaCache() );
+                    indexingModule.indexingService(), cacheModule.schemaCache(), cacheModule.procedureCache() );
 
             TransactionLogModule transactionLogModule =
                     buildTransactionLogs( storeDir, config, logProvider, scheduler, indexingModule.labelScanStore(),
@@ -500,7 +503,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                     indexingModule.indexUpdatesValidator(),
                     storeLayerModule.storeLayer(),
                     cacheModule.updateableSchemaState(), indexingModule.labelScanStore(),
-                    indexingModule.schemaIndexProviderMap() );
+                    indexingModule.schemaIndexProviderMap(), cacheModule.procedureCache() );
 
 
             // Do these assignments last so that we can ensure no cyclical dependencies exist
@@ -618,6 +621,8 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         final CacheAccessBackDoor cacheAccess = new BridgingCacheAccess( schemaCache, updateableSchemaState,
                 propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
 
+        final ProcedureCache procedureCache = new ProcedureCache();
+
         life.add( new LifecycleAdapter()
         {
             @Override
@@ -638,6 +643,12 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             public SchemaCache schemaCache()
             {
                 return schemaCache;
+            }
+
+            @Override
+            public ProcedureCache procedureCache()
+            {
+                return procedureCache;
             }
 
             @Override
@@ -716,12 +727,13 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
             RelationshipTypeTokenHolder relationshipTypeTokens,
             IndexingService indexingService,
-            SchemaCache schemaCache )
+            SchemaCache schemaCache,
+            ProcedureCache procedureCache )
     {
         SchemaStorage schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
         DiskLayer diskLayer = new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, schemaStorage,
                 neoStore, indexingService );
-        final StoreReadLayer storeLayer = new CacheLayer( diskLayer, schemaCache );
+        final StoreReadLayer storeLayer = new CacheLayer( diskLayer, schemaCache, procedureCache );
 
         return new StoreLayerModule()
         {
@@ -938,7 +950,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier, IndexingService indexingService,
             IndexUpdatesValidator indexUpdatesValidator, StoreReadLayer storeLayer,
             UpdateableSchemaState updateableSchemaState, LabelScanStore labelScanStore,
-            SchemaIndexProviderMap schemaIndexProviderMap )
+            SchemaIndexProviderMap schemaIndexProviderMap, ProcedureCache procedureCache )
     {
         final TransactionCommitProcess transactionCommitProcess =
                 commitProcessFactory.create( appender, kernelHealth, neoStore, storeApplier,
@@ -979,7 +991,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                         statementOperations, updateableSchemaState, schemaWriteGuard, schemaIndexProviderMap,
                         transactionHeaderInformationFactory, storeLayer, transactionCommitProcess,
                         indexConfigStore, legacyIndexProviderLookup, hooks, constraintSemantics,
-                        transactionMonitor, life, tracers ) );
+                        transactionMonitor, life, procedureCache, tracers ) );
 
         final Kernel kernel = new Kernel( kernelTransactions, hooks, kernelHealth, transactionMonitor );
 

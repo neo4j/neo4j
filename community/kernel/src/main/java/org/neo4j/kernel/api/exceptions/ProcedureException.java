@@ -17,18 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions.schema;
+package org.neo4j.kernel.api.exceptions;
 
-/**
- * Constraint violation happens when a user attempts to perform an action that violates
- * an existing constraint.
- *
- * @see ConstraintVerificationFailedKernelException
- */
-public abstract class ConstraintViolationKernelException extends ConstraintValidationKernelException
+public class ProcedureException extends KernelException
 {
-    public ConstraintViolationKernelException( String message, Object... parameters )
+    public ProcedureException( Status statusCode, Throwable cause,
+                               String message, Object... parameters )
     {
-        super( message, parameters );
+        super( statusCode, cause, message, parameters );
+    }
+
+    public ProcedureException( Status statusCode, String message,
+                               Object... parameters )
+    {
+        super( statusCode, message, parameters );
     }
 }
