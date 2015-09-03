@@ -25,10 +25,13 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 
@@ -120,4 +123,13 @@ public interface SchemaReadOperations
      * - throws exception for indexes that aren't committed.
      */
     long indexGetCommittedId( KernelStatement state, IndexDescriptor index, SchemaStorage.IndexRuleKind constraint ) throws SchemaRuleNotFoundException;
+
+    /** List all defined procedures, given the current transactional context
+     * @param kernelStatement*/
+    Iterator<ProcedureDescriptor> proceduresGetAll( KernelStatement kernelStatement );
+
+    /**
+     * Load a procedure description given a signature, or return null if the procedure does not exist.
+     */
+    ProcedureDescriptor procedureGet( KernelStatement statement, ProcedureName signature ) throws ProcedureException;
 }

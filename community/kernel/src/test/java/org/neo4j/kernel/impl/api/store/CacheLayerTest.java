@@ -41,7 +41,7 @@ public class CacheLayerTest
 {
     private final DiskLayer diskLayer = mock( DiskLayer.class );
     private final SchemaCache schemaCache = mock( SchemaCache.class );
-    private final CacheLayer context = new CacheLayer( diskLayer, schemaCache );
+    private final CacheLayer context = new CacheLayer( diskLayer, schemaCache, new ProcedureCache() );
 
     @Test
     public void shouldLoadAllConstraintsFromCache() throws Exception

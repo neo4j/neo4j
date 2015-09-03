@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.cursor.LabelItem;
 import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
@@ -47,8 +48,10 @@ import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -563,5 +566,18 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             throws DropConstraintFailureException
     {
         schemaWriteOperations.constraintDrop( state, constraint );
+    }
+
+    @Override
+    public void procedureCreate( KernelStatement state, ProcedureSignature signature, String language, String code )
+            throws ProcedureException, ProcedureConstraintViolation
+    {
+        schemaWriteOperations.procedureCreate( state, signature, language, code );
+    }
+
+    @Override
+    public void procedureDrop( KernelStatement statement, ProcedureSignature.ProcedureName name ) throws ProcedureConstraintViolation, ProcedureException
+    {
+        schemaWriteOperations.procedureDrop( statement, name );
     }
 }

@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -59,8 +60,12 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexSchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureSignature;
+import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
@@ -76,6 +81,8 @@ import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.locking.Locks;
+
+import static org.neo4j.helpers.collection.Iterables.map;
 
 public class OperationsFacade implements ReadOperations, DataWriteOperations, SchemaWriteOperations
 {
@@ -616,6 +623,29 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
+    public Iterator<ProcedureSignature> proceduresGetAll()
+    {
+        statement.assertOpen();
+        // There is a mapping layer here because "inside" the kernel we use the definition object, rather than the signature,
+        // but we prefer to avoid leaking that outside the kernel.
+        return map( new Function<ProcedureDescriptor,ProcedureSignature>()
+            {
+                @Override
+                public ProcedureSignature apply( ProcedureDescriptor o )
+                {
+                    return o.signature();
+                }
+            }, schemaRead().proceduresGetAll( statement ) );
+    }
+
+    @Override
+    public ProcedureDescriptor procedureGet( ProcedureName signature ) throws ProcedureException
+    {
+        statement.assertOpen();
+        return schemaRead().procedureGet( statement, signature );
+    }
+
+    @Override
     public Iterator<IndexDescriptor> uniqueIndexesGetAll()
     {
         statement.assertOpen();
@@ -963,6 +993,21 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
         schemaWrite().uniqueIndexDrop( statement, descriptor );
+    }
+
+    @Override
+    public void procedureCreate( ProcedureSignature signature, String language, String body )
+            throws ProcedureException, ProcedureConstraintViolation
+    {
+        statement.assertOpen();
+        schemaWrite().procedureCreate( statement, signature, language, body );
+    }
+
+    @Override
+    public void procedureDrop( ProcedureName name ) throws ProcedureConstraintViolation, ProcedureException
+    {
+        statement.assertOpen();
+        schemaWrite().procedureDrop( statement, name );
     }
     // </SchemaWrite>
 

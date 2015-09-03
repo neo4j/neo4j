@@ -49,6 +49,8 @@ import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.txstate.ReadableTxState;
@@ -145,6 +147,9 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     private DiffSets<IndexDescriptor> indexChanges;
     private DiffSets<IndexDescriptor> constraintIndexChanges;
     private DiffSets<PropertyConstraint> constraintsChanges;
+
+    private DiffSets<ProcedureDescriptor> procedureChanges;
+    private Map<ProcedureSignature.ProcedureName, ProcedureDescriptor> addedProcedures;
 
     private PropertyChanges propertyChangesForNodes;
 
@@ -293,6 +298,11 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         if ( indexChanges != null )
         {
             indexChanges.accept( indexVisitor( visitor, false ) );
+        }
+
+        if( procedureChanges != null )
+        {
+            procedureChanges.accept( procedureVisitor( visitor ) );
         }
 
         if ( constraintIndexChanges != null )
@@ -460,6 +470,24 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         {
             visitor.visitRemovedRelationshipPropertyExistenceConstraint( constraint );
         }
+    }
+
+    private static DiffSetsVisitor<ProcedureDescriptor> procedureVisitor( final TxStateVisitor visitor )
+    {
+        return new DiffSetsVisitor<ProcedureDescriptor>()
+        {
+            @Override
+            public void visitAdded( ProcedureDescriptor element )
+            {
+                visitor.visitCreatedProcedure( element );
+            }
+
+            @Override
+            public void visitRemoved( ProcedureDescriptor element )
+            {
+                visitor.visitDroppedProcedure( element );
+            }
+        };
     }
 
     private static DiffSetsVisitor<IndexDescriptor> indexVisitor( final TxStateVisitor visitor,
@@ -929,6 +957,48 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     public ReadableDiffSets<Long> nodesWithLabelChanged( int labelId )
     {
         return LABEL_STATE.get( this, labelId ).nodeDiffSets();
+    }
+
+    private DiffSets<ProcedureDescriptor> procedureChanges()
+    {
+        return procedureChanges == null ? procedureChanges = new DiffSets<>() : procedureChanges;
+    }
+
+    private Map<ProcedureSignature.ProcedureName, ProcedureDescriptor> addedProcedures()
+    {
+        return addedProcedures == null ? addedProcedures = new HashMap<>() : addedProcedures;
+    }
+
+    @Override
+    public void procedureDoCreate( ProcedureSignature signature, String language, String body )
+    {
+        ProcedureDescriptor descriptor = new ProcedureDescriptor( signature, language, body );
+        procedureChanges().add( descriptor );
+        addedProcedures().put( signature.name(), descriptor );
+        hasChanges = true;
+    }
+
+    @Override
+    public void procedureDoDrop( ProcedureDescriptor descriptor )
+    {
+        procedureChanges().remove( descriptor );
+        if( addedProcedures != null )
+        {
+            addedProcedures.remove( descriptor.signature().name() );
+        }
+        hasChanges = true;
+    }
+
+    @Override
+    public Iterator<ProcedureDescriptor> augmentProcedures( Iterator<ProcedureDescriptor> procedures )
+    {
+        return procedureChanges != null ? procedureChanges.apply( procedures ) : procedures;
+    }
+
+    @Override
+    public ProcedureDescriptor getProcedure( ProcedureSignature.ProcedureName name )
+    {
+        return addedProcedures != null ? addedProcedures.get( name ) : null;
     }
 
     @Override

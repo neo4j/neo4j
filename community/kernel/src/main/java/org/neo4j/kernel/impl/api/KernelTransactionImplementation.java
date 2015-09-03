@@ -31,6 +31,8 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
+import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
@@ -151,6 +153,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
     private final StoreReadLayer storeLayer;
+    private final ProcedureCache procedureCache;
     private final Clock clock;
     private final TransactionToRecordStateVisitor txStateToRecordStateVisitor = new TransactionToRecordStateVisitor();
     private final Collection<Command> extractedCommands = new ArrayCollection<>( 32 );
@@ -177,22 +180,22 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private CloseListener closeListener;
 
     public KernelTransactionImplementation( StatementOperationParts operations,
-            SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
-            IndexingService indexService,
-            UpdateableSchemaState schemaState,
-            TransactionRecordState recordState,
-            SchemaIndexProviderMap providerMap, NeoStore neoStore,
-            Locks.Client locks, TransactionHooks hooks,
-            ConstraintIndexCreator constraintIndexCreator,
-            TransactionHeaderInformationFactory headerInformationFactory,
-            TransactionCommitProcess commitProcess,
-            TransactionMonitor transactionMonitor,
-            StoreReadLayer storeLayer,
-            LegacyIndexTransactionState legacyIndexTransactionState,
-            Pool<KernelTransactionImplementation> pool,
-            ConstraintSemantics constraintSemantics,
-            Clock clock,
-            TransactionTracer tracer )
+                                            SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
+                                            IndexingService indexService,
+                                            UpdateableSchemaState schemaState,
+                                            TransactionRecordState recordState,
+                                            SchemaIndexProviderMap providerMap, NeoStore neoStore,
+                                            Locks.Client locks, TransactionHooks hooks,
+                                            ConstraintIndexCreator constraintIndexCreator,
+                                            TransactionHeaderInformationFactory headerInformationFactory,
+                                            TransactionCommitProcess commitProcess,
+                                            TransactionMonitor transactionMonitor,
+                                            StoreReadLayer storeLayer,
+                                            LegacyIndexTransactionState legacyIndexTransactionState,
+                                            Pool<KernelTransactionImplementation> pool,
+                                            ConstraintSemantics constraintSemantics,
+                                            Clock clock,
+                                            TransactionTracer tracer, ProcedureCache procedureCache )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -208,6 +211,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
         this.storeLayer = storeLayer;
+        this.procedureCache = procedureCache;
         this.legacyIndexTransactionState = new CachingLegacyIndexTransactionState( legacyIndexTransactionState );
         this.pool = pool;
         this.constraintSemantics = constraintSemantics;
@@ -1044,6 +1048,20 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         public void visitCreatedRelationshipLegacyIndex( String name, Map<String, String> config )
         {
             legacyIndexTransactionState.createIndex( IndexEntityType.Relationship, name, config );
+        }
+
+        @Override
+        public void visitCreatedProcedure( ProcedureDescriptor procedureDescriptor )
+        {
+            // TODO: This is a temporary measure to allow trialing procedures without changing the store format. Clearly, this is not safe or useful for
+            // production. This will need to be changed before we release a useful 3.x series release.
+            procedureCache.createProcedure( procedureDescriptor );
+        }
+
+        @Override
+        public void visitDroppedProcedure( ProcedureDescriptor procedureDescriptor )
+        {
+            procedureCache.dropProcedure( procedureDescriptor );
         }
     }
 

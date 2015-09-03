@@ -44,6 +44,8 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.CountsAccessor;
@@ -385,6 +387,18 @@ public class DiskLayer implements StoreReadLayer
     public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.indexUniqueValuesPercentage( descriptor );
+    }
+
+    @Override
+    public Iterator<ProcedureDescriptor> proceduresGetAll()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ProcedureDescriptor procedureGet( ProcedureSignature.ProcedureName name )
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Override
