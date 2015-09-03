@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.spi
 
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.EntityProducer
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{TraversalMatcher, ExpanderStep}
+import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
 
@@ -48,4 +51,11 @@ trait PlanContext extends TokenContext {
   def txIdProvider: () => Long
 
   def statistics: GraphStatistics
+
+  // Legacy traversal matchers (pre-Ronja) (These were moved out to remove the dependency on the kernel)
+  def monoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node]): TraversalMatcher
+
+  def bidirectionalTraversalMatcher(steps: ExpanderStep,
+                                    start: EntityProducer[Node],
+                                    end: EntityProducer[Node]): TraversalMatcher
 }
