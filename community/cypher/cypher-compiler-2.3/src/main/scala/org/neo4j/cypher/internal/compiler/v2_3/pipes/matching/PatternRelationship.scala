@@ -20,16 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes.matching
 
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{LazyTypes, QueryState}
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
-import org.neo4j.graphdb.{DynamicRelationshipType, Node, Relationship}
-import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription}
-import org.neo4j.kernel.{Traversal, Uniqueness}
+import org.neo4j.graphdb.{Node, Path, Relationship}
 
 import scala.collection.JavaConverters._
 
@@ -141,30 +138,7 @@ class VariableLengthPatternRelationship(pathName: String,
       key -> CTCollection(CTRelationship)) ++ relIterable.map(_ -> CTCollection(CTRelationship)).toMap
 
   override def getGraphRelationships(node: PatternNode, realNode: Node, state: QueryState, f: => ExecutionContext): Seq[GraphRelationship] = {
-
-    val depthEval = (minHops, maxHops) match {
-      case (None, None)           => Evaluators.fromDepth(1)
-      case (Some(min), None)      => Evaluators.fromDepth(min)
-      case (None, Some(max))      => Evaluators.includingDepths(1, max)
-      case (Some(min), Some(max)) => Evaluators.includingDepths(min, max)
-    }
-
-    val baseTraversalDescription: TraversalDescription = Traversal.description()
-      .evaluator(depthEval)
-      .uniqueness(Uniqueness.RELATIONSHIP_PATH)
-
-    val traversalDescription = if (relType.isEmpty) {
-      baseTraversalDescription.expand(Traversal.expanderForAllTypes(toGraphDb(getDirection(node))))
-    } else {
-      val emptyExpander = Traversal.emptyExpander()
-      val dir = getDirection(node)
-      val expander = relType.foldLeft(emptyExpander) {
-        case (e, t) => e.add(DynamicRelationshipType.withName(t), toGraphDb(dir))
-      }
-      baseTraversalDescription.expand(expander)
-    }
-
-    val matchedPaths = traversalDescription.traverse(realNode).asScala
+    val matchedPaths: Iterator[Path] = state.query.variableLengthPathExpand(node, realNode, minHops, maxHops, getDirection(node), relType)
 
     val filteredPaths = if (properties.isEmpty) {
       matchedPaths

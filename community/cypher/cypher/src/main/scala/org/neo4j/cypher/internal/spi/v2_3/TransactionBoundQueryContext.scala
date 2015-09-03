@@ -27,13 +27,15 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, Bound, EntityNotFoundException, FailedIndexException}
 import org.neo4j.graphdb.DynamicRelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.graphdb.traversal.{TraversalDescription, Evaluators}
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.{Uniqueness, Traversal, GraphDatabaseAPI}
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
@@ -464,5 +466,35 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
     tx = graph.beginTx()
     statement = txBridge.get()
+  }
+
+  // Legacy dependency between kernel and compiler
+  override def variableLengthPathExpand(node: PatternNode,
+                                        realNode: Node,
+                                        minHops: Option[Int],
+                                        maxHops: Option[Int],
+                                        direction: SemanticDirection,
+                                        relTypes: Seq[String]): Iterator[Path] = {
+    val depthEval = (minHops, maxHops) match {
+      case (None, None) => Evaluators.fromDepth(1)
+      case (Some(min), None) => Evaluators.fromDepth(min)
+      case (None, Some(max)) => Evaluators.includingDepths(1, max)
+      case (Some(min), Some(max)) => Evaluators.includingDepths(min, max)
+    }
+
+    val baseTraversalDescription: TraversalDescription = Traversal.description()
+      .evaluator(depthEval)
+      .uniqueness(Uniqueness.RELATIONSHIP_PATH)
+
+    val traversalDescription = if (relTypes.isEmpty) {
+      baseTraversalDescription.expand(Traversal.expanderForAllTypes(toGraphDb(direction)))
+    } else {
+      val emptyExpander = Traversal.emptyExpander()
+      val expander = relTypes.foldLeft(emptyExpander) {
+        case (e, t) => e.add(DynamicRelationshipType.withName(t), toGraphDb(direction))
+      }
+      baseTraversalDescription.expand(expander)
+    }
+    traversalDescription.traverse(realNode).iterator().asScala
   }
 }

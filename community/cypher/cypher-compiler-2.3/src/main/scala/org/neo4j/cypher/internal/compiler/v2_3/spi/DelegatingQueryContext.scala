@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.spi
 
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
-import org.neo4j.graphdb.{Relationship, PropertyContainer, Node}
+import org.neo4j.graphdb.{Path, Relationship, PropertyContainer, Node}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
@@ -129,6 +130,16 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
   def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int = singleDbHit(inner.nodeGetDegree(node, dir, relTypeId))
 
   def nodeIsDense(node: Long): Boolean = singleDbHit(inner.nodeIsDense(node))
+
+  // Legacy dependency between kernel and compiler
+  override def variableLengthPathExpand(node: PatternNode,
+                                        realNode: Node,
+                                        minHops: Option[Int],
+                                        maxHops: Option[Int],
+                                        direction: SemanticDirection,
+                                        relTypes: Seq[String]): Iterator[Path] =
+    manyDbHits(inner.variableLengthPathExpand(node, realNode, minHops, maxHops, direction, relTypes))
+
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {
