@@ -39,9 +39,9 @@ import org.neo4j.logging.Logger;
 public class LifeSupport
         implements Lifecycle
 {
-    private volatile List<LifecycleInstance> instances = new ArrayList<LifecycleInstance>();
+    private volatile List<LifecycleInstance> instances = new ArrayList<>();
     private volatile LifecycleStatus status = LifecycleStatus.NONE;
-    private final List<LifecycleListener> listeners = new ArrayList<LifecycleListener>();
+    private final List<LifecycleListener> listeners = new ArrayList<>();
     
     public LifeSupport()
     {
@@ -140,20 +140,7 @@ public class LifeSupport
         if ( status == LifecycleStatus.STARTED )
         {
             status = changedStatus( this, status, LifecycleStatus.STOPPING );
-            LifecycleException ex = null;
-            for ( int i = instances.size() - 1; i >= 0; i-- )
-            {
-                LifecycleInstance lifecycleInstance = instances.get( i );
-                try
-                {
-                    lifecycleInstance.stop();
-                }
-                catch ( LifecycleException e )
-                {
-                    ex = ex == null ? e : Exceptions.withSuppressed( ex, e );
-                }
-            }
-
+            LifecycleException ex = stopInstances(instances);
             status = changedStatus( this, status, LifecycleStatus.STOPPED );
 
             if ( ex != null )
@@ -161,6 +148,24 @@ public class LifeSupport
                 throw ex;
             }
         }
+    }
+
+    private LifecycleException stopInstances(List<LifecycleInstance> instances)
+    {
+        LifecycleException ex = null;
+        for ( int i = instances.size() - 1; i >= 0; i-- )
+        {
+            LifecycleInstance lifecycleInstance = instances.get( i );
+            try
+            {
+                lifecycleInstance.stop();
+            }
+            catch ( LifecycleException e )
+            {
+                ex = ex == null ? e : Exceptions.withSuppressed( ex, e );
+            }
+        }
+        return ex;
     }
 
     /**
@@ -222,7 +227,7 @@ public class LifeSupport
         if ( status == LifecycleStatus.STARTED )
         {
             boolean foundRestartingInstance = false;
-            List<LifecycleInstance> restartingInstances = new ArrayList<LifecycleInstance>();
+            List<LifecycleInstance> restartingInstances = new ArrayList<>();
             for ( LifecycleInstance lifecycleInstance : instances )
             {
                 if ( lifecycleInstance.instance == instance )
@@ -243,19 +248,8 @@ public class LifeSupport
 
             // Stop instances
             status = changedStatus( this, status, LifecycleStatus.STOPPING );
-            LifecycleException ex = null;
-            for ( int i = restartingInstances.size() - 1; i >= 0; i-- )
-            {
-                LifecycleInstance lifecycleInstance = restartingInstances.get( i );
-                try
-                {
-                    lifecycleInstance.stop();
-                }
-                catch ( LifecycleException e )
-                {
-                    ex = ex == null ? e : Exceptions.withSuppressed( ex, e );
-                }
-            }
+
+            LifecycleException ex = stopInstances( restartingInstances );
 
             // Failed stop - stop the whole thing to be safe
             if ( ex != null )

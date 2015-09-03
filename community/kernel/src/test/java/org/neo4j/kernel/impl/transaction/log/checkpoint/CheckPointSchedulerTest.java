@@ -40,6 +40,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.checkPoint;
 
 public class CheckPointSchedulerTest
@@ -48,7 +49,7 @@ public class CheckPointSchedulerTest
     private final OnDemandJobScheduler jobScheduler = spy( new OnDemandJobScheduler() );
 
     @Test
-    public void shouldScheduleTheCheckPointerJobJobOnStart() throws Throwable
+    public void shouldScheduleTheCheckPointerJobOnStart() throws Throwable
     {
         // given
         CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20l );
@@ -104,6 +105,25 @@ public class CheckPointSchedulerTest
 
         // then
         assertNull( jobScheduler.getJob() );
+    }
+
+    @Test
+    public void stoppedJobCantBeInvoked() throws Throwable
+    {
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 10l );
+        scheduler.start();
+        jobScheduler.runJob();
+
+        // verify checkpoint was triggered
+        verify( checkPointer ).checkPointIfNeeded();
+
+        // simulate scheduled run that was triggered just before stop
+        scheduler.stop();
+        scheduler.start();
+        jobScheduler.runJob();
+
+        // checkpointer should not be invoked now because job stopped
+        verifyNoMoreInteractions( checkPointer );
     }
 
     @Test

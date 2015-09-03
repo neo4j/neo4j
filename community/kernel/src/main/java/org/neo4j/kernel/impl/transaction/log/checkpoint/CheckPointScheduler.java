@@ -40,15 +40,13 @@ public class CheckPointScheduler extends LifecycleAdapter
         @Override
         public void run()
         {
-            checkPointing = true;
-
-            if ( stopped )
-            {
-                return;
-            }
-
             try
             {
+                checkPointing = true;
+                if ( stopped )
+                {
+                    return;
+                }
                 checkPointer.checkPointIfNeeded();
             }
             catch ( IOException e )
@@ -56,7 +54,10 @@ public class CheckPointScheduler extends LifecycleAdapter
                 // no need to reschedule since the check pointer has raised a kernel panic and a shutdown is expected
                 throw new UnderlyingStorageException( e );
             }
-            checkPointing = false;
+            finally
+            {
+                checkPointing = false;
+            }
 
             // reschedule only if it is not stopped
             if ( !stopped )

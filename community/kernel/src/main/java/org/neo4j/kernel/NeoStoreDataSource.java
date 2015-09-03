@@ -259,7 +259,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
 
         private final String message;
 
-        private Diagnostics( String message )
+        Diagnostics( String message )
         {
             this.message = message;
         }
@@ -1086,6 +1086,10 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         // Here we're zooming in and focusing on getting committed transactions to close.
         awaitAllTransactionsClosed();
         LogFile logFile = transactionLogModule.logFile();
+        // In order to prevent various issues with life components that can perform operations with logFile on their
+        // stop phase before performing further shutdown/cleanup work and taking a lock on a logfile
+        // we stop all other life components to make sure that we are the last and only one (from current life)
+        life.stop();
         synchronized ( logFile )
         {
             // Under the guard of the logFile monitor do a second pass of waiting committing transactions

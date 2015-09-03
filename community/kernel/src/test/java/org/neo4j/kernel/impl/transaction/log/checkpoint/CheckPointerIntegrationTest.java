@@ -73,6 +73,24 @@ public class CheckPointerIntegrationTest
     }
 
     @Test
+    public void databaseShutdownDuringConstantCheckPointing() throws
+            InterruptedException, IOException
+    {
+        GraphDatabaseService db = builder
+                .setConfig( GraphDatabaseSettings.check_point_interval_time, 0 + "ms" )
+                .setConfig( GraphDatabaseSettings.check_point_interval_tx, "1" )
+                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1g" )
+                .newGraphDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+            tx.success();
+        }
+        Thread.sleep( 10 );
+        db.shutdown();
+    }
+
+    @Test
     public void shouldCheckPointBasedOnTime() throws Throwable
     {
         // given
