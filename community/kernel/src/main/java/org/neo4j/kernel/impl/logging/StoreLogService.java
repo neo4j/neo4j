@@ -23,6 +23,8 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executor;
 
 import org.neo4j.function.Consumer;
@@ -50,7 +52,8 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         private int internalLogRotationDelay = 0;
         private int maxInternalLogArchives = 0;
         private Consumer<LogProvider> rotationListener = Consumers.noop();
-        private Level level = Level.INFO;
+        private Map<String, Level> logLevels = new HashMap<>();
+        private Level defaultLevel = Level.INFO;
 
         private Builder()
         {
@@ -85,9 +88,15 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
             return this;
         }
 
-        public Builder withLevel( Level level )
+        public Builder withLevel( String context, Level level )
         {
-            this.level = level;
+            this.logLevels.put( context, level );
+            return this;
+        }
+
+        public Builder withDefaultLevel( Level defaultLevel )
+        {
+            this.defaultLevel = defaultLevel;
             return this;
         }
 
@@ -100,7 +109,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         {
             return new StoreLogService(
                     userLogProvider,
-                    fileSystem, internalLogPath, level,
+                    fileSystem, internalLogPath, logLevels, defaultLevel,
                     internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives, rotationExecutor, rotationListener );
         }
     }
@@ -126,7 +135,8 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
     private StoreLogService( LogProvider userLogProvider,
             FileSystemAbstraction fileSystem,
             File internalLog,
-            Level level,
+            Map<String, Level> logLevels,
+            Level defaultLevel,
             long internalLogRotationThreshold,
             int internalLogRotationDelay,
             int maxInternalLogArchives,
@@ -138,11 +148,14 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
             internalLog.getParentFile().mkdirs();
         }
 
+        final FormattedLogProvider.Builder internalLogBuilder = FormattedLogProvider.withUTCTimeZone()
+                .withDefaultLogLevel( defaultLevel ).withLogLevels( logLevels );
+
         FormattedLogProvider internalLogProvider;
         if ( internalLogRotationThreshold == 0 )
         {
             OutputStream outputStream = createOrOpenAsOuputStream( fileSystem, internalLog, true );
-            internalLogProvider = FormattedLogProvider.withUTCTimeZone().toOutputStream( outputStream );
+            internalLogProvider = internalLogBuilder.toOutputStream( outputStream );
             rotationListener.accept( internalLogProvider );
             this.closeable = outputStream;
         }
@@ -155,14 +168,13 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
                 @Override
                 public void outputFileCreated( OutputStream newStream, OutputStream oldStream )
                 {
-                    FormattedLogProvider logProvider = FormattedLogProvider.withUTCTimeZone().toOutputStream( newStream );
+                    FormattedLogProvider logProvider = internalLogBuilder.toOutputStream( newStream );
                     logProvider.getLog( StoreLogService.class ).info( "Opened new internal log file" );
                     rotationListener.accept( logProvider );
                     logProvider.getLog( StoreLogService.class ).info( "Rotated internal log file" );
                 }
             } );
-            internalLogProvider = FormattedLogProvider.withUTCTimeZone().withLogLevel( level ).toOutputStream(
-                    rotatingSupplier );
+            internalLogProvider = internalLogBuilder.toOutputStream( rotatingSupplier );
             this.closeable = rotatingSupplier;
         }
         this.logService = new SimpleLogService( userLogProvider, internalLogProvider );

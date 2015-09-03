@@ -26,6 +26,8 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
 
@@ -46,7 +48,8 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     {
         private boolean renderContext = true;
         private TimeZone timezone = TimeZone.getDefault();
-        private Level level = Level.INFO;
+        private Map<String, Level> levels = new HashMap<>();
+        private Level defaultLevel = Level.INFO;
         private boolean autoFlush = true;
 
         private Builder()
@@ -54,7 +57,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
         }
 
         /**
-         * Disable rendering of the context (or class name) in each output line.
+         * Disable rendering of the context (the class name or log name) in each output line.
          *
          * @return this builder
          */
@@ -92,9 +95,35 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
          * @param level the log level to use as a default
          * @return this builder
          */
-        public Builder withLogLevel( Level level )
+        public Builder withDefaultLogLevel( Level level )
         {
-            this.level = level;
+            this.defaultLevel = level;
+            return this;
+        }
+
+        /**
+         * Use the specified log {@link Level} for any {@link Log}s that match the specified context. Any {@link Log} context that
+         * starts with the specified string will have its level set. For example, setting the level for the context {@code org.neo4j}
+         * would result in that level being applied to {@link Log}s with the context {@code org.neo4j.Foo}, {@code org.neo4j.foo.Bar}, etc.
+         *
+         * @param context the context of the Logs to set the level of, matching any Log context starting with this string
+         * @param level the log level to apply
+         * @return this builder
+         */
+        public Builder withLogLevel( String context, Level level )
+        {
+            this.levels.put( context, level );
+            return this;
+        }
+
+        /**
+         * Set the log level for many contexts - equivalent to calling {@link #withLogLevel(String, Level)} for every entry in the provided map.
+         *
+         * @param levels a map containing paris of context and level
+         */
+        public Builder withLogLevels( Map<String, Level> levels )
+        {
+            this.levels.putAll( levels );
             return this;
         }
 
@@ -163,7 +192,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
          */
         public FormattedLogProvider toPrintWriter( Supplier<PrintWriter> writerSupplier )
         {
-            return new FormattedLogProvider( DEFAULT_CURRENT_DATE_SUPPLIER, writerSupplier, timezone, renderContext, level, autoFlush );
+            return new FormattedLogProvider( DEFAULT_CURRENT_DATE_SUPPLIER, writerSupplier, timezone, renderContext, levels, defaultLevel, autoFlush );
         }
     }
 
@@ -171,11 +200,12 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     private final Supplier<PrintWriter> writerSupplier;
     private final TimeZone timezone;
     private final boolean renderContext;
-    private final Level level;
+    private final Map<String, Level> levels;
+    private final Level defaultLevel;
     private final boolean autoFlush;
 
     /**
-     * Start creating a {@link FormattedLogProvider} which will not render the context (or class name) in each output line.
+     * Start creating a {@link FormattedLogProvider} which will not render the context (the class name or log name) in each output line.
      * Use {@link Builder#toOutputStream} to complete.
      *
      * @return a builder for a {@link FormattedLogProvider}
@@ -213,9 +243,9 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
      * @param level the log level to use as a default
      * @return a builder for a {@link FormattedLogProvider}
      */
-    public static Builder withLogLevel( Level level )
+    public static Builder withDefaultLogLevel( Level level )
     {
-        return new Builder().withLogLevel( level );
+        return new Builder().withDefaultLogLevel( level );
     }
 
     /**
@@ -286,26 +316,46 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
         return new Builder().toPrintWriter( writerSupplier );
     }
 
-    FormattedLogProvider( Supplier<Date> currentDateSupplier, Supplier<PrintWriter> writerSupplier, TimeZone timezone, boolean renderContext, Level level, boolean autoFlush )
+    FormattedLogProvider( Supplier<Date> currentDateSupplier, Supplier<PrintWriter> writerSupplier, TimeZone timezone,boolean renderContext,
+            Map<String, Level> levels, Level defaultLevel, boolean autoFlush )
     {
         this.currentDateSupplier = currentDateSupplier;
         this.writerSupplier = writerSupplier;
         this.timezone = timezone;
         this.renderContext = renderContext;
-        this.level = level;
+        this.levels = new HashMap<>( levels );
+        this.defaultLevel = defaultLevel;
         this.autoFlush = autoFlush;
     }
 
     @Override
     protected FormattedLog buildLog( Class loggingClass )
     {
-        String shortenedClassName = PACKAGE_PATTERN.matcher( loggingClass.getName() ).replaceAll( "$1." );
-        return buildLog( shortenedClassName );
+        String className = loggingClass.getName();
+        String shortenedClassName = PACKAGE_PATTERN.matcher( className ).replaceAll( "$1." );
+        return buildLog( shortenedClassName, levelForContext( className ) );
     }
 
     @Override
-    protected FormattedLog buildLog( String context )
+    protected FormattedLog buildLog( String name )
+    {
+        return buildLog( name, levelForContext( name ) );
+    }
+
+    private FormattedLog buildLog( String context, Level level )
     {
         return new FormattedLog( currentDateSupplier, writerSupplier, timezone, this, renderContext ? context : null, level, autoFlush );
+    }
+
+    private Level levelForContext( String context )
+    {
+        for ( Map.Entry<String, Level> entry : levels.entrySet() )
+        {
+            if ( context.startsWith( entry.getKey() ) )
+            {
+                return entry.getValue();
+            }
+        }
+        return defaultLevel;
     }
 }

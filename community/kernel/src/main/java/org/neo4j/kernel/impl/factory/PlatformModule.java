@@ -56,6 +56,7 @@ import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
+import org.neo4j.logging.Level;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageData;
@@ -227,7 +228,11 @@ public class PlatformModule
             }
         } );
 
-        builder.withLevel( config.get( GraphDatabaseSettings.store_internal_log_level ) );
+        for ( String debugContext : config.get( GraphDatabaseSettings.store_internal_debug_contexts ) )
+        {
+            builder.withLevel( debugContext, Level.DEBUG );
+        }
+        builder.withDefaultLevel( config.get( GraphDatabaseSettings.store_internal_log_level ) );
 
         File internalLog = config.get( GraphDatabaseSettings.store_internal_log_location );
         LogService logService;
