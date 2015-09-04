@@ -17,16 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.pipes.matching
+package org.neo4j.cypher.internal.spi.v2_3
 
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{TraversalMatcher, ExpanderStep, TraversalPathExpander}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityProducer, QueryState}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
-import pipes.{EntityProducer, QueryState}
-import org.neo4j.kernel.{Uniqueness, Traversal}
-import org.neo4j.graphdb.{Path, Node}
 import org.neo4j.graphdb.traversal._
-import collection.JavaConverters._
+import org.neo4j.graphdb.{Node, Path}
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.kernel.{Traversal, Uniqueness}
+
+import scala.collection.JavaConverters._
 
 class MonoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node])
   extends TraversalMatcher {

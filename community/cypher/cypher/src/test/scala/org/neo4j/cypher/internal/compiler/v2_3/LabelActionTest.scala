@@ -23,9 +23,10 @@ import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{LabelAction, LabelSetOp}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{IdempotentResult, LockingQueryContext, QueryContext}
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.{Path, Node, Relationship}
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
@@ -177,4 +178,7 @@ class SnitchingQueryContext extends QueryContext {
   def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int = ???
 
   def nodeIsDense(node: Long): Boolean = ???
+
+  // Legacy dependency between kernel and compiler
+  override def variableLengthPathExpand(node: PatternNode, realNode: Node, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]): Iterator[Path] = ???
 }

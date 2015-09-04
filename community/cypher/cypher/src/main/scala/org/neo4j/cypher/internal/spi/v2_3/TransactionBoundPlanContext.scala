@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.spi.v2_3
 
 import org.neo4j.cypher.MissingIndexException
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.EntityProducer
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.ExpanderStep
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.{Node, GraphDatabaseService}
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
@@ -101,6 +103,16 @@ class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDat
     }
     statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
+
+
+  // Legacy traversal matchers (pre-Ronja) (These were moved out to remove the dependency on the kernel)
+  override def monoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node]) =
+    new MonoDirectionalTraversalMatcher(steps, start)
+
+  override def bidirectionalTraversalMatcher(steps: ExpanderStep,
+                                             start: EntityProducer[Node],
+                                             end: EntityProducer[Node]) =
+    new BidirectionalTraversalMatcher(steps, start, end)
 
   val statistics: GraphStatistics =
     InstrumentedGraphStatistics(TransactionBoundGraphStatistics(statement), MutableGraphStatisticsSnapshot())

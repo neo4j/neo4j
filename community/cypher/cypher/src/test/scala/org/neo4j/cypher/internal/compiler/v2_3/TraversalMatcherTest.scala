@@ -22,9 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.True
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{BidirectionalTraversalMatcher, MonoDirectionalTraversalMatcher, SingleStep}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.SingleStep
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection.{BOTH, OUTGOING}
+import org.neo4j.cypher.internal.spi.v2_3.{BidirectionalTraversalMatcher, MonoDirectionalTraversalMatcher}
 import org.neo4j.graphdb.{Node, Path}
 
 class TraversalMatcherTest extends GraphDatabaseFunSuite with QueryStateTestSupport {

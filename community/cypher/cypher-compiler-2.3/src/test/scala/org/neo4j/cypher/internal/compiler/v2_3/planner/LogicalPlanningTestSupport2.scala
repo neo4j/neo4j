@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{ExpanderStep, TraversalMatcher}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityProducer, LazyLabel}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.QueryGraphCardinalityModel
@@ -38,12 +37,12 @@ import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.frontend.v2_3.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.frontend.v2_3.{Foldable, PropertyKeyId, SemanticTable, inSequence}
+import org.neo4j.graphdb.Node
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
-import org.scalatest.matchers.{BeMatcher, MatchResult, Matcher}
-import org.scalatest.verb.ShouldVerb
+import org.scalatest.matchers.{BeMatcher, MatchResult}
 
 import scala.language.reflectiveCalls
 import scala.reflect.ClassTag
@@ -151,6 +150,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       def getLabelId(labelName: String): Int = ???
 
       def txIdProvider: () => Long = ???
+
+      override def monoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node]): TraversalMatcher = ???
+
+      override def bidirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node], end: EntityProducer[Node]): TraversalMatcher = ???
     }
 
     def planFor(queryString: String): SemanticPlan = {
