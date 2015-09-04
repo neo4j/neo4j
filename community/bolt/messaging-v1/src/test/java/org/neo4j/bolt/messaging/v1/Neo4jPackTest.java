@@ -20,10 +20,13 @@
 package org.neo4j.bolt.messaging.v1;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
 
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -60,6 +63,29 @@ public class Neo4jPackTest
     }
 
     @Test
+    public void shouldBeAbleToPackAndUnpackListStream() throws IOException
+    {
+        // Given
+        PackedOutputArray output = new PackedOutputArray();
+        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        packer.packListStreamHeader();
+        List<String> expected = new ArrayList<>();
+        for ( Label label : ALICE.getLabels() )
+        {
+            String labelName = label.name();
+            packer.pack( labelName );
+            expected.add( labelName );
+        }
+        packer.packEndOfStream();
+        Object unpacked = unpacked( output.bytes() );
+
+        // Then
+        assertThat( unpacked, instanceOf( List.class ) );
+        List<String> unpackedList = (List<String>) unpacked;
+        assertThat( unpackedList, equalTo( expected ) );
+    }
+
+    @Test
     public void shouldBeAbleToPackAndUnpackMapStream() throws IOException
     {
         // Given
@@ -71,7 +97,7 @@ public class Neo4jPackTest
             packer.pack( entry.getKey() );
             packer.pack( entry.getValue() );
         }
-        packer.packMapStreamFooter();
+        packer.packEndOfStream();
         Object unpacked = unpacked( output.bytes() );
 
         // Then

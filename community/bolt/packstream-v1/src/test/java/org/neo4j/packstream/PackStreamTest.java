@@ -470,6 +470,33 @@ public class PackStreamTest
     }
 
     @Test
+    public void testCanPackAndUnpackListStream() throws Throwable
+    {
+        // Given
+        Machine machine = new Machine();
+
+        // When
+        PackStream.Packer packer = machine.packer();
+        packer.packListStreamHeader();
+        packer.pack( "eins" );
+        packer.pack( "zwei" );
+        packer.pack( "drei" );
+        packer.packEndOfStream();
+        packer.flush();
+        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
+
+        // Then
+
+        assertThat( unpacker.unpackListHeader(), equalTo( PackStream.UNKNOWN_SIZE ) );
+
+        assertThat( unpacker.unpackText(), equalTo( "eins" ) );
+        assertThat( unpacker.unpackText(), equalTo( "zwei" ) );
+        assertThat( unpacker.unpackText(), equalTo( "drei" ) );
+
+        unpacker.unpackEndOfStream();
+    }
+
+    @Test
     public void testCanPackAndUnpackMap() throws Throwable
     {
         // Given
@@ -508,7 +535,7 @@ public class PackStreamTest
         packer.pack( 1 );
         packer.pack( "two" );
         packer.pack( 2 );
-        packer.packMapStreamFooter();
+        packer.packEndOfStream();
         packer.flush();
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
 
@@ -521,7 +548,7 @@ public class PackStreamTest
         assertThat( unpacker.unpackText(), equalTo( "two" ) );
         assertThat( unpacker.unpackLong(), equalTo( 2L ) );
 
-        unpacker.unpackNull();
+        unpacker.unpackEndOfStream();
     }
 
     @Test

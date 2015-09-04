@@ -22,7 +22,6 @@ package org.neo4j.bolt.messaging.v1;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +48,8 @@ import static org.neo4j.packstream.PackStream.UNKNOWN_SIZE;
  */
 public class Neo4jPack
 {
-    public static final Map<String, Object> EMPTY_PROPERTY_MAP = new HashMap<>();
+    public static final List<Object> EMPTY_LIST = new ArrayList<>();
+    public static final Map<String, Object> EMPTY_MAP = new HashMap<>();
 
     public static final byte NODE = 'N';
     public static final byte RELATIONSHIP = 'R';
@@ -266,20 +266,12 @@ public class Neo4jPack
                     return null;
                 case LIST:
                 {
-                    int size = (int) unpackListHeader();
-                    if ( size == 0 )
-                    {
-                        return Collections.EMPTY_LIST;
-                    }
-                    ArrayList<Object> vals = new ArrayList<>( size );
-                    for ( int j = 0; j < size; j++ )
-                    {
-                        vals.add( unpack() );
-                    }
-                    return vals;
+                    return unpackList();
                 }
                 case MAP:
+                {
                     return unpackMap();
+                }
                 case STRUCT:
                 {
                     unpackStructHeader();
@@ -307,10 +299,52 @@ public class Neo4jPack
                                     "Unknown struct type: " + signature );
                     }
                 }
+                case END_OF_STREAM:
+                {
+                    unpackEndOfStream();
+                    return null;
+                }
                 default:
                     throw new BoltIOException( Status.Request.InvalidFormat,
                             "Unknown value type: " + valType );
             }
+        }
+
+        public List<Object> unpackList() throws IOException
+        {
+            int size = (int) unpackListHeader();
+            if ( size == 0 )
+            {
+                return EMPTY_LIST;
+            }
+            ArrayList<Object> list;
+            if ( size == UNKNOWN_SIZE )
+            {
+                list = new ArrayList<>();
+                boolean more = true;
+                while ( more )
+                {
+                    PackType keyType = peekNextType();
+                    switch ( keyType )
+                    {
+                        case END_OF_STREAM:
+                            unpack();
+                            more = false;
+                            break;
+                        default:
+                            list.add( unpack() );
+                    }
+                }
+            }
+            else
+            {
+                list = new ArrayList<>( size );
+                for ( int i = 0; i < size; i++ )
+                {
+                    list.add( unpack() );
+                }
+            }
+            return list;
         }
 
         public Map<String, Object> unpackMap() throws IOException
@@ -318,7 +352,7 @@ public class Neo4jPack
             int size = (int) unpackMapHeader();
             if ( size == 0 )
             {
-                return EMPTY_PROPERTY_MAP;
+                return EMPTY_MAP;
             }
             Map<String, Object> map;
             if ( size == UNKNOWN_SIZE ) {
@@ -327,23 +361,26 @@ public class Neo4jPack
                 while ( more )
                 {
                     PackType keyType = peekNextType();
-                    if ( keyType == PackType.TEXT )
+                    switch ( keyType )
                     {
-                        String key = unpackText();
-                        Object val = unpack();
-                        map.put( key, val );
-                    }
-                    else
-                    {
-                        unpack();
-                        more = false;
+                        case END_OF_STREAM:
+                            unpack();
+                            more = false;
+                            break;
+                        case TEXT:
+                            String key = unpackText();
+                            Object val = unpack();
+                            map.put( key, val );
+                            break;
+                        default:
+                            throw new PackStream.PackStreamException( "Bad key type" );
                     }
                 }
             }
             else
             {
                 map = new HashMap<>( size, 1 );
-                for ( int j = 0; j < size; j++ )
+                for ( int i = 0; i < size; i++ )
                 {
                     String key = unpackText();
                     Object val = unpack();

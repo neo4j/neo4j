@@ -119,7 +119,7 @@ public class PackStream
     public static final byte LIST_8 = (byte) 0xD4;
     public static final byte LIST_16 = (byte) 0xD5;
     public static final byte LIST_32 = (byte) 0xD6;
-    public static final byte RESERVED_D7 = (byte) 0xD7;
+    public static final byte LIST_STREAM = (byte) 0xD7;
     public static final byte MAP_8 = (byte) 0xD8;
     public static final byte MAP_16 = (byte) 0xD9;
     public static final byte MAP_32 = (byte) 0xDA;
@@ -127,7 +127,7 @@ public class PackStream
     public static final byte STRUCT_8 = (byte) 0xDC;
     public static final byte STRUCT_16 = (byte) 0xDD;
     public static final byte RESERVED_DE = (byte) 0xDE;
-    public static final byte RESERVED_DF = (byte) 0xDF;
+    public static final byte END_OF_STREAM = (byte) 0xDF;
     public static final byte RESERVED_E0 = (byte) 0xE0;
     public static final byte RESERVED_E1 = (byte) 0xE1;
     public static final byte RESERVED_E2 = (byte) 0xE2;
@@ -425,6 +425,11 @@ public class PackStream
             }
         }
 
+        public void packListStreamHeader() throws IOException
+        {
+            out.writeByte( LIST_STREAM );
+        }
+
         public void packMapHeader( int size ) throws IOException
         {
             if ( size < 0x10 )
@@ -450,11 +455,6 @@ public class PackStream
             out.writeByte( MAP_STREAM );
         }
 
-        public void packMapStreamFooter() throws IOException
-        {
-            out.writeByte( NULL );
-        }
-
         public void packStructHeader( int size, byte signature ) throws IOException
         {
             if ( size < 0x10 )
@@ -473,6 +473,11 @@ public class PackStream
             {
                 throw new Overflow( "Structures cannot have more than " + Short.MAX_VALUE + " fields" );
             }
+        }
+
+        public void packEndOfStream() throws IOException
+        {
+            out.writeByte( END_OF_STREAM );
         }
 
     }
@@ -534,6 +539,8 @@ public class PackStream
                 return unpackUINT16();
             case LIST_32:
                 return unpackUINT32();
+            case LIST_STREAM:
+                return UNKNOWN_SIZE;
             default:
                 throw new Unexpected( PackType.LIST, markerByte);
             }
@@ -769,7 +776,7 @@ public class PackStream
         public void unpackNull() throws IOException
         {
             final byte markerByte = in.readByte();
-            assert  markerByte == NULL;
+            assert markerByte == NULL;
         }
 
         private int unpackUINT8() throws IOException
@@ -785,6 +792,12 @@ public class PackStream
         private long unpackUINT32() throws IOException
         {
             return in.readInt() & 0xFFFFFFFFL;
+        }
+
+        public void unpackEndOfStream() throws IOException
+        {
+            final byte markerByte = in.readByte();
+            assert markerByte == END_OF_STREAM;
         }
 
         private void discardRawBytes( int size ) throws IOException
@@ -865,6 +878,7 @@ public class PackStream
         case LIST_8:
         case LIST_16:
         case LIST_32:
+        case LIST_STREAM:
             return PackType.LIST;
         case MAP_8:
         case MAP_16:
@@ -874,6 +888,8 @@ public class PackStream
         case STRUCT_8:
         case STRUCT_16:
             return PackType.STRUCT;
+        case END_OF_STREAM:
+            return PackType.END_OF_STREAM;
         case INT_8:
         case INT_16:
         case INT_32:
