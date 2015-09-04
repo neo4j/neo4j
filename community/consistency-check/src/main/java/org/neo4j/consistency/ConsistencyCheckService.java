@@ -40,10 +40,10 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
@@ -76,14 +76,25 @@ public class ConsistencyCheckService
     }
 
     public Result runFullConsistencyCheck( File storeDir,
+            Config tuningConfiguration,
+            ProgressMonitorFactory progressFactory,
+            LogProvider logProvider,
+            boolean verbose )
+                    throws ConsistencyCheckIncompleteException, IOException
+    {
+        return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider,
+                new DefaultFileSystemAbstraction(), verbose );
+    }
+
+    public Result runFullConsistencyCheck( File storeDir,
                                            Config tuningConfiguration,
                                            ProgressMonitorFactory progressFactory,
                                            LogProvider logProvider,
+                                           FileSystemAbstraction fileSystem,
                                            boolean verbose )
                                                    throws ConsistencyCheckIncompleteException, IOException
     {
         Log log = logProvider.getLog( getClass() );
-        DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, tuningConfiguration, PageCacheTracer.NULL, logProvider.getLog( PageCache.class ) );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();

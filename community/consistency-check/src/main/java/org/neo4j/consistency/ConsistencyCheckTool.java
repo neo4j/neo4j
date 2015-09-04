@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -38,31 +39,29 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
+import org.neo4j.legacy.consistency.ConsistencyCheckTool.ExitHandle;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.System.currentTimeMillis;
+
+import static org.neo4j.helpers.Args.jarUsage;
+import static org.neo4j.helpers.Strings.joinAsLines;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ConsistencyCheckTool
 {
-    private static final String RECOVERY = "recovery";
-    private static final String CONFIG = "config";
-    private static final String PROP_OWNER = "propowner";
-    private static final String VERBOSE = "v";
+    // This to easily change this behaviour before/after releases
+    static final boolean EXPERIMENTAL_BY_DEFAULT = true;
 
-    interface ExitHandle
-    {
-        ExitHandle SYSTEM_EXIT = new ExitHandle()
-        {
-            @Override
-            public void pull()
-            {
-                System.exit( 1 );
-            }
-        };
+    static final String RECOVERY = "recovery";
+    static final String CONFIG = "config";
+    static final String PROP_OWNER = "propowner";
+    static final String VERBOSE = "v";
+    static final String EXPERIMENTAL = "experimental";
 
-        void pull();
-    }
+    // Use the ExitHandle from consistency-check-legacy so that ConsistencyCheckToolTest can properly
+    // test everything with -experimental and w/o it.
 
     public static void main( String[] args ) throws IOException
     {
@@ -96,10 +95,20 @@ public class ConsistencyCheckTool
 
     void run( String... args ) throws ToolFailureException, IOException
     {
-        Args arguments = Args.withFlags( RECOVERY, PROP_OWNER, VERBOSE ).parse( args );
+        Args arguments = Args.withFlags( RECOVERY, PROP_OWNER, VERBOSE, EXPERIMENTAL ).parse( args );
+        if ( !isExperimental( arguments ) )
+        {
+            // We want to actually use the legacy checker, so just go ahead and invoke that main instead,
+            // this component depends on the old checker (w/ changed top-level package to not let all
+            // this classes clash with these ones). We keep the legacy checker until we're confident this
+            // new checker works and then we can just go ahead and delete it.
+            runLegacyConsistencyChecker( args );
+            return;
+        }
+
         File storeDir = determineStoreDirectory( arguments );
         Config tuningConfiguration = readTuningConfiguration( arguments );
-        boolean verbose = determineVerbose( arguments );
+        boolean verbose = isVerbose( arguments );
 
         attemptRecoveryOrCheckStateOfLogicalLogs( arguments, storeDir, tuningConfiguration );
 
@@ -107,7 +116,7 @@ public class ConsistencyCheckTool
         try
         {
             consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
-                    ProgressMonitorFactory.textual( System.err ), logProvider, verbose );
+                    ProgressMonitorFactory.textual( System.err ), logProvider, fs, verbose );
         }
         catch ( ConsistencyCheckIncompleteException e )
         {
@@ -115,9 +124,44 @@ public class ConsistencyCheckTool
         }
     }
 
-    private boolean determineVerbose( Args arguments )
+    private void runLegacyConsistencyChecker( String[] args ) throws ToolFailureException, IOException
+    {
+        long time = currentTimeMillis();
+        try
+        {
+            org.neo4j.legacy.consistency.ConsistencyCheckTool legacyTool = new org.neo4j.legacy.consistency.ConsistencyCheckTool(
+                    new org.neo4j.legacy.consistency.ConsistencyCheckService(),
+                    dbFactory,
+                    fs,
+                    systemError,
+                    exitHandle );
+            legacyTool.run( args );
+        }
+        catch ( org.neo4j.legacy.consistency.ConsistencyCheckTool.ToolFailureException e )
+        {
+            throw new ToolFailureException( e.getMessage(), e.getCause() );
+        }
+        finally
+        {
+            long duration = currentTimeMillis() - time;
+            if ( TimeUnit.MILLISECONDS.toMinutes( duration ) >= 20 )
+            {
+                systemError.println( joinAsLines(
+                        "Tip: adding the option  -experimental  to the consistency check tool will",
+                        "use new experimental features, which may result in much reduced time",
+                        "running a consistency check" ) );
+            }
+        }
+    }
+
+    private boolean isVerbose( Args arguments )
     {
         return arguments.getBoolean( VERBOSE, false, true );
+    }
+
+    private boolean isExperimental( Args arguments )
+    {
+        return arguments.getBoolean( EXPERIMENTAL, EXPERIMENTAL_BY_DEFAULT, true );
     }
 
     private void attemptRecoveryOrCheckStateOfLogicalLogs( Args arguments, File storeDir, Config tuningConfiguration )
@@ -187,13 +231,15 @@ public class ConsistencyCheckTool
 
     private String usage()
     {
-        return Strings.joinAsLines(
-                Args.jarUsage( getClass(), "[-propowner] [-recovery] [-config <neo4j.properties>] [-v] <storedir>" ),
+        return joinAsLines(
+                jarUsage( getClass(), "[-propowner] [-recovery] [-config <neo4j.properties>] [-v] [-experimental] <storedir>" ),
                 "WHERE:   -propowner         also check property owner consistency (more time consuming)",
                 "         -recovery          to perform recovery on the store before checking",
                 "         -config <filename> is the location of an optional properties file",
                 "                            containing tuning parameters for the consistency check",
                 "         -v                 produce execution output",
+                "         -experimental      (ADVANCED) runs the new, experimental and potentially much faster",
+                "                            consistency checker (" + EXPERIMENTAL_BY_DEFAULT + " by default)",
                 "         <storedir>         is the path to the store to check"
         );
     }

@@ -20,6 +20,8 @@
 package org.neo4j.helpers;
 
 import org.junit.Test;
+
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -100,5 +102,52 @@ public class ArrayUtilTest
         {
             assertEquals( (Integer)i, result[i] );
         }
+    }
+
+    @Test
+    public void shouldFindIndexOf() throws Exception
+    {
+        // GIVEN
+        Integer[] numbers = ArrayUtil.concat( 0, 1, 2, 3, 4, 5 );
+
+        // WHEN/THEN
+        for ( int i = 0; i < 6; i++ )
+        {
+            assertEquals( i, ArrayUtil.indexOf( numbers, i ) );
+        }
+    }
+
+    @Test
+    public void shouldRemoveItems() throws Exception
+    {
+        // GIVEN
+        Integer[] numbers = ArrayUtil.concat( 0, 1, 2, 3, 4, 5 );
+
+        // WHEN
+        Integer[] trimmed = ArrayUtil.without( numbers, 2 );
+        trimmed = ArrayUtil.without( trimmed, 5 );
+        trimmed = ArrayUtil.without( trimmed, 0 );
+
+        // THEN
+        assertEquals( 3, trimmed.length );
+        assertFalse( ArrayUtil.contains( trimmed, 0 ) );
+        assertTrue( ArrayUtil.contains( trimmed, 1 ) );
+        assertFalse( ArrayUtil.contains( trimmed, 2 ) );
+        assertTrue( ArrayUtil.contains( trimmed, 3 ) );
+        assertTrue( ArrayUtil.contains( trimmed, 4 ) );
+        assertFalse( ArrayUtil.contains( trimmed, 5 ) );
+    }
+
+    @Test
+    public void shouldConcatArrays() throws Exception
+    {
+        // GIVEN
+        Integer[] initial = new Integer[] {0, 1, 2};
+
+        // WHEN
+        Integer[] all = ArrayUtil.concat( initial, 3, 4, 5 );
+
+        // THEN
+        assertArrayEquals( new Integer[] {0, 1, 2, 3, 4, 5}, all );
     }
 }

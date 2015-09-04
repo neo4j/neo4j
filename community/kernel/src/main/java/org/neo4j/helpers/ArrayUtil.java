@@ -246,7 +246,7 @@ public abstract class ArrayUtil
     /**
      * Count missing items in an array.
      * The order of items doesn't matter.
-     * 
+     *
      * @param array Array to examine
      * @param contains Items to look for
      * @param <T> The type of the array items
@@ -268,7 +268,7 @@ public abstract class ArrayUtil
     /**
      * Count items from a different array contained in an array.
      * The order of items doesn't matter.
-     * 
+     *
      * @param array Array to examine
      * @param contains Items to look for
      * @param <T> The type of the array items
@@ -288,7 +288,7 @@ public abstract class ArrayUtil
 
     /**
      * Check if array contains item.
-     * 
+     *
      * @param array Array to examine
      * @param contains Single item to look for
      * @param <T> The type of the array items
@@ -301,7 +301,7 @@ public abstract class ArrayUtil
 
     /**
      * Check if array contains item.
-     * 
+     *
      * @param array Array to examine
      * @param arrayLength Number of items to check, from the start of the array
      * @param contains Single item to look for
@@ -323,7 +323,7 @@ public abstract class ArrayUtil
 
     /**
      * Compare two items for equality; if both are {@code null} they are regarded as equal.
-     * 
+     *
      * @param first First item to compare
      * @param other Other item to compare
      * @param <T> The type of the items
@@ -337,7 +337,7 @@ public abstract class ArrayUtil
     /**
      * Get the union of two arrays.
      * The resulting array will not contain any duplicates.
-     * 
+     *
      * @param first First array
      * @param other Other array
      * @param <T> The type of the arrays
@@ -384,7 +384,7 @@ public abstract class ArrayUtil
 
     /**
      * Convert an array to a String using a custom delimiter.
-     * 
+     *
      * @param items The array to convert
      * @param delimiter The delimiter to use
      * @param <T> The type of the array
@@ -402,7 +402,7 @@ public abstract class ArrayUtil
 
     /**
      * Create new array with all items converted into a new type using a supplied transformer.
-     * 
+     *
      * @param from original array
      * @param transformer transformer that converts an item from the original to the target type
      * @param toClass target type for items
@@ -424,7 +424,7 @@ public abstract class ArrayUtil
 
     /**
      * Create an array from a single first item and additional items following it.
-     * 
+     *
      * @param first the item to put first
      * @param additional the additional items to add to the array
      * @param <T> the type of the items
@@ -441,6 +441,19 @@ public abstract class ArrayUtil
     }
 
     /**
+     * @return a concatenated array where {@code first} as the item at index {@code 0} and the additional
+     * items following it.
+     */
+    public static <T> T[] concat( T[] initial, T... additional )
+    {
+        @SuppressWarnings( "unchecked" )
+        T[] result = (T[]) Array.newInstance( additional.getClass().getComponentType(), initial.length+additional.length );
+        System.arraycopy( initial, 0, result, 0, initial.length );
+        System.arraycopy( additional, 0, result, initial.length, additional.length );
+        return result;
+    }
+
+    /**
      * @param varargs the items
      * @param <T> the type of the items
      * @return the array version of the vararg argument.
@@ -449,6 +462,37 @@ public abstract class ArrayUtil
     public static <T> T[] array( T... varargs )
     {
         return varargs;
+    }
+
+    public static <T> int indexOf( T[] array, T item )
+    {
+        for ( int i = 0; i < array.length; i++ )
+        {
+            if ( array[i].equals( item ) )
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public static <T> T[] without( T[] source, T... toRemove )
+    {
+        T[] result = source.clone();
+        int length = result.length;
+        for ( T candidate : toRemove )
+        {
+            int index = indexOf( result, candidate );
+            if ( index != -1 )
+            {
+                if ( index+1 < length )
+                {   // not the last one
+                    result[index] = result[length-1];
+                }
+                length--;
+            }
+        }
+        return length == result.length ? result : Arrays.copyOf( result, length );
     }
 
     private ArrayUtil()
