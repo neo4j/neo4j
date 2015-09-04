@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
-
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
@@ -36,7 +37,6 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.logging.LogMarker;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -194,6 +194,7 @@ public class StringLoggerTest
             final StringLogger delegate,
             final CappedOperation.Switch<String> capSwitch )
     {
+        capSwitch.reset(); // this is what CappedOperation does, so the switches are designed for a reset() call first.
         return new StringLogger()
         {
             @Override

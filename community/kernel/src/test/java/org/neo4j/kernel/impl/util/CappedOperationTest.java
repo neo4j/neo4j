@@ -19,16 +19,18 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.util.CappedOperation.count;
-import static org.neo4j.kernel.impl.util.CappedOperation.differentItems;
+import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Test;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.impl.util.CappedOperation.Switch;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.kernel.impl.util.CappedOperation.count;
+import static org.neo4j.kernel.impl.util.CappedOperation.differentItems;
 
 public class CappedOperationTest
 {
@@ -78,29 +80,29 @@ public class CappedOperationTest
     {
         // GIVEN
         AtomicInteger triggerCount = new AtomicInteger();
-        FakeClock clock = new FakeClock();
+        FakeClock clock = new FakeClock( 12345678 );
         CappedOperation<String> operation = countingCappedOperations( triggerCount,
                 CappedOperation.time( clock, 1500, TimeUnit.MILLISECONDS ) );
 
         // WHEN/THEN
         // event happens right away
         operation.event( "event" );
-        assertEquals( 0, triggerCount.get() );
+        assertEquals( 1, triggerCount.get() );
 
         // after a little while, but before the threshold
         clock.forward( 1499, TimeUnit.MILLISECONDS );
         operation.event( "event" );
-        assertEquals( 0, triggerCount.get() );
+        assertEquals( 1, triggerCount.get() );
 
         // right after the threshold
         clock.forward( 2, TimeUnit.MILLISECONDS );
         operation.event( "event" );
-        assertEquals( 1, triggerCount.get() );
+        assertEquals( 2, triggerCount.get() );
 
         // after another threshold
         clock.forward( 1600, TimeUnit.MILLISECONDS );
         operation.event( "event" );
-        assertEquals( 2, triggerCount.get() );
+        assertEquals( 3, triggerCount.get() );
     }
 
     private CappedOperation<String> countingCappedOperations( final AtomicInteger triggerCount,
