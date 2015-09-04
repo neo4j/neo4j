@@ -46,7 +46,7 @@
  *     When you no longer have an immediate use for the contents of the file, it can be
  *     "unmapped."
  *     Mapping a file using the
- *     {@link org.neo4j.io.pagecache.PageCache#map(java.io.File, int) map} method gives
+ *     {@link org.neo4j.io.pagecache.PageCache#map(java.io.File, int, java.nio.file.OpenOption...) map} method gives
  *     you a {@link org.neo4j.io.pagecache.PagedFile} object, through which the
  *     contents of the file can be accessed.
  *     Once a file has been mapped with the page cache, it should no longer be accessed
