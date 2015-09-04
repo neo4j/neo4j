@@ -112,17 +112,20 @@ public class ClusterRule extends ExternalResource
     @Override
     public Statement apply( final Statement base, final Description description )
     {
-        return testDirectory.apply( new Statement()
+        Statement testMethod = new Statement()
         {
             @Override
             public void evaluate() throws Throwable
             {
-                ClusterRule.this.storeDirectory = testDirectory.directory( description.getMethodName() );
-                ClusterRule.super.apply( base, description );
+                storeDirectory = testDirectory.directory( description.getMethodName() );
+                base.evaluate();
             }
-        }, description );
-    }
+        };
 
+        Statement testMethodWithBeforeAndAfter = super.apply( testMethod, description );
+
+        return testDirectory.apply( testMethodWithBeforeAndAfter, description );
+    }
 
     @Override
     protected void after()
