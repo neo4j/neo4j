@@ -46,6 +46,8 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def createRelationship(start: Node, end: Node, relType: String): Relationship = singleDbHit(inner.createRelationship(start, end, relType))
 
+  override def createRelationship(start: Long, end: Long, relType: Int): Relationship = singleDbHit(inner.createRelationship(start, end, relType))
+
   def getOrCreateRelTypeId(relTypeName: String): Int = singleDbHit(inner.getOrCreateRelTypeId(relTypeName))
 
   def getLabelsForNode(node: Long): Iterator[Int] = singleDbHit(inner.getLabelsForNode(node))

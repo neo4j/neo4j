@@ -22,16 +22,17 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 import java.util.concurrent.ThreadLocalRandom
 
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ReadsAllNodes, Effects, ReadsRelationships}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsNodes, ReadsRelationships}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
-import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, InternalException}
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, SemanticDirection}
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.helpers.collection.PrefetchingIterator
 
 import scala.collection.JavaConverters._
-import scala.collection.mutable
+import scala.collection.{Map, mutable}
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -43,22 +44,18 @@ import scala.collection.mutable.ArrayBuffer
  *
  * This pipe also caches relationship information between nodes for the duration of the query
  */
-case class ExpandIntoPipe(source: Pipe,
-                          fromName: String,
-                          relName: String,
-                          toName: String,
-                          dir: SemanticDirection,
-                          lazyTypes: LazyTypes)(val estimatedCardinality: Option[Double] = None)
-                         (implicit pipeMonitor: PipeMonitor)
+case class MergeIntoPipe(source: Pipe,
+                         fromName: String,
+                         relName: String,
+                         toName: String,
+                         dir: SemanticDirection,
+                         typ: String, props: Map[String, Expression])(val estimatedCardinality: Option[Double] = None)
+                        (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
   self =>
 
-  private final val CACHE_SIZE = 100000
-
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    //cache of known connected nodes
-    val relCache = new RelationshipsCache(CACHE_SIZE)
-
+    val typeId = state.query.getOrCreateRelTypeId(typ)
     input.flatMap {
       row =>
         val fromNode = getRowNode(row, fromName)
@@ -66,17 +63,19 @@ case class ExpandIntoPipe(source: Pipe,
           case fromNode: Node =>
             val toNode = getRowNode(row, toName)
 
-            if (toNode == null) Iterator.empty
+            if (toNode == null) throw new RuntimeException("TODO")
             else {
-              val relationships = relCache.get(fromNode, toNode)
-                .getOrElse(findRelationships(state.query, fromNode, toNode, relCache))
+              val relationships = findRelationships(state.query, fromNode, toNode, typeId)
 
-              if (relationships.isEmpty) Iterator.empty
+              if (relationships.isEmpty) {
+                val r = state.query.createRelationship(fromNode.getId, toNode.getId, typeId)
+                Some(row.newWith2(relName, r, toName, toNode))
+              }
               else relationships.map(row.newWith2(relName, _, toName, toNode))
             }
 
           case null =>
-            Iterator.empty
+            throw new RuntimeException("TODO")
         }
     }
   }
@@ -84,9 +83,7 @@ case class ExpandIntoPipe(source: Pipe,
   /**
    * Finds all relationships connecting fromNode and toNode.
    */
-  private def findRelationships(query: QueryContext, fromNode: Node, toNode: Node,
-                                relCache: RelationshipsCache): Iterator[Relationship] = {
-    val relTypes = lazyTypes.types(query)
+  private def findRelationships(query: QueryContext, fromNode: Node, toNode: Node, typeId: Int): Iterator[Relationship] = {
 
     val fromNodeIsDense = query.nodeIsDense(fromNode.getId)
     val toNodeIsDense = query.nodeIsDense(toNode.getId)
@@ -94,32 +91,34 @@ case class ExpandIntoPipe(source: Pipe,
     //if both nodes are dense, start from the one with the lesser degree
     if (fromNodeIsDense && toNodeIsDense) {
       //check degree and iterate from the node with smaller degree
-      val fromDegree = getDegree(fromNode, relTypes, dir, query)
+      val fromDegree = query.nodeGetDegree(fromNode.getId, dir, typeId)
       if (fromDegree == 0) {
         return Iterator.empty
       }
 
-      val toDegree = getDegree(toNode, relTypes, dir.reversed, query)
+      val toDegree = getDegree(toNode, typeId, dir.reversed, query)
       if (toDegree == 0) {
         return Iterator.empty
       }
 
-      relIterator(query, fromNode, toNode, fromDegree < toDegree, relTypes, relCache)
+      relIterator(query, fromNode, toNode, fromDegree < toDegree, typeId)
     }
     // iterate from a non-dense node
-    else if (toNodeIsDense)
-      relIterator(query, fromNode, toNode, preserveDirection = true, relTypes, relCache)
     else if (fromNodeIsDense)
-      relIterator(query, fromNode, toNode, preserveDirection = false, relTypes, relCache)
-    //both nodes are non-dense, choose a random starting point
+      relIterator(query, fromNode, toNode, preserveDirection = false, typeId)
     else
-      relIterator(query, fromNode, toNode, ThreadLocalRandom.current().nextBoolean(), relTypes, relCache)
+      relIterator(query, fromNode, toNode, preserveDirection = true, typeId)
   }
 
-  private def relIterator(query: QueryContext, fromNode: Node,  toNode: Node, preserveDirection: Boolean,
-                          relTypes: Option[Seq[Int]], relCache: RelationshipsCache) = {
-    val (start, localDirection, end) = if(preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reversed, fromNode)
-    val relationships = query.getRelationshipsForIds(start, localDirection, relTypes)
+  private def relIterator(query: QueryContext, fromNode: Node, toNode: Node, preserveDirection: Boolean,
+                          typeId: Int) = {
+    val (start, localDirection, end) = if (preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reversed, fromNode)
+    val relationships = query.getRelationshipsForIds(start, localDirection, Some(Seq(typeId)))
+    println("apa")
+    println(start)
+    println(localDirection)
+    println(typeId)
+
     new PrefetchingIterator[Relationship] {
       //we do not expect two nodes to have many connecting relationships
       val connectedRelationships = new ArrayBuffer[Relationship](2)
@@ -133,37 +132,30 @@ case class ExpandIntoPipe(source: Pipe,
             return rel
           }
         }
-        relCache.put(fromNode, toNode, connectedRelationships)
         null
       }
     }.asScala
   }
 
-  private def getDegree(node: Node, relTypes: Option[Seq[Int]], direction: SemanticDirection, query: QueryContext) = {
-    relTypes.map {
-      case rels if rels.isEmpty   => query.nodeGetDegree(node.getId, direction)
-      case rels if rels.size == 1 => query.nodeGetDegree(node.getId, direction, rels.head)
-      case rels                   => rels.foldLeft(0)(
-        (acc, rel)                => acc + query.nodeGetDegree(node.getId, direction, rel)
-      )
-    }.getOrElse(query.nodeGetDegree(node.getId, direction))
+  private def getDegree(node: Node, typeId: Int, direction: SemanticDirection, query: QueryContext) = {
+    query.nodeGetDegree(node.getId, direction, typeId)
   }
 
   @inline
   private def getRowNode(row: ExecutionContext, col: String): Node = {
     row.getOrElse(col, throw new InternalException(s"Expected to find a node at $col but found nothing")) match {
       case n: Node => n
-      case null    => null
-      case value   => throw new InternalException(s"Expected to find a node at $col but found $value instead")
+      case null => null
+      case value => throw new InternalException(s"Expected to find a node at $col but found $value instead")
     }
   }
 
   def planDescriptionWithoutCardinality =
-    source.planDescription.andThen(this.id, "Expand(Into)", identifiers, ExpandExpression(fromName, relName, lazyTypes.names, toName, dir))
+    source.planDescription.andThen(this.id, "Merge(Into)", identifiers, ExpandExpression(fromName, relName, Seq(typ), toName, dir))
 
   val symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 
-  override def localEffects = Effects(ReadsAllNodes, ReadsRelationships)
+  override def localEffects = Effects(ReadsNodes, ReadsRelationships)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
