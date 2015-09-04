@@ -123,7 +123,7 @@ public class PackStream
     public static final byte MAP_8 = (byte) 0xD8;
     public static final byte MAP_16 = (byte) 0xD9;
     public static final byte MAP_32 = (byte) 0xDA;
-    public static final byte RESERVED_DB = (byte) 0xDB;
+    public static final byte MAP_STREAM = (byte) 0xDB;
     public static final byte STRUCT_8 = (byte) 0xDC;
     public static final byte STRUCT_16 = (byte) 0xDD;
     public static final byte RESERVED_DE = (byte) 0xDE;
@@ -144,6 +144,8 @@ public class PackStream
     public static final byte RESERVED_ED = (byte) 0xED;
     public static final byte RESERVED_EE = (byte) 0xEE;
     public static final byte RESERVED_EF = (byte) 0xEF;
+
+    public static final long UNKNOWN_SIZE = -1;
 
     private static final long PLUS_2_TO_THE_31 = 2147483648L;
     private static final long PLUS_2_TO_THE_15 = 32768L;
@@ -443,6 +445,16 @@ public class PackStream
             }
         }
 
+        public void packMapStreamHeader() throws IOException
+        {
+            out.writeByte( MAP_STREAM );
+        }
+
+        public void packMapStreamFooter() throws IOException
+        {
+            out.writeByte( NULL );
+        }
+
         public void packStructHeader( int size, byte signature ) throws IOException
         {
             if ( size < 0x10 )
@@ -542,6 +554,8 @@ public class PackStream
                 return unpackUINT16();
             case MAP_32:
                 return unpackUINT32();
+            case MAP_STREAM:
+                return UNKNOWN_SIZE;
             default:
                 throw new Unexpected( PackType.MAP, markerByte);
             }
@@ -855,6 +869,7 @@ public class PackStream
         case MAP_8:
         case MAP_16:
         case MAP_32:
+        case MAP_STREAM:
             return PackType.MAP;
         case STRUCT_8:
         case STRUCT_16:

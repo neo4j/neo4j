@@ -496,6 +496,35 @@ public class PackStreamTest
     }
 
     @Test
+    public void testCanPackAndUnpackMapStream() throws Throwable
+    {
+        // Given
+        Machine machine = new Machine();
+
+        // When
+        PackStream.Packer packer = machine.packer();
+        packer.packMapStreamHeader();
+        packer.pack( "one" );
+        packer.pack( 1 );
+        packer.pack( "two" );
+        packer.pack( 2 );
+        packer.packMapStreamFooter();
+        packer.flush();
+        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
+
+        // Then
+
+        assertThat( unpacker.unpackMapHeader(), equalTo( PackStream.UNKNOWN_SIZE ) );
+
+        assertThat( unpacker.unpackText(), equalTo( "one" ) );
+        assertThat( unpacker.unpackLong(), equalTo( 1L ) );
+        assertThat( unpacker.unpackText(), equalTo( "two" ) );
+        assertThat( unpacker.unpackLong(), equalTo( 2L ) );
+
+        unpacker.unpackNull();
+    }
+
+    @Test
     public void testCanPackAndUnpackStruct() throws Throwable
     {
         // Given

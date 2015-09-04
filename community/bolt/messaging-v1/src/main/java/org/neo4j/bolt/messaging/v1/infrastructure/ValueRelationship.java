@@ -60,7 +60,7 @@ public class ValueRelationship extends ValuePropertyContainer implements Relatio
         long endNodeId = unpacker.unpackNodeIdentity();
         String relTypeName = unpacker.unpackText();
 
-        Map<String, Object> props = unpacker.unpackProperties();
+        Map<String, Object> props = unpacker.unpackMap();
 
         RelationshipType relType = DynamicRelationshipType.withName( relTypeName );
 

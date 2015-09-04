@@ -20,6 +20,7 @@
 package org.neo4j.bolt.messaging.v1;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.junit.Test;
 
@@ -56,6 +57,27 @@ public class Neo4jPackTest
         PackedInputArray input = new PackedInputArray( bytes );
         Neo4jPack.Unpacker unpacker = new Neo4jPack.Unpacker( input );
         return unpacker.unpack();
+    }
+
+    @Test
+    public void shouldBeAbleToPackAndUnpackMapStream() throws IOException
+    {
+        // Given
+        PackedOutputArray output = new PackedOutputArray();
+        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        packer.packMapStreamHeader();
+        for ( Map.Entry<String, Object> entry : ALICE.getAllProperties().entrySet() )
+        {
+            packer.pack( entry.getKey() );
+            packer.pack( entry.getValue() );
+        }
+        packer.packMapStreamFooter();
+        Object unpacked = unpacked( output.bytes() );
+
+        // Then
+        assertThat( unpacked, instanceOf( Map.class ) );
+        Map<String, Object> unpackedMap = (Map<String, Object>) unpacked;
+        assertThat( unpackedMap, equalTo( ALICE.getAllProperties() ) );
     }
 
     @Test

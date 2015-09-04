@@ -41,6 +41,8 @@ import org.neo4j.packstream.PackOutput;
 import org.neo4j.packstream.PackStream;
 import org.neo4j.packstream.PackType;
 
+import static org.neo4j.packstream.PackStream.UNKNOWN_SIZE;
+
 /**
  * Extended PackStream packer and unpacker classes for working
  * with Neo4j-specific data types, represented as structures.
@@ -277,21 +279,7 @@ public class Neo4jPack
                     return vals;
                 }
                 case MAP:
-                {
-                    int size = (int) unpackMapHeader();
-                    if ( size == 0 )
-                    {
-                        return Collections.EMPTY_MAP;
-                    }
-                    Map<String, Object> map = new HashMap<>( size, 1 );
-                    for ( int j = 0; j < size; j++ )
-                    {
-                        String key = unpackText();
-                        Object val = unpack();
-                        map.put( key, val );
-                    }
-                    return map;
-                }
+                    return unpackMap();
                 case STRUCT:
                 {
                     unpackStructHeader();
@@ -325,39 +313,42 @@ public class Neo4jPack
             }
         }
 
-        public Map<String, Object> unpackRawMap() throws IOException
+        public Map<String, Object> unpackMap() throws IOException
         {
             int size = (int) unpackMapHeader();
             if ( size == 0 )
             {
-                return Collections.emptyMap();
+                return EMPTY_PROPERTY_MAP;
             }
-            Map<String, Object> map = new HashMap<>( size, 1 );
-            for ( int i = 0; i < size; i++ )
-            {
-                String key = unpackText();
-                map.put( key, unpack() );
-            }
-            return map;
-        }
-        // TODO: combine these
-        public Map<String, Object> unpackProperties() throws IOException
-        {
-            int numProps = (int) unpackMapHeader();
             Map<String, Object> map;
-            if ( numProps > 0 )
+            if ( size == UNKNOWN_SIZE ) {
+                map = new HashMap<>();
+                boolean more = true;
+                while ( more )
+                {
+                    PackType keyType = peekNextType();
+                    if ( keyType == PackType.TEXT )
+                    {
+                        String key = unpackText();
+                        Object val = unpack();
+                        map.put( key, val );
+                    }
+                    else
+                    {
+                        unpack();
+                        more = false;
+                    }
+                }
+            }
+            else
             {
-                map = new HashMap<>( numProps, 1 );
-                for ( int j = 0; j < numProps; j++ )
+                map = new HashMap<>( size, 1 );
+                for ( int j = 0; j < size; j++ )
                 {
                     String key = unpackText();
                     Object val = unpack();
                     map.put( key, val );
                 }
-            }
-            else
-            {
-                map = EMPTY_PROPERTY_MAP;
             }
             return map;
         }

@@ -282,14 +282,14 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private <E extends Exception> void unpackSuccessMessage( MessageHandler<E> output )
                 throws E, IOException
         {
-            Map<String,Object> map = unpacker.unpackRawMap();
+            Map<String,Object> map = unpacker.unpackMap();
             output.handleSuccessMessage( map );
         }
 
         private <E extends Exception> void unpackFailureMessage( MessageHandler<E> output )
                 throws E, IOException
         {
-            Map<String,Object> map = unpacker.unpackRawMap();
+            Map<String,Object> map = unpacker.unpackMap();
 
             String codeStr = map.containsKey( "code" ) ?
                     (String) map.get( "code" ) :
@@ -324,7 +324,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 throws E, IOException
         {
             String statement = unpacker.unpackText();
-            Map<String,Object> params = unpacker.unpackRawMap();
+            Map<String,Object> params = unpacker.unpackMap();
             output.handleRunMessage( statement, params );
         }
 
