@@ -40,7 +40,7 @@ public final class SchemaHelper
 
     public static void createIndex( GraphDatabaseService db, String label, String property )
     {
-        db.execute( String.format( "CREATE INDEX ON :%s(%s)", label, property ) );
+        db.execute( String.format( "CREATE INDEX ON :`%s`(`%s`)", label, property ) );
         awaitIndexes( db );
     }
 
@@ -51,7 +51,7 @@ public final class SchemaHelper
 
     public static void createUniquenessConstraint( GraphDatabaseService db, String label, String property )
     {
-        db.execute( String.format( "CREATE CONSTRAINT ON (n:%s) ASSERT n.%s IS UNIQUE", label, property ) );
+        db.execute( String.format( "CREATE CONSTRAINT ON (n:`%s`) ASSERT n.`%s` IS UNIQUE", label, property ) );
         awaitIndexes( db );
     }
 
@@ -62,7 +62,7 @@ public final class SchemaHelper
 
     public static void createNodePropertyExistenceConstraint( GraphDatabaseService db, String label, String property )
     {
-        db.execute( String.format( "CREATE CONSTRAINT ON (n:%s) ASSERT exists(n.%s)", label, property ) );
+        db.execute( String.format( "CREATE CONSTRAINT ON (n:`%s`) ASSERT exists(n.`%s`)", label, property ) );
     }
 
     public static void createRelPropertyExistenceConstraint( GraphDatabaseService db, RelationshipType type,
@@ -73,7 +73,7 @@ public final class SchemaHelper
 
     public static void createRelPropertyExistenceConstraint( GraphDatabaseService db, String type, String property )
     {
-        db.execute( String.format( "CREATE CONSTRAINT ON ()-[r:%s]-() ASSERT exists(r.%s)", type, property ) );
+        db.execute( String.format( "CREATE CONSTRAINT ON ()-[r:`%s`]-() ASSERT exists(r.`%s`)", type, property ) );
     }
 
     private static void awaitIndexes( GraphDatabaseService db )
