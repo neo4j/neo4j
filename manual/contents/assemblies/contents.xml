@@ -29,7 +29,7 @@
   <fileSets>
     <fileSet>
       <directory>target</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <includes>
         <include>src/**</include>
         <include>sources/**</include>
@@ -41,14 +41,14 @@
     </fileSet>
     <fileSet>
       <directory>target</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <includes>
         <include>docs/**</include>
       </includes>
     </fileSet>
     <fileSet>
       <directory>target/src</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <includes>
         <include>js/**</include>
       </includes>
