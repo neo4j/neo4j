@@ -1,26 +1,21 @@
-NEO4J-ARBITER(1)
-================
+= NEO4J-ARBITER(1)
 :author: The Neo4j Team
 
-NAME
-----
+== NAME
 neo4j-arbiter - Neo4j Arbiter for High-Availability clusters
 
 
 [[neo4j-arbiter-manpage]]
-SYNOPSIS
---------
+== SYNOPSIS
 
 *neo4j-arbiter* <command>
 
 [[neo4j-arbiter-manpage-description]]
-DESCRIPTION
------------
+== DESCRIPTION
 Neo4j Arbiter is a service that can help break ties in Neo4j clusters that have an even number of cluster members.
 
 [[neo4j-arbiter-manpage-commands]]
-COMMANDS
---------
+== COMMANDS
 
 *console*::
   Start the server as an application, running as a foreground process. Stop the server using `CTRL-C`.
@@ -44,8 +39,7 @@ COMMANDS
   Uninstalls the system service
 
 [[neo4j-arbiter-manpage-files]]
-FILES
------
+== FILES
 
 *conf/arbiter.cfg*::
   Arbiter server configuration.

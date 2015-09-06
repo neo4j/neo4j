@@ -1,20 +1,16 @@
-NEO4J-BACKUP(1)
-===============
+= NEO4J-BACKUP(1)
 :author: The Neo4j Team
 
-NAME
-----
+== NAME
 neo4j-backup - Neo4j Backup Tool
 
 [[neo4j-backup-manpage]]
-SYNOPSIS
---------
+== SYNOPSIS
 
 *neo4j-backup* -host <host> [-port <port>] -to target_directory
 
 [[neo4j-backup-manpage-description]]
-DESCRIPTION
------------
+== DESCRIPTION
 
 A tool to perform live backups over the network from a running Neo4j graph database onto a local filesystem.
 Backups can be either full or incremental.
@@ -22,21 +18,19 @@ The first backup must be a full backup, after that incremental backups can be pe
 
 The source(s) are given as host:port pairs, the target is a filesystem location.
 
-BACKUP TYPE
------------
+== BACKUP TYPE
 
 *-full*::
   copies the entire database to a directory.
 
 *-incremental*::
   copies the changes that have taken place since the last full or
-incremental backup to an existing backup store.
+  incremental backup to an existing backup store.
 
 The backup tool will automatically detect whether it needs to do a full or an incremental backup.
 
 [[neo4j-backup-manpage-source-address]]
-SOURCE ADDRESS
-----------
+== SOURCE ADDRESS
 
 Backup sources are given in the following format:
 
@@ -49,22 +43,19 @@ Backup sources are given in the following format:
   In single mode, the port of a source database backup service; in HA mode, the port of a cluster instance. If not given, the default value `6362` will be used for single mode, `5001` for HA.
 
 [[neo4j-backup-manpage-usage-important]]
-IMPORTANT
----------
+== IMPORTANT
 
 Backups can only be performed on databases which have the configuration parameter *`enable_online_backup=true`* set.
 That will make the backup service available on the default port (`6362`).
 To enable the backup service on a different port use for example *`enable_online_backup=port=9999`* instead.
 
 [[neo4j-backup-manpage-usage-windows]]
-Usage - Windows
----------------
+== Usage - Windows
 
 The *`Neo4jBackup.bat`* script is used in the same way.
 
 [[neo4j-backup-manpage-examples]]
-EXAMPLES
---------
+== EXAMPLES
 
 [source,shell]
 ----
@@ -86,8 +77,7 @@ neo4j-backup -host freja -port 9999 -to /mnt/backup/neo4j-backup
 ----
 
 [[neo4j-backup-manpage-restore]]
-RESTORE FROM BACKUP
--------------------
+== RESTORE FROM BACKUP
 
 The Neo4j backups are fully functional databases.
 To use a backup, replace your database directory with the backup.
