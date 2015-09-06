@@ -1,6 +1,5 @@
 [[deployment]]
-Installation & Deployment
-=========================
+= Installation & Deployment
 
 Neo4j is accessed as a standalone server, either directly through a REST interface or through a language-specific driver.
 
@@ -19,7 +18,7 @@ include::{importdir}/neo4j-server-docs-jar/ops/server-installation.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-server-docs-jar/ops/server-cloud.asciidoc[]
+include::{importdir}/neo4j-server-docs-jar/ops/powershell.asciidoc[]
 
 :leveloffset: 2
 
