@@ -190,24 +190,32 @@ public abstract class GraphDatabaseSettings
                   "for seconds, and 'ms' for milliseconds." )
     public static final Setting<Long> check_point_interval_time = setting( "dbms.checkpoint.interval.time", DURATION, "5m" );
 
-    // Indexing
+    // Auto Indexing
     @Description("Controls the auto indexing feature for nodes. Setting it to `false` shuts it down, " +
             "while `true` enables it by default for properties "
             + "listed in the node_keys_indexable setting.")
+    @Internal
+    @Deprecated
     public static final Setting<Boolean> node_auto_indexing = setting("node_auto_indexing", BOOLEAN, FALSE);
 
     @Description("A list of property names (comma separated) that will be indexed by default. This applies to _nodes_ " +
             "only.")
+    @Internal
+    @Deprecated
     public static final Setting<String> node_keys_indexable = setting("node_keys_indexable", STRING, NO_DEFAULT, illegalValueMessage( "must be a comma-separated list of keys to be indexed", matches( ANY ) ) );
 
     @Description("Controls the auto indexing feature for relationships. Setting it to `false` shuts it down, " +
             "while `true` enables it by default for properties "
             + "listed in the relationship_keys_indexable setting.")
+    @Internal
+    @Deprecated
     public static final Setting<Boolean> relationship_auto_indexing =
             setting("relationship_auto_indexing", BOOLEAN, FALSE );
 
     @Description("A list of property names (comma separated) that will be indexed by default. This applies to " +
             "_relationships_ only." )
+    @Internal
+    @Deprecated
     public static final Setting<String> relationship_keys_indexable = setting("relationship_keys_indexable", STRING, NO_DEFAULT, illegalValueMessage( "must be a comma-separated list of keys to be indexed", matches( ANY ) ) );
 
     // Index sampling

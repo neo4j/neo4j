@@ -42,12 +42,6 @@ The value of the property to set
 .PARAMETER Force
 Create the configuration file if it does not exist
 
-
-.EXAMPLE
-'C:\Neo4j\neo4j-community' | Set-Neo4jSetting -ConfigurationFile 'neo4j.properties' -Name 'node_auto_indexing' -Value 'false' 
-
-Set node_auto_indexing=false in the neo4j.properties file for the Neo4j installation at C:\Neo4j\neo4j-community
-
 .EXAMPLE
 Import-CSV -Path 'C:\settings.csv' | Set-Neo4jSetting -Force
 
@@ -73,11 +67,11 @@ Function Set-Neo4jSetting
   param (
     [Parameter(Mandatory=$false,ValueFromPipeline=$true,ParameterSetName='ByServerObject')]
     [object]$Neo4jServer = ''
-  
+
     ,[Parameter(Mandatory=$true,ValueFromPipelineByPropertyName=$true,ParameterSetName='BySettingObject')]
     [alias('Home')]
     [string]$Neo4jHome
-    
+
     ,[Parameter(Mandatory=$true,ParameterSetName='ByServerObject')]
     [Parameter(Mandatory=$true,ValueFromPipelineByPropertyName=$true,ParameterSetName='BySettingObject')]
     [alias('File')]
@@ -91,11 +85,11 @@ Function Set-Neo4jSetting
     ,[Parameter(Mandatory=$true,ParameterSetName='ByServerObject')]
     [Parameter(Mandatory=$true,ValueFromPipelineByPropertyName=$true,ParameterSetName='BySettingObject')]
     [string[]]$Value
-    
+
     ,[Parameter(Mandatory=$false)]
     [switch]$Force = $false
   )
-  
+
   Begin
   {
   }
@@ -118,7 +112,7 @@ Function Set-Neo4jSetting
               return
             }
             $thisServer = $Neo4jServer
-          }      
+          }
           default
           {
             $thisServer = Get-Neo4jServer -Neo4jHome $Neo4jServer
@@ -163,7 +157,7 @@ Function Set-Neo4jSetting
       $line = $originalLine
       $misc = $line.IndexOf('#')
       if ($misc -ge 0) { $line = $line.SubString(0,$misc) }
-  
+
       if ($matches -ne $null) { $matches.Clear() }
       if ($line -match "^$($Name)=(.+)`$")
       {
@@ -181,7 +175,7 @@ Function Set-Neo4jSetting
       if ($originalLine -ne "donotwrite") { Write-Output $originalLine }
     })
     $valuesSet = ($valuesSet -join '=') + '=' # Converting the array to string is required for PS 2.0 compatibility
-    
+
     # Check if any values were not written and append if not
     $Value | ForEach-Object -Process `
     {
@@ -192,15 +186,15 @@ Function Set-Neo4jSetting
         $newContent += "$($Name)=$($_)"; $settingChanged = $true
       }
     }
-    
+
     # Modify the settings file if needed
     if ($settingChanged)
     {
       if ($PSCmdlet.ShouldProcess( ("Item: $($filePath) Setting: $($Name) Value: $($Value)", 'Write configuration file')))
-      {  
+      {
         Set-Content -Path "$filePath" -Encoding ASCII -Value $newContent -Force:$Force -Confirm:$false | Out-Null
-      }  
-    }  
+      }
+    }
     $properties = @{
       'Name' = $Name;
       'Value' = $null;
@@ -219,7 +213,7 @@ Function Set-Neo4jSetting
     }
     Write-Output (New-Object -TypeName PSCustomObject -Property $properties)
   }
-  
+
   End
   {
   }

@@ -43,7 +43,7 @@ There are two ways to start the shell, either by connecting to a remote shell se
 To start the shell and connect to a running server, run:
 [source,plain]
 ----
-neo4j-shell 
+neo4j-shell
 ----
 
 Alternatively supply +-port+ and +-name+ options depending on how the remote shell server was enabled.
@@ -380,13 +380,6 @@ include::shell/sample-session.asciidoc[]
 This example is creating a graph of the characters in the Matrix via the shell and then executing Cypher queries against it:
 
 include::shell/shell-matrix-example-graph.asciidoc[]
-
-Neo4j is configured for autoindexing, in this case with the following in the Neo4j configuration file:
-
-[source]
-----
-include::../autoindex.properties[]
-----
 
 The following is a sample shell session creating the Matrix graph and querying it.
 

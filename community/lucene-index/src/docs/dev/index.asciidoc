@@ -4,7 +4,7 @@ Legacy Indexing
 
 NOTE: This is not the same as <<graphdb-neo4j-schema, indexes defined in the schema>>, the documentation below is for the legacy indexing in Neo4j.
 
-This chapter focuses on how to use the Manual Indexes and Autoindexes.
+This chapter focuses on how to use the Manual Indexes.
 As of Neo4j 2.0, this is not  the favored method of indexing data in Neo4j, instead we recommend defining indexes in the database schema.
 
 However, support for legacy indexes remains, because certain features, such as uniqueness constraints, are not yet handled by the new indexes.
@@ -293,8 +293,8 @@ The +provider+ configuration key is interpreted by Neo4j, but any other configur
   +fulltext+ uses a white-space tokenizer in its analyzer.
 | to_lower_case | `true`, `false` | This parameter goes together with +type+: +fulltext+ and converts values to lower case during both additions and querying, making the index case insensitive. Defaults to `true`.
 | analyzer | the full class name of an {lucene-api-base-uri}/org/apache/lucene/analysis/Analyzer.html[Analyzer] | Overrides the +type+ so that a custom analyzer can be used.
-  Note: +to_lower_case+ still affects lowercasing of string queries. 
-  If the custom analyzer uppercases the indexed tokens, string queries will not match as expected. 
+  Note: +to_lower_case+ still affects lowercasing of string queries.
+  If the custom analyzer uppercases the indexed tokens, string queries will not match as expected.
 |========================================================
 
 
@@ -427,79 +427,3 @@ tag=cache
 
 CAUTION: This setting is not persisted after shutting down the database.
   This means: set this value after each startup of the database if you want to keep it.
-
-[[auto-indexing]]
-== Automatic Indexing ==
-
-Neo4j provides a single index for nodes and one for relationships in each database that automatically follow property values as they are added, deleted and changed on database primitives.
-This functionality is called _auto indexing_ and is controlled both from the database configuration Map and through its own API.
-
-[[auto-indexing-config]]
-=== Configuration ===
-
-By default Auto Indexing is off for both Nodes and Relationships.
-To configure this in the _conf/neo4j.properties_ file, use the configuration keys +node_auto_indexing+ and
-+relationship_auto_indexing+. For embedded mode, use the configuration options
-+GraphDatabaseSettings.node_auto_indexing+ and +GraphDatabaseSettings.relationship_auto_indexing+.
-In both cases, set the value to +true+.
-This will enable automatic indexing on startup.
-Just note that we're not done yet, see below!
-
-To actually auto index something, you have to set which properties should get indexed.
-You do this by listing the property keys to index on.
-In the configuration file, use the +node_keys_indexable+ and +relationship_keys_indexable+ configuration keys.
-When using embedded mode, use the +GraphDatabaseSettings.node_keys_indexable+ and +GraphDatabaseSettings.relationship_keys_indexable+ configuration keys.
-In all cases, the value should be a comma separated list of property keys to index on.
-
-When coding in Java, it's done like this:
-
-[snippet,java]
-----
-component=neo4j-lucene-index
-source=examples/AutoIndexerExampleTests.java
-tag=ConfigAutoIndex
-classifier=test-sources
-----
-
-[[auto-indexing-api]]
-=== Search ===
-The usefulness of the auto indexing functionality comes of course from the ability to actually query the index and retrieve results.
-To that end, you can acquire a +ReadableIndex+ object from the +AutoIndexer+ that exposes all the query and get methods of a full
-link:javadocs/org/neo4j/graphdb/index/Index.html[+Index+] with exactly the same functionality.
-Continuing from the previous example, accessing the index is done like this:
-
-[snippet,java]
-----
-component=neo4j-lucene-index
-source=examples/AutoIndexerExampleTests.java
-tag=APIReadAutoIndex
-classifier=test-sources
-----
-
-[[auto-indexing-config-api]]
-=== Runtime Configuration ===
-
-The same options that are available during database creation via the configuration can also be set during runtime via the +AutoIndexer+ API.
-
-Gaining access to the +AutoIndexer+ API and adding two +Node+ and one +Relationship+ properties to auto index is done like so:
-
-[snippet,java]
-----
-component=neo4j-lucene-index
-source=examples/AutoIndexerExampleTests.java
-tag=APIAutoIndexer
-classifier=test-sources
-----
-
-[NOTE]
-Parameters to the AutoIndexers passed through the Configuration and settings made through the API are cumulative.
-So you can set some beforehand known settings, do runtime checks to augment the initial configuration and then enable the desired auto indexers -
-the final configuration is the same regardless of the method used to reach it.
-
-
-[[auto-indexing-update-removal]]
-=== Updating the Automatic Index ===
-Updates to the auto indexed properties happen of course automatically as you update them. Removal of properties from the auto index similarly
-happens when you remove the actual property, but only while the property is auto indexed. In particular, if you had configured your database
-to auto index a property, but later removed it from the configuration, deleting that property will not remove it from the auto index.
-
