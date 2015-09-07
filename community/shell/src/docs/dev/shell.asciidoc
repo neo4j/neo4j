@@ -20,7 +20,7 @@ When used together with a Neo4j server, simply issue the following at the comman
 ./bin/neo4j-shell
 ----
 
-Under windows, the command is named `Neo4jShell.bat`.
+For help with running shell using Windows PowerShell, see <<powershell>>.
 
 For the full list of options, see the reference in the <<shell-manpage,Shell manual page>>.
 

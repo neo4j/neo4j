@@ -84,12 +84,13 @@ We also need to reference that id space in our relationships file i.e. `START_ID
 [[import-tool-usage]]
 == Command line usage
 
-=== Command
+=== Linux
 
-Under Unix/Linux/OSX, the command is named `neo4j-import`.
-Under Windows, the command is named `Neo4jImport.bat`.
+Under Unix/Linux/OSX, the command is named `neo4j-import`. Depending on the installation type, the tool is either available globally, or used by executing `./bin/neo4j-import` from inside the installation directory.
 
-Depending on the installation type, the tool is either available globally, or used by executing `./bin/neo4j-import` or `bin\Neo4jImport.bat` from inside the installation directory.
+=== Windows
+
+For help with running the import tool using Windows PowerShell, see <<powershell>>.
 
 [[import-tool-options]]
 === Options

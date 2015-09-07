@@ -18,6 +18,8 @@ The first backup must be a full backup, after that incremental backups can be pe
 
 The source(s) are given as host:port pairs, the target is a filesystem location.
 
+For information regarding Windows, see http://neo4j.com/docs/stable/powershell.html.
+
 == BACKUP TYPE
 
 *-full*::
@@ -48,11 +50,6 @@ Backup sources are given in the following format:
 Backups can only be performed on databases which have the configuration parameter *`enable_online_backup=true`* set.
 That will make the backup service available on the default port (`6362`).
 To enable the backup service on a different port use for example *`enable_online_backup=port=9999`* instead.
-
-[[neo4j-backup-manpage-usage-windows]]
-== Usage - Windows
-
-The *`Neo4jBackup.bat`* script is used in the same way.
 
 [[neo4j-backup-manpage-examples]]
 == EXAMPLES
