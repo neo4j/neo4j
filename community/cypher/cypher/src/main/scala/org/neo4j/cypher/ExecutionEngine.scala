@@ -140,7 +140,6 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
   protected def planQuery(queryText: String): (PreparedPlanExecution, TransactionInfo) = {
     val phaseTracer = compilationTracer.compileQuery(queryText)
     try {
-      log.debug(queryText)
 
       val preParsedQuery = preParseQuery(queryText)
       val executionMode = preParsedQuery.executionMode

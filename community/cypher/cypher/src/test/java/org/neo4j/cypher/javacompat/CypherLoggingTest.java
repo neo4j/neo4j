@@ -33,7 +33,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 public class CypherLoggingTest
 {
     @Test
-    public void shouldLogQueriesUsingDebug() throws Exception
+    public void shouldNotLogQueries() throws Exception
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -44,11 +44,8 @@ public class CypherLoggingTest
         engine.execute( "MATCH n RETURN n" );
 
         // then
-        LogMatcherBuilder match = inLog( org.neo4j.cypher.ExecutionEngine.class );
-        logProvider.assertExactly(
-                match.debug( "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" ),
-                match.debug( "MATCH n RETURN n" )
-        );
+        inLog( org.neo4j.cypher.ExecutionEngine.class );
+        logProvider.assertNoLoggingOccurred();
     }
 
     private ExecutionEngine engineWithLogger( LogProvider logProvider ) throws IOException
