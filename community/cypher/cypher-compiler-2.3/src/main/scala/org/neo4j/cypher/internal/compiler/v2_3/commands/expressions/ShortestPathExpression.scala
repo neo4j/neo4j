@@ -40,6 +40,8 @@ import scala.collection.Map
 
 case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates: Seq[Predicate] = Seq.empty) extends Expression with PathExtractor {
   val pathPattern:Seq[Pattern] = Seq(shortestPathPattern)
+  val pathIdentifiers = Set(shortestPathPattern.pathName, shortestPathPattern.relIterator.getOrElse(""))
+
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     if (anyStartpointsContainNull(ctx)) {
@@ -62,14 +64,16 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
     shortestPathStrategy.findResult(start, end)
   }
 
+  /* This test is made after a full shortest path candidate has been produced,
+   * accepting or disqualifying it as appropriate.
+   */
   private def createShortestPathPredicate(incomingCtx: ExecutionContext, predicates: Seq[Predicate])(implicit state: QueryState): ShortestPathPredicate = new ShortestPathPredicate {
     override def test(path: Path): Boolean = if (predicates.isEmpty) true else {
-      val ctx = incomingCtx.newWith(Map(
-        shortestPathPattern.pathName -> path,
-        shortestPathPattern.relIterator.get -> path.relationships()
-      ))
+      incomingCtx += shortestPathPattern.pathName -> path
+      incomingCtx += shortestPathPattern.relIterator.get -> path.relationships()
+
       val ands = Ands(NonEmptyList.from(predicates))
-      ands.isTrue(ctx)
+      ands.isTrue(incomingCtx)
     }
   }
 
@@ -105,13 +109,13 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
 
   private def cypherPositivePredicatesAsExpander(incomingCtx: ExecutionContext, name: String, predicate: Predicate)(implicit state: QueryState) = new org.neo4j.function.Predicate[PropertyContainer] {
     override def test(t: PropertyContainer): Boolean = {
-      predicate.isTrue(incomingCtx.newWith(name -> t))
+      predicate.isTrue(incomingCtx += (name -> t))
     }
   }
 
   private def cypherNegativePredicatesAsExpander(incomingCtx: ExecutionContext, name: String, predicate: Predicate)(implicit state: QueryState) = new org.neo4j.function.Predicate[PropertyContainer] {
     override def test(t: PropertyContainer): Boolean = {
-      !predicate.isTrue(incomingCtx.newWith(name -> t))
+      !predicate.isTrue(incomingCtx += (name -> t))
     }
   }
 
@@ -119,14 +123,14 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
     predicate match {
       case PropertyExists(_, propertyKey) =>
         currentExpander.addRelationshipFilter(
-          if(all) propertyExistsExpander(propertyKey.name)
+          if (all) propertyExistsExpander(propertyKey.name)
           else propertyNotExistsExpander(propertyKey.name))
       case Not(PropertyExists(_, propertyKey)) =>
         currentExpander.addRelationshipFilter(
-          if(all) propertyNotExistsExpander(propertyKey.name)
+          if (all) propertyNotExistsExpander(propertyKey.name)
           else propertyExistsExpander(propertyKey.name))
       case _ => currentExpander.addRelationshipFilter(
-        if(all) cypherPositivePredicatesAsExpander(ctx, relName, predicate)
+        if (all) cypherPositivePredicatesAsExpander(ctx, relName, predicate)
         else cypherNegativePredicatesAsExpander(ctx, relName, predicate))
     }
   }
@@ -144,12 +148,17 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
     predicates.foldLeft(relTypeAndDirExpander) {
       case (currentExpander, predicate) =>
         predicate match {
-          case NoneInCollection(RelationshipFunction(_), symbolName, innerPredicate) => addAllOrNoneRelationshipExpander(ctx, currentExpander, all = false, innerPredicate, symbolName)
-          case AllInCollection(RelationshipFunction(_), symbolName, innerPredicate) => addAllOrNoneRelationshipExpander(ctx, currentExpander, all = true, innerPredicate, symbolName)
+          case NoneInCollection(RelationshipFunction(_), symbolName, innerPredicate) if doesNotDependOnFullPath(innerPredicate) =>
+            addAllOrNoneRelationshipExpander(ctx, currentExpander, all = false, innerPredicate, symbolName)
+          case AllInCollection(RelationshipFunction(_), symbolName, innerPredicate) if doesNotDependOnFullPath(innerPredicate) =>
+            addAllOrNoneRelationshipExpander(ctx, currentExpander, all = true, innerPredicate, symbolName)
           case _ => currentExpander
         }
     }
 
+  private def doesNotDependOnFullPath(predicate: Predicate): Boolean = {
+    (predicate.symbolTableDependencies intersect pathIdentifiers).isEmpty
+  }
 
 }
 

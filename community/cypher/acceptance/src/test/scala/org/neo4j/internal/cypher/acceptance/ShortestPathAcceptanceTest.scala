@@ -117,6 +117,18 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
   }
 
+  test("shortest path shouldn't lose context information at runtime") {
+
+    val query =
+      """MATCH (src:A), (dest:D)
+        |MATCH p = shortestPath((src)-[rs*]->(dest))
+        |WHERE ALL(r in rs WHERE type(rs[0]) = type(r)) AND ALL(r in rs WHERE r.blocked <> true)
+        |RETURN p
+      """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+  }
+
   test("should still be able to return shortest path expression") {
     /* a-b-c-d */
     relate(nodeA, nodeB)
@@ -335,7 +347,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val query = """PROFILE CYPHER
                   |MATCH (a:X), (b:Y)
-                  |MATCH p = shortestPath((a)-[r:REL*]->(b))
+                  |MATCH p = shortestPath((a)-[rs:REL*]->(b))
                   |WHERE ALL(r in rels(p) WHERE NOT exists(r.blocked))
                   |RETURN nodes(p) AS nodes
                 """.stripMargin
@@ -345,18 +357,53 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result.toList should equal(List(Map("nodes" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")))))
   }
 
-  test("shortest path should work with predicates that can be applied to relationship expanders and include dependencies on execution context") {
+  test("shortest path should work with multiple expressions and predicates") {
+    val nodes = shortestPathModel()
+
+    val query = """PROFILE CYPHER
+                  |MATCH (a:X), (b:Y)
+                  |MATCH p1 = shortestPath((a)-[rs1:REL*]->(b))
+                  |MATCH p2 = shortestPath((a)-[rs2:REL*]->(b))
+                  |WHERE ALL(r in rels(p1) WHERE NOT exists(r.blocked))
+                  |RETURN nodes(p1) AS nodes1, nodes(p2) as nodes2
+                """.stripMargin
+
+    val result = executeWithCostPlannerOnly(query)
+
+    result.toList should equal(List(Map("nodes1" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")),
+                                        "nodes2" -> List(nodes("source"), nodes("target")))))
+
+    println(result.executionPlanDescription())
+  }
+
+  test("shortest path should work with predicates that depend on the path expression") {
     val nodes = shortestPathModel()
 
     val query = """PROFILE CYPHER
                   |MATCH (a:X), (b:Y)
                   |MATCH p = shortestPath((a)-[r:REL*]->(b))
+                  |WHERE ALL(r in rels(p) WHERE type(r) = type(rels(p)[0]) AND NOT exists(r.blocked))
+                  |RETURN nodes(p) AS nodes
+                """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+    println(result.executionPlanDescription())
+
+    result.toList should equal(List(Map("nodes" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")))))
+  }
+
+  test("shortest path should work with predicates that can be applied to relationship expanders and include dependencies on execution context") {
+    val nodes = shortestPathModel()
+
+    val query = """PROFILE CYPHER
+                  |MATCH (a:X), (b:Y)
+                  |MATCH p = shortestPath((a)-[rs:REL*]->(b))
                   |WHERE ALL(r in rels(p) WHERE NOT exists(r.blocked) AND a:X) AND NOT has(b.property)
                   |RETURN nodes(p) AS nodes
                 """.stripMargin
 
     val result = executeWithAllPlanners(query)
-    println(result.executionPlanDescription)
+    println(result.executionPlanDescription())
 
     result.toList should equal(List(Map("nodes" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")))))
   }

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.ShortestPath
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsNodes, ReadsRelationships}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{CastSupport, CollectionSupport}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.LegacyExpression
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.graphdb.Path
 
@@ -61,8 +62,12 @@ case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, pre
     }
   }
 
-  override def planDescriptionWithoutCardinality =
-    source.planDescription.andThen(this.id, "ShortestPath", identifiers)
+  override def planDescriptionWithoutCardinality = {
+    val args = predicates.map { p =>
+      LegacyExpression(p)
+    }
+    source.planDescription.andThen(this.id, "ShortestPath", identifiers, args:_*)
+  }
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
