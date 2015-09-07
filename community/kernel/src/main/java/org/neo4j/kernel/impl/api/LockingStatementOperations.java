@@ -38,13 +38,12 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
+import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
+import org.neo4j.kernel.api.procedures.ProcedureSource;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -400,15 +399,15 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public void procedureCreate( KernelStatement state, ProcedureSignature signature, String language, String code )
+    public void procedureCreate( KernelStatement state, ProcedureSource source )
             throws ProcedureException, ProcedureConstraintViolation
     {
         // TODO: Document locking logic
         // In order to keep other processes from creating procedures with conflicting names, we lock the procedure
         // name. We don't exclusively lock the schema, since creating a new procedure will not influence any running
         // operation.
-        state.locks().acquireExclusive( PROCEDURE, procedureResourceId( signature.name() ) );
-        schemaWriteDelegate.procedureCreate( state, signature, language, code );
+        state.locks().acquireExclusive( PROCEDURE, procedureResourceId( source.signature().name() ) );
+        schemaWriteDelegate.procedureCreate( state, source );
     }
 
     @Override
@@ -420,13 +419,13 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Iterator<ProcedureDescriptor> proceduresGetAll( KernelStatement statement )
+    public Iterator<ProcedureSource> proceduresGetAll( KernelStatement statement )
     {
         return schemaReadDelegate.proceduresGetAll( statement );
     }
 
     @Override
-    public ProcedureDescriptor procedureGet( KernelStatement statement, ProcedureName signature ) throws ProcedureException
+    public ProcedureSource procedureGet( KernelStatement statement, ProcedureName signature ) throws ProcedureException
     {
         return schemaReadDelegate.procedureGet( statement, signature );
     }

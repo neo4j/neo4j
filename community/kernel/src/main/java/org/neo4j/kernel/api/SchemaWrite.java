@@ -32,8 +32,8 @@ import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
+import org.neo4j.kernel.api.procedures.ProcedureSource;
 
 interface SchemaWrite
 {
@@ -67,11 +67,9 @@ interface SchemaWrite
     void uniqueIndexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException;
 
     /**
-     * @param signature the namespace, name, typed inputs and typed outputs
-     * @param language named procedure language, eg "js"
-     * @param body the procedure code, format is language-handler specific
+     * @param source of the procedure to create
      */
-    void procedureCreate( ProcedureSignature signature, String language, String body ) throws ProcedureException, ProcedureConstraintViolation;
+    void procedureCreate( ProcedureSource source ) throws ProcedureException, ProcedureConstraintViolation;
 
     /**
      * Drop a procedure from the database.

@@ -22,38 +22,91 @@ package org.neo4j.kernel.impl.api.store;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureSignature;
+import org.neo4j.function.Function;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
+import org.neo4j.kernel.api.procedures.ProcedureSource;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
+import org.neo4j.kernel.procedure.CompiledProcedure;
+import org.neo4j.kernel.procedure.ProcedureCompiler;
+
+import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
  * A temporary in-memory storage for procedures, until we build "real" storage for them in 3.0.
  * TODO!
+ *
+ * This class is thread-safe, but uses very little synchronization. The only synchronization is on the 'procedures' map on 'put' and 'remove'.
+ * If two threads retrieve the same uncompiled procedure, we will compile it twice and one will overwrite the other - but the outcome of both compilations
+ * is the same, so the overwriting makes no difference. Hence, no synchronization is used on the read or compile paths.
  */
 public class ProcedureCache
 {
-    private final Map<ProcedureSignature.ProcedureName, ProcedureDescriptor> procedures = new CopyOnWriteHashMap<>();
+    private static final CacheEntry NONE = new CacheEntry( null );
 
-    public Iterator<ProcedureDescriptor> getAll()
+    private final Map<ProcedureName,CacheEntry> procedures = new CopyOnWriteHashMap<>();
+    private final ProcedureCompiler compiler;
+    private final Function<CacheEntry,ProcedureSource> getSource = new Function<CacheEntry,ProcedureSource>()
     {
-        return procedures.values().iterator();
+        @Override
+        public ProcedureSource apply( CacheEntry pair )
+        {
+            return pair.source;
+        }
+    };
+
+    static class CacheEntry
+    {
+        private final ProcedureSource source;
+        private CompiledProcedure compiled;
+
+        CacheEntry( ProcedureSource source )
+        {
+            this.source = source;
+        }
     }
 
-    public ProcedureDescriptor get( ProcedureSignature.ProcedureName name )
+    public ProcedureCache( ProcedureCompiler compiler )
     {
-        return procedures.get( name );
+        this.compiler = compiler;
+    }
+
+    public Iterator<ProcedureSource> getAll()
+    {
+        return map( getSource, procedures.values().iterator());
+    }
+
+    public ProcedureSource getSource( ProcedureName name )
+    {
+        return procedures.getOrDefault( name, NONE ).source;
+    }
+
+    public CompiledProcedure getCompiled( ProcedureName name ) throws ProcedureException
+    {
+        CacheEntry entry = procedures.get( name );
+        if( entry == null )
+        {
+            throw new ProcedureException( Status.Statement.ProcedureError, "No such procedure, `%s`.", name );
+        }
+
+        if( entry.compiled == null )
+        {
+            entry.compiled = compiler.compile( entry.source );
+        }
+        return entry.compiled;
     }
 
     // TODO: This is temporary, to be replaced by the regular tx log/store layer stuff
-    public synchronized void createProcedure( ProcedureDescriptor descriptor )
+    public void createProcedure( ProcedureSource source )
     {
-        assert !procedures.containsKey( descriptor.signature().name() );
-        procedures.put( descriptor.signature().name(), descriptor );
+        assert !procedures.containsKey( source.signature().name() );
+        procedures.put( source.signature().name(), new CacheEntry( source ) );
     }
 
-    public synchronized void dropProcedure( ProcedureDescriptor procedureDescriptor )
+    public void dropProcedure( ProcedureSource procedureSource )
     {
-        assert procedures.containsKey( procedureDescriptor.signature().name() );
-        procedures.remove( procedureDescriptor.signature().name() );
+        assert procedures.containsKey( procedureSource.signature().name() );
+        procedures.remove( procedureSource.signature().name() );
     }
 }

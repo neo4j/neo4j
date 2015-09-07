@@ -382,7 +382,8 @@ public class KernelTransactionImplementationTest
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
                 null, null, null, null, null, recordState, null, neoStore, new NoOpClient(),
                 hooks, null, headerInformationFactory, commitProcess, transactionMonitor, readLayer, legacyIndexState,
-                mock( Pool.class ), mock(ConstraintSemantics.class), clock, TransactionTracer.NULL, new ProcedureCache() );
+                mock( Pool.class ), mock(ConstraintSemantics.class), clock, TransactionTracer.NULL, new ProcedureCache( null )
+        );
         transaction.initialize( 0 );
         return transaction;
     }

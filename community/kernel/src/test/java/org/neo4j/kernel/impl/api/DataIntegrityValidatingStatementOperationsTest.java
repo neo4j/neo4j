@@ -27,6 +27,8 @@ import org.mockito.stubbing.Answer;
 
 import java.util.Iterator;
 
+import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
@@ -36,11 +38,12 @@ import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureSource;
 import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.procedure.ProcedureCompiler;
 
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
@@ -68,7 +71,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
-                new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
+                new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite, null );
         when( innerRead.indexesGetForLabel( state, rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
 
         // WHEN
@@ -95,7 +98,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
-                new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
+                new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite, null );
         when( innerRead.indexesGetForLabel( state, rule.getLabelId() ) ).thenAnswer( withIterator(  ) );
         when( innerRead.uniqueIndexesGetForLabel( state, rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
 
@@ -123,7 +126,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
-                new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
+                new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite, null );
         when( innerRead.uniqueIndexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer( withIterator(  ) );
         when( innerRead.indexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer( withIterator( ) );
 
@@ -151,7 +154,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
-                new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
+                new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite, null );
         when( innerRead.uniqueIndexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer(
                 withIterator( indexDescriptor ) );
         when( innerRead.indexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
@@ -180,7 +183,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
-                new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
+                new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite, null );
         when( innerRead.uniqueIndexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer(
                 withIterator( indexDescriptor ) );
         when( innerRead.indexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
@@ -209,7 +212,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
-                new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
+                new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite, null );
         when( innerRead.uniqueIndexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer(
                 withIterator( indexDescriptor ) );
         when( innerRead.indexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
@@ -234,7 +237,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     {
         KeyWriteOperations inner = mock( KeyWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
-                new DataIntegrityValidatingStatementOperations( inner, null, null );
+                new DataIntegrityValidatingStatementOperations( inner, null, null, null );
 
         try
         {
@@ -260,7 +263,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     {
         KeyWriteOperations inner = mock( KeyWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
-                new DataIntegrityValidatingStatementOperations( inner, null, null );
+                new DataIntegrityValidatingStatementOperations( inner, null, null, null );
 
         try
         {
@@ -286,7 +289,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     {
         // Given
         DataIntegrityValidatingStatementOperations ctx =
-                new DataIntegrityValidatingStatementOperations( null, null, null );
+                new DataIntegrityValidatingStatementOperations( null, null, null, null );
 
         // When
         ctx.labelGetOrCreateForName( state, "" );
@@ -297,7 +300,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     {
         // Given
         DataIntegrityValidatingStatementOperations ctx =
-                new DataIntegrityValidatingStatementOperations( null, null, null );
+                new DataIntegrityValidatingStatementOperations( null, null, null, null );
 
         // When
         ctx.labelGetOrCreateForName( state, null );
@@ -310,16 +313,35 @@ public class DataIntegrityValidatingStatementOperationsTest
         ProcedureSignature signature = procedureSignature( "my.procedure" ).build();
 
         SchemaReadOperations readOps = mock( SchemaReadOperations.class );
-        when(readOps.procedureGet( state, signature.name() )).thenReturn( mock( ProcedureDescriptor.class ) );
+        when( readOps.procedureGet( state, signature.name() ) ).thenReturn( mock( ProcedureSource.class ) );
 
         DataIntegrityValidatingStatementOperations ops =
-                new DataIntegrityValidatingStatementOperations( null, readOps, null );
+                new DataIntegrityValidatingStatementOperations( null, readOps, null, null );
 
         // expect
         exception.expect( ProcedureConstraintViolation.class );
 
         // when I create a conflicting procedure
-        ops.procedureCreate( state, signature, "jakescript", "woo" );
+        ops.procedureCreate( state, new ProcedureSource( signature, "jakescript", "woo" ) );
+    }
+
+    @Test
+    public void shouldEnsureProceduresCanCompile() throws Exception
+    {
+        // given
+        ProcedureCompiler compiler = mock( ProcedureCompiler.class );
+        SchemaReadOperations readOps = mock( SchemaReadOperations.class );
+        DataIntegrityValidatingStatementOperations ops = new DataIntegrityValidatingStatementOperations( null, readOps, null, compiler );
+
+        ProcedureSource procedure = new ProcedureSource( ProcedureSignature.procedureSignature( "snigescript.do" ).build(), "snigelscript", ".." );
+
+        when(compiler.compile( procedure )).thenThrow( new ProcedureException( Status.Statement.ProcedureError, ".." ) );
+
+        // expect
+        exception.expect( ProcedureException.class );
+
+        // when
+        ops.procedureCreate( state, procedure );
     }
 
     @SafeVarargs

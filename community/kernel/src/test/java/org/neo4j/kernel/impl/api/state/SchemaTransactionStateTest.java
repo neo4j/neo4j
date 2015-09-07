@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.Neo4jTypes;
 import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureSource;
 import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -212,10 +212,10 @@ public class SchemaTransactionStateTest
     {
         // Given
         ProcedureSignature signature = procedureSignature( "myproc" ).out( "field1", Neo4jTypes.NTInteger ).build();
-        txContext.procedureCreate( state, signature, "javascript", "emit(1);" );
+        txContext.procedureCreate( state, new ProcedureSource( signature, "javascript", "emit(1);" ) );
 
         // When
-        ProcedureDescriptor desc = txContext.procedureGet( state, signature.name() );
+        ProcedureSource desc = txContext.procedureGet( state, signature.name() );
 
         // Then
         assertEquals( desc.language(), "javascript" );

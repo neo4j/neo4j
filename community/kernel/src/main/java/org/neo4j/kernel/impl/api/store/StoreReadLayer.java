@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureSource;
 import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -168,8 +168,8 @@ public interface StoreReadLayer
     double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /** Return descriptors for all committed stored procedures */
-    Iterator<ProcedureDescriptor> proceduresGetAll();
+    Iterator<ProcedureSource> proceduresGetAll();
 
     /** Return the description of the specified procedure */
-    ProcedureDescriptor procedureGet( ProcedureName name );
+    ProcedureSource procedureGet( ProcedureName name );
 }

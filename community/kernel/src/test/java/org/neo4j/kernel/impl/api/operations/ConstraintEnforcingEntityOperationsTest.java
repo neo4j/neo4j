@@ -20,10 +20,14 @@
 package org.neo4j.kernel.impl.api.operations;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -76,7 +80,7 @@ public class ConstraintEnforcingEntityOperationsTest
 
         // then
         assertEquals( expectedNodeId, nodeId );
-        verify( locks).acquireShared( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+        verify( locks ).acquireShared( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
         verifyNoMoreInteractions( locks );
     }
 

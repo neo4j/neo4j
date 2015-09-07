@@ -166,6 +166,8 @@ public interface Status
         JoinHintUnsupportedWarning( ClientNotification, "Queries with join hints are not supported by the RULE planner." ),
         DynamicPropertyWarning( ClientNotification, "Queries using dynamic properties will use neither index seeks " +
                                                     "nor index scans for those properties" ),
+
+        ProcedureError( ClientError, "An error occurred while operating on a procedure.")
         ;
 
         private final Code code;

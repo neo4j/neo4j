@@ -44,7 +44,7 @@ public class KernelStatementTest
         KernelStatement statement =
             new KernelStatement(
                 mock( KernelTransactionImplementation.class ),
-                mock( IndexReaderFactory.class ), scanStore, null, null, null, null );
+                mock( IndexReaderFactory.class ), scanStore, null, null, null, null, null );
 
         statement.acquire();
 
@@ -73,7 +73,7 @@ public class KernelStatementTest
 
         KernelStatement statement = new KernelStatement(
             transaction, mock( IndexReaderFactory.class ),
-                mock( LabelScanStore.class ), null, null, null, null );
+                mock( LabelScanStore.class ), null, null, null, null, null );
 
         statement.readOperations().nodeExists( 0 );
     }
@@ -88,7 +88,7 @@ public class KernelStatementTest
         when( scanStore.newReader() ).thenReturn( scanReader );
         KernelStatement statement =
                 new KernelStatement( mock( KernelTransactionImplementation.class ), mock( IndexReaderFactory.class ),
-                        scanStore, null, null, null, null );
+                        scanStore, null, null, null, null, null );
 
         statement.acquire();
 

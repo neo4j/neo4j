@@ -64,9 +64,8 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
+import org.neo4j.kernel.api.procedures.ProcedureSource;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
@@ -629,9 +628,9 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public void procedureCreate( KernelStatement state, ProcedureSignature signature, String language, String code )
+    public void procedureCreate( KernelStatement state, ProcedureSource source )
     {
-        state.txState().procedureDoCreate( signature, language, code );
+        state.txState().procedureDoCreate( source);
     }
 
     @Override
@@ -641,20 +640,20 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<ProcedureDescriptor> proceduresGetAll( KernelStatement statement )
+    public Iterator<ProcedureSource> proceduresGetAll( KernelStatement statement )
     {
-        Iterator<ProcedureDescriptor> procs = storeLayer.proceduresGetAll();
+        Iterator<ProcedureSource> procs = storeLayer.proceduresGetAll();
         return statement.hasTxStateWithChanges() ? statement.txState().augmentProcedures( procs ) : procs;
     }
 
     @Override
-    public ProcedureDescriptor procedureGet( KernelStatement statement, ProcedureName name )
+    public ProcedureSource procedureGet( KernelStatement statement, ProcedureName name )
             throws ProcedureException
     {
         if(statement.hasTxStateWithChanges())
         {
             TransactionState state = statement.txState();
-            ProcedureDescriptor procedure = state.getProcedure( name );
+            ProcedureSource procedure = state.getProcedure( name );
             if( procedure != null )
             {
                 return procedure;

@@ -19,9 +19,14 @@
  */
 package org.neo4j.kernel.api;
 
+import java.util.List;
+
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 
@@ -71,4 +76,16 @@ interface DataWrite
     Property relationshipRemoveProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException;
 
     Property graphRemoveProperty( int propertyKeyId );
+
+    // Implementation notes;
+    // This is here in the spirit of iterative development - I'm not actually sure this is the right place in the stack for this
+    // primitive. Another alternative would be to have the kernel only handle storage of procedures, and introduce a new service
+    // for actually compiling and working with them. However, it is arguably convenient to have them here. In any case, please feel
+    // free to move this if it gets awkward in the future.
+    //
+    // TODO: We should ideally not take List<Object> here, but rather AnyType[], highlighting that only valid Neo4j types
+    // can be used as arguments to these calls. That same principle applies generally - now that we have a strict type system definition
+    // on the kernel level, properties and other operations that deal with the graph domain types should use the Neo4j type system.
+    void procedureCall( ProcedureName signature, List<Object> args, Visitor<List<Object>,ProcedureException> visitor ) throws ProcedureException;
+
 }

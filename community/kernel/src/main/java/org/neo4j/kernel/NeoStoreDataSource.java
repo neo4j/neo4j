@@ -162,6 +162,9 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.Lifecycles;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
+import org.neo4j.kernel.procedure.ProcedureCompiler;
+import org.neo4j.kernel.procedure.impl.StandardProcedureCompiler;
+import org.neo4j.kernel.procedure.impl.js.JavascriptLanguageHandler;
 import org.neo4j.kernel.recovery.DefaultRecoverySPI;
 import org.neo4j.kernel.recovery.LatestCheckPointFinder;
 import org.neo4j.kernel.recovery.Recovery;
@@ -468,6 +471,9 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         // Upgrade the store before we begin
         upgradeStore( storeDir, storeMigrationProcess, indexProvider );
 
+        final ProcedureCompiler procedureCompiler = new StandardProcedureCompiler();
+        procedureCompiler.addLanguageHandler( "javascript", new JavascriptLanguageHandler() );
+
         // Build all modules and their services
         try
         {
@@ -477,7 +483,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             this.neoStoreModule = neoStoreModule;
 
             CacheModule cacheModule = buildCaches(
-                    labelTokens, relationshipTypeTokens, propertyKeyTokenHolder );
+                    labelTokens, relationshipTypeTokens, propertyKeyTokenHolder, procedureCompiler );
 
             IndexingModule indexingModule = buildIndexing( config, scheduler, indexProvider, lockService,
                     tokenNameLookup, logProvider, indexingServiceMonitor,
@@ -503,7 +509,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                     indexingModule.indexUpdatesValidator(),
                     storeLayerModule.storeLayer(),
                     cacheModule.updateableSchemaState(), indexingModule.labelScanStore(),
-                    indexingModule.schemaIndexProviderMap(), cacheModule.procedureCache() );
+                    indexingModule.schemaIndexProviderMap(), cacheModule.procedureCache(), procedureCompiler );
 
 
             // Do these assignments last so that we can ensure no cyclical dependencies exist
@@ -614,7 +620,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
     }
 
     private CacheModule buildCaches( LabelTokenHolder labelTokens, RelationshipTypeTokenHolder relationshipTypeTokens,
-            PropertyKeyTokenHolder propertyKeyTokenHolder )
+            PropertyKeyTokenHolder propertyKeyTokenHolder, ProcedureCompiler procedureCompiler )
     {
         final UpdateableSchemaState updateableSchemaState = new KernelSchemaStateStore( logProvider );
 
@@ -623,7 +629,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         final CacheAccessBackDoor cacheAccess = new BridgingCacheAccess( schemaCache, updateableSchemaState,
                 propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
 
-        final ProcedureCache procedureCache = new ProcedureCache();
+        final ProcedureCache procedureCache = new ProcedureCache( procedureCompiler );
 
         life.add( new LifecycleAdapter()
         {
@@ -952,7 +958,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier, IndexingService indexingService,
             IndexUpdatesValidator indexUpdatesValidator, StoreReadLayer storeLayer,
             UpdateableSchemaState updateableSchemaState, LabelScanStore labelScanStore,
-            SchemaIndexProviderMap schemaIndexProviderMap, ProcedureCache procedureCache )
+            SchemaIndexProviderMap schemaIndexProviderMap, ProcedureCache procedureCache, ProcedureCompiler procedureCompiler )
     {
         final TransactionCommitProcess transactionCommitProcess =
                 commitProcessFactory.create( appender, kernelHealth, neoStore, storeApplier,
@@ -984,7 +990,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
 
         StatementOperationParts statementOperations = dependencies.satisfyDependency( buildStatementOperations(
                 storeLayer, legacyPropertyTrackers, constraintIndexCreator, updateableSchemaState, guard,
-                legacyIndexStore ) );
+                legacyIndexStore, procedureCompiler ) );
 
         final TransactionHooks hooks = new TransactionHooks();
         final KernelTransactions kernelTransactions =
@@ -1220,7 +1226,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
     private StatementOperationParts buildStatementOperations(
             StoreReadLayer storeReadLayer, LegacyPropertyTrackers legacyPropertyTrackers,
             ConstraintIndexCreator constraintIndexCreator, UpdateableSchemaState updateableSchemaState,
-            Guard guard, LegacyIndexStore legacyIndexStore )
+            Guard guard, LegacyIndexStore legacyIndexStore, ProcedureCompiler procedureCompiler )
     {
         // The passed in StoreReadLayer is the bottom most layer: Read-access to committed data.
         // To it we add:
@@ -1239,7 +1245,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         // + Data integrity
         DataIntegrityValidatingStatementOperations dataIntegrityContext =
                 new DataIntegrityValidatingStatementOperations(
-                        parts.keyWriteOperations(), parts.schemaReadOperations(), constraintEnforcingEntityOperations );
+                        parts.keyWriteOperations(), parts.schemaReadOperations(), constraintEnforcingEntityOperations, procedureCompiler );
         parts = parts.override( null, dataIntegrityContext, constraintEnforcingEntityOperations,
                 constraintEnforcingEntityOperations, null, dataIntegrityContext, null, null, null, null, null );
         // + Locking
