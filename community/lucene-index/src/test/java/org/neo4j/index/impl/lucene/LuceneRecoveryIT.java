@@ -35,7 +35,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class RecoveryIT
+public class LuceneRecoveryIT
 {
     @Test
     public void testHardCoreRecovery() throws Exception
