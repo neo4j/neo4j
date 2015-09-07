@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.DynamicLabel.label;
 
 /**
