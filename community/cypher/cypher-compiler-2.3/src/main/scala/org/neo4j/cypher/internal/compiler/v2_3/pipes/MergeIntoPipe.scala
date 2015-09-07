@@ -23,7 +23,9 @@ import java.util.concurrent.ThreadLocalRandom
 
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsNodes, ReadsRelationships}
+import org.neo4j.cypher.internal.compiler.v2_3.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
@@ -49,13 +51,16 @@ case class MergeIntoPipe(source: Pipe,
                          relName: String,
                          toName: String,
                          dir: SemanticDirection,
-                         typ: String, props: Map[String, Expression])(val estimatedCardinality: Option[Double] = None)
+                         typ: String, props: Map[KeyToken, Expression],
+                         onCreateProperties: Map[KeyToken, Expression],
+                         onMatchProperties: Map[KeyToken, Expression])(val estimatedCardinality: Option[Double] = None)
                         (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+  extends PipeWithSource(source, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions {
   self =>
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val typeId = state.query.getOrCreateRelTypeId(typ)
+
     input.flatMap {
       row =>
         val fromNode = getRowNode(row, fromName)
@@ -65,13 +70,19 @@ case class MergeIntoPipe(source: Pipe,
 
             if (toNode == null) throw new RuntimeException("TODO")
             else {
-              val relationships = findRelationships(state.query, fromNode, toNode, typeId)
+              val relationships = findRelationships(fromNode, toNode, typeId)(state, row)
 
               if (relationships.isEmpty) {
-                val r = state.query.createRelationship(fromNode.getId, toNode.getId, typeId)
-                Some(row.newWith2(relName, r, toName, toNode))
+                val relationship = state.query.createRelationship(fromNode.getId, toNode.getId, typeId)
+                setPropertiesOnRelationship(row, relationship, state, props ++ onCreateProperties)
+                Iterator(row.newWith2(relName, relationship, toName, toNode))
               }
-              else relationships.map(row.newWith2(relName, _, toName, toNode))
+              else {
+                relationships.map { relationship =>
+                  setPropertiesOnRelationship(row, relationship, state, onMatchProperties)
+                  row.newWith2(relName, relationship, toName, toNode)
+                }
+              }
             }
 
           case null =>
@@ -83,8 +94,8 @@ case class MergeIntoPipe(source: Pipe,
   /**
    * Finds all relationships connecting fromNode and toNode.
    */
-  private def findRelationships(query: QueryContext, fromNode: Node, toNode: Node, typeId: Int): Iterator[Relationship] = {
-
+  private def findRelationships(fromNode: Node, toNode: Node, typeId: Int)(implicit queryState: QueryState, execution: ExecutionContext): Iterator[Relationship] = {
+    val query = queryState.query
     val fromNodeIsDense = query.nodeIsDense(fromNode.getId)
     val toNodeIsDense = query.nodeIsDense(toNode.getId)
 
@@ -101,35 +112,41 @@ case class MergeIntoPipe(source: Pipe,
         return Iterator.empty
       }
 
-      relIterator(query, fromNode, toNode, fromDegree < toDegree, typeId)
+      relIterator(fromNode, toNode, fromDegree < toDegree, typeId)
     }
     // iterate from a non-dense node
     else if (fromNodeIsDense)
-      relIterator(query, fromNode, toNode, preserveDirection = false, typeId)
+      relIterator(fromNode, toNode, preserveDirection = false, typeId)
     else
-      relIterator(query, fromNode, toNode, preserveDirection = true, typeId)
+      relIterator(fromNode, toNode, preserveDirection = true, typeId)
   }
 
-  private def relIterator(query: QueryContext, fromNode: Node, toNode: Node, preserveDirection: Boolean,
-                          typeId: Int) = {
+  private def relIterator(fromNode: Node, toNode: Node, preserveDirection: Boolean,
+                          typeId: Int)(implicit queryState: QueryState, execution: ExecutionContext) = {
+    val query = queryState.query
     val (start, localDirection, end) = if (preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reversed, fromNode)
     val relationships = query.getRelationshipsForIds(start, localDirection, Some(Seq(typeId)))
-    println("apa")
-    println(start)
-    println(localDirection)
-    println(typeId)
 
     new PrefetchingIterator[Relationship] {
       //we do not expect two nodes to have many connecting relationships
       val connectedRelationships = new ArrayBuffer[Relationship](2)
+
+      private def hasCorrectProperties(rel: Relationship): Boolean = props.forall { case (key, expression) =>
+        val expressionValue = expression(execution)(queryState)
+        val propertyKeyId = key.getOptId(query)
+
+        propertyKeyId.exists { id => query.relationshipOps.getProperty(rel.getId, id) == expressionValue }
+      }
 
       override def fetchNextOrNull(): Relationship = {
         while (relationships.hasNext) {
           val rel = relationships.next()
           val other = rel.getOtherNode(start)
           if (end == other) {
-            connectedRelationships.append(rel)
-            return rel
+            if (hasCorrectProperties(rel)) {
+              connectedRelationships.append(rel)
+              return rel
+            }
           }
         }
         null
@@ -164,29 +181,11 @@ case class MergeIntoPipe(source: Pipe,
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
-  private final class RelationshipsCache(capacity: Int) {
-
-    val table = new mutable.OpenHashMap[(Long, Long), Seq[Relationship]]()
-
-    def get(start: Node, end: Node): Option[Seq[Relationship]] = table.get(key(start, end))
-
-    def put(start: Node, end: Node, rels: Seq[Relationship]) = {
-      if (table.size < capacity) {
-        table.put(key(start, end), rels)
-      }
-    }
-
-    @inline
-    private def key(start: Node, end: Node) = {
-      // if direction is BOTH than we keep the key sorted, otherwise direction is important and we keep key as is
-      if (dir != SemanticDirection.BOTH) (start.getId, end.getId)
-      else {
-        if (start.getId < end.getId)
-          (start.getId, end.getId)
-        else
-          (end.getId, start.getId)
-      }
+  private def setPropertiesOnRelationship(row: ExecutionContext, relationship: Relationship, state: QueryState,
+                                          properties: Map[KeyToken, Expression]): Unit = {
+    properties.foreach { case (keyToken, expression) =>
+      val expressionValue = makeValueNeoSafe(expression(row)(state))
+      state.query.relationshipOps.setProperty(relationship.getId, keyToken.getOrCreateId(state.query), expressionValue)
     }
   }
-
 }
