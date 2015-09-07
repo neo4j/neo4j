@@ -4,7 +4,6 @@
 Cypher:
 o Added reverse function for reversing strings
 o Unfulfillable index hints (e.g. on non-existing indices) will now produce a warning or throw an error as configured
-o String prefix searches using LIKE can now be solved using index seeks using any planner
 o Now supports dynamic property lookup (f.e. using n['property'])
 o Usage of bare node patterns is now deprecated
 o Range queries can now be solved using index seeks
@@ -18,6 +17,9 @@ o Triadic selection is now supported
 o Function exists() can now make use of index scans
 o LIMIT now properly influence planning costs
 o Generates a warning when dynamic property lookup makes index plans impossible
+o New constraint type: property existence for nodes and relationships
+o Inequality predicates can now be chained on the form 0 < n.prop < 10
+o LIKE and ILIKE has been removed
 
 2.3-M02
 -------
