@@ -29,9 +29,9 @@ object findShortestPaths extends CandidateGenerator[GreedyPlanTable] {
     qg.shortestPathPatterns.flatMap { (shortestPath: ShortestPathPattern) =>
       input.plans.collect {
         case plan if shortestPath.isFindableFrom(plan.availableSymbols) =>
-          val pathDependencies = Set(shortestPath.name, Some(shortestPath.rel.name)).flatten
+          val pathIdentifiers = Set(shortestPath.name, Some(shortestPath.rel.name)).flatten
           val pathPredicates = qg.selections.predicates.collect {
-            case Predicate(dependencies, expr: Expression) if (dependencies intersect pathDependencies).nonEmpty => expr
+            case Predicate(dependencies, expr: Expression) if (dependencies intersect pathIdentifiers).nonEmpty => expr
           }.toSeq
           context.logicalPlanProducer.planShortestPaths(plan, shortestPath, pathPredicates)
       }

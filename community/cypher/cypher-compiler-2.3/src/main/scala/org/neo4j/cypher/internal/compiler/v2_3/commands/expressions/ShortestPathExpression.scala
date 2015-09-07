@@ -91,21 +91,27 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
 
   override def localEffects(symbols: SymbolTable) = Effects(ReadsNodes, ReadsRelationships)
 
-  private def propertyExistsExpander(name: String) = new org.neo4j.function.Predicate[Relationship] {
-    override def test(t: Relationship): Boolean = {
+  private def propertyExistsExpander(name: String) = new org.neo4j.function.Predicate[PropertyContainer] {
+    override def test(t: PropertyContainer): Boolean = {
       t.hasProperty(name)
     }
   }
 
-  private def propertyNotExistsExpander(name: String) = new org.neo4j.function.Predicate[Relationship] {
-    override def test(t: Relationship): Boolean = {
+  private def propertyNotExistsExpander(name: String) = new org.neo4j.function.Predicate[PropertyContainer] {
+    override def test(t: PropertyContainer): Boolean = {
       !t.hasProperty(name)
     }
   }
 
-  private def cypherPredicatesAsExpander(incomingCtx: ExecutionContext, relName: String, predicate: Predicate)(implicit state: QueryState) = new org.neo4j.function.Predicate[Relationship] {
-    override def test(t: Relationship): Boolean = {
-      predicate.isTrue(incomingCtx.newWith(relName -> t))
+  private def cypherPositivePredicatesAsExpander(incomingCtx: ExecutionContext, name: String, predicate: Predicate)(implicit state: QueryState) = new org.neo4j.function.Predicate[PropertyContainer] {
+    override def test(t: PropertyContainer): Boolean = {
+      predicate.isTrue(incomingCtx.newWith(name -> t))
+    }
+  }
+
+  private def cypherNegativePredicatesAsExpander(incomingCtx: ExecutionContext, name: String, predicate: Predicate)(implicit state: QueryState) = new org.neo4j.function.Predicate[PropertyContainer] {
+    override def test(t: PropertyContainer): Boolean = {
+      !predicate.isTrue(incomingCtx.newWith(name -> t))
     }
   }
 
@@ -120,7 +126,8 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
           if(all) propertyNotExistsExpander(propertyKey.name)
           else propertyExistsExpander(propertyKey.name))
       case _ => currentExpander.addRelationshipFilter(
-        cypherPredicatesAsExpander(ctx, relName, predicate))
+        if(all) cypherPositivePredicatesAsExpander(ctx, relName, predicate)
+        else cypherNegativePredicatesAsExpander(ctx, relName, predicate))
     }
   }
 
@@ -137,8 +144,8 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
     predicates.foldLeft(relTypeAndDirExpander) {
       case (currentExpander, predicate) =>
         predicate match {
-          case NoneInCollection(RelationshipFunction(_), symbolName, innerPredicate) => addAllOrNoneRelationshipExpander(ctx, currentExpander, false, innerPredicate, symbolName)
-          case AllInCollection(RelationshipFunction(_), symbolName, innerPredicate) => addAllOrNoneRelationshipExpander(ctx, currentExpander, true, innerPredicate, symbolName)
+          case NoneInCollection(RelationshipFunction(_), symbolName, innerPredicate) => addAllOrNoneRelationshipExpander(ctx, currentExpander, all = false, innerPredicate, symbolName)
+          case AllInCollection(RelationshipFunction(_), symbolName, innerPredicate) => addAllOrNoneRelationshipExpander(ctx, currentExpander, all = true, innerPredicate, symbolName)
           case _ => currentExpander
         }
     }

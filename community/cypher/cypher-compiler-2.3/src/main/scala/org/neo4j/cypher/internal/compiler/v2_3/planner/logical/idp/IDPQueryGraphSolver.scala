@@ -76,9 +76,9 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
                                 (implicit context: LogicalPlanningContext): LogicalPlan =
     qg.shortestPathPatterns.foldLeft(kit.select(initialPlan, qg)) {
       case (plan, sp) if sp.isFindableFrom(plan.availableSymbols) =>
-        val pathDependencies = Set(sp.name, Some(sp.rel.name)).flatten
+        val pathIdentifiers = Set(sp.name, Some(sp.rel.name)).flatten
         val pathPredicates = qg.selections.predicates.collect {
-          case Predicate(dependencies, expr: Expression) if (dependencies intersect pathDependencies).nonEmpty => expr
+          case Predicate(dependencies, expr: Expression) if (dependencies intersect pathIdentifiers).nonEmpty => expr
         }.toSeq
         val shortestPath = context.logicalPlanProducer.planShortestPaths(plan, sp, pathPredicates)
         kit.select(shortestPath, qg)
