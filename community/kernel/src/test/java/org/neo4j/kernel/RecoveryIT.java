@@ -34,18 +34,45 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Format;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.test.TargetDirectory;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
 
 public class RecoveryIT
 {
 
     @Rule
     public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+
+    @Test
+    public void idGeneratorsRebuildAfterRecovery() throws IOException
+    {
+        GraphDatabaseService database = startDatabase( directory.graphDbDir() );
+        int numberOfNodes = 10;
+        try ( Transaction transaction = database.beginTx() )
+        {
+            for ( int nodeIndex = 0; nodeIndex < numberOfNodes; nodeIndex++ )
+            {
+                database.createNode();
+            }
+            transaction.success();
+        }
+
+        // copying only transaction log simulate non clean shutdown db that should be able to recover just from logs
+        File restoreDbStoreDir = copyTransactionLogs();
+
+        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir );
+        NeoStore neoStore =
+                ((GraphDatabaseAPI) recoveredDatabase).getDependencyResolver().resolveDependency( NeoStore.class );
+        assertEquals( numberOfNodes, neoStore.getNodeStore().getHighId() );
+
+        database.shutdown();
+        recoveredDatabase.shutdown();
+    }
 
     @Test
     public void deleteAndRemoveNodePropertyDuringOneRecoveryRun() throws IOException
@@ -93,6 +120,14 @@ public class RecoveryIT
         recoveredDatabase.shutdown();
     }
 
+    private Node findNodeByLabel( GraphDatabaseService database, Label testLabel )
+    {
+        try ( ResourceIterator<Node> nodes = database.findNodes( testLabel ) )
+        {
+            return nodes.next();
+        }
+    }
+
     private String createLongString()
     {
         String[] strings = new String[Format.KB * 2];
@@ -103,14 +138,6 @@ public class RecoveryIT
     private GraphDatabaseService startDatabase( File storeDir )
     {
         return new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() );
-    }
-
-    private Node findNodeByLabel( GraphDatabaseService database, Label testLabel )
-    {
-        try ( ResourceIterator<Node> nodes = database.findNodes( testLabel ) )
-        {
-            return nodes.next();
-        }
     }
 
     private File copyTransactionLogs() throws IOException

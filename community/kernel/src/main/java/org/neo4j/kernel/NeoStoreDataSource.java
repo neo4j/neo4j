@@ -578,6 +578,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
             @Override
             public void start() throws IOException
             {
+                // TODO: we should not need it anymore in case if we track ids during recovery,
+                // needs to be cleaned up in latest version
                 if ( startupStatistics.numberOfRecoveredTransactions() > 0 )
                 {
                     neoStore.rebuildIdGenerators();
@@ -965,7 +967,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         life.add( new LifecycleAdapter()
         {
             @Override
-            public void start() throws Throwable
+            public void init() throws Throwable
             {
                 startupStatistics.setNumberOfRecoveredTransactions( recoveredCount.get() );
                 recoveredCount.set( 0 );
