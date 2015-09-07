@@ -19,26 +19,10 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.graphdb.RelationshipType;
-
-/**
- * Special sub-class of {@link Token} that implements the public-facing
- * interface {@link RelationshipType}, so that we can pass tokens directly to users
- * without first wrapping them in another object.
- */
-public class RelationshipTypeToken extends Token implements RelationshipType
+public class DelegatingPropertyKeyTokenHolder extends DelegatingTokenHolder<Token> implements PropertyKeyTokenHolder
 {
-    public RelationshipTypeToken( String name, int id )
+    public DelegatingPropertyKeyTokenHolder( TokenCreator tokenCreator )
     {
-        super( name, id );
-    }
-
-    public static class Factory implements TokenFactory<RelationshipTypeToken>
-    {
-        @Override
-        public RelationshipTypeToken newToken( String name, int id )
-        {
-            return new RelationshipTypeToken( name, id );
-        }
+        super( tokenCreator, new Token.Factory() );
     }
 }

@@ -382,7 +382,7 @@ public class CsvInputBatchImportIT
         return result;
     }
 
-    private Function<String, Integer> translationTable( TokenStore<?> tokenStore, final int anyValue )
+    private Function<String, Integer> translationTable( TokenStore<?, ?> tokenStore, final int anyValue )
     {
         final Map<String, Integer> translationTable = new HashMap<>();
         for ( Token token : tokenStore.getTokens( Integer.MAX_VALUE ) )

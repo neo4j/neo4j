@@ -33,7 +33,6 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.configuration.Config;
@@ -45,14 +44,15 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
 import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
-import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
+import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
@@ -71,6 +71,7 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
+
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
  * that are specific to the Community edition.
@@ -80,7 +81,7 @@ public class CommunityEditionModule
 {
     public CommunityEditionModule( PlatformModule platformModule )
     {
-        org.neo4j.kernel.impl.util.Dependencies deps = platformModule.dependencies;
+        org.neo4j.kernel.impl.util.Dependencies dependencies = platformModule.dependencies;
         Config config = platformModule.config;
         LogService logging = platformModule.logging;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
@@ -90,18 +91,18 @@ public class CommunityEditionModule
         LifeSupport life = platformModule.life;
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
-        lockManager = deps.satisfyDependency( createLockManager( config, logging ) );
+        lockManager = dependencies.satisfyDependency( createLockManager( config, logging ) );
 
-        idGeneratorFactory = deps.satisfyDependency( createIdGeneratorFactory( fileSystem ) );
+        idGeneratorFactory = dependencies.satisfyDependency( createIdGeneratorFactory( fileSystem ) );
 
-        propertyKeyTokenHolder = life.add( deps.satisfyDependency( new PropertyKeyTokenHolder(
+        propertyKeyTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder(
                 createPropertyKeyCreator( config, dataSourceManager, idGeneratorFactory ) ) ) );
-        labelTokenHolder = life.add( deps.satisfyDependency(new LabelTokenHolder( createLabelIdCreator( config,
+        labelTokenHolder = life.add( dependencies.satisfyDependency(new DelegatingLabelTokenHolder( createLabelIdCreator( config,
                 dataSourceManager, idGeneratorFactory ) ) ));
-        relationshipTypeTokenHolder = life.add( deps.satisfyDependency(new RelationshipTypeTokenHolder(
+        relationshipTypeTokenHolder = life.add( dependencies.satisfyDependency(new DelegatingRelationshipTypeTokenHolder(
                 createRelationshipTypeCreator( config, dataSourceManager, idGeneratorFactory ) ) ));
 
-        life.add( deps.satisfyDependency(
+        life.add( dependencies.satisfyDependency(
                 createKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade ) ) );
 
         commitProcessFactory = createCommitProcessFactory();
@@ -116,9 +117,9 @@ public class CommunityEditionModule
 
         constraintSemantics = createSchemaRuleVerifier();
 
-        registerRecovery( config.get( GraphDatabaseFacadeFactory.Configuration.editionName), life, deps );
+        registerRecovery( config.get( GraphDatabaseFacadeFactory.Configuration.editionName), life, dependencies );
 
-        publishEditionInfo( deps.resolveDependency( UsageData.class ) );
+        publishEditionInfo( dependencies.resolveDependency( UsageData.class ) );
     }
 
     protected ConstraintSemantics createSchemaRuleVerifier()
@@ -155,6 +156,7 @@ public class CommunityEditionModule
             // Not Advanced
         }
         return UsageDataKeys.Edition.community;
+
     }
 
     public static CommitProcessFactory createCommitProcessFactory()

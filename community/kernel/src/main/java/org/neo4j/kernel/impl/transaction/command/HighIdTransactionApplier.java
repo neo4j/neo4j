@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
@@ -242,8 +243,8 @@ public class HighIdTransactionApplier implements NeoCommandHandler
         }
     }
 
-    private <RECORD extends TokenRecord> void trackToken( TokenStore<RECORD> tokenStore,
-                                                          TokenCommand<RECORD> tokenCommand )
+    private <RECORD extends TokenRecord, TOKEN extends Token>
+    void trackToken( TokenStore<RECORD, TOKEN> tokenStore, TokenCommand<RECORD> tokenCommand )
     {
         track( tokenStore, tokenCommand );
         track( tokenStore.getNameStore(), tokenCommand.getRecord().getNameRecords() );
