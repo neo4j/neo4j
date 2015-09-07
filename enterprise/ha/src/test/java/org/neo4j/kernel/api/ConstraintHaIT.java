@@ -28,14 +28,16 @@ import java.io.File;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.InvalidTransactionTypeException;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -76,7 +78,7 @@ public class ConstraintHaIT
         @Override
         protected void createConstraint( GraphDatabaseService db, String type, String value )
         {
-            db.execute( String.format( "CREATE CONSTRAINT ON (n:%s) ASSERT exists(n.%s)", type, value ) );
+            db.execute( String.format( "CREATE CONSTRAINT ON (n:`%s`) ASSERT exists(n.`%s`)", type, value ) );
         }
 
         @Override
@@ -124,7 +126,7 @@ public class ConstraintHaIT
         @Override
         protected void createConstraint( GraphDatabaseService db, String type, String value )
         {
-            db.execute( String.format( "CREATE CONSTRAINT ON ()-[r:%s]-() ASSERT exists(r.%s)", type, value ) );
+            db.execute( String.format( "CREATE CONSTRAINT ON ()-[r:`%s`]-() ASSERT exists(r.`%s`)", type, value ) );
         }
 
         @Override
@@ -177,7 +179,7 @@ public class ConstraintHaIT
         @Override
         protected void createConstraint( GraphDatabaseService db, String type, String value )
         {
-            db.schema().constraintFor( label( type ) ).assertPropertyIsUnique( value ).create();
+            db.execute( String.format( "CREATE CONSTRAINT ON (n:`%s`) ASSERT n.`%s` IS UNIQUE", type, value ) );
         }
 
         @Override
@@ -278,9 +280,9 @@ public class ConstraintHaIT
                 createConstraint( slave, TYPE, PROPERTY_KEY );
                 fail( "We expected to not be able to create a constraint on a slave in a cluster." );
             }
-            catch ( Exception e )
+            catch ( QueryExecutionException e )
             {
-                assertThat( e, instanceOf( InvalidTransactionTypeException.class ) );
+                assertThat( Exceptions.rootCause( e ), instanceOf( InvalidTransactionTypeKernelException.class ) );
             }
         }
 
