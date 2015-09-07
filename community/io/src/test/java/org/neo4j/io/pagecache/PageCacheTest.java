@@ -95,6 +95,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import static java.lang.Long.toHexString;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
@@ -106,6 +107,8 @@ import static org.neo4j.test.ThreadTestUtils.fork;
 
 public abstract class PageCacheTest<T extends PageCache>
 {
+    private static final long SEMI_LONG_TIMEOUT_MILLIS = 40_000;
+
     protected static ExecutorService executor;
 
     @BeforeClass
@@ -419,7 +422,7 @@ public abstract class PageCacheTest<T extends PageCache>
         assertThat( recordId, is( recordCount - (10 * recordsPerFilePage) ) );
     }
 
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void writesFlushedFromPageFileMustBeExternallyObservable() throws IOException
     {
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
@@ -716,7 +719,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void rewindMustStartScanningOverFromTheBeginning() throws IOException
     {
         int numberOfRewindsToTest = 10;
@@ -1692,7 +1695,7 @@ public abstract class PageCacheTest<T extends PageCache>
     }
 
     @RepeatRule.Repeat( times = 12000 )
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void mustNotLoseUpdates() throws Exception
     {
         // Another test that tries to squeeze out data race bugs. The idea is
@@ -3263,7 +3266,7 @@ public abstract class PageCacheTest<T extends PageCache>
         assertThat( "expect EOF", inputStream.read(), is( -1 ) );
     }
 
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void freshlyCreatedPagesMustContainAllZeros() throws IOException
     {
         ThreadLocalRandom rng = ThreadLocalRandom.current();
@@ -3303,7 +3306,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void optimisticReadLockMustFaultOnRetryIfPageHasBeenEvicted() throws Exception
     {
         final byte a = 'a';
@@ -3395,7 +3398,7 @@ public abstract class PageCacheTest<T extends PageCache>
         pagedFileB.close();
     }
 
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void concurrentPageFaultingMustNotPutInterleavedDataIntoPages() throws Exception
     {
         final int filePageCount = 11;
@@ -3432,10 +3435,10 @@ public abstract class PageCacheTest<T extends PageCache>
             }
         } );
 
-        harness.run( 10, TimeUnit.SECONDS );
+        harness.run( SEMI_LONG_TIMEOUT_MILLIS, MILLISECONDS );
     }
 
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void concurrentFlushingMustNotPutInterleavedDataIntoFile() throws Exception
     {
         final RecordFormat recordFormat = new StandardRecordFormat();
@@ -3453,10 +3456,10 @@ public abstract class PageCacheTest<T extends PageCache>
         harness.disableCommands( Command.MapFile, Command.UnmapFile, Command.ReadRecord );
         harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 
-        harness.run( 10, TimeUnit.SECONDS );
+        harness.run( SEMI_LONG_TIMEOUT_MILLIS, MILLISECONDS );
     }
 
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void concurrentFlushingWithMischiefMustNotPutInterleavedDataIntoFile() throws Exception
     {
         final RecordFormat recordFormat = new StandardRecordFormat();
@@ -3477,10 +3480,10 @@ public abstract class PageCacheTest<T extends PageCache>
         harness.disableCommands( Command.MapFile, Command.UnmapFile, Command.ReadRecord );
         harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 
-        harness.run( 10, TimeUnit.SECONDS );
+        harness.run( SEMI_LONG_TIMEOUT_MILLIS, MILLISECONDS );
     }
 
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void concurrentFlushingWithFailuresMustNotPutInterleavedDataIntoFile() throws Exception
     {
         final RecordFormat recordFormat = new StandardRecordFormat();
@@ -3501,7 +3504,7 @@ public abstract class PageCacheTest<T extends PageCache>
         harness.disableCommands( Command.MapFile, Command.UnmapFile, Command.ReadRecord );
         harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 
-        harness.run( 10, TimeUnit.SECONDS );
+        harness.run( SEMI_LONG_TIMEOUT_MILLIS, MILLISECONDS );
     }
 
     private Phase filesAreCorrectlyWrittenVerification( final RecordFormat recordFormat, final int filePageCount )
@@ -3828,7 +3831,7 @@ public abstract class PageCacheTest<T extends PageCache>
     // architecture that we support.
     // This test has no timeout because one may want to run it on a CPU
     // emulator, where it's not unthinkable for it to take minutes.
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void mustSupportUnalignedWordAccesses() throws Exception
     {
         // 8 MB pages, 10 of them for 80 MB.
@@ -3863,7 +3866,7 @@ public abstract class PageCacheTest<T extends PageCache>
     }
 
     @RepeatRule.Repeat( times = 50 )
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void mustEvictPagesFromUnmappedFiles() throws Exception
     {
         // GIVEN mapping then unmapping
@@ -3886,7 +3889,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void mustFlushDirtyPagesInTheBackground() throws Exception
     {
         final CountDownLatch swapOutLatch = new CountDownLatch( 1 );
@@ -3931,7 +3934,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void mustReadZerosFromBeyondEndOfFile() throws Exception
     {
         StandardRecordFormat recordFormat = new StandardRecordFormat();
@@ -4021,7 +4024,7 @@ public abstract class PageCacheTest<T extends PageCache>
         return queue;
     }
 
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void mustSyncDeviceWhenFlushAndForcingPagedFile() throws Exception
     {
         AtomicInteger syncDeviceCounter = new AtomicInteger();
@@ -4049,7 +4052,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void mustSyncDeviceWhenFlushAndForcingPageCache() throws Exception
     {
         AtomicInteger syncDeviceCounter = new AtomicInteger();
@@ -4084,7 +4087,7 @@ public abstract class PageCacheTest<T extends PageCache>
         pageCache.map( file( "does not exist" ), filePageSize );
     }
 
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void mustCreateNonExistingFileWithCreateOption() throws Exception
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
@@ -4095,7 +4098,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void mustIgnoreCreateOptionIfFileAlreadyExists() throws Exception
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
@@ -4106,7 +4109,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void mustIgnoreCertainOpenOptions() throws Exception
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
@@ -4119,7 +4122,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void mustThrowOnUnsupportedOpenOptions() throws Exception
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
@@ -4150,7 +4153,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void mappingFileWithTruncateOptionMustTruncateFile() throws Exception
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
