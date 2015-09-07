@@ -39,6 +39,8 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
+import static java.lang.String.format;
+
 public class LuceneLabelScanWriter implements LabelScanWriter
 {
     private final LabelScanStorageStrategy.StorageService storage;
@@ -69,7 +71,9 @@ public class LuceneLabelScanWriter implements LabelScanWriter
         {
             if ( range < currentRange )
             {
-                throw new IllegalArgumentException( "NodeLabelUpdates must be supplied in order of ascending node id" );
+                throw new IllegalArgumentException( format( "NodeLabelUpdates must be supplied in order of " +
+                        "ascending node id. Current range:%d, node id of this update:%d",
+                        currentRange, update.getNodeId() ) );
             }
 
             flush();
