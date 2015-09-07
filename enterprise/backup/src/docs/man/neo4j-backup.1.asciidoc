@@ -20,8 +20,7 @@ The source(s) are given as host:port pairs, the target is a filesystem location.
 
 For information regarding Windows, see http://neo4j.com/docs/stable/powershell.html.
 
-BACKUP TYPE
------------
+== BACKUP TYPE
 
 *-full*::
   copies the entire database to a directory.
