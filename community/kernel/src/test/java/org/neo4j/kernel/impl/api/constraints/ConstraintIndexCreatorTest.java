@@ -213,6 +213,12 @@ public class ConstraintIndexCreatorTest
                 public void registerCloseListener( CloseListener listener )
                 {
                 }
+
+                @Override
+                public void setDescription( String description )
+                {
+
+                }
             };
         }
 

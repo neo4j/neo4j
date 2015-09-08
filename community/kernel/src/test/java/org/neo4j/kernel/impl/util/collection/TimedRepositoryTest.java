@@ -26,27 +26,26 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.function.Consumer;
-import org.neo4j.function.Factory;
+import org.neo4j.function.Function;
 import org.neo4j.test.ArtificialClock;
 
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 public class TimedRepositoryTest
 {
     private final AtomicLong valueGenerator = new AtomicLong();
     private final List<Long> reapedValues = new ArrayList<>();
 
-    private final Factory<Long> provider = new Factory<Long>()
+    private final Function<Long, Long> provider = new Function<Long, Long>()
     {
         @Override
-        public Long newInstance()
+        public Long apply(Long key)
         {
             return valueGenerator.getAndIncrement();
         }

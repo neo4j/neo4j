@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha.lock.forseti;
 
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
@@ -117,26 +118,7 @@ class SharedLock implements ForsetiLockManager.Lock
     }
 
     @Override
-    public int holderWaitListSize()
-    {
-        int size = 0;
-        for ( int i = 0; i < clientsHoldingThisLock.length; i++ )
-        {
-            AtomicReferenceArray<ForsetiClient> holders = clientsHoldingThisLock[i];
-            for ( int j = 0; holders != null && j < holders.length(); j++ )
-            {
-                ForsetiClient client = holders.get( j );
-                if(client != null)
-                {
-                    size += client.waitListSize();
-                }
-            }
-        }
-        return size;
-    }
-
-    @Override
-    public boolean anyHolderIsWaitingFor( int clientId )
+    public int detectDeadlock( int clientId )
     {
         for ( int i = 0; i < clientsHoldingThisLock.length; i++ )
         {
@@ -146,11 +128,11 @@ class SharedLock implements ForsetiLockManager.Lock
                 ForsetiClient client = holders.get( j );
                 if(client != null && client.isWaitingFor( clientId ))
                 {
-                    return true;
+                    return client.id();
                 }
             }
         }
-        return false;
+        return -1;
     }
 
     public boolean tryAcquireUpdateLock( ForsetiClient client )
@@ -188,18 +170,28 @@ class SharedLock implements ForsetiLockManager.Lock
 
     public int numberOfHolders()
     {
-        return refCount.get() & ~UPDATE_LOCK_FLAG;
+        return numberOfHolders( refCount.get() );
+    }
+
+    private int numberOfHolders(int count)
+    {
+        return count & ~UPDATE_LOCK_FLAG;
     }
 
     public boolean isUpdateLock()
     {
-        return (refCount.get() & UPDATE_LOCK_FLAG) == UPDATE_LOCK_FLAG;
+        return isUpdateLock( refCount.get() );
+    }
+
+    private boolean isUpdateLock( int localRefCount )
+    {
+        return (localRefCount & UPDATE_LOCK_FLAG) == UPDATE_LOCK_FLAG;
     }
 
     @Override
-    public String describeWaitList()
+    public String describeWaitList( Set<Integer> involvedParties )
     {
-        StringBuilder sb = new StringBuilder( "SharedLock[" );
+        StringBuilder sb = new StringBuilder();
         for ( int i = 0; i < clientsHoldingThisLock.length; i++ )
         {
             AtomicReferenceArray<ForsetiClient> holders = clientsHoldingThisLock[i];
@@ -209,31 +201,32 @@ class SharedLock implements ForsetiLockManager.Lock
                 ForsetiClient current = holders.get( j );
                 if(current != null)
                 {
-                    sb.append( first ? "" : ", " ).append( current.describeWaitList() );
+                    involvedParties.add( current.id() );
+                    sb.append( first ? "" : ", " ).append( current.describeWaitList( involvedParties ) );
                     first = false;
                 }
             }
         }
-        return sb.append( "]" ).toString();
+        return sb.toString();
     }
 
     @Override
     public String toString()
     {
-        // TODO we should only read out the refCount once, and build a deterministic string based on that
-        if(isUpdateLock())
+        int refCountSnapshot = refCount.get();
+        if(isUpdateLock(refCountSnapshot))
         {
             return "UpdateLock{" +
                 "objectId=" + System.identityHashCode( this ) +
-                ", refCount=" + (refCount.get() & ~UPDATE_LOCK_FLAG) +
-                ", holder=" + updateHolder +
+                ", refCount=" + numberOfHolders( refCountSnapshot ) +
+                ", owner=" + updateHolder +
             '}';
         }
         else
         {
             return "SharedLock{" +
                     "objectId=" + System.identityHashCode( this ) +
-                    ", refCount=" + refCount +
+                    ", refCount=" + refCountSnapshot +
                     '}';
         }
     }
