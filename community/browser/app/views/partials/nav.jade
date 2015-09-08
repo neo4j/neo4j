@@ -11,5 +11,8 @@
       a.fa.fa-star(ng-click='toggleDrawer("scripts")')
     li(ng-class='{active: showingDrawer("info") }')
       a.fa.fa-info-circle(ng-click='toggleDrawer("info")')
-    li.bottom(ng-class='{active: showingDrawer("credits") }')
+  ul.nav.list-group.bottom
+    li(ng-class='{active: showingDrawer("preferences") }')
+      a.fa.fa-cog(ng-click='toggleDrawer("preferences")')
+    li(ng-class='{active: showingDrawer("credits") }')
       a(ng-click='toggleDrawer("credits")') &#64;
