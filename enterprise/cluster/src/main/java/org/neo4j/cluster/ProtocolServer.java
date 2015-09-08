@@ -30,19 +30,22 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * A ProtocolServer ties together the underlying StateMachines with an understanding of ones
  * own server address (me), and provides a proxy factory for creating clients to invoke the CSM.
  */
-public class ProtocolServer implements BindingNotifier
+public class ProtocolServer
+        extends LifecycleAdapter
+        implements BindingNotifier
 {
     private final InstanceId me;
     private URI boundAt;
     protected StateMachineProxyFactory proxyFactory;
     protected final StateMachines stateMachines;
     private Iterable<BindingListener> bindingListeners = Listeners.newListeners();
-    private final StringLogger msgLog;
+    private StringLogger msgLog;
 
     public ProtocolServer( InstanceId me, StateMachines stateMachines, Logging logging )
     {
@@ -53,6 +56,12 @@ public class ProtocolServer implements BindingNotifier
         StateMachineConversations conversations = new StateMachineConversations(me);
         proxyFactory = new StateMachineProxyFactory( stateMachines, conversations, me );
         stateMachines.addMessageProcessor( proxyFactory );
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        msgLog = null;
     }
 
     @Override
