@@ -4,10 +4,8 @@
 This section outlines deprecations in Neo4j {neo4j-version} or earlier in order to help you find a smoother transition path to future releases.
 
 Cypher ExecutionEngine::
-There's no need to use `ExecutionEngine` any more:
-instead, use the
-link:javadocs/org/neo4j/graphdb/GraphDatabaseService.html#execute(java.lang.String)[execute]
-methods on `GraphDatabaseService`.
+There's no need to use `ExecutionEngine` anymore.
+Instead, use the link:javadocs/org/neo4j/graphdb/GraphDatabaseService.html#execute(java.lang.String)[execute] methods on `GraphDatabaseService`.
 `ExecutionEngine` and the related classes/interfaces have been deprecated, see the javadocs for details.
 
 Embedded Java API::
@@ -17,4 +15,9 @@ Graph Matching::
 The graph-matching component will be removed in future releases.
 
 Windows scripts::
-The `.bat` files used to operate the database and tools on Windows are being phased out and will be removed in future releases, in favor of modern, equivalent PowerShell scripts. For more information, see <<powershell>>.
+The `.bat` files used to operate the database and tools on Windows are being phased out and will be removed in future releases, in favor of modern, equivalent PowerShell scripts.
+For more information, see <<powershell>>.
+
+`STR()` function::
+The `STR()` function is deprecated from Neo4j version 2.3 and onwards.
+It may be removed in a future major release.

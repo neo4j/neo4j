@@ -669,7 +669,7 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
       syntax = "SPLIT( original, splitPattern )",
       arguments = List(
         "original" -> "An expression that returns a string",
-        "splitPattern" -> "The string to split to original string with"),
+        "splitPattern" -> "The string to split the original string with"),
       text = "`SPLIT` returns the sequence of strings witch are delimited by split patterns.",
       queryText = """return split("one,two", ",")""",
       returns = "",
@@ -798,10 +798,12 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
       title = "STR",
       syntax = "STR( expression )",
       arguments = List("expression" -> "An expression that returns anything"),
-      text = "`STR` returns a string representation of the expression.",
-      queryText = "return str(1)",
+      text = "`STR` returns a string representation of the expression. If the expression returns a string the result will" +
+        "be wrapped in quotation marks.",
+      queryText = "return str(1), str(\"hello\")",
       returns = "",
-      assertions = (p) => assert(List(Map("str(1)" -> "1")) === p.toList)
+      assertions = (p) => assert(List(Map("str(1)" -> "1",
+                                          "str(\"hello\")" -> "\"hello\"")) === p.toList)
     )
   }
 
@@ -835,8 +837,8 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
     testThis(
       title = "TOSTRING",
       syntax = "TOSTRING( expression )",
-      arguments = List("expression" -> "An expression that returns anything"),
-      text = "`TOSTRING` converts the argument to a string. It converts integers and floating point numbers to strings, and if called with a string will leave it unchanged.",
+      arguments = List("expression" -> "An expression that returns a number or a string"),
+      text = "`TOSTRING` converts the argument to a string. It converts integral and floating point numbers to strings, and if called with a string will leave it unchanged.",
       queryText = "return toString(11.5), toString(\"already a string\")",
       returns = "",
       assertions = (p) => assert(List(Map("toString(11.5)" -> "11.5", "toString(\"already a string\")" -> "already a string")) === p.toList)
