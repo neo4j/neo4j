@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, InequalitySeekRangeExpression, PrefixSeekRangeExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{QueryExpression, RangeQueryExpression, indexQuery}
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsLabel, ReadsNodeProperty, ReadsNodesWithLabels}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsGivenNodeProperty, ReadsNodesWithLabels}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Index, InequalityIndex, PrefixIndex}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
@@ -94,7 +94,7 @@ case class NodeIndexSeekPipe(ident: String,
 
   def sources: Seq[Pipe] = Seq.empty
 
-  override def localEffects = Effects(ReadsNodesWithLabels(label.name), ReadsLabel(label.name), ReadsNodeProperty(propertyKey.name))
+  override def localEffects = Effects(ReadsNodesWithLabels(label.name), ReadsGivenNodeProperty(propertyKey.name))
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

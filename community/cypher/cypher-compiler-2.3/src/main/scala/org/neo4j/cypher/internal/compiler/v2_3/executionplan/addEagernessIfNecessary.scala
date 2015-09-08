@@ -31,7 +31,7 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
       to.contains(ReadsRelationships)
 
     nodesInterfere || relsInterfere || readWriteInterfereNodes || readWriteInterfereRelationships ||
-      nodePropertiesInterfere(from, to) || relationshipPropertiesInterfere(from, to) || labelsInterfere(from, to)
+      nodePropertiesInterfere(from, to) || relationshipPropertiesInterfere(from, to)
   }
 
   def apply(toPipe: Pipe): Pipe = {
@@ -98,9 +98,14 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
       case property: WritesNodeProperty => property
     }
 
-    (propertyReads.nonEmpty && propertyWrites(WritesAnyNodeProperty)) ||
-      (propertyReads(ReadsAnyNodeProperty) && propertyWrites.nonEmpty) ||
-      propertyWrites.exists(x => propertyReads(ReadsNodeProperty(x.propertyName)))
+    propertyReads.exists {
+      case ReadsAnyNodeProperty => propertyWrites.nonEmpty
+      case ReadsGivenNodeProperty(prop) => propertyWrites(WritesGivenNodeProperty(prop))
+    } ||
+      propertyWrites.exists {
+        case WritesAnyNodeProperty => propertyReads.nonEmpty
+        case WritesGivenNodeProperty(prop) => propertyReads(ReadsGivenNodeProperty(prop))
+      }
   }
 
   private def relationshipPropertiesInterfere(from: Effects, to: Effects): Boolean = {
@@ -111,24 +116,13 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
     val propertyWrites = to.effectsSet.collect {
       case property: WritesRelationshipProperty => property
     }
-
-    (propertyReads.nonEmpty && propertyWrites(WritesAnyRelationshipProperty)) ||
-      (propertyReads(ReadsAnyRelationshipProperty) && propertyWrites.nonEmpty) ||
-      propertyWrites.exists(x => propertyReads(ReadsRelationshipProperty(x.propertyName)))
-  }
-
-
-  private def labelsInterfere(from: Effects, to: Effects): Boolean = {
-    val labelReads = from.effectsSet.collect {
-      case label: ReadsLabel => label
-    }
-
-    val labelWrites = to.effectsSet.collect {
-      case label: WritesLabel => label
-    }
-
-    (labelReads.nonEmpty && labelWrites(WritesAnyLabel)) ||
-      (labelReads(ReadsAnyLabel) && labelWrites.nonEmpty) ||
-      labelWrites.exists(x => labelReads(ReadsLabel(x.labelName)))
+    propertyReads.exists {
+      case ReadsAnyRelationshipProperty => propertyWrites.nonEmpty
+      case ReadsGivenRelationshipProperty(prop) => propertyWrites(WritesGivenRelationshipProperty(prop))
+    } ||
+      propertyWrites.exists {
+        case WritesAnyRelationshipProperty => propertyReads.nonEmpty
+        case WritesGivenRelationshipProperty(prop) => propertyReads(ReadsGivenRelationshipProperty(prop))
+      }
   }
 }

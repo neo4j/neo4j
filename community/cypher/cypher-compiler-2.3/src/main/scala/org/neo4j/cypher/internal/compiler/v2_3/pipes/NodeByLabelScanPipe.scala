@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ReadsNodesWithLabels, Effects, ReadsLabel}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsNodesWithLabels}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.LabelName
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
@@ -58,7 +58,7 @@ case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
 
   def sources: Seq[Pipe] = Seq.empty
 
-  override def localEffects = Effects(ReadsNodesWithLabels(label.name), ReadsLabel(label.name))
+  override def localEffects = Effects(ReadsNodesWithLabels(label.name))
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

@@ -122,7 +122,7 @@ case class RangeQueryExpression[T](expression: T) extends QueryExpression[T] {
 case class SchemaIndex(identifier: String, label: String, property: String, kind: SchemaIndexKind, query: Option[QueryExpression[Expression]])
   extends StartItem(identifier, query.map(q => Arguments.LegacyExpression(q.expression)).toSeq :+ Arguments.Index(label, property))
   with ReadOnlyStartItem with Hint with NodeStartItemIdentifiers {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsLabel(label), ReadsNodeProperty(property))
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsNodesWithLabels(label), ReadsGivenNodeProperty(property))
 }
 
 case class NodeById(varName: String, expression: Expression)
@@ -140,7 +140,7 @@ case class NodeByIdOrEmpty(varName: String, expression: Expression)
 case class NodeByLabel(varName: String, label: String)
   extends StartItem(varName, Seq(Arguments.LabelName(label)))
   with ReadOnlyStartItem with Hint with NodeStartItemIdentifiers {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsLabel(label))
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsNodesWithLabels(label))
 }
 
 case class AllNodes(columnName: String) extends StartItem(columnName, Seq.empty)

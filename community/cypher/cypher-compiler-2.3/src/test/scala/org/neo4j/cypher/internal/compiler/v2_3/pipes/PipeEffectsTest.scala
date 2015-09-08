@@ -68,7 +68,7 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
       -> Effects(),
 
     FilterPipe(SingleRowPipe(), HasLabel(Identifier("a"), UnresolvedLabel("Apa")))()
-      -> Effects(ReadsLabel("Apa")),
+      -> Effects(ReadsNodesWithLabels("Apa")),
 
     ColumnFilterPipe(SingleRowPipe(), Seq(ReturnItem(Literal(42), "a")))
       -> Effects(),
