@@ -1,3 +1,7 @@
+2.3.0-M01
+---------
+o Adds support for LIKE/range queries to IndexReader
+
 2.2.5
 -----
 o Fixes an issue where a race could lead to skipped entries from the lucene index

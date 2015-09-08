@@ -1,3 +1,14 @@
+2.3.0-M03
+---------
+o Adds commons-lang3 dependency
+o Uses vectored I/O for better throughput for flushing pages to underlying storage
+
+2.3.0-M02
+---------
+o Striped access to FileChannels in SingleFilePageSwapper. This reduces the contention on the synchronized NativeThreadSet inside FileChannelImpl,
+  which can become a significant contention point when there's a high page fault rate
+o No longer relies on interrupts for page cache shutdown signalling
+
 2.2.1
 -----
 o Page cache read performance improvements

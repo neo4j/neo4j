@@ -1,3 +1,7 @@
+2.3.0-M03
+---------
+o Given ongoing transactions a bit of time (10 seconds default) to complete before making a required role switch
+
 2.2.5
 -----
 o Properly release local slave locks after master locks, resolving an issue

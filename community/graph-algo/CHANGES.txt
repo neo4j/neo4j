@@ -1,3 +1,10 @@
+2.3.0-M03
+---------
+o Correctness fixes to Dijkstra regarding floating point precision, which can now be supplied by user
+o Optimizations to Dijkstra where it didn't terminate as soon as it could have
+o Introducing bidirectional Dijkstra algorithm which often out-performs monodirectional Dijkstra
+o Shortest path algorithm supports result Path filtering
+
 2.2.5
 -----
 o Fixes #5086 - path.reverseNodes bug
