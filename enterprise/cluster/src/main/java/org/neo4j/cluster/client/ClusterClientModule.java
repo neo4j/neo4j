@@ -199,6 +199,7 @@ public class ClusterClientModule
                 acceptorInstanceStore, electionCredentialsProvider, stateMachineExecutor, objectInputStreamFactory,
                 objectOutputStreamFactory );
 
+        this.life.add( server );
         this.life.add( sender );
         this.life.add( stateMachineExecutor );
         this.life.add( receiver );
