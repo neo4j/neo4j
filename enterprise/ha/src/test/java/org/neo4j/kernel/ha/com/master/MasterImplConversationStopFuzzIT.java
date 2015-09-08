@@ -40,7 +40,7 @@ import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.function.Consumer;
-import org.neo4j.function.Factory;
+import org.neo4j.function.Function;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -482,7 +482,7 @@ public class MasterImplConversationStopFuzzIT
     private class ExposedTimedRepository<KEY, VALUE> extends TimedRepository<KEY, VALUE>
     {
 
-        private ExposedTimedRepository(  Factory<VALUE> provider, Consumer<VALUE> reaper, long timeout,
+        private ExposedTimedRepository(  Function<KEY, VALUE> provider, Consumer<VALUE> reaper, long timeout,
                 Clock clock)
         {
             super(provider, reaper, timeout, clock);

@@ -115,6 +115,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
   def execute(query: String, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
     executionMonitor.startQueryExecution(session, query)
     val (preparedPlanExecution, txInfo) = planQuery(query)
+    txBridge.getKernelTransactionBoundToThisThread( true ).setDescription("\"" + query + "\"")
     preparedPlanExecution.execute(graphAPI, txInfo, params, session)
   }
 

@@ -167,10 +167,10 @@ public class MasterImpl extends LifecycleAdapter implements Master
         // not, we use a one-off lock client. The way the client signals this is via the 'eventIdentifier' in the
         // request. -1 means no locks are held, any other number means there should be a matching lock session.
 
-        if(context.getEventIdentifier() == -1)
+        if ( context.getEventIdentifier() == -1 )
         {
             // Client is not holding locks, use a temporary lock client
-            try(Conversation conversation = conversationManager.acquire())
+            try ( Conversation conversation = conversationManager.startConversation( context ) )
             {
                 return commit0( context, preparedTransaction, conversation.getLocks() );
             }
@@ -198,8 +198,8 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
     }
 
-    private Response<Long> commit0( RequestContext context, TransactionRepresentation preparedTransaction, Locks
-            .Client locks ) throws IOException, org.neo4j.kernel.api.exceptions.TransactionFailureException
+    private Response<Long> commit0( RequestContext context, TransactionRepresentation preparedTransaction,
+                                    Locks.Client locks ) throws IOException, org.neo4j.kernel.api.exceptions.TransactionFailureException
     {
         if ( locks.trySharedLock( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() ) )
         {

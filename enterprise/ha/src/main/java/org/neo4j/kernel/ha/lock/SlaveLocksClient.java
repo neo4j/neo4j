@@ -91,6 +91,18 @@ class SlaveLocksClient implements Locks.Client
         return lockMap;
     }
 
+    public Locks.Client description( String desc )
+    {
+        client.description( desc );
+        return this;
+    }
+
+    @Override
+    public String description()
+    {
+        return client.description();
+    }
+
     @Override
     public void acquireShared( Locks.ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
     {

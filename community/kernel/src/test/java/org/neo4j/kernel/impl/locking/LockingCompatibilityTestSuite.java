@@ -46,6 +46,7 @@ import static org.neo4j.test.OtherThreadRule.isWaiting;
         AcquireAndReleaseLocksCompatibility.class,
         DeadlockCompatibility.class,
         LockReentrancyCompatibility.class,
+        LockingFuzzCompatibility.class,
         RWLockCompatibility.class,
         StopCompatibility.class,
         CloseCompatibility.class

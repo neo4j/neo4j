@@ -226,6 +226,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public KernelTransactionImplementation initialize( long lastCommittedTx )
     {
         assert locks != null : "This transaction has been disposed off, it should not be used.";
+        this.locks.description("Core API transaction"); // Default to this. Cypher will override this description for each query
         this.terminated = closing = closed = failure = success = false;
         this.transactionType = TransactionType.ANY;
         this.hooksState = null;
@@ -1113,5 +1114,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         assert closeListener == null;
         closeListener = listener;
+    }
+
+    @Override
+    public void setDescription( String description )
+    {
+        locks.description( description );
     }
 }

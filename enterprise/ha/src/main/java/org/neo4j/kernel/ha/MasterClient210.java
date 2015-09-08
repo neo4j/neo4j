@@ -226,7 +226,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
             resourceIds )
     {
         return sendRequest( HaRequestType210.ACQUIRE_EXCLUSIVE_LOCK, context,
-                new AcquireLockSerializer( type, resourceIds ), LOCK_RESULT_DESERIALIZER );
+            new AcquireLockSerializer( type, resourceIds ), LOCK_RESULT_DESERIALIZER );
     }
 
     @Override

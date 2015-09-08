@@ -21,18 +21,22 @@ package org.neo4j.kernel.impl.enterprise.lock.forseti;
 
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.collection.pool.LinkedQueuePool;
-import org.neo4j.collection.pool.Pool;
+import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static java.lang.String.format;
 
 /**
  * <h1>Forseti, the Nordic god of justice</h1>
@@ -100,12 +104,27 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
     interface Lock
     {
         void copyHolderWaitListsInto( SimpleBitSet waitList );
-        int holderWaitListSize();
-        boolean anyHolderIsWaitingFor( int client );
 
-        /** For introspection and error messages */
-        String describeWaitList();
+        /**
+         * Detect if waiting for this lock would cause a deadlock for the specified client - and if so, return which client we would deadlock with. This is
+         * probabilistic - it may return false positives, and it may return false negatives. The system should call this method in a loop - if there is a
+         * deadlock, the longer it loops the more likely it is to detect it.
+         *
+         * @param client the client that wants to wait on this lock
+         * @return -1 if no deadlock will occur, or the client id if one will
+         */
+        int detectDeadlock( int client );
 
+        /**
+         * For introspection and error messages
+         * @param involvedParties Clients involved in the waiting will be appended to this set, to allow the callee to construct a legend with client descriptions
+         */
+        String describeWaitList( Set<Integer> involvedParties );
+    }
+
+    interface DeadlockResolutionStrategy
+    {
+        boolean shouldAbort( ForsetiClient clientThatsAsking, ForsetiClient clientWereDeadlockedWith );
     }
 
     /** Pointers to lock maps, one array per resource type. */
@@ -115,7 +134,7 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
     private final ResourceType[] resourceTypes;
 
     /** Pool forseti clients. */
-    private final Pool<ForsetiClient> clientPool;
+    private final ForsetiClientFlyweightPool clientPool;
 
     @SuppressWarnings( "unchecked" )
     public ForsetiLockManager( ResourceType... resourceTypes )
@@ -138,7 +157,7 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
         // TODO be good enough. In fact, we could add the required fields for such a stack
         // TODO to the ForsetiClient objects themselves, making the stack garbage-free in
         // TODO the (presumably) common case of client re-use.
-        clientPool = new ForsetiClientFlyweightPool( lockMaps, waitStrategies );
+        clientPool = new ForsetiClientFlyweightPool( lockMaps, waitStrategies, new DefaultDeadlockStrategy() );
     }
 
     /**
@@ -163,7 +182,11 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
                 for ( Map.Entry<Long, Lock> entry : lockMaps[i].entrySet() )
                 {
                     Lock lock = entry.getValue();
-                    out.visit( type, entry.getKey(), lock.describeWaitList(), 0, System.identityHashCode( lock ) );
+                    Set<Integer> involvedParties = new TreeSet<>();
+                    String waitList = lock.describeWaitList( involvedParties );
+                    String legend = legendForClients( involvedParties, clientPool.getClient );
+                    String description = format( "%s: %s%nTransactions:%s", lock.toString(), waitList, legend );
+                    out.visit( type, entry.getKey(), description, 0, System.identityHashCode( lock ) );
                 }
             }
         }
@@ -187,16 +210,28 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
         /** Re-use ids, forseti uses these in arrays, so we want to keep them low and not loose them. */
         // TODO we could use a synchronised SimpleBitSet instead, since we know that we only care about reusing a very limited set of integers.
         private final Queue<Integer> unusedIds = new ConcurrentLinkedQueue<>();
+        private final ConcurrentMap<Integer, ForsetiClient> clientsById = new ConcurrentHashMap<>();
         private final ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps;
         private final WaitStrategy<AcquireLockTimeoutException>[] waitStrategies;
+        private final DeadlockResolutionStrategy deadlockStrategy;
+        private final Function<Integer,ForsetiClient> getClient = new Function<Integer,ForsetiClient>()
+        {
+            @Override
+            public ForsetiClient apply( Integer integer ) throws RuntimeException
+            {
+                return clientsById.get( integer );
+            }
+        };
 
         public ForsetiClientFlyweightPool(
                 ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps,
-                WaitStrategy<AcquireLockTimeoutException>[] waitStrategies )
+                WaitStrategy<AcquireLockTimeoutException>[] waitStrategies,
+                DeadlockResolutionStrategy deadlockStrategy )
         {
             super( 128, null);
             this.lockMaps = lockMaps;
             this.waitStrategies = waitStrategies;
+            this.deadlockStrategy = deadlockStrategy;
         }
 
         @Override
@@ -207,18 +242,32 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
             {
                 id = clientIds.getAndIncrement();
             }
-            return new ForsetiClient(id, lockMaps, waitStrategies, this );
+            ForsetiClient client = new ForsetiClient( id, lockMaps, waitStrategies, this, getClient, deadlockStrategy );
+            clientsById.put( id, client );
+            return client;
         }
 
         @Override
         protected void dispose( ForsetiClient resource )
         {
             super.dispose( resource );
+            clientsById.remove( resource.id() );
             if(resource.id() < 1024)
             {
                 // Re-use all ids < 1024
                 unusedIds.offer( resource.id() );
             }
         }
+    }
+    /** For error messages etc, build a legend of client id -> description, to allow users to tell what each of the different clients were up to */
+    public static String legendForClients( Set<Integer> clientIds, Function<Integer, ForsetiClient> getClient )
+    {
+        StringBuilder out = new StringBuilder();
+        for ( Integer clientId : clientIds )
+        {
+            ForsetiClient client = getClient.apply( clientId );
+            out.append( format( "%n  Tx[%d]: %s", clientId, client == null ? "N/A" : client.description() ) );
+        }
+        return out.toString();
     }
 }

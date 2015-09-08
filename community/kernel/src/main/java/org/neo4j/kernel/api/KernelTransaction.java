@@ -129,4 +129,11 @@ public interface KernelTransaction extends AutoCloseable
      * @param listener {@link CloseListener} to get these notifications.
      */
     void registerCloseListener( CloseListener listener );
+
+    /**
+     * Add a description of this transaction to make user-facing messages more helpful. For instance, this could be set to
+     * the current query string being executed.
+     * @param description
+     */
+    void setDescription( String description );
 }
