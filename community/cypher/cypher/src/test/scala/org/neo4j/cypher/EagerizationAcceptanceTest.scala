@@ -598,6 +598,30 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 0)
   }
 
+  test("should not be eager when merging on two different labels") {
+    val query = "MERGE(:L1) MERGE(p:L2) ON CREATE SET p.name = 'Blaine'"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("should be eager when merging on the same label") {
+    val query = "MERGE(:L1) MERGE(p:L1) ON CREATE SET p.name = 'Blaine'"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should be eager when only one merge has labels") {
+    val query = "MERGE() MERGE(p: Person) ON CREATE SET p.name = 'Blaine'"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should be eager when no merge has labels") {
+    val query = "MERGE() MERGE(p) ON CREATE SET p.name = 'Blaine'"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
   private def assertNumberOfEagerness(query: String, expectedEagerCount: Int) {
     val q = if (query.contains("EXPLAIN")) query else "EXPLAIN " + query
     val result = execute(q)

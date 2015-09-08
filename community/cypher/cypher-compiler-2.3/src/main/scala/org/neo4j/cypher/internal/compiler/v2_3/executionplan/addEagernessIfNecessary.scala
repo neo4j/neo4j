@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EagerPipe, Pipe}
 
 object addEagernessIfNecessary extends (Pipe => Pipe) {
   private def wouldInterfere(from: Effects, to: Effects): Boolean = {
-    val nodesInterfere = from.contains(ReadsNodes) && to.contains(WritesNodes)
+    val nodesInterfere = nodesReadInterference(from, to)
     val relsInterfere = from.contains(ReadsRelationships) && to.contains(WritesRelationships)
 
-    val readWriteInterfereNodes = from.contains(WritesNodes) && to.contains(WritesNodes) && to.contains(ReadsNodes)
+    val readWriteInterfereNodes = nodesWriteInterference(from, to)
     val readWriteInterfereRelationships = from.contains(WritesRelationships) && to.contains(WritesRelationships) &&
       to.contains(ReadsRelationships)
 
@@ -45,6 +45,48 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
       }
     }
     toPipe.dup(sources.toList)
+  }
+
+  private def nodesWriteInterference(from: Effects, to: Effects) = {
+    val fromWrites = from.effectsSet.collect {
+      case writes: WritesNodes => writes
+    }
+
+    val toReads = to.effectsSet.collect {
+      case reads: ReadsNodes => reads
+    }
+    val toWrites = to.effectsSet.collect {
+      case writes: WritesNodes => writes
+    }
+    (fromWrites.contains(WritesAnyNodes) && toWrites.nonEmpty && toReads.nonEmpty) ||
+    (fromWrites.nonEmpty && toWrites.nonEmpty && toReads.contains(ReadsAnyNodes)) ||
+      (nodeLabelOverlap(toReads, fromWrites) && toWrites.nonEmpty)
+  }
+
+  private def nodesReadInterference(from: Effects, to: Effects) = {
+    val fromReads = from.effectsSet.collect {
+      case reads: ReadsNodes => reads
+    }
+
+    val toWrites = to.effectsSet.collect {
+      case writes: WritesNodes => writes
+    }
+
+    (fromReads.nonEmpty && toWrites.contains(WritesAnyNodes)) ||
+    (fromReads.contains(ReadsAnyNodes) && toWrites.nonEmpty) ||
+      nodeLabelOverlap(fromReads, toWrites)
+  }
+
+  private def nodeLabelOverlap(reads: Set[ReadsNodes], writes: Set[WritesNodes]) = {
+    val fromLabels = reads.collect {
+      case ReadsNodesWithLabels(labels) => labels
+    }.flatten
+
+    val toLabels = writes.collect {
+      case WritesNodesWithLabels(labels) => labels
+    }.flatten
+
+    (fromLabels intersect toLabels).nonEmpty
   }
 
   private def nodePropertiesInterfere(from: Effects, to: Effects): Boolean = {

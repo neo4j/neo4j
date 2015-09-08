@@ -116,7 +116,7 @@ case class MergePatternAction(patterns: Seq[Pattern],
 
   private def readEffects(symbols: SymbolTable): Effects = {
     val collect: Seq[Effect] = identifiers.collect {
-      case (k, CTNode) if !symbols.hasIdentifierNamed(k) => ReadsNodes
+      case (k, CTNode) if !symbols.hasIdentifierNamed(k) => ReadsAnyNodes
       case (k, CTRelationship) if !symbols.hasIdentifierNamed(k) => ReadsRelationships
     }
 

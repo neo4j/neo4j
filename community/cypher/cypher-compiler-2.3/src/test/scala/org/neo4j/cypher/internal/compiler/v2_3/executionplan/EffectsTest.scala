@@ -32,16 +32,16 @@ class EffectsTest extends CypherFunSuite {
 
   test("logical AND works for write effects") {
     val first = AllWriteEffects
-    val second = Effects(WritesRelationships, ReadsRelationships, WritesLabel("foo"), WritesNodes)
+    val second = Effects(WritesRelationships, ReadsRelationships, WritesLabel("foo"), WritesAnyNodes)
 
-    (first & second) should be(Effects(WritesRelationships, WritesNodes))
+    (first & second) should be(Effects(WritesRelationships, WritesAnyNodes))
   }
 
   test("logical AND works for read effects") {
     val first = AllReadEffects
-    val second = Effects(ReadsNodes, ReadsAnyNodeProperty, WritesNodeProperty("bar"))
+    val second = Effects(ReadsAnyNodes, ReadsAnyNodeProperty, WritesNodeProperty("bar"))
 
-    (first & second) should be(Effects(ReadsNodes, ReadsAnyNodeProperty))
+    (first & second) should be(Effects(ReadsAnyNodes, ReadsAnyNodeProperty))
   }
 
   test("logical AND considers equal property names") {
@@ -52,25 +52,25 @@ class EffectsTest extends CypherFunSuite {
   }
 
   test("logical AND considers equal label names") {
-    val first = Effects(ReadsNodes, ReadsLabel("bar"))
+    val first = Effects(ReadsAnyNodes, ReadsLabel("bar"))
     val second = Effects(ReadsLabel("bar"))
 
     (first & second).effectsSet should contain only ReadsLabel("bar")
   }
 
   test("logical OR works") {
-    val first = Effects(WritesRelationships, WritesNodes, ReadsLabel("foo"))
+    val first = Effects(WritesRelationships, WritesAnyNodes, ReadsLabel("foo"))
     val second = Effects(ReadsLabel("foo"), WritesNodeProperty("bar"))
 
-    (first | second) should be(Effects(WritesRelationships, WritesNodes, ReadsLabel("foo"), WritesNodeProperty("bar")))
+    (first | second) should be(Effects(WritesRelationships, WritesAnyNodes, ReadsLabel("foo"), WritesNodeProperty("bar")))
   }
 
   test("logical OR works for write effects") {
     val first = AllWriteEffects
-    val second = Effects(WritesRelationships, ReadsRelationships, ReadsNodes)
+    val second = Effects(WritesRelationships, ReadsRelationships, ReadsAnyNodes)
 
     val expected = Effects(
-      WritesNodes, WritesRelationships, WritesAnyLabel, WritesAnyNodeProperty, WritesAnyRelationshipProperty, ReadsRelationships, ReadsNodes
+      WritesAnyNodes, WritesRelationships, WritesAnyLabel, WritesAnyNodeProperty, WritesAnyRelationshipProperty, ReadsRelationships, ReadsAnyNodes
     )
 
     (first | second) should be(expected)
@@ -81,23 +81,23 @@ class EffectsTest extends CypherFunSuite {
     val second = Effects(ReadsNodeProperty("foo"), WritesNodeProperty("bar"))
 
     val expected = Effects(
-      ReadsNodes, ReadsRelationships, ReadsAnyNodeProperty, ReadsAnyRelationshipProperty, ReadsAnyLabel, ReadsNodeProperty("foo"), WritesNodeProperty("bar")
+      ReadsAnyNodes, ReadsRelationships, ReadsAnyNodeProperty, ReadsAnyRelationshipProperty, ReadsAnyLabel, ReadsNodeProperty("foo"), WritesNodeProperty("bar")
     )
 
     (first | second) should be(expected)
   }
 
   test("logical OR considers equal property names") {
-    val first = Effects(WritesNodes, ReadsNodeProperty("foo"))
+    val first = Effects(WritesAnyNodes, ReadsNodeProperty("foo"))
     val second = Effects(ReadsNodeProperty("foo"))
 
-    (first | second) should be(Effects(WritesNodes, ReadsNodeProperty("foo")))
+    (first | second) should be(Effects(WritesAnyNodes, ReadsNodeProperty("foo")))
   }
 
   test("logical OR considers equal label names") {
-    val first = Effects(WritesNodes, ReadsLabel("bar"))
+    val first = Effects(WritesAnyNodes, ReadsLabel("bar"))
     val second = Effects(ReadsLabel("bar"))
 
-    (first | second) should be(Effects(WritesNodes, ReadsLabel("bar")))
+    (first | second) should be(Effects(WritesAnyNodes, ReadsLabel("bar")))
   }
 }
