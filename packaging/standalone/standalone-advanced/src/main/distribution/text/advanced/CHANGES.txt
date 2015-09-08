@@ -23,6 +23,19 @@ o Inequality predicates can now be chained on the form 0 < n.prop < 10
 o LIKE and ILIKE has been removed
 o ShortestPath should now return paths that fulfil any predicates enforced upon it
 
+Graph-algo:
+o Correctness fixes to Dijkstra regarding floating point precision, which can now be supplied by user
+o Optimizations to Dijkstra where it didn't terminate as soon as it could have
+o Introducing bidirectional Dijkstra algorithm which often out-performs monodirectional Dijkstra
+o Shortest path algorithm supports result Path filtering
+
+IO:
+o Adds commons-lang3 dependency
+o Uses vectored I/O for better throughput for flushing pages to underlying storage
+
+Packaging:
+o Adds a Windows PowerShell for managing a Neo4j server
+
 2.3-M02
 -------
 

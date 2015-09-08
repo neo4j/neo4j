@@ -3,6 +3,10 @@ For Release Notes, see http://neo4j.com/release-notes/neo4j-#{project.version}/
 2.3-M03
 -------
 
+Cluster:
+o Fixes bad assumption about all messages containing instance ID
+o No longer resolves hostnames into IPs. This should help in data center installations where a hostname might resolve into different IPs depending on which center the server is running in
+
 Cypher:
 o Added reverse function for reversing strings
 o Unfulfillable index hints (e.g. on non-existing indices) will now produce a warning or throw an error as configured
@@ -23,6 +27,22 @@ o New constraint type: property existence for nodes and relationships
 o Inequality predicates can now be chained on the form 0 < n.prop < 10
 o LIKE and ILIKE has been removed
 o ShortestPath should now return paths that fulfil any predicates enforced upon it
+
+Graph-algo:
+o Correctness fixes to Dijkstra regarding floating point precision, which can now be supplied by user
+o Optimizations to Dijkstra where it didn't terminate as soon as it could have
+o Introducing bidirectional Dijkstra algorithm which often out-performs monodirectional Dijkstra
+o Shortest path algorithm supports result Path filtering
+
+HA:
+o Given ongoing transactions a bit of time (10 seconds default) to complete before making a required role switch
+
+IO:
+o Adds commons-lang3 dependency
+o Uses vectored I/O for better throughput for flushing pages to underlying storage
+
+Packaging:
+o Adds a Windows PowerShell for managing a Neo4j server
 
 2.3-M02
 -------
