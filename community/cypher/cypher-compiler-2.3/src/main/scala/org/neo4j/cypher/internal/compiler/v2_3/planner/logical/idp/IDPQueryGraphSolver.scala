@@ -20,13 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.IteratorSupport._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{Predicate, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp.expandSolverStep.{planSinglePatternSide, planSingleProjectEndpoints}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.solveOptionalMatches.OptionalSolver
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.{applyOptional, outerHashJoin}
 import org.neo4j.cypher.internal.frontend.v2_3.InternalException
+import org.neo4j.cypher.internal.frontend.v2_3.ast._
+import org.neo4j.function
+import org.neo4j.graphdb.Relationship
 
 import scala.annotation.tailrec
 
@@ -73,7 +76,11 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
                                 (implicit context: LogicalPlanningContext): LogicalPlan =
     qg.shortestPathPatterns.foldLeft(kit.select(initialPlan, qg)) {
       case (plan, sp) if sp.isFindableFrom(plan.availableSymbols) =>
-        val shortestPath = context.logicalPlanProducer.planShortestPaths(plan, sp)
+        val pathIdentifiers = Set(sp.name, Some(sp.rel.name)).flatten
+        val pathPredicates = qg.selections.predicates.collect {
+          case Predicate(dependencies, expr: Expression) if (dependencies intersect pathIdentifiers).nonEmpty => expr
+        }.toSeq
+        val shortestPath = context.logicalPlanProducer.planShortestPaths(plan, sp, pathPredicates)
         kit.select(shortestPath, qg)
       case (plan, _) => plan
     }

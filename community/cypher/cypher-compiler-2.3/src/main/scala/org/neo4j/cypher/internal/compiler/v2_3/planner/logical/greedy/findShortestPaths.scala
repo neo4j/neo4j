@@ -19,16 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.greedy
 
-import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{Predicate, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{LogicalPlan, ShortestPathPattern}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CandidateGenerator, LogicalPlanningContext}
+import org.neo4j.cypher.internal.frontend.v2_3.ast.Expression
 
 object findShortestPaths extends CandidateGenerator[GreedyPlanTable] {
   def apply(input: GreedyPlanTable, qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] =
     qg.shortestPathPatterns.flatMap { (shortestPath: ShortestPathPattern) =>
       input.plans.collect {
         case plan if shortestPath.isFindableFrom(plan.availableSymbols) =>
-          context.logicalPlanProducer.planShortestPaths(plan, shortestPath)
+          val pathIdentifiers = Set(shortestPath.name, Some(shortestPath.rel.name)).flatten
+          val pathPredicates = qg.selections.predicates.collect {
+            case Predicate(dependencies, expr: Expression) if (dependencies intersect pathIdentifiers).nonEmpty => expr
+          }.toSeq
+          context.logicalPlanProducer.planShortestPaths(plan, shortestPath, pathPredicates)
       }
     }.toSeq
 }
