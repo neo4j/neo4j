@@ -44,11 +44,11 @@ case class Effects(effectsSet: Set[Effect] = Set.empty) {
   }.toSet[Effect])
 }
 
-object AllWriteEffects extends Effects(Set(WritesAnyNodes, WritesRelationships, WritesAnyNodeProperty, WritesAnyRelationshipProperty)) {
+object AllWriteEffects extends Effects(Set(WritesAnyNode, WritesRelationships, WritesAnyNodeProperty, WritesAnyRelationshipProperty)) {
   override def toString = "AllWriteEffects"
 }
 
-object AllReadEffects extends Effects(Set(ReadsAnyNodes, ReadsRelationships, ReadsAnyNodeProperty, ReadsAnyRelationshipProperty)) {
+object AllReadEffects extends Effects(Set(ReadsAllNodes, ReadsRelationships, ReadsAnyNodeProperty, ReadsAnyRelationshipProperty)) {
   override def toString = "AllReadEffects"
 }
 
@@ -131,8 +131,12 @@ protected trait WriteEffect extends Effect {
 
 trait ReadsNodes extends ReadEffect
 
-case object ReadsAnyNodes extends ReadsNodes {
-  override def toWriteEffect = WritesAnyNodes
+case object ReadsAllNodes extends ReadsNodes {
+  override def toWriteEffect = WritesAnyNode
+}
+
+case object ReadsRelationshipBoundNodes extends ReadsNodes {
+  override def toWriteEffect = WritesRelationshipBoundNodes
 }
 
 case class ReadsNodesWithLabels(labels: Set[String]) extends ReadsNodes {
@@ -145,7 +149,9 @@ object ReadsNodesWithLabels {
 
 trait WritesNodes extends WriteEffect
 
-case object WritesAnyNodes extends WritesNodes
+case object WritesAnyNode extends WritesNodes
+
+case object WritesRelationshipBoundNodes extends WritesNodes
 
 object WritesNodesWithLabels {
   def apply(labels: String*): WritesNodesWithLabels = WritesNodesWithLabels(labels.toSet)

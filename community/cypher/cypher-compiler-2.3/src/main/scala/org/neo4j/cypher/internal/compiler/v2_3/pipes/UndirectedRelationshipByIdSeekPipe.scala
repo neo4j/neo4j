@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ReadsAnyNodes, Effects, ReadsNodes, ReadsRelationships}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ReadsAllNodes, Effects, ReadsRelationships}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
@@ -53,7 +53,7 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs
     this
   }
 
-  override def localEffects = Effects(ReadsAnyNodes, ReadsRelationships)
+  override def localEffects = Effects(ReadsAllNodes, ReadsRelationships)
 
   def sources: Seq[Pipe] = Seq.empty
 

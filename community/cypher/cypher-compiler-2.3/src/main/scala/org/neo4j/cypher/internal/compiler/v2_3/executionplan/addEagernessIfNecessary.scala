@@ -58,8 +58,8 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
     val toWrites = to.effectsSet.collect {
       case writes: WritesNodes => writes
     }
-    (fromWrites.contains(WritesAnyNodes) && toWrites.nonEmpty && toReads.nonEmpty) ||
-    (fromWrites.nonEmpty && toWrites.nonEmpty && toReads.contains(ReadsAnyNodes)) ||
+    (fromWrites.contains(WritesAnyNode) && toWrites.nonEmpty && toReads.nonEmpty) ||
+    (fromWrites.nonEmpty && toWrites.nonEmpty && toReads.contains(ReadsAllNodes)) ||
       (nodeLabelOverlap(toReads, fromWrites) && toWrites.nonEmpty)
   }
 
@@ -72,8 +72,7 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
       case writes: WritesNodes => writes
     }
 
-    (fromReads.nonEmpty && toWrites.contains(WritesAnyNodes)) ||
-    (fromReads.contains(ReadsAnyNodes) && toWrites.nonEmpty) ||
+    (fromReads.nonEmpty && toWrites.contains(WritesAnyNode)) ||
       nodeLabelOverlap(fromReads, toWrites)
   }
 

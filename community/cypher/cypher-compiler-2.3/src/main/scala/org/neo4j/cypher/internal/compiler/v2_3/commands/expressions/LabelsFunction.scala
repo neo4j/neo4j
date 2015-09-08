@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ReadsAnyNodes, Effects}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
@@ -51,5 +51,5 @@ case class LabelsFunction(nodeExpr: Expression) extends Expression {
     CTCollection(CTString)
   }
 
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsAnyNodes)
+  override def localEffects(symbols: SymbolTable) = Effects()
 }
