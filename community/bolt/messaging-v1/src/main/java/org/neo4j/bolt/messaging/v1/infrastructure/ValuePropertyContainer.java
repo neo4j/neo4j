@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ndp.messaging.v1.infrastructure;
+package org.neo4j.bolt.messaging.v1.infrastructure;
 
 import java.util.HashMap;
 import java.util.Map;
