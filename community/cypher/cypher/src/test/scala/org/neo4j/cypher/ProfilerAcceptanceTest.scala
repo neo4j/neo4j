@@ -125,7 +125,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("tracks number of rows") {
     //GIVEN
     // due to the cost model, we need a bunch of nodes for the planner to pick a plan that does lookup by id
-    (1 to 10).foreach(_ => createNode())
+    (1 to 100).foreach(_ => createNode())
 
     val result = profileWithAllPlanners("match (n) where id(n) = 0 RETURN n")
 
@@ -136,7 +136,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("tracks number of graph accesses") {
     //GIVEN
     // due to the cost model, we need a bunch of nodes for the planner to pick a plan that does lookup by id
-    (1 to 10).foreach(_ => createNode("foo" -> "bar"))
+    (1 to 100).foreach(_ => createNode("foo" -> "bar"))
 
     val result = profileWithAllPlanners("match (n) where id(n) = 0 RETURN n.foo")
 

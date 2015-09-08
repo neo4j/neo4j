@@ -23,8 +23,9 @@ import org.mockito.Mockito.{times, verify, verifyNoMoreInteractions}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport2, QueryGraph, Selections}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{PlannerQuery, LogicalPlanningTestSupport2, QueryGraph, Selections}
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
@@ -408,6 +409,11 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
+      cost = {
+        case (ProjectEndpoints(Expand(_, _, _, _, _, _, _),_, _, _, _, _, _, _,_), _) => 10.0
+        case (Expand(ProjectEndpoints(_,_, _, _, _, _, _, _, _), _, _, _, _, _, _), _) => 1.0
+      }
+
       queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq(expandSolverStep(_)))
       val pattern1 = PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
       val pattern2 = PatternRelationship("r2", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
@@ -415,6 +421,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         patternNodes = Set("a", "b", "c"),
         patternRelationships = Set(pattern1, pattern2),
         argumentIds = Set("r1"))
+
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val x = ctx
 
@@ -688,6 +695,11 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
+      cost = {
+        case (_: OuterHashJoin, _) => 20.0
+        case _ => Double.MaxValue
+      }
+
       queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq.empty)
       qg = QueryGraph(// MATCH a, b OPTIONAL MATCH a-[r]->b
         patternNodes = Set("a", "b"),
@@ -806,6 +818,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
+
       queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq(expandSolverStep(_)))
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c", "d"),
@@ -819,14 +832,16 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val x = ctx
 
-      queryGraphSolver.plan(cfg.qg) should equal(
-        ProjectEndpoints(
-          Expand(
+      val plan = queryGraphSolver.plan(cfg.qg)
+      println(plan)
+      plan should equal(
+        Expand(
+          ProjectEndpoints(
             ProjectEndpoints(
-              Argument(Set("a", "b", "c", "d", "r1", "r2"))(solved)(),
+              Argument(Set("r2", "r1", "a", "d", "b", "c"))(solved)(),
               "r2", "c", startInScope = true, "d", endInScope = true, None, directed = true, SimplePatternLength)(solved),
-            "a", SemanticDirection.OUTGOING, Seq.empty, "d", "r3", ExpandInto)(solved),
-          "r1", "a", startInScope = true, "b", endInScope = true, None, directed = true, SimplePatternLength)(solved))
+            "r1", "a" , startInScope = true, "b", endInScope = true, None, directed = true, SimplePatternLength)(solved),
+          "a", OUTGOING, List(), "d", "r3", ExpandInto)(solved))
     }
   }
 

@@ -31,22 +31,23 @@ object CardinalityCostModel extends CostModel {
    */
   private val CPU_BOUND: CostPerRow = 0.1
   private val FAST_STORE: CostPerRow = 1.0
-  private val SLOW_STORE: CostPerRow = 10.0
-  private val PROBE_BUILD_COST: CostPerRow = FAST_STORE
-  private val PROBE_SEARCH_COST: CostPerRow = PROBE_BUILD_COST * .5
-  private val EAGERNESS_MULTIPLIER: Multiplier = 3.0
+  private val SLOW_STORE: CostPerRow = 12.0
+  private val PROBE_BUILD_COST: CostPerRow = 3.1
+  private val PROBE_SEARCH_COST: CostPerRow = 2.4
+  private val EAGERNESS_MULTIPLIER: Multiplier = 2.0
 
   private def costPerRow(plan: LogicalPlan): CostPerRow = plan match {
 
-    case _: Expand |
-         _: VarExpand |
-         _: AllNodesScan |
+    case  _: AllNodesScan |
          _: DirectedRelationshipByIdSeek |
          _: UndirectedRelationshipByIdSeek |
          _: ProjectEndpoints
     => FAST_STORE
 
-    case _: NodeByLabelScan => FAST_STORE * 1.4
+    case _: NodeByLabelScan => 1.6
+
+    case _: Expand |
+         _: VarExpand  => 2.5
 
     // Filtering on labels and properties
     case Selection(predicates, _) if predicates.exists {
