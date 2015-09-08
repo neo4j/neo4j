@@ -444,23 +444,23 @@ public class ImportTool
      */
     private static RuntimeException andPrintError( String typeOfError, Exception e, boolean stackTrace )
     {
+        // List of common errors that can be explained to the user
         if ( e.getClass().equals( DuplicateInputIdException.class ) )
         {
-            System.err.println( "Duplicate input ids that would otherwise clash can be put into separate id space," +
+            printErrorMessage( "Duplicate input ids that would otherwise clash can be put into separate id space," +
                     " read more about how to use id spaces in the manual:" +
-                    manualReference( "import-tool-header-format.html#_id_spaces" ) );
+                    manualReference( "import-tool-header-format.html#_id_spaces" ), e, stackTrace );
         }
         else if ( e.getClass().equals( IllegalMultilineFieldException.class ) )
         {
-            System.err.println( "Detected field which spanned multiple lines for an import where " +
+            printErrorMessage( "Detected field which spanned multiple lines for an import where " +
                     Options.MULTILINE_FIELDS.argument() + "=false. If you know that your input data include " +
-                    "fields containing new-line characters then import with this option set to true." );
+                    "fields containing new-line characters then import with this option set to true.", e, stackTrace );
         }
-
-        System.err.println( typeOfError + ": " + e.getMessage() );
-        if ( stackTrace )
+        // Fallback to printing generic error and stack trace
+        else
         {
-            e.printStackTrace( System.err );
+            printErrorMessage( typeOfError + ": " + e.getMessage(), e, true );
         }
         System.err.println();
 
@@ -476,6 +476,15 @@ public class ImportTool
             }
         } );
         return launderedException( e ); // throw in order to have process exit with !0
+    }
+
+    private static void printErrorMessage( String string, Exception e, boolean stackTrace )
+    {
+        System.err.println( string );
+        if ( stackTrace )
+        {
+            e.printStackTrace( System.err );
+        }
     }
 
     private static Iterable<DataFactory<InputRelationship>>

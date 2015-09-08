@@ -1,3 +1,8 @@
+2.2.6
+-----
+o Stacktraces are printed for any unexpected exception, even if --stacktrace isn't supplied.
+  --stacktrace can still be used to print stack trace for known exceptions.
+
 2.2.5
 -----
 o No longer ignores --multiline-field option
