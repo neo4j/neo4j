@@ -36,7 +36,7 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
  * Every chunk is exactly 256 bytes in length, except for the last one which can
  * be anything greater than one and up to 256. This is signaled via the first
  * byte which is 0 for every non-last chunk and the actual number of bytes for
- * the last one (always > 0).
+ * the last one (always &gt; 0).
  */
 public class BlockLogBuffer implements Closeable
 {

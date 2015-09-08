@@ -73,7 +73,7 @@ public class ExecutionResultSerializer
     }
 
     /**
-     * Will always get called at most once once, and is the first method to get called. This method is not allowed
+     * Will always get called at most once, and is the first method to get called. This method is not allowed
      * to throw exceptions. If there are network errors or similar, the handler should take appropriate action,
      * but never fail this method.
      */
@@ -226,6 +226,7 @@ public class ExecutionResultSerializer
      * Will get called once if any errors occurred, after {@link #statementResult(org.neo4j.graphdb.Result, boolean, ResultDataContent...)}  statementResults}
      * has been called This method is not allowed to throw exceptions. If there are network errors or similar, the
      * handler should take appropriate action, but never fail this method.
+     * @param errors the errors to write
      */
     public void errors( Iterable<? extends Neo4jError> errors )
     {

@@ -39,13 +39,14 @@ public interface IndexImplementation extends Lifecycle
      * Returns a {@link LegacyIndexProviderTransaction} that keeps transaction state for all
      * indexes for a given provider in a transaction.
      *
-     * @param configuration that return a legacy index SPI for.
-     * @return a {@link LegacyIndexSPI} which represents a type of index suitable for the
+     * @param commandFactory index command factory to use
+     * @return a {@link LegacyIndexProviderTransaction} which represents a type of index suitable for the
      * given configuration.
      */
     LegacyIndexProviderTransaction newTransaction( IndexCommandFactory commandFactory );
 
     /**
+     * @param recovery indicate recovery
      * @return an index applier that will get notifications about commands to apply.
      */
     NeoCommandHandler newApplier( boolean recovery );
@@ -69,7 +70,8 @@ public interface IndexImplementation extends Lifecycle
      * the returned {@link ResourceIterator} has been {@link ResourceIterator#close() closed} this
      * index provider must guarantee that the list of files stay intact. The files in the list can
      * change, but no files may be deleted or added during this period.
-     * @throws IOException
+     * @return list of store files managed by this index provider
+     * @throws IOException depends on the implementation
      */
     ResourceIterator<File> listStoreFiles() throws IOException;
 

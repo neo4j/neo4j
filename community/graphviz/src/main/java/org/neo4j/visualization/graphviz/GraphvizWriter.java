@@ -31,7 +31,6 @@ import org.neo4j.walk.Walker;
 /**
  * An object that writes a graph to a specified destination in graphviz dot
  * format.
- * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
  */
 public final class GraphvizWriter
 {

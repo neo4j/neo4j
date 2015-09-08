@@ -50,10 +50,11 @@ public class Session
     }
 
 	/**
-	 * Sets a session value.
-	 * @param key the session key.
-	 * @param value the value.
-	 */
+     * Sets a session value.
+     * @param key the session key.
+     * @param value the value.
+     * @throws ShellException if the execution fails
+     */
 	public void set( String key, Object value ) throws ShellException
     {
 	    Variables.checkIsValidVariableName( key );
@@ -66,9 +67,10 @@ public class Session
     }
 
     /**
-	 * @param key the key to get the session value for.
-	 * @return the value for the {@code key} or {@code null} if not found.
-	 */
+     * @param key the key to get the session value for.
+     * @return the value for the {@code key} or {@code null} if not found.
+     * @throws ShellException if the execution fails
+     */
 	public Object get( String key ) throws ShellException
     {
         Variables.checkIsValidVariableName( key );
@@ -90,10 +92,11 @@ public class Session
 	}
 
 	/**
-	 * Removes a value from the session.
-	 * @param key the session key to remove.
-	 * @return the removed value, or {@code null} if none.
-	 */
+     * Removes a value from the session.
+     * @param key the session key to remove.
+     * @return the removed value, or {@code null} if none.
+     * @throws ShellException if the execution fails
+     */
 	public Object remove( String key ) throws ShellException
     {
         Variables.checkIsValidVariableName( key );

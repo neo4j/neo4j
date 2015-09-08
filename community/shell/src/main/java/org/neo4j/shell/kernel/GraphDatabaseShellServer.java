@@ -55,6 +55,9 @@ public class GraphDatabaseShellServer extends AbstractAppServer
     protected final Map<Serializable, TopLevelTransaction> clients = new ConcurrentHashMap<>();
 
     /**
+     * @param path the path to the directory where the database should be created
+     * @param readOnly make the instance read-only
+     * @param configFileOrNull path to a configuration file or <code>null</code>
      * @throws RemoteException if an RMI error occurs.
      */
     public GraphDatabaseShellServer( String path, boolean readOnly, String configFileOrNull )

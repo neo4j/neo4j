@@ -151,6 +151,7 @@ public class Paths
      * node representation instead of the node id. If that property doesn't
      * exist, the id is used.
      * @param path the {@link Path} to build a string representation of.
+     * @param nodePropertyKey the key of the property value to display
      * @return a quite simple representation of a {@link Path}.
      */
     public static String simplePathToString( Path path, final String nodePropertyKey )

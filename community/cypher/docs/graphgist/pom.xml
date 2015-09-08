@@ -18,6 +18,7 @@
     <neo4j.version>${project.version}</neo4j.version>
     <scala.version>2.10.5</scala.version>
     <scala.binary.version>2.10</scala.binary.version>
+    <doclint-groups>none</doclint-groups>
   </properties>
 
   <dependencies>

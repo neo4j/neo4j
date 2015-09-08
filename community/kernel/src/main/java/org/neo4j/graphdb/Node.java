@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -228,7 +228,6 @@ public interface Node extends PropertyContainer
      * time more than one such relationships exist, it is a fatal error that
      * should generate an unchecked exception. This method reflects that
      * semantics and returns either:
-     * <p>
      * <ol>
      * <li><code>null</code> if there are zero relationships of the given type
      * and direction,</li>
@@ -290,6 +289,7 @@ public interface Node extends PropertyContainer
     /**
      * Returns the number of relationships of a given {@code type} connected to this node.
      *
+     * @param type the type of relationships to get the degree for
      * @return the number of relationships of a given {@code type} connected to this node.
      */
     public int getDegree( RelationshipType type );
@@ -297,6 +297,7 @@ public interface Node extends PropertyContainer
     /**
      * Returns the number of relationships of a given {@code direction} connected to this node.
      *
+     * @param direction the direction of the relationships
      * @return the number of relationships of a given {@code direction} for this node.
      */
     public int getDegree( Direction direction );
@@ -305,6 +306,8 @@ public interface Node extends PropertyContainer
      * Returns the number of relationships of a given {@code type} and {@code direction}
      * connected to this node.
      *
+     * @param type the type of relationships to get the degree for
+     * @param direction the direction of the relationships
      * @return the number of relationships of a given {@code type} and {@code direction}
      * for this node.
      */

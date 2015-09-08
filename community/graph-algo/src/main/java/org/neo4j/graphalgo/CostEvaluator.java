@@ -43,7 +43,7 @@ public interface CostEvaluator<T>
      * can do anything, like looking up a property or running some small
      * calculation.
      *
-     * @param relationship
+     * @param relationship the relationship to get the cost for
      * @param direction The direction in which the relationship is being
      *            evaluated, either {@link Direction#INCOMING} or
      *            {@link Direction#OUTGOING}.

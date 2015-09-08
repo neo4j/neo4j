@@ -91,6 +91,9 @@ public interface BidirectionalTraversalDescription
 
     /**
      * @deprecated Please use {@link #collisionPolicy(BranchCollisionPolicy)}
+     * @param collisionDetection the {@code BranchCollisionPolicy} to use during
+     * this traversal.
+     * @return a new traversal description with the new modifications.
      */
     BidirectionalTraversalDescription collisionPolicy( org.neo4j.kernel.impl.traversal.BranchCollisionPolicy collisionDetection );
 

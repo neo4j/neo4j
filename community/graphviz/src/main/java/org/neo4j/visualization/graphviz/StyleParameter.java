@@ -32,7 +32,6 @@ import org.neo4j.visualization.PropertyType;
 
 /**
  * A configuration parameter for the Neo Graphviz system.
- * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
  */
 public interface StyleParameter
 {

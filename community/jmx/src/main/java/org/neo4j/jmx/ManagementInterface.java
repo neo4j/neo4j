@@ -26,8 +26,6 @@ import java.lang.annotation.Target;
 
 /**
  * Marks that an interface is a Neo4j management interface.
- * 
- * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
  */
 @Target( ElementType.TYPE )
 @Retention( RetentionPolicy.RUNTIME )
