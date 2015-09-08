@@ -21,11 +21,18 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import org.neo4j.unsafe.impl.batchimport.input.DataException;
 
+import static java.lang.String.format;
+
 public class DuplicateInputIdException extends DataException
 {
     public DuplicateInputIdException( Object id, String groupName, String sourceLocation1, String sourceLocation2 )
     {
-        super( "Id '" + id + "' is defined more than once in " + groupName + ", at least at " +
-                sourceLocation1 + " and " + sourceLocation2 );
+        super( message( id, groupName, sourceLocation1, sourceLocation2 ) );
+    }
+
+    public static String message( Object id, String groupName, String sourceLocation1, String sourceLocation2 )
+    {
+        return format( "Id '%s' is defined more than once in %s, at least at %s and %s",
+                id, groupName, sourceLocation1, sourceLocation2 );
     }
 }
