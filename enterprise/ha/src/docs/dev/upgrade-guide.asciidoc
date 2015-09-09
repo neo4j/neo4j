@@ -1,6 +1,5 @@
 [[ha-upgrade-guide]]
-Upgrade of a Neo4j HA Cluster
-=============================
+= Upgrade of a Neo4j HA Cluster
 
 [CAUTION]
 Before attempting any of the upgrades described here, please
@@ -57,6 +56,8 @@ The following process is recommended:
 .Upgrade the slaves
 - Install Neo4j {neo4j-version} on all previous slaves *and remove their database store* (typically _data/graph.db_).
   _Slaves should not be started with a previous store present._
+- Note: The security configuration of the master is _not_ propagated to the slaves.
+  See <<rest-api-security-copy-config>> for more information.
 
 .Restart the cluster
  . Start the previous master instance.
@@ -130,7 +131,8 @@ Your entire cluster has now been completely upgraded to Neo4j {neo4j-version}.
 [[ha-downgrade]]
 == Downgrading ==
 
-Downgrade is only supported between Neo4j versions that <<deployment-upgrading,for automatic upgrades>>.
+Downgrade is only supported between Neo4j versions between which automatic upgrades are possible.
 This typically means only within patch releases of the same Neo4j version.
+See <<deployment-upgrading>> for more information.
 
 Downgrade follows the same process as for <<ha-standard-upgrade, standard upgrade>>.
