@@ -24,11 +24,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 import static java.util.Arrays.asList;
 
@@ -63,7 +63,9 @@ public class GraphDatabaseFactory
     }
 
     /**
-     * @deprecated use {@link #newEmbeddedDatabase(File)} instead
+     * @deprecated use {@link #newEmbeddedDatabase(File)} instead.
+     * @param storeDir the location of the database
+     * @return the database
      */
     @Deprecated
     public GraphDatabaseService newEmbeddedDatabase( String storeDir )
@@ -78,6 +80,8 @@ public class GraphDatabaseFactory
 
     /**
      * @deprecated use {@link #newEmbeddedDatabaseBuilder(File)} instead
+     * @param storeDir the location of the database
+     * @return a builder which is used to configure and start a database
      */
     @Deprecated
     public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( String storeDir )

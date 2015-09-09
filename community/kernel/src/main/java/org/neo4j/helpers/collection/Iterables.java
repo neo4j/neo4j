@@ -33,10 +33,10 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 
 import static java.util.Arrays.asList;
@@ -221,6 +221,10 @@ public final class Iterables
 
     /**
      * @deprecated use {@link #filter(Predicate, Iterable)} instead
+     * @param specification filter
+     * @param i source iterable
+     * @param <X> the type of the elements
+     * @return a filtering iterable
      */
     @Deprecated
     public static <X> Iterable<X> filter( org.neo4j.helpers.Predicate<? super X> specification, Iterable<X> i )
@@ -235,6 +239,10 @@ public final class Iterables
 
     /**
      * @deprecated use {@link #filter(Predicate, Iterator)} instead
+     * @param specification filter
+     * @param i source iterator
+     * @param <X> the type of the elements
+     * @return a filtering iterator
      */
     @Deprecated
     public static <X> Iterator<X> filter( org.neo4j.helpers.Predicate<? super X> specification, Iterator<X> i )

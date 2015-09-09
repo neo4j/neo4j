@@ -150,7 +150,6 @@ public class Man extends AbstractApp
      * @param out the output
      * @param server the server to ask for
      * @param list if {@code true}, a list of the commands is printed
-     * @throws ShellException if the execution fails
      * @throws RemoteException in case of remoting errors
      */
     public static void printHelpString( Output out, ShellServer server, boolean list )

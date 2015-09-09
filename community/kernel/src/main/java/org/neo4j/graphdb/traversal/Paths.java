@@ -181,6 +181,7 @@ public class Paths
      * @param nodeId            true if node id should be included.
      * @param relId             true if relationship id should be included.
      * @param propertyKeys      all property keys that should be included.
+     * @param <T>               the type of the {@link Path}
      * @return                  a new {@link Paths.PathDescriptor}
      */
     public static <T extends Path> PathDescriptor<T> descriptorForIdAndProperties( final boolean nodeId,

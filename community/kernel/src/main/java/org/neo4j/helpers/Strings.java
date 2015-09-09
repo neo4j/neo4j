@@ -195,9 +195,9 @@ public final class Strings
      * Use this to standardize the width of some text output to all be left-justified and space-padded
      * on the right side to fill up the given column width.
      *
-     * @param str
-     * @param columnWidth
-     * @return
+     * @param str the text to format
+     * @param columnWidth the column width
+     * @return the left-justified space-padded text
      */
     public static String ljust( String str, int columnWidth )
     {
@@ -208,9 +208,9 @@ public final class Strings
      * Use this to standardize the width of some text output to all be right-justified and space-padded
      * on the left side to fill up the given column width.
      *
-     * @param str
-     * @param columnWidth
-     * @return
+     * @param str the text to format
+     * @param columnWidth the column width
+     * @return the right-justified space-padded text
      */
     public static String rjust( String str, int columnWidth )
     {
