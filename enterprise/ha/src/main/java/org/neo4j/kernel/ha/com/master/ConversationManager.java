@@ -24,12 +24,11 @@ import java.util.Set;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.function.Consumer;
-import org.neo4j.function.Function;
+import org.neo4j.function.Factory;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.cluster.ConversationSPI;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.collection.ConcurrentAccessException;
 import org.neo4j.kernel.impl.util.collection.NoSuchEntryException;
@@ -53,16 +52,12 @@ public class ConversationManager extends LifecycleAdapter
     private final int lockTimeoutAddition;
     private final Config config;
     private final ConversationSPI spi;
-    private final Function<RequestContext, Conversation> conversationFactory =
-            new Function<RequestContext, Conversation>()
+    private final Factory<Conversation> conversationFactory =  new Factory<Conversation>()
     {
         @Override
-        public Conversation apply( RequestContext ctx )
+        public Conversation newInstance()
         {
-            Locks.Client client = spi.acquireClient();
-            client.description( String.format("Locks held on behalf of slave `%d`, slave transaction id `%d`",
-                            ctx.machineId(), ctx.getEventIdentifier() ) );
-            return new Conversation( client );
+            return new Conversation( spi.acquireClient() );
         }
     };
 
@@ -150,9 +145,9 @@ public class ConversationManager extends LifecycleAdapter
         }
     }
 
-    public Conversation startConversation( RequestContext context )
+    public Conversation acquire()
     {
-        return getConversationFactory().apply( context );
+        return getConversationFactory().newInstance();
     }
 
     protected TimedRepository<RequestContext,Conversation> createConversationStore()
@@ -173,7 +168,7 @@ public class ConversationManager extends LifecycleAdapter
         };
     }
 
-    protected Function<RequestContext, Conversation> getConversationFactory()
+    protected Factory<Conversation> getConversationFactory()
     {
         return conversationFactory;
     }

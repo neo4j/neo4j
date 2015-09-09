@@ -58,7 +58,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -110,9 +109,14 @@ public class MasterImplTest
         HandshakeResult handshake = instance.handshake( 1, new StoreId() ).response();
 
         // When
-        instance.newLockSession( new RequestContext( handshake.epoch(), 1, 2, 0, 0 ) );
-
-        // Then no exception should be thrown
+        try
+        {
+            instance.newLockSession( new RequestContext( handshake.epoch(), 1, 2, 0, 0 ) );
+        }
+        catch ( Exception e )
+        {
+            fail( e.getMessage() );
+        }
     }
 
     @Test
@@ -182,7 +186,6 @@ public class MasterImplTest
                 }
             } ).when( client ).acquireExclusive( any( ResourceType.class ), anyLong() );
             when( conversationSpi.acquireClient() ).thenReturn( client );
-            when( client.description(anyString() )).thenReturn( client );
             Config config = config( 20 );
             ConversationManager conversationManager = new ConversationManager( conversationSpi, config );
             final MasterImpl master = new MasterImpl( spi, conversationManager, mock( Monitor.class ), config );

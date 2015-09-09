@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.enterprise.lock.forseti;
 
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
@@ -36,7 +35,7 @@ class SharedLock implements ForsetiLockManager.Lock
      * both the update flag and the refCount simultaneously. This avoids a nasty series of race conditions, but
      * makes the reference counting code much mode complicated. May be worth revisiting.
      */
-    private static final int UPDATE_LOCK_FLAG = 1 << 31;
+    private static final int UPDATE_LOCK_FLAG = 1<<31;
 
     /**
      * No more holders than this allowed, don't change this without changing the sizing of
@@ -47,28 +46,28 @@ class SharedLock implements ForsetiLockManager.Lock
     // TODO Investigate inlining and padding the refCount.
     // TODO My gut feeling tells me there's a high chance of false-sharing
     // TODO on these unpadded AtomicIntegers.
-    private final AtomicInteger refCount = new AtomicInteger( 1 );
+    private final AtomicInteger refCount = new AtomicInteger(1);
 
     /**
      * When reading this, keep in mind the main design goals here: Releasing and acquiring this lock should not require
      * synchronization, and the lock should have as low of a memory footprint as possible.
-     * <p/>
+     *
      * An array of arrays containing references to clients holding this lock. Each client can only show up once.
      * When the lock is created only the first reference array is created (so the last three slots in the outer array
      * are empty). The outer array is populated when the reference arrays are filled up, with exponentially larger
      * reference arrays:
-     * <p/>
+     *
      * clientsHoldingThisLock[0] = 8 slots
      * clientsHoldingThisLock[1] = 64 slots
      * clientsHoldingThisLock[2] = 512 slots
      * clientsHoldingThisLock[3] = 4096 slots
-     * <p/>
+     *
      * Allowing a total of 4680 transactions holding the same shared lock simultaneously.
-     * <p/>
+     *
      * This data structure was chosen over using regular resizing of the array, because we need to be able to increase
      * the size of the array without requiring synchronization between threads writing to the array and threads trying
      * to resize (since the threads writing to the array are on one of the hottest code paths in the database).
-     * <p/>
+     *
      * This data structure is, however, not optimal, since it requires O(n) at worst to search for a slot and to remove
      * a client from the array. This should be revisited in the future.
      */
@@ -77,15 +76,15 @@ class SharedLock implements ForsetiLockManager.Lock
     /** Client that holds the update lock, if any. */
     private ForsetiClient updateHolder;
 
-    SharedLock( ForsetiClient client )
+    SharedLock(ForsetiClient client)
     {
         addClientHoldingLock( client );
     }
 
-    public boolean acquire( ForsetiClient client )
+    public boolean acquire(ForsetiClient client)
     {
         // First, bump refcount to make sure no one drops this lock on the floor
-        if ( !acquireReference() )
+        if(!acquireReference())
         {
             return false;
         }
@@ -96,15 +95,13 @@ class SharedLock implements ForsetiLockManager.Lock
         {
             // try to add client to a clients that holding current lock.
             return addClientHoldingLock( client );
-        }
-        else
-        {
+        } else {
             releaseReference();
             return false;
         }
     }
 
-    public boolean release( ForsetiClient client )
+    public boolean release(ForsetiClient client)
     {
         removeClientHoldingLock( client );
         return releaseReference();
@@ -119,7 +116,7 @@ class SharedLock implements ForsetiLockManager.Lock
             for ( int j = 0; holders != null && j < holders.length(); j++ )
             {
                 ForsetiClient client = holders.get( j );
-                if ( client != null )
+                if(client != null)
                 {
                     client.copyWaitListTo( waitList );
                 }
@@ -128,7 +125,26 @@ class SharedLock implements ForsetiLockManager.Lock
     }
 
     @Override
-    public int detectDeadlock( int clientId )
+    public int holderWaitListSize()
+    {
+        int size = 0;
+        for ( int i = 0; i < clientsHoldingThisLock.length; i++ )
+        {
+            AtomicReferenceArray<ForsetiClient> holders = clientsHoldingThisLock[i];
+            for ( int j = 0; holders != null && j < holders.length(); j++ )
+            {
+                ForsetiClient client = holders.get( j );
+                if(client != null)
+                {
+                    size += client.waitListSize();
+                }
+            }
+        }
+        return size;
+    }
+
+    @Override
+    public boolean anyHolderIsWaitingFor( int clientId )
     {
         for ( int i = 0; i < clientsHoldingThisLock.length; i++ )
         {
@@ -136,23 +152,23 @@ class SharedLock implements ForsetiLockManager.Lock
             for ( int j = 0; holders != null && j < holders.length(); j++ )
             {
                 ForsetiClient client = holders.get( j );
-                if ( client != null && client.isWaitingFor( clientId ) )
+                if(client != null && client.isWaitingFor( clientId ))
                 {
-                    return client.id();
+                    return true;
                 }
             }
         }
-        return -1;
+        return false;
     }
 
     public boolean tryAcquireUpdateLock( ForsetiClient client )
     {
-        while ( true )
+        while(true)
         {
             int refs = refCount.get();
-            if ( refs > 0 /* UPDATE_LOCK flips the sign bit, so refs will be < 0 if it is an update lock. */ )
+            if(refs > 0 /* UPDATE_LOCK flips the sign bit, so refs will be < 0 if it is an update lock. */)
             {
-                if ( refCount.compareAndSet( refs, refs | UPDATE_LOCK_FLAG ) )
+                if(refCount.compareAndSet( refs, refs | UPDATE_LOCK_FLAG ))
                 {
                     updateHolder = client;
                     return true;
@@ -165,13 +181,13 @@ class SharedLock implements ForsetiLockManager.Lock
         }
     }
 
-    public void releaseUpdateLock( ForsetiClient client )
+    public void releaseUpdateLock(ForsetiClient client)
     {
-        while ( true )
+        while(true)
         {
             int refs = refCount.get();
             cleanUpdateHolder();
-            if ( refCount.compareAndSet( refs, refs & ~UPDATE_LOCK_FLAG ) )
+            if(refCount.compareAndSet( refs, refs & ~UPDATE_LOCK_FLAG ))
             {
                 return;
             }
@@ -185,28 +201,18 @@ class SharedLock implements ForsetiLockManager.Lock
 
     public int numberOfHolders()
     {
-        return numberOfHolders( refCount.get() );
-    }
-
-    public int numberOfHolders( int count )
-    {
-        return count & ~UPDATE_LOCK_FLAG;
+        return refCount.get() & ~UPDATE_LOCK_FLAG;
     }
 
     public boolean isUpdateLock()
     {
-        return isUpdateLock( refCount.get() );
-    }
-
-    private boolean isUpdateLock( int localRefCount )
-    {
-        return (localRefCount & UPDATE_LOCK_FLAG) == UPDATE_LOCK_FLAG;
+        return (refCount.get() & UPDATE_LOCK_FLAG) == UPDATE_LOCK_FLAG;
     }
 
     @Override
-    public String describeWaitList( Set<Integer> involvedParties )
+    public String describeWaitList()
     {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder( "SharedLock[" );
         for ( int i = 0; i < clientsHoldingThisLock.length; i++ )
         {
             AtomicReferenceArray<ForsetiClient> holders = clientsHoldingThisLock[i];
@@ -216,32 +222,31 @@ class SharedLock implements ForsetiLockManager.Lock
                 ForsetiClient current = holders.get( j );
                 if(current != null)
                 {
-                    involvedParties.add( current.id() );
-                    sb.append( first ? "" : ", " ).append( current.describeWaitList( involvedParties ) );
+                    sb.append( first ? "" : ", " ).append( current.describeWaitList() );
                     first = false;
                 }
             }
         }
-        return sb.toString();
+        return sb.append( "]" ).toString();
     }
 
     @Override
     public String toString()
     {
-        int refCountSnapshot = refCount.get();
-        if(isUpdateLock(refCountSnapshot))
+        // TODO we should only read out the refCount once, and build a deterministic string based on that
+        if(isUpdateLock())
         {
             return "UpdateLock{" +
                 "objectId=" + System.identityHashCode( this ) +
-                ", refCount=" + numberOfHolders( refCountSnapshot ) +
-                ", owner=" + updateHolder +
+                ", refCount=" + (refCount.get() & ~UPDATE_LOCK_FLAG) +
+                ", holder=" + updateHolder +
             '}';
         }
         else
         {
             return "SharedLock{" +
                     "objectId=" + System.identityHashCode( this ) +
-                    ", refCount=" + refCountSnapshot +
+                    ", refCount=" + refCount +
                     '}';
         }
     }
