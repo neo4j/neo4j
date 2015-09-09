@@ -40,7 +40,6 @@ case class LoadCSVPipe(source: Pipe,
                   identifier: String,
                   fieldTerminator: Option[String])(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) {
-  private val protocolWhiteList: Seq[String] = Seq("file", "http", "https", "ftp")
 
   protected def checkURL(urlString: String, context: QueryContext): URL = {
     val url: URL = try {
@@ -50,10 +49,6 @@ case class LoadCSVPipe(source: Pipe,
         throw new LoadExternalResourceException(s"Invalid URL specified (${e.getMessage})", null)
     }
 
-    val protocol = url.getProtocol
-    if (!protocolWhiteList.contains(protocol)) {
-      throw new LoadExternalResourceException(s"Unsupported URL protocol: $protocol", null)
-    }
     if (url.getProtocol == "file" && !context.hasLocalFileAccess) {
       throw new LoadExternalResourceException("Accessing local files not allowed by the configuration")
     }

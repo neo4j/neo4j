@@ -20,6 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import java.io.{File, PrintWriter}
+import java.net.{URLConnection, URLStreamHandler, URLStreamHandlerFactory, URL}
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CreateTempFileTestSupport
@@ -301,6 +302,12 @@ class LoadCsvAcceptanceTest
     exception.getMessage should equal("Invalid URL specified (no protocol: foo.bar)")
   }
 
+  test("should work with custom url stream handler") {
+    URL.setURLStreamHandlerFactory( new DummyURLStreamHandlerFactory() )
+    val result = executeScalar[Long](s"LOAD CSV FROM 'dummy://foo.bar' AS line RETURN count(line)")
+    result should equal(3)
+  }
+
   private def ensureNoIllegalCharsInWindowsFilePath(filename: String) = {
     // isWindows?
     if ('\\' == File.separatorChar) {
@@ -343,4 +350,22 @@ class LoadCsvAcceptanceTest
 
   private def createFile(f: PrintWriter => Unit): String = createFile()(f)
   private def createFile(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit): String = createTempFileURL(filename, ".csv")(f).cypherEscape
+
+  class DummyURLStreamHandlerFactory extends URLStreamHandlerFactory {
+    override def createURLStreamHandler( protocol: String ): URLStreamHandler = {
+      if (protocol == "dummy") new DummyURLStreamHandler else null
+    }
+  }
+
+  class DummyURLStreamHandler extends URLStreamHandler {
+    override def openConnection( u: URL ): URLConnection = {
+      new URL(createCSVTempFileURL({
+        writer =>
+          writer.println("'Foo'")
+          writer.println("'Foo'")
+          writer.println("'Foo'")
+      }).cypherEscape).openConnection()
+    }
+  }
+
 }
