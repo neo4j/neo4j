@@ -23,9 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
- */
 public enum PropertyType
 {
 	/**

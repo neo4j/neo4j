@@ -83,18 +83,19 @@ public interface App
 	void shutdown();
 	
 	/**
-	 * Tries to complete the {@code partOfLine} with likely candidates,
-	 * think of this as a hook for writing TAB-completion. Returned candidates
-	 * should contains the supplied part as well as possible completions.
-	 * Implementing this is optional and it's OK to just return an empty list.
-	 * 
-	 * @param partOfLine the part of the line which the client wants to complete
-	 * using TAB-completion.
-	 * @param session the {@link Session} from the client caller.
-	 * @return a list of candidates which includes the supplied {@code partOfLine}
-	 * as well as possible completions. Returns an empty list if no completions found
-	 * or if the implementing class chooses not to implement it properly.
-	 */
+     * Tries to complete the {@code partOfLine} with likely candidates,
+     * think of this as a hook for writing TAB-completion. Returned candidates
+     * should contain the supplied part as well as possible completions.
+     * Implementing this is optional and it's OK to just return an empty list.
+     * 
+     * @param partOfLine the part of the line which the client wants to complete
+     * using TAB-completion.
+     * @param session the {@link Session} from the client caller.
+     * @return a list of candidates which includes the supplied {@code partOfLine}
+     * as well as possible completions. Returns an empty list if no completions found
+     * or if the implementing class chooses not to implement it properly.
+     * @throws ShellException if the execution fails
+     */
 	List<String> completionCandidates( String partOfLine, Session session ) throws ShellException;
 
     boolean takesOptions();

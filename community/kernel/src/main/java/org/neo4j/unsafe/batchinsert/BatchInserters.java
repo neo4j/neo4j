@@ -87,6 +87,10 @@ public final class BatchInserters
 
     /**
      * @deprecated use {@link #inserter(File)} instead
+     * @param storeDir the store directory
+     * @param config configuration settings to use
+     * @param fileSystem the file system abstraction to use
+     * @return a new {@link BatchInserter}
      */
     @Deprecated
     public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem )
@@ -98,6 +102,8 @@ public final class BatchInserters
      * Get a {@link BatchInserter} given a store directory.
      *
      * @param storeDir the store directory
+     * @param fileSystem the file system abstraction to use
+     * @param config configuration settings to use
      * @return a new {@link BatchInserter}
      * @deprecated use {@link #inserter(File)} instead
      */
@@ -109,6 +115,10 @@ public final class BatchInserters
 
     /**
      * @deprecated use {@link #inserter(File, Map)} instead
+     * @param storeDir the store directory
+     * @param fileSystem the file system abstraction to use
+     * @param config configuration settings to use
+     * @return a new {@link BatchInserter}
      */
     @Deprecated
     public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem,

@@ -45,7 +45,6 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
  * <p>
  * Additionally this class can be used as a base class for implementing services
  * that are differentiated by a String key. An example implementation might be:
- * <p>
  * <pre>
  * <code>
  * public abstract class StringConverter extends org.neo4j.commons.Service
@@ -66,7 +65,6 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
  * </pre>
  * <p>
  * With for example these implementations:
- * <p>
  * <pre>
  * <code>
  * public final class UppercaseConverter extends StringConverter
@@ -92,7 +90,7 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
  *     public String convert( String input )
  *     {
  *         char[] chars = input.toCharArray();
- *         for ( int i = 0; i < chars.length/2; i++ )
+ *         for ( int i = 0; i &lt; chars.length/2; i++ )
  *         {
  *             char intermediate = chars[i];
  *             chars[i] = chars[chars.length-1-i];
@@ -105,7 +103,6 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
  * </pre>
  * <p>
  * This would then be used as:
- * <p>
  * <pre>
  * <code>
  * String atad = StringConverter.load( "reverse" ).convert( "data" );

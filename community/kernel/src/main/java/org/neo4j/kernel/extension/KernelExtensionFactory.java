@@ -44,8 +44,10 @@ public abstract class KernelExtensionFactory<DEPENDENCIES> extends Service
     /**
      * Create a new instance of this kernel extension.
      *
-     * @param dependencies
+     * @param dependencies Dependencies
+     * @return the lifecycle for the instance
      * @deprecated use {@link #newInstance(KernelContext, DEPENDENCIES)} instead
+     * @throws Throwable depends on the implementation
      */
     @Deprecated
     public Lifecycle newKernelExtension( DEPENDENCIES dependencies )

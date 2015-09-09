@@ -78,6 +78,7 @@ public interface Index<T extends PropertyContainer> extends ReadableIndex<T>
      *
      * @param entity the entity ({@link Node} or {@link Relationship}) to
      * remove the this index.
+     * @param key the key associated with the index entry
      */
     void remove( T entity, String key );
 

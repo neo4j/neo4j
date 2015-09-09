@@ -170,9 +170,9 @@ public class TextUtil
     /**
      * Tokenizes a string, regarding quotes. Examples:
      * 
-     * o '"One two"'              ==> [ "One two" ]
-     * o 'One two'                ==> [ "One", "two" ]
-     * o 'One "two three" four'   ==> [ "One", "two three", "four" ]
+     * o '"One two"'              ==&gt; [ "One two" ]
+     * o 'One two'                ==&gt; [ "One", "two" ]
+     * o 'One "two three" four'   ==&gt; [ "One", "two three", "four" ]
      *
      * @param string the string to tokenize.
      * @param trim  whether or not to trim each token.

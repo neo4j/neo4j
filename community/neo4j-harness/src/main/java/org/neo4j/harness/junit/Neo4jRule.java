@@ -64,7 +64,7 @@ public class Neo4jRule implements TestRule, TestServerBuilder
             @Override
             public void evaluate() throws Throwable
             {
-                try ( ServerControls _ = controls = builder.newServer() )
+                try ( ServerControls sc = controls = builder.newServer() )
                 {
                     base.evaluate();
                 }
