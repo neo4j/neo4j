@@ -69,6 +69,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
+
 @RunWith( Enclosed.class )
 public class StorePropertyCursorTest
 {
@@ -235,7 +237,8 @@ public class StorePropertyCursorTest
         public void shouldReturnTheCursorToTheCacheOnClose() throws Throwable
         {
             // given
-            StorePropertyCursor storePropertyCursor = new StorePropertyCursor( propertyStore, cache );
+            StorePropertyCursor storePropertyCursor = newStorePropertyCursor( propertyStore, cache );
+            storePropertyCursor.init( 0, NO_LOCK );
 
             // when
             storePropertyCursor.close();
@@ -253,9 +256,9 @@ public class StorePropertyCursorTest
             when( propertyStore.newReadCursor( recordId ) ).thenReturn( pageCursor );
             when( pageCursor.shouldRetry() ).thenReturn( false );
 
-            StorePropertyCursor storePropertyCursor = new StorePropertyCursor( propertyStore, cache );
+            StorePropertyCursor storePropertyCursor = newStorePropertyCursor( propertyStore, cache );
 
-            try ( Cursor<PropertyItem> cursor = storePropertyCursor.init( recordId ) )
+            try ( Cursor<PropertyItem> cursor = storePropertyCursor.init( recordId, NO_LOCK ) )
             {
                 // when
                 cursor.next();
@@ -351,10 +354,10 @@ public class StorePropertyCursorTest
 
             createSinglePropertyValue( propertyStore, recordId, keyId, expectedValue );
 
-            StorePropertyCursor storePropertyCursor = new StorePropertyCursor( propertyStore, cache );
+            StorePropertyCursor storePropertyCursor = newStorePropertyCursor( propertyStore, cache );
 
             // when
-            try ( Cursor<PropertyItem> cursor = storePropertyCursor.init( recordId ) )
+            try ( Cursor<PropertyItem> cursor = storePropertyCursor.init( recordId, NO_LOCK ) )
             {
                 // then
                 assertTrue( cursor.next() );
@@ -414,10 +417,10 @@ public class StorePropertyCursorTest
 
             createTwoPropertyValues( propertyStore, recordId, keyId1, expectedValue1, keyId2, expectedValue2 );
 
-            StorePropertyCursor storePropertyCursor = new StorePropertyCursor( propertyStore, cache );
+            StorePropertyCursor storePropertyCursor = newStorePropertyCursor( propertyStore, cache );
 
             // when
-            try ( Cursor<PropertyItem> cursor = storePropertyCursor.init( recordId ) )
+            try ( Cursor<PropertyItem> cursor = storePropertyCursor.init( recordId, NO_LOCK ) )
             {
                 // then
                 assertTrue( cursor.next() );
@@ -446,10 +449,10 @@ public class StorePropertyCursorTest
 
             createTwoPropertyValues( propertyStore, recordId, keyId1, expectedValue1, keyId2, expectedValue2 );
 
-            StorePropertyCursor storePropertyCursor = new StorePropertyCursor( propertyStore, cache );
+            StorePropertyCursor storePropertyCursor = newStorePropertyCursor( propertyStore, cache );
 
             // when
-            try ( Cursor<PropertyItem> cursor = storePropertyCursor.init( recordId ) )
+            try ( Cursor<PropertyItem> cursor = storePropertyCursor.init( recordId, NO_LOCK ) )
             {
                 PropertyItem item;
 
@@ -494,9 +497,9 @@ public class StorePropertyCursorTest
 
             createSinglePropertyValue( propertyStore, recordId, keyId, expectedValue );
 
-            StorePropertyCursor storePropertyCursor = new StorePropertyCursor( propertyStore, cache );
+            StorePropertyCursor storePropertyCursor = newStorePropertyCursor( propertyStore, cache );
 
-            try ( Cursor<PropertyItem> cursor = storePropertyCursor.init( recordId ) )
+            try ( Cursor<PropertyItem> cursor = storePropertyCursor.init( recordId, NO_LOCK ) )
             {
                 assertTrue( cursor.next() );
                 PropertyItem item = cursor.get();
@@ -506,7 +509,7 @@ public class StorePropertyCursorTest
             }
 
             // when using it
-            try ( Cursor<PropertyItem> cursor = storePropertyCursor.init( recordId ) )
+            try ( Cursor<PropertyItem> cursor = storePropertyCursor.init( recordId, NO_LOCK ) )
             {
                 // then
                 assertTrue( cursor.next() );
@@ -533,8 +536,13 @@ public class StorePropertyCursorTest
         }
     }
 
+    static StorePropertyCursor newStorePropertyCursor( PropertyStore propertyStore,
+            Consumer<StorePropertyCursor> cache )
+    {
+        return new StorePropertyCursor( propertyStore, cache );
+    }
+
     private static void createSinglePropertyValue( PropertyStore store, int recordId, int keyId, Object value )
-            throws IOException
     {
         DynamicRecordAllocator stringAllocator = store.getStringStore();
         DynamicRecordAllocator arrayAllocator = store.getArrayStore();

@@ -1444,7 +1444,8 @@ public class NeoStoreTransactionTest
             public synchronized Object answer( final InvocationOnMock invocation ) throws Throwable
             {
                 // This is necessary because finalize() will also be called
-                if ( invocation.getMethod().getName().equals( "acquireNodeLock" ) )
+                String name = invocation.getMethod().getName();
+                if ( name.equals( "acquireNodeLock" ) || name.equals( "acquireRelationshipLock" ) )
                 {
                     final Lock mock = mock( Lock.class, new Answer()
                     {

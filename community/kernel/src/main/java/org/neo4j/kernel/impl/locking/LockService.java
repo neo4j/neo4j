@@ -52,6 +52,8 @@ public interface LockService
 
     Lock acquireNodeLock( long nodeId, LockType type );
 
+    Lock acquireRelationshipLock( long relationhipId, LockType type );
+
     public static final Lock NO_LOCK = new Lock()
     {
         @Override
@@ -65,6 +67,12 @@ public interface LockService
     {
         @Override
         public Lock acquireNodeLock( long nodeId, LockType type )
+        {
+            return NO_LOCK;
+        }
+
+        @Override
+        public Lock acquireRelationshipLock( long relationhipId, LockType type )
         {
             return NO_LOCK;
         }

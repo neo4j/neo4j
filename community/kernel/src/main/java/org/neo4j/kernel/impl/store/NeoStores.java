@@ -36,7 +36,6 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.counts.ReadOnlyCountsTracker;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
@@ -383,11 +382,6 @@ public class NeoStores implements AutoCloseable
         }
 
         this.stores = stores;
-    }
-
-    public StoreStatement acquireStatement()
-    {
-        return new StoreStatement( this );
     }
 
     public File getStoreDir()

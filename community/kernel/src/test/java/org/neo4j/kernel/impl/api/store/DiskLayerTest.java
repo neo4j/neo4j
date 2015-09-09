@@ -24,6 +24,7 @@ import org.junit.Before;
 
 import java.util.Map;
 
+import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -44,12 +45,14 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 
 /**
@@ -75,14 +78,21 @@ public class DiskLayerTest
         db = (GraphDatabaseAPI) createGraphDatabase();
         DependencyResolver resolver = db.getDependencyResolver();
         IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
-        NeoStores neoStores = resolver.resolveDependency( NeoStoresSupplier.class ).get();
+        final NeoStores neoStores = resolver.resolveDependency( NeoStoresSupplier.class ).get();
         this.disk = new DiskLayer(
                 resolver.resolveDependency( PropertyKeyTokenHolder.class ),
                 resolver.resolveDependency( LabelTokenHolder.class ),
                 resolver.resolveDependency( RelationshipTypeTokenHolder.class ),
                 new SchemaStorage( neoStores.getSchemaStore() ),
                 neoStores,
-                indexingService );
+                indexingService, new Factory<StoreStatement>()
+                {
+                    @Override
+                    public StoreStatement newInstance()
+                    {
+                        return new StoreStatement( neoStores, LockService.NO_LOCK_SERVICE );
+                    }
+                } );
         this.state = new KernelStatement( null, new IndexReaderFactory.Caching( indexingService ),
                 resolver.resolveDependency( LabelScanStore.class ), null,
                 null, null, disk.acquireStatement() );
