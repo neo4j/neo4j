@@ -88,7 +88,16 @@ public enum NotificationCode
         SeverityLevel.WARNING,
         Status.Statement.DeprecationWarning,
         "Use of bare node patterns has been deprecated. Please enclose the identifier in parenthesis."
-    ) ;
+    ),
+    EAGER_LOAD_CSV(
+        SeverityLevel.WARNING,
+        Status.Statement.EagerWarning,
+        "Using LOAD CSV with a large data set in a query where the execution plan contains the " +
+        "Eager operator could potentially consume a lot of memory and is likely to not perform well. " +
+        "See the Neo4j Manual entry on the Eager operator for more information and hints on " +
+        "how problems could be avoided."
+    )
+    ;
 
     private final Status status;
     private final String description;

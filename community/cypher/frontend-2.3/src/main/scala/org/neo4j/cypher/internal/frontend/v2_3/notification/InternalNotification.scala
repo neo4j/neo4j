@@ -47,3 +47,5 @@ case class IndexSeekUnfulfillableNotification(labels: Set[String]) extends Inter
 case class IndexScanUnfulfillableNotification(labels: Set[String]) extends InternalNotification
 
 case class BareNodeSyntaxDeprecatedNotification(position: InputPosition) extends InternalNotification
+
+case object EagerLoadCsvNotification extends InternalNotification

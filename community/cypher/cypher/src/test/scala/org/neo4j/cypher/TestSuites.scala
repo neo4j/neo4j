@@ -80,7 +80,7 @@ abstract class ExecutionEngineFunSuite
     override def apply(result: InternalExecutionResult): MatchResult = {
       val plan: InternalPlanDescription = result.executionPlanDescription()
       MatchResult(
-        matches = operators.exists(plan.find(_).nonEmpty),
+        matches = operators.forall(plan.find(_).nonEmpty),
         rawFailureMessage = s"Plan should use ${operators.mkString(",")}:\n$plan",
         rawNegatedFailureMessage = s"Plan should not use ${operators.mkString(",")}:\n$plan")
     }

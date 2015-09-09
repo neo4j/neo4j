@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, ProfileMode, _}
 import org.neo4j.cypher.internal.frontend.v2_3.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.frontend.v2_3.ast.Statement
+import org.neo4j.cypher.internal.frontend.v2_3.notification.{EagerLoadCsvNotification, InternalNotification}
 import org.neo4j.function.Supplier
 import org.neo4j.function.Suppliers.singleton
 import org.neo4j.graphdb.GraphDatabaseService
@@ -142,13 +143,42 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
       def isPeriodicCommit: Boolean = compiledPlan.periodicCommit.isDefined
 
       def runtimeUsed = CompiledRuntimeName
+
+      def notifications = Seq.empty
     }
   }
+
+  private def hasEagerLoadCsv(pipe: Pipe) = {
+    import org.neo4j.cypher.internal.frontend.v2_3.Foldable._
+    sealed trait SearchState
+    case object NoEagerFound extends SearchState
+    case object EagerFound extends SearchState
+    case object EagerWithLoadCsvFound extends SearchState
+
+    // Walk over the pipe tree and check if an Eager is to be executed after a LoadCsv
+    val resultState = pipe.treeFold[SearchState](NoEagerFound) {
+      case _: LoadCSVPipe => (acc, children) =>
+        acc match {
+          case EagerFound => EagerWithLoadCsvFound
+          case e => e
+        }
+      case _: EagerPipe =>
+        (acc, children) =>
+          children(EagerFound)
+    }
+
+    resultState match {
+      case EagerWithLoadCsvFound => true
+      case _ => false
+    }
+  }
+
+  private def checkForNotifications(pipe: Pipe): Seq[InternalNotification] =
+    if (hasEagerLoadCsv(pipe)) Seq(EagerLoadCsvNotification) else Seq.empty
 
   private def buildInterpreted(pipeInfo: PipeInfo, planContext: PlanContext, inputQuery: PreparedQuery) = {
     val abstractQuery = inputQuery.abstractQuery
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
-
     val columns = getQueryResultColumns(abstractQuery, pipe.symbols)
     val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns)
     val func = getExecutionPlanFunction(periodicCommitInfo, abstractQuery.getQueryText, updating, resultBuilderFactory, inputQuery.notificationLogger)
@@ -164,6 +194,8 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
       def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
 
       def runtimeUsed = InterpretedRuntimeName
+
+      def notifications = checkForNotifications(pipe)
     }
 
   }

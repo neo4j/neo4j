@@ -163,6 +163,10 @@ trait CompatibilityFor2_3 {
       def plan(statement: Statement, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = exceptionHandlerFor2_3.runSafely {
         val planContext = new TransactionBoundPlanContext(statement, graph)
         val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_2_3.get, planContext, tracer)
+
+        // Log notifications/warnings from planning
+        planImpl.notifications.foreach(preParsedQuery.notificationLogger += _)
+
         (new ExecutionPlanWrapper(planImpl), extractedParameters)
       }
 
@@ -308,6 +312,8 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
       NotificationCode.INDEX_SCAN_FOR_DYNAMIC_PROPERTY.notification(InputPosition.empty, NotificationDetail.Factory.indexSeekOrScan(labels.asJava))
     case BareNodeSyntaxDeprecatedNotification(pos) =>
       NotificationCode.BARE_NODE_SYNTAX_DEPRECATED.notification(pos.asInputPosition)
+    case EagerLoadCsvNotification =>
+      NotificationCode.EAGER_LOAD_CSV.notification(InputPosition.empty)
   }
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = exceptionHandlerFor2_3.runSafely {
