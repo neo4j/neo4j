@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.junit.Rule;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+import static org.neo4j.test.OtherThreadRule.isWaiting;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,14 +32,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.junit.Rule;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 import org.neo4j.kernel.api.index.ParameterizedSuiteRunner;
 import org.neo4j.test.OtherThreadRule;
-
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.fail;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import static org.neo4j.test.OtherThreadRule.isWaiting;
 
 /** Base for locking tests. */
 @RunWith(ParameterizedSuiteRunner.class)
@@ -45,7 +44,6 @@ import static org.neo4j.test.OtherThreadRule.isWaiting;
         AcquireAndReleaseLocksCompatibility.class,
         DeadlockCompatibility.class,
         LockReentrancyCompatibility.class,
-        LockingFuzzCompatibility.class,
         RWLockCompatibility.class
 })
 public abstract class LockingCompatibilityTestSuite

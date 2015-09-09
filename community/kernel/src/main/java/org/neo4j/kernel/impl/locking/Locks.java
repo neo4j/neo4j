@@ -74,15 +74,6 @@ public interface Locks extends Lifecycle
     interface Client extends AutoCloseable
     {
         /**
-         * Give this client a user-friendly description to use in error messages and introspection, ideally one that can be traced back to a user operation
-         * (eg. a truncated version of a cypher query, for instance)
-         */
-        Client description( String desc );
-
-        /** Get a description of this client, to help users understand what operation the client represents. */
-        String description();
-
-        /**
          * Can be grabbed when there are no locks or only share locks on a resource. If the lock cannot be acquired,
          * behavior is specified by the {@link WaitStrategy} for the given {@link ResourceType}.
          */
@@ -122,7 +113,6 @@ public interface Locks extends Lifecycle
 
         /** For slave transactions, this tracks an identifier for the lock session running on the master */
         int getLockSessionId();
-
     }
 
     /**

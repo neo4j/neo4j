@@ -22,18 +22,6 @@ package org.neo4j.kernel.impl.locking;
 public class NoOpClient implements Locks.Client
 {
     @Override
-    public Locks.Client description( String desc )
-    {
-        return this;
-    }
-
-    @Override
-    public String description()
-    {
-        return this.toString();
-    }
-
-    @Override
     public void acquireShared( Locks.ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
     {
     }

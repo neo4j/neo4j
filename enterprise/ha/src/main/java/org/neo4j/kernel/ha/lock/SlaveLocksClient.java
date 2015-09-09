@@ -93,19 +93,6 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public Locks.Client description( String desc )
-    {
-        client.description( desc );
-        return this;
-    }
-
-    @Override
-    public String description()
-    {
-        return client.description();
-    }
-
-    @Override
     public void acquireShared( Locks.ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
     {
         Map<Long, AtomicInteger> lockMap = getLockMap( sharedLocks, resourceType );
