@@ -59,17 +59,6 @@ public class CommunityLockClient implements Locks.Client
         this.manager = manager;
     }
 
-    public Locks.Client description( String desc )
-    {
-        return this;
-    }
-
-    @Override
-    public String description()
-    {
-        return toString();
-    }
-
     @Override
     public void acquireShared( Locks.ResourceType resourceType, long resourceId )
     {

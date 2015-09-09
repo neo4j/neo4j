@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.enterprise.lock.forseti;
 
-import java.util.Set;
-
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 
 class ExclusiveLock implements ForsetiLockManager.Lock
@@ -39,16 +37,21 @@ class ExclusiveLock implements ForsetiLockManager.Lock
     }
 
     @Override
-    public int detectDeadlock( int client )
+    public int holderWaitListSize()
     {
-        return owner.isWaitingFor( client ) ? owner.id() : -1;
+        return owner.waitListSize();
     }
 
     @Override
-    public String describeWaitList( Set<Integer> involvedParties )
+    public boolean anyHolderIsWaitingFor( int client )
     {
-        involvedParties.add( owner.id() );
-        return owner.describeWaitList( involvedParties );
+        return owner.isWaitingFor( client );
+    }
+
+    @Override
+    public String describeWaitList()
+    {
+        return "ExclusiveLock[" + owner.describeWaitList() + "]";
     }
 
     @Override

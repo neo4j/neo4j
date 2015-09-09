@@ -461,6 +461,7 @@ public class PageCacheRule extends ExternalResource
             {
                 currentReadIsInconsistent = false;
                 cursor.shouldRetry();
+                cursor.setOffset( 0 );
                 return true;
             }
             return cursor.shouldRetry();
