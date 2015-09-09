@@ -42,18 +42,6 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public Locks.Client description( String desc )
-    {
-        return this;
-    }
-
-    @Override
-    public String description()
-    {
-        return toString();
-    }
-
-    @Override
     public void acquireShared( Locks.ResourceType resourceType, long... resourceIds )
     {
         PrimitiveLongObjectMap<LockResource> localLocks = localShared( resourceType );

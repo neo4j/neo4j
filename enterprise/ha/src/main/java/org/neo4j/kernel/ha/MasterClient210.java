@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
+import org.jboss.netty.buffer.ChannelBuffer;
 
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
@@ -226,7 +226,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
             resourceIds )
     {
         return sendRequest( HaRequestType210.ACQUIRE_EXCLUSIVE_LOCK, context,
-            new AcquireLockSerializer( type, resourceIds ), LOCK_RESULT_DESERIALIZER );
+                new AcquireLockSerializer( type, resourceIds ), LOCK_RESULT_DESERIALIZER );
     }
 
     @Override

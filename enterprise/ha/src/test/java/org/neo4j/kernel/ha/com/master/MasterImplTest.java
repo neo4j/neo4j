@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
@@ -40,7 +40,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.master.MasterImpl.Monitor;
 import org.neo4j.kernel.ha.com.master.MasterImpl.SPI;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.locking.Locks.ResourceType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
@@ -58,7 +57,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -108,9 +106,14 @@ public class MasterImplTest
         HandshakeResult handshake = instance.handshake( 1, new StoreId() ).response();
 
         // When
-        instance.newLockSession( new RequestContext( handshake.epoch(), 1, 2, 0, 0 ) );
-
-        // Then no exception should be thrown
+        try
+        {
+            instance.newLockSession( new RequestContext( handshake.epoch(), 1, 2, 0, 0 ) );
+        }
+        catch ( Exception e )
+        {
+            fail( e.getMessage() );
+        }
     }
 
     @Test
@@ -178,7 +181,6 @@ public class MasterImplTest
                 }
             } ).when( client ).acquireExclusive( any( ResourceType.class ), Matchers.<long[]>anyVararg() );
             when( spi.acquireClient() ).thenReturn( client );
-            when( client.description(anyString() )).thenReturn( client );
             Config config = config( 20 );
             final MasterImpl master = new MasterImpl( spi, mock( Monitor.class ),
                     new DevNullLoggingService(), config, 20 );
@@ -290,7 +292,6 @@ public class MasterImplTest
 
     public static SPI mockedSpi( final StoreId storeId )
     {
-        Locks.Client locks = mock( Locks.Client.class );
         MasterImpl.SPI mock = mock( MasterImpl.SPI.class );
         when( mock.storeId() ).thenReturn( storeId );
         when( mock.packEmptyResponse( any() ) ).thenAnswer( new Answer()
@@ -302,8 +303,6 @@ public class MasterImplTest
                         TransactionIdStore.BASE_TX_ID, ResourceReleaser.NO_OP );
             }
         } );
-        when( mock.acquireClient() ).thenReturn( locks );
-        when( locks.description(anyString()) ).thenReturn( locks );
         return mock;
     }
 }

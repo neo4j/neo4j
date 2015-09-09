@@ -25,11 +25,12 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.function.Consumer;
-import org.neo4j.function.Function;
+import org.neo4j.function.Factory;
 import org.neo4j.helpers.Clock;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
+
 import static org.neo4j.helpers.Format.duration;
 
 /**
@@ -43,7 +44,7 @@ import static org.neo4j.helpers.Format.duration;
 public class TimedRepository<KEY, VALUE> implements Runnable
 {
     private final ConcurrentMap<KEY, Entry> repo = new ConcurrentHashMap<>();
-    private final Function<KEY, VALUE> factory;
+    private final Factory<VALUE> factory;
     private final Consumer<VALUE> reaper;
     private final long timeout;
     private final Clock clock;
@@ -96,7 +97,7 @@ public class TimedRepository<KEY, VALUE> implements Runnable
         }
     }
 
-    public TimedRepository( Function<KEY, VALUE> provider, Consumer<VALUE> reaper, long timeout, Clock clock )
+    public TimedRepository( Factory<VALUE> provider, Consumer<VALUE> reaper, long timeout, Clock clock )
     {
         this.factory = provider;
         this.reaper = reaper;
@@ -106,7 +107,7 @@ public class TimedRepository<KEY, VALUE> implements Runnable
 
     public void begin( KEY key ) throws ConcurrentAccessException
     {
-        VALUE instance = factory.apply( key );
+        VALUE instance = factory.newInstance();
         Entry existing;
         if ( (existing = repo.putIfAbsent( key, new Entry( instance ) )) != null )
         {
