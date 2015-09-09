@@ -356,7 +356,9 @@ public abstract class TransactionProvidingApp extends AbstractApp
      * @param server the {@link GraphDatabaseShellServer} to run at.
      * @param session the {@link Session} used by the client.
      * @param thing the thing to get the name-representation for.
+     * @param checkForMe check if node/rel is the current one in the session
      * @return the display name for a {@link Node}.
+     * @throws ShellException if an error occurs.
      */
     public static String getDisplayName( GraphDatabaseShellServer server,
         Session session, NodeOrRelationship thing, boolean checkForMe )
@@ -378,6 +380,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
      * @param server the {@link GraphDatabaseShellServer} to run at.
      * @param session the {@link Session} used by the client.
      * @param typedId the id for the item to display.
+     * @param checkForMe check if node/rel is the current one in the session
      * @return a display string for the {@code typedId}.
      * @throws ShellException if an error occurs.
      */
@@ -393,7 +396,9 @@ public abstract class TransactionProvidingApp extends AbstractApp
      * @param server the {@link GraphDatabaseShellServer} to run at.
      * @param session the {@link Session} used by the client.
      * @param node the {@link Node} to get a display string for.
+     * @param checkForMe check if node is the current one in the session
      * @return a display string for {@code node}.
+     * @throws ShellException if an error occurs.
      */
     public static String getDisplayName( GraphDatabaseShellServer server,
         Session session, Node node, boolean checkForMe ) throws ShellException
@@ -457,7 +462,9 @@ public abstract class TransactionProvidingApp extends AbstractApp
      * @param session the {@link Session} used by the client.
      * @param relationship the {@link Relationship} to get a display name for.
      * @param verbose whether or not to include the relationship id as well.
+     * @param checkForMe check if relationship is the current one in the session
      * @return a display string for the {@code relationship}.
+     * @throws ShellException if an error occurs.
      */
     public static String getDisplayName( GraphDatabaseShellServer server,
         Session session, Relationship relationship, boolean verbose,

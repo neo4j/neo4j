@@ -110,6 +110,8 @@ public class GraphDatabaseFactory
 
     /**
      * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
+     * 
+     * @return kernel extensions
      */
     @Deprecated
     public Iterable<KernelExtensionFactory<?>> getKernelExtension()
@@ -119,6 +121,9 @@ public class GraphDatabaseFactory
 
     /**
      * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
+     * 
+     * @param newKernelExtensions New kernel extensions to add
+     * @return the factory
      */
     @Deprecated
     public GraphDatabaseFactory addKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
@@ -129,6 +134,9 @@ public class GraphDatabaseFactory
 
     /**
      * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
+     * 
+     * @param newKernelExtension New kernel extension too add
+     * @return the factory
      */
     @Deprecated
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -140,6 +148,9 @@ public class GraphDatabaseFactory
 
     /**
      * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
+     * 
+     * @param newKernelExtensions New kernel extensions to set
+     * @return the factory
      */
     @Deprecated
     public GraphDatabaseFactory setKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
@@ -151,6 +162,8 @@ public class GraphDatabaseFactory
 
     /**
      * @deprecated Manipulating cache providers is deprecated and will be moved to internal components.
+     * 
+     * @return the cache providers
      */
     @Deprecated
     public List<CacheProvider> getCacheProviders()
@@ -160,6 +173,9 @@ public class GraphDatabaseFactory
 
     /**
      * @deprecated Manipulating cache providers is deprecated and will be moved to internal components.
+     * 
+     * @param newCacheProviders New cache providers to set
+     * @return the factory
      */
     @Deprecated
     public GraphDatabaseFactory setCacheProviders( Iterable<CacheProvider> newCacheProviders )

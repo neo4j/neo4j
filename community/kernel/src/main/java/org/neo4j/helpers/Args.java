@@ -493,9 +493,16 @@ public class Args
     }
 
     /**
-     * An option can be specified multiple times. This method will allow interpreting all values for
+     * An option can be specified multiple times; this method will allow interpreting all values for
      * the given key, returning a {@link Collection}. This is the only means of extracting multiple values
      * for any given option. All other methods revolve around zero or one value for an option.
+     * 
+     * @param key Key of the option
+     * @param defaultValue Default value value of the option
+     * @param converter Converter to use
+     * @param validators Validators to use
+     * @param <T> The type of the option values
+     * @return The option values
      */
     @SafeVarargs
     public final <T> Collection<T> interpretOptions( String key, Function<String,T> defaultValue,
@@ -511,11 +518,18 @@ public class Args
     }
 
     /**
-     * An option can be specified multiple times. This method will allow interpreting all values for
+     * An option can be specified multiple times; this method will allow interpreting all values for
      * the given key, returning a {@link Collection}. This is the only means of extracting multiple values
      * for any given option. All other methods revolve around zero or one value for an option.
      * This is also the only means of extracting metadata about a options. Metadata can be supplied as part
      * of the option key, like --my-option:Metadata "my value".
+     * 
+     * @param key Key of the option
+     * @param defaultValue Default value value of the option
+     * @param converter Converter to use
+     * @param validators Validators to use
+     * @param <T> The type of the option values
+     * @return The option values
      */
     @SafeVarargs
     public final <T> Collection<Option<T>> interpretOptionsWithMetadata( String key, Function<String,T> defaultValue,

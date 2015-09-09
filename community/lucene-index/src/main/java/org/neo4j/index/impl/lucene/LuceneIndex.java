@@ -138,7 +138,7 @@ public abstract class LuceneIndex implements LegacyIndex
      * that transaction. When the transaction has been committed all such
      * queries are guaranteed to return correct results.
      *
-     * @param entity the entity (i.e {@link Node} or {@link Relationship})
+     * @param entityId the entity (i.e {@link Node} or {@link Relationship})
      * to dissociate the key/value pair from.
      * @param key the key in the key/value pair to dissociate from the entity.
      * @param value the value in the key/value pair to dissociate from the

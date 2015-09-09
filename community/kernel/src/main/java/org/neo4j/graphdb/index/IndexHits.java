@@ -43,7 +43,7 @@ import org.neo4j.graphdb.Transaction;
  * 
  * <pre>
  * <code>
- * IndexHits<Node> hits = index.get( "key", "value" );
+ * IndexHits&lt;Node&gt; hits = index.get( "key", "value" );
  * try
  * {
  *     for ( Node node : hits )

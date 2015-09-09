@@ -30,10 +30,13 @@ import static java.util.Arrays.copyOf;
 public abstract class ArrayUtil
 {
     /**
+     * Convert an array to a {@link String}.
      * I can't believe this method is missing from {@link Arrays}.
      *
      * @see Arrays#toString(byte[]) for similar functionality.
      * @deprecated use {@link ObjectUtil#toString(Object)} instead.
+     * @param array Array to convert.
+     * @return A String representing the array.
      */
     @Deprecated
     public static String toString( Object array )
@@ -139,12 +142,14 @@ public abstract class ArrayUtil
     }
 
     /**
+     * Check if two arrays are equal.
      * I also can't believe this method is missing from {@link Arrays}.
      * Both arguments must be arrays of some type.
      *
      * @param firstArray value to compare to the other value
      * @param otherArray value to compare to the first value
      * @param equality equality logic
+     * @return Returns {@code true} if the arrays are equal
      *
      * @see Arrays#equals(byte[], byte[]) for similar functionality.
      */
@@ -239,8 +244,13 @@ public abstract class ArrayUtil
     }
 
     /**
+     * Count missing items in an array.
+     * The order of items doesn't matter.
+     * 
+     * @param array Array to examine
+     * @param contains Items to look for
+     * @param <T> The type of the array items
      * @return how many of the items in {@code contains} are missing from {@code array}.
-     * Order of items doesn't matter.
      */
     public static <T> int missing( T[] array, T[] contains )
     {
@@ -256,8 +266,13 @@ public abstract class ArrayUtil
     }
 
     /**
+     * Count items from a different array contained in an array.
+     * The order of items doesn't matter.
+     * 
+     * @param array Array to examine
+     * @param contains Items to look for
+     * @param <T> The type of the array items
      * @return {@code true} if all items in {@code contains} exists in {@code array}, otherwise {@code false}.
-     * Order of items doesn't matter.
      */
     public static <T> boolean containsAll( T[] array, T[] contains )
     {
@@ -272,6 +287,11 @@ public abstract class ArrayUtil
     }
 
     /**
+     * Check if array contains item.
+     * 
+     * @param array Array to examine
+     * @param contains Single item to look for
+     * @param <T> The type of the array items
      * @return {@code true} if {@code contains} exists in {@code array}, otherwise {@code false}.
      */
     public static <T> boolean contains( T[] array, T contains )
@@ -280,6 +300,12 @@ public abstract class ArrayUtil
     }
 
     /**
+     * Check if array contains item.
+     * 
+     * @param array Array to examine
+     * @param arrayLength Number of items to check, from the start of the array
+     * @param contains Single item to look for
+     * @param <T> The type of the array items
      * @return {@code true} if {@code contains} exists in {@code array}, otherwise {@code false}.
      */
     public static <T> boolean contains( T[] array, int arrayLength, T contains )
@@ -296,7 +322,12 @@ public abstract class ArrayUtil
     }
 
     /**
-     * @return {@code true} if {@code first} and {@code other} are both null or are both equal.
+     * Compare two items for equality; if both are {@code null} they are regarded as equal.
+     * 
+     * @param first First item to compare
+     * @param other Other item to compare
+     * @param <T> The type of the items
+     * @return {@code true} if {@code first} and {@code other} are both {@code null} or are both equal.
      */
     public static <T> boolean nullSafeEquals( T first, T other )
     {
@@ -304,7 +335,13 @@ public abstract class ArrayUtil
     }
 
     /**
-     * @return an array containing the union of {@code first} and {@code other}. Items occuring in
+     * Get the union of two arrays.
+     * The resulting array will not contain any duplicates.
+     * 
+     * @param first First array
+     * @param other Other array
+     * @param <T> The type of the arrays
+     * @return an array containing the union of {@code first} and {@code other}. Items occurring in
      * both {@code first} and {@code other} will only have of the two in the resulting union.
      */
     public static <T> T[] union( T[] first, T[] other )
@@ -336,6 +373,11 @@ public abstract class ArrayUtil
     }
 
     /**
+     * Convert an array to a String using a custom delimiter.
+     * 
+     * @param items The array to convert
+     * @param delimiter The delimiter to use
+     * @param <T> The type of the array
      * @return a {@link String} representation of {@code items} with a custom delimiter in between.
      */
     public static <T> String join( T[] items, String delimiter )
@@ -349,6 +391,13 @@ public abstract class ArrayUtil
     }
 
     /**
+     * Create new array with all items converted into a new type using a supplied transformer.
+     * 
+     * @param from original array
+     * @param transformer transformer that converts an item from the original to the target type
+     * @param toClass target type for items
+     * @param <FROM> type of original items
+     * @param <TO> type of the converted items
      * @return a new array with all items from {@code from} converted into type {@code toClass}.
      */
     public static <FROM,TO> TO[] map( FROM[] from, org.neo4j.function.Function<FROM,TO> transformer,
@@ -364,6 +413,11 @@ public abstract class ArrayUtil
     }
 
     /**
+     * Create an array from a single first item and additional items following it.
+     * 
+     * @param first the item to put first
+     * @param additional the additional items to add to the array
+     * @param <T> the type of the items
      * @return a concatenated array where {@code first} as the item at index {@code 0} and the additional
      * items following it.
      */

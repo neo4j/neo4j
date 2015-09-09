@@ -44,7 +44,7 @@ public interface PathExpander<STATE>
 
     /**
      * Returns a new instance with the exact expansion logic, but reversed.
-     * TODO example
+     * 
      * @return a reversed {@link PathExpander}.
      */
     PathExpander<STATE> reverse();

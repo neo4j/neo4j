@@ -24,7 +24,7 @@ import java.util.Map;
 import org.neo4j.graphdb.Node;
 
 /**
- * Wrap a Map<Object, Color> to expose it as a ColorMapper<Node> from a property
+ * Wrap a {@code Map<Object, Color>} to expose it as a {@code ColorMapper<Node>} from a property
  * value.
  */
 public class SimpleNodeColorMapper implements ColorMapper<Node>

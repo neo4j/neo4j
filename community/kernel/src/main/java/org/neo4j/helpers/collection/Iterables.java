@@ -902,6 +902,12 @@ public final class Iterables
      * More formally, returns the lowest index <tt>i</tt> such that
      * <tt>(o==null&nbsp;?&nbsp;get(i)==null&nbsp;:&nbsp;o.equals(get(i)))</tt>,
      * or -1 if there is no such index.
+     * 
+     * @param itemToFind element to find
+     * @param iterable iterable to look for the element in
+     * @param <T> the type of the elements
+     * @return the index of the first occurrence of the specified element
+     *         (or {@code null} if that was specified) or {@code -1}
      */
     public static <T> int indexOf( T itemToFind, Iterable<T> iterable )
     {

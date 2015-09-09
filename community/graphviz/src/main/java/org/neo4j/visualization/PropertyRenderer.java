@@ -22,7 +22,6 @@ package org.neo4j.visualization;
 /**
  * The {@link PropertyRenderer} is responsible for rendering the properties of a
  * node or relationship.
- * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
  * @param <E>
  *            A base exception type that can be thrown by the methods of this
  *            renderer.

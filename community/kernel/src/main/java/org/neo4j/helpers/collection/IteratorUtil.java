@@ -198,6 +198,10 @@ public abstract class IteratorUtil
     /**
      * Iterates over the full iterators, and checks equality for each item in them. Note that this
      * will consume the iterators.
+     * 
+     * @param first the first iterator
+     * @param other the other iterator
+     * @return {@code true} if all items are equal; otherwise 
      */
     public static boolean iteratorsEqual( Iterator<?> first, Iterator<?> other )
     {
@@ -322,7 +326,7 @@ public abstract class IteratorUtil
     }
 
     /**
-     * Returns the given iterable's single element or {@code null} if no
+     * Returns the given iterable's single element or {@code itemIfNone} if no
      * element found. If there is more than one element in the iterable a
      * {@link NoSuchElementException} will be thrown.
      *
@@ -332,6 +336,7 @@ public abstract class IteratorUtil
      *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
+     * @param itemIfNone item to use if none is found
      * @return the single element in {@code iterable}, or {@code null} if no
      * element found.
      * @throws NoSuchElementException if more than one element was found.
@@ -351,6 +356,7 @@ public abstract class IteratorUtil
      *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
+     * @param itemIfNone item to use if none is found
      * @return the single element in {@code iterator}, or {@code itemIfNone} if no
      * element found.
      * @throws NoSuchElementException if more than one element was found.
@@ -551,11 +557,12 @@ public abstract class IteratorUtil
     }
 
     /**
-     * Counts the number of items in the {@code iterator} by looping
+     * Counts the number of filtered in the {@code iterator} by looping
      * through it.
      * @param <T> the type of items in the iterator.
      * @param iterator the {@link Iterator} to count items in.
-     * @return the number of found in {@code iterator}.
+     * @param filter the filter to test items against
+     * @return the number of filtered items found in {@code iterator}.
      */
     public static <T> int count( Iterator<T> iterator, Predicate<T> filter )
     {
@@ -570,17 +577,25 @@ public abstract class IteratorUtil
         return result;
     }
 
+    /**
+     * Counts the number of items in the {@code iterator} by looping
+     * through it.
+     * @param <T> the type of items in the iterator.
+     * @param iterable the {@link Iterable} to count items in.
+     * @return the number of items found in {@code iterable}.
+     */
     public static <T> int count( Iterable<T> iterable )
     {
         return count( iterable, Predicates.<T>TRUE() );
     }
 
     /**
-     * Counts the number of items in the {@code iterable} by looping through it.
+     * Counts the number of filtered items in the {@code iterable} by looping through it.
      *
      * @param <T> the type of items in the iterator.
      * @param iterable the {@link Iterable} to count items in.
-     * @return the number of found in {@code iterator}.
+     * @param filter the filter to test items against
+     * @return the number of found in {@code iterable}.
      */
     public static <T> int count( Iterable<T> iterable, Predicate<T> filter )
     {
@@ -675,6 +690,7 @@ public abstract class IteratorUtil
      * Creates a {@link Set} from an array of items.
      *
      * @param items the items to add to the set.
+     * @param <T> the type of the items
      * @return the {@link Set} containing the items.
      */
     @SafeVarargs
@@ -695,6 +711,10 @@ public abstract class IteratorUtil
 
     /**
      * Alias for asSet()
+     * 
+     * @param items the items to add to the set.
+     * @param <T> the type of the items
+     * @return the {@link Set} containing the items.
      */
     @SafeVarargs
     public static <T> Set<T> set( T... items)
@@ -706,6 +726,7 @@ public abstract class IteratorUtil
      * Creates a {@link Set} from an array of items.
      *
      * @param items the items to add to the set.
+     * @param <T> the type of the items
      * @return the {@link Set} containing the items.
      */
     @SafeVarargs
@@ -723,6 +744,7 @@ public abstract class IteratorUtil
      * Creates a {@link Set} from an array of items.
      *
      * @param items the items to add to the set.
+     * @param <T> the type of the items
      * @return the {@link Set} containing the items.
      */
     public static <T> Set<T> asUniqueSet( Iterator<T> items )
@@ -775,6 +797,7 @@ public abstract class IteratorUtil
     /**
      * Creates an {@link Iterable} for iterating over the lines of a text file.
      * @param file the file to get the lines for.
+     * @param encoding the encoding of the file
      * @return an {@link Iterable} for iterating over the lines of a text file.
      */
     public static ClosableIterable<String> asIterable( final File file, final String encoding )
@@ -819,6 +842,7 @@ public abstract class IteratorUtil
      * @param file the file to get the lines for.
      * @param encoding to be used for reading the file
      * @return an {@link Iterator} for iterating over the lines of a text file.
+     * @throws IOException from underlying I/O operations
      */
     public static ClosableIterator<String> asIterator( File file, String encoding ) throws IOException
     {

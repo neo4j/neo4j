@@ -86,7 +86,7 @@ public class StartClient
     public static final String ARG_PID = "pid";
 
     /**
-     * Commands (a line can contain more than one command, with && in between)
+     * Commands (a line can contain more than one command, with &amp;&amp; in between)
      * to execute when the shell client has been connected.
      */
     public static final String ARG_COMMAND = "c";

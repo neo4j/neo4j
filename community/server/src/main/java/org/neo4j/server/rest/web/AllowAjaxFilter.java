@@ -27,9 +27,6 @@ import com.sun.jersey.spi.container.ContainerResponseFilter;
  * This filter adds the header "Access-Control-Allow-Origin : *" to all
  * responses that goes through it. This allows modern browsers to do cross-site
  * requests to us via javascript.
- * 
- * @author Jacob Hansson <jacob@voltvoodoo.com>
- * 
  */
 public class AllowAjaxFilter implements ContainerResponseFilter
 {

@@ -265,6 +265,23 @@
                   <packages>org.neo4j.tooling:org.neo4j.tooling.*</packages>
                 </group>
               </groups>
+              <additionalDependencies>
+                <additionalDependency>
+                  <groupId>ch.qos.logback</groupId>
+                  <artifactId>logback-classic</artifactId>
+                  <version>${logback-classic.version}</version>
+                </additionalDependency>
+                <additionalDependency>
+                  <groupId>ch.qos.logback</groupId>
+                  <artifactId>logback-core</artifactId>
+                  <version>${logback-classic.version}</version>
+                </additionalDependency>
+                <additionalDependency>
+                  <groupId>org.slf4j</groupId>
+                  <artifactId>slf4j-api</artifactId>
+                  <version>${slf4j-api.version}</version>
+                </additionalDependency>
+              </additionalDependencies>
             </configuration>
           </execution>
         </executions>

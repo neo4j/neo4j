@@ -480,13 +480,14 @@ public final class Settings
     };
 
     /**
-     * For values such as:
+     * For values expressed with a unit such as {@code 100M}.
+     * 
      * <ul>
-     *   <li>100M</li>   ==&gt; 100 * 1024 * 1024
-     *   <li>37261</li>  ==&gt; 37261
-     *   <li>2g</li>     ==&gt; 2 * 1024 * 1024 * 1024
-     *   <li>50m</li>    ==&gt; 50 * 1024 * 1024
-     *   <li>10k</li>    ==&gt; 10 * 1024
+     *   <li>100M<br>   ==&gt; 100 * 1024 * 1024</li>
+     *   <li>37261<br>  ==&gt; 37261</li>
+     *   <li>2g<br>     ==&gt; 2 * 1024 * 1024 * 1024</li>
+     *   <li>50m<br>    ==&gt; 50 * 1024 * 1024</li>
+     *   <li>10k<br>    ==&gt; 10 * 1024</li>
      * </ul>
      */
     public static final Function<String, Long> LONG_WITH_OPTIONAL_UNIT = new Function<String, Long>()
