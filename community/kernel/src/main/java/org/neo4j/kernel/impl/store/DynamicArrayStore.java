@@ -46,7 +46,6 @@ public class DynamicArrayStore extends AbstractDynamicStore
 
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
-    public static final String VERSION = buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
 
     public DynamicArrayStore(
             File fileName,
@@ -55,15 +54,14 @@ public class DynamicArrayStore extends AbstractDynamicStore
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            int blockSizeFromConfiguration )
+            int blockSize )
     {
-        super( fileName, configuration, idType, idGeneratorFactory, pageCache,
-                logProvider, versionMismatchHandler, blockSizeFromConfiguration );
+        super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, blockSize );
     }
 
     @Override
-    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, DynamicRecord record ) throws FAILURE
+    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, DynamicRecord record )
+            throws FAILURE
     {
         processor.processArray( this, record );
     }

@@ -125,13 +125,8 @@ public class IdGeneratorRebuildFailureEmulationTest
         Map<String, String> params = new HashMap<>();
         params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
         Config config = new Config( params, GraphDatabaseSettings.class );
-        factory = new StoreFactory(
-                storeDir,
-                config,
-                new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ),
-                fs,
-                NullLogProvider.getInstance() );
+        factory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ),
+                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
     }
 
     @After

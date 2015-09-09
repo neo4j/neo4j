@@ -83,10 +83,9 @@ public class NodeStore extends AbstractRecordStore<NodeRecord>
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            DynamicArrayStore dynamicLabelStore,
-            StoreVersionMismatchHandler versionMismatchHandler )
+            DynamicArrayStore dynamicLabelStore )
     {
-        super( fileName, config, IdType.NODE, idGeneratorFactory, pageCache, logProvider, versionMismatchHandler );
+        super( fileName, config, IdType.NODE, idGeneratorFactory, pageCache, logProvider );
         this.dynamicLabelStore = dynamicLabelStore;
     }
 

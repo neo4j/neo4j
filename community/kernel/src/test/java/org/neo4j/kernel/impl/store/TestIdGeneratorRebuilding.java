@@ -33,6 +33,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -77,15 +78,8 @@ public class TestIdGeneratorRebuilding
         File storeFile = file( "nodes" );
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
-        NodeStore store = new NodeStore(
-                storeFile,
-                config,
-                new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ),
-                NullLogProvider.getInstance(),
-                labelStore,
-                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION
-        );
+        NodeStore store = new NodeStore( storeFile, config, new DefaultIdGeneratorFactory( fs ),
+                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore );
         store.initialise( true );
         store.makeStoreOk();
 
@@ -132,15 +126,9 @@ public class TestIdGeneratorRebuilding
         // Given we have a store ...
         Config config = new Config( MapUtil.stringMap(
                 GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "false" ) );
-        File storeFile = file( "strings" );
 
-        StoreFactory storeFactory = new StoreFactory(
-                storeDir,
-                config,
-                new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ),
-                fs,
-                NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ),
+                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
         NeoStores neoStores = storeFactory.openNeoStores( true );
         DynamicStringStore store = neoStores.getPropertyStore().getStringStore();
 
@@ -194,15 +182,8 @@ public class TestIdGeneratorRebuilding
         File storeFile = file( "nodes" );
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
-        NodeStore store = new NodeStore(
-                storeFile,
-                config,
-                new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ),
-                NullLogProvider.getInstance(),
-                labelStore,
-                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION
-        );
+        NodeStore store = new NodeStore( storeFile, config, new DefaultIdGeneratorFactory( fs ),
+                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore );
         store.initialise( true );
         store.makeStoreOk();
 

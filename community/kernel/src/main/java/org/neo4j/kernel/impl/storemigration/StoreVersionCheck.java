@@ -23,9 +23,9 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.impl.store.StoreVersionTrailerUtil;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
 
 public class StoreVersionCheck
@@ -37,48 +37,32 @@ public class StoreVersionCheck
         this.pageCache = pageCache;
     }
 
-    public Result hasVersion( File storeFile, String expectedVersion )
+    public Result hasVersion( File neostoreFile, String expectedVersion )
     {
-        String storeFilename = storeFile.getName();
-        try ( PagedFile file = pageCache.map( storeFile, pageCache.pageSize() ) )
+        long record;
+
+        try
         {
-            if ( file.getLastPageId() == -1 )
-            {
-                return new Result( Outcome.storeVersionNotFound, null, storeFilename );
-            }
-
-            String actualVersion = StoreVersionTrailerUtil.readTrailer( file, expectedVersion );
-            if ( actualVersion == null )
-            {
-                return new Result( Outcome.storeVersionNotFound, null, storeFilename );
-            }
-
-            if ( !actualVersion.startsWith( typeDescriptor( expectedVersion ) ) )
-            {
-                return new Result( Outcome.storeVersionNotFound, actualVersion, storeFilename );
-            }
-
-            if ( !expectedVersion.equals( actualVersion ) )
-            {
-                return new Result( Outcome.unexpectedUpgradingStoreVersion, actualVersion, storeFilename );
-            }
+            record = MetaDataStore.getRecord( pageCache, neostoreFile, STORE_VERSION );
         }
-        catch ( IOException e )
+        catch ( IOException ex )
         {
-            return new Result( Outcome.missingStoreFile, null, storeFilename );
+            // since we cannot read let's assume the file is not there
+            return new Result( Outcome.missingStoreFile, null, neostoreFile.getName() );
         }
 
-        return new Result( Outcome.ok, null, storeFilename );
-    }
-
-    private String typeDescriptor( String expectedVersion )
-    {
-        int spaceIndex = expectedVersion.indexOf( ' ' );
-        if ( spaceIndex == -1 )
+        if ( record == MetaDataStore.FIELD_NOT_PRESENT )
         {
-            throw new IllegalArgumentException( "Unexpected version " + expectedVersion );
+            return new Result( Outcome.storeVersionNotFound, null, neostoreFile.getName() );
         }
-        return expectedVersion.substring( 0, spaceIndex );
+
+        String storeVersion = MetaDataStore.versionLongToString( record );
+        if ( !expectedVersion.equals( storeVersion ) )
+        {
+            return new Result( Outcome.unexpectedUpgradingStoreVersion, storeVersion, expectedVersion );
+        }
+
+        return new Result( Outcome.ok, null, neostoreFile.getName() );
     }
 
     public static class Result
@@ -94,7 +78,7 @@ public class StoreVersionCheck
             this.storeFilename = storeFilename;
         }
 
-        public static enum Outcome
+        public enum Outcome
         {
             ok( true ),
             missingStoreFile( false ),
@@ -103,7 +87,7 @@ public class StoreVersionCheck
 
             private final boolean success;
 
-            private Outcome( boolean success )
+            Outcome( boolean success )
             {
                 this.success = success;
             }

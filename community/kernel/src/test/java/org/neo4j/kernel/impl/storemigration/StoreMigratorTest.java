@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
@@ -45,8 +46,6 @@ import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMo
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
-
-import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class StoreMigratorTest
@@ -73,7 +72,7 @@ public class StoreMigratorTest
     }
 
     @Test
-    public void shouldBeAbleToResumeMigration() throws Exception
+    public void shouldBeAbleToResumeMigrationOnMoving() throws Exception
     {
         // GIVEN a legacy database
         File storeDirectory = directory.graphDbDir();
@@ -82,25 +81,56 @@ public class StoreMigratorTest
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
+        UpgradableDatabase upgradableDatabase =
+                new UpgradableDatabase( new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
+
+        String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator =
-                new StoreMigrator( progressMonitor, fs, pageCache, upgradableDatabase, new Config(), logService );
+        StoreMigrator migrator = new StoreMigrator( progressMonitor, fs, pageCache, new Config(), logService );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
         fs.mkdirs( migrationDir );
-        assertTrue( migrator.needsMigration( storeDirectory ) );
-        migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider );
-        migrator.close();
+        migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider, versionToMigrateFrom );
 
         // WHEN simulating resuming the migration
-        upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
         progressMonitor = new SilentMigrationProgressMonitor();
-        migrator = new StoreMigrator( progressMonitor, fs, pageCache, upgradableDatabase, new Config(), logService );
-        migrator.moveMigratedFiles( migrationDir, storeDirectory );
+        migrator = new StoreMigrator( progressMonitor, fs, pageCache, new Config(), logService );
+        migrator.moveMigratedFiles( migrationDir, storeDirectory, versionToMigrateFrom );
 
         // THEN starting the new store should be successful
-        StoreFactory storeFactory = new StoreFactory( fs, storeDirectory, pageCache,
-                logService.getInternalLogProvider() );
+        StoreFactory storeFactory =
+                new StoreFactory( fs, storeDirectory, pageCache, logService.getInternalLogProvider() );
+        storeFactory.openNeoStores( false ).close();
+    }
+
+    @Test
+    public void shouldBeAbleToResumeMigrationOnRebuildingCounts() throws Exception
+    {
+        // GIVEN a legacy database
+        File storeDirectory = directory.graphDbDir();
+        File prepare = directory.directory( "prepare" );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, storeDirectory, prepare );
+        // and a state of the migration saying that it has done the actual migration
+        LogService logService = NullLogService.getInstance();
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        UpgradableDatabase upgradableDatabase =
+                new UpgradableDatabase( new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
+
+        String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory );
+        SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
+        StoreMigrator migrator = new StoreMigrator( progressMonitor, fs, pageCache, new Config(), logService );
+        File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
+        fs.mkdirs( migrationDir );
+        migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider, versionToMigrateFrom );
+        migrator.moveMigratedFiles( migrationDir, storeDirectory, versionToMigrateFrom );
+
+        // WHEN simulating resuming the migration
+        progressMonitor = new SilentMigrationProgressMonitor();
+        migrator = new StoreMigrator( progressMonitor, fs, pageCache, new Config(), logService );
+        migrator.rebuildCounts( storeDirectory, versionToMigrateFrom );
+
+        // THEN starting the new store should be successful
+        StoreFactory storeFactory =
+                new StoreFactory( fs, storeDirectory, pageCache, logService.getInternalLogProvider() );
         storeFactory.openNeoStores( false ).close();
     }
 }

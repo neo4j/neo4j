@@ -32,6 +32,7 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -55,10 +56,12 @@ public class StoreMigrationTool
     {
         String legacyStoreDirectory = args[0];
         FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( System.out );
-        new StoreMigrationTool().run( new DefaultFileSystemAbstraction(), new File( legacyStoreDirectory ), new Config(), userLogProvider, NO_MONITOR );
+        new StoreMigrationTool().run( new DefaultFileSystemAbstraction(), new File( legacyStoreDirectory ),
+                new Config(), userLogProvider, NO_MONITOR );
     }
 
-    public void run( final FileSystemAbstraction fs, final File legacyStoreDirectory, Config config, LogProvider userLogProvider, StoreUpgrader.Monitor monitor ) throws IOException
+    public void run( final FileSystemAbstraction fs, final File legacyStoreDirectory, Config config,
+            LogProvider userLogProvider, StoreUpgrader.Monitor monitor ) throws IOException
     {
         ConfigMapUpgradeConfiguration upgradeConfiguration = new ConfigMapUpgradeConfiguration( config );
         StoreUpgrader migrationProcess = new StoreUpgrader( upgradeConfiguration, fs, monitor, userLogProvider );
@@ -99,15 +102,16 @@ public class StoreMigrationTool
         Log log = userLogProvider.getLog( StoreMigrationTool.class );
         try ( PageCache pageCache = createPageCache( fs, config ) )
         {
-            UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
+            UpgradableDatabase upgradableDatabase =
+                    new UpgradableDatabase( new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
             migrationProcess.addParticipant( new StoreMigrator(
                     new VisibleMigrationProgressMonitor( logService.getInternalLog( StoreMigrationTool.class ) ),
-                    fs, pageCache, upgradableDatabase, config, logService ) );
+                    fs, pageCache, config, logService ) );
             migrationProcess.addParticipant(
-                    schemaIndexProvider.storeMigrationParticipant( fs, pageCache, upgradableDatabase ) );
+                    schemaIndexProvider.storeMigrationParticipant( fs, pageCache ) );
             // Perform the migration
             long startTime = System.currentTimeMillis();
-            migrationProcess.migrateIfNeeded( legacyStoreDirectory, schemaIndexProvider );
+            migrationProcess.migrateIfNeeded( legacyStoreDirectory, upgradableDatabase, schemaIndexProvider );
             long duration = System.currentTimeMillis() - startTime;
             log.info( format( "Migration completed in %d s%n", duration / 1000 ) );
         }

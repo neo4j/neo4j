@@ -64,7 +64,6 @@ public class NeoStores implements AutoCloseable
     private final IdGeneratorFactory idGeneratorFactory;
     private final PageCache pageCache;
     private final LogProvider logProvider;
-    private final StoreVersionMismatchHandler versionMismatchHandler;
     private final boolean createIfNotExist;
     private final File storeDir;
     private final File neoStoreFileName;
@@ -94,7 +93,6 @@ public class NeoStores implements AutoCloseable
             PageCache pageCache,
             final LogProvider logProvider,
             FileSystemAbstraction fileSystemAbstraction,
-            StoreVersionMismatchHandler versionMismatchHandler,
             boolean createIfNotExist )
     {
         this.neoStoreFileName = neoStoreFileName;
@@ -103,7 +101,6 @@ public class NeoStores implements AutoCloseable
         this.pageCache = pageCache;
         this.logProvider = logProvider;
         this.fileSystemAbstraction = fileSystemAbstraction;
-        this.versionMismatchHandler = versionMismatchHandler;
         this.createIfNotExist = createIfNotExist;
         this.storeDir = neoStoreFileName.getParentFile();
     }
@@ -244,9 +241,8 @@ public class NeoStores implements AutoCloseable
     {
         if ( metaDataStore == null )
         {
-            metaDataStore = initialise( new MetaDataStore(
-                    neoStoreFileName, config, idGeneratorFactory, pageCache, logProvider, versionMismatchHandler
-            ) );
+            metaDataStore = initialise(
+                    new MetaDataStore( neoStoreFileName, config, idGeneratorFactory, pageCache, logProvider ) );
         }
         return metaDataStore;
     }
@@ -265,9 +261,9 @@ public class NeoStores implements AutoCloseable
         if ( nodeStore == null )
         {
             File fileName = getStoreFileName( StoreFactory.NODE_STORE_NAME );
-            nodeStore = initialise( new NodeStore(
-                    fileName, config, idGeneratorFactory, pageCache, logProvider, getNodeLabelStore(),
-                    versionMismatchHandler ) );
+            DynamicArrayStore nodeLabelStore = getNodeLabelStore();
+            nodeStore = initialise(
+                    new NodeStore( fileName, config, idGeneratorFactory, pageCache, logProvider, nodeLabelStore ) );
         }
         return nodeStore;
     }
@@ -278,9 +274,9 @@ public class NeoStores implements AutoCloseable
         {
             File fileName = getStoreFileName( StoreFactory.NODE_LABELS_STORE_NAME );
             int blockSizeFromConfiguration = config.get( GraphDatabaseSettings.label_block_size );
-            nodeLabelStore = initialise( new DynamicArrayStore(
-                    fileName, config, IdType.NODE_LABELS, idGeneratorFactory, pageCache, logProvider,
-                    versionMismatchHandler, blockSizeFromConfiguration ) );
+            nodeLabelStore = initialise(
+                    new DynamicArrayStore( fileName, config, IdType.NODE_LABELS, idGeneratorFactory, pageCache,
+                            logProvider, blockSizeFromConfiguration ) );
         }
         return nodeLabelStore;
     }
@@ -295,9 +291,8 @@ public class NeoStores implements AutoCloseable
         if ( relationshipStore == null )
         {
             File fileName = getStoreFileName( StoreFactory.RELATIONSHIP_STORE_NAME );
-            relationshipStore = initialise( new RelationshipStore(
-                    fileName, config, idGeneratorFactory, pageCache, logProvider, versionMismatchHandler
-            ) );
+            relationshipStore = initialise(
+                    new RelationshipStore( fileName, config, idGeneratorFactory, pageCache, logProvider ) );
         }
         return relationshipStore;
     }
@@ -312,9 +307,9 @@ public class NeoStores implements AutoCloseable
         if ( relTypeStore == null )
         {
             File fileName = getStoreFileName( StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME );
-            relTypeStore = initialise( new RelationshipTypeTokenStore(
-                    fileName, config, idGeneratorFactory, pageCache, logProvider,
-                    getRelationshipTypeTokenNamesStore(), versionMismatchHandler, createIfNotExist ) );
+            relTypeStore = initialise(
+                    new RelationshipTypeTokenStore( fileName, config, idGeneratorFactory, pageCache, logProvider,
+                    getRelationshipTypeTokenNamesStore() ) );
         }
         return relTypeStore;
     }
@@ -324,9 +319,9 @@ public class NeoStores implements AutoCloseable
         if ( relTypeTokenNameStore == null )
         {
             File fileName = getStoreFileName( StoreFactory.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME );
-            relTypeTokenNameStore = initialise( new DynamicStringStore(
-                    fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN_NAME, idGeneratorFactory, pageCache,
-                    logProvider, versionMismatchHandler, TokenStore.NAME_STORE_BLOCK_SIZE ) );
+            relTypeTokenNameStore = initialise(
+                    new DynamicStringStore( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN_NAME, idGeneratorFactory,
+                            pageCache, logProvider, TokenStore.NAME_STORE_BLOCK_SIZE ) );
         }
         return relTypeTokenNameStore;
     }
@@ -341,9 +336,9 @@ public class NeoStores implements AutoCloseable
         if ( labelTokenStore == null )
         {
             File fileName = getStoreFileName( StoreFactory.LABEL_TOKEN_STORE_NAME );
-            labelTokenStore = new LabelTokenStore( fileName, config, idGeneratorFactory, pageCache, logProvider,
-                    getLabelTokenNamesStore(), versionMismatchHandler, createIfNotExist );
-            labelTokenStore.initialise( createIfNotExist );
+            labelTokenStore =  initialise(
+                    new LabelTokenStore( fileName, config, idGeneratorFactory, pageCache, logProvider,
+                            getLabelTokenNamesStore() ) );
         }
         return labelTokenStore;
     }
@@ -353,9 +348,9 @@ public class NeoStores implements AutoCloseable
         if ( labelTokenNamesStore == null )
         {
             File fileName = getStoreFileName( StoreFactory.LABEL_TOKEN_NAMES_STORE_NAME );
-            labelTokenNamesStore = initialise( new DynamicStringStore(
-                    fileName, config, IdType.LABEL_TOKEN_NAME, idGeneratorFactory, pageCache, logProvider,
-                    versionMismatchHandler, TokenStore.NAME_STORE_BLOCK_SIZE ) );
+            labelTokenNamesStore = initialise(
+                    new DynamicStringStore( fileName, config, IdType.LABEL_TOKEN_NAME, idGeneratorFactory, pageCache,
+                            logProvider, TokenStore.NAME_STORE_BLOCK_SIZE ) );
         }
         return labelTokenNamesStore;
     }
@@ -370,10 +365,9 @@ public class NeoStores implements AutoCloseable
         if ( propStore == null )
         {
             File fileName = getStoreFileName( StoreFactory.PROPERTY_STORE_NAME );
-            propStore = initialise( new PropertyStore(
-                    fileName, config, idGeneratorFactory, pageCache, logProvider,
-                    getStringPropertyStore(), getPropertyKeyTokenStore(), getArrayPropertyStore(),
-                    versionMismatchHandler ) );
+            propStore = initialise(
+                    new PropertyStore( fileName, config, idGeneratorFactory, pageCache, logProvider,
+                            getStringPropertyStore(), getPropertyKeyTokenStore(), getArrayPropertyStore() ) );
         }
         return propStore;
     }
@@ -384,9 +378,9 @@ public class NeoStores implements AutoCloseable
         {
             File fileName = getStoreFileName( StoreFactory.PROPERTY_STRINGS_STORE_NAME );
             int blockSizeFromConfiguration = config.get( GraphDatabaseSettings.string_block_size );
-            propertyStringStore = initialise( new DynamicStringStore(
-                    fileName, config, IdType.STRING_BLOCK, idGeneratorFactory, pageCache, logProvider,
-                    versionMismatchHandler, blockSizeFromConfiguration ) );
+            propertyStringStore = initialise(
+                    new DynamicStringStore( fileName, config, IdType.STRING_BLOCK, idGeneratorFactory, pageCache,
+                            logProvider, blockSizeFromConfiguration ) );
         }
         return propertyStringStore;
     }
@@ -397,9 +391,9 @@ public class NeoStores implements AutoCloseable
         {
             File fileName = getStoreFileName( StoreFactory.PROPERTY_ARRAYS_STORE_NAME );
             int blockSizeFromConfiguration = config.get( GraphDatabaseSettings.array_block_size );
-            propertyArrayStore = initialise( new DynamicArrayStore(
-                    fileName, config, IdType.ARRAY_BLOCK, idGeneratorFactory, pageCache, logProvider,
-                    versionMismatchHandler, blockSizeFromConfiguration ) );
+            propertyArrayStore = initialise(
+                    new DynamicArrayStore( fileName, config, IdType.ARRAY_BLOCK, idGeneratorFactory, pageCache,
+                            logProvider, blockSizeFromConfiguration ) );
         }
         return propertyArrayStore;
     }
@@ -412,9 +406,9 @@ public class NeoStores implements AutoCloseable
         if ( propertyKeyTokenStore == null )
         {
             File fileName = getStoreFileName( StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME );
-            propertyKeyTokenStore = initialise( new PropertyKeyTokenStore(
-                    fileName, config, idGeneratorFactory, pageCache, logProvider, getPropertyKeyTokenNamesStore(),
-                    versionMismatchHandler ) );
+            propertyKeyTokenStore = initialise(
+                    new PropertyKeyTokenStore( fileName, config, idGeneratorFactory, pageCache, logProvider,
+                            getPropertyKeyTokenNamesStore() ) );
         }
         return propertyKeyTokenStore;
     }
@@ -424,9 +418,9 @@ public class NeoStores implements AutoCloseable
         if ( propertyKeyTokenNamesStore == null )
         {
             File fileName = getStoreFileName( StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME );
-            propertyKeyTokenNamesStore =initialise( new DynamicStringStore(
-                    fileName, config, IdType.PROPERTY_KEY_TOKEN_NAME, idGeneratorFactory, pageCache, logProvider,
-                    versionMismatchHandler, TokenStore.NAME_STORE_BLOCK_SIZE ) );
+            propertyKeyTokenNamesStore = initialise(
+                    new DynamicStringStore( fileName, config, IdType.PROPERTY_KEY_TOKEN_NAME, idGeneratorFactory,
+                            pageCache, logProvider, TokenStore.NAME_STORE_BLOCK_SIZE ) );
         }
         return propertyKeyTokenNamesStore;
     }
@@ -439,8 +433,8 @@ public class NeoStores implements AutoCloseable
         if ( relGroupStore == null )
         {
             File fileName = getStoreFileName( StoreFactory.RELATIONSHIP_GROUP_STORE_NAME );
-            relGroupStore = initialise( new RelationshipGroupStore(
-                    fileName, config, idGeneratorFactory, pageCache, logProvider, versionMismatchHandler ) );
+            relGroupStore = initialise(
+                    new RelationshipGroupStore( fileName, config, idGeneratorFactory, pageCache, logProvider ) );
         }
         return relGroupStore;
     }
@@ -453,9 +447,8 @@ public class NeoStores implements AutoCloseable
         if ( schemaStore == null )
         {
             File fileName = getStoreFileName( StoreFactory.SCHEMA_STORE_NAME );
-            schemaStore = initialise( new SchemaStore(
-                    fileName, config, IdType.SCHEMA, idGeneratorFactory, pageCache, logProvider,
-                    versionMismatchHandler ) );
+            schemaStore = initialise(
+                    new SchemaStore( fileName, config, IdType.SCHEMA, idGeneratorFactory, pageCache, logProvider ) );
         }
         return schemaStore;
     }
@@ -466,7 +459,7 @@ public class NeoStores implements AutoCloseable
         {
             File fileName = getStoreFileName( StoreFactory.COUNTS_STORE );
             boolean readOnly = config.get( GraphDatabaseSettings.read_only );
-            counts = readOnly? createReadOnlyCountsTracker( fileName ) : createWritableCountsTracker( fileName );
+            counts = readOnly ? createReadOnlyCountsTracker( fileName ) : createWritableCountsTracker( fileName );
 
             counts.setInitializer( new DataInitializer<CountsAccessor.Updater>()
             {
@@ -506,7 +499,7 @@ public class NeoStores implements AutoCloseable
 
     private ReadOnlyCountsTracker createReadOnlyCountsTracker( File fileName )
     {
-        return new ReadOnlyCountsTracker( logProvider, fileSystemAbstraction, pageCache, config, fileName  );
+        return new ReadOnlyCountsTracker( logProvider, fileSystemAbstraction, pageCache, config, fileName );
     }
 
     public void makeStoreOk()

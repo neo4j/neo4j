@@ -272,10 +272,8 @@ public class TransactionRecordStateTest
         EphemeralFileSystemAbstraction fs = fsr.get();
         fs.mkdirs( storeDir );
         Config configuration = new Config( stringMap( config ) );
-        StoreFactory storeFactory = new StoreFactory(
-                storeDir, configuration, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ),
-                fs, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( storeDir, configuration, new DefaultIdGeneratorFactory( fs ),
+                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
         return cleanup.add( storeFactory.openNeoStores( true ) );
     }
 

@@ -87,10 +87,9 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            StoreVersionMismatchHandler versionMismatchHandler,
             int blockSizeFromConfiguration )
     {
-        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, versionMismatchHandler );
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider );
         this.blockSizeFromConfiguration = blockSizeFromConfiguration;
     }
 
@@ -127,7 +126,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                 while ( pageCursor.shouldRetry() );
             }
         }
-        StoreVersionTrailerUtil.writeTrailer( file, UTF8.encode( getTypeAndVersionDescriptor() ), blockSize );
 
         File idFileName = new File( storageFileName.getPath() + ".id" );
         idGeneratorFactory.create( idFileName, 0, true );
