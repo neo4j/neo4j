@@ -313,7 +313,6 @@ public abstract class MapUtil
      * {@link RuntimeException} instead.
      * @param config the data to store in the properties file.
      * @param stream the {@link OutputStream} to store the properties in.
-     * @throws IOException IO error.
      */
     public static void storeStrictly( Map<String, String> config, OutputStream stream )
     {
@@ -349,7 +348,6 @@ public abstract class MapUtil
      *
      * @param config the data to store in the properties file.
      * @param writer the {@link Writer} to store the properties in.
-     * @throws IOException IO error.
      */
     public static void storeStrictly( Map<String, String> config, Writer writer )
     {

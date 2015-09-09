@@ -24,9 +24,9 @@ package org.neo4j.helpers;
  *
  * This is deprecated, use {@link org.neo4j.function.BiFunction} instead.
  *
- * @param <T1>
- * @param <T2>
- * @param <R>
+ * @param <T1> the type of the first input item
+ * @param <T2> the type of the second input item
+ * @param <R> the type of the mapped item
  */
 @Deprecated
 public interface Function2<T1, T2, R> extends org.neo4j.function.Function2<T1, T2, R>

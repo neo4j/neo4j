@@ -23,7 +23,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
 /**
- * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
  * @param <E>
  *            A base exception type that can be thrown by the methods of this
  *            renderer.

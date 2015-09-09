@@ -36,6 +36,9 @@ public abstract class PathExpanders
 {
     /**
      * A very permissive {@link PathExpander} that follows any type in any direction.
+     * 
+     * @param <STATE> the type of the object that holds the state
+     * @return a very permissive {@link PathExpander} that follows any type in any direction
      */
     @SuppressWarnings("unchecked")
     public static <STATE> PathExpander<STATE> allTypesAndDirections()
@@ -44,7 +47,11 @@ public abstract class PathExpanders
     }
 
     /**
-     * A very permissive {@link PathExpander} that follows {@code type} in any direction.
+     * A very permissive {@link PathExpander} that follows {@code type} relationships in any direction.
+     * 
+     * @param type the type of relationships to expand in any direction
+     * @param <STATE> the type of the object that holds the state
+     * @return a very permissive {@link PathExpander} that follows {@code type} relationships in any direction
      */
     @SuppressWarnings("unchecked")
     public static <STATE> PathExpander<STATE> forType( RelationshipType type )
@@ -54,6 +61,10 @@ public abstract class PathExpanders
 
     /**
      * A very permissive {@link PathExpander} that follows any type in {@code direction}.
+     * 
+     * @param direction the direction to follow relationships in
+     * @param <STATE> the type of the object that holds the state
+     * @return a very permissive {@link PathExpander} that follows any type in {@code direction}
      */
     @SuppressWarnings("unchecked")
     public static <STATE> PathExpander<STATE> forDirection( Direction direction )
@@ -63,6 +74,11 @@ public abstract class PathExpanders
 
     /**
      * A very restricted {@link PathExpander} that follows {@code type} in {@code direction}.
+     * 
+     * @param type the type of relationships to follow
+     * @param direction the direction to follow relationships in
+     * @param <STATE> the type of the object that holds the state
+     * @return a very restricted {@link PathExpander} that follows {@code type} in {@code direction}
      */
     @SuppressWarnings("unchecked")
     public static <STATE> PathExpander<STATE> forTypeAndDirection( RelationshipType type, Direction direction )
@@ -71,7 +87,15 @@ public abstract class PathExpanders
     }
 
     /**
-     * A very restricted {@link PathExpander} that follows only the {@code type}/ {@code direction} pairs that you list.
+     * A very restricted {@link PathExpander} that follows only the {@code type}/{@code direction} pairs that you list.
+     * 
+     * @param type1 the type of relationships to follow in {@code direction1}
+     * @param direction1 the direction to follow {@code type1} relationships in
+     * @param type2 the type of relationships to follow in {@code direction2}
+     * @param direction2 the direction to follow {@code type2} relationships in
+     * @param more add more {@code type}/{@code direction} pairs
+     * @param <STATE> the type of the object that holds the state
+     * @return a very restricted {@link PathExpander} that follows only the {@code type}/{@code direction} pairs that you list
      */
     @SuppressWarnings("unchecked")
     public static <STATE> PathExpander<STATE> forTypesAndDirections( RelationshipType type1, Direction direction1,
@@ -83,6 +107,10 @@ public abstract class PathExpanders
 
     /**
      * An expander forcing constant relationship direction
+     * 
+     * @param types types of relationships to follow
+     * @param <STATE> the type of the object that holds the state
+     * @return a {@link PathExpander} which enforces constant relationship direction
      */
     public static <STATE> PathExpander<STATE> forConstantDirectionWithTypes( final RelationshipType... types )
     {

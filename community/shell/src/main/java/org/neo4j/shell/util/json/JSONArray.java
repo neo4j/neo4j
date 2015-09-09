@@ -193,7 +193,6 @@ public class JSONArray {
      * Construct a JSONArray from a collection of beans.
      * The collection should have Java Beans.
      * 
-     * @throws JSONException If not an array.
      */
 
     public JSONArray(Collection collection, boolean includeSuperClass) {

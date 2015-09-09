@@ -38,7 +38,6 @@ public interface ShellClient
 	/**
 	 * Evaluates a line and reacts to it.
 	 * @param line the line to evaluate.
-     * @return the next command line from the user.
      * @throws ShellException if something went wrong.
 	 */
 	void evaluate( String line ) throws ShellException;
@@ -47,7 +46,6 @@ public interface ShellClient
      * Evaluates a line and reacts to it.
      * @param line the line to evaluate.
      * @param out output just for this evaluation.
-     * @return the next command line from the user.
      * @throws ShellException if something went wrong.
      */
 	void evaluate( String line, Output out ) throws ShellException;

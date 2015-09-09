@@ -52,6 +52,8 @@ public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
      *             {@link HighlyAvailableGraphDatabaseFactory#newEmbeddedDatabase(String)}
      *             you get an abstraction of this factory, so you can either use
      *             this factory or {@link GraphDatabaseFactory}.
+     * @param path Path to the new database
+     * @return a database service for the newly created database
      */
     @Deprecated
     public GraphDatabaseService newHighlyAvailableDatabase( final String path )
@@ -64,6 +66,8 @@ public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
      *             {@link HighlyAvailableGraphDatabaseFactory#newEmbeddedDatabaseBuilder(String)}
      *             you get an abstraction of this factory, so you can either use
      *             this factory or {@link GraphDatabaseFactory}.
+     * @param path Path to the new database
+     * @return a database service for the newly created database
      */
     @Deprecated
     public GraphDatabaseBuilder newHighlyAvailableDatabaseBuilder( final String path )

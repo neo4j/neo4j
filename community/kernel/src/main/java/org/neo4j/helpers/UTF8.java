@@ -24,8 +24,6 @@ import java.nio.ByteBuffer;
 
 /**
  * Utility class for converting strings to and from UTF-8 encoded bytes.
- *
- * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
  */
 public final class UTF8
 {

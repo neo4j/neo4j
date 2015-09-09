@@ -81,7 +81,6 @@ import org.neo4j.helpers.Service;
  * exception, in that case the exception is treated as a bad request and
  * propagated to the invoking client.
  *
- * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
  * @see java.util.ServiceLoader
  */
 public abstract class ServerPlugin

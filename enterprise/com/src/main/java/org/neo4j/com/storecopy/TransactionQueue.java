@@ -30,7 +30,6 @@ import org.neo4j.kernel.impl.util.Access;
 /**
  * Queues {@link TransactionRepresentation} for application at a later point. Queued transactions can be visited
  * with {@link #accept(TransactionVisitor)} where the transactions are intact in the queue after that call.
- * Or using {@link #acceptAndRemove(TransactionVisitor)} which clear the queue after that call.
  */
 public class TransactionQueue
 {

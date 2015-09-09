@@ -29,6 +29,9 @@ package org.neo4j.helpers;
 public interface Predicate<T>
 {
     /**
+     * Decide whether or not to accept an item. 
+     * 
+     * @param item item to accept or not
      * @return whether or not to accept the {@code item}, where {@code true}
      * means that the {@code item} is accepted and {@code false} means that
      * it's not (i.e. didn't pass the filter).

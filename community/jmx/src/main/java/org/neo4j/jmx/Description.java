@@ -30,8 +30,6 @@ import javax.management.MBeanOperationInfo;
  * Used to provide JMX documentation to management beans.
  * 
  * Annotate the M(X)Bean interface and its methods to provide documentation.
- * 
- * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
  */
 @Target( { ElementType.METHOD, ElementType.TYPE, ElementType.FIELD } )
 @Retention( RetentionPolicy.RUNTIME )

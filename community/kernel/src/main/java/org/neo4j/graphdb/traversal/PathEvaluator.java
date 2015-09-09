@@ -53,7 +53,7 @@ public interface PathEvaluator<STATE> extends Evaluator
 
     /**
      * Adapter for {@link PathEvaluator}.
-     * @param <STATE>
+     * @param <STATE> the type of the state object
      */
     abstract class Adapter<STATE> implements PathEvaluator<STATE>
     {

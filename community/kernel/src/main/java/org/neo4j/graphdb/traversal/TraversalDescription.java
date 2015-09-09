@@ -67,11 +67,14 @@ public interface TraversalDescription
     /**
      * Sets the {@link UniquenessFactory} for creating the
      * {@link UniquenessFilter} to use. It also accepts an extra parameter
-     * which is mandatory for certain uniqueness's, f.ex
+     * which is mandatory for certain uniquenesses, f.ex
      * {@link Uniqueness#NODE_RECENT}.
      *
      * @param uniqueness the {@link UniquenessFactory} the creator
      * of the desired {@link UniquenessFilter} to use.
+     * @param parameter an extra parameter 
+     * which is mandatory for certain uniquenesses, f.ex
+     * {@link Uniqueness#NODE_RECENT}.
      * @return a new traversal description with the new modifications.
      */
     TraversalDescription uniqueness( UniquenessFactory uniqueness, Object parameter );
@@ -92,7 +95,7 @@ public interface TraversalDescription
      * returning either {@link Evaluation#INCLUDE_AND_CONTINUE} or
      * {@link Evaluation#EXCLUDE_AND_CONTINUE}.
      *
-     * @param evaluator
+     * @param evaluator the {@link Evaluator} to add to the traversal
      * @return a new traversal description with the new modifications.
      */
     TraversalDescription evaluator( Evaluator evaluator );
@@ -113,7 +116,7 @@ public interface TraversalDescription
      * returning either {@link Evaluation#INCLUDE_AND_CONTINUE} or
      * {@link Evaluation#EXCLUDE_AND_CONTINUE}.
      *
-     * @param evaluator
+     * @param evaluator the {@link PathEvaluator} to add to the traversal
      * @return a new traversal description with the new modifications.
      */
     TraversalDescription evaluator( PathEvaluator evaluator );
@@ -196,6 +199,7 @@ public interface TraversalDescription
      * @param expander the {@link PathExpander} to use.
      * @param initialState factory for supplying the initial traversal branches with
      * state values potentially used by the {@link PathExpander}.
+     * @param <STATE> the type of the state object
      * @return a new traversal description with the new modifications.
      *
      * @deprecated Because InitialStateFactory is deprecated
@@ -214,6 +218,7 @@ public interface TraversalDescription
      * @param expander the {@link PathExpander} to use.
      * @param initialState factory for supplying the initial traversal branches with
      * state values potentially used by the {@link PathExpander}.
+     * @param <STATE> the type of the state object
      * @return a new traversal description with the new modifications.
      */
     <STATE> TraversalDescription expand( PathExpander<STATE> expander, InitialBranchState<STATE> initialState );

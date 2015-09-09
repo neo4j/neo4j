@@ -35,7 +35,6 @@ import org.neo4j.tooling.GlobalGraphOperations;
  * implementation is the {@link EmbeddedGraphDatabase} class, which is used to
  * embed Neo4j in an application. Typically, you would create an
  * <code>EmbeddedGraphDatabase</code> instance as follows:
- * <p>
  * <pre>
  * <code>GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( "var/graphDb" );
  * // ... use Neo4j
@@ -191,9 +190,10 @@ public interface GraphDatabaseService
 
     /**
      * Use this method to check if the database is currently in a usable state.
-     *
-     * @param timeout timeout (in milliseconds) to wait for the database to become available. If the database has been
-     *                shutdown this immediately returns false.
+     * 
+     * @param timeout timeout (in milliseconds) to wait for the database to become available.
+     *   If the database has been shut down {@code false} is returned immediately.
+     * @return the state of the database: {@code true} if it is available, otherwise {@code false}
      */
     boolean isAvailable( long timeout );
 
@@ -320,12 +320,16 @@ public interface GraphDatabaseService
     IndexManager index();
 
     /**
-     * Factory method for unidirectional traversal descriptions
+     * Factory method for unidirectional traversal descriptions.
+     * 
+     * @return a new {@link TraversalDescription}
      */
     TraversalDescription traversalDescription();
 
     /**
-     * Factory method for bidirectional traversal descriptions
+     * Factory method for bidirectional traversal descriptions.
+     * 
+     * @return a new {@link BidirectionalTraversalDescription}
      */
     BidirectionalTraversalDescription bidirectionalTraversalDescription();
 }

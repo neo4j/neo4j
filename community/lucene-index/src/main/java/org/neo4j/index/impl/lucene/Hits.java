@@ -52,7 +52,7 @@ import java.util.Vector;
  * <pre>
  *   TopDocs topDocs = searcher.search(query, numHits);
  *   ScoreDoc[] hits = topDocs.scoreDocs;
- *   for (int i = 0; i < hits.length; i++) {
+ *   for (int i = 0; i &lt; hits.length; i++) {
  *     int docId = hits[i].doc;
  *     Document d = searcher.doc(docId);
  *     // do something with current hit
@@ -185,14 +185,21 @@ public final class Hits {
     nDeletions = nDels2;
   }
 
-  /** Returns the total number of hits available in this set. */
+    /** Returns the total number of hits available in this set.
+     * 
+     * @return the total number of hits available in this set
+     */
   public int length() {
     return length;
   }
 
   /** Returns the stored fields of the n<sup>th</sup> document in this set.
-   * <p>Documents are cached, so that repeated requests for the same element may
+   * <p>
+   * Documents are cached, so that repeated requests for the same element may
    * return the same Document object.
+   * 
+   * @param n the index of the document to get
+   * @return the stored fields of the document
    * @throws org.apache.lucene.index.CorruptIndexException if the index is corrupt
    * @throws java.io.IOException if there is a low-level IO error
    */
@@ -215,7 +222,12 @@ public final class Hits {
     return hitDoc.doc;
   }
 
-  /** Returns the score for the n<sup>th</sup> document in this set. */
+  /** Returns the score for the n<sup>th</sup> document in this set.
+   *
+   * @param n the index of the document
+   * @return the score for the document
+   * @throws java.io.IOException if there is a low-level IO error
+   */
   public float score(int n) throws IOException {
     return hitDoc(n).score;
   }

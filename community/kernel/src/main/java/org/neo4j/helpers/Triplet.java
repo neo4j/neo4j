@@ -34,6 +34,9 @@ public class Triplet<T1, T2, T3> extends Pair<T1, Pair<T2, T3>>
      * @param first the {@link #first() first value} of the triplet.
      * @param second the {@link #second() second value} of the triplet.
      * @param third the {@link #third() third value} of the triplet.
+     * @param <T1> the type of the first value
+     * @param <T2> the type of the second value
+     * @param <T3> the type of the third value
      * @return a new triplet of the supplied objects.
      */
     public static <T1, T2, T3> Triplet<T1, T2, T3> of( T1 first, T2 second, T3 third )

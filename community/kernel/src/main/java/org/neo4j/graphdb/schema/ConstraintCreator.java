@@ -41,6 +41,7 @@ public interface ConstraintCreator
      * Imposes a uniqueness constraint for the given property, such that
      * there can be at most one node, having the given label, for any set value of that property key.
      *
+     * @param propertyKey property to impose the uniqueness constraint for
      * @return a {@link ConstraintCreator} instance to be used for further interaction.
      */
     ConstraintCreator assertPropertyIsUnique( String propertyKey );

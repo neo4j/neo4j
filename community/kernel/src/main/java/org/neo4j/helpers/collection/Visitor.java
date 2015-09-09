@@ -26,7 +26,7 @@ import java.lang.reflect.Type;
  * A visitor to internalize iteration.
  *
  * @param <E> the element type the visitor accepts.
- * @author Tobias Lindaaker <tobias.lindaaker@neotechnology.com>
+ * @param <FAILURE> the type of exception the visitor might throw
  */
 public interface Visitor<E, FAILURE extends Exception>
 {
@@ -37,6 +37,7 @@ public interface Visitor<E, FAILURE extends Exception>
      * @param element an element from the collection.
      * @return <code>true</code> to terminate the iteration, <code>false</code>
      *         to continue.
+     * @throws FAILURE exception thrown by the visitor
      */
     boolean visit( E element ) throws FAILURE;
 
@@ -50,6 +51,13 @@ public interface Visitor<E, FAILURE extends Exception>
          * visitor cast to compatible type parameters. If the passed in object is not an instance of {@link Visitor},
          * or if it is a {@link Visitor} but one that {@link Visitor#visit(Object) visits} another type of object, this
          * method returns {@code null}.
+         * 
+         * @param eType element type of the visitor
+         * @param fType failure type of the visitor
+         * @param visitor the visitor
+         * @param <T> type of the elements
+         * @param <F> type of the exception
+         * @return the visitor cast to compatible type parameters or {@code null}
          */
         @SuppressWarnings("unchecked"/*checked through reflection*/)
         public static <T, F extends Exception>

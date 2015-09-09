@@ -24,7 +24,7 @@ package org.neo4j.helpers;
  * create a new instance for every invocation, but are free to return the same instance as they please. How the
  * the specific semantics work is up to the implementor.
  *
- * @param <TYPE>
+ * @param <TYPE> the type of the provider
  * @deprecated Use {@link org.neo4j.function.Supplier} instead
  */
 @Deprecated
