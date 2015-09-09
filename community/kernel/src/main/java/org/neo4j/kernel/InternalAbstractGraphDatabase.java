@@ -516,6 +516,8 @@ public abstract class InternalAbstractGraphDatabase
 
         idGeneratorFactory = createIdGeneratorFactory();
 
+        createModeSwitcher();
+
         lockManager = createLockManager();
 
         StringLogger messagesLog = logging.getMessagesLog( StoreMigrator.class );
@@ -849,6 +851,10 @@ public abstract class InternalAbstractGraphDatabase
     protected IdGeneratorFactory createIdGeneratorFactory()
     {
         return new DefaultIdGeneratorFactory();
+    }
+
+    protected void createModeSwitcher()
+    {
     }
 
     protected Locks createLockManager()

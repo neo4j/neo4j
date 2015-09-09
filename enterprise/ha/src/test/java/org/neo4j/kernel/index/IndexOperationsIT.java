@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.index;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.Future;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -34,7 +34,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.ha.BeginTx;
 import org.neo4j.ha.FinishTx;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.UpdatePullerClient;
+import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ha.ClusterManager;
@@ -79,7 +79,7 @@ public class IndexOperationsIT
         // -- all instances should see it after pulling updates
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
-            db.getDependencyResolver().resolveDependency( UpdatePullerClient.class ).pullUpdates();
+            db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
             assertNodeAndIndexingExists( db, node, key, value );
         }
     }

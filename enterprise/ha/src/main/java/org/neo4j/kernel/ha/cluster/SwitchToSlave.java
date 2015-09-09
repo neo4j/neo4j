@@ -53,6 +53,8 @@ import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.StoreOutOfDateException;
 import org.neo4j.kernel.ha.StoreUnableToParticipateInClusterException;
 import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.ha.UpdatePullerScheduler;
+import org.neo4j.kernel.ha.PullerFactory;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMemberVersionCheck;
 import org.neo4j.kernel.ha.cluster.member.ClusterMemberVersionCheck.Outcome;
@@ -132,8 +134,10 @@ public class SwitchToSlave
     private final RequestContextFactory requestContextFactory;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
     private final MasterClientResolver masterClientResolver;
+    private final UpdatePuller updatePuller;
     private final ByteCounterMonitor byteCounterMonitor;
     private final RequestMonitor requestMonitor;
+    private final PullerFactory updatePullerFactory;
     private final StoreCopyClient.Monitor storeCopyMonitor;
     private final Monitor monitor;
 
@@ -143,8 +147,8 @@ public class SwitchToSlave
             ClusterMemberAvailability clusterMemberAvailability,
             RequestContextFactory requestContextFactory,
             Iterable<KernelExtensionFactory<?>> kernelExtensions, MasterClientResolver masterClientResolver,
-            ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor, Monitor monitor,
-            StoreCopyClient.Monitor storeCopyMonitor )
+            UpdatePuller updatePuller, PullerFactory pullerFactory, ByteCounterMonitor byteCounterMonitor,
+            RequestMonitor requestMonitor, Monitor monitor, StoreCopyClient.Monitor storeCopyMonitor )
     {
         this.console = console;
         this.config = config;
@@ -154,11 +158,13 @@ public class SwitchToSlave
         this.clusterMemberAvailability = clusterMemberAvailability;
         this.requestContextFactory = requestContextFactory;
         this.kernelExtensions = kernelExtensions;
+        this.updatePuller = updatePuller;
         this.byteCounterMonitor = byteCounterMonitor;
         this.requestMonitor = requestMonitor;
         this.storeCopyMonitor = storeCopyMonitor;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.masterDelegateHandler = masterDelegateHandler;
+        this.updatePullerFactory = pullerFactory;
         this.monitor = monitor;
         this.masterClientResolver = masterClientResolver;
     }
@@ -211,12 +217,12 @@ public class SwitchToSlave
              * start the ds or we already had a store, so we have already started the ds. Either way,
              * make sure it's there.
              */
-            NeoStoreDataSource nioneoDataSource = resolver.resolveDependency( NeoStoreDataSource.class );
-            nioneoDataSource.afterModeSwitch();
-            StoreId myStoreId = nioneoDataSource.getStoreId();
+            NeoStoreDataSource neoDataSource = resolver.resolveDependency( NeoStoreDataSource.class );
+            neoDataSource.afterModeSwitch();
+            StoreId myStoreId = neoDataSource.getStoreId();
 
             boolean consistencyChecksExecutedSuccessfully = executeConsistencyChecks(
-                    myId, masterUri, nioneoDataSource, cancellationRequest );
+                    myId, masterUri, neoDataSource, cancellationRequest );
 
             if ( !consistencyChecksExecutedSuccessfully )
             {
@@ -231,7 +237,7 @@ public class SwitchToSlave
             }
 
             // no exception were thrown and we can proceed
-            slaveUri = startHaCommunication( haCommunicationLife, nioneoDataSource, me, masterUri, myStoreId, cancellationRequest );
+            slaveUri = startHaCommunication( haCommunicationLife, neoDataSource, me, masterUri, myStoreId, cancellationRequest );
             if ( slaveUri == null )
             {
                 msgLog.info( "Switch to slave unable to connect." );
@@ -281,13 +287,13 @@ public class SwitchToSlave
         }
     }
 
-    private boolean executeConsistencyChecks( InstanceId myId, URI masterUri, NeoStoreDataSource nioneoDataSource,
+    private boolean executeConsistencyChecks( InstanceId myId, URI masterUri, NeoStoreDataSource neoDataSource,
                                               CancellationRequest cancellationRequest ) throws Throwable
     {
         LifeSupport consistencyCheckLife = new LifeSupport();
         try
         {
-            StoreId myStoreId = nioneoDataSource.getStoreId();
+            StoreId myStoreId = neoDataSource.getStoreId();
 
             MasterClient masterClient = newMasterClient( masterUri, myStoreId, consistencyCheckLife );
             consistencyCheckLife.start();
@@ -317,7 +323,7 @@ public class SwitchToSlave
                 return false;
             }
 
-            checkDataConsistency( masterClient, nioneoDataSource, masterUri, masterIsOld );
+            checkDataConsistency( masterClient, neoDataSource, masterUri, masterIsOld );
         }
         finally
         {
@@ -395,7 +401,12 @@ public class SwitchToSlave
     {
         MasterClient master = newMasterClient( masterUri, neoDataSource.getStoreId(), haCommunicationLife );
 
-        Slave slaveImpl = new SlaveImpl( resolver.resolveDependency( TransactionObligationFulfiller.class ) );
+        TransactionObligationFulfiller obligationFulfiller = resolver.resolveDependency(
+                TransactionObligationFulfiller.class );
+        UpdatePullerScheduler updatePullerScheduler = updatePullerFactory.createUpdatePullerScheduler( updatePuller );
+
+
+        Slave slaveImpl = new SlaveImpl( obligationFulfiller );
 
         SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logging, byteCounterMonitor, requestMonitor);
 
@@ -406,15 +417,17 @@ public class SwitchToSlave
 
         masterDelegateHandler.setDelegate( master );
 
+        haCommunicationLife.add( updatePullerScheduler );
         haCommunicationLife.add( slaveImpl );
         haCommunicationLife.add( server );
         haCommunicationLife.start();
+
 
         /*
          * Take the opportunity to catch up with master, now that we're alone here, right before we
          * drop the availability guard, so that other transactions might start.
          */
-        if ( !catchUpWithMaster() )
+        if ( !catchUpWithMaster(updatePuller) )
         {
             return null;
         }
@@ -425,17 +438,14 @@ public class SwitchToSlave
         return slaveHaURI;
     }
 
-    private boolean catchUpWithMaster()
+    private boolean catchUpWithMaster(UpdatePuller updatePuller)
             throws IllegalArgumentException, InterruptedException
     {
         monitor.catchupStarted();
         RequestContext catchUpRequestContext = requestContextFactory.newRequestContext();
         console.log( "Catching up with master. I'm at " + catchUpRequestContext );
 
-        // Unpause the update puller, because we know that we are a slave that just started communication with master.
-        UpdatePuller updatePuller = resolver.resolveDependency( UpdatePuller.class );
-        updatePuller.unpause();
-        if ( !updatePuller.await( UpdatePuller.NEXT_TICKET, false ) )
+        if ( !updatePuller.tryPullUpdates() )
         {
             return false;
         }

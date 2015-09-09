@@ -57,6 +57,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.ha.PullerFactory;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -80,7 +81,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
@@ -532,7 +532,7 @@ public class HighAvailabilityMemberStateMachineTest
                 thenReturn( new DeadSimpleTransactionIdStore() );
         when( dependencyResolver.resolveDependency( ClusterMembers.class ) ).thenReturn( members );
         UpdatePuller updatePuller = mock( UpdatePuller.class );
-        when( updatePuller.await( any( UpdatePuller.Condition.class ), anyBoolean() )).thenReturn( true );
+        when( updatePuller.tryPullUpdates() ).thenReturn( true );
         when( dependencyResolver.resolveDependency( UpdatePuller.class ) ).thenReturn( updatePuller );
 
         Logging logging = mock( Logging.class, RETURNS_MOCKS );
@@ -615,8 +615,8 @@ public class HighAvailabilityMemberStateMachineTest
         SwitchToSlave switchToSlave = new SwitchToSlave( mock( ConsoleLogger.class ), config,
                 dependencyResolver, mock( HaIdGeneratorFactory.class ), logging, handler, clusterMemberAvailability,
                 mock( RequestContextFactory.class ), Iterables.<KernelExtensionFactory<?>>empty(), masterClientResolver,
-                mock( ByteCounterMonitor.class ), mock( RequestMonitor.class ), monitor,
-                mock( StoreCopyClient.Monitor.class ) );
+                updatePuller, mock( PullerFactory.class ), mock( ByteCounterMonitor.class ),
+                mock( RequestMonitor.class ), monitor, mock( StoreCopyClient.Monitor.class ) );
 
         HighAvailabilityModeSwitcher haModeSwitcher = new HighAvailabilityModeSwitcher( switchToSlave,
                 mock( SwitchToMaster.class ), election, clusterMemberAvailability, dependencyResolver, me, logging );

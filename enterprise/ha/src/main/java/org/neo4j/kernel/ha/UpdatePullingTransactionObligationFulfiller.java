@@ -58,7 +58,7 @@ public class UpdatePullingTransactionObligationFulfiller extends LifecycleAdapte
     @Override
     public void fulfill( final long toTxId ) throws InterruptedException
     {
-        updatePuller.await( new Condition()
+        updatePuller.pullUpdates( new Condition()
         {
             @Override
             public boolean evaluate( int currentTicket, int targetTicket )

@@ -30,9 +30,9 @@ public interface CancellationRequest
      * @return True iff a request for cancellation has been issued. It is assumed that the request cannot be withdrawn
      * so once this method returns true it must always return true on all subsequent calls.
      */
-    public boolean cancellationRequested();
+    boolean cancellationRequested();
 
-    public static final CancellationRequest NEVER_CANCELLED = new CancellationRequest()
+    CancellationRequest NEVER_CANCELLED = new CancellationRequest()
     {
         @Override
         public boolean cancellationRequested()

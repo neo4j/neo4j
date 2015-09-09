@@ -27,7 +27,7 @@ import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.UpdatePullerClient;
+import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.management.ClusterMemberInfo;
 import org.neo4j.management.HighAvailability;
 
@@ -130,8 +130,8 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
             long time = System.currentTimeMillis();
             try
             {
-                kernelData.graphDatabase().getDependencyResolver().resolveDependency(
-                        UpdatePullerClient.class ).pullUpdates();
+                kernelData.graphDatabase().getDependencyResolver().resolveDependency( UpdatePuller.class )
+                        .pullUpdates();
             }
             catch ( Exception e )
             {

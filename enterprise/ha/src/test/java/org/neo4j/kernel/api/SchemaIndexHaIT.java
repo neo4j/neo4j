@@ -58,7 +58,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.UpdatePullerClient;
+import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -138,7 +138,7 @@ public class SchemaIndexHaIT
 
         // Pick a slave, pull the data and the index
         HighlyAvailableGraphDatabase aSlave = cluster.getAnySlave();
-        aSlave.getDependencyResolver().resolveDependency( UpdatePullerClient.class ).pullUpdates();
+        aSlave.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
 
         // and await the index population to start. It will actually block as long as we want it to
         dbFactory.awaitPopulationStarted( aSlave );

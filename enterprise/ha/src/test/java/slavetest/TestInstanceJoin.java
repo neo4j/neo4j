@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.UpdatePullerClient;
+import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.test.TargetDirectory;
@@ -96,7 +96,7 @@ public class TestInstanceJoin
 
             slave = start( dir.existingDirectory( "slave" ).getAbsolutePath(), 1,
                     stringMap( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001,127.0.0.1:5002" ) );
-            slave.getDependencyResolver().resolveDependency( UpdatePullerClient.class ).pullUpdates();
+            slave.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
 
             try ( Transaction ignore = slave.beginTx() )
             {
