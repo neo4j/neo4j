@@ -22,7 +22,6 @@ package org.neo4j.bolt.messaging.v1;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,13 +40,16 @@ import org.neo4j.packstream.PackOutput;
 import org.neo4j.packstream.PackStream;
 import org.neo4j.packstream.PackType;
 
+import static org.neo4j.packstream.PackStream.UNKNOWN_SIZE;
+
 /**
  * Extended PackStream packer and unpacker classes for working
  * with Neo4j-specific data types, represented as structures.
  */
 public class Neo4jPack
 {
-    public static final Map<String, Object> EMPTY_PROPERTY_MAP = new HashMap<>();
+    public static final List<Object> EMPTY_LIST = new ArrayList<>();
+    public static final Map<String, Object> EMPTY_MAP = new HashMap<>();
 
     public static final byte NODE = 'N';
     public static final byte RELATIONSHIP = 'R';
@@ -264,33 +266,11 @@ public class Neo4jPack
                     return null;
                 case LIST:
                 {
-                    int size = (int) unpackListHeader();
-                    if ( size == 0 )
-                    {
-                        return Collections.EMPTY_LIST;
-                    }
-                    ArrayList<Object> vals = new ArrayList<>( size );
-                    for ( int j = 0; j < size; j++ )
-                    {
-                        vals.add( unpack() );
-                    }
-                    return vals;
+                    return unpackList();
                 }
                 case MAP:
                 {
-                    int size = (int) unpackMapHeader();
-                    if ( size == 0 )
-                    {
-                        return Collections.EMPTY_MAP;
-                    }
-                    Map<String, Object> map = new HashMap<>( size, 1 );
-                    for ( int j = 0; j < size; j++ )
-                    {
-                        String key = unpackText();
-                        Object val = unpack();
-                        map.put( key, val );
-                    }
-                    return map;
+                    return unpackMap();
                 }
                 case STRUCT:
                 {
@@ -319,45 +299,93 @@ public class Neo4jPack
                                     "Unknown struct type: " + signature );
                     }
                 }
+                case END_OF_STREAM:
+                {
+                    unpackEndOfStream();
+                    return null;
+                }
                 default:
                     throw new BoltIOException( Status.Request.InvalidFormat,
                             "Unknown value type: " + valType );
             }
         }
 
-        public Map<String, Object> unpackRawMap() throws IOException
+        public List<Object> unpackList() throws IOException
+        {
+            int size = (int) unpackListHeader();
+            if ( size == 0 )
+            {
+                return EMPTY_LIST;
+            }
+            ArrayList<Object> list;
+            if ( size == UNKNOWN_SIZE )
+            {
+                list = new ArrayList<>();
+                boolean more = true;
+                while ( more )
+                {
+                    PackType keyType = peekNextType();
+                    switch ( keyType )
+                    {
+                        case END_OF_STREAM:
+                            unpack();
+                            more = false;
+                            break;
+                        default:
+                            list.add( unpack() );
+                    }
+                }
+            }
+            else
+            {
+                list = new ArrayList<>( size );
+                for ( int i = 0; i < size; i++ )
+                {
+                    list.add( unpack() );
+                }
+            }
+            return list;
+        }
+
+        public Map<String, Object> unpackMap() throws IOException
         {
             int size = (int) unpackMapHeader();
             if ( size == 0 )
             {
-                return Collections.emptyMap();
+                return EMPTY_MAP;
             }
-            Map<String, Object> map = new HashMap<>( size, 1 );
-            for ( int i = 0; i < size; i++ )
-            {
-                String key = unpackText();
-                map.put( key, unpack() );
-            }
-            return map;
-        }
-        // TODO: combine these
-        public Map<String, Object> unpackProperties() throws IOException
-        {
-            int numProps = (int) unpackMapHeader();
             Map<String, Object> map;
-            if ( numProps > 0 )
+            if ( size == UNKNOWN_SIZE ) {
+                map = new HashMap<>();
+                boolean more = true;
+                while ( more )
+                {
+                    PackType keyType = peekNextType();
+                    switch ( keyType )
+                    {
+                        case END_OF_STREAM:
+                            unpack();
+                            more = false;
+                            break;
+                        case TEXT:
+                            String key = unpackText();
+                            Object val = unpack();
+                            map.put( key, val );
+                            break;
+                        default:
+                            throw new PackStream.PackStreamException( "Bad key type" );
+                    }
+                }
+            }
+            else
             {
-                map = new HashMap<>( numProps, 1 );
-                for ( int j = 0; j < numProps; j++ )
+                map = new HashMap<>( size, 1 );
+                for ( int i = 0; i < size; i++ )
                 {
                     String key = unpackText();
                     Object val = unpack();
                     map.put( key, val );
                 }
-            }
-            else
-            {
-                map = EMPTY_PROPERTY_MAP;
             }
             return map;
         }

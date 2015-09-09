@@ -20,9 +20,13 @@
 package org.neo4j.bolt.messaging.v1;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.Test;
 
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -56,6 +60,50 @@ public class Neo4jPackTest
         PackedInputArray input = new PackedInputArray( bytes );
         Neo4jPack.Unpacker unpacker = new Neo4jPack.Unpacker( input );
         return unpacker.unpack();
+    }
+
+    @Test
+    public void shouldBeAbleToPackAndUnpackListStream() throws IOException
+    {
+        // Given
+        PackedOutputArray output = new PackedOutputArray();
+        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        packer.packListStreamHeader();
+        List<String> expected = new ArrayList<>();
+        for ( Label label : ALICE.getLabels() )
+        {
+            String labelName = label.name();
+            packer.pack( labelName );
+            expected.add( labelName );
+        }
+        packer.packEndOfStream();
+        Object unpacked = unpacked( output.bytes() );
+
+        // Then
+        assertThat( unpacked, instanceOf( List.class ) );
+        List<String> unpackedList = (List<String>) unpacked;
+        assertThat( unpackedList, equalTo( expected ) );
+    }
+
+    @Test
+    public void shouldBeAbleToPackAndUnpackMapStream() throws IOException
+    {
+        // Given
+        PackedOutputArray output = new PackedOutputArray();
+        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        packer.packMapStreamHeader();
+        for ( Map.Entry<String, Object> entry : ALICE.getAllProperties().entrySet() )
+        {
+            packer.pack( entry.getKey() );
+            packer.pack( entry.getValue() );
+        }
+        packer.packEndOfStream();
+        Object unpacked = unpacked( output.bytes() );
+
+        // Then
+        assertThat( unpacked, instanceOf( Map.class ) );
+        Map<String, Object> unpackedMap = (Map<String, Object>) unpacked;
+        assertThat( unpackedMap, equalTo( ALICE.getAllProperties() ) );
     }
 
     @Test

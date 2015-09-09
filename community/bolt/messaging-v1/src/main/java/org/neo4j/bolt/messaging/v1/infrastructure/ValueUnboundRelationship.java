@@ -58,7 +58,7 @@ public class ValueUnboundRelationship
         long relId = unpacker.unpackRelationshipIdentity();
         String relTypeName = unpacker.unpackText();
 
-        Map<String, Object> props = unpacker.unpackProperties();
+        Map<String, Object> props = unpacker.unpackMap();
 
         RelationshipType relType = DynamicRelationshipType.withName( relTypeName );
 
