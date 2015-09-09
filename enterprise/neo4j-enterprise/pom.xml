@@ -275,7 +275,7 @@
                   <groupId>ch.qos.logback</groupId>
                   <artifactId>logback-core</artifactId>
                   <version>${logback-classic.version}</version>
-s                </additionalDependency>
+                </additionalDependency>
                 <additionalDependency>
                   <groupId>org.slf4j</groupId>
                   <artifactId>slf4j-api</artifactId>
