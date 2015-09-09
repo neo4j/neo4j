@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.{ExecutionPlan, CypherCompiler => Compiler}
 import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.kernel.api.{KernelTransaction,ReadOperations, Statement}
+import org.neo4j.kernel.api.{ReadOperations, Statement}
 import org.neo4j.kernel.impl.api.OperationsFacade
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
@@ -205,7 +205,6 @@ class LazyTest extends ExecutionEngineFunSuite {
       def answer( invocation: InvocationOnMock ): NodeProxy = new NodeProxy( null, invocation.getArguments( )( 0 ).asInstanceOf[Long] )
     })
     when(bridge.get()).thenReturn(fakeStatement)
-    when(bridge.getKernelTransactionBoundToThisThread(true)).thenReturn(mock[KernelTransaction])
     when(fakeStatement.readOperations()).thenReturn(fakeReadStatement)
     when(fakeStatement.dataWriteOperations()).thenReturn(fakeDataStatement)
     when(fakeGraph.getDependencyResolver).thenReturn(dependencies)
