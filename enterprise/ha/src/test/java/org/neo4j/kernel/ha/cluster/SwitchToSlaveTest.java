@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 
+import org.junit.Test;
+
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.StoreCopyClient;
@@ -65,6 +66,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -101,7 +103,8 @@ public class SwitchToSlaveTest
         // When
         try
         {
-            switchToSlave.checkDataConsistency( masterClient, transactionIdStore, storeId, null, false );
+            switchToSlave.checkDataConsistency( masterClient, transactionIdStore, storeId,
+                    new URI( "cluster://localhost?serverId=1" ), false );
             fail( "Should have thrown " + MismatchingStoreIdException.class.getSimpleName() + " exception" );
         }
         catch ( MismatchingStoreIdException e )
@@ -154,7 +157,7 @@ public class SwitchToSlaveTest
         when( updatePuller.await( UpdatePuller.NEXT_TICKET, false ) ).thenReturn( false );
 
         // when
-        URI localhost = new URI( "127.0.0.1" );
+        URI localhost = new URI( "cluster://127.0.0.1?serverId=1" );
         URI uri = switchToSlave.switchToSlave( mock( LifeSupport.class ), localhost, localhost,
                 mock( CancellationRequest.class ) );
 
@@ -174,6 +177,7 @@ public class SwitchToSlaveTest
         when( master.getStoreId() ).thenReturn( new StoreId( 42, 42, 42, 42 ) );
         when( master.getHARole() ).thenReturn( HighAvailabilityModeSwitcher.MASTER );
         when( master.hasRole( eq( HighAvailabilityModeSwitcher.MASTER ) ) ).thenReturn( true );
+        when( master.getInstanceId() ).thenReturn( new InstanceId( 1 ) );
         when( clusterMembers.getMembers() ).thenReturn( asList( master ) );
 
         DependencyResolver resolver = mock( DependencyResolver.class );
