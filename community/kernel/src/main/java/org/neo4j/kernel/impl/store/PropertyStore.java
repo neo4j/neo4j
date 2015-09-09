@@ -364,12 +364,20 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
     public PageCursor newReadCursor( long recordId ) throws IOException
     {
         PageCursor cursor = storeFile.io( pageIdForRecord( recordId ), PF_SHARED_LOCK );
-        if ( !cursor.next() )
+        try
         {
-            throw new IOException( "Record not found: " + recordId );
+            if ( !cursor.next() )
+            {
+                throw new IOException( "Record not found: " + recordId );
+            }
+            cursor.setOffset( (int) (recordId * RECORD_SIZE % storeFile.pageSize()) );
+            return cursor;
         }
-        cursor.setOffset( (int) (recordId * RECORD_SIZE % storeFile.pageSize()) );
-        return cursor;
+        catch ( Throwable failure )
+        {
+            cursor.close();
+            throw failure;
+        }
     }
 
     public PropertyRecord getRecord( PropertyRecord record, PageCursor cursor )

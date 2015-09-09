@@ -71,8 +71,10 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
         long currentPropertyRecordId = nextPropertyRecordId;
         try ( PageCursor cursor = propertyStore.newReadCursor( currentPropertyRecordId ) )
         {
+            int offset = cursor.getOffset();
             do
             {
+                cursor.setOffset( offset );
                 nextPropertyRecordId = readNextPropertyRecordId( cursor );
 
                 payload.clear();
