@@ -302,7 +302,7 @@ class LoadCsvAcceptanceTest
   }
 
   test("eager queries should be handled correctly") {
-    val url = createCSVTempFileURL ({
+    val url = createCSVTempFileURL({
       writer =>
         writer.println("id,title,country,year")
         writer.println("1,Wall Street,USA,1987")
@@ -320,6 +320,21 @@ class LoadCsvAcceptanceTest
     val result = execute("match (m:Movie) return m.id AS id ORDER BY m.id").toList
 
     result should equal(List(Map("id" -> 1), Map("id" -> 2), Map("id" -> 3)))
+  }
+
+  test("should be able to use expression as url") {
+    val url = createCSVTempFileURL({
+      writer =>
+        writer.println("'Foo'")
+        writer.println("'Foo'")
+        writer.println("'Foo'")
+    }).cypherEscape
+    val first = url.substring(0, url.length / 2)
+    val second = url.substring(url.length / 2)
+    createNode(Map("prop" -> second))
+
+    val result = execute(s"MATCH (n) WITH n, '$first' as prefix  LOAD CSV FROM prefix + n.prop AS line CREATE (a {name: line[0]}) RETURN a.name")
+    assertStats(result, nodesCreated = 3, propertiesSet = 3)
   }
 
   private def ensureNoIllegalCharsInWindowsFilePath(filename: String) = {
