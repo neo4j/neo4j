@@ -36,7 +36,7 @@ class PageOfRangesIterator extends PrefetchingIterator<PrimitiveLongIterator>
     private final BitmapDocumentFormat format;
     private final int rangesPerPage;
     private final int[] labels;
-    private LongValuesIterator rangesIterator;
+    private DocValuesCollector.LongValuesIterator rangesIterator;
 
     PageOfRangesIterator( BitmapDocumentFormat format, IndexSearcher searcher, int rangesPerPage, Query query,
                           int... labels )
@@ -60,7 +60,7 @@ class PageOfRangesIterator extends PrefetchingIterator<PrimitiveLongIterator>
             return null; // we are done searching with this iterator
         }
 
-        LongValuesIterator ranges = getRanges();
+        DocValuesCollector.LongValuesIterator ranges = getRanges();
         int pageSize = Math.min( ranges.remaining(), rangesPerPage );
         long[] rangeMap = new long[pageSize * 2];
 
@@ -78,7 +78,7 @@ class PageOfRangesIterator extends PrefetchingIterator<PrimitiveLongIterator>
         return new LongPageIterator( new BitmapExtractor( format.bitmapFormat(), rangeMap ) );
     }
 
-    private LongValuesIterator getRanges() {
+    private DocValuesCollector.LongValuesIterator getRanges() {
         if ( rangesIterator != null )
         {
             return rangesIterator;

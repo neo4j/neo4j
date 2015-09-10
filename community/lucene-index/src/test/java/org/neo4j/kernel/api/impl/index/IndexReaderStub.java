@@ -21,8 +21,11 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
@@ -32,6 +35,8 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.function.Function;
@@ -52,6 +57,9 @@ public class IndexReaderStub extends LeafReader
     };
 
     private IOException throwOnFields;
+    private static FieldInfo DummyFieldInfo =
+            new FieldInfo( "id", 0, false, true, false, IndexOptions.DOCS,
+                    DocValuesType.NONE, -1, Collections.<String,String>emptyMap() );
 
     public IndexReaderStub( boolean allDeleted, final String... elements )
     {
@@ -76,7 +84,7 @@ public class IndexReaderStub extends LeafReader
         };
     }
 
-    public IndexReaderStub( final Map<String, NumericDocValues> ndvs )
+    public IndexReaderStub( final Map<String,NumericDocValues> ndvs )
     {
         this.ndvs = new Function<String,NumericDocValues>()
         {
@@ -231,7 +239,7 @@ public class IndexReaderStub extends LeafReader
     @Override
     public void document( int docID, StoredFieldVisitor visitor ) throws IOException
     {
-
+        visitor.stringField( DummyFieldInfo, String.valueOf( docID ).getBytes( StandardCharsets.UTF_8 ) );
     }
 
     @Override
