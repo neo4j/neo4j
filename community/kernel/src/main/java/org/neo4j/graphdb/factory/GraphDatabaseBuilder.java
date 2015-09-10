@@ -57,6 +57,8 @@ public class GraphDatabaseBuilder
     /**
      * Set a database setting to a particular value.
      *
+     * @param setting Database setting to set
+     * @param value New value of the setting
      * @return the builder
      */
     public GraphDatabaseBuilder setConfig( Setting<?> setting, String value )
@@ -79,7 +81,11 @@ public class GraphDatabaseBuilder
 
     /**
      * Set an unvalidated configuration option.
-     * @deprecated Use setConfig with explicit {@link Setting} instead
+     * @deprecated Use setConfig with explicit {@link Setting} instead.
+     * 
+     * @param name Name of the setting
+     * @param value New value of the setting
+     * @return the builder
      */
     @Deprecated
     public GraphDatabaseBuilder setConfig( String name, String value )
@@ -96,8 +102,9 @@ public class GraphDatabaseBuilder
     }
 
     /**
-     * Set a map of config settings into the builder. Overwrites any existing values.
+     * Set a map of configuration settings into the builder. Overwrites any existing values.
      *
+     * @param config Map of configuration settings
      * @return the builder
      * @deprecated Use setConfig with explicit {@link Setting} instead
      */
@@ -116,6 +123,7 @@ public class GraphDatabaseBuilder
      * Load a Properties file from a given file, and add the settings to
      * the builder.
      *
+     * @param fileName Filename of properties file to use
      * @return the builder
      * @throws IllegalArgumentException if the builder was unable to load from the given filename
      */
@@ -137,6 +145,7 @@ public class GraphDatabaseBuilder
      * Load Properties file from a given URL, and add the settings to
      * the builder.
      *
+     * @param url URL of properties file to use
      * @return the builder
      */
     public GraphDatabaseBuilder loadPropertiesFromURL( URL url )

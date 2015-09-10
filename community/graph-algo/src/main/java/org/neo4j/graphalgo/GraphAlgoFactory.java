@@ -338,7 +338,7 @@ public abstract class GraphAlgoFactory
      * See {@link #dijkstra(PathExpander, CostEvaluator)} for documentation.
      *
      * Uses a cost evaluator which uses the supplied property key to
-     * represent the cost (values of type <bold>double</bold>).
+     * represent the cost (values of type <b>double</b>).
      *
      * @param expander the {@link RelationshipExpander} to use for expanding
      * {@link Relationship}s for each {@link Node}.
@@ -357,7 +357,7 @@ public abstract class GraphAlgoFactory
      * See {@link #dijkstra(PathExpander, CostEvaluator)} for documentation.
      *
      * Uses a cost evaluator which uses the supplied property key to
-     * represent the cost (values of type <bold>double</bold>).
+     * represent the cost (values of type <b>double</b>).
      *
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Path}.
@@ -423,7 +423,7 @@ public abstract class GraphAlgoFactory
      * See {@link #dijkstra(PathExpander, CostEvaluator)} for documentation.
      *
      * Uses a cost evaluator which uses the supplied property key to
-     * represent the cost (values of type <bold>double</bold>).
+     * represent the cost (values of type <b>double</b>).
      *
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Path}.
@@ -445,7 +445,7 @@ public abstract class GraphAlgoFactory
      * See {@link #dijkstra(PathExpander, CostEvaluator)} for documentation.
      *
      * Uses a cost evaluator which uses the supplied property key to
-     * represent the cost (values of type <bold>double</bold>).
+     * represent the cost (values of type <b>double</b>).
      *
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Path}.
@@ -467,7 +467,7 @@ public abstract class GraphAlgoFactory
      * See {@link #dijkstra(PathExpander, CostEvaluator)} for documentation.
      *
      * Uses a cost evaluator which uses the supplied property key to
-     * represent the cost (values of type <bold>double</bold>).
+     * represent the cost (values of type <b>double</b>).
      *
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Path}.
@@ -490,7 +490,7 @@ public abstract class GraphAlgoFactory
      * See {@link #dijkstra(PathExpander, CostEvaluator)} for documentation.
      *
      * Uses a cost evaluator which uses the supplied property key to
-     * represent the cost (values of type <bold>double</bold>).
+     * represent the cost (values of type <b>double</b>).
      *
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Path}.

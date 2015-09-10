@@ -97,7 +97,8 @@ public class OutputFormat
      * Before the 'errors' response existed, we would just spit out stack traces.
      * For new endpoints, we should return the new 'errors' response format, which will bundle stack traces only on
      * unknown problems.
-     */
+     * @param exception the error
+     * @return the bad request response     */
     public Response badRequestWithoutLegacyStacktrace( Throwable exception )
     {
         return response( Response.status( BAD_REQUEST ), new ExceptionRepresentation( exception, false ) );
@@ -136,8 +137,10 @@ public class OutputFormat
         return response( Response.status( Status.CONFLICT ), representation );
     }
 
-    /** @see {@link #badRequestWithoutLegacyStacktrace} */
-    public Response serverErrorWithoutLegacyStacktrace( Throwable exception )
+    /** Server error with stack trace included as needed, see {@link #badRequestWithoutLegacyStacktrace}.
+     * @param exception the error
+     * @return the internal server error response
+     */    public Response serverErrorWithoutLegacyStacktrace( Throwable exception )
     {
         return response( Response.status( Status.INTERNAL_SERVER_ERROR ), new ExceptionRepresentation( exception, false ) );
     }

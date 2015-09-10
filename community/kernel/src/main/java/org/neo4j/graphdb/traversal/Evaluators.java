@@ -218,6 +218,12 @@ public abstract class Evaluators
 
     /**
      * @deprecated use {@link #includeWhereLastRelationshipTypeIs(RelationshipType, RelationshipType...)}
+     * @param type              the (first) type (of possibly many) to match the last relationship
+     *                          in paths with.
+     * @param orAnyOfTheseTypes types to match the last relationship in paths with. If any matches
+     *                          it's considered a match.
+     * @return an {@link Evaluator} which compares the type of the last relationship
+     *         in a {@link Path} to a given set of relationship types.
      */
     public static Evaluator returnWhereLastRelationshipTypeIs( RelationshipType type,
                                                                RelationshipType... orAnyOfTheseTypes )
@@ -306,6 +312,8 @@ public abstract class Evaluators
 
     /**
      * @deprecated use {@link #includeWhereEndNodeIs(Node...)}
+     * @param nodes end nodes for paths to be included in the result.
+     * @return an {@link Evaluator} which only includes positions where the end node is one of {@code nodes}
      */
     public static Evaluator returnWhereEndNodeIs( Node... nodes )
     {
@@ -320,6 +328,7 @@ public abstract class Evaluators
      * {@link Evaluation#EXCLUDE_AND_CONTINUE} for {@code evaluationIfNoMatch}.
      * 
      * @param nodes end nodes for paths to be included in the result.
+     * @return paths where the end node is one of {@code nodes}
      */
     @SuppressWarnings( "rawtypes" )
     public static PathEvaluator includeWhereEndNodeIs( Node... nodes )

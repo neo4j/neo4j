@@ -126,6 +126,8 @@ public class GraphDatabaseFactory
 
     /**
      * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
+     * 
+     * @return kernel extensions
      */
     @Deprecated
     public Iterable<KernelExtensionFactory<?>> getKernelExtension()
@@ -135,6 +137,9 @@ public class GraphDatabaseFactory
 
     /**
      * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
+     * 
+     * @param newKernelExtensions New kernel extensions to add
+     * @return the factory
      */
     @Deprecated
     public GraphDatabaseFactory addKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
@@ -145,6 +150,9 @@ public class GraphDatabaseFactory
 
     /**
      * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
+     * 
+     * @param newKernelExtension New kernel extension too add
+     * @return the factory
      */
     @Deprecated
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -156,6 +164,9 @@ public class GraphDatabaseFactory
 
     /**
      * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
+     * 
+     * @param newKernelExtensions New kernel extensions to set
+     * @return the factory
      */
     @Deprecated
     public GraphDatabaseFactory setKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
@@ -165,7 +176,7 @@ public class GraphDatabaseFactory
     }
 
     public GraphDatabaseFactory setUserLogProvider( LogProvider userLogProvider )
-    {
+   {
         getCurrentState().setUserLogProvider( userLogProvider );
         return this;
     }

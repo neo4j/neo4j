@@ -33,9 +33,6 @@ import org.neo4j.server.rest.web.RelationshipNotFoundException;
 /**
  * Implementations of this class must be stateless. Implementations of this
  * class must have a public no arguments constructor.
- *
- * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
- * @author Andres Taylor <andres.taylor@neotechnology.com>
  */
 public abstract class RepresentationFormat implements InputFormat
 {

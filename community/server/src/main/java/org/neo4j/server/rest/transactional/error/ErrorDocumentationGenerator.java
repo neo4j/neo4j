@@ -30,11 +30,13 @@ import org.neo4j.kernel.api.exceptions.Status;
 /**
  * Generates Asciidoc for {@link Status}.
  *
- * [options="header", cols=">s,^", width="100%"]
+ * <pre>
+ * [options="header", cols="&gt;s,^", width="100%"]
  * |===
  * Status Code                                    |Description
  * Neo.SomeClassification.SomeCategory.SomeTitle  |Some description
  * |===
+ * </pre>
  */
 public class ErrorDocumentationGenerator
 {

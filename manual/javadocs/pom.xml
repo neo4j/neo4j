@@ -24,6 +24,7 @@
     <docs-plugin.skip>true</docs-plugin.skip>
     <attach-javadoc-phase>package</attach-javadoc-phase>
     <attach-test-jar-phase>none</attach-test-jar-phase>
+    <doclint-groups>all</doclint-groups>
   </properties>
 
   <scm>
@@ -41,6 +42,11 @@
       <groupId>org.neo4j</groupId>
       <artifactId>server-api</artifactId>
       <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -155,7 +161,7 @@ the relevant Commercial Agreement.
               <windowtitle>Neo4j ${project.version} API</windowtitle>
               <show>public</show>
               <excludePackageNames>
-                *.impl.*:*.internal.*:org.neo4j.ext.udc:org.neo4j.kernel:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*:org.apache.lucene.index:org.neo4j.cluster.*:org.neo4j.helpers.progress:org.neo4j.kernel.configuration:org.neo4j.kernel.guard:org.neo4j.kernel.info
+*.impl.*:*.internal.*:org.neo4j.ext.udc:org.neo4j.kernel:org.neo4j.kernel.extension:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*:org.apache.lucene.index:org.neo4j.cluster.*:org.neo4j.helpers.progress:org.neo4j.kernel.configuration:org.neo4j.kernel.guard:org.neo4j.kernel.info:org.neo4j.kernel.logging:org.neo4j.backup.log:org.neo4j.helpers.logging
               </excludePackageNames>
               <groups>
                 <group>
@@ -213,6 +219,18 @@ the relevant Commercial Agreement.
                   <packages>org.neo4j.graphmatching:org.neo4j.graphmatching.*</packages>
                 </group>
               </groups>
+              <additionalDependencies>
+                <additionalDependency>
+                  <groupId>ch.qos.logback</groupId>
+                  <artifactId>logback-classic</artifactId>
+                  <version>${logback-classic.version}</version>
+                </additionalDependency>
+                <additionalDependency>
+                  <groupId>ch.qos.logback</groupId>
+                  <artifactId>logback-core</artifactId>
+                  <version>${logback-classic.version}</version>
+                </additionalDependency>
+              </additionalDependencies>
             </configuration>
           </execution>
         </executions>

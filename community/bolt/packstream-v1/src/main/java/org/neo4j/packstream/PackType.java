@@ -43,6 +43,8 @@ public enum PackType
     MAP,
     /** A composite data structure, made up of zero or more packstream values and a type signature. */
     STRUCT,
+    /** A marker that denotes the end of a streamed value */
+    END_OF_STREAM,
     /** Undefined type, reserved for future use */
     RESERVED
 }

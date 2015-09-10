@@ -87,7 +87,7 @@ public class ValueNode
             labels = Collections.emptyList();
         }
 
-        Map<String, Object> props = unpacker.unpackProperties();
+        Map<String, Object> props = unpacker.unpackMap();
 
         return new ValueNode( id, labels, props );
     }

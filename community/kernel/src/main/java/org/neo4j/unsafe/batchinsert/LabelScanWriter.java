@@ -29,6 +29,10 @@ public interface LabelScanWriter extends Closeable
 {
     /**
      * Store a {@link NodeLabelUpdate}. Calls to this method MUST be ordered by ascending node id.
+     * 
+     * @param update node label update to store
+     * @throws IOException some kind of I/O exception has occurred
+     * @throws IndexCapacityExceededException when no more index entries can be added
      */
     void write( NodeLabelUpdate update ) throws IOException, IndexCapacityExceededException;
 

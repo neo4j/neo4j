@@ -25,7 +25,7 @@ import java.util.NoSuchElementException;
 /**
  * Wraps the given iterator but keeps the first item to allow later
  * access to it, like CachingIterator but with less memory overhead.
- * @param <T>
+ * @param <T> the type of elements
  */
 public class FirstItemIterable<T> implements Iterable<T> {
     private final T first;

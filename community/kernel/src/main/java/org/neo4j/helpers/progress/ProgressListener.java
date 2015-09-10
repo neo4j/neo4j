@@ -24,8 +24,6 @@ package org.neo4j.helpers.progress;
  * <p>
  * Progress objects are not thread safe, and are to be used by a single thread only. Each Progress object from a {@link
  * ProgressMonitorFactory.MultiPartBuilder} can be used from different threads.
- *
- * @author Tobias Lindaaker <tobias.lindaaker@neotechnology.com>
  */
 public interface ProgressListener
 {

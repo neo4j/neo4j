@@ -34,6 +34,7 @@ public interface DependencyResolver
      * {@link SelectionStrategy} is used, so the first encountered matching dependency will be returned.
      *
      * @param type the type of {@link Class} that the returned instance must implement.
+     * @param <T> the type that the returned instance must implement
      * @return the resolved dependency for the given type.
      * @throws IllegalArgumentException if no matching dependency was found.
      */
@@ -46,6 +47,7 @@ public interface DependencyResolver
      * @param type the type of {@link Class} that the returned instance must implement.
      * @param selector {@link SelectionStrategy} which will make the choice of which one to return among
      * matching candidates.
+     * @param <T> the type that the returned instance must implement
      * @return the resolved dependency for the given type.
      * @throws IllegalArgumentException if no matching dependency was found.
      */
@@ -68,6 +70,7 @@ public interface DependencyResolver
          * @param type the type of items.
          * @param candidates candidates up for selection, where one should be picked. There might
          * also be no suitable candidate, in which case an exception should be thrown.
+         * @param <T> the type of items
          * @return a suitable candidate among all available.
          * @throws IllegalArgumentException if no suitable candidate was found.
          */

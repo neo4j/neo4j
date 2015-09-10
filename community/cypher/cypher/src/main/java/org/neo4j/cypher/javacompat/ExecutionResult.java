@@ -67,6 +67,8 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
      * Constructor used by the Cypher framework. End-users should not
      * create an ExecutionResult directly, but instead use the result
      * returned from calling {@link ExecutionEngine#execute(String)}.
+     * 
+     * @param   projection Execution result projection to use.
      */
     public ExecutionResult( org.neo4j.cypher.ExtendedExecutionResult projection )
     {

@@ -21,10 +21,14 @@ package org.neo4j.com;
 
 
 /**
- * A representation of the context in which an HA slave operates. Contains <li>
- * the machine id</li> <li>a list of the last applied transaction id for each
- * datasource</li> <li>an event identifier, the txid of the most recent local
- * top level tx</li> <li>a session id, the startup time of the database</li>
+ * A representation of the context in which an HA slave operates.
+ * Contains
+ * <ul>
+ * <li>the machine id</li>
+ * <li>a list of the last applied transaction id for each datasource</li>
+ * <li>an event identifier, the txid of the most recent local top level tx</li>
+ * <li>a session id, the startup time of the database</li>
+ * </ul>
  */
 public final class RequestContext
 {

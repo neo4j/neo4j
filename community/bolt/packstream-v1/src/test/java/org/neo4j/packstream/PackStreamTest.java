@@ -470,6 +470,33 @@ public class PackStreamTest
     }
 
     @Test
+    public void testCanPackAndUnpackListStream() throws Throwable
+    {
+        // Given
+        Machine machine = new Machine();
+
+        // When
+        PackStream.Packer packer = machine.packer();
+        packer.packListStreamHeader();
+        packer.pack( "eins" );
+        packer.pack( "zwei" );
+        packer.pack( "drei" );
+        packer.packEndOfStream();
+        packer.flush();
+        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
+
+        // Then
+
+        assertThat( unpacker.unpackListHeader(), equalTo( PackStream.UNKNOWN_SIZE ) );
+
+        assertThat( unpacker.unpackText(), equalTo( "eins" ) );
+        assertThat( unpacker.unpackText(), equalTo( "zwei" ) );
+        assertThat( unpacker.unpackText(), equalTo( "drei" ) );
+
+        unpacker.unpackEndOfStream();
+    }
+
+    @Test
     public void testCanPackAndUnpackMap() throws Throwable
     {
         // Given
@@ -493,6 +520,35 @@ public class PackStreamTest
         assertThat( unpacker.unpackLong(), equalTo( 1L ) );
         assertThat( unpacker.unpackText(), equalTo( "two" ) );
         assertThat( unpacker.unpackLong(), equalTo( 2L ) );
+    }
+
+    @Test
+    public void testCanPackAndUnpackMapStream() throws Throwable
+    {
+        // Given
+        Machine machine = new Machine();
+
+        // When
+        PackStream.Packer packer = machine.packer();
+        packer.packMapStreamHeader();
+        packer.pack( "one" );
+        packer.pack( 1 );
+        packer.pack( "two" );
+        packer.pack( 2 );
+        packer.packEndOfStream();
+        packer.flush();
+        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
+
+        // Then
+
+        assertThat( unpacker.unpackMapHeader(), equalTo( PackStream.UNKNOWN_SIZE ) );
+
+        assertThat( unpacker.unpackText(), equalTo( "one" ) );
+        assertThat( unpacker.unpackLong(), equalTo( 1L ) );
+        assertThat( unpacker.unpackText(), equalTo( "two" ) );
+        assertThat( unpacker.unpackLong(), equalTo( 2L ) );
+
+        unpacker.unpackEndOfStream();
     }
 
     @Test

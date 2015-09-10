@@ -147,9 +147,11 @@ public class Man extends AbstractApp
      * contains an introductory message and also lists all available apps for
      * the server.
      *
-     * @param server
-     *            the server to ask for
-     * @return the short introductory help string.
+     * @param out the output
+     * @param server the server to ask for
+     * @param list if {@code true}, a list of the commands is printed
+     * @throws ShellException if the execution fails
+     * @throws RemoteException in case of remoting errors
      */
     public static void printHelpString( Output out, ShellServer server, boolean list )
             throws RemoteException

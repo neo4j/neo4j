@@ -25,7 +25,7 @@ package org.neo4j.helpers;
  * A parameter-less function for lazy evaluation to prevent the evaluation of an
  * expression until forced at a later time.
  * 
- * @param <T>
+ * @param <T> the type of the thunk
  * @deprecated Use {@link org.neo4j.function.Supplier} instead
  */
 @Deprecated

@@ -71,13 +71,14 @@ public interface ShellServer extends Remote
      */
     public void terminate( Serializable clientID ) throws RemoteException;
 
-	/**
-	 * @param initialSession the initial session variables that the client would
-	 * like to override or add to any initial server session variables.
-	 * @return a nice welcome for a client. Typically a client connects and
-	 * asks for a greeting message to display to the user.
-	 * @throws RemoteException RMI error.
-	 */
+    /**
+     * @param initialSession the initial session variables that the client would
+     * like to override or add to any initial server session variables.
+     * @return a nice welcome for a client. Typically a client connects and
+     * asks for a greeting message to display to the user.
+     * @throws RemoteException RMI error.
+     * @throws ShellException wraps general errors
+     */
 	Welcome welcome( Map<String, Serializable> initialSession ) throws RemoteException, ShellException;
 
 	/**

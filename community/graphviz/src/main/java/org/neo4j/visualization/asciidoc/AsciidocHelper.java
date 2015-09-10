@@ -115,10 +115,15 @@ public class AsciidocHelper
     }
 
     /**
-     * Create graphviz output using a {@link GraphStyle) which is implemented by
-     * {@link AsciiDocSimpleStyle} and {@link AsciiDocStyle}.
-     * {@link AsciiDocSimpleStyle} provides different customization options for
-     * coloring.
+     * Create graphviz output using a {@link GraphStyle}.
+     * {@link GraphStyle} is implemented by {@link AsciiDocSimpleStyle} and {@link AsciiDocStyle}.
+     * {@link AsciiDocSimpleStyle} provides different customization options for coloring.
+     * 
+     * @param title the title of the visualization
+     * @param graph the database to use
+     * @param identifier the identifier to include in the filename
+     * @param graphStyle the style configuration to use
+     * @return a string to be included in an AsciiDoc document
      */
     public static String createGraphViz( String title,
                                          GraphDatabaseService graph, String identifier, GraphStyle graphStyle )

@@ -45,6 +45,8 @@
     <version-package>cypher.internal</version-package>
     <scala.version>2.11.7</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
+    <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
+    <doclint-groups>none</doclint-groups>
   </properties>
 
   <build>
@@ -343,4 +345,5 @@
     </dependency>
 
   </dependencies>
+  
 </project>

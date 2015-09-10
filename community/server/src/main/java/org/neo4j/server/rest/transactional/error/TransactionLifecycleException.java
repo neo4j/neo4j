@@ -24,7 +24,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 /**
  * TransactionLifecycleExceptions are internal exceptions that may be thrown
  * due to server transaction lifecycle transitions that map directly on a
- * @{link StatusCode}
+ * {@link Status.Code}.
  */
 public abstract class TransactionLifecycleException extends Exception
 {

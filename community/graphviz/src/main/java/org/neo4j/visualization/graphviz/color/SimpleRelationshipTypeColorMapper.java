@@ -24,7 +24,7 @@ import java.util.Map;
 import org.neo4j.graphdb.RelationshipType;
 
 /**
- * Wrap a Map<String, Color> to expose it as a ColorMapper<RelationshipType>.
+ * Wrap a {@code Map<String, Color>} to expose it as a {@code ColorMapper<RelationshipType>}.
  */
 public class SimpleRelationshipTypeColorMapper implements
         ColorMapper<RelationshipType>
