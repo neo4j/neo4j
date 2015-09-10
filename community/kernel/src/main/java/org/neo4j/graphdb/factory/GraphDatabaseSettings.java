@@ -152,7 +152,7 @@ public abstract class GraphDatabaseSettings
     @Description( "Internal log contexts that should output debug level logging" )
     @Internal
     public static final Setting<List<String>> store_internal_debug_contexts = setting( "store.internal_log.debug_contexts",
-            list( ",", STRING ), "" );
+            list( ",", STRING ), "org.neo4j.diagnostics,org.neo4j.cluster.protocol,org.neo4j.kernel.ha" );
 
     @Description("Log level threshold.")
     public static final Setting<Level> store_internal_log_level = setting( "store.internal_log.level",
