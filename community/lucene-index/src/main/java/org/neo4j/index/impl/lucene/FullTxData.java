@@ -251,10 +251,10 @@ class FullTxData extends TxData
             return query;
         }
 
-        BooleanQuery result = new BooleanQuery();
-        result.add( injectOrphans( query ), Occur.SHOULD );
-        result.add( new TermQuery( new Term( ORPHANS_KEY, ORPHANS_VALUE ) ), Occur.SHOULD );
-        return result;
+        return new BooleanQuery.Builder()
+                .add( injectOrphans( query ), Occur.SHOULD )
+                .add( new TermQuery( new Term( ORPHANS_KEY, ORPHANS_VALUE ) ), Occur.SHOULD )
+                .build();
     }
 
     private Query injectOrphans( Query query )
@@ -262,12 +262,12 @@ class FullTxData extends TxData
         if ( query instanceof BooleanQuery )
         {
             BooleanQuery source = (BooleanQuery) query;
-            BooleanQuery result = new BooleanQuery();
+            BooleanQuery.Builder builder = new BooleanQuery.Builder();
             for ( BooleanClause clause : source.clauses() )
             {
-                result.add( injectOrphans( clause.getQuery() ), clause.getOccur() );
+                builder.add( injectOrphans( clause.getQuery() ), clause.getOccur() );
             }
-            return result;
+            return builder.build();
         }
 
         String orphanField = extractTermField( query );
@@ -276,10 +276,10 @@ class FullTxData extends TxData
             return query;
         }
 
-        BooleanQuery result = new BooleanQuery();
-        result.add( query, Occur.SHOULD );
-        result.add( new TermQuery( new Term( ORPHANS_KEY, orphanField ) ), Occur.SHOULD );
-        return result;
+        return new BooleanQuery.Builder()
+                .add( query, Occur.SHOULD )
+                .add( new TermQuery( new Term( ORPHANS_KEY, orphanField ) ), Occur.SHOULD )
+                .build();
     }
 
     private String extractTermField( Query query )

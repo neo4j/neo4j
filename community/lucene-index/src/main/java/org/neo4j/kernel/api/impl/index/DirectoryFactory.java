@@ -209,9 +209,9 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
         }
 
         @Override
-        public Lock makeLock( final String name )
+        public Lock obtainLock( String name ) throws IOException
         {
-            return delegate.makeLock( name );
+            return delegate.obtainLock( name );
         }
 
         @Override

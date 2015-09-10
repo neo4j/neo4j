@@ -134,13 +134,13 @@ class LuceneIndexAccessorReader implements IndexReader
     {
         Query nodeIdQuery = new TermQuery( documentLogic.newTermForChangeOrRemove( nodeId ) );
         Query valueQuery = documentLogic.newSeekQuery( propertyValue );
-        BooleanQuery nodeIdAndValueQuery = new BooleanQuery( true );
+        BooleanQuery.Builder nodeIdAndValueQuery = new BooleanQuery.Builder().setDisableCoord( true );
         nodeIdAndValueQuery.add( nodeIdQuery, BooleanClause.Occur.MUST );
         nodeIdAndValueQuery.add( valueQuery, BooleanClause.Occur.MUST );
         try
         {
             TotalHitCountCollector collector = new TotalHitCountCollector();
-            searcher.search( nodeIdAndValueQuery, collector );
+            searcher.search( nodeIdAndValueQuery.build(), collector );
             // A <label,propertyKeyId,nodeId> tuple should only match at most a single propertyValue
             return collector.getTotalHits();
         }

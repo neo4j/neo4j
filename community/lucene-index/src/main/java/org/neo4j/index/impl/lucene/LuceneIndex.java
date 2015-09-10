@@ -455,14 +455,14 @@ public abstract class LuceneIndex implements LegacyIndex
         @Override
         public LegacyIndexHits get( String key, Object valueOrNull, long startNode, long endNode )
         {
-            BooleanQuery query = new BooleanQuery();
+            BooleanQuery.Builder builder = new BooleanQuery.Builder();
             if ( key != null && valueOrNull != null )
             {
-                query.add( type.get( key, valueOrNull ), Occur.MUST );
+                builder.add( type.get( key, valueOrNull ), Occur.MUST );
             }
-            addIfAssigned( query, startNode, KEY_START_NODE_ID );
-            addIfAssigned( query, endNode, KEY_END_NODE_ID );
-            return query( query, null, null, null );
+            addIfAssigned( builder, startNode, KEY_START_NODE_ID );
+            addIfAssigned( builder, endNode, KEY_END_NODE_ID );
+            return query( builder.build(), null, null, null );
         }
 
         @Override
@@ -478,16 +478,17 @@ public abstract class LuceneIndex implements LegacyIndex
                     queryOrQueryObjectOrNull instanceof QueryContext ?
                             (QueryContext) queryOrQueryObjectOrNull : null;
 
-            BooleanQuery query = new BooleanQuery();
+            BooleanQuery.Builder builder = new BooleanQuery.Builder();
             if ( (context != null && context.getQueryOrQueryObject() != null) ||
                     (context == null && queryOrQueryObjectOrNull != null ) )
             {
-                query.add( type.query( key, context != null ?
-                        context.getQueryOrQueryObject() : queryOrQueryObjectOrNull, context ), Occur.MUST );
+                builder.add( type.query( key, context != null ?
+                                              context.getQueryOrQueryObject() : queryOrQueryObjectOrNull, context ),
+                        Occur.MUST );
             }
-            addIfAssigned( query, startNode, KEY_START_NODE_ID );
-            addIfAssigned( query, endNode, KEY_END_NODE_ID );
-            return query( query, null, null, context );
+            addIfAssigned( builder, startNode, KEY_START_NODE_ID );
+            addIfAssigned( builder, endNode, KEY_END_NODE_ID );
+            return query( builder.build(), null, null, context );
         }
 
         @Override
@@ -520,11 +521,11 @@ public abstract class LuceneIndex implements LegacyIndex
             addRemoveCommand( entityId, null, null );
         }
 
-        private static void addIfAssigned( BooleanQuery query, long node, String field )
+        private static void addIfAssigned( BooleanQuery.Builder builder, long node, String field )
         {
             if ( node != -1 )
             {
-                query.add( new TermQuery( new Term( field, "" + node ) ), Occur.MUST );
+                builder.add( new TermQuery( new Term( field, "" + node ) ), Occur.MUST );
             }
         }
 
