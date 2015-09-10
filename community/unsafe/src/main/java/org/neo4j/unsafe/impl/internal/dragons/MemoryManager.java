@@ -17,9 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.muninn;
-
-import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
+package org.neo4j.unsafe.impl.internal.dragons;
 
 /**
  * The memory manager is simple: it only allocates memory, until it itself is finalizable and frees it all in one go.
@@ -29,7 +27,7 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
  *
  * The memory manager assumes that the memory claimed from it is evenly divisible in units of pages.
  */
-final class MemoryManager
+public final class MemoryManager
 {
     private static final long GRAB_SIZE = 32 * 1024 * 1024; // 32 MiB
 
