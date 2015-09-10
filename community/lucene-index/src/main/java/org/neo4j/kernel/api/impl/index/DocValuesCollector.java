@@ -93,22 +93,6 @@ public class DocValuesCollector extends SimpleCollector
     }
 
     /**
-     * @return the documents matched by the query, one {@link MatchingDocs} per visited segment that contains a hit.
-     */
-    public List<MatchingDocs> getMatchingDocs()
-    {
-        if ( docs != null && segmentHits > 0 )
-        {
-            matchingDocs.add( new MatchingDocs( this.context, docs.getDocIdSet(), segmentHits, scores ) );
-            docs = null;
-            scores = null;
-            context = null;
-        }
-
-        return Collections.unmodifiableList( matchingDocs );
-    }
-
-    /**
      * @param field the field that contains the values
      * @return an iterator over all NumericDocValues from the given field
      */
@@ -129,7 +113,12 @@ public class DocValuesCollector extends SimpleCollector
         {
             return getValuesIterator( field );
         }
-        TopDocs topDocs = getTopDocs( sort, getTotalHits() );
+        int size = getTotalHits();
+        if ( size == 0 )
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+        TopDocs topDocs = getTopDocs( sort, size );
         LeafReaderContext[] contexts = getLeafReaderContexts( getMatchingDocs() );
         return new TopDocsValuesIterator( topDocs, contexts, field );
     }
@@ -231,15 +220,33 @@ public class DocValuesCollector extends SimpleCollector
     {
         if ( docs != null && segmentHits > 0 )
         {
-            matchingDocs.add( new MatchingDocs( this.context, docs.getDocIdSet(), segmentHits, scores ) );
+            createMatchingDocs();
         }
-        docs = createDocs( context.reader().maxDoc() );
+        int maxDoc = context.reader().maxDoc();
+        docs = createDocs( maxDoc );
         if ( keepScores )
         {
-            scores = new float[64]; // some initial size
+            int initialSize = Math.min( 32, maxDoc );
+            scores = new float[initialSize];
         }
         segmentHits = 0;
         this.context = context;
+    }
+
+    /**
+     * @return the documents matched by the query, one {@link MatchingDocs} per visited segment that contains a hit.
+     */
+    public List<MatchingDocs> getMatchingDocs()
+    {
+        if ( docs != null && segmentHits > 0 )
+        {
+            createMatchingDocs();
+            docs = null;
+            scores = null;
+            context = null;
+        }
+
+        return Collections.unmodifiableList( matchingDocs );
     }
 
     /**
@@ -249,6 +256,26 @@ public class DocValuesCollector extends SimpleCollector
     {
         return new Docs( maxDoc );
     }
+
+    private void createMatchingDocs()
+    {
+        if ( scores == null || scores.length == segmentHits )
+        {
+            matchingDocs.add( new MatchingDocs( this.context, docs.getDocIdSet(), segmentHits, scores ) );
+        }
+        else
+        {
+            // NOTE: we could skip the copy step here since the MatchingDocs are supposed to be
+            // consumed through any of the provided Iterators (actually, the replay method),
+            // which all don't care if scores has null values at the end.
+            // This is for just sanity's sake, we could also make MatchingDocs private
+            // and treat this as implementation detail.
+            float[] finalScores = new float[segmentHits];
+            System.arraycopy( scores, 0, finalScores, 0, segmentHits );
+            matchingDocs.add( new MatchingDocs( this.context, docs.getDocIdSet(), segmentHits, finalScores ) );
+        }
+    }
+
 
     private TopDocs getTopDocs( Sort sort, int size ) throws IOException
     {
@@ -305,9 +332,144 @@ public class DocValuesCollector extends SimpleCollector
     }
 
     /**
+     * Iterates over all per-segment {@link DocValuesCollector.MatchingDocs}. Supports two kinds of lookups.
+     * One, iterate over all long values of the given field (constructor argument).
+     * Two, lookup a value for the current doc in a sidecar {@code NumericDocValues} field.
+     * That is, this iterator has a main field, that drives the iteration and allow for lookups
+     * in other, secondary fields based on the current document of the main iteration.
+     *
+     * Lookups from this class are not thread-safe. Races can happen when the segment barrier
+     * is crossed; one thread might think it is reading from one segment while another thread has
+     * already advanced this Iterator to the next segment, having raced the first thread.
+     */
+    public class LongValuesIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator implements DocValuesAccess
+    {
+        private final Iterator<DocValuesCollector.MatchingDocs> matchingDocs;
+        private final String field;
+        private final int size;
+        private DocIdSetIterator currentDisi;
+        private NumericDocValues currentDocValues;
+        private DocValuesCollector.MatchingDocs currentDocs;
+        private final Map<String,NumericDocValues> docValuesCache;
+
+        private int index = 0;
+
+        /**
+         * @param allMatchingDocs all {@link DocValuesCollector.MatchingDocs} across all segments
+         * @param totalHits the total number of hits across all segments
+         * @param field the main field, whose values drive the iteration
+         */
+        public LongValuesIterator( Iterable<DocValuesCollector.MatchingDocs> allMatchingDocs, int totalHits, String field )
+        {
+            this.size = totalHits;
+            this.field = field;
+            matchingDocs = allMatchingDocs.iterator();
+            docValuesCache = new HashMap<>();
+        }
+
+        /**
+         * @return the number of docs left in this iterator.
+         */
+        public int remaining()
+        {
+            return size - index;
+        }
+
+        @Override
+        public long current()
+        {
+            return next;
+        }
+
+        @Override
+        public long getValue( String field )
+        {
+            if ( ensureValidDisi() )
+            {
+                if ( docValuesCache.containsKey( field ) )
+                {
+                    return docValuesCache.get( field ).get( currentDisi.docID() );
+                }
+
+                NumericDocValues docValues = currentDocs.readDocValues( field );
+                docValuesCache.put( field, docValues );
+
+                return docValues.get( currentDisi.docID() );
+            }
+            else
+            {
+                // same as DocValues.emptyNumeric()#get
+                // which means, getValue carries over the semantics of NDV
+                // -1 would also be a possibility here.
+                return 0;
+            }
+        }
+
+        @Override
+        protected boolean fetchNext()
+        {
+            try
+            {
+                if ( ensureValidDisi() )
+                {
+                    int nextDoc = currentDisi.nextDoc();
+                    if ( nextDoc != DocIdSetIterator.NO_MORE_DOCS )
+                    {
+                        index++;
+                        return next( currentDocValues.get( nextDoc ) );
+                    }
+                    else
+                    {
+                        currentDisi = null;
+                        return fetchNext();
+                    }
+                }
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+
+            return false;
+        }
+
+        /**
+         * @return true if it was able to make sure, that currentDisi is valid
+         */
+        private boolean ensureValidDisi()
+        {
+            try
+            {
+                while ( currentDisi == null )
+                {
+                    if ( matchingDocs.hasNext() )
+                    {
+                        currentDocs = matchingDocs.next();
+                        currentDisi = currentDocs.docIdSet.iterator();
+                        if ( currentDisi != null )
+                        {
+                            docValuesCache.clear();
+                            currentDocValues = currentDocs.readDocValues( field );
+                        }
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
+    }
+
+    /**
      * Holds the documents that were matched per segment.
      */
-    public final static class MatchingDocs
+    public static final class MatchingDocs
     {
 
         /** The {@code LeafReaderContext} for this segment. */
@@ -538,7 +700,7 @@ public class DocValuesCollector extends SimpleCollector
         private ScoreDocsIterator( TopDocs docs, LeafReaderContext[] contexts )
         {
             this.contexts = contexts;
-            this.iterator = new ArrayIterator<ScoreDoc>( docs.scoreDocs );
+            this.iterator = new ArrayIterator<>( docs.scoreDocs );
             int segments = contexts.length;
             docStarts = new int[segments + 1];
             for ( int i = 0; i < segments; i++ )
@@ -660,8 +822,12 @@ public class DocValuesCollector extends SimpleCollector
 
         private void loadNextValue( LeafReaderContext context, int docID )
         {
-            NumericDocValues docValues = null;
-            if ( !docValuesCache.containsKey( context ) )
+            NumericDocValues docValues;
+            if ( docValuesCache.containsKey( context ) )
+            {
+                docValues = docValuesCache.get( context );
+            }
+            else
             {
                 try
                 {

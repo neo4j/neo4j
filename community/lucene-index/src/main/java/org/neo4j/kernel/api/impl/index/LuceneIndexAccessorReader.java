@@ -222,8 +222,7 @@ class LuceneIndexAccessorReader implements IndexReader
         {
             DocValuesCollector docValuesCollector = new DocValuesCollector();
             searcher.search( query, docValuesCollector );
-            return new LongValuesIterator(
-                    docValuesCollector.getMatchingDocs(), docValuesCollector.getTotalHits(), NODE_ID_KEY );
+            return docValuesCollector.getValuesIterator( NODE_ID_KEY );
         }
         catch ( IOException e )
         {
