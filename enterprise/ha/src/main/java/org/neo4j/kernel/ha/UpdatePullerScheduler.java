@@ -21,41 +21,32 @@ package org.neo4j.kernel.ha;
 
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.JobScheduler.JobHandle;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
-public class UpdatePullerClient extends LifecycleAdapter
+/**
+ * This scheduler is part of slave lifecycle that will schedule periodic pulling on slave switch
+ * and turn them off during slave shutdown.
+ *
+ * @see UpdatePuller
+ */
+public class UpdatePullerScheduler extends LifecycleAdapter
 {
+    private final UpdatePuller updatePuller;
     private final JobScheduler scheduler;
     private final StringLogger logger;
-    private final UpdatePuller updatePuller;
-    private final AvailabilityGuard availabilityGuard;
     private final long pullIntervalMillis;
-    private JobHandle intervalJobHandle;
+    private JobScheduler.JobHandle intervalJobHandle;
 
-    public UpdatePullerClient( long pullIntervalMillis, JobScheduler scheduler, final Logging logging,
-            UpdatePuller updatePullingThread, AvailabilityGuard availabilityGuard )
+    public UpdatePullerScheduler( UpdatePuller updatePuller, JobScheduler scheduler, Logging logging, long
+            pullIntervalMillis )
     {
-        this.pullIntervalMillis = pullIntervalMillis;
+        this.updatePuller = updatePuller;
         this.scheduler = scheduler;
-        this.availabilityGuard = availabilityGuard;
         this.logger = logging.getMessagesLog( getClass() );
-        updatePuller = updatePullingThread;
-    }
-
-    public void pullUpdates() throws InterruptedException
-    {
-        if ( !updatePuller.isActive() || !availabilityGuard.isAvailable( 5000 ) )
-        {
-            return;
-        }
-
-        updatePuller.await( UpdatePuller.NEXT_TICKET,
-                false /*we're OK with the update puller becoming inactive while we await the condition*/ );
+        this.pullIntervalMillis = pullIntervalMillis;
     }
 
     @Override
@@ -70,7 +61,7 @@ public class UpdatePullerClient extends LifecycleAdapter
                 {
                     try
                     {
-                        pullUpdates();
+                        updatePuller.pullUpdates();
                     }
                     catch ( InterruptedException e )
                     {

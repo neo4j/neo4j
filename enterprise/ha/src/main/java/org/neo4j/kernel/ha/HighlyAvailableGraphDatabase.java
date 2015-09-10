@@ -42,6 +42,7 @@ import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvid
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
+import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -148,6 +149,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private TransactionCommittingResponseUnpacker responseUnpacker;
     private Provider<KernelAPI> kernelProvider;
     private InvalidEpochExceptionHandler invalidEpochHandler;
+    private InstanceId serverId;
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String,String> params,
                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
@@ -180,7 +182,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         masterDelegateInvocationHandler = new DelegateInvocationHandler<>( Master.class );
         master = (Master) Proxy.newProxyInstance( Master.class.getClassLoader(), new Class[]{Master.class},
                 masterDelegateInvocationHandler );
-        InstanceId serverId = config.get( ClusterSettings.server_id );
+        serverId = config.get( ClusterSettings.server_id );
         requestContextFactory = dependencies.satisfyDependency( new RequestContextFactory( serverId.toIntegerIndex(),
                 getDependencyResolver() ) );
 
@@ -201,14 +203,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         life.add( requestContextFactory );
 
         life.add( responseUnpacker );
-
-        UpdatePuller updatePuller = dependencies.satisfyDependency( life.add(
-                new UpdatePuller( memberStateMachine, requestContextFactory, master, lastUpdateTime,
-                        logging, serverId, invalidEpochHandler ) ) );
-        dependencies.satisfyDependency( life.add( new UpdatePullerClient( config.get( HaSettings.pull_interval ),
-                jobScheduler, logging, updatePuller, availabilityGuard ) ) );
-        dependencies.satisfyDependency( life.add( new UpdatePullingTransactionObligationFulfiller(
-                updatePuller, memberStateMachine, serverId, dependencies ) ) );
 
         stateSwitchTimeoutMillis = config.get( HaSettings.state_switch_timeout );
 
@@ -476,6 +470,20 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging,
                 requestContextFactory );
 
+
+        /*
+         * We don't really switch to master here. We just need to initialize the idGenerator so the initial store
+         * can be started (if required). In any case, the rest of the database is in pending state, so nothing will
+         * happen until events start arriving and that will set us to the proper state anyway.
+         */
+        ((HaIdGeneratorFactory) idGeneratorFactory).switchToMaster();
+
+        return idGeneratorFactory;
+    }
+
+    @Override
+    protected void createModeSwitcher()
+    {
         ConsoleLogger consoleLog = logging.getConsoleLog( HighAvailabilityModeSwitcher.class );
 
         invalidEpochHandler = new InvalidEpochExceptionHandler()
@@ -486,6 +494,23 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 highAvailabilityModeSwitcher.forceElections();
             }
         };
+
+        DelegateInvocationHandler<UpdatePuller> updatePullerDelegate = new DelegateInvocationHandler<>(
+                UpdatePuller.class );
+        UpdatePuller updatePullerProxy = (UpdatePuller) Proxy.newProxyInstance( UpdatePuller.class.getClassLoader(),
+                                                        new Class[]{UpdatePuller.class}, updatePullerDelegate );
+        dependencies.satisfyDependency( updatePullerProxy );
+
+        this.lastUpdateTime = new LastUpdateTime();
+        PullerFactory pullerFactory = new PullerFactory(requestContextFactory, master,
+                lastUpdateTime, logging, serverId, invalidEpochHandler, config.get( HaSettings.pull_interval ),
+                jobScheduler, dependencies, availabilityGuard, memberStateMachine );
+
+        TransactionObligationFulfiller obligationFulfiller = pullerFactory.createObligationFulfiller(
+                updatePullerProxy );
+        paxosLife.add( obligationFulfiller );
+        dependencies.satisfyDependency( obligationFulfiller );
+
 
         MasterClientResolver masterClientResolver = new MasterClientResolver( logging, responseUnpacker,
                 invalidEpochHandler,
@@ -498,6 +523,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 (HaIdGeneratorFactory) idGeneratorFactory,
                 logging, masterDelegateInvocationHandler, clusterMemberAvailability,
                 requestContextFactory, kernelExtensions.listFactories(), masterClientResolver,
+                updatePullerProxy, pullerFactory,
                 monitors.newMonitor( ByteCounterMonitor.class, SlaveServer.class ),
                 monitors.newMonitor( RequestMonitor.class, SlaveServer.class ),
                 monitors.newMonitor( SwitchToSlave.Monitor.class ),
@@ -513,6 +539,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( switchToSlaveInstance, switchToMasterInstance,
                 clusterClient, clusterMemberAvailability, getDependencyResolver(), config.get( ClusterSettings.server_id ), logging );
 
+        paxosLife.add( new UpdatePullerModeSwitcher( highAvailabilityModeSwitcher, updatePullerDelegate,
+                pullerFactory ) );
+
         clusterClient.addBindingListener( highAvailabilityModeSwitcher );
         memberStateMachine.addHighAvailabilityMemberListener( highAvailabilityModeSwitcher );
 
@@ -520,15 +549,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
          * We always need the mode switcher and we need it to restart on switchover.
          */
         paxosLife.add( highAvailabilityModeSwitcher );
-
-        /*
-         * We don't really switch to master here. We just need to initialize the idGenerator so the initial store
-         * can be started (if required). In any case, the rest of the database is in pending state, so nothing will
-         * happen until events start arriving and that will set us to the proper state anyway.
-         */
-        ((HaIdGeneratorFactory) idGeneratorFactory).switchToMaster();
-
-        return idGeneratorFactory;
     }
 
     @Override
@@ -621,7 +641,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected KernelData createKernelData()
     {
-        this.lastUpdateTime = new LastUpdateTime();
         OnDiskLastTxIdGetter txIdGetter = new OnDiskLastTxIdGetter( this );
         ClusterDatabaseInfoProvider databaseInfo = new ClusterDatabaseInfoProvider(
                 members, txIdGetter, lastUpdateTime );

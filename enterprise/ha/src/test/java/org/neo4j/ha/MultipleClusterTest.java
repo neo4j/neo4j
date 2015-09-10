@@ -19,25 +19,24 @@
  */
 package org.neo4j.ha;
 
-import java.io.File;
-
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.UpdatePullerClient;
+import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.test.ha.ClusterManager.fromXml;
 
 /**
@@ -92,7 +91,7 @@ public class MultipleClusterTest
             // Verify properties in all cluster nodes
             for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : cluster1.getAllMembers() )
             {
-                highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( UpdatePullerClient.class ).pullUpdates();
+                highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
 
                 Transaction transaction = highlyAvailableGraphDatabase.beginTx();
                 assertEquals( "neo4j.ha", highlyAvailableGraphDatabase.getNodeById( cluster1NodeId ).getProperty(
@@ -102,7 +101,7 @@ public class MultipleClusterTest
 
             for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : cluster2.getAllMembers() )
             {
-                highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( UpdatePullerClient.class ).pullUpdates();
+                highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
 
                 Transaction transaction = highlyAvailableGraphDatabase.beginTx();
                 assertEquals( "neo4j.ha2", highlyAvailableGraphDatabase.getNodeById( cluster2NodeId ).getProperty(
