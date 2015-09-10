@@ -19,27 +19,28 @@
  */
 package org.neo4j.bolt.docs.v1;
 
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.JsonParser;
+import org.codehaus.jackson.map.ObjectMapper;
+
+import java.io.ByteArrayInputStream;
+import java.io.EOFException;
 import java.io.IOException;
-import java.util.Collections;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-
+import org.neo4j.bolt.messaging.v1.Neo4jPack;
+import org.neo4j.bolt.messaging.v1.PackStreamMessageFormatV1;
+import org.neo4j.bolt.messaging.v1.RecordingByteChannel;
+import org.neo4j.bolt.runtime.internal.Neo4jError;
+import org.neo4j.bolt.runtime.spi.ImmutableRecord;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
-import org.neo4j.bolt.messaging.v1.PackStreamMessageFormatV1;
-import org.neo4j.bolt.messaging.v1.Neo4jPack;
-import org.neo4j.bolt.messaging.v1.RecordingByteChannel;
-import org.neo4j.bolt.messaging.v1.RecordingMessageHandler;
-import org.neo4j.bolt.messaging.v1.message.Message;
-import org.neo4j.bolt.runtime.spi.ImmutableRecord;
-import org.neo4j.bolt.transport.socket.ChunkedInput;
 import org.neo4j.packstream.BufferedChannelOutput;
 
-import static java.util.Arrays.asList;
-
-import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.bolt.transport.socket.Chunker.chunk;
 
 /**
@@ -81,60 +82,10 @@ public class DocSerialization
     public static void pack( String value, Neo4jPack.Packer packer, PackStreamMessageFormatV1.Writer writer )
             throws IOException
     {
-        // NOTE: This currently has hard-coded handling of specific messages, it did not seem worth the time
-        // to write a custom parser for this yet. We may want to come back and do that as the docs evolve.
-        if ( value.equalsIgnoreCase( "null" ) )
-        {
-            packer.packNull();
-        }
-        else if ( value.equalsIgnoreCase( "true" ) )
-        {
-            packer.pack( true );
-        }
-        else if ( value.equalsIgnoreCase( "false" ) )
-        {
-            packer.pack( false );
-        }
-        else if ( value.startsWith( "\"" ) )
-        {
-            packer.pack( value.substring( 1, value.length() - 1 ) );
-        }
-        else if ( value.startsWith( "[" ) )
-        {
-            if ( value.equals( "[]" ) )
-            {
-                packer.packListHeader( 0 );
-            }
-            else
-            {
-                String[] values = value.substring( 1, value.length() - 1 ).split( "," );
-                packer.packListHeader( values.length );
-                for ( String s : values )
-                {
-                    pack( s, packer, writer );
-                }
-            }
-        }
-        else if ( value.startsWith( "{" ) )
-        {
-            if ( value.equals( "{}" ) )
-            {
-                packer.packMapHeader( 0 );
-            }
-            else
-            {
-                String[] pairs = value.substring( 1, value.length() - 1 ).split( "," );
-                packer.packMapHeader( pairs.length );
-                for ( String pair : pairs )
-                {
-                    String[] split = pair.split( ":" );
-                    packer.pack(
-                            split[0] );  // Key, different from packing value because it doesn't use quotation marks
-                    pack( split[1], packer, writer ); // Value
-                }
-            }
-        }
-        else if ( value.startsWith( "Struct" ) )
+        ObjectMapper mapper = new ObjectMapper();
+
+        // 1: Is the value a struct definition?
+        if ( value.startsWith( "Struct" ) )
         {
             DocStructExample struct = new DocStructExample( value );
             packer.packStructHeader( struct.size(), (byte)struct.signature() );
@@ -144,102 +95,91 @@ public class DocSerialization
                 pack( s, packer, writer );
             }
         }
-        else if ( value.matches( "-?[0-9]+\\.[0-9]+" ) )
+        else if ( value.equals( "FAILURE { \"code\": \"Neo.ClientError.Statement.InvalidSyntax\",                  \"message\": \"Invalid input 'T': expected" +
+                                " <init> (line 1, column 1 (offset: 0))                          \"This will cause a syntax error\"                          " +
+                                " ^\"}" ) )
         {
-            packer.pack( Double.parseDouble( value ) );
-        }
-        else if ( value.matches( "-?[0-9]+" ) )
-        {
-            packer.pack( Long.parseLong( value ) );
-        }
-        else if ( value.equals( "DISCARD_ALL" ) )
-        {
-            writer.handleIgnoredMessage();
-        }
-        else if ( value.equals( "PULL_ALL" ) )
-        {
-            writer.handlePullAllMessage();
-        }
-        else if ( value.equals( "ACK_FAILURE" ) )
-        {
-            writer.handleAckFailureMessage();
-        }
-        else if ( value.equals( "IGNORED" ) ) // kiss..
-        {
-            writer.handleIgnoredMessage();
-        }
-        else if ( value.equals( "RUN \"RETURN 1 AS num\" {}" ) ) // kiss..
-        {
-            writer.handleRunMessage( "RETURN 1 AS num", Collections.<String,Object>emptyMap() );
-        }
-        else if ( value.equals( "RUN \"This will cause a syntax error\" {}" ) ) // kiss..
-        {
-            writer.handleRunMessage( "This will cause a syntax error", Collections.<String,Object>emptyMap() );
-        }
-        else if ( value.equals( "RECORD [1,2,3]" ) ) // kiss..
-        {
-            writer.handleRecordMessage( new ImmutableRecord( new Object[]{1, 2, 3} ) );
-        }
-        else if ( value.equals( "RECORD [1]" ) ) // kiss..
-        {
-            writer.handleRecordMessage( new ImmutableRecord( new Object[]{1} ) );
-        }
-        else if ( value.equals( "SUCCESS {fields:[\"name\", \"age\"]}" ) ) // kiss..
-        {
-            writer.handleSuccessMessage( map( "fields", asList( "name", "age" ) ) );
-        }
-        else if ( value.equals( "SUCCESS { fields: ['num'] }" ) ) // kiss..
-        {
-            writer.handleSuccessMessage( map( "fields", asList( "num" ) ) );
-        }
-        else if ( value.equals( "SUCCESS {}" ) ) // kiss..
-        {
-            writer.handleSuccessMessage( map() );
-        }
-        else if ( value.equals( "FAILURE {code:\"Neo.ClientError.Statement.InvalidSyntax\", " +
-                                "message:\"Invalid syntax.\"}" ) ) // kiss..
-        {
-            writer.handleFailureMessage(  Status.Statement.InvalidSyntax, "Invalid syntax." );
-        }
-        else if ( value.equals( "FAILURE {code:\"Neo.ClientError.Statement.InvalidSyntax\"," ) ) // kiss..
-        {
-            writer.handleFailureMessage(  Status.Statement.InvalidSyntax,
+            // Hard-coded special case, because we don't handle this message automatically yet
+            writer.handleFailureMessage( Status.Statement.InvalidSyntax,
                     "Invalid input 'T': expected <init> (line 1, column 1 (offset: 0))\n" +
                     "\"This will cause a syntax error\"\n" +
                     " ^" );
         }
-        else if( value.equals( "INITIALIZE \"MyClient/1.0\"" ))
-        {
-            writer.handleInitializeMessage( "MyClient/1.0" );
-        }
         else
         {
-            throw new RuntimeException( "Unknown value: " + value );
-        }
-    }
-
-    public static List<Message> unpackChunked( byte[] data ) throws Exception
-    {
-        ChunkedInput input = new ChunkedInput();
-        PackStreamMessageFormatV1.Reader reader =
-                new PackStreamMessageFormatV1.Reader( new Neo4jPack.Unpacker( input ) );
-        RecordingMessageHandler messages = new RecordingMessageHandler();
-
-        ByteBuf buf = Unpooled.wrappedBuffer( data );
-        while ( buf.readableBytes() > 0 )
-        {
-            int chunkSize = buf.readUnsignedShort();
-            if ( chunkSize > 0 )
+            try
             {
-                input.append( buf.readSlice( chunkSize ) );
+                // 2: Assume the value is a JSON value
+                Object scalar = mapper.readValue( value, Object.class );
+                packer.pack( scalar );
             }
-            else
+            catch ( JsonParseException e )
             {
-                reader.read( messages );
-                input.clear();
+                // 3: If that fails, assume the value is a message with space-delimeted JSON-encoded arguments
+                String[] parts = value.split( " ", 2 );
+                List<Object> args = new ArrayList<>();
+                String type = parts[0];
+                if( parts.length == 2 )
+                {
+                    JsonParser parser = mapper.getJsonFactory().createJsonParser(
+                            new ByteArrayInputStream( parts[1].getBytes( StandardCharsets.UTF_8 ) ) );
+                    try
+                    {
+                        while ( !parser.isClosed() )
+                        {
+                            Object e1 = mapper.readValue( parser, Object.class );
+                            args.add( e1 );
+                        }
+                    } catch( EOFException ignore ) {
+
+                    } catch( JsonParseException je ) {
+                        throw new RuntimeException( "Unable to parse documented protocol exchange in '" + value + "': " + je.getMessage(), je );
+                    }
+                }
+
+                if ( type.equals( "DISCARD_ALL" ) )
+                {
+                    writer.handleIgnoredMessage();
+                }
+                else if ( type.equals( "PULL_ALL" ) )
+                {
+                    writer.handlePullAllMessage();
+                }
+                else if ( type.equals( "ACK_FAILURE" ) )
+                {
+                    writer.handleAckFailureMessage();
+                }
+                else if ( type.equals( "IGNORED" ) )
+                {
+                    writer.handleIgnoredMessage();
+                }
+                else if( type.equals( "RUN" ))
+                {
+                    writer.handleRunMessage( (String)args.get( 0 ), (Map<String, Object>)args.get( 1 ) );
+                }
+                else if( type.equals( "RECORD" ))
+                {
+                    writer.handleRecordMessage( new ImmutableRecord( Iterables.toArray(Object.class, (List<Object>)args.get( 0 )) ) );
+                }
+                else if( type.equals( "SUCCESS" ))
+                {
+                    writer.handleSuccessMessage( (Map<String,Object>)args.get( 0 ) );
+                }
+                else if( type.equals( "FAILURE" ))
+                {
+                    Map<String, Object> meta = (Map<String,Object>) args.get( 0 );
+                    writer.handleFailureMessage( Neo4jError.codeFromString( (String) meta.get( "code" ) ), (String) meta.get( "message" ) );
+                }
+                else if( type.equals( "INITIALIZE" ))
+                {
+                    writer.handleInitializeMessage( (String) args.get( 0 ) );
+                }
+                else
+                {
+                    throw new RuntimeException( "Unknown value" );
+                }
             }
         }
-        return messages.asList();
     }
 
     public static String normalizedHex( byte[] data )

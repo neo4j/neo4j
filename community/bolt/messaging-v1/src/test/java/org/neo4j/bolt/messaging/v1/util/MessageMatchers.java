@@ -233,14 +233,12 @@ public class MessageMatchers
                 return consumer.asList().get( 0 );
             }
 
-            throw new IllegalArgumentException( "Expected a message in " + HexPrinter.hex( bytes ) );
+            throw new IllegalArgumentException( "Expected a message in `" + HexPrinter.hex( bytes ) + "`" );
         }
         catch ( Throwable e )
         {
-            throw new IOException( "Failed to deserialize response, '" + e.getMessage() + "'. Messages read so " +
-                                   "far: \n" + consumer.asList() + "\n" +
-                                   "Raw data: \n" +
-                                   HexPrinter.hex( bytes ), e );
+            throw new IOException( "Failed to deserialize response, '" + e.getMessage() + "'.\n" +
+                                   "Raw data: \n" + HexPrinter.hex( bytes ), e );
         }
     }
 

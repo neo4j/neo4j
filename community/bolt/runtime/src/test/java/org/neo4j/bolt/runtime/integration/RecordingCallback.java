@@ -230,6 +230,12 @@ public class RecordingCallback<V, A> implements Session.Callback<V,A>
             {
                 values.add( new ImmutableRecord( record.fields() ) );
             }
+
+            @Override
+            public void addMetadata( String key, Object value )
+            {
+
+            }
         } );
         return values.toArray( new Record[values.size()] );
     }

@@ -88,6 +88,12 @@ public class StreamMatchers
                                 matched.set( false );
                             }
                         }
+
+                        @Override
+                        public void addMetadata( String key, Object value )
+                        {
+
+                        }
                     } );
                 }
                 catch ( Exception e )

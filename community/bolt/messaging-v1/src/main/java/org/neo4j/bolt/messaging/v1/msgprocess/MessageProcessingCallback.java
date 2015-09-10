@@ -30,7 +30,6 @@ import org.neo4j.bolt.runtime.internal.Neo4jError;
 
 public class MessageProcessingCallback<T> extends Session.Callback.Adapter<T,Void>
 {
-
     // TODO: move this somewhere more sane (when modules are unified)
     public static void publishError( MessageHandler<IOException> out, Neo4jError error )
             throws IOException
@@ -104,11 +103,9 @@ public class MessageProcessingCallback<T> extends Session.Callback.Adapter<T,Voi
                 out.handleSuccessMessage( successMetadata() );
             }
         }
-        catch ( IOException e )
+        catch ( Throwable e )
         {
-            // Tough one to recover from, at this point, we've failed to write a response
-            // back to the client. We may consider signaling the state machine about this in
-            // some way, but this is left as a future exercise.
+            // TODO: we've lost the ability to communicate with the client. Shut down the session, close transactions.
             log.error( "Failed to write response to driver", e );
         }
         finally
