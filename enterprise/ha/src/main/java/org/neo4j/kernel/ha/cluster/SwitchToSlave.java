@@ -89,9 +89,8 @@ import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.single;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
-import static org.neo4j.kernel.ha.cluster.member.ClusterMembers.inRole;
+import static org.neo4j.kernel.ha.cluster.member.ClusterMembers.hasInstanceId;
 import static org.neo4j.kernel.impl.store.NeoStore.isStorePresent;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
@@ -370,7 +369,7 @@ public class SwitchToSlave
         try
         {
             userLog.info( "Checking store consistency with master" );
-            checkMyStoreIdAndMastersStoreId( storeId, masterIsOld );
+            checkMyStoreIdAndMastersStoreId( storeId, masterIsOld, masterUri );
             checkDataConsistencyWithMaster( masterUri, masterClient, storeId, txIdStore );
             userLog.info( "Store is consistent" );
         }
@@ -404,12 +403,16 @@ public class SwitchToSlave
         }
     }
 
-    private void checkMyStoreIdAndMastersStoreId( StoreId myStoreId, boolean masterIsOld )
+    private void checkMyStoreIdAndMastersStoreId( StoreId myStoreId, boolean masterIsOld, URI masterUri )
     {
         if ( !masterIsOld )
         {
             ClusterMembers clusterMembers = resolver.resolveDependency( ClusterMembers.class );
-            ClusterMember master = single( filter( inRole( MASTER ), clusterMembers.getMembers() ) );
+
+            ClusterMember master = single(
+                    filter( hasInstanceId( HighAvailabilityModeSwitcher.getServerId( masterUri ) ),
+                            clusterMembers.getMembers() ) );
+
             StoreId masterStoreId = master.getStoreId();
 
             if ( !myStoreId.equals( masterStoreId ) )
