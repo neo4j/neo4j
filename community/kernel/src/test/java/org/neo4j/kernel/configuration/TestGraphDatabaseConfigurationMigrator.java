@@ -19,16 +19,18 @@
  */
 package org.neo4j.kernel.configuration;
 
-import org.junit.Test;
-
 import java.util.Map;
 
+import org.hamcrest.CoreMatchers;
+import org.junit.Test;
+
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -99,7 +101,44 @@ public class TestGraphDatabaseConfigurationMigrator
             equalTo( "1074790416" ) );
 
         logProvider.assertAtLeastOnce(
-                inLog( getClass() ).warn( "The neostore.*.db.mapped_memory settings have been replaced by the single 'dbms.pagecache.memory'. The sum of the old configuration will be used as the value for the new setting." )
+                inLog( getClass() )
+                        .warn( "The neostore.*.db.mapped_memory settings have been replaced by the single 'dbms" +
+                               ".pagecache.memory'. The sum of the old configuration will be used as the value for the new setting." )
         );
+    }
+
+    @Test
+    public void shouldWarnAboutDeprecatedCacheTypeSetting() throws Exception
+    {
+        // given
+        ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        Map<String,String> oldConfig = stringMap( GraphDatabaseSettings.cache_type.name(), "hpc" );
+
+        // when
+        Map<String,String> newConfig = migrator.apply( oldConfig, logProvider.getLog( getClass() ) );
+
+        // then
+        logProvider.assertAtLeastOnce(
+                inLog( getClass() ).warn( CoreMatchers.containsString( "cache_type" ) )
+        );
+        assertFalse( newConfig.containsKey( "cache_type" ) );
+    }
+
+    @Test
+    public void shouldNotWarnAboutDeprecatedCacheTypeSettingWithDefaultValue() throws Exception
+    {
+        // given
+        ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        Map<String,String> oldConfig = stringMap(
+                GraphDatabaseSettings.cache_type.name(), GraphDatabaseSettings.cache_type.getDefaultValue() );
+
+        // when
+        Map<String,String> newConfig = migrator.apply( oldConfig, logProvider.getLog( getClass() ) );
+
+        // then
+        logProvider.assertNoLoggingOccurred();
+        assertFalse( newConfig.containsKey( "cache_type" ) );
     }
 }
