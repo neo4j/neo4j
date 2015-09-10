@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
@@ -111,6 +112,12 @@ public class ServerConfigFactory
         {
             params.put( GraphDatabaseSettings.log_queries_filename.name(), "data/log/queries.log" );
         }
+
+        if( !params.containsKey( BoltKernelExtension.Settings.enabled.name() ))
+        {
+            params.put( BoltKernelExtension.Settings.enabled.name(), "true" );
+        }
+
         config.applyChanges( params );
     }
 

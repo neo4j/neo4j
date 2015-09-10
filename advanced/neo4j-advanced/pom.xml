@@ -158,7 +158,7 @@
               <show>public</show>
               <windowtitle>${project.name} ${project.version} API</windowtitle>
               <excludePackageNames>
-                *.impl.*:*.internal.*:org.neo4j.ext.udc:org.neo4j.kernel:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*:org.apache.lucene.index:org.neo4j.cluster.*:org.neo4j.helpers.progress:org.neo4j.kernel.configuration:org.neo4j.kernel.guard:org.neo4j.kernel.info:org.neo4j.kernel.logging
+                *.impl.*:*.internal.*:org.neo4j.bolt.ext.udc:org.neo4j.kernel:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*:org.apache.lucene.index:org.neo4j.cluster.*:org.neo4j.helpers.progress:org.neo4j.kernel.configuration:org.neo4j.kernel.guard:org.neo4j.kernel.info:org.neo4j.kernel.logging
               </excludePackageNames>
               <groups>
                 <group>

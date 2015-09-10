@@ -69,7 +69,6 @@ public class StreamingJsonFormatTest
         }
         assertTrue( stream.toString().contains( "\"self\" : \"http://localhost/node/0\"," ) );
     }
-
     @Test
     public void canFormatString() throws Exception
     {
