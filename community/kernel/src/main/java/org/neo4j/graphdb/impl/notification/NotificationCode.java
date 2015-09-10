@@ -96,7 +96,13 @@ public enum NotificationCode
         "Eager operator could potentially consume a lot of memory and is likely to not perform well. " +
         "See the Neo4j Manual entry on the Eager operator for more information and hints on " +
         "how problems could be avoided."
-    )
+    ),
+    LARGE_LABEL_LOAD_CSV(
+        SeverityLevel.WARNING,
+        Status.Statement.IndexMissingWarning,
+        "Using LOAD CSV followed by a MATCH or MERGE that matches a non-indexed label will most likely " +
+        "not perform well on large data sets. Please consider using a schema index."
+        )
     ;
 
     private final Status status;

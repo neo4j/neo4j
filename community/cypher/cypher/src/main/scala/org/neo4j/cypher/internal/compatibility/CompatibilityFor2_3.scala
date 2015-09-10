@@ -314,6 +314,8 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
       NotificationCode.BARE_NODE_SYNTAX_DEPRECATED.notification(pos.asInputPosition)
     case EagerLoadCsvNotification =>
       NotificationCode.EAGER_LOAD_CSV.notification(InputPosition.empty)
+    case LargeLabelWithLoadCsvNotification =>
+      NotificationCode.LARGE_LABEL_LOAD_CSV.notification(InputPosition.empty)
   }
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = exceptionHandlerFor2_3.runSafely {
@@ -391,16 +393,14 @@ class StringInfoLogger2_3(log: Log) extends InfoLogger {
   }
 }
 case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
-                                           queryCacheSize: Int,
-                                           statsDivergenceThreshold: Double,
-                                           queryPlanTTL: Long,
-                                           clock: Clock,
-                                           kernelMonitors: KernelMonitors,
-                                           kernelAPI: KernelAPI,
-                                           log: Log,
-                                           planner: CypherPlanner,
-                                           runtime: CypherRuntime,
-                                           useErrorsOverWarnings: Boolean) extends CompatibilityFor2_3 {
+                                   config: CypherCompilerConfiguration,
+                                   clock: Clock,
+                                   kernelMonitors: KernelMonitors,
+                                   kernelAPI: KernelAPI,
+                                   log: Log,
+                                   planner: CypherPlanner,
+                                   runtime: CypherRuntime) extends CompatibilityFor2_3 {
+
   protected val compiler = {
     val plannerName = planner match {
       case CypherPlanner.default => None
@@ -417,19 +417,20 @@ case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
     }
 
     CypherCompilerFactory.costBasedCompiler(
-      graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, GeneratedQueryStructure, new WrappedMonitors2_3( kernelMonitors ),
-      new StringInfoLogger2_3( log ), rewriterSequencer, plannerName, runtimeName, useErrorsOverWarnings
-    )
+      graph, config, clock, GeneratedQueryStructure, new WrappedMonitors2_3( kernelMonitors ),
+      new StringInfoLogger2_3( log ), rewriterSequencer, plannerName, runtimeName)
   }
+
+  override val queryCacheSize: Int = config.queryCacheSize
 }
 
 case class CompatibilityFor2_3Rule(graph: GraphDatabaseService,
-                                   queryCacheSize: Int,
-                                   statsDivergenceThreshold: Double,
-                                   queryPlanTTL: Long,
+                                   config: CypherCompilerConfiguration,
                                    clock: Clock,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI) extends CompatibilityFor2_3 {
   protected val compiler = CypherCompilerFactory.ruleBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors2_3( kernelMonitors ), rewriterSequencer)
+    graph, config, clock, new WrappedMonitors2_3( kernelMonitors ), rewriterSequencer)
+
+  override val queryCacheSize: Int = config.queryCacheSize
 }

@@ -27,15 +27,16 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, CantHandleQueryException}
 import org.neo4j.cypher.internal.compiler.v2_3.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, ProfileMode, _}
-import org.neo4j.cypher.internal.frontend.v2_3.PeriodicCommitInOpenTransactionException
+import org.neo4j.cypher.internal.frontend.v2_3.{LabelId, PeriodicCommitInOpenTransactionException}
 import org.neo4j.cypher.internal.frontend.v2_3.ast.Statement
-import org.neo4j.cypher.internal.frontend.v2_3.notification.{EagerLoadCsvNotification, InternalNotification}
+import org.neo4j.cypher.internal.frontend.v2_3.notification.{LargeLabelWithLoadCsvNotification, EagerLoadCsvNotification, InternalNotification}
 import org.neo4j.function.Supplier
 import org.neo4j.function.Suppliers.singleton
 import org.neo4j.graphdb.GraphDatabaseService
@@ -98,7 +99,7 @@ trait ExecutablePlanBuilder {
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): Either[CompiledPlan, PipeInfo]
 }
 
-class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold: Double, queryPlanTTL: Long,
+class ExecutionPlanBuilder(graph: GraphDatabaseService, config: CypherCompilerConfiguration,
                            clock: Clock, pipeBuilder: ExecutablePlanBuilder) extends PatternGraphBuilder {
   val nodeManager = {
     val gdapi = graph.asInstanceOf[GraphDatabaseAPI]
@@ -115,7 +116,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
 
   private def buildCompiled(compiledPlan: CompiledPlan, planContext: PlanContext, inputQuery: PreparedQuery) = {
     new ExecutionPlan {
-      val fingerprint = PlanFingerprintReference(clock, queryPlanTTL, statsDivergenceThreshold, compiledPlan.fingerprint)
+      val fingerprint = PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, compiledPlan.fingerprint)
 
       def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
 
@@ -148,7 +149,38 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
     }
   }
 
-  private def hasEagerLoadCsv(pipe: Pipe) = {
+  private def checkForLoadCsvAndMatchOnLargeNonIndexedLabel(pipe: Pipe, planContext: PlanContext) = {
+    import org.neo4j.cypher.internal.frontend.v2_3.Foldable._
+
+    sealed trait SearchState
+    case object NoneFound extends SearchState
+    case object LargeLabelFound extends SearchState
+    case object LargeLabelWithLoadCsvFound extends SearchState
+
+    val threshold = Cardinality(config.nonIndexedLabelWarningThreshold)
+
+    // Walk over the pipe tree and check if a large label scan is to be executed after a LoadCsv
+    val resultState = pipe.treeFold[SearchState](NoneFound) {
+      case _: LoadCSVPipe => (acc, children) =>
+        acc match {
+          case LargeLabelFound => children(LargeLabelWithLoadCsvFound)
+          case e => e
+        }
+      case NodeStartPipe(_, _, NodeByLabelEntityProducer(_, id), _) =>
+        val cardinality = planContext.statistics.nodesWithLabelCardinality(Some(LabelId(id)))
+        if (cardinality > threshold) (acc, children) => children(LargeLabelFound) else (acc, children) => children(acc)
+      case NodeByLabelScanPipe(_, label) =>
+        val cardinality = planContext.statistics.nodesWithLabelCardinality(label.id(planContext))
+        if (cardinality > threshold) (acc, children) => children(LargeLabelFound) else (acc, children) => children(acc)
+    }
+
+    resultState match {
+      case LargeLabelWithLoadCsvFound => Some(LargeLabelWithLoadCsvNotification)
+      case _ => None
+    }
+  }
+
+  private def checkForEagerLoadCsv(pipe: Pipe) = {
     import org.neo4j.cypher.internal.frontend.v2_3.Foldable._
     sealed trait SearchState
     case object NoEagerFound extends SearchState
@@ -168,13 +200,18 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
     }
 
     resultState match {
-      case EagerWithLoadCsvFound => true
-      case _ => false
+      case EagerWithLoadCsvFound => Some(EagerLoadCsvNotification)
+      case _ => None
     }
   }
 
-  private def checkForNotifications(pipe: Pipe): Seq[InternalNotification] =
-    if (hasEagerLoadCsv(pipe)) Seq(EagerLoadCsvNotification) else Seq.empty
+  private def checkForNotifications(pipe: Pipe, planContext: PlanContext): Seq[InternalNotification] = {
+    (
+      checkForEagerLoadCsv(pipe) ++
+      checkForLoadCsvAndMatchOnLargeNonIndexedLabel(pipe, planContext)
+    ).toSeq
+  }
+
 
   private def buildInterpreted(pipeInfo: PipeInfo, planContext: PlanContext, inputQuery: PreparedQuery) = {
     val abstractQuery = inputQuery.abstractQuery
@@ -182,9 +219,8 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
     val columns = getQueryResultColumns(abstractQuery, pipe.symbols)
     val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns)
     val func = getExecutionPlanFunction(periodicCommitInfo, abstractQuery.getQueryText, updating, resultBuilderFactory, inputQuery.notificationLogger)
-
     new ExecutionPlan {
-      private val fingerprint = PlanFingerprintReference(clock, queryPlanTTL, statsDivergenceThreshold, fp)
+      private val fingerprint = PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, fp)
 
       def run(queryContext: QueryContext, ignored: KernelStatement, planType: ExecutionMode, params: Map[String, Any]) =
         func(queryContext, planType, params)
@@ -195,7 +231,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
 
       def runtimeUsed = InterpretedRuntimeName
 
-      def notifications = checkForNotifications(pipe)
+      def notifications = checkForNotifications(pipe, planContext)
     }
 
   }

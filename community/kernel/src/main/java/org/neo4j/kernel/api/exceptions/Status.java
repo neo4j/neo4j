@@ -168,7 +168,8 @@ public interface Status
                                                     "nor index scans for those properties" ),
         EagerWarning(ClientNotification, "The execution plan for this query contains the Eager operator, " +
                                          "which forces all dependent data to be materialized in main memory " +
-                                         "before proceeding");
+                                         "before proceeding"),
+        IndexMissingWarning( ClientNotification, "Adding a schema index may speed up this query." );
 
         private final Code code;
 

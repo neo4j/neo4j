@@ -303,4 +303,18 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result should use("LoadCSV", "Eager")
     result.notifications should not contain EagerLoadCsvNotification
   }
+
+  test("should warn for large label scans combined with load csv") {
+    1 to 10 foreach { _ => createLabeledNode("A") }
+    val result = innerExecute("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (a:A) RETURN *")
+    result should use("LoadCSV", "NodeByLabel")
+    result.notifications should contain(LargeLabelWithLoadCsvNotification)
+  }
+
+  test("should not warn for small label scans combined with load csv") {
+    createLabeledNode("A")
+    val result = innerExecute("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (a:A) RETURN *")
+    result should use("LoadCSV", "NodeByLabel")
+    result.notifications should not contain LargeLabelWithLoadCsvNotification
+  }
 }
