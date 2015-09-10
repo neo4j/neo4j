@@ -85,7 +85,6 @@ public interface JobScheduler extends Lifecycle
             }
             return "neo4j." + name() + "-" + threadCounter.incrementAndGet();
         }
-
     }
 
     /**

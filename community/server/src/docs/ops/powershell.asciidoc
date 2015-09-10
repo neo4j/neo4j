@@ -30,6 +30,11 @@ This will add the module to the current session.
 
 [NOTE]
 --
+On Windows it is sometimes necessary to _Unblock_ a downloaded zip file before you can import its contents as a module. If you right-click on the zip file and choose "Properties" you will get a dialog. Bottom-right on that dialog you will find an "Unblock" button. Click that. Then you should be able to import the module.
+--
+
+[NOTE]
+--
 Running scripts has to be enabled on the system.
 This can for example be achieved by executing the following from an elevated PowerShell prompt:
 [source,powershell]

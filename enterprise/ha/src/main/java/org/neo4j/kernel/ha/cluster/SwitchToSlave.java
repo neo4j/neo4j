@@ -34,7 +34,7 @@ import org.neo4j.com.ServerUtil;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
-import org.neo4j.function.Factory;
+import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.function.Function;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
@@ -50,9 +50,11 @@ import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.MasterClient210;
+import org.neo4j.kernel.ha.PullerFactory;
 import org.neo4j.kernel.ha.StoreOutOfDateException;
 import org.neo4j.kernel.ha.StoreUnableToParticipateInClusterException;
 import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.ha.UpdatePullerScheduler;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMemberVersionCheck;
 import org.neo4j.kernel.ha.cluster.member.ClusterMemberVersionCheck.Outcome;
@@ -63,6 +65,7 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
+import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.ha.store.ForeignStoreException;
@@ -85,7 +88,6 @@ import org.neo4j.logging.Log;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.single;
@@ -128,7 +130,6 @@ public class SwitchToSlave
     private final FileSystemAbstraction fileSystemAbstraction;
     private final ClusterMembers clusterMembers;
     private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
-    private final Factory<Slave> slaveFactory;
     private final Function<Slave, SlaveServer> slaveServerFactory;
     private final UpdatePuller updatePuller;
     private final PageCache pageCache;
@@ -146,6 +147,7 @@ public class SwitchToSlave
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
     private final MasterClientResolver masterClientResolver;
     private final StoreCopyClient.Monitor storeCopyMonitor;
+    private final PullerFactory updatePullerFactory;
     private final Monitor monitor;
 
     public SwitchToSlave( File storeDir,
@@ -158,13 +160,13 @@ public class SwitchToSlave
             DelegateInvocationHandler<Master> masterDelegateHandler,
             ClusterMemberAvailability clusterMemberAvailability,
             RequestContextFactory requestContextFactory,
+            PullerFactory pullerFactory,
             Iterable<KernelExtensionFactory<?>> kernelExtensions,
             MasterClientResolver masterClientResolver,
             Monitor monitor,
             StoreCopyClient.Monitor storeCopyMonitor,
             Supplier<NeoStoreDataSource> neoDataSourceSupplier,
             Supplier<TransactionIdStore> transactionIdStoreSupplier,
-            Factory<Slave> slaveFactory,
             Function<Slave, SlaveServer> slaveServerFactory,
             UpdatePuller updatePuller,
             PageCache pageCache,
@@ -176,7 +178,6 @@ public class SwitchToSlave
         this.clusterMembers = clusterMembers;
         this.neoDataSourceSupplier = neoDataSourceSupplier;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
-        this.slaveFactory = slaveFactory;
         this.slaveServerFactory = slaveServerFactory;
         this.updatePuller = updatePuller;
         this.pageCache = pageCache;
@@ -193,6 +194,7 @@ public class SwitchToSlave
         this.storeCopyMonitor = storeCopyMonitor;
         this.msgLog = logService.getInternalLog( getClass() );
         this.masterDelegateHandler = masterDelegateHandler;
+        this.updatePullerFactory = pullerFactory;
         this.monitor = monitor;
         this.masterClientResolver = masterClientResolver;
     }
@@ -252,9 +254,9 @@ public class SwitchToSlave
              * start the ds or we already had a store, so we have already started the ds. Either way,
              * make sure it's there.
              */
-            NeoStoreDataSource nioneoDataSource = neoDataSourceSupplier.get();
-            nioneoDataSource.afterModeSwitch();
-            StoreId myStoreId = nioneoDataSource.getStoreId();
+            NeoStoreDataSource neoDataSource = neoDataSourceSupplier.get();
+            neoDataSource.afterModeSwitch();
+            StoreId myStoreId = neoDataSource.getStoreId();
 
             boolean consistencyChecksExecutedSuccessfully = executeConsistencyChecks(
                     myId, transactionIdStoreSupplier.get(), masterUri, myStoreId, cancellationRequest );
@@ -272,7 +274,7 @@ public class SwitchToSlave
             }
 
             // no exception were thrown and we can proceed
-            slaveUri = startHaCommunication( haCommunicationLife, nioneoDataSource, me, masterUri, myStoreId, cancellationRequest );
+            slaveUri = startHaCommunication( haCommunicationLife, neoDataSource, me, masterUri, myStoreId, cancellationRequest );
             if ( slaveUri == null )
             {
                 msgLog.info( "Switch to slave unable to connect." );
@@ -430,7 +432,11 @@ public class SwitchToSlave
     {
         MasterClient master = newMasterClient( masterUri, neoDataSource.getStoreId(), haCommunicationLife );
 
-        Slave slaveImpl = slaveFactory.newInstance();
+        TransactionObligationFulfiller obligationFulfiller =
+                resolver.resolveDependency( TransactionObligationFulfiller.class );
+        UpdatePullerScheduler updatePullerScheduler = updatePullerFactory.createUpdatePullerScheduler( updatePuller );
+
+        Slave slaveImpl = new SlaveImpl( obligationFulfiller );
 
         SlaveServer server = slaveServerFactory.apply(slaveImpl);
 
@@ -441,6 +447,7 @@ public class SwitchToSlave
 
         masterDelegateHandler.setDelegate( master );
 
+        haCommunicationLife.add( updatePullerScheduler );
         haCommunicationLife.add( slaveImpl );
         haCommunicationLife.add( server );
         haCommunicationLife.start();
@@ -449,7 +456,7 @@ public class SwitchToSlave
          * Take the opportunity to catch up with master, now that we're alone here, right before we
          * drop the availability guard, so that other transactions might start.
          */
-        if ( !catchUpWithMaster() )
+        if ( !catchUpWithMaster( updatePuller ) )
         {
             return null;
         }
@@ -460,21 +467,13 @@ public class SwitchToSlave
         return slaveHaURI;
     }
 
-    private boolean catchUpWithMaster()
-            throws IllegalArgumentException, InterruptedException
+    private boolean catchUpWithMaster( UpdatePuller updatePuller ) throws IllegalArgumentException, InterruptedException
     {
         monitor.catchupStarted();
         RequestContext catchUpRequestContext = requestContextFactory.newRequestContext();
         userLog.info( "Catching up with master. I'm at %s", catchUpRequestContext );
 
-        // Unpause the update puller, because we know that we are a slave that just started communication with master.
-        updatePuller.unpause();
-        /*
-         * We cannot assume here that the updatePuller is unpaused. Another master switch could have happened in the
-         * meanwhile and paused the updatePuller again. In such a case we simple bail out since that event is gonna
-         * rerun this code again.
-         */
-        if ( !updatePuller.await( UpdatePuller.NEXT_TICKET, false ) )
+        if ( !updatePuller.tryPullUpdates() )
         {
             return false;
         }

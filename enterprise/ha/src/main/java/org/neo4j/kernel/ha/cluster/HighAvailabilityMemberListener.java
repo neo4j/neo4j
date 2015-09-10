@@ -32,7 +32,7 @@ public interface HighAvailabilityMemberListener
 
     void instanceStops( HighAvailabilityMemberChangeEvent event );
 
-    public static class Adapter implements HighAvailabilityMemberListener
+    class Adapter implements HighAvailabilityMemberListener
     {
         @Override
         public void masterIsElected( HighAvailabilityMemberChangeEvent event )

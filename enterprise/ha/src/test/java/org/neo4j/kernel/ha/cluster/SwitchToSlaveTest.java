@@ -20,15 +20,19 @@
 package org.neo4j.kernel.ha.cluster;
 
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.StoreCopyClient;
-import org.neo4j.function.Factory;
+import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.function.Function;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.DependencyResolver;
@@ -45,7 +49,10 @@ import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.MasterClient214;
+import org.neo4j.kernel.ha.PullerFactory;
+import org.neo4j.kernel.ha.SlaveUpdatePuller;
 import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.ha.UpdatePullerScheduler;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -60,9 +67,11 @@ import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertNull;
@@ -72,6 +81,7 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -80,6 +90,11 @@ import static org.mockito.Mockito.withSettings;
 
 public class SwitchToSlaveTest
 {
+    private final UpdatePuller updatePuller = mockWithLifecycle( SlaveUpdatePuller.class );
+    private final PullerFactory pullerFactory = mock( PullerFactory.class );
+    private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+    private final MasterClient masterClient = mock( MasterClient.class );
+
     @Test
     @SuppressWarnings( "unchecked" )
     public void shouldHandleBranchedStoreWhenMyStoreIdDiffersFromMasterStoreId() throws Throwable
@@ -148,13 +163,10 @@ public class SwitchToSlaveTest
         SwitchToSlave switchToSlave = newSwitchToSlaveSpy();
 
         when( fs.fileExists( any( File.class ) ) ).thenReturn( true );
-        when( updatePuller.await( UpdatePuller.NEXT_TICKET, true ) ).thenThrow(
-                new IllegalStateException( "this should not happen" )
-        );
-        when( updatePuller.await( UpdatePuller.NEXT_TICKET, false ) ).thenReturn( false );
+        when( updatePuller.tryPullUpdates() ).thenReturn( false );
 
         // when
-        URI localhost = new URI( "127.0.0.1" );
+        URI localhost = getLocalhostUri();
         URI uri = switchToSlave.switchToSlave( mock( LifeSupport.class ), localhost, localhost,
                 mock( CancellationRequest.class ) );
 
@@ -162,9 +174,44 @@ public class SwitchToSlaveTest
         assertNull( uri );
     }
 
-    private final UpdatePuller updatePuller = mockWithLifecycle( UpdatePuller.class );
-    private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
-    private final MasterClient masterClient = mock( MasterClient.class );
+
+    @Test
+    public void updatesPulledAndPullingScheduledOnSwitchToSlave() throws Throwable
+    {
+        SwitchToSlave switchToSlave = newSwitchToSlaveSpy();
+
+        when( fs.fileExists( any( File.class ) ) ).thenReturn( true );
+        JobScheduler jobScheduler = mock( JobScheduler.class );
+        LifeSupport communicationLife = mock( LifeSupport.class );
+        URI localhost = getLocalhostUri();
+        final UpdatePullerScheduler pullerScheduler =
+                new UpdatePullerScheduler( jobScheduler, NullLogProvider.getInstance(), updatePuller, 10l );
+
+        when( pullerFactory.createUpdatePullerScheduler( updatePuller ) ).thenReturn( pullerScheduler );
+        // emulate lifecycle start call on scheduler
+        doAnswer( new Answer()
+        {
+            @Override
+            public Object answer( InvocationOnMock invocationOnMock ) throws Throwable
+            {
+                pullerScheduler.init();
+                return null;
+            }
+        } ).when( communicationLife ).start();
+
+
+        switchToSlave.switchToSlave( communicationLife, localhost, localhost, mock( CancellationRequest.class ) );
+
+        verify( updatePuller ).tryPullUpdates();
+        verify( communicationLife ).add( pullerScheduler );
+        verify( jobScheduler ).scheduleRecurring( eq( JobScheduler.Groups.pullUpdates ), any( Runnable.class ),
+                eq( 10l ), eq( 10l ), eq( TimeUnit.MILLISECONDS ) );
+    }
+
+    private URI getLocalhostUri() throws URISyntaxException
+    {
+        return new URI( "127.0.0.1" );
+    }
 
     @SuppressWarnings( "unchecked" )
     private SwitchToSlave newSwitchToSlaveSpy() throws IOException
@@ -179,6 +226,8 @@ public class SwitchToSlaveTest
         DependencyResolver resolver = mock( DependencyResolver.class );
         when( resolver.resolveDependency( any( Class.class ) ) ).thenReturn( mock( Lifecycle.class ) );
         when( resolver.resolveDependency( ClusterMembers.class ) ).thenReturn( clusterMembers );
+        when( resolver.resolveDependency( TransactionObligationFulfiller.class ) )
+                .thenReturn( mock( TransactionObligationFulfiller.class ) );
 
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
         when( dataSource.getStoreId() ).thenReturn( new StoreId( 42, 42, 42, 42 ) );
@@ -204,33 +253,27 @@ public class SwitchToSlaveTest
         when( masterClientResolver.instantiate( anyString(), anyInt(), any( Monitors.class ), any( StoreId.class ),
                 any( LifeSupport.class ) ) ).thenReturn( masterClient );
 
-        return spy( new SwitchToSlave( new File(""), NullLogService.getInstance(),
+        return spy( new SwitchToSlave( new File( "" ), NullLogService.getInstance(),
                 mock( FileSystemAbstraction.class ),
                 clusterMembers,
                 configMock(), resolver,
                 mock( HaIdGeneratorFactory.class ),
                 mock( DelegateInvocationHandler.class ),
                 mock( ClusterMemberAvailability.class ), mock( RequestContextFactory.class ),
+                pullerFactory,
                 Iterables.<KernelExtensionFactory<?>>empty(), masterClientResolver,
                 mock( SwitchToSlave.Monitor.class ),
                 new StoreCopyClient.Monitor.Adapter(),
                 Suppliers.singleton( dataSource ),
                 Suppliers.singleton( transactionIdStoreMock ),
-                new Factory<Slave>()
+                new Function<Slave,SlaveServer>()
                 {
                     @Override
-                    public Slave newInstance()
+                    public SlaveServer apply( Slave slave ) throws RuntimeException
                     {
-                        return mock( Slave.class );
+                        return mock( SlaveServer.class );
                     }
-                }, new Function<Slave, SlaveServer>()
-        {
-            @Override
-            public SlaveServer apply( Slave slave ) throws RuntimeException
-            {
-                return mock( SlaveServer.class );
-            }
-        }, mock( UpdatePuller.class ), pageCacheMock, mock( Monitors.class ), transactionCounters ) );
+                }, updatePuller, pageCacheMock, mock( Monitors.class ), transactionCounters ) );
     }
 
     private Config configMock()

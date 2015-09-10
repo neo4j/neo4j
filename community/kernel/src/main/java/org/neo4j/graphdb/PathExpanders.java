@@ -157,7 +157,8 @@ public abstract class PathExpanders
     /**
      * A wrapper that uses {@link Paths.DefaultPathDescriptor} to print expanded paths.
      * All expanded paths will be printed using System.out.
-     * @param source
+     * @param source    {@link PathExpander} to wrap.
+     * @param <STATE>   the type of the object that holds the state
      * @return A new {@link PathExpander}.
      */
     public static <STATE> PathExpander<STATE> printingWrapper( final PathExpander<STATE> source )
@@ -172,6 +173,7 @@ public abstract class PathExpanders
      * Will use System.out as {@link PrintStream}.
      * @param source    {@link PathExpander} to wrap.
      * @param pred      {@link BiFunction} used as predicate for printing expansion.
+     * @param <STATE>   the type of the object that holds the state
      * @return          A new {@link PathExpander}.
      */
     public static <STATE> PathExpander<STATE> printingWrapper(
@@ -188,6 +190,7 @@ public abstract class PathExpanders
      * Will use System.out as {@link PrintStream}.
      * @param source        {@link PathExpander} to wrap.
      * @param descriptor    {@link Paths.PathDescriptor} to use when printing paths.
+     * @param <STATE>       the type of the object that holds the state
      * @return              A new {@link PathExpander}.
      */
     public static <STATE> PathExpander<STATE> printingWrapper(
@@ -211,6 +214,7 @@ public abstract class PathExpanders
      * @param source    {@link PathExpander} to wrap.
      * @param pred      {@link BiFunction} used as predicate for printing expansion.
      * @param descriptor    {@link Paths.PathDescriptor} to use when printing paths.
+     * @param <STATE>   the type of the object that holds the state
      * @return          A new {@link PathExpander}.
      */
     public static <STATE> PathExpander<STATE> printingWrapper(
@@ -228,6 +232,7 @@ public abstract class PathExpanders
      * @param pred          {@link BiFunction} used as predicate for printing expansion.
      * @param descriptor    {@link Paths.PathDescriptor} to use when printing paths.
      * @param out           {@link PrintStream} to use for printing expanded paths
+     * @param <STATE>       the type of the object that holds the state
      * @return              A new {@link PathExpander}.
      */
     public static <STATE> PathExpander<STATE> printingWrapper(

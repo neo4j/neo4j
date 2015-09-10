@@ -19,16 +19,16 @@
  */
 package org.neo4j.helpers.collection;
 
-import org.neo4j.function.Predicate;
-import org.neo4j.function.Predicates;
-
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
+
 /**
  * An iterable which filters another iterable, only letting items with certain
- * criterias pass through. All iteration/filtering is done lazily.
+ * criteria pass through. All iteration/filtering is done lazily.
  *
  * @param <T> the type of items in the iteration.
  */
@@ -39,6 +39,8 @@ public class FilteringIterable<T> implements Iterable<T>
 
     /**
      * @deprecated use {@link #FilteringIterable(Iterable, Predicate)} instead
+     * @param source iterable to fetch items from
+     * @param predicate filter to decide which items to pass through
      */
     @Deprecated
 	public FilteringIterable( Iterable<T> source, org.neo4j.helpers.Predicate<T> predicate )
@@ -69,6 +71,8 @@ public class FilteringIterable<T> implements Iterable<T>
 
     /**
      * @deprecated use {@link Predicates#noDuplicates()} instead
+     * @param <T> the type of the elements
+     * @return a filter which skips duplicates
      */
     @Deprecated
     public static <T> org.neo4j.helpers.Predicate<T> noDuplicatesPredicate()
@@ -86,6 +90,8 @@ public class FilteringIterable<T> implements Iterable<T>
 
     /**
      * @deprecated use {@link Predicates#notNull()} instead
+     * @param <T> the type of the elements
+     * @return a filter which skips {@code null}s
      */
     @Deprecated
     @SuppressWarnings("unchecked")

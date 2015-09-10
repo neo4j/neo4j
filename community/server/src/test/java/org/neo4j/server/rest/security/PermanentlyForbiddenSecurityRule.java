@@ -17,27 +17,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers;
+package org.neo4j.server.rest.security;
 
-/**
- * Represents the concept of a cancellation notification towards a task. The implementation for the request will
- * remain application dependent, but the task to be cancelled can use this to discover if cancellation has been
- * requested.
- */
-public interface CancellationRequest
+import javax.servlet.http.HttpServletRequest;
+
+//START SNIPPET: forbiddenRule
+public class PermanentlyForbiddenSecurityRule implements ForbiddingSecurityRule
 {
-    /**
-     * @return True iff a request for cancellation has been issued. It is assumed that the request cannot be withdrawn
-     * so once this method returns true it must always return true on all subsequent calls.
-     */
-    boolean cancellationRequested();
 
-    CancellationRequest NEVER_CANCELLED = new CancellationRequest()
+    public static final String REALM = "WallyWorld"; // as per RFC2617 :-)
+
+    @Override
+    public boolean isAuthorized( HttpServletRequest request )
     {
-        @Override
-        public boolean cancellationRequested()
-        {
-            return false;
-        }
-    };
+        return true; // always authenticated
+    }
+
+    @Override
+    public boolean isForbidden(HttpServletRequest request)
+    {
+        return true;
+    }
+
+    @Override
+    public String forUriPath()
+    {
+        return "/*";
+    }
+
+    @Override
+    public String wwwAuthenticateHeader()
+    {
+        return SecurityFilter.basicAuthenticationResponse(REALM);
+    }
 }
+// END SNIPPET: forbiddenRule

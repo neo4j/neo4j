@@ -375,11 +375,11 @@ public abstract class GraphAlgoFactory
     /**
      * See {@link #dijkstra(PathExpander, CostEvaluator)} for documentation
      *
-     * Instead of finding all shortest paths with equal cost, find the top {@param numberOfWantedPaths} paths.
+     * Instead of finding all shortest paths with equal cost, find the top {@code numberOfWantedPaths} paths.
      * This is usually slower than finding all shortest paths with equal cost.
      *
      * Uses a cost evaluator which uses the supplied property key to
-     * represent the cost (values of type <bold>double</bold>).
+     * represent the cost (values of type <b>double</b>).
      *
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Path}.
@@ -398,7 +398,7 @@ public abstract class GraphAlgoFactory
     /**
      * See {@link #dijkstra(PathExpander, CostEvaluator)} for documentation
      *
-     * Instead of finding all shortest paths with equal cost, find the top {@param numberOfWantedPaths} paths.
+     * Instead of finding all shortest paths with equal cost, find the top {@code numberOfWantedPaths} paths.
      * This is usually slower than finding all shortest paths with equal cost.
      *
      * @param expander the {@link PathExpander} to use for expanding

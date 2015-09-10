@@ -150,6 +150,8 @@ public class Exceptions
 
     /**
      * @deprecated use {@link org.neo4j.function.Predicates#instanceOfAny(Class[])} instead
+     * @param types the exception types to check against
+     * @return a predicate which determines if a {@link Throwable} is among the given types
      */
     @Deprecated
     public static Predicate<Throwable> exceptionsOfType( final Class<? extends Throwable>... types )
@@ -272,6 +274,9 @@ public class Exceptions
 
     /**
      * @deprecated use {@link #contains(Throwable, org.neo4j.function.Predicate)} instead
+     * @param cause the cause we have
+     * @param toLookFor predicate for the cause we are looking for
+     * @return {@code true} if the cause was found
      */
     @Deprecated
     public static boolean contains( Throwable cause, Predicate<Throwable> toLookFor )
@@ -294,6 +299,8 @@ public class Exceptions
 
     /**
      * @deprecated use {@link org.neo4j.function.Predicates#instanceOfAny(Class[])} instead
+     * @param anyOfTheseClasses classes to match against
+     * @return a predicate which yields {@code true} if an item is an instance of any of the given classes
      */
     @Deprecated
     public static Predicate<Throwable> isAnyOfClasses( final Class... anyOfTheseClasses )
@@ -426,6 +433,8 @@ public class Exceptions
 
     /**
      * @deprecated use {@link #briefOneLineStackTraceInformation(org.neo4j.function.Predicate)} instead
+     * @param toInclude predicate which decides which stack trace elements to include
+     * @return the filtered brief stack traces
      */
     @Deprecated
     public static String briefOneLineStackTraceInformation( Predicate<StackTraceElement> toInclude )

@@ -48,7 +48,6 @@ import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.StoreCopyClient;
-import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.DependencyResolver;
@@ -62,6 +61,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.MasterClient214;
+import org.neo4j.kernel.ha.PullerFactory;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
@@ -87,7 +87,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
@@ -531,7 +530,7 @@ public class HighAvailabilityMemberStateMachineTest
                 thenReturn( new DeadSimpleTransactionIdStore() );
         when( dependencyResolver.resolveDependency( ClusterMembers.class ) ).thenReturn( members );
         UpdatePuller updatePuller = mock( UpdatePuller.class );
-        when( updatePuller.await( any( UpdatePuller.Condition.class ), anyBoolean() )).thenReturn( true );
+        when( updatePuller.tryPullUpdates() ).thenReturn( true );
         when( dependencyResolver.resolveDependency( UpdatePuller.class ) ).thenReturn( updatePuller );
 
         ClusterMemberAvailability clusterMemberAvailability = mock( ClusterMemberAvailability.class );
@@ -619,36 +618,30 @@ public class HighAvailabilityMemberStateMachineTest
         when( pageCacheMock.map( any( File.class ), anyInt() ) ).thenReturn( pagedFileMock );
 
         TransactionIdStore transactionIdStoreMock = mock( TransactionIdStore.class );
-        when( transactionIdStoreMock.getLastCommittedTransaction() ).thenReturn( new long[] {0, 0} );
-        SwitchToSlave switchToSlave = new SwitchToSlave( new File(""), NullLogService.getInstance(),
+        when( transactionIdStoreMock.getLastCommittedTransaction() ).thenReturn( new long[]{0, 0} );
+        SwitchToSlave switchToSlave = new SwitchToSlave( new File( "" ), NullLogService.getInstance(),
                 mock( FileSystemAbstraction.class ),
                 members,
                 config, dependencyResolver,
                 mock( HaIdGeneratorFactory.class ),
                 handler,
                 mock( ClusterMemberAvailability.class ), mock( RequestContextFactory.class ),
+                mock( PullerFactory.class ),
                 Iterables.<KernelExtensionFactory<?>>empty(), masterClientResolver,
                 monitor,
                 new StoreCopyClient.Monitor.Adapter(),
                 Suppliers.singleton( dataSource ),
                 Suppliers.singleton( transactionIdStoreMock ),
-                new Factory<Slave>()
+                new Function<Slave,SlaveServer>()
                 {
                     @Override
-                    public Slave newInstance()
+                    public SlaveServer apply( Slave slave ) throws RuntimeException
                     {
-                        return mock( Slave.class );
+                        SlaveServer mock = mock( SlaveServer.class );
+                        when( mock.getSocketAddress() ).thenReturn( new InetSocketAddress( "localhost", 123 ) );
+                        return mock;
                     }
-                }, new Function<Slave, SlaveServer>()
-        {
-            @Override
-            public SlaveServer apply( Slave slave ) throws RuntimeException
-            {
-                SlaveServer mock = mock( SlaveServer.class );
-                when( mock.getSocketAddress() ).thenReturn( new InetSocketAddress( "localhost", 123 ) );
-                return mock;
-            }
-        }, updatePuller, pageCacheMock, mock( Monitors.class ), transactionCounters );
+                }, updatePuller, pageCacheMock, mock( Monitors.class ), transactionCounters );
 
         HighAvailabilityModeSwitcher haModeSwitcher = new HighAvailabilityModeSwitcher( switchToSlave,
                 mock( SwitchToMaster.class ), election, clusterMemberAvailability, mock( ClusterClient.class ),
