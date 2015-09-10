@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
 
+import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -35,7 +36,6 @@ import org.neo4j.kernel.impl.transaction.command.HighIdTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.IndexTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
-import org.neo4j.concurrent.WorkSync;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.function.Optional;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
@@ -48,7 +48,7 @@ import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 public class TransactionRepresentationStoreApplier
 {
     private final NeoStore neoStore;
-    private final IndexingService indexingService;
+    protected final IndexingService indexingService;
     private final CacheAccessBackDoor cacheAccess;
     private final LockService lockService;
     private final Provider<LabelScanWriter> labelScanWriters;

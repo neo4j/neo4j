@@ -25,9 +25,11 @@ import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -58,8 +60,8 @@ import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
  */
 public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, Lifecycle
 {
-    private static final int DEFAULT_BATCH_SIZE = 100;
     private final DependencyResolver resolver;
+    private final Function<DependencyResolver,IndexUpdatesValidator> validatorFunction;
     private final TransactionQueue transactionQueue;
     // Visits all queued transactions, committing them
     private final TransactionVisitor batchCommitter = new TransactionVisitor()
@@ -84,40 +86,57 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         {
             long transactionId = transaction.getCommitEntry().getTxId();
             TransactionRepresentation representation = transaction.getTransactionRepresentation();
-            try
+            commitmentAccess.get().publishAsCommitted();
+            try ( LockGroup locks = new LockGroup();
+                  ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate( representation ) )
             {
-                commitmentAccess.get().publishAsCommitted();
-                try ( LockGroup locks = new LockGroup();
-                      ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate( representation, EXTERNAL ) )
-                {
-                    storeApplier.apply( representation, indexUpdates, locks, transactionId, EXTERNAL );
-                    handler.accept( transaction );
-                }
+                storeApplier.apply( representation, indexUpdates, locks, transactionId, EXTERNAL );
+                handler.accept( transaction );
             }
-            finally
+        }
+    };
+    private final TransactionVisitor batchCloser = new TransactionVisitor()
+    {
+        @Override
+        public void visit( CommittedTransactionRepresentation transaction, TxHandler handler,
+                Access<Commitment> commitmentAccess ) throws IOException
+        {
+            if ( commitmentAccess.get().markedAsCommitted() )
             {
-                transactionIdStore.transactionClosed( transactionId );
+                transactionIdStore.transactionClosed( transaction.getCommitEntry().getTxId() );
             }
         }
     };
     private TransactionAppender appender;
-    private TransactionRepresentationStoreApplier storeApplier;
+    private BatchingTransactionRepresentationStoreApplier storeApplier;
     private IndexUpdatesValidator indexUpdatesValidator;
     private TransactionIdStore transactionIdStore;
     private TransactionObligationFulfiller obligationFulfiller;
     private LogFile logFile;
     private LogRotation logRotation;
-    private volatile boolean stopped = false;
+    private volatile boolean stopped;
     private KernelHealth kernelHealth;
-
-    public TransactionCommittingResponseUnpacker( DependencyResolver resolver )
-    {
-        this( resolver, DEFAULT_BATCH_SIZE );
-    }
+    private final Function<DependencyResolver,BatchingTransactionRepresentationStoreApplier> applierFunction;
 
     public TransactionCommittingResponseUnpacker( DependencyResolver resolver, int maxBatchSize )
     {
         this.resolver = resolver;
+        this.validatorFunction = new DefaultIndexUpdatesValidatorCreator();
+        this.applierFunction = new DefaultBatchingStoreApplierCreator();
+        this.transactionQueue = new TransactionQueue( maxBatchSize );
+    }
+
+    public TransactionCommittingResponseUnpacker( DependencyResolver resolver, int maxBatchSize,
+            // These two are just for testing purposes, to inject different behaviour.
+            // It's made hard by the fact this class is not accepting dependencies in its constructor,
+            // rather has a weird place in the lifecycle of things where it needs to pull things
+            // out in #start()
+            Function<DependencyResolver,IndexUpdatesValidator> validatorFunction,
+            Function<DependencyResolver,BatchingTransactionRepresentationStoreApplier> applierFunction )
+    {
+        this.resolver = resolver;
+        this.validatorFunction = validatorFunction;
+        this.applierFunction = applierFunction;
         this.transactionQueue = new TransactionQueue( maxBatchSize );
     }
 
@@ -179,7 +198,25 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
                     // changed before that change would have ended up in the log, it would be fine sine as a slave
                     // you would pull that transaction again anyhow before making changes to (after reading) any record.
                     appender.force();
-                    transactionQueue.accept( batchApplier );
+                    try
+                    {
+                        // Apply all transactions to the store. Only apply, i.e. mark as committed, not closed.
+                        // We mark as closed below.
+                        transactionQueue.accept( batchApplier );
+                        // Ensure that all changes are flushed to the store, we're doing some batching of transactions
+                        // here so some shortcuts are taken in places. Although now comes the time where we must
+                        // ensure that all pending changes are applied and flushed properly.
+                        storeApplier.closeBatch();
+                    }
+                    finally
+                    {
+                        // Mark the applied transactions as closed. We must do this as a separate step after
+                        // applying them, with a closeBatch() call in between, otherwise there might be
+                        // threads waiting for transaction obligations to be fulfilled and since they are looking
+                        // at last closed transaction id they might get notified to continue before all data
+                        // has actually been flushed properly.
+                        transactionQueue.accept( batchCloser );
+                    }
                 }
             }
             catch ( IOException e )
@@ -204,8 +241,8 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     public void start() throws Throwable
     {
         this.appender = resolver.resolveDependency( LogicalTransactionStore.class ).getAppender();
-        this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class );
-        this.indexUpdatesValidator = resolver.resolveDependency( IndexUpdatesValidator.class );
+        this.storeApplier = applierFunction.apply( resolver );
+        this.indexUpdatesValidator = validatorFunction.apply( resolver );
         this.transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
         this.obligationFulfiller = resolveTransactionObligationFulfiller( resolver );
         this.logFile = resolver.resolveDependency( LogFile.class );

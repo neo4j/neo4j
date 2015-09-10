@@ -52,7 +52,7 @@ public class LogRotationControl
 
     public void forceEverything()
     {
-        indexingService.flushAll();
+        indexingService.forceAll();
         labelScanStore.force();
         for ( IndexImplementation index : indexProviders )
         {

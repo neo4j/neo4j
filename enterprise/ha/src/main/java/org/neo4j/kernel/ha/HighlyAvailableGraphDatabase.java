@@ -187,7 +187,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 getDependencyResolver() ) );
 
         this.responseUnpacker = dependencies.satisfyDependency(
-                new TransactionCommittingResponseUnpacker( getDependencyResolver() ) );
+                new TransactionCommittingResponseUnpacker( getDependencyResolver(),
+                        config.get( HaSettings.pull_apply_batch_size ) ) );
 
         kernelProvider = new Provider<KernelAPI>()
         {

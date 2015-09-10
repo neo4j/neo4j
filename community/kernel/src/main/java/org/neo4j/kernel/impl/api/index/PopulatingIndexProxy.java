@@ -90,6 +90,7 @@ public class PopulatingIndexProxy implements IndexProxy
         switch ( mode )
         {
             case ONLINE:
+            case BATCHED:
                 return new PopulatingIndexUpdater()
                 {
                     @Override
@@ -98,18 +99,6 @@ public class PopulatingIndexProxy implements IndexProxy
                         job.update( update );
                     }
                 };
-
-            case RECOVERY:
-                return new PopulatingIndexUpdater()
-                {
-                    @Override
-                    public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
-                    {
-                        throw new UnsupportedOperationException( "Recovered updates shouldn't reach this place" );
-                    }
-                };
-
-
             default:
                 return new PopulatingIndexUpdater()
                 {
@@ -149,7 +138,13 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public void force()
     {
-        // Ignored... I think
+        // Ignored... this isn't controlled from the outside while we're populating the index.
+    }
+
+    @Override
+    public void flush() throws IOException
+    {
+        // Ignored... this isn't controlled from the outside while we're populating the index.
     }
 
     @Override

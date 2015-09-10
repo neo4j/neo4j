@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.search.IndexSearcher;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-
-import org.apache.lucene.search.IndexSearcher;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.CancellationRequest;
@@ -52,15 +52,7 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor
     @Override
     public IndexUpdater newUpdater( final IndexUpdateMode mode )
     {
-        if ( mode != IndexUpdateMode.RECOVERY )
-        {
-            return new LuceneUniquePropertyIndexUpdater( super.newUpdater( mode ) );
-        }
-        else
-        {
-            /* If we are in recovery, don't handle the business logic of validating uniqueness. */
-            return super.newUpdater( mode );
-        }
+        return new LuceneUniquePropertyIndexUpdater( super.newUpdater( mode ) );
     }
 
     @Override

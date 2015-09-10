@@ -170,6 +170,7 @@ class BatchingTransactionAppender implements TransactionAppender
         private final long transactionId;
         private final long transactionChecksum;
         private final TransactionIdStore transactionIdStore;
+        private boolean markedAsCommitted;
 
         TransactionCommitment( boolean hasLegacyIndexChanges, long transactionId, long transactionChecksum,
                                TransactionIdStore transactionIdStore )
@@ -183,7 +184,14 @@ class BatchingTransactionAppender implements TransactionAppender
         @Override
         public void publishAsCommitted()
         {
+            markedAsCommitted = true;
             transactionIdStore.transactionCommitted( transactionId, transactionChecksum );
+        }
+
+        @Override
+        public boolean markedAsCommitted()
+        {
+            return markedAsCommitted;
         }
     }
 
