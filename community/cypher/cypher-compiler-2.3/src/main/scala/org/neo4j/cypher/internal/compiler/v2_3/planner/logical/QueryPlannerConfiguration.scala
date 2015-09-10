@@ -42,22 +42,22 @@ object QueryPlannerConfiguration {
     leafPlanners = LeafPlannerList(
       argumentLeafPlanner,
 
-      // MATCH n WHERE id(n) IN ... RETURN n
+      // MATCH (n) WHERE id(n) IN ... RETURN n
       idSeekLeafPlanner,
 
-      // MATCH n WHERE n.prop IN ... RETURN n
+      // MATCH (n) WHERE n.prop IN ... RETURN n
       uniqueIndexSeekLeafPlanner,
 
-      // MATCH n WHERE n.prop IN ... RETURN n
+      // MATCH (n) WHERE n.prop IN ... RETURN n
       indexSeekLeafPlanner,
 
-      // MATCH n WHERE has(n.prop) RETURN n
+      // MATCH (n) WHERE has(n.prop) RETURN n
       indexScanLeafPlanner,
 
       // MATCH (n:Person) RETURN n
       labelScanLeafPlanner,
 
-      // MATCH n RETURN n
+      // MATCH (n) RETURN n
       allNodesLeafPlanner,
 
       // Legacy indices

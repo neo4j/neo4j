@@ -28,9 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.Cardinali
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
-import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, SemanticDirection, ast, symbols}
-import org.neo4j.function
-import org.neo4j.graphdb.Relationship
+import org.neo4j.cypher.internal.frontend.v2_3._
 
 case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends CollectionSupport {
   def solvePredicate(plan: LogicalPlan, solved: Expression)(implicit context: LogicalPlanningContext) =
@@ -340,6 +338,19 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                            (implicit context: LogicalPlanningContext) = {
     val solved = inner.solved.updateTailOrSelf(_.updateQueryProjection(_.withProjections(expressions)))
     Projection(inner, expressions)(solved)
+  }
+
+  def planCountStoreNodeAggregation(inner: LogicalPlan, idName: IdName, labelName: Option[String], argumentIds: Set[IdName])(implicit context: LogicalPlanningContext) = {
+    val solved = inner.solved
+    CountStoreNodeAggregation(idName, labelName, argumentIds)(solved)
+  }
+
+  def planCountStoreRelationshipAggregation(inner: LogicalPlan, idName: IdName, startLabelName: Option[String],
+                                            typeNames: Seq[RelTypeName], endLabelName: Option[String],
+                                            argumentIds: Set[IdName])
+                                           (implicit context: LogicalPlanningContext) = {
+    val solved = inner.solved
+    CountStoreRelationshipAggregation(idName, startLabelName, typeNames, endLabelName, argumentIds)(solved)
   }
 
   def planSkip(inner: LogicalPlan, count: Expression)(implicit context: LogicalPlanningContext) = {

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.{projection, sortSkipAndLimit, aggregation}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.{considerAggregationByCountStore, projection, sortSkipAndLimit, aggregation}
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 
@@ -36,7 +36,8 @@ case class PlanEventHorizon(config: QueryPlannerConfiguration = QueryPlannerConf
     val projectedPlan = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
         val aggregationPlan = aggregation(selectedPlan, aggregatingProjection)
-        sortSkipAndLimit(aggregationPlan, query)
+        val aggregationByCountStore = considerAggregationByCountStore(aggregationPlan, query)
+        sortSkipAndLimit(aggregationByCountStore, query)
 
       case queryProjection: RegularQueryProjection =>
         val sortedAndLimited = sortSkipAndLimit(selectedPlan, query)

@@ -144,6 +144,11 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
                                         relTypes: Seq[String]): Iterator[Path] =
     manyDbHits(inner.variableLengthPathExpand(node, realNode, minHops, maxHops, direction, relTypes))
 
+  def nodeCountByCountStore(labelId: Int): Long = inner.nodeCountByCountStore(labelId)
+
+  def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int): Long =
+    inner.relationshipCountByCountStore(startLabelId, typeId, endLabelId)
+
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {
