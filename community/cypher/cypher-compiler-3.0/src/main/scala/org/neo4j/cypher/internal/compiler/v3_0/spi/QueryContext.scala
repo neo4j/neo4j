@@ -137,6 +137,11 @@ trait QueryContext extends TokenContext {
                                maxHops: Option[Int],
                                direction: SemanticDirection,
                                relTypes: Seq[String]): Iterator[Path]
+
+  def nodeCountByCountStore(labelId: Int): Long
+
+  def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int): Long
+
 }
 
 trait LockingQueryContext extends QueryContext {

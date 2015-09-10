@@ -513,4 +513,13 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     }
     traversalDescription.traverse(realNode).iterator().asScala
   }
+
+  def nodeCountByCountStore(labelId: Int): Long = {
+    statement.readOperations().countsForNode(labelId)
+  }
+
+  def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int): Long = {
+    statement.readOperations().countsForRelationship(startLabelId, typeId, endLabelId)
+  }
+
 }
