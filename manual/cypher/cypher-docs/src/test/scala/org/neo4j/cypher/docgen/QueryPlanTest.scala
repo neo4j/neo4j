@@ -134,6 +134,20 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     )
   }
 
+  @Test def eager() {
+    profileQuery(
+      title = "Eager",
+      text =
+        """For isolation purposes this operator makes sure that operations that affect subsequent operations are executed fully for the whole dataset before continuing execution. 
+           | Otherwise it could trigger endless loops, matching data again, that was just created.
+           | The Eager operator can cause high memory usage when importing data or migrating graph structures.
+           | In such cases split up your operations into simpler steps e.g. you can import nodes and relationships separately. 
+           | Alternatively return the records to be updated and run an update statement afterwards.""".stripMargin,
+      queryText = """MATCH (p:Person) MERGE (:Person:Clone {name:p.name})""",
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Eager"))
+    )
+  }
+
   @Test def updateGraph() {
     profileQuery(
       title = "Update Graph",
