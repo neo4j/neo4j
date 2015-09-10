@@ -169,6 +169,13 @@ public class Predicates
 
     /**
      * @deprecated use {@link #await(Supplier, Predicate, long, TimeUnit)} instead
+     * @param provider the provider
+     * @param predicate the predicate
+     * @param timeout the timeout
+     * @param unit the unit
+     * @param <TYPE> the type
+     * @throws InterruptedException if interrupted
+     * @throws TimeoutException if timeout occurs
      */
     @Deprecated
     public static <TYPE> void await( final Provider<TYPE> provider, Predicate<TYPE> predicate, long timeout, TimeUnit unit )
@@ -186,6 +193,13 @@ public class Predicates
 
     /**
      * @deprecated use {@link org.neo4j.function.Predicates#await(Supplier, org.neo4j.function.Predicate, long, TimeUnit)} instead
+     * @param supplier the supplier
+     * @param predicate the predicate
+     * @param timeout the timeout
+     * @param unit the unit
+     * @param <TYPE> the type
+     * @throws InterruptedException if interrupted
+     * @throws TimeoutException if timeout occurs
      */
     @Deprecated
     public static <TYPE> void await( Supplier<TYPE> supplier, Predicate<TYPE> predicate, long timeout, TimeUnit unit )

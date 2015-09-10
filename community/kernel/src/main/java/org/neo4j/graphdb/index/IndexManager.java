@@ -194,12 +194,14 @@ public interface IndexManager
 
     /**
      * @deprecated this feature will be removed in a future release, please consider using schema indexes instead
+     * @return the auto indexing manager for nodes
      */
     @Deprecated
     AutoIndexer<Node> getNodeAutoIndexer();
 
     /**
      * @deprecated this feature will be removed in a future release, please consider using schema indexes instead
+     * @return the auto indexing manager for relationships
      */
     @Deprecated
     RelationshipAutoIndexer getRelationshipAutoIndexer();

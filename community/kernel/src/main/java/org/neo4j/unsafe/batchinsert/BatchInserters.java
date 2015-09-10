@@ -53,6 +53,7 @@ public final class BatchInserters
      *
      * @param storeDir the store directory
      * @return a new {@link BatchInserter}
+     * @throws IOException if there is an IO error
      */
     public static BatchInserter inserter( File storeDir ) throws IOException
     {
@@ -79,6 +80,7 @@ public final class BatchInserters
      * @param storeDir the store directory
      * @param config configuration settings to use
      * @return a new {@link BatchInserter}
+     * @throws IOException if there is an IO error
      */
     public static BatchInserter inserter( File storeDir, Map<String,String> config ) throws IOException
     {
@@ -88,7 +90,6 @@ public final class BatchInserters
     /**
      * @deprecated use {@link #inserter(File)} instead
      * @param storeDir the store directory
-     * @param config configuration settings to use
      * @param fileSystem the file system abstraction to use
      * @return a new {@link BatchInserter}
      */
@@ -103,9 +104,9 @@ public final class BatchInserters
      *
      * @param storeDir the store directory
      * @param fileSystem the file system abstraction to use
-     * @param config configuration settings to use
      * @return a new {@link BatchInserter}
      * @deprecated use {@link #inserter(File)} instead
+     * @throws IOException if there is an IO error
      */
     @Deprecated
     public static BatchInserter inserter( File storeDir, FileSystemAbstraction fileSystem ) throws IOException
@@ -138,9 +139,11 @@ public final class BatchInserters
      * Get a {@link BatchInserter} given a store directory.
      *
      * @param storeDir the store directory
+     * @param fileSystem the file system abstraction to use
      * @param config configuration settings to use
      * @return a new {@link BatchInserter}
      * @deprecated use {@link #inserter(File, Map)} instead
+     * @throws IOException if there is an IO error
      */
     @Deprecated
     @SuppressWarnings( { "unchecked", "rawtypes" } )
@@ -152,6 +155,11 @@ public final class BatchInserters
 
     /**
      * @deprecated use {@link #inserter(File, Map, Iterable)} instead
+     * @param storeDir the store directory
+     * @param fileSystem the file system abstraction to use
+     * @param config configuration settings to use
+     * @param kernelExtensions kernel extensions
+     * @return a new {@link BatchInserter}
      */
     @Deprecated
     public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem,

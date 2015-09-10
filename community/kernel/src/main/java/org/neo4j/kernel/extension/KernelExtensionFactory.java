@@ -46,7 +46,7 @@ public abstract class KernelExtensionFactory<DEPENDENCIES> extends Service
      *
      * @param dependencies Dependencies
      * @return the lifecycle for the instance
-     * @deprecated use {@link #newInstance(KernelContext, DEPENDENCIES)} instead
+     * @deprecated use {@link #newInstance(KernelContext, Object)} instead
      * @throws Throwable depends on the implementation
      */
     @Deprecated
@@ -62,6 +62,7 @@ public abstract class KernelExtensionFactory<DEPENDENCIES> extends Service
      * @param context the context the extension should be created for
      * @param dependencies deprecated
      * @return the {@link Lifecycle} for the extension
+     * @throws Throwable if there is an error
      */
     public Lifecycle newInstance( @SuppressWarnings( "unused" ) KernelContext context, DEPENDENCIES dependencies ) throws Throwable
     {

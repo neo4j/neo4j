@@ -594,7 +594,8 @@ public abstract class IteratorUtil
      *
      * @param <T> the type of items in the iterator.
      * @param iterable the {@link Iterable} to count items in.
-     * @return the number of found in {@code iterator}.
+     * @param filter the filter to apply
+     * @return the number of items found in {@code iterator}.
      */
     public static <T> int count( Iterable<T> iterable, org.neo4j.helpers.Predicate<T> filter )
     {

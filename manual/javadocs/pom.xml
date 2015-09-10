@@ -161,7 +161,7 @@ the relevant Commercial Agreement.
               <windowtitle>Neo4j ${project.version} API</windowtitle>
               <show>public</show>
               <excludePackageNames>
-*.impl.*:*.internal.*:org.neo4j.ext.udc:org.neo4j.kernel:org.neo4j.kernel.extension:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*:org.apache.lucene.index:org.neo4j.cluster.*:org.neo4j.helpers.progress:org.neo4j.kernel.configuration:org.neo4j.kernel.guard:org.neo4j.kernel.info:org.neo4j.kernel.logging:org.neo4j.backup.log:org.neo4j.helpers.logging
+*.impl.*:*.internal.*:org.neo4j.ext.udc:org.neo4j.kernel:org.neo4j.kernel.extension:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*:org.apache.lucene.index:org.neo4j.cluster.*:org.neo4j.helpers.progress:org.neo4j.kernel.configuration:org.neo4j.kernel.guard:org.neo4j.kernel.info:org.neo4j.kernel.logging:org.neo4j.backup.log:org.neo4j.helpers.logging:org.neo4j.function:org.neo4j.function.*:org.neo4j.logging:org.neo4j.logging.*:org.neo4j.udc
               </excludePackageNames>
               <groups>
                 <group>

@@ -40,7 +40,7 @@ import static org.neo4j.function.Predicates.not;
  * invoke execute which will begin/commit transactions in a loop for the specified number of times.
  * <p>
  * By default all exceptions (except Errors and TransactionTerminatedException) cause a retry,
- * and the monitor does nothing, but these can be overridden with custom behaviour.
+ * and the monitor does nothing, but these can be overridden with custom behavior.
  * A bit more narrow and typical exception to retry on is {@link TransientFailureException},
  * which aims to represent exceptions that are most likely to succeed after a retry.
  */
@@ -125,6 +125,8 @@ public class TransactionTemplate
 
     /**
      * @deprecated use {@link #retryOn(org.neo4j.function.Predicate)} instead
+     * @param retryPredicate a predicate for deciding whether to retry
+     * @return a new {@link TransactionTemplate}
      */
     @Deprecated
     public TransactionTemplate retryOn( Predicate<Throwable> retryPredicate )

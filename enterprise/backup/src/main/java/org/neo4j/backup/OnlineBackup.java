@@ -78,6 +78,8 @@ public class OnlineBackup
 
     /**
      * @deprecated use {@link #backup(File)} instead
+     * @param targetDirectory A directory holding a complete database previously obtained from the backup server.
+     * @return The same OnlineBackup instance, possible to use for a new backup operation
      */
     @Deprecated
     public OnlineBackup backup( String targetDirectory )
@@ -108,6 +110,9 @@ public class OnlineBackup
 
     /**
      * @deprecated use {@link #backup(File, boolean)} instead
+     * @param targetDirectory A directory holding a complete database previously obtained from the backup server.
+     * @param verification If true, the verification phase will be run.
+     * @return The same OnlineBackup instance, possible to use for a new backup operation
      */
     @Deprecated
     public OnlineBackup backup( String targetDirectory, boolean verification )
@@ -140,6 +145,9 @@ public class OnlineBackup
 
     /**
      * @deprecated use {@link #backup(File, Config)} instead
+     * @param targetDirectory A directory holding a complete database previously obtained from the backup server.
+     * @param tuningConfiguration The {@link Config} to use when running the consistency check
+     * @return The same OnlineBackup instance, possible to use for a new backup operation
      */
     @Deprecated
     public OnlineBackup backup( String targetDirectory, Config tuningConfiguration )
@@ -170,6 +178,10 @@ public class OnlineBackup
 
     /**
      * @deprecated use {@link #backup(File, Config, boolean)} instead
+     * @param targetDirectory A directory holding a complete database previously obtained from the backup server.
+     * @param tuningConfiguration The {@link Config} to use when running the consistency check
+     * @param verification If true, the verification phase will be run.
+     * @return The same OnlineBackup instance, possible to use for a new backup operation.
      */
     @Deprecated
     public OnlineBackup backup( String targetDirectory, Config tuningConfiguration,

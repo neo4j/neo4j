@@ -23,6 +23,8 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.Result.ResultRow;
+
 /**
  * Represents the result of {@link GraphDatabaseService#execute(String, java.util.Map) executing} a query.
  * <p>
@@ -196,7 +198,8 @@ public interface Result extends ResourceIterator<Map<String, Object>>
      * creation perspective.
      *
      * @param visitor the ResultVisitor instance that will see the results of the visit.
-     * @throws VisitationException if the {@linkplain ResultVisitor#visit(ResultRow) visit-method} throws such an
+     * @param <VisitationException> the type of the exception that might get thrown
+     * @throws VisitationException if the {@code visit(ResultRow)} method of {@link ResultVisitor} throws such an
      * exception.
      */
     <VisitationException extends Exception> void accept( ResultVisitor<VisitationException> visitor )
@@ -204,9 +207,10 @@ public interface Result extends ResourceIterator<Map<String, Object>>
 
     /**
      * Describes a row of a result. The contents of this object is only stable during the
-     * {@linkplain ResultVisitor#visit(ResultRow) visit} call. The data it contains can change between calls to
-     * {@linkplain ResultVisitor#visit(ResultRow) the visit method}. Instances of this type should thus not be saved
-     * for later, or shared with other threads, rather the content should be copied.
+     * call to the {@code visit(ResultRow)} method of {@link ResultVisitor}.
+     * The data it contains can change between calls to the {@code visit(ResultRow)} method.
+     * Instances of this type should thus not be saved
+     * for later use, or shared with other threads, rather the content should be copied.
      */
     interface ResultRow
     {
