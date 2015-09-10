@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.ha.factory;
 
+import org.jboss.netty.logging.InternalLoggerFactory;
+
 import java.io.File;
+import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -75,11 +76,11 @@ import org.neo4j.kernel.ha.HighAvailabilityMemberInfoProvider;
 import org.neo4j.kernel.ha.LabelTokenCreatorModeSwitcher;
 import org.neo4j.kernel.ha.LastUpdateTime;
 import org.neo4j.kernel.ha.PropertyKeyCreatorModeSwitcher;
+import org.neo4j.kernel.ha.PullerFactory;
 import org.neo4j.kernel.ha.RelationshipTypeCreatorModeSwitcher;
 import org.neo4j.kernel.ha.TransactionChecksumLookup;
 import org.neo4j.kernel.ha.UpdatePuller;
-import org.neo4j.kernel.ha.UpdatePullerClient;
-import org.neo4j.kernel.ha.UpdatePullingTransactionObligationFulfiller;
+import org.neo4j.kernel.ha.UpdatePullerModeSwitcher;
 import org.neo4j.kernel.ha.cluster.ConversationSPI;
 import org.neo4j.kernel.ha.cluster.DefaultConversationSPI;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
@@ -107,7 +108,6 @@ import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
 import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
-import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.ha.lock.LockManagerModeSwitcher;
@@ -362,25 +362,20 @@ public class HighlyAvailableEditionModule
 
         LastUpdateTime lastUpdateTime = new LastUpdateTime();
 
-        UpdatePuller updatePuller = dependencies.satisfyDependency( life.add(
-                new UpdatePuller( memberStateMachine, requestContextFactory, master, lastUpdateTime,
-                        logging.getInternalLogProvider(), serverId, invalidEpochHandler ) ) );
-        dependencies.satisfyDependency( life.add( new UpdatePullerClient( config.get( HaSettings.pull_interval ),
-                platformModule.jobScheduler, logging.getInternalLogProvider(), updatePuller,
-                platformModule.availabilityGuard ) ) );
-        dependencies.satisfyDependency( life.add( new UpdatePullingTransactionObligationFulfiller(
-                updatePuller, memberStateMachine, serverId,
-                dependencies.provideDependency( TransactionIdStore.class ) ) ) );
+        DelegateInvocationHandler<UpdatePuller> updatePullerDelegate =
+                new DelegateInvocationHandler<>( UpdatePuller.class );
+        UpdatePuller updatePullerProxy = (UpdatePuller) Proxy.newProxyInstance(
+                UpdatePuller.class .getClassLoader(), new Class[]{UpdatePuller.class}, updatePullerDelegate );
+        dependencies.satisfyDependency( updatePullerProxy );
 
+        PullerFactory pullerFactory = new PullerFactory( requestContextFactory, master, lastUpdateTime,
+                logging.getInternalLogProvider(), serverId, invalidEpochHandler,
+                config.get( HaSettings.pull_interval ), platformModule.jobScheduler,
+                dependencies, platformModule.availabilityGuard, memberStateMachine );
 
-        Factory<Slave> slaveFactory = new Factory<Slave>()
-        {
-            @Override
-            public Slave newInstance()
-            {
-                return new SlaveImpl( dependencies.resolveDependency( TransactionObligationFulfiller.class ) );
-            }
-        };
+        TransactionObligationFulfiller fulfiller = pullerFactory.createObligationFulfiller( updatePullerProxy );
+        paxosLife.add( fulfiller );
+        dependencies.satisfyDependency( fulfiller );
 
         Function<Slave, SlaveServer> slaveServerFactory = new Function<Slave, SlaveServer>()
         {
@@ -393,17 +388,17 @@ public class HighlyAvailableEditionModule
             }
         };
 
+
         SwitchToSlave switchToSlaveInstance = new SwitchToSlave( platformModule.storeDir, logging,
-                platformModule.fileSystem, members,
-                config, dependencies, (HaIdGeneratorFactory) idGeneratorFactory,
-                masterDelegateInvocationHandler, clusterMemberAvailability,
-                requestContextFactory, platformModule.kernelExtensions.listFactories(), masterClientResolver,
+                platformModule.fileSystem, members, config, dependencies, (HaIdGeneratorFactory) idGeneratorFactory,
+                masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory, pullerFactory,
+                platformModule.kernelExtensions.listFactories(), masterClientResolver,
                 monitors.newMonitor( SwitchToSlave.Monitor.class ),
                 monitors.newMonitor( StoreCopyClient.Monitor.class ),
                 dependencies.provideDependency( NeoStoreDataSource.class ),
                 dependencies.provideDependency( TransactionIdStore.class ),
-                slaveFactory, slaveServerFactory, updatePuller, platformModule.pageCache, monitors,
-                platformModule.transactionMonitor);
+                slaveServerFactory, updatePullerProxy, platformModule.pageCache,
+                monitors, platformModule.transactionMonitor );
 
         final Factory<MasterImpl.SPI> masterSPIFactory = new Factory<MasterImpl.SPI>()
         {
@@ -499,6 +494,8 @@ public class HighlyAvailableEditionModule
          * We always need the mode switcher and we need it to restart on switchover.
          */
         paxosLife.add( highAvailabilityModeSwitcher );
+        paxosLife.add(
+                new UpdatePullerModeSwitcher( highAvailabilityModeSwitcher, updatePullerDelegate, pullerFactory ) );
 
 
         life.add( requestContextFactory );

@@ -128,7 +128,7 @@ public class TestBasicHaOperations
         }
 
         // which has propagated to the slaves
-        slave.getDependencyResolver().resolveDependency( UpdatePullerClient.class ).pullUpdates();
+        slave.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
 
         // when
         // the slave does a change

@@ -49,7 +49,7 @@ public class UpdatePullingTransactionObligationFulfillerTest
     @Before
     public void setup() throws Throwable
     {
-        when( updatePuller.await( any( UpdatePuller.Condition.class ), anyBoolean() ) ).thenAnswer(
+        doAnswer(
                 new Answer<Boolean>()
                 {
 
@@ -58,7 +58,8 @@ public class UpdatePullingTransactionObligationFulfillerTest
                     {
                         return ((UpdatePuller.Condition) invocation.getArguments()[0]).evaluate( 33, 34 );
                     }
-                } );
+                }
+        ).when( updatePuller ).pullUpdates( any( UpdatePuller.Condition.class ), anyBoolean() );
     }
 
     @Test

@@ -241,7 +241,6 @@ public class HighAvailabilityModeSwitcherTest
         // M1: Get masterIsAvailable for instance 1 at PENDING state, changing PENDING -> TO_SLAVE
         // M2: Get masterIsAvailable for instance 2 at TO_SLAVE state, changing TO_SLAVE -> TO_SLAVE
 
-        System.gc();
         // Given
         final CountDownLatch firstMasterAvailableHandled = new CountDownLatch( 1 );
         final CountDownLatch secondMasterAvailableComes = new CountDownLatch( 1 );
@@ -249,7 +248,7 @@ public class HighAvailabilityModeSwitcherTest
 
         SwitchToSlave switchToSlave = mock( SwitchToSlave.class );
 
-        HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( switchToSlave,
+        HighAvailabilityModeSwitcher modeSwitcher = new HighAvailabilityModeSwitcher( switchToSlave,
                 mock( SwitchToMaster.class ), mock( Election.class ), mock( ClusterMemberAvailability.class ),
                 mock( ClusterClient.class ), mock( Supplier.class ), new InstanceId( 4 ), NullLogService.getInstance() )
         {
@@ -304,9 +303,9 @@ public class HighAvailabilityModeSwitcherTest
                 return executor;
             }
         };
-        toTest.init();
-        toTest.start();
-        toTest.listeningAt( URI.create( "ha://server3?serverId=3" ) );
+        modeSwitcher.init();
+        modeSwitcher.start();
+        modeSwitcher.listeningAt( URI.create( "ha://server3?serverId=3" ) );
 
         // When
 
@@ -318,18 +317,17 @@ public class HighAvailabilityModeSwitcherTest
                 .switchToSlave( any( LifeSupport.class ), any( URI.class ), eq( uri1 ), any( CancellationRequest
                         .class ) );
 
-        toTest.masterIsAvailable( new HighAvailabilityMemberChangeEvent( PENDING, TO_SLAVE, new InstanceId( 1 ), uri1
-        ) );
-        firstMasterAvailableHandled.await(); // wait until the first masterIsAvailable triggers the exception
-        // handling process
+        modeSwitcher.masterIsAvailable(
+                new HighAvailabilityMemberChangeEvent( PENDING, TO_SLAVE, new InstanceId( 1 ), uri1 ) );
+        firstMasterAvailableHandled.await(); // wait until the first masterIsAvailable triggers the exception handling
         verify( switchToSlave ).switchToSlave( any( LifeSupport.class ), any( URI.class ), eq( uri1 ),
                 any( CancellationRequest.class ) );
 
 
         // masterIsAvailable for instance 2
         URI uri2 = URI.create( "ha://server2" );
-        toTest.masterIsAvailable( new HighAvailabilityMemberChangeEvent( TO_SLAVE, TO_SLAVE, new InstanceId( 2 ),
-                uri2 ) );
+        modeSwitcher.masterIsAvailable(
+                new HighAvailabilityMemberChangeEvent( TO_SLAVE, TO_SLAVE, new InstanceId( 2 ), uri2 ) );
         secondMasterAvailableComes.countDown();
         secondMasterAvailableHandled.await(); // wait until switchToSlave method is invoked again
 
