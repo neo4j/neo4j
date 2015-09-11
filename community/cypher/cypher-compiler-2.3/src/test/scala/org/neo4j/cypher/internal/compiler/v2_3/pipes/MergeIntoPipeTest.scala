@@ -21,14 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.mockito.Matchers.{any => mockAny, eq => mockEq}
 import org.mockito.Mockito
-import org.mockito.Mockito._
-import org.mockito.Mockito.{mock => jmock}
+import org.mockito.Mockito.{mock => jmock, _}
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Literal, Expression}
-import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken.Unresolved
-import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{TokenType, KeyToken}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, Literal}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{Operations, QueryContext}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
@@ -37,8 +35,6 @@ import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.DynamicRelationshipType.withName
 import org.neo4j.graphdb.{Node, Relationship}
-
-import scala.collection
 
 class MergeIntoPipeTest extends CypherFunSuite {
 

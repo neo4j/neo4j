@@ -185,4 +185,5 @@ class SnitchingQueryContext extends QueryContext {
   override def variableLengthPathExpand(node: PatternNode, realNode: Node, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]): Iterator[Path] = ???
 
   def getImportURL(url: URL): Either[String,URL] = ???
+  override def createRelationship(start: Long, end: Long, relType: Int) = ???
 }

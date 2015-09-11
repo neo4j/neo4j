@@ -19,12 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import java.util.concurrent.ThreadLocalRandom
-
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsNodes, ReadsRelationships}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsRelationships}
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
@@ -34,7 +32,7 @@ import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.helpers.collection.PrefetchingIterator
 
 import scala.collection.JavaConverters._
-import scala.collection.{Map, mutable}
+import scala.collection.Map
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -43,15 +41,14 @@ import scala.collection.mutable.ArrayBuffer
  *
  * This is done by checking both nodes and starts from any non-dense node of the two.
  * If both nodes are dense, we find the degree of each and expand from the smaller of the two
- *
- * This pipe also caches relationship information between nodes for the duration of the query
  */
 case class MergeIntoPipe(source: Pipe,
                          fromName: String,
                          relName: String,
                          toName: String,
                          dir: SemanticDirection,
-                         typ: String, props: Map[KeyToken, Expression],
+                         typ: String,
+                         props: Map[KeyToken, Expression],
                          onCreateProperties: Map[KeyToken, Expression],
                          onMatchProperties: Map[KeyToken, Expression])(val estimatedCardinality: Option[Double] = None)
                         (implicit pipeMonitor: PipeMonitor)
@@ -64,29 +61,23 @@ case class MergeIntoPipe(source: Pipe,
     input.flatMap {
       row =>
         val fromNode = getRowNode(row, fromName)
-        fromNode match {
-          case fromNode: Node =>
-            val toNode = getRowNode(row, toName)
+        val toNode = getRowNode(row, toName)
 
-            if (toNode == null) throw new RuntimeException("TODO")
-            else {
-              val relationships = findRelationships(fromNode, toNode, typeId)(state, row)
+        if (fromNode == null || toNode == null)
+          Iterator(row.newWith2(relName, null, toName, toNode))
+        else {
+          val relationships = findRelationships(fromNode, toNode, typeId)(state, row)
 
-              if (relationships.isEmpty) {
-                val relationship = state.query.createRelationship(fromNode.getId, toNode.getId, typeId)
-                setPropertiesOnRelationship(row, relationship, state, props ++ onCreateProperties)
-                Iterator(row.newWith2(relName, relationship, toName, toNode))
-              }
-              else {
-                relationships.map { relationship =>
-                  setPropertiesOnRelationship(row, relationship, state, onMatchProperties)
-                  row.newWith2(relName, relationship, toName, toNode)
-                }
-              }
+          if (relationships.isEmpty) {
+            val relationship = state.query.createRelationship(fromNode.getId, toNode.getId, typeId)
+            setPropertiesOnRelationship(row, relationship, state, props ++ onCreateProperties)
+            Iterator(row.newWith2(relName, relationship, toName, toNode))
+          } else {
+            relationships.map { relationship =>
+              setPropertiesOnRelationship(row, relationship, state, onMatchProperties)
+              row.newWith2(relName, relationship, toName, toNode)
             }
-
-          case null =>
-            throw new RuntimeException("TODO")
+          }
         }
     }
   }
@@ -172,7 +163,7 @@ case class MergeIntoPipe(source: Pipe,
 
   val symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 
-  override def localEffects = Effects(ReadsNodes, ReadsRelationships)
+  override def localEffects = Effects(ReadsRelationships)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
