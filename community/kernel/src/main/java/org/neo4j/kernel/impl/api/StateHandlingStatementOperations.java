@@ -1155,18 +1155,15 @@ public class StateHandlingStatementOperations implements
             try
             {
                 statement.txState().accept( new TransactionCountingStateVisitor( null, storeLayer, this,
-                            statement, counts ) );
-                if(counts.hasChanges()) {
+                        statement, counts ) );
+                if ( counts.hasChanges() )
+                {
                     count += counts.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
                 }
             }
-            catch ( ConstraintValidationKernelException e )
+            catch ( ConstraintValidationKernelException | CreateConstraintFailureException e )
             {
-                throw new IllegalArgumentException( "Unexpected error: " + e.getMessage());
-            }
-            catch ( CreateConstraintFailureException e )
-            {
-                throw new IllegalArgumentException( "Unexpected error: " + e.getMessage());
+                throw new IllegalArgumentException( "Unexpected error: " + e.getMessage() );
             }
         }
         return count;
@@ -1175,7 +1172,26 @@ public class StateHandlingStatementOperations implements
     @Override
     public long countsForRelationship( KernelStatement statement, int startLabelId, int typeId, int endLabelId )
     {
-        return storeLayer.countsForRelationship( startLabelId, typeId, endLabelId );
+        long count = storeLayer.countsForRelationship( startLabelId, typeId, endLabelId );
+        if ( statement.hasTxStateWithChanges() )
+        {
+            CountsRecordState counts = new CountsRecordState();
+            try
+            {
+                statement.txState().accept( new TransactionCountingStateVisitor( null, storeLayer, this,
+                        statement, counts ) );
+                if ( counts.hasChanges() )
+                {
+                    count += counts.relationshipCount( startLabelId, typeId, endLabelId, newDoubleLongRegister() )
+                            .readSecond();
+                }
+            }
+            catch ( ConstraintValidationKernelException | CreateConstraintFailureException e )
+            {
+                throw new IllegalArgumentException( "Unexpected error: " + e.getMessage() );
+            }
+        }
+        return count;
     }
 
     @Override

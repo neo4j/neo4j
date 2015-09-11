@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Identifier
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, PlanTransformer}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{AggregatingQueryProjection, PlannerQuery}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{FunctionName, FunctionInvocation}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, PlanTransformer}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
+import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{HasLabels, FunctionName, FunctionInvocation, Identifier}
 
 object considerAggregationByCountStore extends PlanTransformer[PlannerQuery] {
 
@@ -31,11 +32,37 @@ object considerAggregationByCountStore extends PlanTransformer[PlannerQuery] {
       if (groupingKeys.size == 0 && aggregatingExpressions.size == 1) => aggregatingExpressions.head._2 match {
       case FunctionInvocation(FunctionName("count"), false, Vector(Identifier(countName))) => plan match {
         case a: Aggregation => a.left match {
+          // MATCH (n) RETURN count(n)
           case AllNodesScan(nodeId, argumentIds) if (countName == nodeId.name) =>
             context.logicalPlanProducer.planCountStoreNodeAggregation(plan, nodeId, None, argumentIds)
           // MATCH ()-[r]->(), MATCH ()-[r:X]->(), MATCH ()-[r:X|Y]->()
           case Expand(AllNodesScan(nodeId, argumentIds), from, direction, types, to, relId, ExpandAll) if (countName == relId.name) =>
             context.logicalPlanProducer.planCountStoreRelationshipAggregation(plan, relId, None, types, None, argumentIds)
+          // MATCH (:A)-[r]->(), MATCH (:A)<-[r]-()
+          case Expand(NodeByLabelScan(nodeId, label, argumentIds), from, direction, types, to, relId, ExpandAll) if (countName == relId.name) => direction match {
+            // MATCH (:A)-[r]->()
+            case OUTGOING =>
+              context.logicalPlanProducer.planCountStoreRelationshipAggregation(plan, relId, Some(label.name), types, None, argumentIds)
+            // MATCH (:A)<-[r]-()
+            case _ =>
+              context.logicalPlanProducer.planCountStoreRelationshipAggregation(plan, relId, None, types, Some(label.name), argumentIds)
+          }
+          // MATCH (:A)-[r]->(), MATCH (:A)<-[r]-()
+          case Selection(predicates, Expand(AllNodesScan(nodeId, argumentIds), from, direction, types, to, relId, ExpandAll))
+            // TODO: consider predicates with more than just HasLabel, by maintaining a Selection() around the plan
+            if (countName == relId.name && predicates.length == 1) => predicates.head match {
+              case HasLabels(Identifier(nodeIdentifier), labels) if(labels.length == 1) => direction match {
+                // MATCH (:A)<-[r]-()
+                case OUTGOING =>
+                  context.logicalPlanProducer.planCountStoreRelationshipAggregation(plan, relId, None, types, Some(labels.head.name), argumentIds)
+                // MATCH (:A)-[r]->()
+                case _ =>
+                  context.logicalPlanProducer.planCountStoreRelationshipAggregation(plan, relId, Some(labels.head.name), types, None, argumentIds)
+              }
+              case _ => plan
+          }
+          // MATCH (n:A) RETURN count(n)
+            // TODO: This query could be planned with Selection(HasLabels,AllNodeScan), so we should consider this too!
           case NodeByLabelScan(nodeId, label, argumentIds) if (countName == nodeId.name) =>
             context.logicalPlanProducer.planCountStoreNodeAggregation(plan, nodeId, Some(label.name), argumentIds)
           case _ => plan
