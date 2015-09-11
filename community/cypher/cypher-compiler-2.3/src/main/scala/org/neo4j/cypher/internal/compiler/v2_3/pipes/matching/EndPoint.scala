@@ -65,4 +65,6 @@ final case class EndPoint(name: String) extends Trail {
   def add(f: (String) => Trail) = f(name)
 
   def filter(f: (Trail) => Boolean):Iterable[Trail] = Some(this).filter(f)
+
+  override def typ: Seq[String] = Seq.empty
 }

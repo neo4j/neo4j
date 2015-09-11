@@ -220,8 +220,8 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     val hasBothEndNodesInScope = symbols.hasIdentifierNamed(start.name) && symbols.hasIdentifierNamed(end.name)
 
     if (hasBothEndNodesInScope)
-      Effects(ReadsRelationships, ReadsAnyRelationshipProperty, WritesAnyRelationshipProperty, WritesRelationships)
+      Effects(ReadsRelationshipsWithAnyType, CreatesRelationship(relType))
     else
-      AllEffects
+      Effects()
   }
 }

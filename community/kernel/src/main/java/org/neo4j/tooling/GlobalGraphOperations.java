@@ -109,7 +109,11 @@ public class GlobalGraphOperations
                     {
                         assert ids != null : "ids null";
                         assert nodeManager != null : "nodeManager null";
-                        return ids.hasNext() ? nodeManager.newNodeProxyById( ids.next() ) : null;
+                        if (ids.hasNext())
+                            return nodeManager.newNodeProxyById( ids.next() );
+                        else
+                            return null;
+//                        return ids.hasNext() ?  : null;
                     }
                 };
             }

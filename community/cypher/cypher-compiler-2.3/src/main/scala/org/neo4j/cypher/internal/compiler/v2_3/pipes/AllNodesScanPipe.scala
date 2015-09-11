@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ReadsAllNodes, Eff
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
+import org.neo4j.graphdb.Node
 
 case class AllNodesScanPipe(ident: String)(val estimatedCardinality: Option[Double] = None)
                            (implicit pipeMonitor: PipeMonitor) extends Pipe with RonjaPipe {

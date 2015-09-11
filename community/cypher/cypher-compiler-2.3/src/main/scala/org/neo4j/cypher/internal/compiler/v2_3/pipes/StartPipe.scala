@@ -34,8 +34,9 @@ sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     input.flatMap(ctx => {
-      val source = createSource(ctx, state)
+      val source: Iterator[T] = createSource(ctx, state)
       source.map(x => {
+        println(s"received an object from the store. assuming node and getting id: ${x.asInstanceOf[Node].getId}")
         ctx.newWith1(name, x)
       })
     })
@@ -49,7 +50,10 @@ sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,
 case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProducer[Node], itemEffects: Effects = Effects(ReadsAllNodes))(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Node](source, name, createSource, pipeMonitor) {
   def identifierType = CTNode
-  override def localEffects = itemEffects
+
+  def isLeaf = source.sources.isEmpty
+
+  override def localEffects = if (isLeaf) itemEffects else Effects.nonLeaf(itemEffects)
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
@@ -57,12 +61,14 @@ case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProduce
     val (head :: Nil) = sources
     copy(source = head)(estimatedCardinality)
   }
+
+
 }
 
 case class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Relationship](source, name, createSource, pipeMonitor) {
   def identifierType = CTRelationship
-  override def localEffects = Effects(ReadsRelationships)
+  override def localEffects = Effects(ReadsRelationshipsWithAnyType)
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 

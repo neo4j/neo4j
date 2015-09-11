@@ -93,6 +93,7 @@ public class DiffApplyingPrimitiveLongIterator extends PrimitiveLongBaseIterator
             long value = source.next();
             if ( !removedElements.contains( value ) && !addedElements.contains( value ) )
             {
+                System.out.println("RETURNING A NODE FROM store, id is " + value);
                 return next( value );
             }
         }
@@ -107,7 +108,13 @@ public class DiffApplyingPrimitiveLongIterator extends PrimitiveLongBaseIterator
 
     private boolean computeNextFromAddedElements()
     {
-        return addedElementsIterator.hasNext() ? next( (Long) addedElementsIterator.next() ) : false;
+        boolean b = addedElementsIterator.hasNext();
+        if(b) {
+            Long next = (Long) addedElementsIterator.next();
+            System.out.println( "returning an added node with id " + next );
+            return next( next );
+        } else return false;
+
     }
 
     @Override

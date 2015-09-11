@@ -22,17 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EagerPipe, Pipe}
 
 object addEagernessIfNecessary extends (Pipe => Pipe) {
-  private def wouldInterfere(from: Effects, to: Effects): Boolean = {
-    val nodesInterfere = nodesReadInterference(from, to)
-    val relsInterfere = from.contains(ReadsRelationships) && to.contains(WritesRelationships)
-
-    val readWriteInterfereNodes = nodesWriteInterference(from, to)
-    val readWriteInterfereRelationships = from.contains(WritesRelationships) && to.contains(WritesRelationships) &&
-      to.contains(ReadsRelationships)
-
-    nodesInterfere || relsInterfere || readWriteInterfereNodes || readWriteInterfereRelationships ||
-      nodePropertiesInterfere(from, to) || relationshipPropertiesInterfere(from, to)
-  }
 
   def apply(toPipe: Pipe): Pipe = {
     val sources = toPipe.sources.map(apply).map { fromPipe =>
@@ -47,42 +36,61 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
     toPipe.dup(sources.toList)
   }
 
-  private def nodesWriteInterference(from: Effects, to: Effects) = {
-    val fromWrites = from.effectsSet.collect {
-      case writes: WritesNodes => writes
-    }
+  private def wouldInterfere(from: Effects, to: Effects): Boolean = {
+//    val nodesInterfere = nodesReadInterference(from, to)
+//    val relsInterfere = from.contains(ReadsRelationships) && to.contains(WritesRelationships)
 
-    val toReads = to.effectsSet.collect {
-      case reads: ReadsNodes => reads
-    }
-    val toWrites = to.effectsSet.collect {
-      case writes: WritesNodes => writes
-    }
-    (fromWrites.contains(WritesAnyNode) && toWrites.nonEmpty && toReads.nonEmpty) ||
-    (fromWrites.nonEmpty && toWrites.nonEmpty && toReads.contains(ReadsAllNodes)) ||
-      (nodeLabelOverlap(toReads, fromWrites) && toWrites.nonEmpty)
+    val deleteMergeInterfereNodes = nodesDeleteMergeInterference(from, to)
+    val deleteMergeInterfereRelationships = relationshipsDeleteMergeInterference(from, to)
+    val writeReadInterfereNodes = nodesWriteReadInterference(from, to)
+    val readWriteInterfereNodes = nodesReadCreate
+
+    deleteMergeInterfereNodes || deleteMergeInterfereRelationships ||
+      nodePropertiesInterfere(from, to) || relationshipPropertiesInterfere(from, to) || writeReadInterfereNodes
   }
 
-  private def nodesReadInterference(from: Effects, to: Effects) = {
-    val fromReads = from.effectsSet.collect {
-      case reads: ReadsNodes => reads
-    }
-
-    val toWrites = to.effectsSet.collect {
-      case writes: WritesNodes => writes
-    }
-
-    (fromReads.nonEmpty && toWrites.contains(WritesAnyNode)) ||
-      nodeLabelOverlap(fromReads, toWrites)
+  private def nodesWriteReadInterference(from: Effects, to: Effects) = {
+    // Flip the order to reuse this code:
+    readsCreatesSameNode(to, from)
   }
 
-  private def nodeLabelOverlap(reads: Set[ReadsNodes], writes: Set[WritesNodes]) = {
-    val fromLabels = reads.collect {
+  private def relationshipsDeleteMergeInterference(from: Effects, to: Effects) = {
+    from.contains(DeletesRelationship) && readsCreatesSameRelationship(from, to)
+  }
+  private def readsCreatesSameRelationship(from: Effects, to: Effects) = {
+    from.contains(ReadsRelationshipsWithAnyType) && to.effectsSet.exists {
+      case create: CreatesSomeRelationship => true
+      case _ => false
+    } || readsCreatesSameRelationshipWithType(from, to)
+  }
+
+  private def readsCreatesSameRelationshipWithType(from: Effects, to: Effects) = {
+    val fromTypes = from.effectsSet.collect {
+      case ReadsRelationshipsWithType(typ) => typ
+    }
+
+    val toTypes = to.effectsSet.collect {
+      case CreatesRelationship(typ) => typ
+    }
+
+    (fromTypes intersect toTypes).nonEmpty
+  }
+
+  private def nodesDeleteMergeInterference(from: Effects, to: Effects) = {
+    from.contains(DeletesNode) && readsCreatesSameNode(from, to)
+  }
+
+  private def readsCreatesSameNode(from: Effects, to: Effects) = {
+    from.contains(ReadsAllNodes) && to.contains(CreatesAnyNode) || readsCreatesSameNodeWithLabels(from, to)
+  }
+
+  private def readsCreatesSameNodeWithLabels(from: Effects, to: Effects) = {
+    val fromLabels = from.effectsSet.collect {
       case ReadsNodesWithLabels(labels) => labels
     }.flatten
 
-    val toLabels = writes.collect {
-      case WritesNodesWithLabels(labels) => labels
+    val toLabels = to.effectsSet.collect {
+      case CreatesNodesWithLabels(labels) => labels
     }.flatten
 
     (fromLabels intersect toLabels).nonEmpty
@@ -94,16 +102,16 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
     }
 
     val propertyWrites = to.effectsSet.collect {
-      case property: WritesNodeProperty => property
+      case property: SetNodeProperty => property
     }
 
     propertyReads.exists {
       case ReadsAnyNodeProperty => propertyWrites.nonEmpty
-      case ReadsGivenNodeProperty(prop) => propertyWrites(WritesGivenNodeProperty(prop))
+      case ReadsGivenNodeProperty(prop) => propertyWrites(SetGivenNodeProperty(prop))
     } ||
       propertyWrites.exists {
-        case WritesAnyNodeProperty => propertyReads.nonEmpty
-        case WritesGivenNodeProperty(prop) => propertyReads(ReadsGivenNodeProperty(prop))
+        case SetAnyNodeProperty => propertyReads.nonEmpty
+        case SetGivenNodeProperty(prop) => propertyReads(ReadsGivenNodeProperty(prop))
       }
   }
 

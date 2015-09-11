@@ -73,10 +73,8 @@ case class DeleteEntityAction(elementToDelete: Expression, forced: Boolean)
 
   def localEffects(symbols: SymbolTable) = elementToDelete match {
     case i: Identifier => symbols.identifiers(i.entityName) match {
-      case _: NodeType         => Effects(WritesAnyNode, WritesAnyNode, WritesAnyNodeProperty)
-      case _: RelationshipType => Effects(WritesRelationships, WritesAnyRelationshipProperty)
-      case _                   => Effects()
+      case _: NodeType         => Effects(DeletesNode)
+      case _: RelationshipType => Effects(DeletesRelationship)
     }
-    case _ => AllWriteEffects
   }
 }

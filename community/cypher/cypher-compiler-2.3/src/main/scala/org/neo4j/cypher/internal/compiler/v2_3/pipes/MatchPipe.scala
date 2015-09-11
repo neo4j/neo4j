@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.AllReadEffects
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsNodesWithLabels}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{MatchingContext, PatternGraph}
 
 case class MatchPipe(source: Pipe,
@@ -47,7 +46,10 @@ case class MatchPipe(source: Pipe,
     }
   }
 
-  override def localEffects = AllReadEffects
+  override def localEffects = {
+    println("this was used !!!")
+    Effects()
+  }
 
   override def planDescription =
     source.planDescription.andThen(this.id, matchingContext.builder.name, identifiers)

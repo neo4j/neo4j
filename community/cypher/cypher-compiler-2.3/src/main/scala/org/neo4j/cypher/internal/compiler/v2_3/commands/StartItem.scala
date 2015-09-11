@@ -52,7 +52,7 @@ trait ReadOnlyStartItem {
 
 case class RelationshipById(varName: String, expression: Expression)
   extends StartItem(varName, Seq(Arguments.LegacyExpression(expression))) with ReadOnlyStartItem with RelationshipStartItemIdentifiers {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsRelationships)
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsRelationshipsWithAnyType)
 }
 
 case class RelationshipByIndex(varName: String, idxName: String, key: Expression, expression: Expression)
@@ -61,7 +61,7 @@ case class RelationshipByIndex(varName: String, idxName: String, key: Expression
     Arguments.LegacyIndex(idxName),
     Arguments.LegacyExpression(key)))
   with ReadOnlyStartItem with RelationshipStartItemIdentifiers {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsRelationships)
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsRelationshipsWithAnyType)
 }
 
 case class RelationshipByIndexQuery(varName: String, idxName: String, query: Expression)
@@ -69,7 +69,7 @@ case class RelationshipByIndexQuery(varName: String, idxName: String, query: Exp
     Arguments.LegacyIndex(idxName),
     Arguments.LegacyExpression(query)))
   with ReadOnlyStartItem with RelationshipStartItemIdentifiers {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsRelationships)
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsRelationshipsWithAnyType)
 }
 
 case class NodeByIndex(varName: String, idxName: String, key: Expression, expression: Expression)
@@ -150,7 +150,7 @@ case class AllNodes(columnName: String) extends StartItem(columnName, Seq.empty)
 
 case class AllRelationships(columnName: String) extends StartItem(columnName, Seq.empty)
   with ReadOnlyStartItem with RelationshipStartItemIdentifiers {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsRelationships)
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsRelationshipsWithAnyType)
 }
 
 case class LoadCSV(withHeaders: Boolean, url: Expression, identifier: String, fieldTerminator: Option[String]) extends StartItem(identifier, Seq.empty)

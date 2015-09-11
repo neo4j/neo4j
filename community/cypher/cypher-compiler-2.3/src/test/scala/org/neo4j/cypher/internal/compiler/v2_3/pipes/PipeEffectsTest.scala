@@ -42,18 +42,18 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
     -> Effects(),
 
     ExecuteUpdateCommandsPipe(SingleRowPipe(), Seq(CreateNode("n", Map.empty, Seq.empty)))
-    -> Effects(WritesAnyNode),
+    -> Effects(CreatesAnyNode),
 
     ExecuteUpdateCommandsPipe(SingleRowPipe(), Seq(CreateRelationship("r", RelationshipEndpoint("a"), RelationshipEndpoint("b"), "TYPE", Map.empty)))
-    -> Effects(WritesRelationships),
+    -> Effects(CreatesRelationship("TYPE")),
 
     ExecuteUpdateCommandsPipe(SingleRowPipe(), Seq(
       CreateNode("n", Map.empty, Seq.empty),
       CreateRelationship("r", RelationshipEndpoint("a"), RelationshipEndpoint("b"), "TYPE", Map.empty)))
-    -> Effects(WritesAnyNode, WritesRelationships),
+    -> Effects(CreatesAnyNode, CreatesRelationship("TYPE")),
 
     ExecuteUpdateCommandsPipe(SingleRowPipe(), Seq(MergeNodeAction("n", Map.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty, None)))
-      -> Effects(ReadsAllNodes, WritesAnyNode),
+      -> Effects(ReadsAllNodes, CreatesAnyNode),
 
     NodeStartPipe(SingleRowPipe(), "n", mock[EntityProducer[Node]])()
       -> Effects(ReadsAllNodes),
@@ -76,7 +76,7 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
     {
       val trail: Trail = mock[Trail]
       when(trail.predicates).thenReturn(Seq.empty)
-      TraversalMatchPipe(SingleRowPipe(), mock[TraversalMatcher], trail) -> Effects(ReadsAllNodes, ReadsRelationships)
+      TraversalMatchPipe(SingleRowPipe(), mock[TraversalMatcher], trail) -> Effects(ReadsAllNodes, ReadsRelationshipsWithAnyType)
     },
 
     SlicePipe(SingleRowPipe(), Some(Literal(10)), None)

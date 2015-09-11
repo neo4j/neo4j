@@ -50,6 +50,4 @@ case class LabelsFunction(nodeExpr: Expression) extends Expression {
     nodeExpr.evaluateType(CTNode, symbols)
     CTCollection(CTString)
   }
-
-  override def localEffects(symbols: SymbolTable) = Effects()
 }

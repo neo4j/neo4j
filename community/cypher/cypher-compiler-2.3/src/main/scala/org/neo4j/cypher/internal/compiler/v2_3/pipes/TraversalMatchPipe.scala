@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ReadsAllNodes, Effects, ReadsRelationships}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{Trail, TraversalMatcher}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.KeyNames
 
@@ -52,7 +52,16 @@ case class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Tr
   def planDescription =
     source.planDescription.andThen(this.id, "TraversalMatcher", identifiers, KeyNames(trail.pathDescription))
 
-  override def localEffects = trail.predicates.flatten.foldLeft(Effects(ReadsAllNodes, ReadsRelationships))(_ | _.effects(symbols))
+  override def localEffects = {
+    // Add effects from matching nodes and relationships
+    val matcherEffects =
+      if (trail.typ.isEmpty) Effects(ReadsRelationshipBoundNodes, ReadsRelationshipsWithAnyType)
+      else trail.typ.foldLeft(Effects(ReadsRelationshipBoundNodes)) { (effects, typ) =>
+        effects | Effects(ReadsRelationshipsWithType(typ))
+      }
+    // Add effects from predicates
+    trail.predicates.flatten.foldLeft(matcherEffects)(_ | _.effects(symbols))
+  }
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
