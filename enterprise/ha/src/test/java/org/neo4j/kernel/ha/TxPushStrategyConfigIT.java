@@ -19,20 +19,23 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
 
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.helpers.TransactionTemplate;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -41,6 +44,7 @@ import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
@@ -134,7 +138,7 @@ public class TxPushStrategyConfigIT
         cluster.await( masterSeesSlavesAsAvailable( 1 ) );
     }
 
-    private final LifeSupport life = new LifeSupport();
+    private LifeSupport life = new LifeSupport();
     private ManagedCluster cluster;
     @Rule
     public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
@@ -156,6 +160,7 @@ public class TxPushStrategyConfigIT
     public void after() throws Exception
     {
         life.shutdown();
+        life = new LifeSupport();
     }
 
     private void startCluster( int memberCount, final int pushFactor, final String pushStrategy )
@@ -260,17 +265,30 @@ public class TxPushStrategyConfigIT
         createTransaction( cluster.getMemberByServerId( serverId ) );
     }
 
-    private void createTransaction( GraphDatabaseAPI db )
+    private void createTransaction( final GraphDatabaseAPI db )
     {
-        try (Transaction tx = db.beginTx())
+        TransactionTemplate template = new TransactionTemplate()
+                .with( db )
+                .retries( 10 )
+                .backoff( 1, TimeUnit.SECONDS )
+                .monitor( new TransactionTemplate.Monitor.Adapter()
+                {
+                    @Override
+                    public void failure( Throwable ex )
+                    {
+                        // Assume this is because of master switch
+                        // Redo the machine id mapping
+                        cluster.await( allSeesAllAsAvailable() );
+                        mapMachineIds();
+                    }
+                } );
+        template.execute( new Consumer<Transaction>()
         {
-            db.createNode();
-            tx.success();
-        }
-        catch ( RuntimeException e )
-        {
-            e.printStackTrace();
-            throw e;
-        }
+            @Override
+            public void accept( Transaction transaction )
+            {
+                db.createNode();
+            }
+        } );
     }
 }
