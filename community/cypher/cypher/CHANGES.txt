@@ -21,6 +21,8 @@ o New constraint type: property existence for nodes and relationships
 o Inequality predicates can now be chained on the form 0 < n.prop < 10
 o LIKE and ILIKE has been removed
 o ShortestPath should now return paths that fulfil any predicates enforced upon it
+o The str() function is now deprecated
+o Cypher queries will no longer be logged in messages.log
 
 2.3-M02
 -------
