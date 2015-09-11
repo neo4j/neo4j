@@ -38,11 +38,20 @@ case class Effects(effectsSet: Set[Effect] = Set.empty) {
 
   def writes() = effectsSet.exists(_.writes)
 
+  def regardlessOfLeafEffects = Effects(effectsSet.map {
+    case LeafEffect(e) => e
+    case e => e
+  })
+
   def toWriteEffects = Effects(effectsSet.map {
 //    case e: ReadEffect => e.toWriteEffect
     case e: WriteEffect => e
   }.toSet[Effect])
-}
+
+  def asLeafEffects = Effects(effectsSet.map {
+    effect => LeafEffect(effect)
+  }.toSet[Effect])
+  }
 
 object AllWriteEffects extends Effects(Set(CreatesAnyNode, SetAnyNodeProperty, WritesAnyRelationshipProperty)) {
   override def toString = "AllWriteEffects"
@@ -127,6 +136,12 @@ protected trait WriteEffect extends Effect {
   override def reads = false
 
   override def writes = true
+}
+
+case class LeafEffect(effect: Effect) extends Effect {
+  override def reads = effect.reads
+
+  override def writes = effect.writes
 }
 
 case class SetLabel(label: String) extends WriteEffect

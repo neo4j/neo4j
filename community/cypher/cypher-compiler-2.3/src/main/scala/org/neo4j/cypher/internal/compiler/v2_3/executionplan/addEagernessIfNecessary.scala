@@ -36,22 +36,34 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
     toPipe.dup(sources.toList)
   }
 
-  private def wouldInterfere(from: Effects, to: Effects): Boolean = {
+  private def wouldInterfere(fromWithLeafInfo: Effects, toWithLeafInfo: Effects): Boolean = {
 //    val nodesInterfere = nodesReadInterference(from, to)
 //    val relsInterfere = from.contains(ReadsRelationships) && to.contains(WritesRelationships)
 
-    val deleteMergeInterfereNodes = nodesDeleteMergeInterference(from, to)
-    val deleteMergeInterfereRelationships = relationshipsDeleteMergeInterference(from, to)
-    val writeReadInterfereNodes = nodesWriteReadInterference(from, to)
-    val readWriteInterfereNodes = nodesReadCreate
+    // NOTE: Leaf effects will not be considered unless effects have first been flattened with Effects.regardlessOfLeafEffects
+    val from = fromWithLeafInfo.regardlessOfLeafEffects
+    val to = toWithLeafInfo.regardlessOfLeafEffects
 
-    deleteMergeInterfereNodes || deleteMergeInterfereRelationships ||
-      nodePropertiesInterfere(from, to) || relationshipPropertiesInterfere(from, to) || writeReadInterfereNodes
+    val deleteMergeInterfereNodes = nodesDeleteMergeInterference(from, to)
+    val deleteMergeInterfereRelationships = relationshipsDeleteMergeInterference(fromWithLeafInfo, toWithLeafInfo)
+    val writeReadInterfereNodes = nodesWriteReadInterference(from, to)
+    val readWriteNonLeafInterfereNodes = nodesReadCreateInterference(fromWithLeafInfo, toWithLeafInfo) // NOTE: Here we should _not_ consider leaf effects
+
+    deleteMergeInterfereNodes ||
+      deleteMergeInterfereRelationships ||
+      nodePropertiesInterfere(fromWithLeafInfo, toWithLeafInfo) ||
+      relationshipPropertiesInterfere(fromWithLeafInfo, toWithLeafInfo) ||
+      writeReadInterfereNodes ||
+      readWriteNonLeafInterfereNodes
   }
 
   private def nodesWriteReadInterference(from: Effects, to: Effects) = {
     // Flip the order to reuse this code:
     readsCreatesSameNode(to, from)
+  }
+
+  def nodesReadCreateInterference(from: Effects, to: Effects) = {
+    readsCreatesSameNode(from, to)
   }
 
   private def relationshipsDeleteMergeInterference(from: Effects, to: Effects) = {

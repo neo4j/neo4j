@@ -168,7 +168,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val query = "MATCH () CREATE () WITH * MATCH () CREATE ()"
 
-    assertNumberOfEagerness(query, 1)
+    assertNumberOfEagerness(query, 2)
     assertStats(execute(query), nodesCreated = 10)
   }
 

@@ -53,7 +53,7 @@ case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProduce
 
   def isLeaf = source.sources.isEmpty
 
-  override def localEffects = if (isLeaf) itemEffects else Effects.nonLeaf(itemEffects)
+  override def localEffects = if (isLeaf) itemEffects.asLeafEffects else itemEffects
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
