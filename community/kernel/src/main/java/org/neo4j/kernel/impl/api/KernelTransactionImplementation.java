@@ -25,13 +25,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.collection.pool.Pool;
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
+import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -40,10 +38,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.cursor.DegreeItem;
-import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -83,8 +78,6 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.util.collection.ArrayCollection;
 
-import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
-import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
 
 /**
@@ -403,8 +396,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private TxStateVisitor txStateVisitor()
     {
-        return constraintSemantics
-                .decorateTxStateVisitor( operations, storeStatement, storeLayer, this, txStateToRecordStateVisitor );
+        TxStateVisitor constraintVisitor = constraintSemantics.decorateTxStateVisitor(
+                operations, storeStatement, storeLayer, this, txStateToRecordStateVisitor );
+        return new TransactionCountingStateVisitor( constraintVisitor, storeLayer,
+                operations.entityReadOperations(), this, counts );
     }
 
     private void assertTransactionOpen()
@@ -677,7 +672,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     {
-        private final RelationshipDataExtractor edge = new RelationshipDataExtractor();
         private boolean clearState;
 
         void done()
@@ -699,60 +693,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         public void visitCreatedNode( long id )
         {
             recordState.nodeCreate( id );
-            counts.incrementNodeCount( ANY_LABEL, 1 );
         }
 
         @Override
         public void visitDeletedNode( long id )
         {
-            try ( StoreStatement statement = storeLayer.acquireStatement() )
-            {
-                counts.incrementNodeCount( ANY_LABEL, -1 );
-                try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id ) )
-                {
-                    if ( node.next() )
-                    {
-                        // TODO Rewrite this to use cursors directly instead of iterator
-                        PrimitiveIntIterator labels = node.get().getLabels();
-                        if ( labels.hasNext() )
-                        {
-                            final int[] removed = PrimitiveIntCollections.asArray( labels );
-                            for ( int label : removed )
-                            {
-                                counts.incrementNodeCount( label, -1 );
-                            }
-
-                            try ( Cursor<DegreeItem> degrees = node.get().degrees() )
-                            {
-                                while ( degrees.next() )
-                                {
-                                    DegreeItem degree = degrees.get();
-                                    for ( int label : removed )
-                                    {
-                                        updateRelationshipsCountsFromDegrees( degree.type(), label, -degree.outgoing(),
-                                                -degree.incoming() );
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
             recordState.nodeDelete( id );
         }
 
         @Override
         public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
         {
-            try
-            {
-                updateRelationshipCount( startNode, type, endNode, 1 );
-            }
-            catch ( EntityNotFoundException e )
-            {
-                throw new IllegalStateException( "Nodes with added relationships should exist.", e );
-            }
-
             // record the state changes to be made to the store
             recordState.relCreate( id, type, startNode, endNode );
         }
@@ -760,17 +711,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         @Override
         public void visitDeletedRelationship( long id )
         {
-            try
-            {
-                storeLayer.relationshipVisit( id, edge );
-                updateRelationshipCount( edge.startNode(), edge.type(), edge.endNode(), -1 );
-            }
-            catch ( EntityNotFoundException e )
-            {
-                throw new IllegalStateException(
-                        "Relationship being deleted should exist along with its nodes.", e );
-            }
-
             // record the state changes to be made to the store
             recordState.relDelete( id );
         }
@@ -838,48 +778,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         @Override
         public void visitNodeLabelChanges( long id, final Set<Integer> added, final Set<Integer> removed )
         {
-            try ( StoreStatement statement = storeLayer.acquireStatement() )
-            {
-                // update counts
-                if ( !(added.isEmpty() && removed.isEmpty()) )
-                {
-                    for ( Integer label : added )
-                    {
-                        counts.incrementNodeCount( label, 1 );
-                    }
-                    for ( Integer label : removed )
-                    {
-                        counts.incrementNodeCount( label, -1 );
-                    }
-                    // get the relationship counts from *before* this transaction,
-                    // the relationship changes will compensate for what happens during the transaction
-                    try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id ) )
-                    {
-                        if ( node.next() )
-                        {
-                            try ( Cursor<DegreeItem> degrees = node.get().degrees() )
-                            {
-                                while ( degrees.next() )
-                                {
-                                    DegreeItem degree = degrees.get();
-
-                                    for ( Integer label : added )
-                                    {
-                                        updateRelationshipsCountsFromDegrees( degree.type(), label, degree.outgoing(),
-                                                degree.incoming() );
-                                    }
-                                    for ( Integer label : removed )
-                                    {
-                                        updateRelationshipsCountsFromDegrees( degree.type(), label, -degree.outgoing(),
-                                                -degree.incoming() );
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             // record the state changes to be made to the store
             for ( Integer label : removed )
             {
@@ -1066,49 +964,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         public void visitDroppedProcedure( ProcedureDescriptor procedureDescriptor )
         {
             procedureCache.dropProcedure( procedureDescriptor );
-        }
-    }
-
-    private void updateRelationshipsCountsFromDegrees( int type, int label, long outgoing, long incoming )
-    {
-        // untyped
-        counts.incrementRelationshipCount( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL, outgoing );
-        counts.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, label, incoming );
-        // typed
-        counts.incrementRelationshipCount( label, type, ANY_LABEL, outgoing );
-        counts.incrementRelationshipCount( ANY_LABEL, type, label, incoming );
-    }
-
-    private void updateRelationshipCount( long startNode, int type, long endNode, int delta )
-            throws EntityNotFoundException
-    {
-        updateRelationshipsCountsFromDegrees( type, ANY_LABEL, delta, 0 );
-        for ( PrimitiveIntIterator startLabels = labelsOf( startNode ); startLabels.hasNext(); )
-        {
-            updateRelationshipsCountsFromDegrees( type, startLabels.next(), delta, 0 );
-        }
-        for ( PrimitiveIntIterator endLabels = labelsOf( endNode ); endLabels.hasNext(); )
-        {
-            updateRelationshipsCountsFromDegrees( type, endLabels.next(), 0, delta );
-        }
-    }
-
-    private PrimitiveIntIterator labelsOf( long nodeId )
-    {
-        try ( StoreStatement statement = storeLayer.acquireStatement() )
-        {
-            try ( Cursor<NodeItem> node = operations.entityReadOperations().nodeCursor( this, statement, nodeId ) )
-            {
-                if ( node.next() )
-                {
-                    return node.get().getLabels();
-                }
-                else
-                {
-                    return PrimitiveIntCollections.emptyIterator();
-
-                }
-            }
         }
     }
 

@@ -30,6 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Predicate;
+import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
@@ -53,6 +54,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
@@ -70,6 +72,7 @@ import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
+import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
@@ -99,6 +102,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_NUMBERS;
+import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class StateHandlingStatementOperations implements
         KeyReadOperations,
@@ -1142,9 +1146,30 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long countsForNode( KernelStatement statement, int labelId )
+    public long countsForNode( final KernelStatement statement, int labelId )
     {
-        return storeLayer.countsForNode( labelId );
+        long count = storeLayer.countsForNode( labelId );
+        if ( statement.hasTxStateWithChanges() )
+        {
+            CountsRecordState counts = new CountsRecordState();
+            try
+            {
+                statement.txState().accept( new TransactionCountingStateVisitor( null, storeLayer, this,
+                            statement, counts ) );
+                if(counts.hasChanges()) {
+                    count += counts.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
+                }
+            }
+            catch ( ConstraintValidationKernelException e )
+            {
+                throw new IllegalArgumentException( "Unexpected error: " + e.getMessage());
+            }
+            catch ( CreateConstraintFailureException e )
+            {
+                throw new IllegalArgumentException( "Unexpected error: " + e.getMessage());
+            }
+        }
+        return count;
     }
 
     @Override
