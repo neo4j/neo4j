@@ -301,6 +301,27 @@ class LoadCsvAcceptanceTest
     exception.getMessage should equal("Invalid URL specified (no protocol: foo.bar)")
   }
 
+  test("eager queries should be handled correctly") {
+    val url = createCSVTempFileURL ({
+      writer =>
+        writer.println("id,title,country,year")
+        writer.println("1,Wall Street,USA,1987")
+        writer.println("2,The American President,USA,1995")
+        writer.println("3,The Shawshank Redemption,USA,1994")
+    }).cypherEscape
+
+    execute(s"LOAD CSV WITH HEADERS FROM '$url' AS csvLine " +
+      "MERGE (country:Country {name: csvLine.country}) " +
+      "CREATE (movie:Movie {id: toInt(csvLine.id), title: csvLine.title, year:toInt(csvLine.year)})" +
+      "CREATE (movie)-[:MADE_IN]->(country)")
+
+
+    //make sure three unique movies are created
+    val result = execute("match (m:Movie) return m.id AS id ORDER BY m.id").toList
+
+    result should equal(List(Map("id" -> 1), Map("id" -> 2), Map("id" -> 3)))
+  }
+
   private def ensureNoIllegalCharsInWindowsFilePath(filename: String) = {
     // isWindows?
     if ('\\' == File.separatorChar) {
