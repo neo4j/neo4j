@@ -43,6 +43,16 @@ IO:
 o Adds commons-lang3 dependency
 o Uses vectored I/O for better throughput for flushing pages to underlying storage
 
+Kernel:
+o Introducing cursors in Kernel API. Cursors will allow for less garbage (objects) created and more efficient usage of PageCursors
+o Status codes of the 'transient' classification now cause transactions to be rolled back. This resolves several
+  outstanding issues where deadlocks, network errors and other similar problems required clients to manually roll back
+  transactions. Only ClientError and ClientNotification classified status codes leave open transactions running.
+o Adds checkpoints to the log, decoupled from log rotation. This allows for asynchronous flushing of the page cache
+  down to storage, resulting in short-to-no pauses for write transactions that would previously occur around log rotation.
+o Adds PropertyContainer#getAllProperties(), returning a Map<String,Object> of all properties as a more convenient
+  and more performant way of getting all properties of a Node or Relationship.
+
 Packaging:
 o Adds a Windows PowerShell for managing a Neo4j server
 
