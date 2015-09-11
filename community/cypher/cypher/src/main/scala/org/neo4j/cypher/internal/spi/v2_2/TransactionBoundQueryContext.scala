@@ -291,7 +291,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   override def hasLocalFileAccess: Boolean = graph match {
     case db: GraphDatabaseAPI => db.getDependencyResolver.resolveDependency(classOf[Config]).get(GraphDatabaseSettings.allow_file_urls)
-    case _ => true
+    case _ => false
   }
 
   def relationshipStartNode(rel: Relationship) = rel.getStartNode

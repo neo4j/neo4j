@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.spi.v2_3
 
+import java.net.URL
+
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
 import org.neo4j.cypher.InternalException
@@ -62,6 +64,8 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   val relationshipActions = graph.getDependencyResolver.resolveDependency(classOf[RelationshipProxy.RelationshipActions])
 
   def isOpen = open
+
+  private val protocolWhiteList: Seq[String] = Seq("file", "http", "https", "ftp")
 
   def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (statement.dataWriteOperations().nodeAddLabel(node, labelId)) count + 1 else count
@@ -449,9 +453,16 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
     statement.schemaWriteOperations().constraintDrop(new RelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
-  override def hasLocalFileAccess: Boolean = graph match {
-    case db: GraphDatabaseAPI => db.getDependencyResolver.resolveDependency(classOf[Config]).get(GraphDatabaseSettings.allow_file_urls)
-    case _ => true
+  override def getImportURL(url: URL): Either[String,URL] = graph match {
+    case db: GraphDatabaseAPI =>
+      val protocol = url.getProtocol
+      if (!protocolWhiteList.contains(protocol)) {
+        Left(s"loading resources via protocol '$protocol' is not permitted")
+      } else if (url.getProtocol == "file" && !db.getDependencyResolver.resolveDependency(classOf[Config]).get(GraphDatabaseSettings.allow_file_urls)) {
+        Left{s"configuration property '${GraphDatabaseSettings.allow_file_urls.name()}' is false"}
+      } else {
+        Right(url)
+      }
   }
 
   def relationshipStartNode(rel: Relationship) = rel.getStartNode

@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility
 
+import java.net.URL
+
 import org.neo4j.cypher.internal.compiler.v2_3.spi
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
@@ -146,8 +148,8 @@ class ExceptionTranslatingQueryContextFor2_3(inner: QueryContext) extends Delega
   override def commitAndRestartTx() =
     translateException(super.commitAndRestartTx())
 
-  override def hasLocalFileAccess =
-    translateException(super.hasLocalFileAccess)
+  override def getImportURL(url: URL) =
+    translateException(super.getImportURL(url))
 
   override def relationshipStartNode(rel: Relationship) =
     translateException(super.relationshipStartNode(rel))
