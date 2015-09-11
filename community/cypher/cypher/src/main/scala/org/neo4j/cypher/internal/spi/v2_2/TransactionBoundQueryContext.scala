@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.spi.v2_2
 
+import java.net.URL
+
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiler.v2_2.{EntityNotFoundException, FailedIndexException}
 import org.neo4j.cypher.internal.compiler.v2_2.spi._
@@ -54,6 +56,8 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   val relationshipOps = new RelationshipOperations
 
   def isOpen = open
+
+  private val protocolWhiteList: Seq[String] = Seq("file", "http", "https", "ftp")
 
   def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (statement.dataWriteOperations().nodeAddLabel(node, labelId)) count + 1 else count
@@ -291,9 +295,16 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
     statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(labelId, propertyKeyId))
 
-  override def hasLocalFileAccess: Boolean = graph match {
-    case iagdb: InternalAbstractGraphDatabase => iagdb.getConfig.get(GraphDatabaseSettings.allow_file_urls)
-    case _ => true
+  override def getImportURL(url: URL): Either[String, URL] = graph match {
+    case iagdb: InternalAbstractGraphDatabase =>
+      val protocol = url.getProtocol
+      if (!protocolWhiteList.contains(protocol)) {
+        Left(s"loading resources via protocol '$protocol' is not permitted")
+      } else if (url.getProtocol == "file" && !iagdb.getConfig.get(GraphDatabaseSettings.allow_file_urls)) {
+        Left{s"configuration property '${GraphDatabaseSettings.allow_file_urls.name()}' is false"}
+      } else {
+        Right(url)
+      }
   }
 
   def relationshipStartNode(rel: Relationship) = rel.getStartNode

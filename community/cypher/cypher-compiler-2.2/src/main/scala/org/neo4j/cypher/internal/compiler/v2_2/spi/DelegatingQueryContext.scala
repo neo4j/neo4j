@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.spi
 
+import java.net.URL
+
 import org.neo4j.graphdb.{Relationship, PropertyContainer, Direction, Node}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
@@ -105,7 +107,7 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def getRelTypeName(id: Int): String = singleDbHit(inner.getRelTypeName(id))
 
-  override def hasLocalFileAccess: Boolean = inner.hasLocalFileAccess
+  def getImportURL(url: URL): Either[String,URL] = inner.getImportURL(url)
 
   def relationshipStartNode(rel: Relationship) = inner.relationshipStartNode(rel)
 

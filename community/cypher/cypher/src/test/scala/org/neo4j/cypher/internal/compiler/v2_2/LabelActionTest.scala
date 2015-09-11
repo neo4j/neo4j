@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
+import java.net.URL
+
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_2.commands.values.{KeyToken, TokenType}
@@ -162,4 +164,6 @@ class SnitchingQueryContext extends QueryContext {
   def nodeGetDegree(node: Long, dir: Direction): Int = ???
 
   def nodeGetDegree(node: Long, dir: Direction, relTypeId: Int): Int = ???
+
+  def getImportURL(url: URL): Either[String,URL] = ???
 }
