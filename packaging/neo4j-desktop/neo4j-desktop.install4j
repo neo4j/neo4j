@@ -37,13 +37,13 @@
       <fileEntry mountPoint="210" file="./target/licenses/LICENSE.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
     </entries>
     <components>
-      <component name="Neo4j Community Launcher" id="155" customizedId="" displayDescription="false" hideHelpButton="false" selected="true" changeable="false" downloadable="false" hidden="false">
+      <component name="Neo4j CE Launcher" id="155" customizedId="" displayDescription="false" hideHelpButton="false" selected="true" changeable="false" downloadable="false" hidden="false">
         <description />
         <include all="false">
           <entry location="bin/neo4j-desktop-@NEO4J_VERSION@.jar" fileType="regular" />
           <entry location="bin/neo4j-community.vmoptions" fileType="regular" />
           <entry location="bin/install.properties" fileType="regular" />
-          <entry location="bin/neo4j-community" fileType="launcher" />
+          <entry location="bin/neo4j-ce" fileType="launcher" />
           <entry location="plugins" fileType="regular" />
         </include>
         <dependencies>
@@ -731,7 +731,7 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
       </topLevelFiles>
     </macosArchive>
   </mediaSets>
-  <buildIds buildAll="false">
+  <buildIds buildAll="true">
     <mediaSet refId="444" />
   </buildIds>
   <buildOptions verbose="true" faster="false" disableSigning="false" disableJreBundling="false" debug="false" />
