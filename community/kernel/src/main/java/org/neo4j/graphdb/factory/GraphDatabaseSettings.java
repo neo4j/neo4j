@@ -19,13 +19,13 @@
  */
 package org.neo4j.graphdb.factory;
 
-import org.apache.commons.lang3.SystemUtils;
-
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
 import java.util.List;
+
+import org.apache.commons.lang3.SystemUtils;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
@@ -70,6 +70,12 @@ public abstract class GraphDatabaseSettings
     @Description("Only allow read operations from this Neo4j instance. "
             + "This mode still requires write access to the directory for lock purposes.")
     public static final Setting<Boolean> read_only = setting( "read_only", BOOLEAN, FALSE );
+
+    @Deprecated
+    @Description( "The type of cache to use for nodes and relationships. " +
+                  "This configuration setting is no longer applicable from Neo4j 2.3. " +
+                  "Configuration has been simplified to only require tuning of the page cache." )
+    public static final Setting<String> cache_type = setting( "cache_type", STRING, "deprecated" );
 
     @Description("Print out the effective Neo4j configuration after startup.")
     public static final Setting<Boolean> dump_configuration = setting("dump_configuration", BOOLEAN, FALSE );
