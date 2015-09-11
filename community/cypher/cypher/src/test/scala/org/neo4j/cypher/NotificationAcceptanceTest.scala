@@ -305,9 +305,16 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("should warn for large label scans combined with load csv") {
-    1 to 10 foreach { _ => createLabeledNode("A") }
+    1 to 11 foreach { _ => createLabeledNode("A") }
     val result = innerExecute("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (a:A) RETURN *")
     result should use("LoadCSV", "NodeByLabel")
+    result.notifications should contain(LargeLabelWithLoadCsvNotification)
+  }
+
+  test("should warn for large label scans with merge combined with load csv") {
+    1 to 11 foreach { _ => createLabeledNode("A") }
+    val result = innerExecute("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE (a:A) RETURN *")
+    result should use("LoadCSV", "UpdateGraph")
     result.notifications should contain(LargeLabelWithLoadCsvNotification)
   }
 
@@ -317,4 +324,12 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result should use("LoadCSV", "NodeByLabel")
     result.notifications should not contain LargeLabelWithLoadCsvNotification
   }
+
+  test("should not warn for small label scans with merge combined with load csv") {
+    createLabeledNode("A")
+    val result = innerExecute("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE (a:A) RETURN *")
+    result should use("LoadCSV", "UpdateGraph")
+    result.notifications should not contain LargeLabelWithLoadCsvNotification
+  }
+
 }

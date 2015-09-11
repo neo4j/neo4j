@@ -149,67 +149,13 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, config: CypherCompilerCo
     }
   }
 
-  private def checkForLoadCsvAndMatchOnLargeNonIndexedLabel(pipe: Pipe, planContext: PlanContext) = {
-    import org.neo4j.cypher.internal.frontend.v2_3.Foldable._
 
-    sealed trait SearchState
-    case object NoneFound extends SearchState
-    case object LargeLabelFound extends SearchState
-    case object LargeLabelWithLoadCsvFound extends SearchState
-
-    val threshold = Cardinality(config.nonIndexedLabelWarningThreshold)
-
-    // Walk over the pipe tree and check if a large label scan is to be executed after a LoadCsv
-    val resultState = pipe.treeFold[SearchState](NoneFound) {
-      case _: LoadCSVPipe => (acc, children) =>
-        acc match {
-          case LargeLabelFound => children(LargeLabelWithLoadCsvFound)
-          case e => e
-        }
-      case NodeStartPipe(_, _, NodeByLabelEntityProducer(_, id), _) =>
-        val cardinality = planContext.statistics.nodesWithLabelCardinality(Some(LabelId(id)))
-        if (cardinality > threshold) (acc, children) => children(LargeLabelFound) else (acc, children) => children(acc)
-      case NodeByLabelScanPipe(_, label) =>
-        val cardinality = planContext.statistics.nodesWithLabelCardinality(label.id(planContext))
-        if (cardinality > threshold) (acc, children) => children(LargeLabelFound) else (acc, children) => children(acc)
-    }
-
-    resultState match {
-      case LargeLabelWithLoadCsvFound => Some(LargeLabelWithLoadCsvNotification)
-      case _ => None
-    }
-  }
-
-  private def checkForEagerLoadCsv(pipe: Pipe) = {
-    import org.neo4j.cypher.internal.frontend.v2_3.Foldable._
-    sealed trait SearchState
-    case object NoEagerFound extends SearchState
-    case object EagerFound extends SearchState
-    case object EagerWithLoadCsvFound extends SearchState
-
-    // Walk over the pipe tree and check if an Eager is to be executed after a LoadCsv
-    val resultState = pipe.treeFold[SearchState](NoEagerFound) {
-      case _: LoadCSVPipe => (acc, children) =>
-        acc match {
-          case EagerFound => EagerWithLoadCsvFound
-          case e => e
-        }
-      case _: EagerPipe =>
-        (acc, children) =>
-          children(EagerFound)
-    }
-
-    resultState match {
-      case EagerWithLoadCsvFound => Some(EagerLoadCsvNotification)
-      case _ => None
-    }
-  }
 
   private def checkForNotifications(pipe: Pipe, planContext: PlanContext): Seq[InternalNotification] = {
-    (
-      checkForEagerLoadCsv(pipe) ++
-      checkForLoadCsvAndMatchOnLargeNonIndexedLabel(pipe, planContext)
-    ).toSeq
+    val notificationCheckers = Seq(checkForEagerLoadCsv,
+      CheckForLoadCsvAndMatchOnLargeLabel(planContext, config.nonIndexedLabelWarningThreshold))
+
+    notificationCheckers.flatMap(_(pipe))
   }
 
 
