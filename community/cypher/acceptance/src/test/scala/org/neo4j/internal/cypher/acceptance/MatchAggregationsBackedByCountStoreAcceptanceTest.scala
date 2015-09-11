@@ -84,10 +84,13 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
           |CREATE (c)-[:KNOWS]->(s)
         """.stripMargin)
 
-      val result = executeWithCostPlannerOnly("MATCH (n:User) RETURN count(n)")
-      println(result.executionPlanDescription())
-      result.executionPlanDescription() should includeOperation("CountStoreNodeAggregation")
-      result.columnAs("count(n)").toSet[Int] should equal(Set(2))
+      Map("User" -> 2, "Admin" -> 1).collect {
+        case (labelName, expectedCount) =>
+          val result = executeWithCostPlannerOnly(s"MATCH (n:$labelName) RETURN count(n)")
+          println(result.executionPlanDescription())
+          result.executionPlanDescription() should includeOperation("CountStoreNodeAggregation")
+          result.columnAs("count(n)").toSet[Int] should equal(Set(expectedCount))
+      }
     }
   }
 
@@ -109,9 +112,13 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
           |CREATE (c)-[:KNOWS]->(s)
         """.stripMargin)
 
-      val result = executeWithCostPlannerOnly("MATCH (n:Admin) RETURN count(n)")
-      result.executionPlanDescription() should includeOperation("CountStoreNodeAggregation")
-      result.columnAs("count(n)").toSet[Int] should equal(Set(1))
+      Map("User" -> 2, "Admin" -> 1).collect {
+        case (labelName, expectedCount) =>
+          val result = executeWithCostPlannerOnly(s"MATCH (n:$labelName) RETURN count(n)")
+          println(result.executionPlanDescription())
+          result.executionPlanDescription() should includeOperation("CountStoreNodeAggregation")
+          result.columnAs("count(n)").toSet[Int] should equal(Set(expectedCount))
+      }
     }
   }
 
