@@ -19,35 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import org.neo4j.cypher.internal.frontend.v2_3.ast.LabelName
-import org.neo4j.cypher.internal.compiler.v2_3.spi.{TokenContext, QueryContext}
-import org.neo4j.cypher.internal.frontend.v2_3.{SemanticTable, LabelId}
+import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_3.commands.NodeByLabel
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
+import org.neo4j.graphdb.Node
 
-case class LazyLabel(name:String) {
-  private var id : Option[LabelId] = None
+case class NodeByLabelEntityProducer(nodeByLabel: NodeByLabel, labelId: Int) extends EntityProducer[Node] {
 
-  def id(context: TokenContext): Option[LabelId] = id match {
-    case None => {
-      id = context.getOptLabelId(name).map(LabelId)
-      id
-    }
-    case x    => x
-  }
+  def apply(m: ExecutionContext, q: QueryState) = q.query.getNodesByLabel(labelId)
 
-  // yuck! this is only used by tests...
-  def id(table:SemanticTable):Option[LabelId] = id match {
-    case None => {
-      id = table.resolvedLabelIds.get(name)
-      id
-    }
-    case x    => x
-  }
-}
+  override def producerType: String = nodeByLabel.producerType
 
-object LazyLabel {
-  def apply(name: LabelName)(implicit table:SemanticTable): LazyLabel = {
-    val label = new LazyLabel(name.name)
-    label.id = name.id
-    label
-  }
+  override def arguments: Seq[Argument] = nodeByLabel.arguments
 }

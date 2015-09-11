@@ -42,6 +42,7 @@ import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
 import static org.neo4j.helpers.Settings.DEFAULT;
 import static org.neo4j.helpers.Settings.DOUBLE;
+import static org.neo4j.helpers.Settings.LONG;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.INTEGER;
@@ -128,7 +129,13 @@ public abstract class GraphDatabaseSettings
                   "A value of 0 means always replan, and 1 means never replan." )
     public static Setting<Double> query_statistics_divergence_threshold = setting(
             "dbms.cypher.statistics_divergence_threshold", DOUBLE, "0.1", min( 0.0 ), max(
-            1.0 ) );
+                    1.0 ) );
+
+    @Description( "The threshold when a warning is generated if a label scan is done after a load csv " +
+                  "where the label has no index" )
+    @Internal
+    public static Setting<Long> query_non_indexed_label_warning_threshold = setting(
+            "dbms.cypher.non_indexed_label_warning_threshold", LONG, "10000" );
 
     @Description("The minimum lifetime of a query plan before a query is considered for replanning")
     public static Setting<Long> cypher_min_replan_interval = setting( "dbms.cypher.min_replan_interval", DURATION, "1s" );

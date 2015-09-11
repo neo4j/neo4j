@@ -275,4 +275,61 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     result.notifications shouldBe empty
   }
+
+  test("should warn for load csv + eager") {
+    val result = innerExecute("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH () CREATE () RETURN line")
+
+    result should use("LoadCSV", "Eager")
+    result.notifications should contain(EagerLoadCsvNotification)
+  }
+
+  test("should not warn for load csv without eager") {
+    val result = innerExecute("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (:A) CREATE (:B) RETURN line")
+
+    result should use("LoadCSV")
+    result.notifications should not contain EagerLoadCsvNotification
+  }
+
+  test("should not warn for eager without load csv") {
+    val result = innerExecute("EXPLAIN MATCH (a) CREATE (b) RETURN *")
+
+    result should use("Eager")
+    result.notifications should not contain EagerLoadCsvNotification
+  }
+
+  test("should not warn for eager that precedes load csv") {
+    val result = innerExecute("EXPLAIN MATCH (a) CREATE (b) WITH b LOAD CSV FROM 'file:///ignore/ignore.csv' AS line RETURN *")
+
+    result should use("LoadCSV", "Eager")
+    result.notifications should not contain EagerLoadCsvNotification
+  }
+
+  test("should warn for large label scans combined with load csv") {
+    1 to 11 foreach { _ => createLabeledNode("A") }
+    val result = innerExecute("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (a:A) RETURN *")
+    result should use("LoadCSV", "NodeByLabel")
+    result.notifications should contain(LargeLabelWithLoadCsvNotification)
+  }
+
+  test("should warn for large label scans with merge combined with load csv") {
+    1 to 11 foreach { _ => createLabeledNode("A") }
+    val result = innerExecute("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE (a:A) RETURN *")
+    result should use("LoadCSV", "UpdateGraph")
+    result.notifications should contain(LargeLabelWithLoadCsvNotification)
+  }
+
+  test("should not warn for small label scans combined with load csv") {
+    createLabeledNode("A")
+    val result = innerExecute("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (a:A) RETURN *")
+    result should use("LoadCSV", "NodeByLabel")
+    result.notifications should not contain LargeLabelWithLoadCsvNotification
+  }
+
+  test("should not warn for small label scans with merge combined with load csv") {
+    createLabeledNode("A")
+    val result = innerExecute("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE (a:A) RETURN *")
+    result should use("LoadCSV", "UpdateGraph")
+    result.notifications should not contain LargeLabelWithLoadCsvNotification
+  }
+
 }

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.GetGraphElements
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.GraphElementPropertyFunctions
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityProducer, IndexSeekModeFactory, QueryState}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{NodeByLabelEntityProducer, EntityProducer, IndexSeekModeFactory, QueryState}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v2_3.{EntityNotFoundException, IndexHintException, InternalException}
@@ -92,9 +92,8 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
     // The label exists at compile time - no need to look up the label id for every run
     case (planContext, startItem@NodeByLabel(identifier, label)) if planContext.getOptLabelId(label).nonEmpty =>
       val labelId: Int = planContext.getOptLabelId(label).get
-      asProducer[Node](startItem) {
-        (m: ExecutionContext, state: QueryState) => state.query.getNodesByLabel(labelId)
-      }
+
+      NodeByLabelEntityProducer(startItem, labelId)
 
     // The label is missing at compile time - we look it up every time this plan is run
     case (planContext, startItem@NodeByLabel(identifier, label)) => asProducer(startItem) {

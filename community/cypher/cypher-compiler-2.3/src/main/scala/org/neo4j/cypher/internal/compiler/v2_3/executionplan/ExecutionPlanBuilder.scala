@@ -27,14 +27,16 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, CantHandleQueryException}
 import org.neo4j.cypher.internal.compiler.v2_3.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, ProfileMode, _}
-import org.neo4j.cypher.internal.frontend.v2_3.PeriodicCommitInOpenTransactionException
+import org.neo4j.cypher.internal.frontend.v2_3.{LabelId, PeriodicCommitInOpenTransactionException}
 import org.neo4j.cypher.internal.frontend.v2_3.ast.Statement
+import org.neo4j.cypher.internal.frontend.v2_3.notification.{LargeLabelWithLoadCsvNotification, EagerLoadCsvNotification, InternalNotification}
 import org.neo4j.function.Supplier
 import org.neo4j.function.Suppliers.singleton
 import org.neo4j.graphdb.GraphDatabaseService
@@ -97,7 +99,7 @@ trait ExecutablePlanBuilder {
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): Either[CompiledPlan, PipeInfo]
 }
 
-class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold: Double, queryPlanTTL: Long,
+class ExecutionPlanBuilder(graph: GraphDatabaseService, config: CypherCompilerConfiguration,
                            clock: Clock, pipeBuilder: ExecutablePlanBuilder) extends PatternGraphBuilder {
   val nodeManager = {
     val gdapi = graph.asInstanceOf[GraphDatabaseAPI]
@@ -114,7 +116,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
 
   private def buildCompiled(compiledPlan: CompiledPlan, planContext: PlanContext, inputQuery: PreparedQuery) = {
     new ExecutionPlan {
-      val fingerprint = PlanFingerprintReference(clock, queryPlanTTL, statsDivergenceThreshold, compiledPlan.fingerprint)
+      val fingerprint = PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, compiledPlan.fingerprint)
 
       def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
 
@@ -142,19 +144,29 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
       def isPeriodicCommit: Boolean = compiledPlan.periodicCommit.isDefined
 
       def runtimeUsed = CompiledRuntimeName
+
+      def notifications = Seq.empty
     }
   }
+
+
+
+  private def checkForNotifications(pipe: Pipe, planContext: PlanContext): Seq[InternalNotification] = {
+    val notificationCheckers = Seq(checkForEagerLoadCsv,
+      CheckForLoadCsvAndMatchOnLargeLabel(planContext, config.nonIndexedLabelWarningThreshold))
+
+    notificationCheckers.flatMap(_(pipe))
+  }
+
 
   private def buildInterpreted(pipeInfo: PipeInfo, planContext: PlanContext, inputQuery: PreparedQuery) = {
     val abstractQuery = inputQuery.abstractQuery
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
-
     val columns = getQueryResultColumns(abstractQuery, pipe.symbols)
     val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns)
     val func = getExecutionPlanFunction(periodicCommitInfo, abstractQuery.getQueryText, updating, resultBuilderFactory, inputQuery.notificationLogger)
-
     new ExecutionPlan {
-      private val fingerprint = PlanFingerprintReference(clock, queryPlanTTL, statsDivergenceThreshold, fp)
+      private val fingerprint = PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, fp)
 
       def run(queryContext: QueryContext, ignored: KernelStatement, planType: ExecutionMode, params: Map[String, Any]) =
         func(queryContext, planType, params)
@@ -164,6 +176,8 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
       def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
 
       def runtimeUsed = InterpretedRuntimeName
+
+      def notifications = checkForNotifications(pipe, planContext)
     }
 
   }

@@ -166,7 +166,10 @@ public interface Status
         JoinHintUnsupportedWarning( ClientNotification, "Queries with join hints are not supported by the RULE planner." ),
         DynamicPropertyWarning( ClientNotification, "Queries using dynamic properties will use neither index seeks " +
                                                     "nor index scans for those properties" ),
-        ;
+        EagerWarning(ClientNotification, "The execution plan for this query contains the Eager operator, " +
+                                         "which forces all dependent data to be materialized in main memory " +
+                                         "before proceeding"),
+        IndexMissingWarning( ClientNotification, "Adding a schema index may speed up this query." );
 
         private final Code code;
 

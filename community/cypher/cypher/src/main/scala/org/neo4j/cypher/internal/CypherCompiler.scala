@@ -37,6 +37,7 @@ object CypherCompiler {
   val DEFAULT_QUERY_PLAN_TTL: Long = 1000 // 1 second
   val CLOCK = Clock.SYSTEM_CLOCK
   val DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD = 0.1
+  val DEFAULT_NON_INDEXED_LABEL_WARNING_THRESHOLD = 10000
 }
 
 case class PreParsedQuery(statement: String, rawStatement: String, version: CypherVersion,
@@ -67,13 +68,16 @@ class CypherCompiler(graph: GraphDatabaseService,
   import org.neo4j.cypher.internal.CypherCompiler._
 
   private val log: Log = logProvider.getLog(getClass)
-  private val queryCacheSize: Int = getQueryCacheSize
-  private val queryPlanTTL: Long = getMinimumTimeBeforeReplanning
-  private val statisticsDivergenceThreshold = getStatisticsDivergenceThreshold
 
-  private val factory = new
-      PlannerFactory(graph, kernelAPI, kernelMonitors, log, queryCacheSize, statisticsDivergenceThreshold, queryPlanTTL,
-        useErrorsOverWarnings)
+  private val config = CypherCompilerConfiguration(
+    queryCacheSize = getQueryCacheSize,
+    statsDivergenceThreshold = getStatisticsDivergenceThreshold,
+    queryPlanTTL = getMinimumTimeBeforeReplanning,
+    useErrorsOverWarnings = useErrorsOverWarnings,
+    nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold
+  )
+
+  private val factory = new PlannerFactory(graph, kernelAPI, kernelMonitors, log, config)
   private val planners: PlannerCache = new PlannerCache(factory)
 
   private final val VERSIONS_WITH_FIXED_PLANNER: Set[CypherVersion] = Set(v1_9)
@@ -145,6 +149,10 @@ class CypherCompiler(graph: GraphDatabaseService,
       .andThen(_.platformModule.config.get(GraphDatabaseSettings.query_statistics_divergence_threshold).doubleValue())
       .applyOrElse(graph, (_: GraphDatabaseService) => DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD)
 
+  private def getNonIndexedLabelWarningThreshold: Long =
+    optGraphAs[GraphDatabaseFacade]
+      .andThen(_.platformModule.config.get(GraphDatabaseSettings.query_non_indexed_label_warning_threshold).longValue())
+      .applyOrElse(graph, (_: GraphDatabaseService) => DEFAULT_NON_INDEXED_LABEL_WARNING_THRESHOLD)
 
   private def getMinimumTimeBeforeReplanning: Long = {
     optGraphAs[GraphDatabaseFacade]
