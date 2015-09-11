@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
+import java.nio.file.Files;
 
 public abstract class FileLock
 {
@@ -186,9 +187,9 @@ public abstract class FileLock
                 }
                 finally
                 {
-                    if ( !lockFile.delete() )
+                    if (!FileUtils.deleteFile( lockFile ))
                     {
-                        throw new IOException( "Couldn't delete lock file " + lockFile.getAbsolutePath() );
+                        Files.delete(lockFile.toPath());
                     }
                 }
             }
