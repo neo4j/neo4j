@@ -22,12 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates._
-import org.neo4j.cypher.internal.compiler.v2_3.commands._
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsNodes, ReadsRelationships}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{PathExtractor, Pattern, ShortestPath, SingleNode, _}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsAllNodes, ReadsRelationships}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v2_3.SyntaxException
-import org.neo4j.cypher.internal.frontend.v2_3.ast.{Property, FunctionName, FunctionInvocation}
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.graphalgo.GraphAlgoFactory
@@ -92,8 +91,6 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
   def calculateType(symbols: SymbolTable) =  if (shortestPathPattern.single) CTPath else CTCollection(CTPath)
 
   def symbolTableDependencies = shortestPathPattern.symbolTableDependencies + shortestPathPattern.left.name + shortestPathPattern.right.name
-
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsNodes, ReadsRelationships)
 
   private def propertyExistsExpander(name: String) = new org.neo4j.function.Predicate[PropertyContainer] {
     override def test(t: PropertyContainer): Boolean = {
@@ -160,6 +157,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
     (predicate.symbolTableDependencies intersect pathIdentifiers).isEmpty
   }
 
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsAllNodes, ReadsRelationships)
 }
 
 trait ShortestPathStrategy {

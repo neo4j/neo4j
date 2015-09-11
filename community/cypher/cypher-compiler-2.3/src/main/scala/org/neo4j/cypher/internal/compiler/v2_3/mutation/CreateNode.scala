@@ -37,10 +37,11 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
   with CollectionSupport {
 
   def localEffects(symbols: SymbolTable) = {
+    val writeEffects = if (labels.isEmpty) Effects(WritesAnyNode) else Effects(WritesNodesWithLabels(labels.map(_.name).toSet))
     val propertyEffects = properties.values.foldLeft(Effects())(_ | _.effects(symbols))
-    val labelEffects = Effects(labels.map(kt => WritesLabel(kt.name)).toSet[Effect])
+    val labelEffects = Effects(labels.map(kt => WritesNodesWithLabels(kt.name)).toSet[Effect])
 
-    Effects(WritesNodes) | propertyEffects | labelEffects
+    writeEffects | propertyEffects | labelEffects
   }
 
   def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext] = {
@@ -54,7 +55,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
 
       val queryCtx = state.query
       val labelIds = labels.map(_.getOrCreateId(state.query))
-      if (labelIds.size > 0)
+      if (labelIds.nonEmpty)
         queryCtx.setLabelsOnNode(node.getId, labelIds.iterator)
 
       val newContext = context.newWith(key -> node)

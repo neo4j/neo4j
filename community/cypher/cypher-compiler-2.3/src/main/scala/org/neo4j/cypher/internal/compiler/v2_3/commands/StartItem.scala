@@ -78,7 +78,7 @@ case class NodeByIndex(varName: String, idxName: String, key: Expression, expres
     Arguments.LegacyIndex(idxName),
     Arguments.LegacyExpression(key)))
   with ReadOnlyStartItem with NodeStartItemIdentifiers with Hint {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsNodes)
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsAllNodes)
 }
 
 case class NodeByIndexQuery(varName: String, idxName: String, query: Expression)
@@ -86,7 +86,7 @@ case class NodeByIndexQuery(varName: String, idxName: String, query: Expression)
     Arguments.LegacyExpression(query),
     Arguments.LegacyIndex(idxName)))
   with ReadOnlyStartItem with NodeStartItemIdentifiers with Hint {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsNodes)
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsAllNodes)
 }
 
 trait Hint
@@ -122,30 +122,30 @@ case class RangeQueryExpression[T](expression: T) extends QueryExpression[T] {
 case class SchemaIndex(identifier: String, label: String, property: String, kind: SchemaIndexKind, query: Option[QueryExpression[Expression]])
   extends StartItem(identifier, query.map(q => Arguments.LegacyExpression(q.expression)).toSeq :+ Arguments.Index(label, property))
   with ReadOnlyStartItem with Hint with NodeStartItemIdentifiers {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsLabel(label), ReadsNodeProperty(property))
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsNodesWithLabels(label), ReadsGivenNodeProperty(property))
 }
 
 case class NodeById(varName: String, expression: Expression)
   extends StartItem(varName, Seq(Arguments.LegacyExpression(expression)))
   with ReadOnlyStartItem with NodeStartItemIdentifiers {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsNodes)
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsAllNodes)
 }
 
 case class NodeByIdOrEmpty(varName: String, expression: Expression)
   extends StartItem(varName, Seq(Arguments.LegacyExpression(expression)))
   with ReadOnlyStartItem with NodeStartItemIdentifiers {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsNodes)
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsAllNodes)
 }
 
 case class NodeByLabel(varName: String, label: String)
   extends StartItem(varName, Seq(Arguments.LabelName(label)))
   with ReadOnlyStartItem with Hint with NodeStartItemIdentifiers {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsLabel(label))
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsNodesWithLabels(label))
 }
 
 case class AllNodes(columnName: String) extends StartItem(columnName, Seq.empty)
   with ReadOnlyStartItem with NodeStartItemIdentifiers {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsNodes)
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsAllNodes)
 }
 
 case class AllRelationships(columnName: String) extends StartItem(columnName, Seq.empty)
