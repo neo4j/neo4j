@@ -24,14 +24,18 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.NameId
+import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
-case class CountStoreNodeAggregationPipe(ident: String, labelName: Option[String])(val estimatedCardinality: Option[Double] = None)
+case class CountStoreNodeAggregationPipe(ident: String, label: Option[LazyLabel])(val estimatedCardinality: Option[Double] = None)
                                                            (implicit pipeMonitor: PipeMonitor) extends Pipe with RonjaPipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
-    val labelId = labelName match {
-      case Some(name) => state.query.getLabelId(name)
+    val labelId: Int = label match {
+      case Some(label) => label.id(state.query) match {
+        case Some(id) => id
+        case _ => throw new IllegalArgumentException("Cannot find id for label: " + label)
+      }
       case _ => NameId.WILDCARD
     }
     val count = state.query.nodeCountByCountStore(labelId)

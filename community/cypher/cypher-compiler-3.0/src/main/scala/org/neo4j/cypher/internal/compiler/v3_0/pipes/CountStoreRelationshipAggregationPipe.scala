@@ -25,21 +25,27 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{NoChildren, Plan
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.NameId
 import org.neo4j.cypher.internal.frontend.v3_0.ast.RelTypeName
+import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
-case class CountStoreRelationshipAggregationPipe(ident: String, startLabelName: Option[String],
-                                                 typeNames: Seq[RelTypeName], endLabelName: Option[String])
+case class CountStoreRelationshipAggregationPipe(ident: String, startLabel: Option[LazyLabel],
+                                                 typeNames: Seq[RelTypeName], endLabel: Option[LazyLabel])
                                                 (val estimatedCardinality: Option[Double] = None)
                                                 (implicit pipeMonitor: PipeMonitor) extends Pipe with RonjaPipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
-    val labelIds = Seq(startLabelName, endLabelName).map { labelName =>
-      labelName match {
-        case Some(name) => state.query.getLabelId(name)
+    val labelIds: Seq[Int] = Seq(startLabel, endLabel).map { labelOption =>
+      labelOption match {
+        case Some(label) =>
+          val labelId: Int = label.id(state.query) match {
+            case Some(id) => id
+            case _ => throw new IllegalArgumentException("Cannot find id for label: " + label)
+          }
+          labelId
         case _ => NameId.WILDCARD
       }
     }
-    val count = if (typeNames.length == 0) {
+    val count = if (typeNames.isEmpty) {
       state.query.relationshipCountByCountStore(labelIds(0), NameId.WILDCARD, labelIds(1))
     } else {
       typeNames.foldLeft(0L) { (count, typeName) =>
