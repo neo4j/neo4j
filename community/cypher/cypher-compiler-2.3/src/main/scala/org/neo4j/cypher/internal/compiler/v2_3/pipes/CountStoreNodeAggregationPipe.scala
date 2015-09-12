@@ -1,19 +1,41 @@
+/*
+ * Copyright (c) 2002-2015 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsNodes}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v2_3.NameId
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
-case class CountStoreNodeAggregationPipe(ident: String, labelName: Option[String])(val estimatedCardinality: Option[Double] = None)
+case class CountStoreNodeAggregationPipe(ident: String, label: Option[LazyLabel])(val estimatedCardinality: Option[Double] = None)
                                                            (implicit pipeMonitor: PipeMonitor) extends Pipe with RonjaPipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
-    val labelId = labelName match {
-      case Some(name) => state.query.getLabelId(name)
+    val labelId: Int = label match {
+      case Some(label) => label.id(state.query) match {
+        case Some(id) => id
+        case _ => throw new IllegalArgumentException("Cannot find id for label: " + label)
+      }
       case _ => NameId.WILDCARD
     }
     val count = state.query.nodeCountByCountStore(labelId)
