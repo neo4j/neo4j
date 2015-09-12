@@ -19,160 +19,24 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
-import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-/**
- * Exists:
- * get from map
- * <p>
- * Previously when it doesn't exist:
- * tokenCreator.create
- * record changes
- * command execution
- * <p>
- * Doesn't exist:
- * tokenCreator.create( name, id )
- * new kernel transaction
- * change in statement
- * commit
- * record changes
- * command execution
- * add to holder
- */
-public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
+public interface TokenHolder<TOKEN extends Token>
 {
-    public static final int NO_ID = -1;
-    private final Map<String,Integer> nameToId = new CopyOnWriteHashMap<>();
-    private final Map<Integer,TOKEN> idToToken = new CopyOnWriteHashMap<>();
-    private final TokenCreator tokenCreator;
+    int NO_ID = -1;
 
-    public TokenHolder( TokenCreator tokenCreator )
-    {
-        this.tokenCreator = tokenCreator;
-    }
+    void setInitialTokens( List<TOKEN> tokens ) throws NonUniqueTokenException;
 
-    public void setInitialTokens( Token... tokens ) throws NonUniqueTokenException
-    {
-        nameToId.clear();
-        idToToken.clear();
+    void addToken( TOKEN token ) throws NonUniqueTokenException;
 
-        Map<String,Integer> newNameToId = new HashMap<>();
-        Map<Integer,TOKEN> newIdToToken = new HashMap<>();
+    int getOrCreateId( String name );
 
-        for ( Token token : tokens )
-        {
-            addToken( token.name(), token.id(), newNameToId, newIdToToken );
-        }
+    TOKEN getTokenById( int id ) throws TokenNotFoundException;
 
-        nameToId.putAll( newNameToId );
-        idToToken.putAll( newIdToToken );
-    }
-
-    public void addToken( String name, int id ) throws NonUniqueTokenException
-    {
-        addToken( name, id, nameToId, idToToken );
-    }
-
-    public void addToken( Token token ) throws NonUniqueTokenException
-    {
-        addToken( token.name(), token.id() );
-    }
-
-    void addToken( String name, int id, Map<String,Integer> nameToIdMap, Map<Integer,TOKEN> idToTokenMap )
-            throws NonUniqueTokenException
-    {
-        TOKEN token = newToken( name, id );
-        Integer previous;
-        if ( (previous = nameToIdMap.put( name, id )) != null && previous != id )
-        {
-            throw new NonUniqueTokenException( getClass(), name, id, previous );
-        }
-        idToTokenMap.put( id, token );
-    }
-
-    public void removeToken( int id )
-    {
-        TOKEN token = idToToken.remove( id );
-        nameToId.remove( token.name() );
-    }
-
-    public int getOrCreateId( String name )
-    {
-        Integer id = nameToId.get( name );
-        if ( id != null )
-        {
-            return id;
-        }
-
-        // Let's create it
-        try
-        {
-            id = createToken( name );
-            return id;
-        }
-        catch ( Throwable e )
-        {
-            throw new TransactionFailureException( "Could not create token", e );
-        }
-    }
-
-    private synchronized int createToken( String name )
-            throws KernelException
-    {
-        Integer id = nameToId.get( name );
-        if ( id != null )
-        {
-            return id;
-        }
-
-        id = tokenCreator.getOrCreate( name );
-        try
-        {
-            addToken( name, id );
-        }
-        catch ( NonUniqueTokenException e )
-        {
-            throw new IllegalStateException( "Newly created token should be unique.", e );
-        }
-        return id;
-    }
-
-    public TOKEN getTokenById( int id ) throws TokenNotFoundException
-    {
-        TOKEN result = getTokenByIdOrNull( id );
-        if ( result == null )
-        {
-            throw new TokenNotFoundException( "Token for id " + id );
-        }
-        return result;
-    }
-
-    public TOKEN getTokenByIdOrNull( int id )
-    {
-        return idToToken.get( id );
-    }
+    TOKEN getTokenByIdOrNull( int id );
 
     /** Returns the id, or {@link #NO_ID} if no token with this name exists. */
-    public int getIdByName( String name )
-    {
-        Integer id = nameToId.get( name );
-        if ( id == null )
-        {
-            return NO_ID;
-        }
-        return id;
-    }
+    int getIdByName( String name );
 
-    public Iterable<TOKEN> getAllTokens()
-    {
-        return idToToken.values();
-    }
-
-    protected abstract TOKEN newToken( String name, int id );
+    Iterable<TOKEN> getAllTokens();
 }

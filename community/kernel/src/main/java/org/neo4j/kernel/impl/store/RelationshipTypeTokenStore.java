@@ -27,6 +27,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -36,7 +37,7 @@ import org.neo4j.logging.LogProvider;
  * Implementation of the relationship type store. Uses a dynamic store to store
  * relationship type names.
  */
-public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeTokenRecord>
+public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeTokenRecord, RelationshipTypeToken>
 {
     public static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
     public static final int RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
@@ -52,8 +53,8 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
             StoreVersionMismatchHandler versionMismatchHandler,
             Monitors monitors )
     {
-        super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, logProvider, nameStore, versionMismatchHandler, monitors );
+        super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache, fileSystemAbstraction,
+                logProvider, nameStore, versionMismatchHandler, monitors, new RelationshipTypeToken.Factory() );
     }
 
     @Override

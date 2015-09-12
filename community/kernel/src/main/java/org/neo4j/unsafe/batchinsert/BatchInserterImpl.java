@@ -278,10 +278,10 @@ public class BatchInserterImpl implements BatchInserter
         neoStore = sf.newNeoStore( true );
         neoStore.verifyStoreOk();
         neoStore.makeStoreOk();
-        Token[] indexes = getPropertyKeyTokenStore().getTokens( 10000 );
+        List<Token> indexes = getPropertyKeyTokenStore().getTokens( 10000 );
         propertyKeyTokens = new BatchTokenHolder( indexes );
         labelTokens = new BatchTokenHolder( neoStore.getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
-        Token[] types = getRelationshipTypeStore().getTokens( Integer.MAX_VALUE );
+        List<RelationshipTypeToken> types = getRelationshipTypeStore().getTokens( Integer.MAX_VALUE );
         relationshipTypeTokens = new BatchTokenHolder( types );
         indexStore = life.add( new IndexConfigStore( this.storeDir, fileSystem ) );
         schemaCache = new SchemaCache( new StandardConstraintSemantics(), neoStore.getSchemaStore() );

@@ -387,7 +387,7 @@ public class DataSourceModule
     private static class StartupWaiter extends LifecycleAdapter
     {
         private final AvailabilityGuard availabilityGuard;
-        private long timeout;
+        private final long timeout;
 
         public StartupWaiter( AvailabilityGuard availabilityGuard, long timeout )
         {
