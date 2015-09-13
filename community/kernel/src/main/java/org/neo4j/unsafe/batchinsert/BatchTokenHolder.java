@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import java.util.List;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.kernel.impl.core.Token;
@@ -29,7 +31,7 @@ class BatchTokenHolder
     private final ArrayMap<String,Token> nameToToken = new ArrayMap<>( (byte) 5, false, false );
     private final PrimitiveIntObjectMap<Token> idToToken = Primitive.intObjectMap( 20 );
 
-    BatchTokenHolder( Token[] tokens )
+    BatchTokenHolder( List<? extends Token> tokens )
     {
         for ( Token token : tokens )
         {

@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -443,7 +444,7 @@ public class NeoTransactionStoreApplierTest
         final RelationshipTypeTokenRecord record = new RelationshipTypeTokenRecord( 42 );
         final Command.RelationshipTypeTokenCommand command =
                 (RelationshipTypeTokenCommand) new Command.RelationshipTypeTokenCommand().init( record );
-        final Token token = new Token( "token", 21 );
+        final RelationshipTypeToken token = new RelationshipTypeToken( "token", 21 );
         when( relationshipTypeTokenStore.getToken( (int) command.getKey() ) ).thenReturn( token );
 
         // when

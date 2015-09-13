@@ -125,6 +125,9 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
+import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
+import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
@@ -512,12 +515,12 @@ public class HighlyAvailableEditionModule
                 createLockManager( highAvailabilityModeSwitcher, paxosLife, config, masterDelegateInvocationHandler,
                         requestContextFactory, platformModule.availabilityGuard, logging ) );
 
-        propertyKeyTokenHolder = dependencies.satisfyDependency( new PropertyKeyTokenHolder(
+        propertyKeyTokenHolder = dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder(
                 createPropertyKeyCreator( config, paxosLife, highAvailabilityModeSwitcher, masterDelegateInvocationHandler,
                         requestContextFactory, kernelProvider ) ) );
-        labelTokenHolder = dependencies.satisfyDependency( new LabelTokenHolder( createLabelIdCreator( config,
+        labelTokenHolder = dependencies.satisfyDependency( new DelegatingLabelTokenHolder( createLabelIdCreator( config,
                 paxosLife, highAvailabilityModeSwitcher, masterDelegateInvocationHandler, requestContextFactory, kernelProvider ) ) );
-        relationshipTypeTokenHolder = dependencies.satisfyDependency( new RelationshipTypeTokenHolder(
+        relationshipTypeTokenHolder = dependencies.satisfyDependency( new DelegatingRelationshipTypeTokenHolder(
                 createRelationshipTypeCreator( config, paxosLife, highAvailabilityModeSwitcher, masterDelegateInvocationHandler,
                         requestContextFactory, kernelProvider ) ) );
 

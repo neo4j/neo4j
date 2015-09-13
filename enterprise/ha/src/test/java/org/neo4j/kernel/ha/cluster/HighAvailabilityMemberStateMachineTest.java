@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -37,6 +32,11 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.junit.Test;
+import org.mockito.Matchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -97,6 +97,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.AvailabilityGuard.AvailabilityRequirement;
+
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcherTest.storeSupplierMock;
@@ -764,7 +765,7 @@ public class HighAvailabilityMemberStateMachineTest
         public void switchToSlave( InstanceId me )
         {
             InstanceId someOneElseThanMyself = new InstanceId( me.toIntegerIndex() + 1 );
-            listener.memberIsAvailable( "master", someOneElseThanMyself, URI.create( "http://127.0.0.1:2390" ), null );
+            listener.memberIsAvailable( "master", someOneElseThanMyself, URI.create( "cluster://127.0.0.1:2390?serverId=2" ), null );
             listener.memberIsAvailable( "slave", me, null, null );
         }
     }

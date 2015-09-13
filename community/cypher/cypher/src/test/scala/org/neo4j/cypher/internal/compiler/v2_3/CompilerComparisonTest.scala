@@ -46,9 +46,13 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
   val monitorTag = "CompilerComparison"
   val clock = Clock.SYSTEM_CLOCK
-  val queryCacheSize = 100
-  val queryPlanTTL = 1000
-  val statsDivergenceThreshold = 0.5
+  val config = CypherCompilerConfiguration(
+    queryCacheSize = 100,
+    statsDivergenceThreshold = 0.5,
+    queryPlanTTL = 1000,
+    useErrorsOverWarnings = false,
+    nonIndexedLabelWarningThreshold = 10000
+  )
 
   val compilers = Seq[(String, GraphDatabaseService => CypherCompiler)](
     "legacy (rule)" -> legacyCompiler,
@@ -302,7 +306,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     )
     val pipeBuilder = new SilentFallbackPlanBuilder(new LegacyExecutablePlanBuilder(monitors, rewriterSequencer), planner,
                                                     planBuilderMonitor)
-    val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
+    val execPlanBuilder = new ExecutionPlanBuilder(graph, config, clock, pipeBuilder)
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](100)
     val cacheHitMonitor = monitors.newMonitor[CypherCacheHitMonitor[Statement]](monitorTag)
     val cacheFlushMonitor = monitors.newMonitor[CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]]](monitorTag)
@@ -318,7 +322,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
     val pipeBuilder = new LegacyExecutablePlanBuilder(monitors, rewriterSequencer)
-    val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
+    val execPlanBuilder = new ExecutionPlanBuilder(graph, config, clock, pipeBuilder)
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](100)
     val cacheHitMonitor = monitors.newMonitor[CypherCacheHitMonitor[Statement]](monitorTag)
     val cacheFlushMonitor = monitors.newMonitor[CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]]](monitorTag)

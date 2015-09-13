@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<install4j version="6.0.2" transformSequenceNumber="5">
+<install4j version="6.0.3" transformSequenceNumber="5">
   <directoryPresets config="./src/main/install.properties" />
   <application name="Neo4j CE @NEO4J_VERSION@" distributionSourceDir="" applicationId="8478-6373-2628-9929" mediaDir="." mediaFilePattern="${compiler:sys.shortName}_${compiler:sys.platform}" compression="9" lzmaCompression="true" pack200Compression="false" excludeSignedFromPacking="true" commonExternalFiles="false" createMd5Sums="false" shrinkRuntime="true" shortName="neo4j-ce-@NEO4J_VERSION@" publisher="Neo Technology" publisherWeb="http://neotechnology.com" version="@NEO4J_VERSION@" allPathsRelative="true" backupOnSave="false" autoSave="false" convertDotsToUnderscores="true" macSignature="????" macVolumeId="e07442ebbe7e691b" javaMinVersion="1.7" javaMaxVersion="1.7" allowBetaVM="false" jdkMode="runtimeJre" jdkName="JDK 1.6">
     <languages skipLanguageSelection="false" languageSelectionInPrincipalLanguage="false">
@@ -731,7 +731,7 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
       </topLevelFiles>
     </macosArchive>
   </mediaSets>
-  <buildIds buildAll="true">
+  <buildIds buildAll="false">
     <mediaSet refId="444" />
   </buildIds>
   <buildOptions verbose="true" faster="false" disableSigning="false" disableJreBundling="false" debug="false" />

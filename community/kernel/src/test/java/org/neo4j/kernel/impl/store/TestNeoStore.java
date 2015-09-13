@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -61,6 +62,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
+import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -667,19 +669,19 @@ public class TestNeoStore
         data = rtStore.getToken( relType2 );
         assertEquals( relType2, data.id() );
         assertEquals( "relationshiptype2", data.name() );
-        Token allData[] = rtStore.getTokens( Integer.MAX_VALUE );
-        assertEquals( 2, allData.length );
+        List<RelationshipTypeToken> allData = rtStore.getTokens( Integer.MAX_VALUE );
+        assertEquals( 2, allData.size() );
         for ( int i = 0; i < 2; i++ )
         {
-            if ( allData[i].id() == relType1 )
+            if ( allData.get(i).id() == relType1 )
             {
-                assertEquals( relType1, allData[i].id() );
-                assertEquals( "relationshiptype1", allData[i].name() );
+                assertEquals( relType1, allData.get(i).id() );
+                assertEquals( "relationshiptype1", allData.get(i).name() );
             }
-            else if ( allData[i].id() == relType2 )
+            else if ( allData.get(i).id() == relType2 )
             {
-                assertEquals( relType2, allData[i].id() );
-                assertEquals( "relationshiptype2", allData[i].name() );
+                assertEquals( relType2, allData.get(i).id() );
+                assertEquals( "relationshiptype2", allData.get(i).name() );
             }
             else
             {

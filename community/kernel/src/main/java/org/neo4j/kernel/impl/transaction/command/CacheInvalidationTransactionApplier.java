@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.command;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -53,7 +54,7 @@ public class CacheInvalidationTransactionApplier extends NeoCommandHandler.Deleg
     {
         super.visitRelationshipTypeTokenCommand( command );
 
-        Token type = relationshipTypeTokenStore.getToken( (int) command.getKey() );
+        RelationshipTypeToken type = relationshipTypeTokenStore.getToken( (int) command.getKey() );
         cacheAccess.addRelationshipTypeToken( type );
 
         return false;
