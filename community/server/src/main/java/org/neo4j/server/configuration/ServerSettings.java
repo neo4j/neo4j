@@ -23,13 +23,13 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
-import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Migrator;
 
 import static org.neo4j.helpers.Settings.ANY;
@@ -37,7 +37,6 @@ import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.EMPTY;
 import static org.neo4j.helpers.Settings.FALSE;
-import static org.neo4j.helpers.Settings.HOSTNAME_PORT;
 import static org.neo4j.helpers.Settings.INTEGER;
 import static org.neo4j.helpers.Settings.NO_DEFAULT;
 import static org.neo4j.helpers.Settings.PATH;
@@ -176,20 +175,16 @@ public interface ServerSettings
     @Description( "Enable auth requirement to access Neo4j." )
     Setting<Boolean> auth_enabled = setting("dbms.security.auth_enabled", BOOLEAN, TRUE);
 
-    @Internal
-    @Description("Enable Bolt")
-    Setting<Boolean> bolt_enabled = setting( "xx.bolt.enabled", BOOLEAN, FALSE );
+    @Description("Enable the Bolt protocol")
+    Setting<Boolean> bolt_enabled = BoltKernelExtension.Settings.enabled;
 
-    @Internal
     @Description("Enable TLS for Bolt")
-    Setting<Boolean> bolt_tls_enabled = setting( "xx.bolt.tls.enabled", BOOLEAN, FALSE );
+    Setting<Boolean> bolt_tls_enabled = BoltKernelExtension.Settings.tls_enabled;
 
-    @Internal
-    @Description("Host and port for Bolt")
-    Setting<HostnamePort> bolt_socket_address = setting( "dbms.bolt.address", HOSTNAME_PORT, "localhost:7687" );
+    @Description("Host and port for Bolt TCP transport")
+    Setting<HostnamePort> bolt_socket_address = BoltKernelExtension.Settings.socket_address;
 
-    @Internal
-    @Description("Host and port for the Bolt Websocket")
-    Setting<HostnamePort> bolt_ws_address = setting( "dbms.bolt.ws.address", HOSTNAME_PORT, "localhost:7688" );
+    @Description("Host and port for the Bolt Websocket transport")
+    Setting<HostnamePort> bolt_ws_address = BoltKernelExtension.Settings.websocket_address;
 
 }

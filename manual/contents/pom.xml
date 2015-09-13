@@ -24,8 +24,6 @@
     <neo4j.version>${project.version}</neo4j.version>
     <attach-docs-phase>none</attach-docs-phase>
     <attach-test-jar-phase>none</attach-test-jar-phase>
-    <bolt-attribute></bolt-attribute>
-    <additional-document-attributes>${bolt-attribute}</additional-document-attributes>
   </properties>
 
   <scm>
@@ -226,7 +224,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-bolt-v1-docs</artifactId>
+      <artifactId>neo4j-bolt</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
       <scope>provided</scope>
@@ -396,18 +394,5 @@
       </plugin>
     </plugins>
   </build>
-  <profiles>
-    <profile>
-      <id>feature-bolt</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property> <name>feature.bolt</name> </property>
-      </activation>
-      <properties>
-        <!-- Line break is intentional -->
-        <bolt-attribute>:feature-bolt:</bolt-attribute>
-      </properties>
-    </profile>
-  </profiles>
 </project>
 

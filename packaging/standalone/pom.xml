@@ -58,10 +58,6 @@
     <org.neo4j.server.bundledir>system/lib</org.neo4j.server.bundledir>
     <dbms.security.require_auth>true</dbms.security.require_auth>
 
-    <!-- Additional configuration to append to neo4j-server.properties -->
-    <feature-config.bolt></feature-config.bolt>
-    <config.neo4j-server.additional>${feature-config.bolt}</config.neo4j-server.additional>
-
     <!-- Runtime properties. These are used to bootstrap the server. All other configuration should happen through a configuration file. Each of these should have a sensible default, so that the server can operate without them defined. -->
     <neo4j.home>${project.build.directory}/neo4j</neo4j.home>
     <neo4j.confdir>${neo4j.home}/conf</neo4j.confdir> <!-- needed? -->
@@ -353,17 +349,6 @@ terms of the relevant Commercial Agreement.
           </plugin>
         </plugins>
       </build>
-    </profile>
-    <profile>
-      <id>feature-bolt</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property> <name>feature.bolt</name> </property>
-      </activation>
-      <properties>
-        <feature-config.bolt># Enable Bolt, for alpha testing and preview
-xx.bolt.enabled=true</feature-config.bolt>
-      </properties>
     </profile>
   </profiles>
 
