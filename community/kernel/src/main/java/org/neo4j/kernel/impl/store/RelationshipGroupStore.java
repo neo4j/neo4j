@@ -95,24 +95,23 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         }
     }
 
-    public RelationshipGroupRecord getRecord( long id, RelationshipGroupRecord recordInstance )
+    public RelationshipGroupRecord forceGetRecord( long id, RelationshipGroupRecord record )
     {
         try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
         {
             if ( cursor.next() )
             {
-                RelationshipGroupRecord record;
                 do
                 {
-                    record = getRecord( id, cursor, recordInstance );
-                } while ( cursor.shouldRetry() );
-
-                if ( record != null )
-                {
-                    return record;
+                    readRecord( id, cursor, record );
                 }
+                while ( cursor.shouldRetry() );
             }
-            throw new InvalidRecordException( "Record[" + id + "] not in use" );
+            else
+            {
+                record.setInUse( false );
+            }
+            return record;
         }
         catch ( IOException e )
         {
@@ -135,10 +134,11 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     private RelationshipGroupRecord getRecord( long id, PageCursor cursor )
     {
         RelationshipGroupRecord record = new RelationshipGroupRecord( -1, -1 );
-        return getRecord( id, cursor, record );
+        readRecord( id, cursor, record );
+        return record;
     }
 
-    private RelationshipGroupRecord getRecord( long id, PageCursor cursor, RelationshipGroupRecord record )
+    private void readRecord( long id, PageCursor cursor, RelationshipGroupRecord record )
     {
         cursor.setOffset( offsetForId( id ) );
 
@@ -147,10 +147,6 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         // [ xxx,    ] high firstOut bits
         long inUseByte = cursor.getByte();
         boolean inUse = (inUseByte&0x1) > 0;
-        if ( !inUse )
-        {
-            return null;
-        }
 
         // [    ,xxx ] high firstIn bits
         // [ xxx,    ] high firstLoop bits
@@ -170,13 +166,12 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
 
         record.setId( id );
         record.setType( type );
-        record.setInUse( true );
+        record.setInUse( inUse );
         record.setNext( longFromIntAndMod( nextLowBits, nextMod ) );
         record.setFirstOut( longFromIntAndMod( nextOutLowBits, nextOutMod ) );
         record.setFirstIn( longFromIntAndMod( nextInLowBits, nextInMod ) );
         record.setFirstLoop( longFromIntAndMod( nextLoopLowBits, nextLoopMod ) );
         record.setOwningNode( owningNode );
-        return record;
     }
 
     @Override
@@ -239,24 +234,19 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     {
         try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
         {
+            RelationshipGroupRecord record = new RelationshipGroupRecord( id, -1 );
             if ( cursor.next() )
             {
-                RelationshipGroupRecord record;
                 do
                 {
-                    record = getRecord( id, cursor );
+                    readRecord( id, cursor, record );
                 } while ( cursor.shouldRetry() );
-
-                if ( record != null )
-                {
-                    return record;
-                }
             }
-            return new RelationshipGroupRecord( id, -1 );
+            return record;
         }
         catch ( IOException e )
         {
-            return new RelationshipGroupRecord( id, -1 );
+            throw new UnderlyingStorageException( e );
         }
     }
 
