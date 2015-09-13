@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.backup.OnlineBackupKernelExtension;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Response;
 import org.neo4j.com.monitor.RequestMonitor;
@@ -110,7 +111,7 @@ public class SwitchToSlaveTest
         // When
         try
         {
-            switchToSlave.checkDataConsistency( masterClient, neoStoreDataSource, null, false );
+            switchToSlave.checkDataConsistency( masterClient, neoStoreDataSource, new URI("cluster://localhost?serverId=1"), false );
             fail( "Should have thrown " + MismatchingStoreIdException.class.getSimpleName() + " exception" );
         }
         catch ( MismatchingStoreIdException e )
@@ -193,13 +194,14 @@ public class SwitchToSlaveTest
 
         verify( updatePuller ).tryPullUpdates();
         verify( communicationLife ).add( pullerScheduler );
-        verify( jobScheduler ).scheduleRecurring( eq(JobScheduler.Group.pullUpdates), any(Runnable.class), eq( 10l ),
+        verify( jobScheduler ).scheduleRecurring( eq( JobScheduler.Group.pullUpdates ), any( Runnable.class ),
+                eq( 10l ),
                 eq( 10l ), eq( TimeUnit.MILLISECONDS ) );
     }
 
     private URI getLocalhostUri() throws URISyntaxException
     {
-        return new URI( "127.0.0.1" );
+        return new URI( "cluster://127.0.0.1?serverId=1" );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -271,6 +273,7 @@ public class SwitchToSlaveTest
         when( master.getStoreId() ).thenReturn( storeId );
         when( master.getHARole() ).thenReturn( HighAvailabilityModeSwitcher.MASTER );
         when( master.hasRole( eq( HighAvailabilityModeSwitcher.MASTER ) ) ).thenReturn( true );
+        when( master.getInstanceId() ).thenReturn( new InstanceId(1) );
         when( clusterMembers.getMembers() ).thenReturn( Collections.singleton( master ) );
         when( resolver.resolveDependency( ClusterMembers.class ) ).thenReturn( clusterMembers );
 

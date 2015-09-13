@@ -65,6 +65,18 @@ public class ClusterMembers
         };
     }
 
+    public static Predicate<ClusterMember> hasInstanceId( final InstanceId instanceId )
+    {
+        return new Predicate<ClusterMember>()
+        {
+            @Override
+            public boolean accept( ClusterMember item )
+            {
+                return item.getInstanceId().equals( instanceId );
+            }
+        };
+    }
+
     private final Map<InstanceId, ClusterMember> members = new CopyOnWriteHashMap<>();
 
     public ClusterMembers( Cluster cluster, Heartbeat heartbeat, ClusterMemberEvents events, InstanceId me )
