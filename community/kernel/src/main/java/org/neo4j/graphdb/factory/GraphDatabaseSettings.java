@@ -19,13 +19,13 @@
  */
 package org.neo4j.graphdb.factory;
 
-import org.apache.commons.lang3.SystemUtils;
-
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
 import java.util.List;
+
+import org.apache.commons.lang3.SystemUtils;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
@@ -42,6 +42,7 @@ import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
 import static org.neo4j.helpers.Settings.DEFAULT;
 import static org.neo4j.helpers.Settings.DOUBLE;
+import static org.neo4j.helpers.Settings.LONG;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.INTEGER;
@@ -70,6 +71,12 @@ public abstract class GraphDatabaseSettings
     @Description("Only allow read operations from this Neo4j instance. "
             + "This mode still requires write access to the directory for lock purposes.")
     public static final Setting<Boolean> read_only = setting( "read_only", BOOLEAN, FALSE );
+
+    @Deprecated
+    @Description( "The type of cache to use for nodes and relationships. " +
+                  "This configuration setting is no longer applicable from Neo4j 2.3. " +
+                  "Configuration has been simplified to only require tuning of the page cache." )
+    public static final Setting<String> cache_type = setting( "cache_type", STRING, "deprecated" );
 
     @Description("Print out the effective Neo4j configuration after startup.")
     public static final Setting<Boolean> dump_configuration = setting("dump_configuration", BOOLEAN, FALSE );
@@ -122,7 +129,13 @@ public abstract class GraphDatabaseSettings
                   "A value of 0 means always replan, and 1 means never replan." )
     public static Setting<Double> query_statistics_divergence_threshold = setting(
             "dbms.cypher.statistics_divergence_threshold", DOUBLE, "0.1", min( 0.0 ), max(
-            1.0 ) );
+                    1.0 ) );
+
+    @Description( "The threshold when a warning is generated if a label scan is done after a load csv " +
+                  "where the label has no index" )
+    @Internal
+    public static Setting<Long> query_non_indexed_label_warning_threshold = setting(
+            "dbms.cypher.non_indexed_label_warning_threshold", LONG, "10000" );
 
     @Description("The minimum lifetime of a query plan before a query is considered for replanning")
     public static Setting<Long> cypher_min_replan_interval = setting( "dbms.cypher.min_replan_interval", DURATION, "1s" );
@@ -152,7 +165,7 @@ public abstract class GraphDatabaseSettings
     @Description( "Internal log contexts that should output debug level logging" )
     @Internal
     public static final Setting<List<String>> store_internal_debug_contexts = setting( "store.internal_log.debug_contexts",
-            list( ",", STRING ), "" );
+            list( ",", STRING ), "org.neo4j.diagnostics,org.neo4j.cluster.protocol,org.neo4j.kernel.ha" );
 
     @Description("Log level threshold.")
     public static final Setting<Level> store_internal_log_level = setting( "store.internal_log.level",

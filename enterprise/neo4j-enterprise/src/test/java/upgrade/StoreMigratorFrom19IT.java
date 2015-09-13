@@ -27,6 +27,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -168,7 +169,7 @@ public class StoreMigratorFrom19IT
         // verify that there are no duplicate keys in the store
         try ( PropertyKeyTokenStore tokenStore = storeFactory.newPropertyKeyTokenStore() )
         {
-            Token[] tokens = tokenStore.getTokens( MAX_VALUE );
+            List<Token> tokens = tokenStore.getTokens( MAX_VALUE );
             assertNoDuplicates( tokens );
         }
 
@@ -207,7 +208,7 @@ public class StoreMigratorFrom19IT
         assertEquals( 8L + 3, neoStore.getLastCommittedTransactionId() ); // prior verifications add 3 transactions
     }
 
-    private void assertNoDuplicates( Token[] tokens )
+    private void assertNoDuplicates( List<Token> tokens )
     {
         Set<String> visited = new HashSet<>();
         for ( Token token : tokens )

@@ -21,6 +21,7 @@ package org.neo4j.helpers;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.function.Consumer;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -137,6 +138,19 @@ public class TransactionTemplate
     public TransactionTemplate retryOn( org.neo4j.function.Predicate<Throwable> retryPredicate )
     {
         return new TransactionTemplate( gds, monitor, retries, backoff, retryPredicate );
+    }
+
+    public void execute( final Consumer<Transaction> txConsumer )
+    {
+        execute( new Function<Transaction, Object>()
+        {
+            @Override
+            public Object apply( Transaction transaction )
+            {
+                txConsumer.accept( transaction );
+                return null;
+            }
+        } );
     }
 
     public <T> T execute( Function<Transaction, T> txFunction )

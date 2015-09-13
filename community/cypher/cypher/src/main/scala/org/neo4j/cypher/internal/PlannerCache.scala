@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compatibility.{CompatibilityFor1_9, CompatibilityFor2_2, CompatibilityFor2_2Cost, CompatibilityFor2_2Rule, CompatibilityFor2_3, CompatibilityFor2_3Cost, CompatibilityFor2_3Rule}
+import org.neo4j.cypher.internal.compiler.v2_3.CypherCompilerConfiguration
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.KernelAPI
@@ -37,23 +38,21 @@ final case class PlannerSpec_v2_2(planner: CypherPlanner) extends PlannerSpec
 final case class PlannerSpec_v2_3(planner: CypherPlanner, runtime: CypherRuntime) extends PlannerSpec
 
 class PlannerFactory(graph: GraphDatabaseService, kernelAPI: KernelAPI, kernelMonitors: KernelMonitors, log: Log,
-                     queryCacheSize: Int, statisticsDivergenceThreshold: Double, queryPlanTTL: Long,
-                     useErrorsOverWarnings: Boolean) {
+                     config: CypherCompilerConfiguration) {
 
-  def create(spec: PlannerSpec_v1_9.type) = CompatibilityFor1_9(graph, queryCacheSize, kernelMonitors)
+  def create(spec: PlannerSpec_v1_9.type) = CompatibilityFor1_9(graph, config.queryCacheSize, kernelMonitors)
 
   def create(spec: PlannerSpec_v2_2) = spec.planner match {
-    case CypherPlanner.rule => CompatibilityFor2_2Rule(graph, queryCacheSize, statisticsDivergenceThreshold,
-      queryPlanTTL, CypherCompiler.CLOCK, kernelMonitors, kernelAPI)
-    case _ => CompatibilityFor2_2Cost(graph, queryCacheSize, statisticsDivergenceThreshold, queryPlanTTL,
+    case CypherPlanner.rule => CompatibilityFor2_2Rule(graph, config.queryCacheSize, config.statsDivergenceThreshold,
+      config.queryPlanTTL, CypherCompiler.CLOCK, kernelMonitors, kernelAPI)
+    case _ => CompatibilityFor2_2Cost(graph, config.queryCacheSize, config.statsDivergenceThreshold, config.queryPlanTTL,
       CypherCompiler.CLOCK, kernelMonitors, kernelAPI, log, spec.planner)
   }
 
   def create(spec: PlannerSpec_v2_3) =  spec.planner match {
-    case CypherPlanner.rule => CompatibilityFor2_3Rule(graph, queryCacheSize, statisticsDivergenceThreshold,
-      queryPlanTTL, CypherCompiler.CLOCK, kernelMonitors, kernelAPI)
-    case _ => CompatibilityFor2_3Cost(graph, queryCacheSize, statisticsDivergenceThreshold, queryPlanTTL,
-      CypherCompiler.CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime, useErrorsOverWarnings)
+    case CypherPlanner.rule => CompatibilityFor2_3Rule(graph, config, CypherCompiler.CLOCK, kernelMonitors, kernelAPI)
+    case _ => CompatibilityFor2_3Cost(graph, config,
+      CypherCompiler.CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime)
   }
 }
 

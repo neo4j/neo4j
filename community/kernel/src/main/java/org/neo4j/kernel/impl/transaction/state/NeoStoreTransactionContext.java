@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import java.util.Collection;
 
+import org.neo4j.kernel.impl.core.RelationshipTypeToken;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -93,21 +95,21 @@ public class NeoStoreTransactionContext
 
     public void createPropertyKeyToken( String name, int id )
     {
-        TokenCreator<PropertyKeyTokenRecord> creator =
+        TokenCreator<PropertyKeyTokenRecord, Token> creator =
                 new TokenCreator<>( neoStore.getPropertyKeyTokenStore() );
         creator.createToken( name, id, getPropertyKeyTokenRecords() );
     }
 
     public void createLabelToken( String name, int id )
     {
-        TokenCreator<LabelTokenRecord> creator =
+        TokenCreator<LabelTokenRecord, Token> creator =
                 new TokenCreator<>( neoStore.getLabelTokenStore() );
         creator.createToken( name, id, getLabelTokenRecords() );
     }
 
     public void createRelationshipTypeToken( String name, int id )
     {
-        TokenCreator<RelationshipTypeTokenRecord> creator =
+        TokenCreator<RelationshipTypeTokenRecord, RelationshipTypeToken> creator =
                 new TokenCreator<>( neoStore.getRelationshipTypeTokenStore() );
         creator.createToken( name, id, getRelationshipTypeTokenRecords() );
     }

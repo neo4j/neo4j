@@ -24,6 +24,7 @@ import java.net.URL
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.ArrayBackedMap
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
@@ -60,6 +61,43 @@ case class LoadCSVPipe(source: Pipe,
     url
   }
 
+  //Uses an ArrayBackedMap to store header-to-values mapping
+  private class IteratorWithHeaders(headers: Seq[String], context: ExecutionContext, inner: Iterator[Array[String]]) extends Iterator[ExecutionContext] {
+    private val internalMap = new ArrayBackedMap[String, String](headers.zipWithIndex.toMap)
+    private var nextContext: ExecutionContext = null
+    private var needsUpdate = true
+
+    def hasNext: Boolean = {
+      if (needsUpdate) {
+        nextContext = computeNextRow()
+        needsUpdate = false
+      }
+      nextContext != null
+    }
+
+    def next(): ExecutionContext = {
+      if (!hasNext) Iterator.empty.next()
+      needsUpdate = true
+      nextContext
+    }
+
+    private def computeNextRow() = {
+      if (inner.hasNext) {
+        val row = inner.next()
+        internalMap.putValues(row)
+        //we need to make a copy here since someone may hold on this
+        //reference, e.g. EagerPipe
+        context.newWith(identifier -> internalMap.copy)
+      } else null
+    }
+  }
+
+  private class IteratorWithoutHeaders(context: ExecutionContext, inner: Iterator[Array[String]]) extends Iterator[ExecutionContext] {
+    override def hasNext: Boolean = inner.hasNext
+
+    override def next(): ExecutionContext = context.newWith(identifier -> inner.next().toSeq)
+  }
+
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
@@ -69,17 +107,12 @@ case class LoadCSVPipe(source: Pipe,
       val url = checkURL(urlExpression(context).asInstanceOf[String], state.query)
 
       val iterator: Iterator[Array[String]] = state.resources.getCsvIterator(url, fieldTerminator)
-
-      val nextRow: Array[String] => Iterable[Any] = format match {
+      format match {
         case HasHeaders =>
-          val headers = iterator.next().toSeq
-          (row: Array[String]) => (headers zip row).toMap
+          val headers = iterator.next().toSeq // First row is headers
+          new IteratorWithHeaders(headers, context, iterator)
         case NoHeaders =>
-          (row: Array[String]) => row.toSeq
-      }
-
-      iterator.map {
-        value => context.newWith(identifier -> nextRow(value))
+          new IteratorWithoutHeaders(context, iterator)
       }
     })
   }

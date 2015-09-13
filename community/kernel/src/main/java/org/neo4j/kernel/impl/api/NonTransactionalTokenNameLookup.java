@@ -65,7 +65,7 @@ public class NonTransactionalTokenNameLookup implements TokenNameLookup
         return tokenById( propertyKeyTokenHolder, propertyKeyId, "property" );
     }
 
-    private static String tokenById( TokenHolder<?> tokenHolder, int tokenId, String tokenName )
+    private static String tokenById( TokenHolder tokenHolder, int tokenId, String tokenName )
     {
         try
         {

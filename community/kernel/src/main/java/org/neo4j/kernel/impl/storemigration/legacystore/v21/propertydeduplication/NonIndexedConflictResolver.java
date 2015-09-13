@@ -52,7 +52,7 @@ class NonIndexedConflictResolver implements PrimitiveLongObjectVisitor<List<Dupl
 
     private Map<String, Integer> buildPropertyKeyIndex( PropertyKeyTokenStore tokenStore ) throws IOException
     {
-        Token[] tokens = tokenStore.getTokens( (int) tokenStore.getHighestPossibleIdInUse() + 1 );
+        List<Token> tokens = tokenStore.getTokens( (int) tokenStore.getHighestPossibleIdInUse() + 1 );
         Map<String, Integer> map = new HashMap<>();
         for ( Token token : tokens )
         {
@@ -87,7 +87,7 @@ class NonIndexedConflictResolver implements PrimitiveLongObjectVisitor<List<Dupl
         {
             return token;
         }
-        TokenCreator<PropertyKeyTokenRecord> creator = new TokenCreator<>( keyTokenStore );
+        TokenCreator<PropertyKeyTokenRecord, Token> creator = new TokenCreator<>( keyTokenStore );
         DirectRecordAccess<Integer, PropertyKeyTokenRecord, Void> recordAccess = new DirectRecordAccess<>(
                 keyTokenStore, Loaders.propertyKeyTokenLoader( keyTokenStore )
         );

@@ -88,13 +88,20 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
 
   private def createCompiler() =
     CypherCompilerFactory.costBasedCompiler(
-      graph, 128, 0.5, 1000L, Clock.SYSTEM_CLOCK,
+      graph,
+      CypherCompilerConfiguration(
+        queryCacheSize = 128,
+        statsDivergenceThreshold = 0.5,
+        queryPlanTTL = 1000L,
+        useErrorsOverWarnings = false,
+        nonIndexedLabelWarningThreshold = 10000L
+      ),
+      Clock.SYSTEM_CLOCK,
       GeneratedQueryStructure,
       new WrappedMonitors2_3(kernelMonitors),
       new StringInfoLogger2_3(NullLog.getInstance),
       plannerName = Some(GreedyPlannerName),
       runtimeName = Some(CompiledRuntimeName),
-      rewriterSequencer = RewriterStepSequencer.newValidating,
-      useErrorsOverWarnings = false
+      rewriterSequencer = RewriterStepSequencer.newValidating
     )
 }

@@ -27,14 +27,15 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 /**
- * Implementation of the property store.
+ * Implementation of the label store.
  */
-public class LabelTokenStore extends TokenStore<LabelTokenRecord>
+public class LabelTokenStore extends TokenStore<LabelTokenRecord, Token>
 {
     public static final String TYPE_DESCRIPTOR = "LabelTokenStore";
     public static final int RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
@@ -50,8 +51,8 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord>
             StoreVersionMismatchHandler versionMismatchHandler,
             Monitors monitors )
     {
-        super(fileName, config, IdType.LABEL_TOKEN, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, logProvider, nameStore, versionMismatchHandler, monitors );
+        super( fileName, config, IdType.LABEL_TOKEN, idGeneratorFactory, pageCache, fileSystemAbstraction,
+                logProvider, nameStore, versionMismatchHandler, monitors, new Token.Factory() );
     }
 
     @Override

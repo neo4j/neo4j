@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -146,14 +147,14 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         dumpTokens( storeFactory.newRelationshipTypeTokenStore( file ), ids );
     }
 
-    private static <T extends TokenRecord> void dumpTokens( final TokenStore<T> store, long[] ids ) throws Exception
+    private static <R extends TokenRecord, T extends Token> void dumpTokens( final TokenStore<R, T> store, long[] ids ) throws Exception
     {
         try
         {
-            new DumpStore<T, TokenStore<T>>( System.out )
+            new DumpStore<R, TokenStore<R, T>>( System.out )
             {
                 @Override
-                protected Object transform( T record ) throws Exception
+                protected Object transform( R record ) throws Exception
                 {
                     if ( record.inUse() )
                     {

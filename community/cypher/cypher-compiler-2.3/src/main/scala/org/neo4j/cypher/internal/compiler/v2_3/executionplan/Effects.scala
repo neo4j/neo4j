@@ -38,17 +38,17 @@ case class Effects(effectsSet: Set[Effect] = Set.empty) {
 
   def writes() = effectsSet.exists(_.writes)
 
-  def toWriteEffects() = Effects(effectsSet.map {
+  def toWriteEffects = Effects(effectsSet.map {
     case e: ReadEffect => e.toWriteEffect
     case e: WriteEffect => e
   }.toSet[Effect])
 }
 
-object AllWriteEffects extends Effects(Set(WritesNodes, WritesRelationships, WritesAnyLabel, WritesAnyNodeProperty, WritesAnyRelationshipProperty)) {
+object AllWriteEffects extends Effects(Set(WritesAnyNode, WritesRelationships, WritesAnyNodeProperty, WritesAnyRelationshipProperty)) {
   override def toString = "AllWriteEffects"
 }
 
-object AllReadEffects extends Effects(Set(ReadsNodes, ReadsRelationships, ReadsAnyLabel, ReadsAnyNodeProperty, ReadsAnyRelationshipProperty)) {
+object AllReadEffects extends Effects(Set(ReadsAllNodes, ReadsRelationships, ReadsAnyNodeProperty, ReadsAnyRelationshipProperty)) {
   override def toString = "AllReadEffects"
 }
 
@@ -63,8 +63,8 @@ object Effects {
   def propertyRead(expression: Expression, symbols: SymbolTable)(propertyKey: String) = {
     (expression match {
       case i: Identifier => symbols.identifiers.get(i.entityName).map {
-        case _: NodeType => Effects(ReadsNodeProperty(propertyKey))
-        case _: RelationshipType => Effects(ReadsRelationshipProperty(propertyKey))
+        case _: NodeType => Effects(ReadsGivenNodeProperty(propertyKey))
+        case _: RelationshipType => Effects(ReadsGivenRelationshipProperty(propertyKey))
         case _ => Effects()
       }
       case _ => None
@@ -74,8 +74,8 @@ object Effects {
   def propertyWrite(expression: Expression, symbols: SymbolTable)(propertyKey: String) =
     (expression match {
       case i: Identifier => symbols.identifiers.get(i.entityName).map {
-        case _: NodeType => Effects(WritesNodeProperty(propertyKey))
-        case _: RelationshipType => Effects(WritesRelationshipProperty(propertyKey))
+        case _: NodeType => Effects(WritesGivenNodeProperty(propertyKey))
+        case _: RelationshipType => Effects(WritesGivenRelationshipProperty(propertyKey))
         case _ => Effects()
       }
       case _ => None
@@ -129,49 +129,57 @@ protected trait WriteEffect extends Effect {
   override def writes = true
 }
 
-case object ReadsNodes extends ReadEffect {
-  override def toWriteEffect = WritesNodes
+trait ReadsNodes extends ReadEffect
+
+case object ReadsAllNodes extends ReadsNodes {
+  override def toWriteEffect = WritesAnyNode
 }
 
-case object WritesNodes extends WriteEffect
+case object ReadsRelationshipBoundNodes extends ReadsNodes {
+  override def toWriteEffect = WritesRelationshipBoundNodes
+}
 
-case class ReadsNodeProperty(propertyName: String) extends ReadEffect {
+case class ReadsNodesWithLabels(labels: Set[String]) extends ReadsNodes {
+  override def toWriteEffect = WritesNodesWithLabels(labels)
+}
+
+object ReadsNodesWithLabels {
+  def apply(label: String*): ReadsNodesWithLabels = ReadsNodesWithLabels(label.toSet)
+}
+
+trait WritesNodes extends WriteEffect
+
+case object WritesAnyNode extends WritesNodes
+
+case object WritesRelationshipBoundNodes extends WritesNodes
+
+object WritesNodesWithLabels {
+  def apply(labels: String*): WritesNodesWithLabels = WritesNodesWithLabels(labels.toSet)
+}
+
+case class WritesNodesWithLabels(labels: Set[String]) extends WritesNodes
+
+trait ReadsNodeProperty extends ReadEffect
+
+case class ReadsGivenNodeProperty(propertyName: String) extends ReadsNodeProperty {
   override def toString = s"${super.toString} '$propertyName'"
 
-  override def toWriteEffect = WritesNodeProperty(propertyName)
+  override def toWriteEffect = WritesGivenNodeProperty(propertyName)
 }
 
-object ReadsAnyNodeProperty extends ReadsNodeProperty("") {
-  override def toWriteEffect: WritesNodeProperty = WritesAnyNodeProperty
+object ReadsAnyNodeProperty extends ReadsNodeProperty {
+  override def toWriteEffect = WritesAnyNodeProperty
 
   override def toString = this.getClass.getSimpleName
 }
 
-case class WritesNodeProperty(propertyName: String) extends WriteEffect {
+trait WritesNodeProperty extends WriteEffect
+
+case class WritesGivenNodeProperty(propertyName: String) extends WritesNodeProperty {
   override def toString = s"${super.toString} '$propertyName'"
 }
 
-object WritesAnyNodeProperty extends WritesNodeProperty("") {
-  override def toString = this.getClass.getSimpleName
-}
-
-case class ReadsLabel(labelName: String) extends ReadEffect {
-  override def toString = s"${super.toString} '$labelName'"
-
-  override def toWriteEffect = WritesLabel(labelName)
-}
-
-object ReadsAnyLabel extends ReadsLabel("") {
-  override def toWriteEffect: WritesLabel = WritesAnyLabel
-
-  override def toString = this.getClass.getSimpleName
-}
-
-case class WritesLabel(labelName: String) extends WriteEffect {
-  override def toString = s"${super.toString} '$labelName'"
-}
-
-object WritesAnyLabel extends WritesLabel("") {
+object WritesAnyNodeProperty extends WritesNodeProperty {
   override def toString = this.getClass.getSimpleName
 }
 
@@ -181,22 +189,26 @@ case object ReadsRelationships extends ReadEffect {
 
 case object WritesRelationships extends WriteEffect
 
-case class ReadsRelationshipProperty(propertyName: String) extends ReadEffect {
+trait ReadsRelationshipProperty extends ReadEffect
+
+case class ReadsGivenRelationshipProperty(propertyName: String) extends ReadsRelationshipProperty {
   override def toString = s"${super.toString} '$propertyName'"
 
-  override def toWriteEffect = WritesRelationshipProperty(propertyName)
+  override def toWriteEffect = WritesGivenRelationshipProperty(propertyName)
 }
 
-case class WritesRelationshipProperty(propertyName: String) extends WriteEffect {
-  override def toString = s"${super.toString} '$propertyName'"
-}
-
-object ReadsAnyRelationshipProperty extends ReadsRelationshipProperty("") {
-  override def toWriteEffect: WritesRelationshipProperty = WritesAnyRelationshipProperty
+object ReadsAnyRelationshipProperty extends ReadsRelationshipProperty {
+  override def toWriteEffect = WritesAnyRelationshipProperty
 
   override def toString = this.getClass.getSimpleName
 }
 
-object WritesAnyRelationshipProperty extends WritesRelationshipProperty("") {
+trait WritesRelationshipProperty extends WriteEffect
+
+case class WritesGivenRelationshipProperty(propertyName: String) extends WritesRelationshipProperty {
+  override def toString = s"${super.toString} '$propertyName'"
+}
+
+object WritesAnyRelationshipProperty extends WritesRelationshipProperty {
   override def toString = this.getClass.getSimpleName
 }

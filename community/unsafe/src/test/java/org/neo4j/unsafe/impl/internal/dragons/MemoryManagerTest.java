@@ -17,15 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.muninn;
+package org.neo4j.unsafe.impl.internal.dragons;
 
 import org.junit.Test;
 
-import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
-
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 public class MemoryManagerTest
 {
