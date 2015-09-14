@@ -1,7 +1,7 @@
 .inner
   h4 Configuration
-  
-  form(ng-controller="SettingsCtrl")  
+
+  form(ng-controller="SettingsCtrl")
     h5 Personal
     .form-group
       label(for="userName") Name
@@ -10,71 +10,68 @@
       label(for="shouldReportUdc")
         input#shouldReportUdc(type="checkbox", ng-model="settings.shouldReportUdc", ng-change="save()")
         | &nbsp; Share non-sensitive data?
-    .checkbox 
+    .checkbox
       label(for="acceptsReplies")
         input#acceptsReplies(type='checkbox', ng-model="settings.acceptsReplies", ng-change="save()")
         | &nbsp; Accepts replies
-    .checkbox 
-      label(for="storeCredentials") 
+    .checkbox
+      label(for="storeCredentials")
         input#storeCredentials(type='checkbox', ng-model="settings.storeCredentials", ng-change="save()")
         | &nbsp; Save login credentials
-    .checkbox 
-      label(for="enableMotd") 
+    .checkbox
+      label(for="enableMotd")
         input#enableMotd(type='checkbox', ng-model="settings.enableMotd", ng-change="save()")
         | &nbsp; Enable MOTD feed
     .form-group
-      label UI Theme            
-      .radio 
+      label UI Theme
+      .radio
         label
-          input(type="radio", name="themeRadio", id="theme1", value="normal", ng-model="settings.theme", ng-change="save()", checked) 
+          input(type="radio", name="themeRadio", id="theme1", value="normal", ng-model="settings.theme", ng-change="save()", checked)
           | Normal
       .radio
         label
-          input(type="radio", name="themeRadio", id="theme2", value="dark", ng-model="settings.theme", ng-change="save()") 
+          input(type="radio", name="themeRadio", id="theme2", value="dark", ng-model="settings.theme", ng-change="save()")
           | Dark
       .radio
         label
-          input(type="radio", name="themeRadio", id="theme3", value="outline", ng-model="settings.theme", ng-change="save()") 
+          input(type="radio", name="themeRadio", id="theme3", value="outline", ng-model="settings.theme", ng-change="save()")
           | Outline
 
     h5 Network Connection
-    .form-group 
+    .form-group
       label(for="maxExecutionTime") Max Execution Time
         input.form-control.input#maxExecutionTime(type='number', ng-model="settings.maxExecutionTime", ng-change="save()")
-    .form-group 
+    .form-group
       label(for="heartbeat") Heartbeat
         input.form-control.input#maxExecutionTime(type='number', ng-model="settings.maxExecutionTime", ng-change="save()")
 
-    h5 Result Frames 
-    .form-group 
+    h5 Result Frames
+    .form-group
       label(for="maxFrames") Max Frames
         input.form-control.input#maxFrames(type='number', ng-model="settings.maxFrames", ng-change="save()")
-    .form-group 
+    .form-group
       label(for="maxHistory") Max History
         input.form-control.input#maxHistory(type='number', ng-model="settings.maxHistory", ng-change="save()")
-    .form-group 
+    .form-group
       label(for="scrollToTop") Scroll To Top
         input.form-control.input#scrollToTop(type='number', ng-model="settings.scrollToTop", ng-change="save()")
     h5 Graph Visualization
-    .form-group 
+    .form-group
       label(for="maxNeighbours") Max Neighbors
         input.form-control.input#maxNeighbours(type='number', ng-model="settings.maxNeighbours", ng-change="save()")
-    .form-group 
+    .form-group
       label(for="maxNodes") Max Nodes
         input.form-control.input#maxNodes(type='number', ng-model="settings.maxNodes", ng-change="save()")
-    .form-group 
+    .form-group
       label(for="maxRows") Max Rows
         input.form-control.input#maxRows(type='number', ng-model="settings.maxRows", ng-change="save()")
-    //- .form-group 
-    //-   label(for="filemode") File Mode
-    //-     input.form-control.input#filemode(type='number', ng-model="settings.filemode", ng-change="save()")
-    .form-group 
+    .form-group
       label(for="maxRawSize") Max Raw Size
         input.form-control.input#maxRawSize(type='number', ng-model="settings.maxRawSize", ng-change="save()")
-    .form-group 
+    .form-group
       label(for="initCmd") Initial Command
         input.form-control.input#initCmd(type='number', ng-model="settings.initCmd", ng-change="save()")
-    .form-group 
+    .form-group
       label(for="refreshInterval") Refresh Interval
         input.form-control.input#refreshInterval(type='number', ng-model="settings.refreshInterval", ng-change="save()")
-        
+
