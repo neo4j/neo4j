@@ -39,7 +39,6 @@ case class MergePatternAction(patterns: Seq[Pattern],
                               onMatch: Seq[SetAction],
                               maybeUpdateActions: Option[Seq[UpdateAction]] = None,
                               maybeMatchPipe: Option[Pipe] = None) extends UpdateAction {
-
   def children: Seq[AstNode[_]] = patterns ++ actions ++ onCreate ++ onMatch
 
   def readyToExecute = maybeMatchPipe.nonEmpty && maybeUpdateActions.nonEmpty
@@ -110,9 +109,9 @@ case class MergePatternAction(patterns: Seq[Pattern],
   def symbolTableDependencies: Set[String] = {
     val dependencies = (
       patterns.flatMap(_.symbolTableDependencies) ++
-      actions.flatMap(_.symbolTableDependencies) ++
-      onCreate.flatMap(_.symbolTableDependencies) ++
-      onMatch.flatMap(_.symbolTableDependencies)).toSet
+        actions.flatMap(_.symbolTableDependencies) ++
+        onCreate.flatMap(_.symbolTableDependencies) ++
+        onMatch.flatMap(_.symbolTableDependencies)).toSet
 
     val introducedIdentifiers = patterns.flatMap(_.identifiers).toSet
 
@@ -139,7 +138,7 @@ case class MergePatternAction(patterns: Seq[Pattern],
     val onMatchEffects = onMatch.effects(allSymbols)
     val updateActionsEffects = updateActions().effects(allSymbols)
 
-    actionEffects | onCreateEffects | onMatchEffects | updateActionsEffects | effectsFromReading
+    actionEffects ++ onCreateEffects ++ onMatchEffects ++ updateActionsEffects ++ effectsFromReading
   }
 
   override def updateSymbols(symbol: SymbolTable): SymbolTable = symbol.add(identifiers.toMap)

@@ -36,23 +36,23 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
     toPipe.dup(sources.toList)
   }
 
-  private def wouldInterfere(fromWithLeafInfo: Effects, toWithLeafInfo: Effects): Boolean = {
+  private def wouldInterfere(from: Effects, to: Effects): Boolean = {
 //    val nodesInterfere = nodesReadInterference(from, to)
 //    val relsInterfere = from.contains(ReadsRelationships) && to.contains(WritesRelationships)
 
     // NOTE: Leaf effects will not be considered unless effects have first been flattened with Effects.regardlessOfLeafEffects
-    val from = fromWithLeafInfo.regardlessOfLeafEffects
-    val to = toWithLeafInfo.regardlessOfLeafEffects
+    val fromWithoutLeafInfo = from.regardlessOfLeafEffects
+    val toWithoutLeafInfo = to.regardlessOfLeafEffects
 
-    val deleteMergeInterfereNodes = nodesDeleteMergeInterference(from, to)
-    val deleteMergeInterfereRelationships = relationshipsDeleteMergeInterference(fromWithLeafInfo, toWithLeafInfo)
-    val writeReadInterfereNodes = nodesWriteReadInterference(from, to)
-    val readWriteNonLeafInterfereNodes = nodesReadCreateInterference(fromWithLeafInfo, toWithLeafInfo) // NOTE: Here we should _not_ consider leaf effects
+    val deleteMergeInterfereNodes = nodesDeleteMergeInterference(fromWithoutLeafInfo, toWithoutLeafInfo)
+    val deleteMergeInterfereRelationships = relationshipsDeleteMergeInterference(fromWithoutLeafInfo, toWithoutLeafInfo)
+    val writeReadInterfereNodes = nodesWriteReadInterference(fromWithoutLeafInfo, toWithoutLeafInfo)
+    val readWriteNonLeafInterfereNodes = nodesReadWriteInterference(from, to) // NOTE: Here we should _not_ consider leaf effects
 
     deleteMergeInterfereNodes ||
       deleteMergeInterfereRelationships ||
-      nodePropertiesInterfere(fromWithLeafInfo, toWithLeafInfo) ||
-      relationshipPropertiesInterfere(fromWithLeafInfo, toWithLeafInfo) ||
+      nodePropertiesInterfere(from, to) ||
+      relationshipPropertiesInterfere(from, to) ||
       writeReadInterfereNodes ||
       readWriteNonLeafInterfereNodes
   }
@@ -62,8 +62,8 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
     readsCreatesSameNode(to, from)
   }
 
-  def nodesReadCreateInterference(from: Effects, to: Effects) = {
-    readsCreatesSameNode(from, to)
+  def nodesReadWriteInterference(from: Effects, to: Effects) = {
+    readsCreatesSameNode(from.regardlessOfOptionalEffects, to) || readsDeletesSameNode(from, to)
   }
 
   private def relationshipsDeleteMergeInterference(from: Effects, to: Effects) = {
@@ -93,7 +93,17 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
   }
 
   private def readsCreatesSameNode(from: Effects, to: Effects) = {
-    from.contains(ReadsAllNodes) && to.contains(CreatesAnyNode) || readsCreatesSameNodeWithLabels(from, to)
+    from.contains(ReadsAllNodes) && to.effectsSet.exists {
+      case create: CreatesNodes => true
+      case _ => false
+    } || readsCreatesSameNodeWithLabels(from, to)
+  }
+
+  private def readsDeletesSameNode(from: Effects, to: Effects) = {
+    val fromReadNodes = from.effectsSet.collect {
+      case readNodes: ReadsNodes => readNodes
+    }
+    fromReadNodes.nonEmpty && to.contains(DeletesNode)
   }
 
   private def readsCreatesSameNodeWithLabels(from: Effects, to: Effects) = {
@@ -103,6 +113,7 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
 
     val toLabels = to.effectsSet.collect {
       case CreatesNodesWithLabels(labels) => labels
+      case SetLabel(label) => Set(label)
     }.flatten
 
     (fromLabels intersect toLabels).nonEmpty

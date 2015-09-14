@@ -43,14 +43,24 @@ case class Effects(effectsSet: Set[Effect] = Set.empty) {
     case e => e
   })
 
-  def toWriteEffects = Effects(effectsSet.map {
-//    case e: ReadEffect => e.toWriteEffect
-    case e: WriteEffect => e
-  }.toSet[Effect])
+  def regardlessOfOptionalEffects = Effects(effectsSet.map {
+    case OptionalLeafEffect(e) => e
+    case e => e
+  })
 
-  def asLeafEffects = Effects(effectsSet.map {
-    effect => LeafEffect(effect)
-  }.toSet[Effect])
+//  def toWriteEffects = Effects(effectsSet.map[Effect, Effect] {
+////    case e: ReadEffect => e.toWriteEffect
+//    case e: WriteEffect => e
+//  })
+
+  def asLeafEffects = Effects(effectsSet.map[Effect, Set[Effect]] {
+    effect: Effect => LeafEffect(effect)
+  })
+
+  def leafEffectsAsOptional = Effects(effectsSet.map {
+    case LeafEffect(e) => OptionalLeafEffect(e)
+    case e => e
+  })
   }
 
 object AllWriteEffects extends Effects(Set(CreatesAnyNode, SetAnyNodeProperty, WritesAnyRelationshipProperty)) {
@@ -142,6 +152,16 @@ case class LeafEffect(effect: Effect) extends Effect {
   override def reads = effect.reads
 
   override def writes = effect.writes
+
+  override def toString = this.getClass.getSimpleName + "(" + effect.toString + ")"
+}
+
+case class OptionalLeafEffect(effect: Effect) extends Effect {
+  override def reads = effect.reads
+
+  override def writes = effect.writes
+
+  override def toString = this.getClass.getSimpleName + "(" + effect.toString + ")"
 }
 
 case class SetLabel(label: String) extends WriteEffect

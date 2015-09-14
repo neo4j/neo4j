@@ -75,6 +75,7 @@ case class DeleteEntityAction(elementToDelete: Expression, forced: Boolean)
     case i: Identifier => symbols.identifiers(i.entityName) match {
       case _: NodeType         => Effects(DeletesNode)
       case _: RelationshipType => Effects(DeletesRelationship)
+      case _: PathType         => Effects(DeletesNode, DeletesRelationship)
     }
   }
 }

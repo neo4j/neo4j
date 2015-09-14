@@ -325,6 +325,13 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
             throws EntityNotFoundException
     {
         statement.assertOpen();
+
+        // TODO: Is it ok to handle this case here?
+        if ( statement.txState().nodeIsDeletedInThisTx( nodeId ) )
+        {
+            return RelationshipIterator.EMPTY;
+        }
+
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
             return node.get().getRelationships( direction );

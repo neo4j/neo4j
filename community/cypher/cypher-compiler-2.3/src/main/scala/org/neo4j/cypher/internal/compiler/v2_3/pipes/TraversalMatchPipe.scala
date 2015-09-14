@@ -60,7 +60,8 @@ case class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Tr
         effects | Effects(ReadsRelationshipsWithType(typ))
       }
     // Add effects from predicates
-    trail.predicates.flatten.foldLeft(matcherEffects)(_ | _.effects(symbols))
+    val allEffects = trail.predicates.flatten.foldLeft(matcherEffects)(_ | _.effects(symbols))
+    if (isLeaf) allEffects.asLeafEffects else allEffects
   }
 
   def dup(sources: List[Pipe]): Pipe = {

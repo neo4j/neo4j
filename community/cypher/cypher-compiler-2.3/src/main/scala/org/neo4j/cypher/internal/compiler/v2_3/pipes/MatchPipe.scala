@@ -46,10 +46,7 @@ case class MatchPipe(source: Pipe,
     }
   }
 
-  override def localEffects = {
-    println("this was used !!!")
-    Effects()
-  }
+  override def localEffects = Effects()
 
   override def planDescription =
     source.planDescription.andThen(this.id, matchingContext.builder.name, identifiers)

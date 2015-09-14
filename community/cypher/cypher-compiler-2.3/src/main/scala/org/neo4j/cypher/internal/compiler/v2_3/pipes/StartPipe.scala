@@ -36,7 +36,6 @@ sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,
     input.flatMap(ctx => {
       val source: Iterator[T] = createSource(ctx, state)
       source.map(x => {
-        println(s"received an object from the store. assuming node and getting id: ${x.asInstanceOf[Node].getId}")
         ctx.newWith1(name, x)
       })
     })
@@ -50,8 +49,6 @@ sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,
 case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProducer[Node], itemEffects: Effects = Effects(ReadsAllNodes))(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Node](source, name, createSource, pipeMonitor) {
   def identifierType = CTNode
-
-  def isLeaf = source.sources.isEmpty
 
   override def localEffects = if (isLeaf) itemEffects.asLeafEffects else itemEffects
 

@@ -53,7 +53,7 @@ case class OptionalMatchPipe(source: Pipe,
     Iterator(in.newWith(nulls))
   }
 
-  override def localEffects = matchPipe.localEffects
+  override def localEffects = matchPipe.localEffects.leafEffectsAsOptional
 
   private def doMatch(state: QueryState)(ctx: ExecutionContext) = matchPipe.createResults(state)
 
