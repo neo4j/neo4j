@@ -36,6 +36,9 @@
         label
           input(type="radio", name="themeRadio", id="theme3", value="outline", ng-model="settings.theme", ng-change="save()")
           | Outline
+    .form-group
+      label(for="initCmd") Initial Command
+        input.form-control.input#initCmd(type='string', ng-model="settings.initCmd", ng-change="save()")
 
     h5 Network Connection
     .form-group
@@ -43,7 +46,7 @@
         input.form-control.input#maxExecutionTime(type='number', ng-model="settings.maxExecutionTime", ng-change="save()")
     .form-group
       label(for="heartbeat") Heartbeat
-        input.form-control.input#maxExecutionTime(type='number', ng-model="settings.maxExecutionTime", ng-change="save()")
+        input.form-control.input#maxExecutionTime(type='number', ng-model="settings.heartbeat", ng-change="save()")
 
     h5 Result Frames
     .form-group
@@ -55,6 +58,7 @@
     .form-group
       label(for="scrollToTop") Scroll To Top
         input.form-control.input#scrollToTop(type='number', ng-model="settings.scrollToTop", ng-change="save()")
+
     h5 Graph Visualization
     .form-group
       label(for="maxNeighbours") Max Neighbors
@@ -68,9 +72,6 @@
     .form-group
       label(for="maxRawSize") Max Raw Size
         input.form-control.input#maxRawSize(type='number', ng-model="settings.maxRawSize", ng-change="save()")
-    .form-group
-      label(for="initCmd") Initial Command
-        input.form-control.input#initCmd(type='number', ng-model="settings.initCmd", ng-change="save()")
     .form-group
       label(for="refreshInterval") Refresh Interval
         input.form-control.input#refreshInterval(type='number', ng-model="settings.refreshInterval", ng-change="save()")
