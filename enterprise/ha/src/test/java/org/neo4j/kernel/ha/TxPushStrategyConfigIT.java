@@ -65,35 +65,25 @@ public class TxPushStrategyConfigIT
     @Test
     public void twoRoundRobin() throws Exception
     {
-        ManagedCluster cluster = startCluster( 5, 2, "round_robin" );
+        ManagedCluster cluster = startCluster( 4, 2, "round_robin" );
 
         createTransactionOnMaster( cluster );
         assertLastTransactions( cluster,
                 lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
                 lastTx( SECOND_SLAVE, BASE_TX_ID + 1 ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID ),
-                lastTx( FOURTH_SLAVE, BASE_TX_ID ) );
+                lastTx( THIRD_SLAVE, BASE_TX_ID ) );
 
         createTransactionOnMaster( cluster );
         assertLastTransactions( cluster,
                 lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
                 lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID + 2 ),
-                lastTx( FOURTH_SLAVE, BASE_TX_ID ) );
+                lastTx( THIRD_SLAVE, BASE_TX_ID + 2 ) );
 
         createTransactionOnMaster( cluster );
         assertLastTransactions( cluster,
-                lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
+                lastTx( FIRST_SLAVE, BASE_TX_ID + 3 ),
                 lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID + 3 ),
-                lastTx( FOURTH_SLAVE, BASE_TX_ID + 3 ) );
-
-        createTransactionOnMaster( cluster );
-        assertLastTransactions( cluster,
-                lastTx( FIRST_SLAVE, BASE_TX_ID + 4 ),
-                lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID + 3 ),
-                lastTx( FOURTH_SLAVE, BASE_TX_ID + 4 ) );
+                lastTx( THIRD_SLAVE, BASE_TX_ID + 3 ) );
     }
 
     @Test
@@ -165,7 +155,6 @@ public class TxPushStrategyConfigIT
     private static final int FIRST_SLAVE = 2;
     private static final int SECOND_SLAVE = 3;
     private static final int THIRD_SLAVE = 4;
-    private static final int FOURTH_SLAVE = 5;
     private InstanceId[] machineIds;
 
     private ManagedCluster startCluster( int memberCount, final int pushFactor, final String pushStrategy )
@@ -186,7 +175,7 @@ public class TxPushStrategyConfigIT
     {
         machineIds = new InstanceId[cluster.size()];
         machineIds[0] = cluster.getServerId( cluster.getMaster() );
-        List<HighlyAvailableGraphDatabase> slaves = new ArrayList<HighlyAvailableGraphDatabase>();
+        List<HighlyAvailableGraphDatabase> slaves = new ArrayList<>();
         for ( HighlyAvailableGraphDatabase hadb : cluster.getAllMembers() )
         {
             if ( !hadb.isMaster() )
