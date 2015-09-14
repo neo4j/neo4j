@@ -69,23 +69,19 @@ public class TxPushStrategyConfigIT
     @Test
     public void twoRoundRobin() throws Exception
     {
-        startCluster( 5, 2, "round_robin" );
+        startCluster( 4, 2, "round_robin" );
 
         createTransactionOnMaster();
         assertLastTransactions( lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ), lastTx( SECOND_SLAVE, BASE_TX_ID + 1 ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID ), lastTx( FOURTH_SLAVE, BASE_TX_ID ) );
+                lastTx( THIRD_SLAVE, BASE_TX_ID ) );
 
         createTransactionOnMaster();
         assertLastTransactions( lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ), lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID + 2 ), lastTx( FOURTH_SLAVE, BASE_TX_ID ) );
+                lastTx( THIRD_SLAVE, BASE_TX_ID + 2 ) );
 
         createTransactionOnMaster();
-        assertLastTransactions( lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ), lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID + 3 ), lastTx( FOURTH_SLAVE, BASE_TX_ID + 3 ) );
-
-        createTransactionOnMaster();
-        assertLastTransactions( lastTx( FIRST_SLAVE, BASE_TX_ID + 4 ), lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID + 3 ), lastTx( FOURTH_SLAVE, BASE_TX_ID + 4 ) );
+        assertLastTransactions( lastTx( FIRST_SLAVE, BASE_TX_ID + 3 ), lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
+                lastTx( THIRD_SLAVE, BASE_TX_ID + 3 ) );
     }
 
     @Test
