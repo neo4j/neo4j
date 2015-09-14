@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.rest.transactional.integration;
 
+import org.codehaus.jackson.JsonNode;
+import org.junit.Test;
+
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
@@ -30,9 +33,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
-import org.codehaus.jackson.JsonNode;
-import org.junit.Test;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
@@ -54,7 +54,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoErrors;
@@ -167,17 +166,19 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                       "} ] }";
 
         // begin and execute
+        // given statement is badly escaped and it is a client error, thus tx is rolled back at once
         Response begin = http.POST( "/db/data/transaction", quotedJson( json ) );
 
         String commitResource = begin.stringFromContent( "commit" );
 
-        // commit
+        // commit fails because tx was rolled back on the previous step
         Response commit = http.POST( commitResource );
 
         assertThat( begin.status(), equalTo( 201 ) );
         assertThat( begin, hasErrors( Status.Request.InvalidFormat ) );
-        assertThat( commit.status(), equalTo( 200 ) );
-        assertThat( commit, containsNoErrors() );
+
+        assertThat( commit.status(), equalTo( 404 ) );
+        assertThat( commit, hasErrors( Status.Transaction.UnknownId ) );
 
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
     }

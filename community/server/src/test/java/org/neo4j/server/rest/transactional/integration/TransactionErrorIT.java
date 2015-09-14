@@ -19,22 +19,25 @@
  */
 package org.neo4j.server.rest.transactional.integration;
 
+import org.codehaus.jackson.JsonNode;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 
-import org.codehaus.jackson.JsonNode;
-import org.junit.Test;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.exceptions.Status.Request.InvalidFormat;
 import static org.neo4j.kernel.api.exceptions.Status.Statement.InvalidSyntax;
+import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoErrors;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoStackTraces;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.hasErrors;
 import static org.neo4j.test.server.HTTP.POST;
@@ -117,9 +120,52 @@ public class TransactionErrorIT extends AbstractRestFunctionalTestBase
         }
     }
 
+    @Test
+    public void singleClientErrorShouldRollbackTx() throws JsonParseException
+    {
+        // Given
+        HTTP.Response response = POST( txUri(), quotedJson( "{ 'statements': [ { 'statement': 'RETURN {foo}' } ] }" ) );
+        assertThat( response, hasErrors( Status.Statement.ParameterMissing ) );
+
+        // When
+        HTTP.Response commitResponse = POST( response.stringFromContent( "commit" ) );
+
+        // Then: tx was rolled back and server does not know about it any more
+        assertThat( commitResponse.status(), is( 404 ) );
+        assertThat( commitResponse, hasErrors( Status.Transaction.UnknownId ) );
+    }
+
+    @Test
+    public void clientErrorShouldRollbackTxIfHappensLast() throws JsonParseException
+    {
+        // Given
+        long nodesInDatabaseBeforeTransaction = countNodes();
+
+        HTTP.Response first = POST( txUri(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        assertThat( first, containsNoErrors() );
+        long txId = extractTxId( first );
+
+        HTTP.Response second =
+                POST( txUri( txId ), quotedJson( "{ 'statements': [ { 'statement': 'RETURN {foo}' } ] }" ) );
+        assertThat( second, hasErrors( Status.Statement.ParameterMissing ) );
+
+        // When
+        HTTP.Response commitResponse = POST( first.stringFromContent( "commit" ) );
+
+        // Then: tx was rolled back and server does not know about it any more
+        assertThat( commitResponse.status(), is( 404 ) );
+        assertThat( commitResponse, hasErrors( Status.Transaction.UnknownId ) );
+        assertThat( countNodes(), is( nodesInDatabaseBeforeTransaction ) );
+    }
+
     private String txUri()
     {
         return getDataUri() + "transaction";
+    }
+
+    private String txUri( long txId )
+    {
+        return getDataUri() + "transaction/" + txId;
     }
 
     private String txCommitUri()
@@ -132,4 +178,10 @@ public class TransactionErrorIT extends AbstractRestFunctionalTestBase
         return TransactionMatchers.countNodes( graphdb() );
     }
 
+    private static long extractTxId( HTTP.Response response )
+    {
+        int lastSlash = response.location().lastIndexOf( "/" );
+        String txIdString = response.location().substring( lastSlash + 1 );
+        return Long.parseLong( txIdString );
+    }
 }
