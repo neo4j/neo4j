@@ -4,7 +4,9 @@
 [abstract]
 `LOAD CSV` is used to import data from CSV files.
 
+The URL of the CSV file is specified by using `FROM` followed by an arbitrary expression evaluating to the URL in question.
 It is required to specify an identifier for the CSV data using `AS`.
+
 See the examples below for further details.
 
 There is also a worked example, see <<cypherdoc-importing-csv-files-with-cypher>>.
