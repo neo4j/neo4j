@@ -79,4 +79,11 @@ public class StringsTest
         assertEquals( "a\\bbc", Strings.escape( "a\bbc" ) );
         assertEquals( "a\\fbc", Strings.escape( "a\fbc" ) );
     }
+
+    @Test
+    public void testJoiningLines()
+    {
+        assertEquals( "a" + System.lineSeparator() + "b" + System.lineSeparator() + "c" + System.lineSeparator(),
+                Strings.joinAsLines( "a", "b", "c" ) );
+    }
 }

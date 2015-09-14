@@ -22,6 +22,7 @@ package org.neo4j.tooling;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
@@ -92,6 +93,20 @@ public class ImportToolTest
     @Rule
     public final Mute mute = Mute.mute( Mute.System.values() );
     private int dataIndex;
+
+    @Test
+    public void usageMessageIncludeExample() throws Exception
+    {
+        String output = executeImportAndCatchOutput( "?" );
+        assertTrue( "Usage message should include example section, but was:" + output, output.contains( "Example:" ) );
+    }
+
+    @Test
+    public void usageMessagePrintedOnEmptyInputParameters()
+    {
+        String output = executeImportAndCatchOutput();
+        assertTrue( "Output should include usage section, but was:" + output, output.contains( "Example:" ) );
+    }
 
     @Test
     public void shouldImportWithAsManyDefaultsAsAvailable() throws Exception
@@ -1093,6 +1108,23 @@ public class ImportToolTest
                 return line >= startingAt && line < endingAt;
             }
         };
+    }
+
+    private String executeImportAndCatchOutput(String... arguments)
+    {
+        PrintStream originalStream = System.out;
+        ByteArrayOutputStream outputStreamBuffer = new ByteArrayOutputStream();
+        PrintStream replacement = new PrintStream( outputStreamBuffer );
+        System.setOut( replacement );
+        try
+        {
+            importTool( arguments );
+            return new String( outputStreamBuffer.toByteArray() );
+        }
+        finally
+        {
+            System.setOut( originalStream );
+        }
     }
 
     private void importTool( String... arguments )
