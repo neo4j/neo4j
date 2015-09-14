@@ -40,12 +40,12 @@ public class BiasedWinnerStrategy implements WinnerStrategy
         this.nodePromoted = nodePromoted;
     }
 
-    public static BiasedWinnerStrategy promotion(ClusterContext clusterContext, InstanceId biasedNode)
+    public static BiasedWinnerStrategy promotion( ClusterContext clusterContext, InstanceId biasedNode )
     {
         return new BiasedWinnerStrategy( clusterContext, biasedNode, true );
     }
 
-    public static BiasedWinnerStrategy demotion(ClusterContext clusterContext, InstanceId biasedNode)
+    public static BiasedWinnerStrategy demotion( ClusterContext clusterContext, InstanceId biasedNode )
     {
         return new BiasedWinnerStrategy( clusterContext, biasedNode, false );
     }
@@ -55,9 +55,9 @@ public class BiasedWinnerStrategy implements WinnerStrategy
     {
         List<Vote> eligibleVotes = ElectionContextImpl.removeBlankVotes( votes );
 
-        moveMostSuitableCandidatesToTop(eligibleVotes);
+        moveMostSuitableCandidatesToTop( eligibleVotes );
 
-        logElectionOutcome(votes, eligibleVotes);
+        logElectionOutcome( votes, eligibleVotes );
 
         for ( Vote vote : eligibleVotes )
         {
@@ -66,6 +66,12 @@ public class BiasedWinnerStrategy implements WinnerStrategy
             {
                 return vote.getSuggestedNode();
             }
+        }
+
+        // None were chosen - try again, without considering promotions or demotions
+        for ( Vote vote : eligibleVotes )
+        {
+            return vote.getSuggestedNode();
         }
 
         return null;
