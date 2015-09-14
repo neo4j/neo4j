@@ -34,11 +34,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.TransactionTemplate;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.ha.ClusterManager;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -46,9 +46,9 @@ import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.kernel.impl.api.integrationtest.UniquenessConstraintValidationConcurrencyIT.createNode;
+import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.OtherThreadRule.isWaiting;
 import static org.neo4j.test.TargetDirectory.testDirForTest;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 
 public class UniquenessConstraintValidationHAIT
 {

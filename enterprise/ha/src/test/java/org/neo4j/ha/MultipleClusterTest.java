@@ -31,13 +31,14 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.ha.ClusterManager;
-import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.ha.ClusterManager.fromXml;
+
+import static org.neo4j.kernel.impl.ha.ClusterManager.fromXml;
 
 /**
  * Verify that we can run multiple clusters simultaneously

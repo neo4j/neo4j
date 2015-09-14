@@ -19,12 +19,14 @@
  */
 package org.neo4j.graphdb.factory;
 
+import org.neo4j.kernel.impl.ha.ClusterManager;
+
 public class TestHighlyAvailableGraphDatabaseFactory extends HighlyAvailableGraphDatabaseFactory
 {
     @Override
     protected void configure( GraphDatabaseBuilder builder )
     {
         super.configure( builder );
-        builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
+        builder.setConfig( ClusterManager.CONFIG_FOR_SINGLE_JVM_CLUSTER );
     }
 }
