@@ -19,16 +19,19 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
-import org.junit.Before;
-import org.junit.Test;
+import java.util.concurrent.Executors;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
@@ -37,6 +40,7 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
@@ -47,14 +51,12 @@ import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 
 import static java.util.Collections.singletonList;
-
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
@@ -432,6 +434,44 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
             db.schema().constraintFor( label( "Foo" ) ).assertPropertyIsUnique( "bar" ).create();
 
             tx.success();
+        }
+    }
+
+    @Test
+    public void changedConstraintsShouldResultInTransientFailure() throws InterruptedException
+    {
+        // Given
+        Runnable constraintCreation = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    db.schema().constraintFor( label( "Foo" ) ).assertPropertyIsUnique( "bar" ).create();
+                    tx.success();
+                }
+            }
+        };
+
+        // When
+        try
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                Executors.newSingleThreadExecutor().submit( constraintCreation ).get();
+                db.createNode();
+                tx.success();
+            }
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            // Then
+            assertThat( e, instanceOf( TransientTransactionFailureException.class ) );
+            assertThat( e.getCause(), instanceOf( TransactionFailureException.class ) );
+            TransactionFailureException cause = (TransactionFailureException) e.getCause();
+            assertEquals( Status.Transaction.ConstraintsChanged, cause.status() );
         }
     }
 
