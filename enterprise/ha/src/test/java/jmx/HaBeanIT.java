@@ -19,26 +19,16 @@
  */
 package jmx;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.first;
-import static org.neo4j.test.ha.ClusterManager.RepairKit;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterSeesMembers;
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
 
 import java.net.URI;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
@@ -53,13 +43,26 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
+import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
+import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
 import org.neo4j.management.BranchedStore;
 import org.neo4j.management.ClusterMemberInfo;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.management.Neo4jManager;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.ha.ClusterManager;
-import org.neo4j.test.ha.ClusterManager.ManagedCluster;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.first;
+import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesMembers;
 
 public class HaBeanIT
 {
@@ -81,7 +84,6 @@ public class HaBeanIT
                 builder.setConfig( "jmx.port", "" + ( 9912 + serverId.toIntegerIndex() ) );
                 builder.setConfig( HaSettings.ha_server, ":" + ( 1136 + serverId.toIntegerIndex() ) );
                 builder.setConfig( GraphDatabaseSettings.forced_kernel_id, testName.getMethodName() + serverId );
-
             }
         };
         clusterManager.start();

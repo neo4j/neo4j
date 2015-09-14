@@ -33,17 +33,19 @@ import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
+import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.kernel.impl.ha.ClusterManager.Builder;
+import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.ha.ClusterManager.Builder;
-import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
 import static java.util.Arrays.asList;
+
 import static org.neo4j.cluster.ClusterSettings.default_timeout;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
 public class ClusterRule extends ExternalResource
 {
@@ -54,7 +56,7 @@ public class ClusterRule extends ExternalResource
     private final Map<String,String> config = new HashMap<>();
     private HighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
     private List<Predicate<ManagedCluster>> availabilityChecks = asList( allSeesAllAsAvailable() );
-    private TargetDirectory.TestDirectory testDirectory;
+    private final TargetDirectory.TestDirectory testDirectory;
 
     public ClusterRule( Class<?> testClass )
     {

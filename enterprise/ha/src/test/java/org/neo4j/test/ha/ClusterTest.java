@@ -19,14 +19,14 @@
  */
 package org.neo4j.test.ha;
 
-import java.net.InetAddress;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
-
 import org.hamcrest.CoreMatchers;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.net.InetAddress;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.Clusters;
@@ -38,6 +38,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 
@@ -47,10 +48,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.helpers.collection.MapUtil.entry;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.test.ha.ClusterManager.fromXml;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
+import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.kernel.impl.ha.ClusterManager.fromXml;
+import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
+import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
 
 public class ClusterTest
 {

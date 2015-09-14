@@ -23,8 +23,6 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.graphdb.Result.ResultRow;
-
 /**
  * Represents the result of {@link GraphDatabaseService#execute(String, java.util.Map) executing} a query.
  * <p>
@@ -117,6 +115,7 @@ public interface Result extends ResourceIterator<Map<String, Object>>
      *
      * @return {@code true} if there is more rows available in this result, {@code false} otherwise.
      */
+    @Override
     boolean hasNext();
 
     /**
@@ -124,6 +123,7 @@ public interface Result extends ResourceIterator<Map<String, Object>>
      *
      * @return the next row in this result.
      */
+    @Override
     Map<String, Object> next();
 
     /**
@@ -133,6 +133,7 @@ public interface Result extends ResourceIterator<Map<String, Object>>
      * It is thus safe (and even encouraged, for style and simplicity) to invoke this method even after consuming all
      * rows in the result through the {@link #next() next-method}.
      */
+    @Override
     void close();
 
     /**
@@ -179,6 +180,7 @@ public interface Result extends ResourceIterator<Map<String, Object>>
     void writeAsStringTo( PrintWriter writer );
 
     /** Removing rows from the result is not supported. */
+    @Override
     void remove();
 
     /**

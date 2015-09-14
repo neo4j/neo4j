@@ -19,25 +19,25 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.io.File;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+
+import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
-import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
 import static java.util.Arrays.asList;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsJoined;
-import static org.neo4j.test.ha.ClusterManager.clusterWithAdditionalClients;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-import static org.neo4j.test.ha.ClusterManager.masterSeesMembers;
+import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsJoined;
+import static org.neo4j.kernel.impl.ha.ClusterManager.clusterWithAdditionalClients;
+import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
+import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesMembers;
 
 public class HaLoggingIT
 {

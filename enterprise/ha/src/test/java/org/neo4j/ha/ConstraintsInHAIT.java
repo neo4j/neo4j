@@ -26,7 +26,7 @@ import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.InvalidTransactionTypeException;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.test.ha.ClusterManager;
+import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.hamcrest.Matchers.equalTo;
