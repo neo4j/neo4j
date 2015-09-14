@@ -20,11 +20,14 @@
 package org.neo4j.internal.cypher.acceptance
 
 import java.io.{File, PrintWriter}
+import java.net.{URLConnection, URLStreamHandler, URLStreamHandlerFactory, URL}
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.StringHelper.RichString
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.graphdb.security.URLAccessRule
+import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.BeforeAndAfterAll
 
@@ -271,11 +274,39 @@ class LoadCsvAcceptanceTest
     }
   }
 
+  test("should reject URLs that are not valid") {
+    intercept[LoadExternalResourceException] {
+      execute(s"LOAD CSV FROM 'morsecorba://sos' AS line CREATE (a {name:line[0]})")
+    }.getMessage should equal("Invalid URL 'morsecorba://sos': unknown protocol: morsecorba")
+
+    intercept[LoadExternalResourceException] {
+      execute(s"LOAD CSV FROM '://' AS line CREATE (a {name:line[0]})")
+    }.getMessage should equal("Invalid URL '://': no protocol: ://")
+
+    intercept[LoadExternalResourceException] {
+      execute(s"LOAD CSV FROM 'foo.bar' AS line CREATE (a {name:line[0]})")
+    }.getMessage should equal("Invalid URL 'foo.bar': no protocol: foo.bar")
+
+    intercept[LoadExternalResourceException] {
+      execute(s"LOAD CSV FROM 'jar:file:///tmp/bar.jar' AS line CREATE (a {name:line[0]})")
+    }.getMessage should equal("Invalid URL 'jar:file:///tmp/bar.jar': no !/ in spec")
+
+    intercept[LoadExternalResourceException] {
+      execute("LOAD CSV FROM 'file://./blah.csv' AS line CREATE (a {name:line[0]})")
+    }.getMessage should equal("Cannot load from URL 'file://./blah.csv': file URL may not contain an authority section (i.e. it should be 'file:///')")
+
+    intercept[LoadExternalResourceException] {
+      execute("LOAD CSV FROM 'file:///tmp/blah.csv?q=foo' AS line CREATE (a {name:line[0]})")
+    }.getMessage should equal("Cannot load from URL 'file:///tmp/blah.csv?q=foo': file URL may not contain a query component")
+  }
+
+  test("should deny URLs for blocked protocols") {
+    intercept[LoadExternalResourceException] {
+      execute(s"LOAD CSV FROM 'jar:file:///tmp/bar.jar!/blah/foo.csv' AS line CREATE (a {name:line[0]})")
+    }.getMessage should equal("Cannot load from URL 'jar:file:///tmp/bar.jar!/blah/foo.csv': loading resources via protocol 'jar' is not permitted")
+  }
+
   test("should fail for file urls if local file access disallowed") {
-    val url = createCSVTempFileURL({
-      writer =>
-        writer.println("String without quotes")
-    }).cypherEscape
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.allow_file_urls, "false")
@@ -283,22 +314,35 @@ class LoadCsvAcceptanceTest
 
     intercept[LoadExternalResourceException] {
       val engine = new ExecutionEngine(db)
-      engine.execute(s"LOAD CSV FROM '$url' AS line CREATE (a {name:line[0]})")
-    }
+      engine.execute(s"LOAD CSV FROM 'file:///tmp/blah.csv' AS line CREATE (a {name:line[0]})")
+    }.getMessage should endWith(": configuration property 'allow_file_urls' is false")
   }
 
-  test("should reject URLs that are not file://, http://, https://, ftp://") {
-    val exception = intercept[LoadExternalResourceException] {
-      execute(s"LOAD CSV FROM 'morsecorba://sos' AS line CREATE (a {name:line[0]})")
-    }
-    exception.getMessage should equal("Invalid URL specified (unknown protocol: morsecorba)")
-  }
+  test("should apply protocol rules set at db construction") {
+    val url = createCSVTempFileURL({
+      writer =>
+        writer.println("something")
+    })
 
-  test("should reject invalid URLs") {
-    val exception = intercept[LoadExternalResourceException] {
-      execute(s"LOAD CSV FROM 'foo.bar' AS line CREATE (a {name:line[0]})")
-    }
-    exception.getMessage should equal("Invalid URL specified (no protocol: foo.bar)")
+    URL.setURLStreamHandlerFactory(new URLStreamHandlerFactory {
+      override def createURLStreamHandler(protocol: String): URLStreamHandler =
+        if (protocol != "testproto")
+          null
+        else
+          new URLStreamHandler {
+            override def openConnection(u: URL): URLConnection = new URL(url).openConnection()
+          }
+    })
+
+    val db = new TestGraphDatabaseFactory()
+      .addURLAccessRule( "testproto", new URLAccessRule {
+        override def validate(gdb: GraphDatabaseAPI, url: URL): URL = url
+      })
+      .newImpermanentDatabaseBuilder()
+      .newGraphDatabase()
+
+    val result = new ExecutionEngine(db).execute(s"LOAD CSV FROM 'testproto://foo.bar' AS line RETURN line[0] AS field")
+    result.toList should equal(List(Map("field" -> "something")))
   }
 
   test("eager queries should be handled correctly") {

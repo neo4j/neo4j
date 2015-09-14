@@ -19,8 +19,11 @@
  */
 package org.neo4j.test;
 
+import java.net.URL;
+
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.security.URLAccessValidationError;
 import org.neo4j.logging.LogProvider;
 
 /**

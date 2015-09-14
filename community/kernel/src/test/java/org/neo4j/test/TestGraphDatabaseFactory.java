@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.AbstractLogService;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -134,6 +135,12 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
     public TestGraphDatabaseFactory addKernelExtension( KernelExtensionFactory<?> newKernelExtension )
     {
         return (TestGraphDatabaseFactory) super.addKernelExtension( newKernelExtension );
+    }
+
+    @Override
+    public TestGraphDatabaseFactory addURLAccessRule( String protocol, URLAccessRule rule )
+    {
+        return (TestGraphDatabaseFactory) super.addURLAccessRule( protocol, rule );
     }
 
     public GraphDatabaseBuilder newImpermanentDatabaseBuilder( final File storeDir )

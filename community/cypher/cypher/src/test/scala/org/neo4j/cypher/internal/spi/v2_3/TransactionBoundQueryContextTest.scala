@@ -109,9 +109,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val context = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, stmt)
 
     // THEN
-    context.getImportURL(new URL("http://localhost:7474/data.csv")) should equal (Left(new URL("http://localhost:7474/data.csv")))
-    context.getImportURL(new URL("file:///tmp/foo/data.csv")) should equal (Left(new URL("file:///tmp/foo/data.csv")))
-    context.getImportURL(new URL("jar:file:/tmp/blah.jar!/tmp/foo/data.csv")) should equal (Right("loading resources via protocol 'jar' is not permitted"))
+    context.getImportURL(new URL("http://localhost:7474/data.csv")) should equal (Right(new URL("http://localhost:7474/data.csv")))
+    context.getImportURL(new URL("file:///tmp/foo/data.csv")) should equal (Right(new URL("file:///tmp/foo/data.csv")))
+    context.getImportURL(new URL("jar:file:/tmp/blah.jar!/tmp/foo/data.csv")) should equal (Left("loading resources via protocol 'jar' is not permitted"))
 
     tx.success()
     tx.finish()
@@ -126,8 +126,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val context = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, stmt)
 
     // THEN
-    context.getImportURL(new URL("http://localhost:7474/data.csv")) should equal (Left(new URL("http://localhost:7474/data.csv")))
-    context.getImportURL(new URL("file:///tmp/foo/data.csv")) should equal (Right("configuration property 'allow_file_urls' is false"))
+    context.getImportURL(new URL("http://localhost:7474/data.csv")) should equal (Right(new URL("http://localhost:7474/data.csv")))
+    context.getImportURL(new URL("file:///tmp/foo/data.csv")) should equal (Left("configuration property 'allow_file_urls' is false"))
 
     tx.success()
     tx.finish()
