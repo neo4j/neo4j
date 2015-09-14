@@ -295,5 +295,3 @@ Configuration files for the http://www.eclipse.org[Eclipse]
 and http://www.jetbrains.com/idea/[Intellij IDEA]
 IDEs can be found link:code-style[here].
 These files will configure your IDE to use the Neo4j coding style.
-There is also a configuration file for http://pmd.sourceforge.net[PMD] located link:code-analysis/pmd.xml[here],
-which can help you find bugs or code smells in your contribution.
