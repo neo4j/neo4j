@@ -26,11 +26,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
@@ -38,6 +40,7 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
@@ -386,6 +389,44 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
         createConstraint( statement, typeId, propertyKeyId );
         commit();
+    }
+
+    @Test
+    public void changedConstraintsShouldResultInTransientFailure() throws InterruptedException
+    {
+        // Given
+        Runnable constraintCreation = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    createConstraintInRunningTx( db, KEY, PROP );
+                    tx.success();
+                }
+            }
+        };
+
+        // When
+        try
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                Executors.newSingleThreadExecutor().submit( constraintCreation ).get();
+                db.createNode();
+                tx.success();
+            }
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            // Then
+            assertThat( e, instanceOf( TransientTransactionFailureException.class ) );
+            assertThat( e.getCause(), instanceOf( TransactionFailureException.class ) );
+            TransactionFailureException cause = (TransactionFailureException) e.getCause();
+            assertEquals( Status.Transaction.ConstraintsChanged, cause.status() );
+        }
     }
 
     private static Map<IndexDefinition,Schema.IndexState> indexesWithState( Schema schema )
