@@ -133,9 +133,7 @@ article.guide
         p.lead Using the visual query plan
       .col-sm-9
         p.summary
-          | Using the query plan bottlenecks and heavy lookups can be identified.
-          br
-          | Prepend your query with &nbsp;
+          | Understand how your query works by prepending&nbsp;
           code EXPLAIN
           | &nbsp; or &nbsp;
           code PROFILE
@@ -150,11 +148,8 @@ article.guide
         h3 Live Cypher warnings
         p.lead Identify query problems in real time
       .col-sm-5
-        p Be notified about deprecated patterns and potentially heavy queries
-          | as you type in the editor.
-        ul
-          li Informs about deprecated patterns
-          li Identifies potentially heavy queries
+        p As you type, the query editor notifies you about deprecated features 
+          | and potentially expensive queries.
       .col-sm-4
         img.img-responsive(src='images/screen_cypher_warn.png')
     slide.row-fluid
