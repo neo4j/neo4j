@@ -811,7 +811,7 @@ public abstract class PageCacheTest<T extends PageCache>
         channel.close();
     }
 
-    @Test( timeout = 1000 )
+    @Test( timeout = 2000 )
     public void flushingDuringPagedFileCloseMustRetryUntilItSucceeds() throws IOException
     {
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
