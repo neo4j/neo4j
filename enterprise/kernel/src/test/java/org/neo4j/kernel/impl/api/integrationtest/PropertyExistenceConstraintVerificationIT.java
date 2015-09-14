@@ -45,7 +45,7 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.impl.api.OperationsFacade;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ThreadingRule;
+import org.neo4j.test.ExecutorRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -57,7 +57,7 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT.NodePropertyExistenceExistenceConstrainVerificationIT;
 import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT.RelationshipPropertyExistenceExistenceConstrainVerificationIT;
-import static org.neo4j.test.ThreadingRule.waitingWhileIn;
+import static org.neo4j.test.ExecutorRule.waitingWhileIn;
 
 @RunWith( Suite.class )
 @SuiteClasses( {
@@ -147,7 +147,7 @@ public class PropertyExistenceConstraintVerificationIT
         @Rule
         public final DatabaseRule db = new EnterpriseDatabaseRule();
         @Rule
-        public final ThreadingRule thread = new ThreadingRule();
+        public final ExecutorRule executorRule = new ExecutorRule();
 
         abstract void createConstraint( DatabaseRule db, String key, String property );
 
@@ -199,7 +199,7 @@ public class PropertyExistenceConstraintVerificationIT
                 {
                     createConstraint( db, KEY, PROPERTY );
 
-                    nodeCreation = thread.executeAndAwait( createOffender(), null,
+                    nodeCreation = executorRule.executeAndAwait( createOffender(), null,
                             waitingWhileIn( OperationsFacade.class, offenderCreationMethodName() ), 5, SECONDS );
 
                     tx.success();
@@ -233,7 +233,7 @@ public class PropertyExistenceConstraintVerificationIT
                 {
                     createOffender( db, KEY );
 
-                    constraintCreation = thread.executeAndAwait( createConstraint(), null,
+                    constraintCreation = executorRule.executeAndAwait( createConstraint(), null,
                             waitingWhileIn( OperationsFacade.class, constraintCreationMethodName() ), 5, SECONDS );
 
                     tx.success();
@@ -292,11 +292,9 @@ public class PropertyExistenceConstraintVerificationIT
                 {
                     try ( Transaction tx = db.beginTx() )
                     {
-                        System.out.println("creating constraint");
                         createConstraint( db, KEY, PROPERTY );
                         tx.success();
                     }
-                    System.out.println("constraint created");
                     return null;
                 }
             };

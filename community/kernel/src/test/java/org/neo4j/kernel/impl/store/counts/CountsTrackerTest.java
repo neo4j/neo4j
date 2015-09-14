@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 import org.neo4j.function.Function;
@@ -35,15 +36,17 @@ import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.CountsOracle;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
+import org.neo4j.kernel.impl.store.kvstore.PreparedRotation;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.Resources;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.register.Registers;
 import org.neo4j.test.Barrier;
-import org.neo4j.test.ThreadingRule;
+import org.neo4j.test.ExecutorRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -58,7 +61,7 @@ public class CountsTrackerTest
     @Rule
     public final Resources resourceManager = new Resources( FILE_IN_EXISTING_DIRECTORY );
     @Rule
-    public final ThreadingRule threading = new ThreadingRule();
+    public final ExecutorRule executorRule = new ExecutorRule();
 
     @Test
     public void shouldBeAbleToStartAndStopTheStore() throws Exception
@@ -113,6 +116,52 @@ public class CountsTrackerTest
 
         // then
         oracle.verify( tracker );
+    }
+
+    @Test(timeout = 2000)
+    @Resources.Life( STARTED )
+    public void concurrentRotationsQueued() throws Exception
+    {
+        int rotationDelay = 500;
+        int numberOfRotations = 2;
+        final CountsTracker tracker = resourceManager.managed( newTracker( rotationDelay ) );
+        CountsOracle countsOracle = someData();
+
+        countsOracle.update( tracker, 1 );
+
+        long startTime = System.currentTimeMillis();
+
+        Future<Long> firstRotation = executorRule.submit( new Callable<Long>()
+        {
+            @Override
+            public Long call() throws Exception
+            {
+                return tracker.rotate( 2 );
+            }
+        } );
+
+        Future<Long> secondRotation = executorRule.submit( new Callable<Long>()
+        {
+            @Override
+            public Long call() throws Exception
+            {
+                return tracker.rotate( 3 );
+            }
+        } );
+
+        assertFalse( firstRotation.isDone() );
+        assertFalse( secondRotation.isDone() );
+
+        countsOracle.update( tracker, 2 );
+        countsOracle.update( tracker, 3 );
+
+        while ( !firstRotation.isDone() || !secondRotation.isDone() )
+        {
+            Thread.sleep( 10 );
+        }
+        long executionTime = System.currentTimeMillis() - startTime;
+        assertTrue( "Rotation should be executed sequentially, one should take at least 'rotation delay' ms.",
+                executionTime >= (numberOfRotations * rotationDelay) );
     }
 
     @Test
@@ -212,7 +261,7 @@ public class CountsTrackerTest
                     return super.include( countsKey, value );
                 }
             } );
-            Future<Void> task = threading.execute( new Function<CountsTracker, Void>()
+            Future<Void> task = executorRule.execute( new Function<CountsTracker, Void>()
             {
                 @Override
                 public Void apply( CountsTracker tracker )
@@ -303,7 +352,7 @@ public class CountsTrackerTest
         }
 
         // when
-        Future<Long> rotated = threading.executeAndAwait( new Rotation( 2 ), tracker, new Predicate<Thread>()
+        Future<Long> rotated = executorRule.executeAndAwait( new Rotation( 2 ), tracker, new Predicate<Thread>()
         {
             @Override
             public boolean test( Thread thread )
@@ -347,8 +396,37 @@ public class CountsTrackerTest
 
     private CountsTracker newTracker()
     {
+        return newTracker( 0 );
+    }
+
+    private CountsTracker newTracker( final int rotationSleepMillis)
+    {
         return new CountsTracker( resourceManager.logProvider(), resourceManager.fileSystem(),
                 resourceManager.pageCache(), new Config(), resourceManager.testPath() )
+        {
+            @Override
+            protected PreparedRotation prepareRotation( long version )
+            {
+                PreparedRotation preparedRotation = super.prepareRotation( version );
+                if (rotationSleepMillis > 0)
+                {
+                    sleep();
+                }
+                return preparedRotation;
+            }
+
+            private void sleep()
+            {
+                try
+                {
+                    Thread.sleep( rotationSleepMillis );
+                }
+                catch ( InterruptedException e )
+                {
+                    e.printStackTrace();
+                }
+            }
+        }
                 .setInitializer( new DataInitializer<CountsAccessor.Updater>()
                 {
                     @Override

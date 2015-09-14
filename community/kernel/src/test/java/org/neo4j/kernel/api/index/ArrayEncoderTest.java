@@ -29,7 +29,7 @@ import org.junit.Test;
 
 import org.neo4j.function.Function;
 import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.test.ThreadingRule;
+import org.neo4j.test.ExecutorRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -39,7 +39,7 @@ import static org.junit.Assert.assertTrue;
 public class ArrayEncoderTest
 {
     @Rule
-    public final ThreadingRule threads = new ThreadingRule();
+    public final ExecutorRule threads = new ExecutorRule();
 
 
     private static final Character[] base64chars = new Character[]{
