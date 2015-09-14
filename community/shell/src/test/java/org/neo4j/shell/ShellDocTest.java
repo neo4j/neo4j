@@ -35,6 +35,7 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static java.lang.System.lineSeparator;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -47,8 +48,6 @@ import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
 
 public class ShellDocTest
 {
-    private final static String NL = System.getProperty( "line.separator" );
-
     private AppCommandParser parse( final String line ) throws Exception
     {
         return new AppCommandParser( new GraphDatabaseShellServer( null ), line );
@@ -186,11 +185,11 @@ public class ShellDocTest
         doc.add( "create index on :Person(name);", "", "create an index" );
         doc.add( "create (m:Person:Hacker {name:'Mattias'}), (m)-[:KNOWS]->(m);", "", "create one labeled node and a relationship" );
         doc.add( "dump", "begin" +
-                NL +"create index on :`Person`(`name`)" +
-                NL +"create (_0:`Person`:`Hacker` {`name`:\"Mattias\"})" +
-                NL +"create _0-[:`KNOWS`]->_0" +
-                NL +";" +
-                NL +"commit", "Export the whole database including indexes" );
+                lineSeparator() + "create index on :`Person`(`name`)" +
+                lineSeparator() + "create (_0:`Person`:`Hacker` {`name`:\"Mattias\"})" +
+                lineSeparator() + "create _0-[:`KNOWS`]->_0" +
+                lineSeparator() + ";" +
+                lineSeparator() + "commit", "Export the whole database including indexes" );
         doc.run();
         server.shutdown();
         db.shutdown();

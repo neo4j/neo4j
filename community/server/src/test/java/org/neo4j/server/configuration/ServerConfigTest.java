@@ -126,7 +126,7 @@ public class ServerConfigTest
             out.write( "com.foo.bar=\"mount/point/foo\"," );
             out.write( "com.foo.baz=\"/bar\"," );
             out.write( "com.foo.foobarbaz=\"/\"" );
-            out.write( System.getProperty( "line.separator" ) );
+            out.write( System.lineSeparator() );
         }
 
         // when
