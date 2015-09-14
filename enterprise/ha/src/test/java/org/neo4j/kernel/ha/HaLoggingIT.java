@@ -26,17 +26,18 @@ import org.junit.Test;
 
 import java.io.File;
 
+import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
 import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsJoined;
+import static org.neo4j.kernel.impl.ha.ClusterManager.clusterWithAdditionalClients;
+import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
+import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesMembers;
 import static org.neo4j.kernel.impl.util.StringLogger.DEFAULT_NAME;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsJoined;
-import static org.neo4j.test.ha.ClusterManager.clusterWithAdditionalClients;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-import static org.neo4j.test.ha.ClusterManager.masterSeesMembers;
 
 public class HaLoggingIT
 {

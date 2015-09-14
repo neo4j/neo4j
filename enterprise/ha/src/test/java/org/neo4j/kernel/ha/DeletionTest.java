@@ -20,15 +20,17 @@
 package org.neo4j.kernel.ha;
 
 import static org.junit.Assert.assertNotNull;
+
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
 import org.junit.After;
+
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.ha.ClusterManager;
 
 /**
  * Test for a regression:
