@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsRelationships}
-import org.neo4j.cypher.internal.compiler.v2_3.mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsRelationships, WritesRelationships}
+import org.neo4j.cypher.internal.compiler.v2_3.mutation.{SetAction, GraphElementPropertyFunctions}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
-import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.v2_3.{InvalidSemanticsException, InternalException, SemanticDirection}
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.helpers.collection.PrefetchingIterator
 
@@ -36,7 +36,7 @@ import scala.collection.Map
 import scala.collection.mutable.ArrayBuffer
 
 /**
- * Expand when both end-points are known, find all relationships of the given
+ * Merge when both end-points are known, find all relationships of the given
  * type in the given direction between the two end-points.
  *
  * This is done by checking both nodes and starts from any non-dense node of the two.
@@ -49,8 +49,8 @@ case class MergeIntoPipe(source: Pipe,
                          dir: SemanticDirection,
                          typ: String,
                          props: Map[KeyToken, Expression],
-                         onCreateProperties: Map[KeyToken, Expression],
-                         onMatchProperties: Map[KeyToken, Expression])(val estimatedCardinality: Option[Double] = None)
+                         onCreateActions: Seq[SetAction],
+                         onMatchActions: Seq[SetAction])(val estimatedCardinality: Option[Double] = None)
                         (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions {
   self =>
@@ -70,12 +70,15 @@ case class MergeIntoPipe(source: Pipe,
 
           if (relationships.isEmpty) {
             val relationship = state.query.createRelationship(fromNode.getId, toNode.getId, typeId)
-            setPropertiesOnRelationship(row, relationship, state, props ++ onCreateProperties)
-            Iterator(row.newWith2(relName, relationship, toName, toNode))
+            setPropertiesOnRelationship(row, relationship, state, props)
+            val newContext = row.newWith2(relName, relationship, toName, toNode)
+            onCreateActions.foreach(_.exec(newContext, state))
+            Iterator(newContext)
           } else {
             relationships.map { relationship =>
-              setPropertiesOnRelationship(row, relationship, state, onMatchProperties)
-              row.newWith2(relName, relationship, toName, toNode)
+              val newContext =row.newWith2(relName, relationship, toName, toNode)
+              onMatchActions.foreach(_.exec(newContext, state))
+              newContext
             }
           }
         }
@@ -163,7 +166,15 @@ case class MergeIntoPipe(source: Pipe,
 
   val symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 
-  override def localEffects = Effects(ReadsRelationships)
+  override def localEffects = {
+    val effects = Effects(ReadsRelationships, WritesRelationships)
+    val onCreateEffects = onCreateActions.foldLeft(effects) {
+      case (acc, action) => acc | action.localEffects(symbols)
+    }
+    onMatchActions.foldLeft(onCreateEffects) {
+      case (acc, action) => acc | action.localEffects(symbols)
+    }
+  }
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
@@ -176,6 +187,9 @@ case class MergeIntoPipe(source: Pipe,
                                           properties: Map[KeyToken, Expression]): Unit = {
     properties.foreach { case (keyToken, expression) =>
       val expressionValue = makeValueNeoSafe(expression(row)(state))
+      if (expressionValue == null) {
+        throw new InvalidSemanticsException(s"Cannot merge relationship using null property value for ${keyToken.name}")
+      }
       state.query.relationshipOps.setProperty(relationship.getId, keyToken.getOrCreateId(state.query), expressionValue)
     }
   }

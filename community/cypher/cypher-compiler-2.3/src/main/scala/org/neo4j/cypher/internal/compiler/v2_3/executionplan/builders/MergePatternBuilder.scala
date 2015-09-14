@@ -45,7 +45,7 @@ case class MergePatternBuilder(matching: Phase) extends PlanBuilder with Collect
 
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress = {
     def prepareMergeAction(symbols: SymbolTable, originalMerge: MergePatternAction): (SymbolTable, MergePatternAction) = {
-      val (newSymbols,updateActions) = MergePatternBuilder.createActions(symbols, originalMerge.actions)
+      val (newSymbols,updateActions) = MergePatternBuilder.createActions(symbols, originalMerge.actions ++ originalMerge.onCreate)
       val matchPipe = solveMatchQuery(symbols, originalMerge).pipe
       val preparedMerge = originalMerge.copy(maybeMatchPipe = Some(matchPipe), maybeUpdateActions = Some(updateActions))
       (newSymbols, preparedMerge)

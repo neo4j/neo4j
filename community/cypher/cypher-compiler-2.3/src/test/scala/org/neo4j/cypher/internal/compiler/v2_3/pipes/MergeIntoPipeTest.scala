@@ -25,8 +25,9 @@ import org.mockito.Mockito.{mock => jmock, _}
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, Literal}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier, Property, Expression, Literal}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType}
+import org.neo4j.cypher.internal.compiler.v2_3.mutation.{PropertySetAction, SetAction}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{Operations, QueryContext}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
@@ -237,8 +238,11 @@ class MergeIntoPipeTest extends CypherFunSuite {
 
     // when
     val left = newMockedPipe("a", row("a" -> node_a, "b" -> node_b))
+    val propertySetAction = Seq(
+      PropertySetAction(Property(Identifier("r"), resolve("key")), Literal(42)),
+      PropertySetAction(Property(Identifier("r"), resolve("foo")), Literal("bar")))
     val result = createPipeAndRun(query, left, INCOMING, "A", relProperties = Map.empty,
-      onCreateProperties = Map("key" -> Literal(42), "foo" -> Literal("bar")))
+      onCreateProperties = propertySetAction)
 
     // then
     val (single :: Nil) = result
@@ -256,8 +260,11 @@ class MergeIntoPipeTest extends CypherFunSuite {
 
     // when
     val left = newMockedPipe("a", row("a" -> node_a, "b" -> node_b))
+    val propertySetAction = Seq(
+      PropertySetAction(Property(Identifier("r"), resolve("key")), Literal(42)),
+      PropertySetAction(Property(Identifier("r"), resolve("foo")), Literal("bar")))
     val result = createPipeAndRun(query, left, INCOMING, "A", relProperties = Map.empty,
-      onCreateProperties = Map.empty, onMatchProperties = Map("key" -> Literal(42), "foo" -> Literal("bar")))
+      onCreateProperties = Seq.empty, onMatchProperties = propertySetAction)
 
     // then
     val (single :: Nil) = result
@@ -267,12 +274,15 @@ class MergeIntoPipeTest extends CypherFunSuite {
   }
 
   private def createPipeAndRun(query: QueryContext, left: Pipe, dir: SemanticDirection = OUTGOING, relType: String,
-                               relProperties: Map[String, Expression], onCreateProperties: Map[String, Expression] = Map.empty, onMatchProperties: Map[String, Expression] = Map.empty): List[ExecutionContext] = {
+                               relProperties: Map[String, Expression], onCreateProperties: Seq[SetAction] = Seq.empty, onMatchProperties: Seq[SetAction] = Seq.empty): List[ExecutionContext] = {
     val f: PartialFunction[(String, Expression), (KeyToken, Expression)] = {
-      case (k, v) => KeyToken.Resolved(k, k.hashCode, TokenType.PropertyKey) -> v
+      case (k, v) => resolve(k) -> v
     }
-    MergeIntoPipe(left, "a", "r", "b", dir, relType, relProperties.map(f), onCreateProperties.map(f), onMatchProperties.map(f))().createResults(QueryStateHelper.emptyWith(query)).toList
+    MergeIntoPipe(left, "a", "r", "b", dir, relType, relProperties.map(f), onCreateProperties, onMatchProperties)().createResults(QueryStateHelper.emptyWith(query)).toList
   }
+
+  private def resolve(key: String): KeyToken = KeyToken.Resolved(key, key.hashCode, TokenType.PropertyKey)
+
 
   private def setupRelationshipFromNode(startNode: Node, dir: SemanticDirection, rels: Relationship*)(implicit query: QueryContext) {
     val typeId = rels.head.getType.name().hashCode

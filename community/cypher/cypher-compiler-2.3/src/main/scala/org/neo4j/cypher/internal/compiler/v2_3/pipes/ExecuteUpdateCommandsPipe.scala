@@ -91,7 +91,7 @@ trait NoLushEntityCreation {
       Seq(NamedExpectation(key, props, Seq.empty)) ++ extractIfEntity(from) ++ extractIfEntity(to)
     case CreateUniqueAction(links@_*) =>
       links.flatMap(l => Seq(l.start, l.end, l.rel))
-    case MergePatternAction(_, _, _, Some(updates), _) =>
+    case MergePatternAction(_, _, _, _, Some(updates), _) =>
       updates.flatMap(extractEntities)
     case _ =>
       Seq()
