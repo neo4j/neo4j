@@ -5,17 +5,17 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
@@ -33,6 +33,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransientTransactionFailureException;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
@@ -46,6 +47,7 @@ import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -82,7 +84,6 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
 
     abstract void removeOffendingDataInRunningTx( GraphDatabaseService db );
 
-
     @Before
     public void createKeys() throws Exception
     {
@@ -90,6 +91,15 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         this.typeId = initializeLabelOrRelType( statement, KEY );
         this.propertyKeyId = statement.propertyKeyGetOrCreateForName( PROP );
         commit();
+    }
+
+    @Override
+    protected GraphDatabaseService createGraphDatabase( EphemeralFileSystemAbstraction fs )
+    {
+        return new TestEnterpriseGraphDatabaseFactory()
+                .setFileSystem( fs )
+                .newImpermanentDatabaseBuilder()
+                .newGraphDatabase();
     }
 
     @Test

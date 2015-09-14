@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.util.Set;
-
 import org.junit.Test;
+
+import java.util.Set;
 
 import org.neo4j.SchemaHelper;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -55,6 +55,8 @@ public class DiskLayerSchemaWithPECTest extends DiskLayerTest
         SchemaHelper.createNodePropertyExistenceConstraint( db, label2, propertyKey );
         SchemaHelper.createRelPropertyExistenceConstraint( db, relType1, propertyKey );
 
+        SchemaHelper.awaitIndexes( db );
+
         // When
         Set<PropertyConstraint> constraints = asSet( disk.constraintsGetAll() );
 
@@ -79,6 +81,8 @@ public class DiskLayerSchemaWithPECTest extends DiskLayerTest
 
         SchemaHelper.createUniquenessConstraint( db, label1, propertyKey );
 
+        SchemaHelper.awaitIndexes( db );
+
         // When
         Set<NodePropertyConstraint> constraints = asSet( disk.constraintsGetForLabel( labelId( label1 ) ) );
 
@@ -99,6 +103,8 @@ public class DiskLayerSchemaWithPECTest extends DiskLayerTest
 
         SchemaHelper.createNodePropertyExistenceConstraint( db, label1, propertyKey );
         SchemaHelper.createNodePropertyExistenceConstraint( db, label2, propertyKey );
+
+        SchemaHelper.awaitIndexes( db );
 
         // When
         Set<NodePropertyConstraint> constraints = asSet(

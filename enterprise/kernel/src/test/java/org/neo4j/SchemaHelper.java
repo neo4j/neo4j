@@ -41,7 +41,6 @@ public final class SchemaHelper
     public static void createIndex( GraphDatabaseService db, String label, String property )
     {
         db.execute( String.format( "CREATE INDEX ON :`%s`(`%s`)", label, property ) );
-        awaitIndexes( db );
     }
 
     public static void createUniquenessConstraint( GraphDatabaseService db, Label label, String property )
@@ -52,7 +51,6 @@ public final class SchemaHelper
     public static void createUniquenessConstraint( GraphDatabaseService db, String label, String property )
     {
         db.execute( String.format( "CREATE CONSTRAINT ON (n:`%s`) ASSERT n.`%s` IS UNIQUE", label, property ) );
-        awaitIndexes( db );
     }
 
     public static void createNodePropertyExistenceConstraint( GraphDatabaseService db, Label label, String property )
@@ -76,7 +74,7 @@ public final class SchemaHelper
         db.execute( String.format( "CREATE CONSTRAINT ON ()-[r:`%s`]-() ASSERT exists(r.`%s`)", type, property ) );
     }
 
-    private static void awaitIndexes( GraphDatabaseService db )
+    public static void awaitIndexes( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {

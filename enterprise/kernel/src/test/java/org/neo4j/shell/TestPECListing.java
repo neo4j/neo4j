@@ -143,6 +143,8 @@ public class TestPECListing extends AbstractShellTest
         SchemaHelper.createNodePropertyExistenceConstraint( db, label, "name" );
         SchemaHelper.createRelPropertyExistenceConstraint( db, relType, "since" );
 
+        SchemaHelper.awaitIndexes( db );
+
         // THEN
         executeCommand( "schema",
                 "Indexes",

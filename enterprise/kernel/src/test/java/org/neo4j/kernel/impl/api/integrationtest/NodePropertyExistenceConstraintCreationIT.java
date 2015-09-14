@@ -19,15 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import java.util.Iterator;
-
 import org.junit.Test;
+
+import java.util.Iterator;
 
 import org.neo4j.SchemaHelper;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
@@ -36,7 +35,6 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -48,15 +46,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.single;
 public class NodePropertyExistenceConstraintCreationIT
         extends AbstractConstraintCreationIT<NodePropertyExistenceConstraint>
 {
-    @Override
-    protected GraphDatabaseService createGraphDatabase( EphemeralFileSystemAbstraction fs )
-    {
-        return new TestEnterpriseGraphDatabaseFactory()
-                .setFileSystem( fs )
-                .newImpermanentDatabaseBuilder()
-                .newGraphDatabase();
-    }
-
     @Override
     int initializeLabelOrRelType( SchemaWriteOperations writeOps, String name ) throws KernelException
     {
