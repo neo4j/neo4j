@@ -29,6 +29,7 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
+import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -124,7 +125,7 @@ public class ConsistencyCheckTool
             {
                 if ( new RecoveryRequiredChecker( fs, pageCache ).isRecoveryRequiredAt( storeDir ) )
                 {
-                    systemError.print( lines(
+                    systemError.print( Strings.joinAsLines(
                             "Active logical log detected, this might be a source of inconsistencies.",
                             "Consider allowing the database to recover before running the consistency check.",
                             "Consistency checking will continue, abort if you wish to perform recovery first.",
@@ -150,7 +151,8 @@ public class ConsistencyCheckTool
         File storeDir = new File( unprefixedArguments.get( 0 ) );
         if ( !storeDir.isDirectory() )
         {
-            throw new ToolFailureException( lines( String.format( "'%s' is not a directory", storeDir ) ) + usage() );
+            throw new ToolFailureException(
+                    Strings.joinAsLines( String.format( "'%s' is not a directory", storeDir ) ) + usage() );
         }
         return storeDir;
     }
@@ -178,23 +180,13 @@ public class ConsistencyCheckTool
 
     private String usage()
     {
-        return lines(
+        return Strings.joinAsLines(
                 Args.jarUsage( getClass(), "[-propowner] [-recovery] [-config <neo4j.properties>] <storedir>" ),
                 "WHERE:   <storedir>         is the path to the store to check",
                 "         -recovery          to perform recovery on the store before checking",
                 "         <neo4j.properties> is the location of an optional properties file",
                 "                            containing tuning parameters for the consistency check"
         );
-    }
-
-    private static String lines( String... content )
-    {
-        StringBuilder result = new StringBuilder();
-        for ( String line : content )
-        {
-            result.append( line ).append( System.lineSeparator() );
-        }
-        return result.toString();
     }
 
     class ToolFailureException extends Exception

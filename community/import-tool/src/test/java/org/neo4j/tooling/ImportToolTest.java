@@ -97,6 +97,24 @@ public class ImportToolTest
     private int dataIndex;
 
     @Test
+    public void usageMessageIncludeExample() throws Exception
+    {
+        SuppressOutput.Voice outputVoice = suppressOutput.getOutputVoice();
+        importTool( "?" );
+        assertTrue( "Usage message should include example section, but was:" + outputVoice,
+                outputVoice.containsMessage( "Example:" ) );
+    }
+
+    @Test
+    public void usageMessagePrintedOnEmptyInputParameters() throws Exception
+    {
+        SuppressOutput.Voice outputVoice = suppressOutput.getOutputVoice();
+        importTool();
+        assertTrue( "Output should include usage section, but was:" + outputVoice,
+                outputVoice.containsMessage( "Example:" ) );
+    }
+
+    @Test
     public void shouldImportWithAsManyDefaultsAsAvailable() throws Exception
     {
         // GIVEN
@@ -637,7 +655,7 @@ public class ImportToolTest
     @Test
     public void shouldPrintReferenceLinkOnDataImportErrors() throws Exception
     {
-        shouldPrintReferenceLinkAsPartOfErrorMessage(nodeIds(),
+        shouldPrintReferenceLinkAsPartOfErrorMessage( nodeIds(),
                 IteratorUtil.iterator( new RelationshipDataLine( "1", "", "type", "name" ) ),
                 "Relationship missing mandatory field 'END_ID', read more about relationship " +
                 "format in the manual:  http://neo4j.com/docs/" + Version.getKernelVersion() +
@@ -952,7 +970,7 @@ public class ImportToolTest
 
     private String randomName()
     {
-        int length = random.nextInt( 10 )+5;
+        int length = random.nextInt( 10 ) + 5;
         StringBuilder builder = new StringBuilder();
         for ( int i = 0; i < length; i++ )
         {
@@ -962,13 +980,13 @@ public class ImportToolTest
     }
 
     private File relationshipData( boolean includeHeader, Configuration config, List<String> nodeIds,
-                                   IntPredicate linePredicate, boolean specifyType ) throws Exception
+            IntPredicate linePredicate, boolean specifyType ) throws Exception
     {
         return relationshipData( includeHeader, config, nodeIds, linePredicate, specifyType, Charset.defaultCharset() );
     }
 
     private File relationshipData( boolean includeHeader, Configuration config, List<String> nodeIds,
-                                   IntPredicate linePredicate, boolean specifyType, Charset encoding ) throws Exception
+            IntPredicate linePredicate, boolean specifyType, Charset encoding ) throws Exception
     {
         return relationshipData( includeHeader, config, randomRelationships( nodeIds ), linePredicate,
                 specifyType, encoding );
@@ -1065,7 +1083,7 @@ public class ImportToolTest
         public String toString()
         {
             return "RelationshipDataLine [startNodeId=" + startNodeId + ", endNodeId=" + endNodeId + ", type=" + type
-                    + ", name=" + name + "]";
+                   + ", name=" + name + "]";
         }
     }
 
@@ -1093,11 +1111,11 @@ public class ImportToolTest
             if ( linePredicate.test( i ) )
             {
                 writer.println( entry.startNodeId +
-                        delimiter + entry.endNodeId +
-                        (specifyType ? (delimiter + entry.type) : "") +
-                        delimiter + currentTimeMillis() +
-                        delimiter + (entry.name != null ? entry.name : "")
-                        );
+                                delimiter + entry.endNodeId +
+                                (specifyType ? (delimiter + entry.type) : "") +
+                                delimiter + currentTimeMillis() +
+                                delimiter + (entry.name != null ? entry.name : "")
+                );
             }
         }
     }

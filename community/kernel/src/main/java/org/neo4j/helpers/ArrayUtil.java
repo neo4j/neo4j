@@ -373,6 +373,16 @@ public abstract class ArrayUtil
     }
 
     /**
+     * Check if provided array is empty
+     * @param array - array to check
+     * @return true if array is null or empty
+     */
+    public static boolean isEmpty( Object[] array )
+    {
+        return (array == null) || (array.length == 0);
+    }
+
+    /**
      * Convert an array to a String using a custom delimiter.
      * 
      * @param items The array to convert
