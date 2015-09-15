@@ -50,6 +50,7 @@ o Adds a Windows PowerShell for managing a Neo4j server
 
 Browser:
 o Display cypher warnings in editor gutter
+o New drawer for :config settings
 o In database drawer: display only labels and rel types in use
 o Fetch labels / rel types / propertykeys at interval
 o On EXPLAIN and PROFILE frames, show cypher warnings view if warnings exists
