@@ -82,6 +82,14 @@ public class ArrayUtilTest
     }
 
     @Test
+    public void emptyArray()
+    {
+        assertTrue( ArrayUtil.isEmpty( null ) );
+        assertTrue( ArrayUtil.isEmpty( new String[] {} ) );
+        assertFalse( ArrayUtil.isEmpty( new Long[] { 1L } ) );
+    }
+
+    @Test
     public void shouldConcatOneAndMany() throws Exception
     {
         // WHEN
