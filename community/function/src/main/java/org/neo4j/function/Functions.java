@@ -199,6 +199,9 @@ public final class Functions
 
     /**
      * @deprecated use {@link Consumers#noop()}
+     * @param <TYPE> the type of object to swallow
+     * @param type the type to swallow
+     * @return return the consumer of the type object
      */
     @Deprecated
     @SuppressWarnings( "unchecked" )
@@ -209,6 +212,9 @@ public final class Functions
 
     /**
      * @deprecated use {@link Suppliers#singleton(Object)}
+     * @param <T> the type of the item object
+     * @param item the constant item
+     * @return return a factory object
      */
     @Deprecated
     public static <T> Factory<T> constantly( final T item )

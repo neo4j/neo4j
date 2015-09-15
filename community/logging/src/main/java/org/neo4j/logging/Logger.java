@@ -39,7 +39,7 @@ public interface Logger
 
     /**
      * @param format    A string format for writing a message
-     * @param arguments Arguments to substitute into the message according to the {@param format}
+     * @param arguments Arguments to substitute into the message according to the {@code format}
      */
     void log( String format, Object... arguments );
 
