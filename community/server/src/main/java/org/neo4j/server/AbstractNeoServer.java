@@ -174,10 +174,9 @@ public abstract class AbstractNeoServer implements NeoServer
         this.authManager = life.add(new AuthManager( users, Clock.SYSTEM_CLOCK, config.get( ServerSettings.auth_enabled ) ));
         this.webServer = createWebServer();
 
-        if ( getKeyStoreRequired() )
-        {
-            this.keyStoreInfo = createKeyStore();
-        }
+
+        this.keyStoreInfo = createKeyStore();
+
         for ( ServerModule moduleClass : createServerModules() )
         {
             registerModule( moduleClass );
@@ -440,11 +439,6 @@ public abstract class AbstractNeoServer implements NeoServer
     protected boolean getHttpsEnabled()
     {
         return config.get( ServerSettings.webserver_https_enabled );
-    }
-
-    protected boolean getKeyStoreRequired()
-    {
-        return config.get( ServerSettings.webserver_https_enabled ) || config.get( ServerSettings.bolt_tls_enabled );
     }
 
     protected int getHttpsPort()
