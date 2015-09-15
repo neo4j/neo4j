@@ -21,14 +21,16 @@ package org.neo4j.consistency.report;
 
 import org.neo4j.consistency.RecordType;
 import org.neo4j.helpers.ObjectUtil;
+import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.logging.Log;
+
+import static org.neo4j.helpers.Strings.TAB;
 
 public class InconsistencyMessageLogger implements InconsistencyLogger
 {
     private final Log log;
-    public static final String LINE_SEPARATOR = System.getProperty( "line.separator" );
-    public static final String TAB = "\t";
+
 
     public InconsistencyMessageLogger( Log log )
     {
@@ -63,7 +65,7 @@ public class InconsistencyMessageLogger implements InconsistencyLogger
 
     private static String buildMessage( String message, AbstractBaseRecord record, Object[] args )
     {
-        StringBuilder builder = joinLines( message ).append( LINE_SEPARATOR ).append( TAB ).append( record );
+        StringBuilder builder = joinLines( message ).append( System.lineSeparator() ).append( TAB ).append( record );
         appendArgs( builder, args );
         return builder.toString();
     }
@@ -71,8 +73,8 @@ public class InconsistencyMessageLogger implements InconsistencyLogger
     private static String buildMessage( String message, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord, Object[] args )
     {
         StringBuilder builder = joinLines( message );
-        builder.append( LINE_SEPARATOR ).append( TAB ).append( "- " ).append( oldRecord );
-        builder.append( LINE_SEPARATOR ).append( TAB ).append( "+ " ).append( newRecord );
+        builder.append( System.lineSeparator() ).append( TAB ).append( "- " ).append( oldRecord );
+        builder.append( System.lineSeparator() ).append( TAB ).append( "+ " ).append( newRecord );
         appendArgs( builder, args );
         return builder.toString();
     }
@@ -94,7 +96,7 @@ public class InconsistencyMessageLogger implements InconsistencyLogger
         {
             return builder;
         }
-        builder.append( LINE_SEPARATOR ).append( TAB ).append( "Inconsistent with:" );
+        builder.append( System.lineSeparator() ).append( TAB ).append( "Inconsistent with:" );
         for ( Object arg : args )
         {
             builder.append( ' ' ).append( ObjectUtil.toString( arg ) );

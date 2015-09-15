@@ -235,7 +235,7 @@ case object Prettifier extends (String => String) {
   }
 
   val space = " "
-  val newline = System.getProperty("line.separator")
+  val newline = System.lineSeparator()
 
   def insertBreak(token: SyntaxToken, tail: Seq[SyntaxToken]): String = {
     if (tail.isEmpty)

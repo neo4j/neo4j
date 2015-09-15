@@ -192,7 +192,7 @@ public class ConsistencyCheckTool
         StringBuilder result = new StringBuilder();
         for ( String line : content )
         {
-            result.append( line ).append( System.getProperty( "line.separator" ) );
+            result.append( line ).append( System.lineSeparator() );
         }
         return result.toString();
     }

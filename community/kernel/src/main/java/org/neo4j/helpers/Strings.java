@@ -27,6 +27,9 @@ import java.util.Arrays;
  */
 public final class Strings
 {
+
+    public static final String TAB = "\t";
+
     private Strings()
     {
     }
