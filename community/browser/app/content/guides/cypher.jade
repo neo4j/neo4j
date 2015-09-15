@@ -128,6 +128,31 @@ article.guide
             code surfer
             | will contain Allison, a friend of a friend who surfs
     slide.row-fluid
+      .col-sm-3
+        h3 Analyze
+        p.lead Using the visual query plan
+      .col-sm-9
+        p.summary
+          | Understand how your query works by prepending&nbsp;
+          code EXPLAIN
+          | &nbsp; or &nbsp;
+          code PROFILE
+          | :
+        figure
+          pre.pre-scrollable.code.runnable(mode='cypher').
+            PROFILE MATCH (js:Person)-[:KNOWS]-()-[:KNOWS]-(surfer)
+            WHERE js.name = "Johan" AND surfer.hobby = "surfing"
+            RETURN DISTINCT surfer
+    slide.row-fluid
+      .col-sm-3
+        h3 Live Cypher warnings
+        p.lead Identify query problems in real time
+      .col-sm-5
+        p As you type, the query editor notifies you about deprecated features 
+          | and potentially expensive queries.
+      .col-sm-4
+        img.img-responsive(src='images/screen_cypher_warn.png')
+    slide.row-fluid
       .col-sm-4
         h3 Next steps
         p Start your application using Cypher to create and query graph data. Use the REST API
