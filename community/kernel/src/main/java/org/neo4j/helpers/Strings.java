@@ -27,6 +27,9 @@ import java.util.Arrays;
  */
 public final class Strings
 {
+
+    public static final String TAB = "\t";
+
     private Strings()
     {
     }
@@ -144,6 +147,23 @@ public final class Strings
         }
         return builder.toString();
     }
+
+    /**
+     * Joining independent lines from provided elements into one line with {@link java.lang.System#lineSeparator} after
+     * each element
+     * @param elements - lines to join
+     * @return joined line
+     */
+    public static String joinAsLines( String... elements )
+    {
+        StringBuilder result = new StringBuilder();
+        for ( String line : elements )
+        {
+            result.append( line ).append( System.lineSeparator() );
+        }
+        return result.toString();
+    }
+
 
     public static void escape( Appendable output, String arg ) throws IOException
     {

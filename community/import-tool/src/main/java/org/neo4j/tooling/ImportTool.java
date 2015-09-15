@@ -33,6 +33,8 @@ import org.neo4j.function.Function;
 import org.neo4j.function.Function2;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Args.Option;
+import org.neo4j.helpers.ArrayUtil;
+import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -62,10 +64,10 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static java.lang.System.out;
 import static java.nio.charset.Charset.defaultCharset;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
+import static org.neo4j.helpers.Strings.TAB;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
@@ -168,7 +170,7 @@ public class ImportTool
                         + "nodes within the same group having the same id, the first encountered will be imported "
                         + "whereas consecutive such nodes will be skipped. "
                         + "Skipped nodes will be logged"
-                        + ", containing at most number of entites specified by " + BAD_TOLERANCE.key() + "." );
+                        + ", containing at most number of entities specified by " + BAD_TOLERANCE.key() + "." );
 
         private final String key;
         private final Object defaultValue;
@@ -259,7 +261,7 @@ public class ImportTool
     public static void main( String[] incomingArguments, boolean defaultSettingsSuitableForTests )
     {
         Args args = Args.parse( incomingArguments );
-        if ( asksForUsage( args ) )
+        if ( ArrayUtil.isEmpty( incomingArguments ) || asksForUsage( args ) )
         {
             printUsage( System.out );
             return;
@@ -513,13 +515,20 @@ public class ImportTool
                 + "See the chapter \"Import Tool\" in the Neo4j Manual for details on the CSV file format "
                 + "- a special kind of header is required.", 80 ) )
         {
-            out.println( "\t" + line );
+            out.println( TAB + line );
         }
         out.println( "Usage:" );
         for ( Options option : Options.values() )
         {
             option.printUsage( out );
         }
+
+        out.println( "Example:");
+        out.print( Strings.joinAsLines(
+                TAB + "bin/neo4j-import --into retail.db --id-type string --nodes:Customer customers.csv ",
+                TAB + "--nodes products.csv --nodes orders_header.csv,orders1.csv,orders2.csv ",
+                TAB + "--relationships:CONTAINS order_details.csv ",
+                TAB + "--relationships:ORDERED customer_orders_header.csv,orders1.csv,orders2.csv" ) );
     }
 
     private static boolean asksForUsage( Args args )
