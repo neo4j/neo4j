@@ -190,7 +190,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
 
     // when
     val e = intercept[IllegalStateException](resources.getCsvIterator(new URL(url)))
-    e.getMessage should include(url)
+    e.getMessage should include(url.replace("file:", ""))
   }
 
   test("should parse multiline fields") {

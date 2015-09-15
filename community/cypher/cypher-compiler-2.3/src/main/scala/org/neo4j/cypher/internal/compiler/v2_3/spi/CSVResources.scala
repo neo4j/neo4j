@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.spi
 
 import java.io._
 import java.net.{CookieHandler, CookieManager, CookiePolicy, URL}
+import java.nio.charset.Charset
+
 import org.neo4j.csv.reader._
 import org.neo4j.cypher.internal.compiler.v2_3.TaskCloser
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.ExternalResource
@@ -28,7 +30,6 @@ import org.neo4j.cypher.internal.frontend.v2_3.LoadExternalResourceException
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks._
-import java.nio.charset.Charset
 
 object CSVResources {
   val DEFAULT_FIELD_TERMINATOR: Char = ','
@@ -48,7 +49,11 @@ class CSVResources(cleaner: TaskCloser) extends ExternalResource {
 
   def getCsvIterator(url: URL, fieldTerminator: Option[String] = None): Iterator[Array[String]] = {
     val inputStream = openStream(url)
-    val reader = Readables.wrap( inputStream, url.toString(), Charset.forName( "UTF-8" ) )
+
+    val reader = if (url.getProtocol == "file")
+      Readables.files(Charset.forName("UTF-8"), new File(url.toURI))
+    else
+      Readables.wrap(inputStream, url.toString, Charset.forName("UTF-8"))
     val delimiter: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)
     val seeker = CharSeekers.charSeeker(reader, CSVResources.defaultConfig, true)
     val extractor = new Extractors(delimiter).string()
