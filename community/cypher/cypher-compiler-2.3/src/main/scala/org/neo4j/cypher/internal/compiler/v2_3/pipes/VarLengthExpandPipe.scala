@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ReadsAllNodes, Effects, ReadsRelationshipsWithAnyType}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ReadsAllNodes, Effects, ReadsAllRelationships}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, InternalException}
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
@@ -105,7 +105,7 @@ case class VarLengthExpandPipe(source: Pipe,
 
   def symbols = source.symbols.add(toName, CTNode).add(relName, CTCollection(CTRelationship))
 
-  override def localEffects = Effects(ReadsAllNodes, ReadsRelationshipsWithAnyType)
+  override def localEffects = Effects(ReadsAllNodes, ReadsAllRelationships)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

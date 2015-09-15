@@ -76,7 +76,7 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
     {
       val trail: Trail = mock[Trail]
       when(trail.predicates).thenReturn(Seq.empty)
-      TraversalMatchPipe(SingleRowPipe(), mock[TraversalMatcher], trail) -> Effects(ReadsAllNodes, ReadsRelationshipsWithAnyType)
+      TraversalMatchPipe(SingleRowPipe(), mock[TraversalMatcher], trail) -> Effects(ReadsAllNodes, ReadsAllRelationships)
     },
 
     SlicePipe(SingleRowPipe(), Some(Literal(10)), None)

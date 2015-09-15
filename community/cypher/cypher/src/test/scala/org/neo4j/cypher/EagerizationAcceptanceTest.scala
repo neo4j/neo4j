@@ -190,6 +190,12 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     }
   }
 
+  test("should not introduce eagerness for leaf create match") {
+    val query = "CREATE () WITH * MATCH () RETURN 1"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
   test("should not need eagerness for match create with labels") {
     createLabeledNode("L")
     val query = "MATCH (:L) CREATE (:L)"
@@ -585,22 +591,52 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 0)
   }
 
-  test("should be eager when merging on the same label") {
+  test("does not need to be eager when merging on the same label, merges match") {
+    createLabeledNode("L1")
+    createLabeledNode("L1")
     val query = "MERGE(:L1) MERGE(p:L1) ON CREATE SET p.name = 'Blaine'"
 
-    assertNumberOfEagerness(query, 1)
+    assertNumberOfEagerness(query, 0)
+    assertStats(execute(query))
   }
 
-  test("should be eager when only one merge has labels") {
+  test("does not need to be eager when merging on the same label, merges create") {
+    createNode()
+    val query = "MERGE(:L1) MERGE(p:L1) ON CREATE SET p.name = 'Blaine'"
+
+    assertNumberOfEagerness(query, 0)
+    assertStats(execute(query), nodesCreated = 1, labelsAdded = 1)
+  }
+
+  test("does not need to be eager when right side creates nodes for left side, merges match") {
+    createNode()
+    createLabeledNode("Person")
     val query = "MERGE() MERGE(p: Person) ON CREATE SET p.name = 'Blaine'"
 
-    assertNumberOfEagerness(query, 1)
+    assertNumberOfEagerness(query, 0)
+    assertStats(execute(query))
+  }
+  test("does not need to be eager when right side creates nodes for left side, 2nd merge create") {
+    createNode()
+    createNode()
+    val query = "MERGE() MERGE(p: Person) ON CREATE SET p.name = 'Blaine'"
+
+    assertNumberOfEagerness(query, 0)
+    assertStats(execute(query), nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
   }
 
-  test("should be eager when no merge has labels") {
+  test("does not need to be eager when no merge has labels, merges match") {
+    createNode()
     val query = "MERGE() MERGE(p) ON CREATE SET p.name = 'Blaine'"
 
-    assertNumberOfEagerness(query, 1)
+    assertNumberOfEagerness(query, 0)
+    assertStats(execute(query))
+  }
+  test("does not need to be eager when no merge has labels, merges create") {
+    val query = "MERGE() MERGE(p) ON CREATE SET p.name = 'Blaine'"
+
+    assertNumberOfEagerness(query, 0)
+    assertStats(execute(query), nodesCreated = 1)
   }
 
   test("should not be eager when merging on already bound identifiers") {

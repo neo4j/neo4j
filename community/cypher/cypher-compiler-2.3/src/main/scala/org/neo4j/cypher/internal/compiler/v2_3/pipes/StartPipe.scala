@@ -34,7 +34,7 @@ sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     input.flatMap(ctx => {
-      val source: Iterator[T] = createSource(ctx, state)
+      val source = createSource(ctx, state)
       source.map(x => {
         ctx.newWith1(name, x)
       })
@@ -65,7 +65,7 @@ case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProduce
 case class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Relationship](source, name, createSource, pipeMonitor) {
   def identifierType = CTRelationship
-  override def localEffects = Effects(ReadsRelationshipsWithAnyType)
+  override def localEffects = Effects(ReadsAllRelationships)
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 

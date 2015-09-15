@@ -29,7 +29,7 @@ class UniqueLinkTest extends CypherFunSuite {
   test("given both end nodes, only claims to write relationships, not nodes") {
     val link = UniqueLink("a", "b", "r", "X", SemanticDirection.OUTGOING)
     val symbols = new SymbolTable(Map("a" -> CTNode, "b" -> CTNode))
-    link.effects(symbols) should equal(Effects(ReadsRelationshipsWithAnyType, CreatesRelationship("X"), ReadsAnyRelationshipProperty, WritesAnyRelationshipProperty))
+    link.effects(symbols) should equal(Effects(ReadsAllRelationships, CreatesRelationship("X"), ReadsAnyRelationshipProperty, WritesAnyRelationshipProperty))
   }
 
   test("given one end, creates nodes and relationships") {

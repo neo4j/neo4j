@@ -55,12 +55,12 @@ case class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Tr
   override def localEffects = {
     // Add effects from matching nodes and relationships
     val matcherEffects =
-      if (trail.typ.isEmpty) Effects(ReadsRelationshipBoundNodes, ReadsRelationshipsWithAnyType)
+      if (trail.typ.isEmpty) Effects(ReadsRelationshipBoundNodes, ReadsAllRelationships)
       else trail.typ.foldLeft(Effects(ReadsRelationshipBoundNodes)) { (effects, typ) =>
-        effects | Effects(ReadsRelationshipsWithType(typ))
+        effects ++ Effects(ReadsRelationshipsWithType(typ))
       }
     // Add effects from predicates
-    val allEffects = trail.predicates.flatten.foldLeft(matcherEffects)(_ | _.effects(symbols))
+    val allEffects = trail.predicates.flatten.foldLeft(matcherEffects)(_ ++ _.effects(symbols))
     if (isLeaf) allEffects.asLeafEffects else allEffects
   }
 

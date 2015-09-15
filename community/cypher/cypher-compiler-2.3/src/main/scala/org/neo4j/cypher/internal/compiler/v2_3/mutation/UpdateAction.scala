@@ -74,7 +74,7 @@ class EffectsCollector(private var _effects: Effects, expr: AstNode[_], symbolTa
   tables.put(expr, symbolTable)
 
   def withEffects(extraEffects: Effects) = {
-    _effects = _effects | extraEffects
+    _effects = _effects ++ extraEffects
     self
   }
 

@@ -64,7 +64,6 @@ public class PrimitiveLongCollections
                 throw new NoSuchElementException( "No more elements in " + this );
             }
             hasNext = false;
-//            System.out.println("returning node from iterator with id " + next);
             return next;
         }
 

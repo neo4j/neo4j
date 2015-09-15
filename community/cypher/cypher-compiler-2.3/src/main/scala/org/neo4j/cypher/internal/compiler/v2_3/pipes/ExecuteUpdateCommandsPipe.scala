@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v2_3.mutation._
@@ -68,7 +69,13 @@ case class ExecuteUpdateCommandsPipe(source: Pipe, commands: Seq[UpdateAction])(
 
   def sourceSymbols: SymbolTable = source.symbols
 
-  override def localEffects = commands.effects(sourceSymbols)
+  override def isLeaf = source.sources.isEmpty
+
+  override def localEffects = {
+    val effects = commands.effects(sourceSymbols)
+    if (isLeaf) effects.asLeafEffects
+    else effects
+  }
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

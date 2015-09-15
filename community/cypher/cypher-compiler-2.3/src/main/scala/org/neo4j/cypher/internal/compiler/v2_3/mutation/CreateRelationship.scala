@@ -65,7 +65,7 @@ case class CreateRelationship(key: String,
 extends UpdateAction
   with GraphElementPropertyFunctions {
 
-  def localEffects(symbols: SymbolTable) = props.values.foldLeft(Effects(CreatesRelationship(typ)))(_ | _.effects(symbols))
+  def localEffects(symbols: SymbolTable) = props.values.foldLeft(Effects(CreatesRelationship(typ)))(_ ++ _.effects(symbols))
 
   override def children =
     props.values.toSeq ++ Seq(from.node, to.node) ++
