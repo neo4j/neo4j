@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.test.ThreadingRule;
+import org.neo4j.test.ExecutorRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -49,7 +49,7 @@ public class ConversationTest
     @InjectMocks
     private Conversation conversation;
     @Rule
-    public ThreadingRule threadingRule = new ThreadingRule();
+    public ExecutorRule executorRule = new ExecutorRule();
 
     @Test
     public void stopAlreadyClosedConversationDoNotTouchLocks()
@@ -103,10 +103,10 @@ public class ConversationTest
             }
         } ).when( client ).close();
 
-        threadingRule.execute( stopConversation(), conversation );
+        executorRule.execute( stopConversation(), conversation );
 
         stopReadyLatch.await();
-        threadingRule.execute( closeConversation(), conversation );
+        executorRule.execute( closeConversation(), conversation );
 
         long raceStartTime = System.currentTimeMillis();
         stopLatch.countDown();

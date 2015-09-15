@@ -40,7 +40,7 @@ import org.neo4j.helpers.ConcurrentTransfer;
 
 import static java.util.Objects.requireNonNull;
 
-public class ThreadingRule extends ExternalResource
+public class ExecutorRule extends ExternalResource
 {
     private ExecutorService executor;
 
@@ -68,6 +68,11 @@ public class ThreadingRule extends ExternalResource
         }
     }
 
+    public <V> Future<V> submit(Callable<V> callable) throws Exception
+    {
+        return executor.submit( callable );
+    }
+
     public <FROM, TO, EX extends Exception> Future<TO> execute( ThrowingFunction<FROM,TO,EX> function, FROM parameter )
     {
         return executor.submit( task( Barrier.NONE, function, parameter, Consumers.<Thread>noop() ) );
@@ -87,15 +92,6 @@ public class ThreadingRule extends ExternalResource
         Future<TO> future = executor.submit( task( Barrier.NONE, function, parameter, threadTransfer ) );
         Predicates.await( threadTransfer, threadCondition, timeout, unit );
         return future;
-    }
-
-    public Cancelable threadBlockMonitor( Thread thread, Runnable action )
-    {
-        CancellationHandle cancellation = new CancellationHandle();
-        executor.submit( new ThreadBlockMonitor( cancellation,
-                requireNonNull( thread, "thread" ),
-                requireNonNull( action, "action" ) ) );
-        return cancellation;
     }
 
     private static <FROM, TO, EX extends Exception> Callable<TO> task(
@@ -178,76 +174,4 @@ public class ThreadingRule extends ExternalResource
         };
     }
 
-    private static class CancellationHandle implements Cancelable, CancellationRequest
-    {
-        private volatile boolean cancelled = false;
-
-        @Override
-        public boolean cancellationRequested()
-        {
-            return cancelled;
-        }
-
-        public void cancel()
-        {
-            cancelled = true;
-        }
-    }
-
-    private static class ThreadBlockMonitor implements Runnable
-    {
-        private final CancellationRequest cancellation;
-        private final Thread thread;
-        private final Runnable action;
-
-        public ThreadBlockMonitor( CancellationRequest cancellation, Thread thread, Runnable action )
-        {
-            this.cancellation = cancellation;
-            this.thread = thread;
-            this.action = action;
-        }
-
-        @Override
-        public void run()
-        {
-            StackTraceElement[] lastTrace = null;
-            Thread.State lastState = null;
-            do
-            {
-                Thread.State state = thread.getState();
-                switch ( state )
-                {
-                case BLOCKED:
-                case WAITING:
-                case TIMED_WAITING:
-                    StackTraceElement[] trace = thread.getStackTrace();
-                    if ( trace[0].isNativeMethod() &&
-                         Thread.class.getName().equals( trace[0].getClassName() ) &&
-                         "sleep".equals( trace[0].getMethodName() ) )
-                    {
-                        break; // don't regard Thread.sleep() as being blocked
-                    }
-                    if ( lastState == state && Arrays.equals( trace, lastTrace ) )
-                    {
-                        action.run();
-                        return;
-                    }
-                    lastTrace = trace;
-                    break;
-                default:
-                    lastTrace = null;
-                }
-                lastState = state;
-                try
-                {
-                    Thread.sleep( 500 );
-                }
-                catch ( InterruptedException e )
-                {
-                    return;
-                }
-            }
-            while ( !cancellation.cancellationRequested() );
-        }
-    }
 }

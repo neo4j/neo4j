@@ -44,7 +44,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.register.Registers;
-import org.neo4j.test.ThreadingRule;
+import org.neo4j.test.ExecutorRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -56,11 +56,35 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.reserving;
-import static org.neo4j.test.ThreadingRule.stackTracePredicate;
+import static org.neo4j.test.ExecutorRule.stackTracePredicate;
 
 @RunWith( Parameterized.class )
 public class LuceneIndexAccessorTest
 {
+    private final long nodeId = 1, nodeId2 = 2;
+    private final Object value = "value", value2 = 40;
+    private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
+
+    @Rule
+    public final ExecutorRule executorRule = new ExecutorRule();
+
+    @Parameterized.Parameter
+    public IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory;
+    private LuceneIndexAccessor accessor;
+
+    @Before
+    public void before() throws IOException
+    {
+        dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+        accessor = accessorFactory.apply( dirFactory );
+    }
+
+    @After
+    public void after()
+    {
+        dirFactory.close();
+    }
+
     @Test
     public void indexReaderShouldSupportScan() throws Exception
     {
@@ -169,7 +193,7 @@ public class LuceneIndexAccessorTest
         // when
         IndexReader indexReader = accessor.newReader(); // needs to be acquired before drop() is called
 
-        Future<Void> drop = threading.executeAndAwait( new IOFunction<Void, Void>()
+        Future<Void> drop = executorRule.executeAndAwait( new IOFunction<Void, Void>()
         {
             @Override
             public Void apply( Void nothing ) throws IOException
@@ -194,16 +218,7 @@ public class LuceneIndexAccessorTest
         }
     }
 
-    private final long nodeId = 1, nodeId2 = 2;
-    private final Object value = "value", value2 = 40;
-    private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
 
-    @Rule
-    public final ThreadingRule threading = new ThreadingRule();
-
-    @Parameterized.Parameter
-    public IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory;
-    private LuceneIndexAccessor accessor;
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<IOFunction<DirectoryFactory,LuceneIndexAccessor>[]> implementations()
@@ -248,19 +263,6 @@ public class LuceneIndexAccessorTest
             IOFunction<DirectoryFactory,LuceneIndexAccessor> foo )
     {
         return new IOFunction[]{foo};
-    }
-
-    @Before
-    public void before() throws IOException
-    {
-        dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-        accessor = accessorFactory.apply( dirFactory );
-    }
-
-    @After
-    public void after()
-    {
-        dirFactory.close();
     }
 
     private NodePropertyUpdate add( long nodeId, Object value )

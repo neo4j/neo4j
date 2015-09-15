@@ -40,7 +40,7 @@ import org.neo4j.test.Barrier;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.NamedFunction;
-import org.neo4j.test.ThreadingRule;
+import org.neo4j.test.ExecutorRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.DynamicLabel.label;
@@ -48,8 +48,10 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class RelationshipCountsTest
 {
-    public final @Rule DatabaseRule db = new ImpermanentDatabaseRule();
-    public final @Rule ThreadingRule threading = new ThreadingRule();
+    @Rule
+    public final DatabaseRule db = new ImpermanentDatabaseRule();
+    @Rule
+    public final ExecutorRule executorRule = new ExecutorRule();
 
     @Test
     public void shouldReportNumberOfRelationshipsInAnEmptyGraph() throws Exception
@@ -126,7 +128,7 @@ public class RelationshipCountsTest
         GraphDatabaseService graphDb = db.getGraphDatabaseService();
         final Barrier.Control barrier = new Barrier.Control();
         long before = numberOfRelationships();
-        Future<Long> tx = threading.execute( new NamedFunction<GraphDatabaseService, Long>( "create-relationships" )
+        Future<Long> tx = executorRule.execute( new NamedFunction<GraphDatabaseService, Long>( "create-relationships" )
         {
             @Override
             public Long apply( GraphDatabaseService graphDb )
@@ -175,7 +177,7 @@ public class RelationshipCountsTest
         }
         final Barrier.Control barrier = new Barrier.Control();
         long before = numberOfRelationships();
-        Future<Long> tx = threading.execute( new NamedFunction<GraphDatabaseService, Long>( "create-relationships" )
+        Future<Long> tx = executorRule.execute( new NamedFunction<GraphDatabaseService, Long>( "create-relationships" )
         {
             @Override
             public Long apply( GraphDatabaseService graphDb )

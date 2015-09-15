@@ -37,14 +37,25 @@ import org.neo4j.test.Barrier;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.NamedFunction;
-import org.neo4j.test.ThreadingRule;
+import org.neo4j.test.ExecutorRule;
 
 import static org.junit.Assert.assertEquals;
 
 public class NodeCountsTest
 {
-    public final @Rule DatabaseRule db = new ImpermanentDatabaseRule();
-    public final @Rule ThreadingRule threading = new ThreadingRule();
+    @Rule
+    public final DatabaseRule db = new ImpermanentDatabaseRule();
+    @Rule
+    public final ExecutorRule executorRule = new ExecutorRule();
+
+    private Supplier<Statement> statementSupplier;
+
+    @Before
+    public void exposeGuts()
+    {
+        statementSupplier = db.getGraphDatabaseAPI().getDependencyResolver()
+                .resolveDependency( ThreadToStatementContextBridge.class );
+    }
 
     @Test
     public void shouldReportNumberOfNodesInAnEmptyGraph() throws Exception
@@ -160,7 +171,7 @@ public class NodeCountsTest
         GraphDatabaseService graphDb = db.getGraphDatabaseService();
         final Barrier.Control barrier = new Barrier.Control();
         long before = numberOfNodes();
-        Future<Long> done = threading.execute( new NamedFunction<GraphDatabaseService, Long>( "create-nodes" )
+        Future<Long> done = executorRule.execute( new NamedFunction<GraphDatabaseService, Long>( "create-nodes" )
         {
             @Override
             public Long apply( GraphDatabaseService graphDb )
@@ -207,12 +218,4 @@ public class NodeCountsTest
         return statementSupplier.get().readOperations().countsForNode( ReadOperations.ANY_LABEL );
     }
 
-    private Supplier<Statement> statementSupplier;
-
-    @Before
-    public void exposeGuts()
-    {
-        statementSupplier = db.getGraphDatabaseAPI().getDependencyResolver()
-                              .resolveDependency( ThreadToStatementContextBridge.class );
-    }
 }

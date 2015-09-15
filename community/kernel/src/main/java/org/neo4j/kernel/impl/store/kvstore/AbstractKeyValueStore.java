@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.kvstore;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.function.Consumer;
@@ -46,6 +47,7 @@ import static org.neo4j.kernel.impl.locking.LockWrapper.writeLock;
 public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
 {
     private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
+    private final ReentrantLock rotationLock = new ReentrantLock( /*fair=*/true );
     private final Format format;
     final RotationStrategy rotationStrategy;
     private RotationTimerFactory rotationTimerFactory;
@@ -193,18 +195,26 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     }
 
     /**
-     * Prepare for rotation. Sets up the internal structures to ensure that all changes up to and including the changes
-     * of the specified version are applied before rotation takes place. This method does not block, however if all
+     * Rotate a count store.
+     * Sets up the internal structures to ensure that all changes up to and including the changes
+     * of the specified version are applied before rotation takes place. If all
      * required changes have not been applied {@linkplain PreparedRotation#rotate() the rotate method} will block
-     * waiting for all changes to be applied. Invoking {@linkplain PreparedRotation#rotate() the rotate method} some
-     * time after all requested transactions have been applied is ok, since setting the store up for rotation does
-     * not block updates, it just sorts them into updates that apply before rotation and updates that apply after.
+     * waiting for all changes to be applied.
      *
      * @param version the smallest version to include in the rotation. Note that the actual rotated version might be a
-     *                later version than this version. The actual rotated version is returned by
-     *                {@link PreparedRotation#rotate()}.
+     * later version than this version. The actual rotated version is returned as result of rotations.
+     * @return the highest transaction id that was included in the snapshot created by the rotation.
      */
-    protected final PreparedRotation prepareRotation( final long version )
+    public long rotate( final long version ) throws IOException
+    {
+        try ( LockWrapper rotationLockWrapper = new LockWrapper( rotationLock ) )
+        {
+            PreparedRotation preparedRotation = prepareRotation( version );
+            return preparedRotation.rotate();
+        }
+    }
+
+    protected PreparedRotation prepareRotation( final long version )
     {
         try ( LockWrapper ignored = writeLock( updateLock ) )
         {

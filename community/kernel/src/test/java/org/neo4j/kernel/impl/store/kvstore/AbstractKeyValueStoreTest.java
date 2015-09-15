@@ -26,10 +26,10 @@ import org.junit.rules.ExpectedException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.neo4j.function.IOFunction;
 import org.neo4j.function.Predicate;
@@ -39,7 +39,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.test.ThreadingRule;
+import org.neo4j.test.ExecutorRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -53,7 +53,7 @@ public class AbstractKeyValueStoreTest
     @Rule
     public final Resources resourceManager = new Resources( FILE_IN_EXISTING_DIRECTORY );
     @Rule
-    public final ThreadingRule threading = new ThreadingRule();
+    public final ExecutorRule executorRule = new ExecutorRule();
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
@@ -97,7 +97,7 @@ public class AbstractKeyValueStoreTest
         Store store = resourceManager.managed( new Store() );
 
         // when
-        store.prepareRotation( 0 ).rotate();
+        store.rotate( 0 );
     }
 
     @Test
@@ -116,7 +116,7 @@ public class AbstractKeyValueStoreTest
         assertEquals( "too old", store.get( "age" ) );
 
         // when
-        store.prepareRotation( 0 ).rotate();
+        store.rotate( 0 );
 
         // then
         assertEquals( "hello world", store.get( "message" ) );
@@ -134,7 +134,7 @@ public class AbstractKeyValueStoreTest
             for ( long txId = 2; txId <= 10; txId++ )
             {
                 store.updater( txId ).get().close();
-                store.prepareRotation( txId ).rotate();
+                store.rotate( txId );
             }
         }
 
@@ -224,31 +224,49 @@ public class AbstractKeyValueStoreTest
         final Store store = resourceManager.managed( createTestStore() );
         updateStore( store, 1 );
 
-        PreparedRotation rotation = store.prepareRotation( 2 );
+        Future<Long> rotationFuture = executorRule.submit( new Callable<Long>()
+        {
+            @Override
+            public Long call() throws Exception
+            {
+                return store.rotate( 2 );
+            }
+        } );
         updateStore( store, 2 );
-        rotation.rotate();
+        assertEquals( 2, rotationFuture.get().longValue() );
 
         // then
         assertEquals( 2, store.headers().get( TX_ID ).longValue() );
-        store.prepareRotation( 2 ).rotate();
+        assertEquals( 2, store.rotate( 2 ) );
     }
 
     @Test
     @Resources.Life( STARTED )
     public void postStateUpdatesCountedOnlyForTransactionsGreaterThanRotationVersion()
-            throws IOException, TimeoutException, InterruptedException, ExecutionException
+            throws Exception
     {
-        final Store store = resourceManager.managed( createTestStore() );
+        CountDownLatch rotationLatch = new CountDownLatch( 1 );
+        final Store store = resourceManager.managed( createTestStore(rotationLatch) );
 
-        PreparedRotation rotation = store.prepareRotation( 2 );
+        Future<Long> rotationFuture = executorRule.submit( new Callable<Long>()
+        {
+            @Override
+            public Long call() throws Exception
+            {
+                return store.rotate( 2 );
+            }
+        } );
+
+        rotationLatch.await();
+
         updateStore( store, 4 );
         updateStore( store, 3 );
         updateStore( store, 1 );
         updateStore( store, 2 );
 
-        assertEquals( 2, rotation.rotate() );
+        assertEquals( 2, rotationFuture.get().longValue() );
 
-        Future<Long> rotationFuture = threading.executeAndAwait( store.rotation, 5l, new Predicate<Thread>()
+        rotationFuture = executorRule.executeAndAwait( store.rotation, 5l, new Predicate<Thread>()
         {
             @Override
             public boolean test( Thread thread )
@@ -274,7 +292,7 @@ public class AbstractKeyValueStoreTest
 
         // when
         updateStore( store, 1 );
-        Future<Long> rotation = threading.executeAndAwait( store.rotation, 3l, new Predicate<Thread>()
+        Future<Long> rotation = executorRule.executeAndAwait( store.rotation, 3l, new Predicate<Thread>()
         {
             @Override
             public boolean test( Thread thread )
@@ -328,15 +346,25 @@ public class AbstractKeyValueStoreTest
         expectedException.expect( RotationTimeoutException.class );
 
         // WHEN
-        store.prepareRotation( 10l ).rotate();
+        store.rotate(10l);
+    }
+
+    private Store createTestStore(long timeoutMillis)
+    {
+        return createTestStore( timeoutMillis, null );
+    }
+
+    private Store createTestStore(CountDownLatch rotationPreparedLatch)
+    {
+        return createTestStore( TimeUnit.SECONDS.toMillis( 100 ), rotationPreparedLatch );
     }
 
     private Store createTestStore()
     {
-        return createTestStore( TimeUnit.SECONDS.toMillis( 100 ) );
+        return createTestStore( TimeUnit.SECONDS.toMillis( 100 ), null );
     }
 
-    private Store createTestStore( long rotationTimeout )
+    private Store createTestStore( long rotationTimeout, final CountDownLatch rotationPreparedLatch )
     {
         return new Store( rotationTimeout, TX_ID )
         {
@@ -352,6 +380,17 @@ public class AbstractKeyValueStoreTest
                 {
                     return super.initialHeader( field );
                 }
+            }
+
+            @Override
+            protected PreparedRotation prepareRotation( long version )
+            {
+                PreparedRotation preparedRotation = super.prepareRotation( version );
+                if ( rotationPreparedLatch != null )
+                {
+                    rotationPreparedLatch.countDown();
+                }
+                return preparedRotation;
             }
 
             @Override
@@ -423,7 +462,7 @@ public class AbstractKeyValueStoreTest
             @Override
             public Long apply( Long version ) throws IOException
             {
-                return prepareRotation( version ).rotate();
+                return rotate(version);
             }
         };
 
@@ -452,6 +491,7 @@ public class AbstractKeyValueStoreTest
                 }
             } );
         }
+
 
         @Override
         protected Headers initialHeaders( long version )

@@ -34,7 +34,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
-import org.neo4j.test.ThreadingRule;
+import org.neo4j.test.ExecutorRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -46,7 +46,7 @@ public class ConstraintIndexConcurrencyTest
     @Rule
     public final DatabaseRule db = new ImpermanentDatabaseRule();
     @Rule
-    public final ThreadingRule threads = new ThreadingRule();
+    public final ExecutorRule executorRule = new ExecutorRule();
 
     @Test
     public void shouldNotAllowConcurrentViolationOfConstraint() throws Exception
@@ -79,7 +79,7 @@ public class ConstraintIndexConcurrencyTest
                     "The value is irrelevant, we just want to perform some sort of lookup against this index" );
 
             // then let another thread come in and create a node
-            threads.execute( createNode( label, propertyKey, conflictingValue ), graphDb ).get();
+            executorRule.execute( createNode( label, propertyKey, conflictingValue ), graphDb ).get();
 
             // before we create a node with the same property ourselves - using the same statement that we have
             // already used for lookup against that very same index

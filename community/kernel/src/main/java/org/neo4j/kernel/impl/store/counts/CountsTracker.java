@@ -50,7 +50,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
@@ -138,15 +137,6 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
             }
         } );
         return this;
-    }
-
-    /**
-     * @param txId the lowest transaction id that must be included in the snapshot created by the rotation.
-     * @return the highest transaction id that was included in the snapshot created by the rotation.
-     */
-    public long rotate( long txId ) throws IOException
-    {
-        return prepareRotation( txId ).rotate();
     }
 
     public long txId()
