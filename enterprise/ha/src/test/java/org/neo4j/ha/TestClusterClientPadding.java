@@ -19,47 +19,31 @@
  */
 package org.neo4j.ha;
 
-import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.ClusterRule;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsJoined;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterWithAdditionalClients;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesMembers;
 
-@Ignore("build failures make this block forever")
 public class TestClusterClientPadding
 {
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
-    private ClusterManager clusterManager;
+    public ClusterRule clusterRule = new ClusterRule( getClass() );
     private ManagedCluster cluster;
 
     @Before
-    public void before() throws Throwable
+    public void setUp() throws Throwable
     {
-        clusterManager = new ClusterManager(
-                clusterWithAdditionalClients( 2, 1 ), testDirectory.directory( "dbs" ), stringMap() );
-        clusterManager.start();
-        cluster = clusterManager.getDefaultCluster();
-        cluster.await( masterAvailable() );
-        cluster.await( masterSeesMembers( 3 ) );
-        cluster.await( allSeesAllAsJoined() );
-    }
-
-    @After
-    public void after() throws Throwable
-    {
-        clusterManager.shutdown();
+        cluster = clusterRule.provider( clusterWithAdditionalClients( 2, 1 ) )
+                .availabilityChecks( masterAvailable(), masterSeesMembers( 3 ), allSeesAllAsJoined() )
+                .startCluster();
     }
 
     @Test

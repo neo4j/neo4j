@@ -22,9 +22,11 @@ package org.neo4j.test.ha;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+import org.omg.PortableInterceptor.ClientRequestInfo;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,6 +85,12 @@ public class ClusterRule extends ExternalResource
     {
         this.factory = factory;
         return this;
+    }
+
+    @SafeVarargs
+    public final ClusterRule availabilityChecks( Predicate<ManagedCluster>... checks )
+    {
+        return availabilityChecks( Arrays.asList( checks ) );
     }
 
     public ClusterRule availabilityChecks( List<Predicate<ManagedCluster>> checks )
