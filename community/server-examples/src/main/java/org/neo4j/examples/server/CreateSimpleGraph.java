@@ -72,7 +72,7 @@ public class CreateSimpleGraph
         
         System.out.println( String.format(
                 "POST [%s] to [%s], status code [%d], returned data: "
-                        + System.getProperty( "line.separator" ) + "%s",
+                        + System.lineSeparator() + "%s",
                 payload, txUri, response.getStatus(),
                 response.getEntity( String.class ) ) );
         
@@ -105,7 +105,7 @@ public class CreateSimpleGraph
 
         System.out.println( String.format(
                 "POST [%s] to [%s], status code [%d], returned data: "
-                        + System.getProperty( "line.separator" ) + "%s",
+                        + System.lineSeparator() + "%s",
                 jsonTraverserPayload, traverserUri, response.getStatus(),
                 response.getEntity( String.class ) ) );
         response.close();

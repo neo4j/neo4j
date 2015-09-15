@@ -27,10 +27,10 @@ import java.util.regex.Pattern;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.test.ha.ClusterManager;
 
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
 public class StoreMigratorTestUtil
 {

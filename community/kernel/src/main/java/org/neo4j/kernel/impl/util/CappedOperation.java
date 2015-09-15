@@ -101,7 +101,7 @@ public abstract class CappedOperation<T>
         final long timeMillis = unit.toMillis( time );
         return new Switch<T>()
         {
-            private long lastSeen;
+            private long lastSeen = -1;
 
             @Override
             public boolean test( T item )
@@ -112,7 +112,7 @@ public abstract class CappedOperation<T>
             @Override
             public void reset()
             {
-                lastSeen = clock.currentTimeMillis();
+                lastSeen = lastSeen == -1 ? 0 : clock.currentTimeMillis();
             }
         };
     }

@@ -36,6 +36,7 @@ import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.function.Function;
+import org.neo4j.function.Predicate;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.CancellationRequest;
@@ -91,9 +92,8 @@ import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.single;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
-import static org.neo4j.kernel.ha.cluster.member.ClusterMembers.inRole;
+import static org.neo4j.kernel.ha.cluster.member.ClusterMembers.hasInstanceId;
 import static org.neo4j.kernel.impl.store.NeoStore.isStorePresent;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
@@ -372,7 +372,7 @@ public class SwitchToSlave
         try
         {
             userLog.info( "Checking store consistency with master" );
-            checkMyStoreIdAndMastersStoreId( storeId, masterIsOld );
+            checkMyStoreIdAndMastersStoreId( storeId, masterIsOld, masterUri );
             checkDataConsistencyWithMaster( masterUri, masterClient, storeId, txIdStore );
             userLog.info( "Store is consistent" );
         }
@@ -406,12 +406,20 @@ public class SwitchToSlave
         }
     }
 
-    private void checkMyStoreIdAndMastersStoreId( StoreId myStoreId, boolean masterIsOld )
+    private void checkMyStoreIdAndMastersStoreId( StoreId myStoreId, boolean masterIsOld, URI masterUri )
     {
         if ( !masterIsOld )
         {
             ClusterMembers clusterMembers = resolver.resolveDependency( ClusterMembers.class );
-            ClusterMember master = single( filter( inRole( MASTER ), clusterMembers.getMembers() ) );
+
+            InstanceId serverId = HighAvailabilityModeSwitcher.getServerId( masterUri );
+            Predicate<ClusterMember> specification = hasInstanceId( serverId );
+            Iterable<ClusterMember> members = clusterMembers.getMembers();
+            Iterable<ClusterMember> filter = filter( specification,
+                    members );
+            ClusterMember master = single(
+                    filter );
+
             StoreId masterStoreId = master.getStoreId();
 
             if ( !myStoreId.equals( masterStoreId ) )

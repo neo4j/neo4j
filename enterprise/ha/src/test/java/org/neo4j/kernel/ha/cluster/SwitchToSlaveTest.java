@@ -29,6 +29,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.StoreCopyClient;
@@ -116,7 +117,7 @@ public class SwitchToSlaveTest
         // When
         try
         {
-            switchToSlave.checkDataConsistency( masterClient, transactionIdStore, storeId, null, false );
+            switchToSlave.checkDataConsistency( masterClient, transactionIdStore, storeId, new URI("cluster://localhost?serverId=1"), false );
             fail( "Should have thrown " + MismatchingStoreIdException.class.getSimpleName() + " exception" );
         }
         catch ( MismatchingStoreIdException e )
@@ -210,7 +211,7 @@ public class SwitchToSlaveTest
 
     private URI getLocalhostUri() throws URISyntaxException
     {
-        return new URI( "127.0.0.1" );
+        return new URI( "cluster://127.0.0.1?serverId=1" );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -221,6 +222,7 @@ public class SwitchToSlaveTest
         when( master.getStoreId() ).thenReturn( new StoreId( 42, 42, 42, 42 ) );
         when( master.getHARole() ).thenReturn( HighAvailabilityModeSwitcher.MASTER );
         when( master.hasRole( eq( HighAvailabilityModeSwitcher.MASTER ) ) ).thenReturn( true );
+        when( master.getInstanceId() ).thenReturn( new InstanceId( 1 ) );
         when( clusterMembers.getMembers() ).thenReturn( asList( master ) );
 
         DependencyResolver resolver = mock( DependencyResolver.class );

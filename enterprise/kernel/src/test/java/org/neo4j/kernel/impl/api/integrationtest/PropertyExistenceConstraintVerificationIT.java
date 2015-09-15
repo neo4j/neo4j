@@ -19,31 +19,25 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
 import org.neo4j.SchemaHelper;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseDatabaseRule;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
-import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.impl.api.OperationsFacade;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ThreadingRule;
 
@@ -55,8 +49,7 @@ import static org.junit.Assert.fail;
 import static org.junit.runners.Suite.SuiteClasses;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT.NodePropertyExistenceExistenceConstrainVerificationIT;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT.RelationshipPropertyExistenceExistenceConstrainVerificationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT.*;
 import static org.neo4j.test.ThreadingRule.waitingWhileIn;
 
 @RunWith( Suite.class )
@@ -95,11 +88,6 @@ public class PropertyExistenceConstraintVerificationIT
             return "nodeAddLabel"; // takes schema read lock to enforce constraints
         }
 
-        @Override
-        Class<?> offenderType()
-        {
-            return Node.class;
-        }
     }
 
     public static class RelationshipPropertyExistenceExistenceConstrainVerificationIT
@@ -132,11 +120,6 @@ public class PropertyExistenceConstraintVerificationIT
             return "relationshipCreate"; // takes schema read lock to enforce constraints
         }
 
-        @Override
-        public Class<?> offenderType()
-        {
-            return Relationship.class;
-        }
     }
 
     public abstract static class AbstractPropertyExistenceConstraintVerificationIT
@@ -157,17 +140,13 @@ public class PropertyExistenceConstraintVerificationIT
 
         abstract String offenderCreationMethodName();
 
-        abstract Class<?> offenderType();
-
-
         @Test
         public void shouldFailToCreateConstraintIfSomeNodeLacksTheMandatoryProperty() throws Exception
         {
             // given
-            long entityId;
             try ( Transaction tx = db.beginTx() )
             {
-                entityId = createOffender( db, KEY );
+                createOffender( db, KEY );
                 tx.success();
             }
 
@@ -254,18 +233,6 @@ public class PropertyExistenceConstraintVerificationIT
             }
         }
 
-        private String userMessageOf( KernelException exception )
-        {
-            try ( Transaction ignored = db.beginTx() )
-            {
-                DependencyResolver dependencyResolver = db.getGraphDatabaseAPI().getDependencyResolver();
-                Statement statement =
-                        dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ).get();
-                TokenNameLookup tokenNameLookup = new StatementTokenNameLookup( statement.readOperations() );
-                return exception.getUserMessage( tokenNameLookup );
-            }
-        }
-
         private ThrowingFunction<Void,Void,RuntimeException> createOffender()
         {
             return new ThrowingFunction<Void,Void,RuntimeException>()
@@ -292,11 +259,9 @@ public class PropertyExistenceConstraintVerificationIT
                 {
                     try ( Transaction tx = db.beginTx() )
                     {
-                        System.out.println("creating constraint");
                         createConstraint( db, KEY, PROPERTY );
                         tx.success();
                     }
-                    System.out.println("constraint created");
                     return null;
                 }
             };

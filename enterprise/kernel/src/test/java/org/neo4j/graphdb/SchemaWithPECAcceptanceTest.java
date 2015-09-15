@@ -121,6 +121,7 @@ public class SchemaWithPECAcceptanceTest
     private ConstraintDefinition createUniquenessConstraint( Label label, String propertyKey )
     {
         SchemaHelper.createUniquenessConstraint( db, label, propertyKey );
+        SchemaHelper.awaitIndexes( db );
         return new UniquenessConstraintDefinition( mock( InternalSchemaActions.class ), label, propertyKey );
     }
 

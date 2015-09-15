@@ -19,99 +19,105 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
-
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.TransactionTemplate;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.ha.ClusterManager;
-import org.neo4j.test.ha.ClusterManager.ManagedCluster;
+import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
+import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
 
 public class TxPushStrategyConfigIT
 {
     @Test
     public void shouldPushToSlavesInDescendingOrder() throws Exception
     {
-        startCluster( 4, 2, "fixed" );
+        ManagedCluster cluster = startCluster( 4, 2, "fixed" );
 
         for ( int i = 0; i < 5; i++ )
         {
-            createTransactionOnMaster();
-            assertLastTransactions( lastTx( THIRD_SLAVE, BASE_TX_ID + 1 + i ) );
-            assertLastTransactions( lastTx( SECOND_SLAVE, BASE_TX_ID + 1 + i ) );
-            assertLastTransactions( lastTx( FIRST_SLAVE, BASE_TX_ID ) );
+            createTransactionOnMaster( cluster );
+            assertLastTransactions( cluster, lastTx( THIRD_SLAVE, BASE_TX_ID + 1 + i ) );
+            assertLastTransactions( cluster, lastTx( SECOND_SLAVE, BASE_TX_ID + 1 + i ) );
+            assertLastTransactions( cluster, lastTx( FIRST_SLAVE, BASE_TX_ID ) );
         }
     }
 
     @Test
     public void twoRoundRobin() throws Exception
     {
-        startCluster( 5, 2, "round_robin" );
+        ManagedCluster cluster = startCluster( 4, 2, "round_robin" );
 
-        createTransactionOnMaster();
-        assertLastTransactions( lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ), lastTx( SECOND_SLAVE, BASE_TX_ID + 1 ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID ), lastTx( FOURTH_SLAVE, BASE_TX_ID ) );
+        createTransactionOnMaster( cluster );
+        assertLastTransactions( cluster,
+                lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
+                lastTx( SECOND_SLAVE, BASE_TX_ID + 1 ),
+                lastTx( THIRD_SLAVE, BASE_TX_ID ) );
 
-        createTransactionOnMaster();
-        assertLastTransactions( lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ), lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID + 2 ), lastTx( FOURTH_SLAVE, BASE_TX_ID ) );
+        createTransactionOnMaster( cluster );
+        assertLastTransactions( cluster,
+                lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
+                lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
+                lastTx( THIRD_SLAVE, BASE_TX_ID + 2 ) );
 
-        createTransactionOnMaster();
-        assertLastTransactions( lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ), lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID + 3 ), lastTx( FOURTH_SLAVE, BASE_TX_ID + 3 ) );
-
-        createTransactionOnMaster();
-        assertLastTransactions( lastTx( FIRST_SLAVE, BASE_TX_ID + 4 ), lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID + 3 ), lastTx( FOURTH_SLAVE, BASE_TX_ID + 4 ) );
+        createTransactionOnMaster( cluster );
+        assertLastTransactions( cluster,
+                lastTx( FIRST_SLAVE, BASE_TX_ID + 3 ),
+                lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
+                lastTx( THIRD_SLAVE, BASE_TX_ID + 3 ) );
     }
 
     @Test
     public void shouldPushToOneLessSlaveOnSlaveCommit() throws Exception
     {
-        startCluster( 4, 2, "fixed" );
+        ManagedCluster cluster = startCluster( 4, 2, "fixed" );
 
-        createTransactionOn( new InstanceId( FIRST_SLAVE ) );
-        assertLastTransactions( lastTx( MASTER, BASE_TX_ID + 1 ), lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
-                lastTx( SECOND_SLAVE, BASE_TX_ID ), lastTx( THIRD_SLAVE, BASE_TX_ID + 1 ) );
+        createTransactionOn( cluster, new InstanceId( FIRST_SLAVE ) );
+        assertLastTransactions( cluster,
+                lastTx( MASTER, BASE_TX_ID + 1 ),
+                lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
+                lastTx( SECOND_SLAVE, BASE_TX_ID ),
+                lastTx( THIRD_SLAVE, BASE_TX_ID + 1 ) );
 
-        createTransactionOn( new InstanceId( SECOND_SLAVE ) );
-        assertLastTransactions( lastTx( MASTER, BASE_TX_ID + 2 ), lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
-                lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ), lastTx( THIRD_SLAVE, BASE_TX_ID + 2 ) );
+        createTransactionOn( cluster, new InstanceId( SECOND_SLAVE ) );
+        assertLastTransactions( cluster,
+                lastTx( MASTER, BASE_TX_ID + 2 ),
+                lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
+                lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
+                lastTx( THIRD_SLAVE, BASE_TX_ID + 2 ) );
 
-        createTransactionOn( new InstanceId( THIRD_SLAVE ) );
-        assertLastTransactions( lastTx( MASTER, BASE_TX_ID + 3 ), lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
-                lastTx( SECOND_SLAVE, BASE_TX_ID + 3 ), lastTx( THIRD_SLAVE, BASE_TX_ID + 3 ) );
+        createTransactionOn( cluster, new InstanceId( THIRD_SLAVE ) );
+        assertLastTransactions( cluster,
+                lastTx( MASTER, BASE_TX_ID + 3 ),
+                lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
+                lastTx( SECOND_SLAVE, BASE_TX_ID + 3 ),
+                lastTx( THIRD_SLAVE, BASE_TX_ID + 3 ) );
     }
 
     @Test
     public void slavesListGetsUpdatedWhenSlaveLeavesNicely() throws Exception
     {
-        startCluster( 3, 1, "fixed" );
+        ManagedCluster cluster = startCluster( 3, 1, "fixed" );
 
         cluster.shutdown( cluster.getAnySlave() );
         cluster.await( masterSeesSlavesAsAvailable( 1 ) );
@@ -120,73 +126,57 @@ public class TxPushStrategyConfigIT
     @Test
     public void slaveListIsCorrectAfterMasterSwitch() throws Exception
     {
-        startCluster( 3, 1, "fixed" );
+        ManagedCluster cluster = startCluster( 3, 1, "fixed" );
         cluster.shutdown( cluster.getMaster() );
         cluster.await( masterAvailable() );
         HighlyAvailableGraphDatabase newMaster = cluster.getMaster();
         cluster.await( masterSeesSlavesAsAvailable( 1 ) );
-        createTransaction( newMaster );
-        assertLastTransactions( lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ), lastTx( SECOND_SLAVE, BASE_TX_ID + 1 ) );
+        createTransaction( cluster, newMaster );
+        assertLastTransactions( cluster,
+                lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
+                lastTx( SECOND_SLAVE, BASE_TX_ID + 1 ) );
     }
 
     @Test
     public void slavesListGetsUpdatedWhenSlaveRageQuits() throws Throwable
     {
-        startCluster( 3, 1, "fixed" );
+        ManagedCluster cluster = startCluster( 3, 1, "fixed" );
         cluster.fail( cluster.getAnySlave() );
 
         cluster.await( masterSeesSlavesAsAvailable( 1 ) );
     }
 
-    private LifeSupport life = new LifeSupport();
-    private ManagedCluster cluster;
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
-
-    @Rule
-    public TestName name = new TestName();
+    public final ClusterRule clusterRule = new ClusterRule( getClass() );
 
     /**
      * These are _indexes_ of cluster members in machineIds
      */
-    private static int MASTER = 1;
-    private static int FIRST_SLAVE = 2;
-    private static int SECOND_SLAVE = 3;
-    private static int THIRD_SLAVE = 4;
-    private static int FOURTH_SLAVE = 5;
+    private static final int MASTER = 1;
+    private static final int FIRST_SLAVE = 2;
+    private static final int SECOND_SLAVE = 3;
+    private static final int THIRD_SLAVE = 4;
     private InstanceId[] machineIds;
 
-    @After
-    public void after() throws Exception
+    private ManagedCluster startCluster( int memberCount, final int pushFactor, final String pushStrategy )
+            throws Exception
     {
-        life.shutdown();
-        life = new LifeSupport();
+        ManagedCluster cluster = clusterRule.provider( clusterOfSize( memberCount ) )
+                .config( HaSettings.tx_push_factor, "" + pushFactor )
+                .config( HaSettings.tx_push_strategy, pushStrategy )
+                .availabilityChecks( Arrays.asList( allSeesAllAsAvailable() ) )
+                .startCluster();
+
+        mapMachineIds( cluster );
+
+        return cluster;
     }
 
-    private void startCluster( int memberCount, final int pushFactor, final String pushStrategy )
-    {
-        ClusterManager clusterManager = life.add( new ClusterManager( clusterOfSize( memberCount ),
-                testDirectory.directory( name.getMethodName() ), stringMap() )
-        {
-            @Override
-            protected void config( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
-            {
-                builder.setConfig( HaSettings.tx_push_factor, "" + pushFactor );
-                builder.setConfig( HaSettings.tx_push_strategy, pushStrategy );
-            }
-        } );
-        life.start();
-        cluster = clusterManager.getDefaultCluster();
-        cluster.await( allSeesAllAsAvailable() );
-
-        mapMachineIds();
-    }
-
-    private void mapMachineIds()
+    private void mapMachineIds(final  ManagedCluster cluster )
     {
         machineIds = new InstanceId[cluster.size()];
         machineIds[0] = cluster.getServerId( cluster.getMaster() );
-        List<HighlyAvailableGraphDatabase> slaves = new ArrayList<HighlyAvailableGraphDatabase>();
+        List<HighlyAvailableGraphDatabase> slaves = new ArrayList<>();
         for ( HighlyAvailableGraphDatabase hadb : cluster.getAllMembers() )
         {
             if ( !hadb.isMaster() )
@@ -209,7 +199,7 @@ public class TxPushStrategyConfigIT
         }
     }
 
-    private void assertLastTransactions( LastTxMapping... transactionMappings )
+    private void assertLastTransactions( ManagedCluster cluster, LastTxMapping... transactionMappings )
     {
         StringBuilder failures = new StringBuilder();
         for ( LastTxMapping mapping : transactionMappings )
@@ -255,17 +245,17 @@ public class TxPushStrategyConfigIT
         }
     }
 
-    private void createTransactionOnMaster()
+    private void createTransactionOnMaster( ManagedCluster cluster )
     {
-        createTransaction( cluster.getMaster() );
+        createTransaction( cluster, cluster.getMaster() );
     }
 
-    private void createTransactionOn( InstanceId serverId )
+    private void createTransactionOn( ManagedCluster cluster, InstanceId serverId )
     {
-        createTransaction( cluster.getMemberByServerId( serverId ) );
+        createTransaction( cluster, cluster.getMemberByServerId( serverId ) );
     }
 
-    private void createTransaction( final GraphDatabaseAPI db )
+    private void createTransaction( final ManagedCluster cluster, final GraphDatabaseAPI db )
     {
         TransactionTemplate template = new TransactionTemplate()
                 .with( db )
@@ -279,7 +269,7 @@ public class TxPushStrategyConfigIT
                         // Assume this is because of master switch
                         // Redo the machine id mapping
                         cluster.await( allSeesAllAsAvailable() );
-                        mapMachineIds();
+                        mapMachineIds( cluster );
                     }
                 } );
         template.execute( new Consumer<Transaction>()

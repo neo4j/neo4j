@@ -19,8 +19,6 @@
  */
 package org.neo4j.graphalgo;
 
-import java.util.List;
-
 import org.neo4j.graphalgo.impl.path.AStar;
 import org.neo4j.graphalgo.impl.path.AllPaths;
 import org.neo4j.graphalgo.impl.path.AllSimplePaths;

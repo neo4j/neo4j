@@ -113,7 +113,7 @@ public class ErrorReporter
             return printBase64Binary(
                     Exceptions.stringify( cause ).getBytes( StandardCharsets.UTF_8 ) )
                     // Below replaceAll call inserts a line break every 100 characters
-                    .replaceAll( "(.{100})", "$1" + System.getProperty( "line.separator" ) );
+                    .replaceAll( "(.{100})", "$1" + System.lineSeparator() );
         }
     }
 

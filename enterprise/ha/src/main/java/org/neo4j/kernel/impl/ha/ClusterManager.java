@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.ha;
+package org.neo4j.kernel.impl.ha;
 
 import org.w3c.dom.Document;
 
@@ -41,6 +41,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -63,7 +64,6 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
@@ -90,13 +90,22 @@ import org.neo4j.logging.Log;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
-import static org.junit.Assert.fail;
+import static java.util.Collections.unmodifiableMap;
+
 import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
 
+/**
+ * Utility for spinning up an HA cluster inside the same JVM. Only intended for being used in tests
+ * as well as other tools that may need a cluster conveniently within the same JVM.
+ */
 public class ClusterManager
         extends LifecycleAdapter
 {
+    public static final Map<String,String> CONFIG_FOR_SINGLE_JVM_CLUSTER = unmodifiableMap( stringMap(
+            GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
+
     public interface StoreDirInitializer
     {
         void initializeStoreDir( int serverId, File storeDir ) throws IOException;
@@ -130,7 +139,7 @@ public class ClusterManager
     {
         this.clustersProvider = clustersProvider;
         this.root = root;
-        this.commonConfig = commonConfig;
+        this.commonConfig = withDefaults( commonConfig );
         this.instanceConfig = instanceConfig;
         this.dbFactory = dbFactory;
         this.storeDirInitializer = null;
@@ -140,22 +149,29 @@ public class ClusterManager
     {
         this.clustersProvider = builder.provider;
         this.root = builder.root;
-        this.commonConfig = builder.commonConfig;
+        this.commonConfig = withDefaults( builder.commonConfig );
         this.instanceConfig = builder.instanceConfig;
         this.dbFactory = builder.factory;
         this.storeDirInitializer = builder.initializer;
     }
 
+    private Map<String,String> withDefaults( Map<String,String> commonConfig )
+    {
+        Map<String,String> result = new HashMap<>( CONFIG_FOR_SINGLE_JVM_CLUSTER );
+        result.putAll( commonConfig );
+        return result;
+    }
+
     public ClusterManager( Provider clustersProvider, File root, Map<String,String> commonConfig,
                            Map<Integer,Map<String,String>> instanceConfig )
     {
-        this( clustersProvider, root, commonConfig, instanceConfig, new TestHighlyAvailableGraphDatabaseFactory() );
+        this( clustersProvider, root, commonConfig, instanceConfig, new HighlyAvailableGraphDatabaseFactory() );
     }
 
     public ClusterManager( Provider clustersProvider, File root, Map<String,String> commonConfig )
     {
         this( clustersProvider, root, commonConfig, Collections.<Integer,Map<String,String>>emptyMap(),
-                new TestHighlyAvailableGraphDatabaseFactory() );
+                new HighlyAvailableGraphDatabaseFactory() );
     }
 
     /**
@@ -529,8 +545,8 @@ public class ClusterManager
                 return (T) item;
             }
         }
-        fail( "Couldn't find the network instance to fail. Internal field, so fragile sensitive to changes though" );
-        return null; // it will never get here.
+        throw new AssertionError( "Couldn't find the network instance to fail. "
+                + "Internal field, so fragile sensitive to changes though" );
     }
 
     private Field accessible( Field field )
@@ -567,7 +583,7 @@ public class ClusterManager
         private final Map<Integer,Map<String,String>> instanceConfig = new HashMap<>();
         private Provider provider = clusterOfSize( 3 );
         private Map<String,String> commonConfig = emptyMap();
-        private HighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
+        private HighlyAvailableGraphDatabaseFactory factory = new HighlyAvailableGraphDatabaseFactory();
         private StoreDirInitializer initializer;
 
         public Builder( File root )
@@ -1000,7 +1016,9 @@ public class ClusterManager
                         GraphDatabaseSettings.class );
 
                 LifeSupport clusterClientLife = new LifeSupport();
-                ClusterClientModule clusterClientModule = new ClusterClientModule( clusterClientLife, new Dependencies(  ), new Monitors(), config1, NullLogService.getInstance(), new NotElectableElectionCredentialsProvider() );
+                ClusterClientModule clusterClientModule = new ClusterClientModule( clusterClientLife,
+                        new Dependencies(), new Monitors(), config1, NullLogService.getInstance(),
+                        new NotElectableElectionCredentialsProvider() );
 
                 arbiters.add( new ClusterMembers( clusterClientModule.clusterClient, clusterClientModule.clusterClient, new ClusterMemberEvents()
                 {
@@ -1127,6 +1145,14 @@ public class ClusterManager
                 LogService logService = db.getDependencyResolver().resolveDependency( LogService.class );
                 Log messagesLog = logService.getInternalLog( HighlyAvailableGraphDatabase.class );
                 messagesLog.info( message );
+            }
+        }
+
+        public void applyOnAll( org.neo4j.function.Function<GraphDatabaseService,Void> function )
+        {
+            for ( HighlyAvailableGraphDatabase db : getAllMembers() )
+            {
+                function.apply( db );
             }
         }
     }

@@ -47,6 +47,16 @@ import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 
+import static org.neo4j.kernel.impl.util.CappedOperation.time;
+
+/**
+ * Pushes transactions committed on master to one or more slaves. Number of slaves receiving each transactions
+ * is controlled by {@link HaSettings#tx_push_factor}. Which slaves receives transactions is controlled by
+ * {@link HaSettings#tx_push_strategy}.
+ *
+ * An attempt is made to push each transaction to the wanted number of slaves, but if it isn't possible
+ * and a timeout is hit, propagation will still be considered as successful and occurrence will be logged.
+ */
 public class TransactionPropagator implements Lifecycle
 {
     public interface Configuration
@@ -148,6 +158,15 @@ public class TransactionPropagator implements Lifecycle
                     log.error( "Slave " + context.slave.getServerId() + ": Replication commit threw" +
                                (context.throwable instanceof ComException ? " communication" : "") +
                                " exception:", context.throwable );
+                }
+            };
+    private final CappedOperation<String> pushedToTooFewSlaveLogger =
+            new CappedOperation<String>( time( 5, TimeUnit.SECONDS ) )
+            {
+                @Override
+                protected void triggered( String message )
+                {
+                    log.warn( message );
                 }
             };
 
@@ -267,8 +286,8 @@ public class TransactionPropagator implements Lifecycle
             // We did the best we could, have we committed successfully on enough slaves?
             if ( !(successfulReplications >= replicationFactor) )
             {
-                log.warn( "Transaction %s couldn't commit on enough slaves, desired %s, but could only commit at ",
-                        txId, replicationFactor, successfulReplications );
+                pushedToTooFewSlaveLogger.event( "Transaction " + txId + " couldn't commit on enough slaves, desired " +
+                        replicationFactor + ", but could only commit at " + successfulReplications );
             }
         }
         catch ( Throwable t )

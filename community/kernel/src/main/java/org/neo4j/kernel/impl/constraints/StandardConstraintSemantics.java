@@ -36,6 +36,8 @@ import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 
 public class StandardConstraintSemantics implements ConstraintSemantics
 {
+    public static final String ERROR_MESSAGE = "Property existence constraint requires Neo4j Enterprise Edition";
+
     @Override
     public void validateNodePropertyExistenceConstraint( Cursor<NodeItem> allNodes, int label, int propertyKey )
             throws CreateConstraintFailureException
@@ -63,14 +65,13 @@ public class StandardConstraintSemantics implements ConstraintSemantics
     protected PropertyConstraint readNonStandardConstraint( PropertyConstraintRule rule )
     {
         // When opening a store in Community Edition that contains a Property Existence Constraint
-        throw new IllegalStateException( "Property existence constraint requires Neo4j Enterprise Edition");
+        throw new IllegalStateException( ERROR_MESSAGE );
     }
 
     private CreateConstraintFailureException propertyExistenceConstraintsNotAllowed( PropertyConstraint constraint )
     {
         // When creating a Property Existence Constraint in Community Edition
-        return new CreateConstraintFailureException( constraint, new IllegalStateException(
-                "Property existence constraint requires Neo4j Enterprise Edition" ) );
+        return new CreateConstraintFailureException( constraint, new IllegalStateException( ERROR_MESSAGE ) );
     }
 
     @Override

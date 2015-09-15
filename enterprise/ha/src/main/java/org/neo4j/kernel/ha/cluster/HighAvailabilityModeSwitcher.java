@@ -253,16 +253,8 @@ public class HighAvailabilityModeSwitcher
                 switchToSlave();
                 break;
             case PENDING:
-                if ( event.getOldState().equals( HighAvailabilityMemberState.SLAVE ) )
-                {
-                    clusterMemberAvailability.memberIsUnavailable( SLAVE );
-                }
-                else if ( event.getOldState().equals( HighAvailabilityMemberState.MASTER ) )
-                {
-                    clusterMemberAvailability.memberIsUnavailable( MASTER );
-                }
 
-                switchToPending();
+                switchToPending( event.getOldState() );
                 break;
             default:
                 // do nothing
@@ -436,7 +428,7 @@ public class HighAvailabilityModeSwitcher
         }, cancellationHandle );
     }
 
-    private void switchToPending()
+    private void switchToPending( final HighAvailabilityMemberState oldState )
     {
         msgLog.info( "I am %s, moving to pending", instanceId );
 
@@ -449,6 +441,15 @@ public class HighAvailabilityModeSwitcher
                 {
                     msgLog.info( "Switch to pending cancelled on start." );
                     return;
+                }
+
+                if ( oldState.equals( HighAvailabilityMemberState.SLAVE ) )
+                {
+                    clusterMemberAvailability.memberIsUnavailable( SLAVE );
+                }
+                else if ( oldState.equals( HighAvailabilityMemberState.MASTER ) )
+                {
+                    clusterMemberAvailability.memberIsUnavailable( MASTER );
                 }
 
                 Listeners.notifyListeners( modeSwitchListeners, new Listeners.Notification<ModeSwitcher>()
