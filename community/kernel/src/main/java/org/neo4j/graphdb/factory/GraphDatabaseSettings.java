@@ -144,6 +144,10 @@ public abstract class GraphDatabaseSettings
                   + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )
     public static Setting<Boolean> allow_file_urls = setting( "allow_file_urls", BOOLEAN, TRUE );
 
+    @Description( "Sets the root directory for file URLs used with the Cypher `LOAD CSV` clause. This must be set to a single "
+                  + "directory, restricting access to only those files within that directory and its subdirectories." )
+    public static Setting<File> load_csv_file_url_root = setting( "dbms.security.load_csv_file_url_root", PATH, NO_DEFAULT );
+
     @Deprecated
     @Obsoleted( "This is no longer used" )
     @Description("The directory where the database files are located.")

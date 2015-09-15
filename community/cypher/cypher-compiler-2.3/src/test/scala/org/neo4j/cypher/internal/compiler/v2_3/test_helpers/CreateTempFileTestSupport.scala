@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_3.test_helpers
 
 import java.io.PrintWriter
+import java.nio.file.{Files, Path}
 
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.io.fs.FileUtils
 
 import scala.io.Codec
 import scala.reflect.io.File
@@ -29,11 +31,11 @@ import scala.reflect.io.File
 trait CreateTempFileTestSupport extends CypherTestSupport {
   self: CypherFunSuite =>
 
-  private var files: Seq[File] = Seq.empty
+  private var paths: Seq[Path] = Seq.empty
 
   override protected def stopTest(): Unit = {
     try {
-      files.foreach(_.delete())
+      paths.filter(Files.exists(_)).foreach(FileUtils.deletePathRecursively)
     } finally {
       super.stopTest()
     }
@@ -49,22 +51,40 @@ trait CreateTempFileTestSupport extends CypherTestSupport {
     withTempFileWriter(name, ext)(f).toAbsolute.path
   }
 
+  def createTempDirectory(name: String): Path = synchronized {
+    val dir = java.nio.file.Files.createTempDirectory(name)
+    paths = paths :+ dir
+    dir
+  }
+
   def createTempFileURL(name: String, ext: String)(f: PrintWriter => Unit): String = synchronized {
     withTempFileWriter(name, ext)(f).toURI.toURL.toString
   }
 
-  private def withTempFileWriter(name: String, ext: String)(f: PrintWriter => Unit): File =  {
-    val file = new File(java.io.File.createTempFile(name, ext, null))
+  private def withTempFileWriter(name: String, ext: String)(f: PrintWriter => Unit): File = {
+    val path = Files.createTempFile(name, ext)
+    val file = new File(path.toFile)
     try {
-      val writer = new PrintWriter(file.bufferedWriter(append = false, Codec.UTF8), true)
-      try {
-        f(writer)
-      } finally {
-        writer.close()
-      }
+      fileWrite(file)(f)
     } finally {
-      files = files :+ file
+      paths = paths :+ path
     }
     file
+  }
+
+  def pathWrite(path: Path)(f: PrintWriter => Unit): Path = {
+    Files.createDirectories(path.getParent)
+    fileWrite(new File(path.toFile))(f)
+    path
+  }
+
+  def fileWrite(file: File)(f: PrintWriter => Unit): File = {
+    val writer = new PrintWriter(file.bufferedWriter(append = false, Codec.UTF8), true)
+    try {
+      f(writer)
+      file
+    } finally {
+      writer.close()
+    }
   }
 }

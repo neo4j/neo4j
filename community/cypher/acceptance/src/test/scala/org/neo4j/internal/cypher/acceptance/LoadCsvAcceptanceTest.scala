@@ -244,7 +244,7 @@ class LoadCsvAcceptanceTest
 
   test("should fail gracefully when loading missing file") {
     intercept[LoadExternalResourceException] {
-      execute("LOAD CSV FROM 'file://./these_are_not_the_droids_you_are_looking_for.csv' AS line CREATE (a {name:line[0]})")
+      execute("LOAD CSV FROM 'file:///./these_are_not_the_droids_you_are_looking_for.csv' AS line CREATE (a {name:line[0]})")
     }
   }
 
@@ -316,6 +316,22 @@ class LoadCsvAcceptanceTest
       val engine = new ExecutionEngine(db)
       engine.execute(s"LOAD CSV FROM 'file:///tmp/blah.csv' AS line CREATE (a {name:line[0]})")
     }.getMessage should endWith(": configuration property 'allow_file_urls' is false")
+  }
+
+  test("should restrict file urls to be rooted within an authorized directory") {
+    val dir = createTempDirectory("loadcsvroot")
+    pathWrite(dir.resolve("tmp/blah.csv"))(
+      writer =>
+        writer.println("something")
+    )
+
+    val db = new TestGraphDatabaseFactory()
+      .newImpermanentDatabaseBuilder()
+      .setConfig(GraphDatabaseSettings.load_csv_file_url_root, dir.toString)
+      .newGraphDatabase()
+
+    val result = new ExecutionEngine(db).execute(s"LOAD CSV FROM 'file:///tmp/blah.csv' AS line RETURN line[0] AS field")
+    result.toList should equal(List(Map("field" -> "something")))
   }
 
   test("should apply protocol rules set at db construction") {

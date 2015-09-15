@@ -87,4 +87,18 @@ public class FileURLAccessRuleTest
             assertThat( error.getMessage(), equalTo( "configuration property 'allow_file_urls' is false" ) );
         }
     }
+
+    @Test
+    public void shouldAdjustURLToWithinImportDirectory() throws Exception
+    {
+        final URL url = new URL( "file:///bar/baz.csv" );
+        final GraphDatabaseAPI gdb = mock( GraphDatabaseAPI.class );
+        final DependencyResolver mockResolver = mock( DependencyResolver.class );
+        when( gdb.getDependencyResolver() ).thenReturn( mockResolver );
+        final Config config = new Config( MapUtil.stringMap( GraphDatabaseSettings.load_csv_file_url_root.name(), "/var/lib/neo4j/import" ) );
+        when( mockResolver.resolveDependency( eq( Config.class ) ) ).thenReturn( config );
+
+        URL accessURL = URLAccessRules.fileAccess().validate( gdb, url );
+        assertThat( accessURL, equalTo( new URL( "file:///var/lib/neo4j/import/bar/baz.csv" ) ) );
+    }
 }
