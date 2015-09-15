@@ -47,6 +47,7 @@ import org.neo4j.io.pagecache.impl.ByteBufferPage;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -771,13 +772,13 @@ public abstract class PageSwapperTest
         ByteBufferPage pageB = createPage( 8 );
         pageA.putLong( X, 0 );
         pageB.putLong( Y, 0 );
-        assertThat( swapper.read( 1, new Page[]{pageA, pageB}, 0, 2 ), is( 12L ) );
+        assertThat( swapper.read( 1, new Page[]{pageA, pageB}, 0, 2 ), isOneOf( 12L, 16L ) );
         assertThat( pageA.getLong( 0 ), is( 0xFFFF_FFFF_FFFF_FFFFL ) );
         assertThat( pageB.getLong( 0 ), is( 0xFFFF_FFFF_0000_0000L ) );
     }
 
     @Test
-    public void positionedVectoredReadWhereSecondLastPageExtendBeyondEndOfFileMustHaveREstZeroFilled() throws Exception
+    public void positionedVectoredReadWhereSecondLastPageExtendBeyondEndOfFileMustHaveRestZeroFilled() throws Exception
     {
         File file = file( "file" );
         PageSwapperFactory factory = swapperFactory();
@@ -799,7 +800,7 @@ public abstract class PageSwapperTest
         pageA.putInt( -1, 0 );
         pageB.putInt( -1, 0 );
         pageC.putInt( -1, 0 );
-        assertThat( swapper.read( 0, new Page[]{pageA, pageB, pageC}, 0, 3 ), is( 12L ) );
+        assertThat( swapper.read( 0, new Page[]{pageA, pageB, pageC}, 0, 3 ), isOneOf( 12L, 16L ) );
         assertThat( pageA.getInt( 0 ), is( 1 ) );
         assertThat( pageA.getInt( 4 ), is( 2 ) );
         assertThat( pageB.getInt( 0 ), is( 3 ) );
