@@ -3,6 +3,7 @@
 
 Cypher:
 o Allow arbitrary expressions for URL in LOAD CSV
+o Support for using compressed data with LOAD CSV
 o Added reverse function for reversing strings
 o Unfulfillable index hints (e.g. on non-existing indices) will now produce a warning or throw an error as configured
 o Now supports dynamic property lookup (f.e. using n['property'])
