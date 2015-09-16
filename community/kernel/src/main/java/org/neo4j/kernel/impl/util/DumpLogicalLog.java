@@ -34,7 +34,7 @@ import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -45,10 +45,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
 import static java.util.TimeZone.getTimeZone;
-
 import static javax.transaction.xa.Xid.MAXBQUALSIZE;
 import static javax.transaction.xa.Xid.MAXGTRIDSIZE;
-
 import static org.neo4j.helpers.Format.DEFAULT_TIME_ZONE;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles.getLogVersion;
@@ -112,7 +110,7 @@ public class DumpLogicalLog
     protected static boolean isAGraphDatabaseDirectory( String fileName )
     {
         File file = new File( fileName );
-        return file.isDirectory() && new File( file, NeoStore.DEFAULT_NAME ).exists();
+        return file.isDirectory() && new File( file, MetaDataStore.DEFAULT_NAME ).exists();
     }
 
     public static void main( String args[] ) throws IOException

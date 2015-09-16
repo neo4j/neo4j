@@ -68,7 +68,7 @@ import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
@@ -180,12 +180,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private CloseListener closeListener;
 
     public KernelTransactionImplementation( StatementOperationParts operations,
-                                            SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
+                                            SchemaWriteGuard schemaWriteGuard,
+                                            LabelScanStore labelScanStore,
                                             IndexingService indexService,
                                             UpdateableSchemaState schemaState,
                                             TransactionRecordState recordState,
-                                            SchemaIndexProviderMap providerMap, NeoStore neoStore,
-                                            Locks.Client locks, TransactionHooks hooks,
+                                            SchemaIndexProviderMap providerMap,
+                                            NeoStores neoStores,
+                                            Locks.Client locks,
+                                            TransactionHooks hooks,
                                             ConstraintIndexCreator constraintIndexCreator,
                                             TransactionHeaderInformationFactory headerInformationFactory,
                                             TransactionCommitProcess commitProcess,
@@ -195,7 +198,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             Pool<KernelTransactionImplementation> pool,
                                             ConstraintSemantics constraintSemantics,
                                             Clock clock,
-                                            TransactionTracer tracer, ProcedureCache procedureCache )
+                                            TransactionTracer tracer,
+                                            ProcedureCache procedureCache )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -216,7 +220,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.pool = pool;
         this.constraintSemantics = constraintSemantics;
         this.clock = clock;
-        this.schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
+        this.schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
         this.tracer = tracer;
     }
 

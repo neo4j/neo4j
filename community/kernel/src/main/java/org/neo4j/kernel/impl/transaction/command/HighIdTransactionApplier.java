@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -54,22 +54,22 @@ import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCo
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.TokenCommand;
 
-public class HighIdTransactionApplier implements NeoCommandHandler
+public class HighIdTransactionApplier implements CommandHandler
 {
-    private final NeoCommandHandler delegate;
-    private final NeoStore neoStore;
+    private final CommandHandler delegate;
+    private final NeoStores neoStores;
     private final Map<CommonAbstractStore,HighId> highIds = new HashMap<>();
 
-    public HighIdTransactionApplier( NeoCommandHandler delegate, NeoStore neoStore )
+    public HighIdTransactionApplier( CommandHandler delegate, NeoStores neoStores )
     {
         this.delegate = delegate;
-        this.neoStore = neoStore;
+        this.neoStores = neoStores;
     }
 
     @Override
     public boolean visitNodeCommand( NodeCommand command ) throws IOException
     {
-        NodeStore nodeStore = neoStore.getNodeStore();
+        NodeStore nodeStore = neoStores.getNodeStore();
         track( nodeStore, command );
         track( nodeStore.getDynamicLabelStore(), command.getAfter().getDynamicLabelRecords() );
         return delegate.visitNodeCommand( command );
@@ -78,14 +78,14 @@ public class HighIdTransactionApplier implements NeoCommandHandler
     @Override
     public boolean visitRelationshipCommand( RelationshipCommand command ) throws IOException
     {
-        track( neoStore.getRelationshipStore(), command );
+        track( neoStores.getRelationshipStore(), command );
         return delegate.visitRelationshipCommand( command );
     }
 
     @Override
     public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
     {
-        PropertyStore propertyStore = neoStore.getPropertyStore();
+        PropertyStore propertyStore = neoStores.getPropertyStore();
         track( propertyStore, command );
         for ( PropertyBlock block : command.getAfter() )
         {
@@ -108,35 +108,35 @@ public class HighIdTransactionApplier implements NeoCommandHandler
     @Override
     public boolean visitRelationshipGroupCommand( RelationshipGroupCommand command ) throws IOException
     {
-        track( neoStore.getRelationshipGroupStore(), command );
+        track( neoStores.getRelationshipGroupStore(), command );
         return delegate.visitRelationshipGroupCommand( command );
     }
 
     @Override
     public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command ) throws IOException
     {
-        trackToken( neoStore.getRelationshipTypeTokenStore(), command );
+        trackToken( neoStores.getRelationshipTypeTokenStore(), command );
         return delegate.visitRelationshipTypeTokenCommand( command );
     }
 
     @Override
     public boolean visitLabelTokenCommand( LabelTokenCommand command ) throws IOException
     {
-        trackToken( neoStore.getLabelTokenStore(), command );
+        trackToken( neoStores.getLabelTokenStore(), command );
         return delegate.visitLabelTokenCommand( command );
     }
 
     @Override
     public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command ) throws IOException
     {
-        trackToken( neoStore.getPropertyKeyTokenStore(), command );
+        trackToken( neoStores.getPropertyKeyTokenStore(), command );
         return delegate.visitPropertyKeyTokenCommand( command );
     }
 
     @Override
     public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
     {
-        SchemaStore schemaStore = neoStore.getSchemaStore();
+        SchemaStore schemaStore = neoStores.getSchemaStore();
         for ( DynamicRecord record : command.getRecordsAfter() )
         {
             track( schemaStore, record.getId() );

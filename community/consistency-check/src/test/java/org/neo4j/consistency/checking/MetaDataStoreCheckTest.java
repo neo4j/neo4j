@@ -28,10 +28,10 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class NeoStoreCheckTest
-        extends RecordCheckTestBase<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport, NeoStoreCheck>
+public class MetaDataStoreCheckTest
+        extends RecordCheckTestBase<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport,NeoStoreCheck>
 {
-    public NeoStoreCheckTest()
+    public MetaDataStoreCheckTest()
     {
         super( new NeoStoreCheck(), ConsistencyReport.NeoStoreConsistencyReport.class );
     }

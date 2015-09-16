@@ -20,19 +20,19 @@
 package org.neo4j.kernel.impl.transaction.state;
 
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 
 public class NeoStoreTransactionContextFactory
 {
-    private final NeoStore neoStore;
+    private final NeoStores neoStores;
 
-    public NeoStoreTransactionContextFactory( NeoStore neoStore )
+    public NeoStoreTransactionContextFactory( NeoStores neoStores )
     {
-        this.neoStore = neoStore;
+        this.neoStores = neoStores;
     }
 
     public NeoStoreTransactionContext newInstance( Locks.Client locks )
     {
-        return new NeoStoreTransactionContext( neoStore, locks );
+        return new NeoStoreTransactionContext( neoStores, locks );
     }
 }

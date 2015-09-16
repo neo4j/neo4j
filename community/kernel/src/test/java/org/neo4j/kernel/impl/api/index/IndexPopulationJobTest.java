@@ -62,7 +62,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.logging.LogProvider;
@@ -602,7 +602,7 @@ public class IndexPopulationJobTest
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         ctxSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        counts = db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get().getCounts();
+        counts = db.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get().getCounts();
         stateHolder = new KernelSchemaStateStore( NullLogProvider.getInstance() );
         indexStoreView = newStoreView();
 
@@ -731,6 +731,6 @@ public class IndexPopulationJobTest
     private NeoStoreIndexStoreView newStoreView()
     {
         return new NeoStoreIndexStoreView( mock( LockService.class, RETURNS_MOCKS ),
-                db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get() );
+                db.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get() );
     }
 }

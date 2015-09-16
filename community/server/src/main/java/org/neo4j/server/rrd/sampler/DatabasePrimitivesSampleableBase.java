@@ -21,27 +21,27 @@ package org.neo4j.server.rrd.sampler;
 
 import org.rrd4j.DsType;
 
-import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.server.rrd.Sampleable;
 
 public abstract class DatabasePrimitivesSampleableBase implements Sampleable
 {
-    private final NeoStoreSupplier neoStoreSupplier;
+    private final NeoStoresSupplier neoStoresSupplier;
 
-    public DatabasePrimitivesSampleableBase( NeoStoreSupplier neoStoreSupplier )
+    public DatabasePrimitivesSampleableBase( NeoStoresSupplier neoStoresSupplier )
     {
-        if( neoStoreSupplier == null )
+        if( neoStoresSupplier == null )
         {
-            throw new RuntimeException( "Database sampler needs a NeoStore to work, was given null." );
+            throw new RuntimeException( "Database sampler needs a NeoStores to work, was given null." );
         }
-        this.neoStoreSupplier = neoStoreSupplier;
+        this.neoStoresSupplier = neoStoresSupplier;
 
     }
 
-    protected NeoStore getNeoStore()
+    protected NeoStores getNeoStores()
     {
-        return neoStoreSupplier.get();
+        return neoStoresSupplier.get();
     }
 
     @Override

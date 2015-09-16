@@ -39,11 +39,12 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.AbstractStore;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
-import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator.SchemaStoreProvider;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreVersionException;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
@@ -109,7 +110,7 @@ public class SchemaIndexMigratorTest
         // given
         when( upgradableDatabase.hasCurrentVersion( pageCache, storeDir )).thenReturn( true );
         when( upgradableDatabase.checkUpgradeable( storeDir ) ).thenThrow( new UnexpectedUpgradingStoreVersionException(
-                NeoStore.DEFAULT_NAME, Legacy21Store.LEGACY_VERSION, AbstractStore.ALL_STORES_VERSION ) );
+                MetaDataStore.DEFAULT_NAME, Legacy21Store.LEGACY_VERSION, AbstractStore.ALL_STORES_VERSION ) );
 
         // when
         boolean needsMigration = migrator.needsMigration( storeDir );
@@ -223,7 +224,8 @@ public class SchemaIndexMigratorTest
     public void setup() throws IOException
     {
         when( schemaIndexProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "key", "version" ) );
-        when( schemaStoreProvider.provide( storeDir, pageCache ) ).thenReturn( schemaStore );
+        when( storeFactory.openNeoStores( false ) ).thenReturn( neoStores );
+        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
         Iterator<SchemaRule> iterator = Arrays.asList( schemaRule( indexRuleId, 42, 21 ) ).iterator();
         when( schemaStore.loadAllSchemaRules() ).thenReturn( iterator );
         when( schemaIndexProvider.getOnlineAccessor( indexRuleId, indexConfig, samplingConfig )).thenReturn( accessor );
@@ -233,10 +235,11 @@ public class SchemaIndexMigratorTest
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final UpgradableDatabase upgradableDatabase = mock( UpgradableDatabase.class );
     private final SchemaIndexProvider schemaIndexProvider = mock( SchemaIndexProvider.class );
-    private final SchemaStoreProvider schemaStoreProvider = mock( SchemaStoreProvider.class );
+    private final StoreFactory storeFactory = mock( StoreFactory.class );
+    private final NeoStores neoStores = mock( NeoStores.class );
     private final PageCache pageCache = mock( PageCache.class );
     private final SchemaIndexMigrator migrator =
-            new SchemaIndexMigrator( fs, pageCache, upgradableDatabase, schemaStoreProvider );
+            new SchemaIndexMigrator( fs, pageCache, upgradableDatabase, storeFactory );
     private final SchemaStore schemaStore = mock( SchemaStore.class );
     private final IndexAccessor accessor = mock( IndexAccessor.class );
     private final IndexReader indexReader = mock( IndexReader.class );

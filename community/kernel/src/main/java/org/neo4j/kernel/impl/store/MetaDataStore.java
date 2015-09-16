@@ -23,21 +23,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
+import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
@@ -46,9 +39,7 @@ import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.Logger;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -56,20 +47,8 @@ import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.kernel.impl.util.CappedOperation.time;
 
-/**
- * This class contains the references to the "NodeStore,RelationshipStore,
- * PropertyStore and RelationshipTypeStore". NeoStore doesn't actually "store"
- * anything but extends the AbstractStore for the "type and version" validation
- * performed in there.
- */
-public class NeoStore extends AbstractStore implements TransactionIdStore, LogVersionRepository
+public class MetaDataStore extends AbstractStore implements TransactionIdStore, LogVersionRepository
 {
-    public abstract static class Configuration
-            extends AbstractStore.Configuration
-    {
-        public static final Setting<Integer> relationship_grab_size = GraphDatabaseSettings.relationship_grab_size;
-    }
-
     public static final String TYPE_DESCRIPTOR = "NeoStore";
     // This value means the field has not been refreshed from the store. Normally, this should happen only once
     public static final long FIELD_NOT_PRESENT = -1;
@@ -97,7 +76,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         UPGRADE_TRANSACTION_CHECKSUM( 10, "Checksum of transaction id the most recent upgrade was performed at" ),
         LAST_CLOSED_TRANSACTION_LOG_VERSION( 11, "Log version where the last transaction commit entry has been written into" ),
         LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET( 12, "Byte offset in the log file where the last transaction commit entry " +
-                                              "has been written into" );
+                                                     "has been written into" );
 
         private final int id;
         private final String description;
@@ -115,33 +94,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     }
 
     public static final int META_DATA_RECORD_COUNT = Position.values().length;
-
-    public static boolean isStorePresent( PageCache pageCache, File storeDir )
-    {
-        File neoStore = new File( storeDir, DEFAULT_NAME );
-        try ( PagedFile file = pageCache.map( neoStore, getPageSize( pageCache ) ) )
-        {
-            if ( file.getLastPageId() == -1 )
-            {
-                return false;
-            }
-        }
-        catch ( IOException e )
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    private NodeStore nodeStore;
-    private PropertyStore propStore;
-    private RelationshipStore relStore;
-    private RelationshipTypeTokenStore relTypeStore;
-    private LabelTokenStore labelTokenStore;
-    private SchemaStore schemaStore;
-    private RelationshipGroupStore relGroupStore;
-    private CountsTracker counts;
 
     // Fields the neostore keeps cached and must be initialized on startup
     private volatile long creationTimeField = FIELD_NOT_INITIALIZED;
@@ -165,27 +117,16 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     private final OutOfOrderSequence lastCommittedTx = new ArrayQueueOutOfOrderSequence( -1, 200, new long[1] );
     private final OutOfOrderSequence lastClosedTx = new ArrayQueueOutOfOrderSequence( -1, 200, new long[2] );
 
-    private final int relGrabSize;
     private final CappedOperation<Void> transactionCloseWaitLogger;
 
-    public NeoStore( File fileName, Config conf, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction, final LogProvider logProvider,
-            RelationshipTypeTokenStore relTypeStore, LabelTokenStore labelTokenStore, PropertyStore propStore,
-            RelationshipStore relStore, NodeStore nodeStore, SchemaStore schemaStore,
-            RelationshipGroupStore relGroupStore, CountsTracker counts,
-            StoreVersionMismatchHandler versionMismatchHandler, Monitors monitors )
+    MetaDataStore( File fileName, Config conf,
+                   IdGeneratorFactory idGeneratorFactory,
+                   PageCache pageCache, LogProvider logProvider,
+                   StoreVersionMismatchHandler versionMismatchHandler )
     {
-        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                logProvider, versionMismatchHandler );
-        this.relTypeStore = relTypeStore;
-        this.labelTokenStore = labelTokenStore;
-        this.propStore = propStore;
-        this.relStore = relStore;
-        this.nodeStore = nodeStore;
-        this.schemaStore = schemaStore;
-        this.relGroupStore = relGroupStore;
-        this.counts = counts;
-        this.relGrabSize = conf.get( Configuration.relationship_grab_size );
+        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider,
+                versionMismatchHandler );
+
         this.transactionCloseWaitLogger = new CappedOperation<Void>( time( 30, SECONDS ) )
         {
             @Override
@@ -196,34 +137,50 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
                         lastCommittedTx, lastCommittingTxField, lastClosedTx ) );
             }
         };
-        counts.setInitializer( new DataInitializer<CountsAccessor.Updater>()
-        {
-            @Override
-            public void initialize( CountsAccessor.Updater updater )
-            {
-                log.warn( "Missing counts store, rebuilding it." );
-                new CountsComputer( NeoStore.this ).initialize( updater );
-            }
-
-            @Override
-            public long initialVersion()
-            {
-                return getLastCommittedTransactionId();
-            }
-        } );
-        try
-        {
-            counts.init(); // TODO: move this to LifeCycle
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Failed to initialize counts store", e );
-        }
     }
 
-    public StoreStatement acquireStatement()
+    @Override
+    protected void initialiseNewStoreFile( PagedFile file ) throws IOException
     {
-        return new StoreStatement( this );
+        super.initialiseNewStoreFile( file );
+
+        StoreId storeId = new StoreId();
+
+
+        storeFile = file;
+        setCreationTime( storeId.getCreationTime() );
+        setRandomNumber( storeId.getRandomId() );
+        // If metaDataStore.creationTime == metaDataStore.upgradeTime && metaDataStore.upgradeTransactionId == BASE_TX_ID
+        // then store has never been upgraded
+        setUpgradeTime( storeId.getCreationTime() );
+        setUpgradeTransaction( BASE_TX_ID, BASE_TX_CHECKSUM );
+        setCurrentLogVersion( 0 );
+        setLastCommittedAndClosedTransactionId(
+                BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
+        setStoreVersion( MetaDataStore.versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
+        setGraphNextProp( -1 );
+        setLatestConstraintIntroducingTx( 0 );
+
+        int trailerPosition = META_DATA_RECORD_COUNT * getRecordSize();
+        StoreVersionTrailerUtil.writeTrailer( file, UTF8.encode( getTypeAndVersionDescriptor() ), trailerPosition );
+
+        flush();
+        storeFile = null;
+    }
+
+    @Override
+    protected void initialiseNewIdGenerator( IdGenerator idGenerator )
+    {
+        super.initialiseNewIdGenerator( idGenerator );
+
+        /*
+         * created time | random long | backup version | tx id | store version | next prop | latest constraint tx |
+         * upgrade time | upgrade id
+         */
+        for ( int i = 0; i < META_DATA_RECORD_COUNT; i++ )
+        {
+            nextId();
+        }
     }
 
     @Override
@@ -271,82 +228,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         }
     }
 
-    /**
-     * Closes the node,relationship,property and relationship type stores.
-     */
-    @Override
-    protected void closeStorage()
-    {
-        if ( relTypeStore != null )
-        {
-            relTypeStore.close();
-            relTypeStore = null;
-        }
-        if ( labelTokenStore != null )
-        {
-            labelTokenStore.close();
-            labelTokenStore = null;
-        }
-        if ( propStore != null )
-        {
-            propStore.close();
-            propStore = null;
-        }
-        if ( relStore != null )
-        {
-            relStore.close();
-            relStore = null;
-        }
-        if ( nodeStore != null )
-        {
-            nodeStore.close();
-            nodeStore = null;
-        }
-        if ( schemaStore != null )
-        {
-            schemaStore.close();
-            schemaStore = null;
-        }
-        if ( relGroupStore != null )
-        {
-            relGroupStore.close();
-            relGroupStore = null;
-        }
-        if ( counts != null )
-        {
-            try
-            {
-                counts.rotate( getLastCommittedTransactionId() );
-                counts.shutdown();
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( e );
-            }
-            finally
-            {
-                counts = null;
-            }
-        }
-    }
-
-    @Override
-    public void flush()
-    {
-        try
-        {
-            if ( counts != null )
-            {
-                counts.rotate( getLastCommittedTransactionId() );
-            }
-            pageCache.flushAndForce();
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Failed to flush", e );
-        }
-    }
-
     @Override
     public String getTypeDescriptor()
     {
@@ -364,7 +245,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
      * This method only works for neostore files of the current version. It is not guaranteed to correctly handle store
      * version trailers of other store versions.
      *
-     * @param pageCache {@link PageCache} the {@code neoStore} file lives in.
+     * @param pageCache {@link PageCache} the {@code neostore} file lives in.
      * @param neoStore {@link File} pointing to the neostore.
      * @param position record {@link Position}.
      * @param value value to write in that record.
@@ -378,7 +259,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         {
             String expectedTrailer = buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
 
-            long trailerOffset = StoreVersionTrailerUtil.getTrailerOffset( pagedFile, expectedTrailer );
+            long trailerOffset = StoreVersionTrailerUtil.getTrailerPosition( pagedFile, expectedTrailer );
             int recordOffset = RECORD_SIZE * position.id;
             try ( PageCursor pageCursor = pagedFile.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
             {
@@ -425,12 +306,12 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     /**
      * Reads a record from a neostore file.
      *
-     * @param pageCache {@link PageCache} the {@code neoStore} file lives in.
+     * @param pageCache {@link PageCache} the {@code neostore} file lives in.
      * @param neoStore {@link File} pointing to the neostore.
      * @param recordPosition record {@link Position}.
      * @return the read record value specified by {@link Position}.
      */
-    public static long getRecord( PageCache pageCache, File neoStore, Position recordPosition )
+    public static long getRecord( PageCache pageCache, File neoStore, Position recordPosition ) throws IOException
     {
         try ( PagedFile pagedFile = pageCache.map( neoStore, getPageSize( pageCache ) ) )
         {
@@ -457,14 +338,10 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
                 }
             }
         }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
         return FIELD_NOT_PRESENT;
     }
 
-    private static int getPageSize( PageCache pageCache )
+    static int getPageSize( PageCache pageCache )
     {
         return pageCache.pageSize() - pageCache.pageSize() % RECORD_SIZE;
     }
@@ -704,159 +581,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         }
     }
 
-    /**
-     * Returns the node store.
-     *
-     * @return The node store
-     */
-    public NodeStore getNodeStore()
-    {
-        return nodeStore;
-    }
-
-    /**
-     * @return the schema store.
-     */
-    public SchemaStore getSchemaStore()
-    {
-        return schemaStore;
-    }
-
-    /**
-     * The relationship store.
-     *
-     * @return The relationship store
-     */
-    public RelationshipStore getRelationshipStore()
-    {
-        return relStore;
-    }
-
-    /**
-     * Returns the relationship type store.
-     *
-     * @return The relationship type store
-     */
-    public RelationshipTypeTokenStore getRelationshipTypeTokenStore()
-    {
-        return relTypeStore;
-    }
-
-    /**
-     * Returns the label store.
-     *
-     * @return The label store
-     */
-    public LabelTokenStore getLabelTokenStore()
-    {
-        return labelTokenStore;
-    }
-
-    /**
-     * Returns the property store.
-     *
-     * @return The property store
-     */
-    public PropertyStore getPropertyStore()
-    {
-        return propStore;
-    }
-
-    /**
-     * @return the {@link PropertyKeyTokenStore}
-     */
-    public PropertyKeyTokenStore getPropertyKeyTokenStore()
-    {
-        return propStore.getPropertyKeyTokenStore();
-    }
-
-    /**
-     * @return the {@link RelationshipGroupStore}
-     */
-    public RelationshipGroupStore getRelationshipGroupStore()
-    {
-        return relGroupStore;
-    }
-
-    public CountsTracker getCounts()
-    {
-        return counts;
-    }
-
-    @Override
-    public void makeStoreOk()
-    {
-        relTypeStore.makeStoreOk();
-        labelTokenStore.makeStoreOk();
-        propStore.makeStoreOk();
-        relStore.makeStoreOk();
-        nodeStore.makeStoreOk();
-        schemaStore.makeStoreOk();
-        relGroupStore.makeStoreOk();
-        super.makeStoreOk();
-    }
-
-    public void rebuildIdGenerators()
-    {
-        relTypeStore.rebuildIdGenerator();
-        labelTokenStore.rebuildIdGenerator();
-        propStore.rebuildIdGenerator();
-        relStore.rebuildIdGenerator();
-        nodeStore.rebuildIdGenerator();
-        schemaStore.rebuildIdGenerator();
-        relGroupStore.rebuildIdGenerator();
-        super.rebuildIdGenerator();
-    }
-
-    public int getRelationshipGrabSize()
-    {
-        return relGrabSize;
-    }
-
-    /**
-     * Throws cause of store not being OK.
-     */
-    public void verifyStoreOk()
-    {
-        visitStore( new Visitor<CommonAbstractStore,RuntimeException>()
-        {
-            @Override
-            public boolean visit( CommonAbstractStore element )
-            {
-                element.checkStoreOk();
-                return false;
-            }
-        } );
-    }
-
-    @Override
-    public void logVersions( Logger msgLog )
-    {
-        msgLog.log( "Store versions:" );
-        super.logVersions( msgLog );
-        schemaStore.logVersions( msgLog );
-        nodeStore.logVersions( msgLog );
-        relStore.logVersions( msgLog );
-        relTypeStore.logVersions( msgLog );
-        labelTokenStore.logVersions( msgLog );
-        propStore.logVersions( msgLog );
-        relGroupStore.logVersions( msgLog );
-    }
-
-    @Override
-    public void logIdUsage( Logger msgLog )
-    {
-        msgLog.log( "Id usage:" );
-        schemaStore.logIdUsage( msgLog );
-        nodeStore.logIdUsage( msgLog );
-        relStore.logIdUsage( msgLog );
-        relTypeStore.logIdUsage( msgLog );
-        labelTokenStore.logIdUsage( msgLog );
-        propStore.logIdUsage( msgLog );
-        relGroupStore.logIdUsage( msgLog );
-    }
-
-    public NeoStoreRecord asRecord()
+    public NeoStoreRecord asRecord() // TODO rename to something about next graph prop
     {
         NeoStoreRecord result = new NeoStoreRecord();
         result.setNextProp( getGraphNextProp() );
@@ -919,11 +644,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             result[i] = (char) bits.getShort( 8 );
         }
         return new String( result );
-    }
-
-    public int getDenseNodeThreshold()
-    {
-        return getRelationshipGroupStore().getDenseNodeThreshold();
     }
 
     @Override
@@ -1027,42 +747,5 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             transactionCloseWaitLogger.event( null );
         }
         return onPar;
-    }
-
-    /**
-     * Visits this store, and any other store managed by this store.
-     * TODO this could, and probably should, replace all override-and-do-the-same-thing-to-all-my-managed-stores
-     * methods like:
-     * {@link #makeStoreOk()},
-     * {@link #closeStorage()} (where that method could be deleted all together and do a visit in {@link #close()}),
-     * {@link #logIdUsage(Logger)},
-     * {@link #logVersions(Logger)},
-     * For a good samaritan to pick up later.
-     */
-    @Override
-    public void visitStore( Visitor<CommonAbstractStore,RuntimeException> visitor )
-    {
-        nodeStore.visitStore( visitor );
-        relStore.visitStore( visitor );
-        relGroupStore.visitStore( visitor );
-        relTypeStore.visitStore( visitor );
-        labelTokenStore.visitStore( visitor );
-        propStore.visitStore( visitor );
-        schemaStore.visitStore( visitor );
-        visitor.visit( this );
-    }
-
-    public void rebuildCountStoreIfNeeded() throws IOException
-    {
-        // TODO: move this to LifeCycle
-        counts.start();
-    }
-
-    public void assertOpen()
-    {
-        if ( nodeStore == null )
-        {
-            throw new IllegalStateException( "Database has been shutdown" );
-        }
     }
 }

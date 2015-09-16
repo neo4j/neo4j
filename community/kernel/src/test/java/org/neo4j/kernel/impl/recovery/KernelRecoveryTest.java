@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
@@ -105,7 +105,7 @@ public class KernelRecoveryTest
         EphemeralFileSystemAbstraction crashedFs = fs.snapshot();
         db.shutdown();
         repairIdGenerator( crashedFs,
-                new File( storeDir, NeoStore.DEFAULT_NAME + StoreFactory.NODE_STORE_NAME + ".id" ) );
+                new File( storeDir, MetaDataStore.DEFAULT_NAME + StoreFactory.NODE_STORE_NAME + ".id" ) );
 
         // WHEN
         db = newDB( crashedFs );

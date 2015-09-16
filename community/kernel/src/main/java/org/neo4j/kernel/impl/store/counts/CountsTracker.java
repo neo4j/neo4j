@@ -29,7 +29,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
-import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.AbstractKeyValueStore;
@@ -117,8 +117,8 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
                 log.error( format( "Failed to rotate counts store at transaction %d to [%s], from [%s].",
                         headers.get( FileVersion.FILE_VERSION ).txId, target, source ), e );
             }
-        }, new RotationTimerFactory( Clock.SYSTEM_CLOCK, config.get( GraphDatabaseSettings
-                .store_interval_log_rotation_wait_time ) ), 16, 16, HEADER_FIELDS );
+        }, new RotationTimerFactory( Clock.SYSTEM_CLOCK,
+                config.get( GraphDatabaseSettings.store_interval_log_rotation_wait_time ) ), 16, 16, HEADER_FIELDS );
     }
 
     public CountsTracker setInitializer( final DataInitializer<Updater> initializer )
@@ -267,7 +267,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
     @Override
     protected String fileTrailer()
     {
-        return StoreFactory.buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
+        return CommonAbstractStore.buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
     }
 
     @Override

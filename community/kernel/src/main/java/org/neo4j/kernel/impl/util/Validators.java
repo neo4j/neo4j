@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 
 public class Validators
@@ -95,7 +95,7 @@ public class Validators
         public void validate( File value )
         {
             if ( new DefaultFileSystemAbstraction()
-                    .fileExists( new File( value, StoreFileType.STORE.augment( NeoStore.DEFAULT_NAME ) ) ) )
+                    .fileExists( new File( value, StoreFileType.STORE.augment( MetaDataStore.DEFAULT_NAME ) ) ) )
             {
                 throw new IllegalArgumentException( "Directory '" + value + "' already contains a database" );
             }

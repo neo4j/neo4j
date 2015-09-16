@@ -30,7 +30,6 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -60,7 +59,6 @@ public class TestGrowingFileMemoryMapping
                 pagecache_memory.name(), mmapSize( NUMBER_OF_RECORDS, NodeStore.RECORD_SIZE ) ), NodeStore.Configuration.class );
         DefaultFileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystemAbstraction );
-        Monitors monitors = new Monitors();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction, config );
         StoreFactory storeFactory = new StoreFactory(
                 storeDir,
@@ -69,22 +67,10 @@ public class TestGrowingFileMemoryMapping
                 pageCache,
                 fileSystemAbstraction,
                 NullLogProvider.getInstance(),
-                monitors );
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
 
-        File fileName = new File( storeDir, NeoStore.DEFAULT_NAME + ".nodestore.db" );
-        storeFactory.createEmptyStore( fileName, storeFactory.buildTypeDescriptorAndVersion(
-                NodeStore.TYPE_DESCRIPTOR ) );
-
-        NodeStore nodeStore = new NodeStore(
-                fileName,
-                config,
-                idGeneratorFactory,
-                pageCache,
-                fileSystemAbstraction,
-                NullLogProvider.getInstance(),
-                null,
-                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
-                monitors );
+        NeoStores neoStores = storeFactory.openNeoStores( true );
+        NodeStore nodeStore = neoStores.getNodeStore();
 
         // when
         int iterations = 2 * NUMBER_OF_RECORDS;
@@ -109,7 +95,7 @@ public class TestGrowingFileMemoryMapping
                     record.getNextRel(), is( (long) i ) );
         }
 
-        nodeStore.close();
+        neoStores.close();
     }
 
     private String mmapSize( int numberOfRecords, int recordSize )

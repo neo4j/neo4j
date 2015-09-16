@@ -31,7 +31,8 @@ import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -66,7 +67,7 @@ public class SchemaRuleCommandTest
         Collection<DynamicRecord> beforeRecords = serialize( rule, id, false, false);
         Collection<DynamicRecord> afterRecords = serialize( rule, id, true, true);
 
-        when( neoStore.getSchemaStore() ).thenReturn( store );
+        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         SchemaRuleCommand command = new SchemaRuleCommand();
         command.init( beforeRecords, afterRecords, rule );
@@ -75,7 +76,7 @@ public class SchemaRuleCommandTest
         storeApplier.visitSchemaRuleCommand( command );
 
         // THEN
-        verify( store ).updateRecord( first( afterRecords ) );
+        verify( schemaStore ).updateRecord( first( afterRecords ) );
     }
 
     @Test
@@ -85,7 +86,7 @@ public class SchemaRuleCommandTest
         Collection<DynamicRecord> beforeRecords = serialize( rule, id, false, false);
         Collection<DynamicRecord> afterRecords = serialize( rule, id, true, true);
 
-        when( neoStore.getSchemaStore() ).thenReturn( store );
+        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         SchemaRuleCommand command = new SchemaRuleCommand();
         command.init( beforeRecords, afterRecords, rule );
@@ -104,7 +105,8 @@ public class SchemaRuleCommandTest
         Collection<DynamicRecord> beforeRecords = serialize( rule, id, true, true);
         Collection<DynamicRecord> afterRecords = serialize( rule, id, true, false);
 
-        when( neoStore.getSchemaStore() ).thenReturn( store );
+        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
+        when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
 
         SchemaRuleCommand command = new SchemaRuleCommand();
         command.init( beforeRecords, afterRecords, uniquenessConstraintRule( id, labelId, propertyKey, 0 )  );
@@ -113,8 +115,8 @@ public class SchemaRuleCommandTest
         storeApplier.visitSchemaRuleCommand( command );
 
         // THEN
-        verify( store ).updateRecord( first( afterRecords ) );
-        verify( neoStore ).setLatestConstraintIntroducingTx( txId );
+        verify( schemaStore ).updateRecord( first( afterRecords ) );
+        verify( metaDataStore ).setLatestConstraintIntroducingTx( txId );
     }
 
     @Test
@@ -124,7 +126,7 @@ public class SchemaRuleCommandTest
         Collection<DynamicRecord> beforeRecords = serialize( rule, id, true, true);
         Collection<DynamicRecord> afterRecords = serialize( rule, id, false, false);
 
-        when( neoStore.getSchemaStore() ).thenReturn( store );
+        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         SchemaRuleCommand command = new SchemaRuleCommand();
         command.init( beforeRecords, afterRecords, rule );
@@ -133,7 +135,7 @@ public class SchemaRuleCommandTest
         storeApplier.visitSchemaRuleCommand( command );
 
         // THEN
-        verify( store ).updateRecord( first( afterRecords ) );
+        verify( schemaStore ).updateRecord( first( afterRecords ) );
     }
 
     @Test
@@ -143,7 +145,7 @@ public class SchemaRuleCommandTest
         Collection<DynamicRecord> beforeRecords = serialize( rule, id, true, true);
         Collection<DynamicRecord> afterRecords = serialize( rule, id, false, false);
 
-        when( neoStore.getSchemaStore() ).thenReturn( store );
+        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         SchemaRuleCommand command = new SchemaRuleCommand();
         command.init( beforeRecords, afterRecords, rule );
@@ -166,7 +168,7 @@ public class SchemaRuleCommandTest
         command.init( beforeRecords, afterRecords, rule );
         InMemoryLogChannel buffer = new InMemoryLogChannel();
 
-        when( neoStore.getSchemaStore() ).thenReturn( store );
+        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
         new CommandWriter( buffer ).visitSchemaRuleCommand( command );
@@ -188,7 +190,7 @@ public class SchemaRuleCommandTest
         SchemaRuleCommand command = new SchemaRuleCommand();
         command.init( beforeRecords, afterRecords, rule );
         InMemoryLogChannel buffer = new InMemoryLogChannel();
-        when( neoStore.getSchemaStore() ).thenReturn( store );
+        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
         new CommandWriter( buffer ).visitSchemaRuleCommand( command );
@@ -204,12 +206,13 @@ public class SchemaRuleCommandTest
     private final int propertyKey = 8;
     private final long id = 0;
     private final long txId = 1337l;
-    private final NeoStore neoStore = mock( NeoStore.class );
-    private final SchemaStore store = mock( SchemaStore.class );
+    private final NeoStores neoStores = mock( NeoStores.class );
+    private final MetaDataStore metaDataStore = mock( MetaDataStore.class );
+    private final SchemaStore schemaStore = mock( SchemaStore.class );
     private final IndexingService indexes = mock( IndexingService.class );
     @SuppressWarnings( "unchecked" )
     private final Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
-    private final NeoStoreTransactionApplier storeApplier = new NeoStoreTransactionApplier( neoStore,
+    private final NeoStoreTransactionApplier storeApplier = new NeoStoreTransactionApplier( neoStores,
             mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, new LockGroup(), txId );
     private final WorkSync<Provider<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork> labelScanStoreSynchronizer =
             new WorkSync<>( labelScanStore );

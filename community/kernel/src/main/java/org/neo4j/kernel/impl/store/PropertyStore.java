@@ -32,7 +32,6 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -46,7 +45,6 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 
@@ -86,16 +84,14 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
             Config configuration,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
             DynamicStringStore stringPropertyStore,
             PropertyKeyTokenStore propertyKeyTokenStore,
             DynamicArrayStore arrayPropertyStore,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            StoreVersionMismatchHandler versionMismatchHandler )
     {
-        super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, logProvider, versionMismatchHandler, monitors );
+        super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache, logProvider,
+                versionMismatchHandler );
         this.stringPropertyStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayPropertyStore = arrayPropertyStore;
@@ -117,26 +113,6 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
     public DynamicArrayStore getArrayStore()
     {
         return arrayPropertyStore;
-    }
-
-    @Override
-    protected void closeStorage()
-    {
-        if ( stringPropertyStore != null )
-        {
-            stringPropertyStore.close();
-            stringPropertyStore = null;
-        }
-        if ( propertyKeyTokenStore != null )
-        {
-            propertyKeyTokenStore.close();
-            propertyKeyTokenStore = null;
-        }
-        if ( arrayPropertyStore != null )
-        {
-            arrayPropertyStore.close();
-            arrayPropertyStore = null;
-        }
     }
 
     @Override

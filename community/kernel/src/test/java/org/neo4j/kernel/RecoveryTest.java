@@ -34,7 +34,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.RecoveryLegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
@@ -212,7 +212,7 @@ public class RecoveryTest
                     }
                 }
             };
-            LogEntryWriter first = new LogEntryWriter( writableLogChannel, NeoCommandHandler.EMPTY );
+            LogEntryWriter first = new LogEntryWriter( writableLogChannel, CommandHandler.EMPTY );
             visitor.visit( Pair.of( first, consumer ) );
         }
     }

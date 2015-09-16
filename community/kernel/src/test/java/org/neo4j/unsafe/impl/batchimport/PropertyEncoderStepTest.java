@@ -28,10 +28,9 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -45,14 +44,13 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
 public class PropertyEncoderStepTest
 {
     public final @Rule EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     public final @Rule PageCacheRule pageCacheRule = new PageCacheRule();
-    private NeoStore neoStore;
+    private NeoStores neoStores;
     private PageCache pageCache;
 
     @Before
@@ -60,14 +58,15 @@ public class PropertyEncoderStepTest
     {
         File storeDir = new File( "dir" );
         pageCache = pageCacheRule.getPageCache( fsRule.get() );
-        neoStore = new StoreFactory( fsRule.get(), storeDir, pageCache, NullLogProvider.getInstance(),
-                new Monitors() ).createNeoStore();
+        StoreFactory storeFactory = new StoreFactory(
+                fsRule.get(), storeDir, pageCache, NullLogProvider.getInstance() );
+        neoStores = storeFactory.openNeoStores( true );
     }
 
     @After
     public void closeNeoStore() throws IOException
     {
-        neoStore.close();
+        neoStores.close();
         pageCache.close();
     }
 
@@ -78,9 +77,9 @@ public class PropertyEncoderStepTest
         // GIVEN
         StageControl control = mock( StageControl.class );
         BatchingPropertyKeyTokenRepository tokens =
-                new BatchingPropertyKeyTokenRepository( neoStore.getPropertyKeyTokenStore(), 0 );
+                new BatchingPropertyKeyTokenRepository( neoStores.getPropertyKeyTokenStore(), 0 );
         Step<Batch<InputNode,NodeRecord>> step =
-                new PropertyEncoderStep<>( control, DEFAULT, tokens, neoStore.getPropertyStore() );
+                new PropertyEncoderStep<>( control, DEFAULT, tokens, neoStores.getPropertyStore() );
         @SuppressWarnings( "rawtypes" )
         Step downstream = mock( Step.class );
         step.setDownstream( downstream );

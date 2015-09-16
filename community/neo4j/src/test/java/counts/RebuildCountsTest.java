@@ -37,7 +37,8 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -75,7 +76,7 @@ public class RebuildCountsTest
 
         // and also
         internalLogProvider.assertAtLeastOnce(
-                inLog( NeoStore.class ).warn( "Missing counts store, rebuilding it." )
+                inLog( MetaDataStore.class ).warn( "Missing counts store, rebuilding it." )
         );
     }
 
@@ -100,7 +101,7 @@ public class RebuildCountsTest
 
         // and also
         internalLogProvider.assertAtLeastOnce(
-                inLog( NeoStore.class ).warn( "Missing counts store, rebuilding it." )
+                inLog( MetaDataStore.class ).warn( "Missing counts store, rebuilding it." )
         );
     }
 
@@ -147,12 +148,12 @@ public class RebuildCountsTest
 
     private CountsTracker counts()
     {
-        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
+        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
     }
 
     private void deleteCounts( FileSystemAbstraction snapshot )
     {
-        final File storeFileBase = new File( storeDir, NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
+        final File storeFileBase = new File( storeDir, MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
         File alpha = new File( storeFileBase + CountsTracker.LEFT );
         File beta = new File( storeFileBase + CountsTracker.RIGHT );
         assertTrue( snapshot.deleteFile( alpha ) );
