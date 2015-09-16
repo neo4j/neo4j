@@ -51,3 +51,5 @@ case class BareNodeSyntaxDeprecatedNotification(position: InputPosition) extends
 case object EagerLoadCsvNotification extends InternalNotification
 
 case object LargeLabelWithLoadCsvNotification extends InternalNotification
+
+case class MissingLabelNotification(position: InputPosition, label: String) extends InternalNotification

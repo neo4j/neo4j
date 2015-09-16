@@ -316,6 +316,8 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
       NotificationCode.EAGER_LOAD_CSV.notification(InputPosition.empty)
     case LargeLabelWithLoadCsvNotification =>
       NotificationCode.LARGE_LABEL_LOAD_CSV.notification(InputPosition.empty)
+    case MissingLabelNotification(pos, label) =>
+      NotificationCode.MISSING_LABEL.notification(pos.asInputPosition, NotificationDetail.Factory.label(label))
   }
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = exceptionHandlerFor2_3.runSafely {

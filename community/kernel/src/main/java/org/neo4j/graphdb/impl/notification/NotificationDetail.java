@@ -28,12 +28,17 @@ public interface NotificationDetail
 
     String value();
 
-    public final static class Factory
+    final class Factory
     {
         public static NotificationDetail index( final String labelName, final String propertyKeyName )
         {
             return createNotificationDetail( "hinted index",
                     String.format( "index on :%s(%s)", labelName, propertyKeyName ), true );
+        }
+
+        public static NotificationDetail label( final String labelName )
+        {
+            return createNotificationDetail( "provided label", labelName, true );
         }
 
         public static NotificationDetail joinKey( List<String> identifiers )

@@ -332,4 +332,12 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result.notifications should not contain LargeLabelWithLoadCsvNotification
   }
 
+  test("should warn for misspelled label") {
+    createLabeledNode("Person")
+    val resultMisspelled = innerExecute("EXPLAIN MATCH (n:Preson) RETURN n.name")
+    val resultCorrectlySpelled = innerExecute("EXPLAIN MATCH (n:Person) RETURN n.name")
+
+    resultMisspelled.notifications should contain(MissingLabelNotification(InputPosition(9, 1, 10), "Preson"))
+    resultCorrectlySpelled.notifications shouldBe empty
+  }
 }

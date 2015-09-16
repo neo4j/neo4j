@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter.Lo
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CachedMetricsFactory, DefaultQueryPlanner, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v2_3.ast.{NodePattern, Statement}
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{LabelName, NodePattern, Statement}
 import org.neo4j.cypher.internal.frontend.v2_3.notification.{BareNodeSyntaxDeprecatedNotification, InternalNotification}
 import org.neo4j.cypher.internal.frontend.v2_3.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition, SemanticTable, inSequence}
