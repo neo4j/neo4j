@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.spi
 import java.io._
 import java.net.{CookieHandler, CookieManager, CookiePolicy, URL}
 import java.nio.charset.Charset
+import java.util.zip.{GZIPInputStream, InflaterInputStream}
 
 import org.neo4j.csv.reader._
 import org.neo4j.cypher.internal.compiler.v2_3.TaskCloser
@@ -101,7 +102,12 @@ class CSVResources(cleaner: TaskCloser) extends ExternalResource {
       val con = url.openConnection()
       con.setConnectTimeout(connectionTimeout)
       con.setReadTimeout(readTimeout)
-      con.getInputStream
+      val stream = con.getInputStream
+      con.getContentEncoding match {
+        case "gzip" => new GZIPInputStream(stream)
+        case "deflate" => new InflaterInputStream(stream)
+        case _ => stream
+      }
     } catch {
       case e: IOException =>
         throw new LoadExternalResourceException(s"Couldn't load the external resource at: $url", e)
