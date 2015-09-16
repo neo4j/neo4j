@@ -55,7 +55,7 @@ public class SessionStateMachine implements Session, SessionState
         UNITIALIZED
                 {
                     @Override
-                    public State initialize( SessionStateMachine ctx, String clientName )
+                    public State init( SessionStateMachine ctx, String clientName )
                     {
                         ctx.usageData.get( UsageDataKeys.clientNames ).add( clientName );
                         return IDLE;
@@ -65,7 +65,7 @@ public class SessionStateMachine implements Session, SessionState
                     protected State onNoImplementation( SessionStateMachine ctx, String command )
                     {
                         ctx.error( new Neo4jError( Status.Request.Invalid, "No operations allowed until you send an " +
-                                                                           "INITIALIZE message." ));
+                                                                           "INIT message." ));
                         return halt( ctx );
                     }
                 },
@@ -269,7 +269,7 @@ public class SessionStateMachine implements Session, SessionState
 
         // Operations that a session can perform. Individual states override these if they want to support them.
 
-        public State initialize( SessionStateMachine ctx, String clientName )
+        public State init( SessionStateMachine ctx, String clientName )
         {
             return onNoImplementation( ctx, "initializing the session" );
         }
@@ -444,12 +444,12 @@ public class SessionStateMachine implements Session, SessionState
     }
 
     @Override
-    public <A> void initialize( String clientName, A attachment, Callback<Void,A> callback )
+    public <A> void init( String clientName, A attachment, Callback<Void,A> callback )
     {
         before( attachment, callback );
         try
         {
-            state = state.initialize( this, clientName );
+            state = state.init( this, clientName );
         }
         finally { after(); }
     }

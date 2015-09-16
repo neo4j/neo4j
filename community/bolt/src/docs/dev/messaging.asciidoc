@@ -23,7 +23,8 @@ image:simple-exchange.png[]
 === Initialization
 
 Before a session can be used to <<bolt-message-structs-run,run>> queries, it must be <<bolt-message-structs-initialize,initialized>>.
-The `INITIALIZE` message should be sent by the client as the first message it sends after <<bolt-handshake,negotiating protocol version>>.
+The `INIT` message should be sent by the client as the first message it sends after <<bolt-handshake,negotiating
+protocol version>>.
 
 [[bolt-messaging-pipelining]]
 === Pipelining
@@ -68,20 +69,20 @@ Once the client acknowledges the failure, it is then able to resend a corrected 
 Protocol messages are represented as <<bolt-packstream-structures,serialized structures>>.
 
 [[bolt-message-structs-initialize]]
-==== INITIALIZE
+==== INIT
 
-The `INITIALIZE` message is a client message used once to initalize the session.
+The `INIT` message is a client message used once to initialize the session.
 This message is always the first message the client sends after <<bolt-handshake,negotiating protocol version>>.
-Sending any message other than `INITIALIZE` as the first message to the server will result in a `FAILURE` and the
+Sending any message other than `INIT` as the first message to the server will result in a `FAILURE` and the
 server closing the connection.
 
 The server will reply with a `SUCCESS` message unless some parameter for initialization is malformed.
 
-All parameters in the `INITIALIZE` message are required.
+All parameters in the `INIT` message are required.
 
 [source,bolt_message_struct]
 ----
-InitializeMessage (signature=0x01) {
+InitMessage (signature=0x01) {
     Text clientName
 }
 ----
@@ -89,7 +90,7 @@ InitializeMessage (signature=0x01) {
 .Example
 [source,bolt_packstream_type]
 ----
-Value: INITIALIZE "MyClient/1.0"
+Value: INIT "MyClient/1.0"
 
 B1 01 8C 4D  79 43 6C 69  65 6E 74 2F  31 2E 30
 ----

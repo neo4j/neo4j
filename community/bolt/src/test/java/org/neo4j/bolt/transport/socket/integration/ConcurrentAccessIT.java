@@ -109,7 +109,7 @@ public class ConcurrentAccessIT
     {
         return new Callable<Void>()
         {
-            private final byte[] initialize = chunk( Messages.initialize( "TestClient" ) );
+            private final byte[] init = chunk( Messages.init( "TestClient" ) );
             private final byte[] createAndRollback = chunk(
                     run( "BEGIN" ), pullAll(),
                     run( "CREATE (n)" ), pullAll(),
@@ -126,7 +126,7 @@ public class ConcurrentAccessIT
                 client.connect( address ).send( acceptedVersions( 1, 0, 0, 0 ) );
                 assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
 
-                initialize(client);
+                init( client );
 
                 for ( int i = 0; i < iterationsToRun; i++ )
                 {
@@ -136,9 +136,9 @@ public class ConcurrentAccessIT
                 return null;
             }
 
-            private void initialize( Connection client ) throws Exception
+            private void init( Connection client ) throws Exception
             {
-                client.send( initialize );
+                client.send( init );
                 assertThat( client, eventuallyRecieves(
                     msgSuccess()
                 ));

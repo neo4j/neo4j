@@ -19,28 +19,27 @@
  */
 package org.neo4j.bolt.docs.v1;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.util.HexPrinter;
-import org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.v1.RecordingByteChannel;
 import org.neo4j.bolt.messaging.v1.RecordingMessageHandler;
+import org.neo4j.bolt.v1.messaging.Neo4jPack;
+import org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1;
 import org.neo4j.bolt.v1.messaging.message.Message;
+import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.runtime.spi.ImmutableRecord;
 import org.neo4j.bolt.v1.transport.ChunkedInput;
-import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.util.HexPrinter;
 
 import static java.util.Arrays.asList;
-
-import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.bolt.transport.socket.Chunker.chunk;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 /**
  * Takes human-readable value descriptions and packs them to binary data, and vice versa.
@@ -208,9 +207,9 @@ public class DocSerialization
                     "\"This will cause a syntax error\"\n" +
                     " ^" );
         }
-        else if( value.equals( "INITIALIZE \"MyClient/1.0\"" ))
+        else if( value.equals( "INIT \"MyClient/1.0\"" ))
         {
-            writer.handleInitializeMessage( "MyClient/1.0" );
+            writer.handleInitMessage( "MyClient/1.0" );
         }
         else
         {

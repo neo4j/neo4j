@@ -39,7 +39,7 @@ import org.neo4j.bolt.v1.messaging.message.AcknowledgeFailureMessage;
 import org.neo4j.bolt.v1.messaging.message.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
 import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
-import org.neo4j.bolt.v1.messaging.message.InitializeMessage;
+import org.neo4j.bolt.v1.messaging.message.InitMessage;
 import org.neo4j.bolt.v1.messaging.message.Message;
 import org.neo4j.bolt.v1.messaging.message.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.message.RecordMessage;
@@ -72,7 +72,7 @@ public class MessageFormatTest
         assertSerializes( new FailureMessage( Status.General.UnknownFailure, "Err" ) );
         assertSerializes( new IgnoredMessage() );
         assertSerializes( new AcknowledgeFailureMessage() );
-        assertSerializes( new InitializeMessage( "MyClient/1.0" ) );
+        assertSerializes( new InitMessage( "MyClient/1.0" ) );
     }
 
     @Test

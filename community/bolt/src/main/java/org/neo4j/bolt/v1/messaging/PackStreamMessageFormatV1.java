@@ -42,7 +42,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
     public interface MessageTypes
     {
-        byte MSG_INITIALIZE = 0x01;
+        byte MSG_INIT = 0x01;
         byte MSG_ACK_FAILURE = 0x0F;
         byte MSG_RUN = 0x10;
         byte MSG_DISCARD_ALL = 0x2F;
@@ -181,9 +181,9 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         @Override
-        public void handleInitializeMessage( String clientName ) throws IOException
+        public void handleInitMessage( String clientName ) throws IOException
         {
-            packer.packStructHeader( 1, MessageTypes.MSG_INITIALIZE );
+            packer.packStructHeader( 1, MessageTypes.MSG_INIT );
             packer.pack( clientName );
             onMessageComplete.onMessageComplete();
         }
@@ -250,8 +250,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     case MessageTypes.MSG_IGNORED:
                         unpackIgnoredMessage( output );
                         break;
-                    case MessageTypes.MSG_INITIALIZE:
-                        unpackInitializeMessage( output );
+                    case MessageTypes.MSG_INIT:
+                        unpackInitMessage( output );
                         break;
                     default:
                         throw new BoltIOException( Status.Request.Invalid,
@@ -339,10 +339,10 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             output.handlePullAllMessage();
         }
 
-        private <E extends Exception> void unpackInitializeMessage( MessageHandler<E> output ) throws IOException, E
+        private <E extends Exception> void unpackInitMessage( MessageHandler<E> output ) throws IOException, E
         {
             String clientName = unpacker.unpackText();
-            output.handleInitializeMessage( clientName );
+            output.handleInitMessage( clientName );
         }
 
     }

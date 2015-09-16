@@ -38,7 +38,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.bolt.v1.messaging.message.Messages.initialize;
+import static org.neo4j.bolt.v1.messaging.message.Messages.init;
 import static org.neo4j.bolt.v1.messaging.message.Messages.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.Messages.run;
 import static org.neo4j.bolt.messaging.v1.util.MessageMatchers.msgRecord;
@@ -119,7 +119,7 @@ public class TransportSessionIT
         client.connect( address )
                 .send( acceptedVersions( 1, 0, 0, 0 ) )
                 .send( chunk(
-                        initialize("TestClient/1.1"),
+                        init( "TestClient/1.1" ),
                         run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
                         pullAll() ) );
 

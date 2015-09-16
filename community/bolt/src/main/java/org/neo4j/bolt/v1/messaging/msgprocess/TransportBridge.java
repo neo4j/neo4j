@@ -61,9 +61,9 @@ public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
     }
 
     @Override
-    public void handleInitializeMessage( String clientName ) throws RuntimeException
+    public void handleInitMessage( String clientName ) throws RuntimeException
     {
-        session.initialize( clientName, null, simpleCallback );
+        session.init( clientName, null, simpleCallback );
     }
 
     @Override
