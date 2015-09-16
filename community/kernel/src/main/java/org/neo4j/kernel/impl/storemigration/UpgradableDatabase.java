@@ -20,10 +20,11 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
@@ -114,11 +115,11 @@ public class UpgradableDatabase
         return result;
     }
 
-    public boolean hasCurrentVersion( PageCache pageCache, File storeDir )
+    public boolean hasCurrentVersion( PageCache pageCache, File storeDir ) throws IOException
     {
-        File neoStore = new File( storeDir, NeoStore.DEFAULT_NAME );
-        long versionLong = NeoStore.getRecord( pageCache, neoStore, NeoStore.Position.STORE_VERSION );
-        String versionAsString = NeoStore.versionLongToString( versionLong );
+        File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        long versionLong = MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION );
+        String versionAsString = MetaDataStore.versionLongToString( versionLong );
         return CommonAbstractStore.ALL_STORES_VERSION.equals( versionAsString );
     }
 }

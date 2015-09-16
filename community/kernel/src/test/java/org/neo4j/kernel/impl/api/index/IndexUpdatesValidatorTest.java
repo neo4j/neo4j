@@ -36,7 +36,7 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -71,7 +71,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
 public class IndexUpdatesValidatorTest
 {
-    private final NeoStore neoStore = mock( NeoStore.class );
+    private final NeoStores neoStores = mock( NeoStores.class );
 
     private final IndexingService indexingService = mock( IndexingService.class );
     private final NodeStore nodeStore = mock( NodeStore.class );
@@ -289,9 +289,9 @@ public class IndexUpdatesValidatorTest
 
     private IndexUpdatesValidator newIndexUpdatesValidatorWithMockedDependencies()
     {
-        when( neoStore.getNodeStore() ).thenReturn( nodeStore );
-        when( neoStore.getPropertyStore() ).thenReturn( propertyStore );
-        return new IndexUpdatesValidator( neoStore, null, propertyLoader, indexingService );
+        when( neoStores.getNodeStore() ).thenReturn( nodeStore );
+        when( neoStores.getPropertyStore() ).thenReturn( propertyStore );
+        return new IndexUpdatesValidator( neoStores, null, propertyLoader, indexingService );
     }
 
     private static Command nodeAddRandomLabelsCommand( long nodeId )

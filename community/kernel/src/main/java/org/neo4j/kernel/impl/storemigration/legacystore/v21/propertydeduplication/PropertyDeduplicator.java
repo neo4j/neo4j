@@ -31,7 +31,7 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.kernel.monitoring.Monitors;
 
 public class PropertyDeduplicator
 {
@@ -50,9 +49,6 @@ public class PropertyDeduplicator
     private final File workingDir;
     private final PageCache pageCache;
     private final SchemaIndexProvider schemaIndexProvider;
-    private final File propertyStorePath;
-    private final File nodeStorePath;
-    private final File schemaStorePath;
     private final PrimitiveIntObjectMap<Long> seenPropertyKeys;
     private final PrimitiveIntObjectMap<DuplicateCluster> localDuplicateClusters;
 
@@ -64,10 +60,6 @@ public class PropertyDeduplicator
         this.pageCache = pageCache;
         this.schemaIndexProvider = schemaIndexProvider;
 
-        propertyStorePath = new File( workingDir, NeoStore.DEFAULT_NAME + StoreFactory.PROPERTY_STORE_NAME );
-        nodeStorePath = new File( workingDir, NeoStore.DEFAULT_NAME + StoreFactory.NODE_STORE_NAME );
-        schemaStorePath = new File( workingDir, NeoStore.DEFAULT_NAME + StoreFactory.SCHEMA_STORE_NAME );
-
         seenPropertyKeys = Primitive.intObjectMap();
         localDuplicateClusters = Primitive.intObjectMap();
     }
@@ -75,12 +67,13 @@ public class PropertyDeduplicator
     public void deduplicateProperties() throws IOException
     {
         final StoreFactory storeFactory = new StoreFactory(
-                fileSystem, workingDir, pageCache, NullLogProvider.getInstance(), new Monitors(), StoreVersionMismatchHandler.ALLOW_OLD_VERSION );
+                fileSystem, workingDir, pageCache, NullLogProvider.getInstance(), StoreVersionMismatchHandler.ALLOW_OLD_VERSION );
 
-        try ( PropertyStore propertyStore = storeFactory.newPropertyStore( propertyStorePath );
-              NodeStore nodeStore = storeFactory.newNodeStore( nodeStorePath );
-              SchemaStore schemaStore = storeFactory.newSchemaStore( schemaStorePath ) )
+        try ( NeoStores neoStores = storeFactory.openNeoStores( false ) )
         {
+            PropertyStore propertyStore = neoStores.getPropertyStore();
+            NodeStore nodeStore = neoStores.getNodeStore();
+            SchemaStore schemaStore = neoStores.getSchemaStore();
             PrimitiveLongObjectMap<List<DuplicateCluster>> duplicateClusters = collectConflictingProperties( propertyStore );
             resolveConflicts( duplicateClusters, propertyStore, nodeStore, schemaStore );
         }

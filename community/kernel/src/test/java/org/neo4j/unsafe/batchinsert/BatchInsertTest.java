@@ -77,7 +77,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.StoreLogService;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -90,9 +90,8 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -315,13 +314,13 @@ public class BatchInsertTest
         return db;
     }
 
-    private NeoStore switchToNeoStore( BatchInserter inserter )
+    private NeoStores switchToNeoStores( BatchInserter inserter )
     {
         inserter.shutdown();
         File dir = new File( inserter.getStoreDir() );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance(), new Monitors() );
-        return storeFactory.newNeoStore( false );
+        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance() );
+        return storeFactory.openNeoStores( false );
     }
 
     @Test
@@ -909,8 +908,8 @@ public class BatchInsertTest
         GraphDatabaseAPI graphdb = (GraphDatabaseAPI) switchToEmbeddedGraphDatabaseService( inserter );
         try
         {
-            NeoStore neoStore = graphdb.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
-            SchemaStore store = neoStore.getSchemaStore();
+            NeoStores neoStores = graphdb.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get();
+            SchemaStore store = neoStores.getSchemaStore();
             SchemaStorage storage = new SchemaStorage( store );
             List<Long> inUse = new ArrayList<>();
             for ( long i = 1, high = store.getHighestPossibleIdInUse(); i <= high; i++ )
@@ -1332,9 +1331,9 @@ public class BatchInsertTest
         try
         {
             DependencyResolver dependencyResolver = db.getDependencyResolver();
-            NeoStoreSupplier neoStoreSupplier = dependencyResolver.resolveDependency( NeoStoreSupplier.class );
-            NeoStore neoStore = neoStoreSupplier.get();
-            NodeStore nodeStore = neoStore.getNodeStore();
+            NeoStoresSupplier neoStoresSupplier = dependencyResolver.resolveDependency( NeoStoresSupplier.class );
+            NeoStores neoStores = neoStoresSupplier.get();
+            NodeStore nodeStore = neoStores.getNodeStore();
             NodeRecord record = nodeStore.getRecord( 1 );
             assertTrue( "Node " + record + " should have been dense", record.isDense() );
         }
@@ -1372,17 +1371,17 @@ public class BatchInsertTest
                 DynamicLabel.label( "Item" ) );
 
         // THEN
-        NeoStore neoStore = switchToNeoStore( inserter );
+        NeoStores neoStores = switchToNeoStores( inserter );
         try
         {
-            NodeRecord node = neoStore.getNodeStore().getRecord( nodeId );
+            NodeRecord node = neoStores.getNodeStore().getRecord( nodeId );
             NodeLabels labels = NodeLabelsField.parseLabelsField( node );
-            long[] labelIds = labels.get( neoStore.getNodeStore() );
+            long[] labelIds = labels.get( neoStores.getNodeStore() );
             assertEquals( 1, labelIds.length );
         }
         finally
         {
-            neoStore.close();
+            neoStores.close();
         }
     }
 
@@ -1399,12 +1398,12 @@ public class BatchInsertTest
                 DynamicLabel.label( "DD" ), DynamicLabel.label( "EE" ), DynamicLabel.label( "FF" ) );
 
         // THEN
-        try ( NeoStore neoStore = switchToNeoStore( inserter ) )
+        try ( NeoStores neoStores = switchToNeoStores( inserter ) )
         {
-            NodeRecord node = neoStore.getNodeStore().getRecord( nodeId );
+            NodeRecord node = neoStores.getNodeStore().getRecord( nodeId );
             NodeLabels labels = NodeLabelsField.parseLabelsField( node );
 
-            long[] labelIds = labels.get( neoStore.getNodeStore() );
+            long[] labelIds = labels.get( neoStores.getNodeStore() );
             long[] sortedLabelIds = labelIds.clone();
             Arrays.sort( sortedLabelIds );
             assertArrayEquals( sortedLabelIds, labelIds );

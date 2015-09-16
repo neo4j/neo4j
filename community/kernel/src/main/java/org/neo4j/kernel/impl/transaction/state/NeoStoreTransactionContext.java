@@ -24,7 +24,7 @@ import java.util.Collection;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.locking.Locks.Client;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -45,19 +45,19 @@ public class NeoStoreTransactionContext
     private final PropertyCreator propertyCreator;
     private final PropertyDeleter propertyDeleter;
     private final RecordAccessSet recordChangeSet;
+    private final NeoStores neoStores;
 
-    private final NeoStore neoStore;
-
-    public NeoStoreTransactionContext( NeoStore neoStore, Client locks )
+    public NeoStoreTransactionContext( NeoStores neoStores, Client locks )
     {
-        this.neoStore = neoStore;
+        this.neoStores = neoStores;
 
-        recordChangeSet = new RecordChangeSet( neoStore );
-        RelationshipGroupGetter relGroupGetter = new RelationshipGroupGetter( neoStore.getRelationshipGroupStore() );
+        recordChangeSet = new RecordChangeSet( neoStores );
+        RelationshipGroupGetter relGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore() );
         PropertyTraverser propertyTraverser = new PropertyTraverser();
-        propertyCreator = new PropertyCreator( neoStore.getPropertyStore(), propertyTraverser );
-        propertyDeleter = new PropertyDeleter( neoStore.getPropertyStore(), propertyTraverser );
-        relationshipCreator = new RelationshipCreator( locks, relGroupGetter, neoStore.getDenseNodeThreshold() );
+        propertyCreator = new PropertyCreator( neoStores.getPropertyStore(), propertyTraverser );
+        propertyDeleter = new PropertyDeleter( neoStores.getPropertyStore(), propertyTraverser );
+        relationshipCreator = new RelationshipCreator(
+                locks, relGroupGetter, neoStores.getRelationshipGroupStore().getDenseNodeThreshold() );
         relationshipDeleter = new RelationshipDeleter( locks, relGroupGetter, propertyDeleter );
     }
 
@@ -96,21 +96,21 @@ public class NeoStoreTransactionContext
     public void createPropertyKeyToken( String name, int id )
     {
         TokenCreator<PropertyKeyTokenRecord, Token> creator =
-                new TokenCreator<>( neoStore.getPropertyKeyTokenStore() );
+                new TokenCreator<>( neoStores.getPropertyKeyTokenStore() );
         creator.createToken( name, id, getPropertyKeyTokenRecords() );
     }
 
     public void createLabelToken( String name, int id )
     {
         TokenCreator<LabelTokenRecord, Token> creator =
-                new TokenCreator<>( neoStore.getLabelTokenStore() );
+                new TokenCreator<>( neoStores.getLabelTokenStore() );
         creator.createToken( name, id, getLabelTokenRecords() );
     }
 
     public void createRelationshipTypeToken( String name, int id )
     {
         TokenCreator<RelationshipTypeTokenRecord, RelationshipTypeToken> creator =
-                new TokenCreator<>( neoStore.getRelationshipTypeTokenStore() );
+                new TokenCreator<>( neoStores.getRelationshipTypeTokenStore() );
         creator.createToken( name, id, getRelationshipTypeTokenRecords() );
     }
 

@@ -45,7 +45,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
@@ -200,9 +200,9 @@ public class TestCrashWithRebuildSlow
     private Map<IdType,Long> getHighIds( GraphDatabaseAPI db )
     {
         final Map<IdType,Long> highIds = new HashMap<>();
-        NeoStore neoStore = db.getDependencyResolver().resolveDependency(
-                DataSourceManager.class ).getDataSource().getNeoStore();
-        neoStore.visitStore( new Visitor<CommonAbstractStore,RuntimeException>()
+        NeoStores neoStores = db.getDependencyResolver().resolveDependency(
+                DataSourceManager.class ).getDataSource().getNeoStores();
+        neoStores.visitStore( new Visitor<CommonAbstractStore,RuntimeException>()
         {
             @Override
             public boolean visit( CommonAbstractStore store ) throws RuntimeException

@@ -77,7 +77,7 @@ public class SchemaStorageTest
     @Before
     public void initStorage() throws Exception
     {
-        storage = new SchemaStorage( dependencyResolver().resolveDependency( NeoStore.class ).getSchemaStore() );
+        storage = new SchemaStorage( dependencyResolver().resolveDependency( NeoStores.class ).getSchemaStore() );
     }
 
     @Test

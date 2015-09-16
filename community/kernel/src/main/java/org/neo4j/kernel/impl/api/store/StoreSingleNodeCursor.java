@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.function.Consumer;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 /**
@@ -33,11 +33,11 @@ public class StoreSingleNodeCursor extends StoreAbstractNodeCursor
     private Consumer<StoreSingleNodeCursor> instanceCache;
 
     public StoreSingleNodeCursor( NodeRecord nodeRecord,
-            NeoStore neoStore,
+            NeoStores neoStores,
             StoreStatement storeStatement,
             Consumer<StoreSingleNodeCursor> instanceCache )
     {
-        super( nodeRecord, neoStore, storeStatement );
+        super( nodeRecord, neoStores, storeStatement );
         this.instanceCache = instanceCache;
     }
 
@@ -55,7 +55,7 @@ public class StoreSingleNodeCursor extends StoreAbstractNodeCursor
             try
             {
                 nodeRecord.setId( nodeId );
-                NodeRecord record = neoStore.getNodeStore().loadRecord( nodeId, this.nodeRecord );
+                NodeRecord record = neoStores.getNodeStore().loadRecord( nodeId, this.nodeRecord );
                 return record != null && record.inUse();
             }
             finally

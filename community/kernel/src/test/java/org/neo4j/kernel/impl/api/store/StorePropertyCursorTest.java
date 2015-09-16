@@ -20,8 +20,10 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
@@ -45,12 +47,12 @@ import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -65,7 +67,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_STORE_NAME;
 
 @RunWith( Enclosed.class )
 public class StorePropertyCursorTest
@@ -228,40 +229,66 @@ public class StorePropertyCursorTest
         }
     }
 
-    @RunWith( Parameterized.class )
-    public static class SingleValueProperties
+    public static class PropertyStoreBasedTestSupport
     {
-        @Rule
-        public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-        @Rule
-        public PageCacheRule pageCacheRule = new PageCacheRule( true );
+        @ClassRule
+        public static EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+        @ClassRule
+        public static PageCacheRule pageCacheRule = new PageCacheRule();
 
-        private final Consumer<StorePropertyCursor> cache = Consumers.noop();
+        private static PageCache pageCache;
 
-        private PropertyStore propertyStore;
+        @BeforeClass
+        public static void setUpPageCache()
+        {
+            pageCache = pageCacheRule.getPageCache( fsRule.get() );
+        }
+
+        @AfterClass
+        public static void tearDownPageCache() throws IOException
+        {
+            pageCache.close();
+        }
+
+        protected final Consumer<StorePropertyCursor> cache = Consumers.noop();
+
+        protected PropertyStore propertyStore;
+        private NeoStores neoStores;
 
         @Before
         public void setup() throws IOException
         {
             EphemeralFileSystemAbstraction fs = fsRule.get();
-            PageCache pageCache = pageCacheRule.getPageCache( fs );
             LogProvider log = NullLogProvider.getInstance();
-            Monitors monitors = new Monitors();
 
             File storeDir = new File( "store" );
+            if ( fs.isDirectory( storeDir ) )
+            {
+                fs.deleteRecursively( storeDir );
+            }
             fs.mkdirs( storeDir );
-            StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, log, monitors );
-            storeFactory.createPropertyStore();
-
-            propertyStore = storeFactory.newPropertyStore( storeFactory.storeFileName( PROPERTY_STORE_NAME ) );
+            StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, log );
+            neoStores = storeFactory.openNeoStores( true );
+            propertyStore = neoStores.getPropertyStore();
         }
 
         @After
         public void tearDown()
         {
-            propertyStore.close();
+            neoStores.close();
         }
 
+        @Test
+        public void ignore() throws Exception
+        {
+            // JUnit gets confused if this class has no method with the @Test annotation.
+            // This is also why this class is not abstract.
+        }
+    }
+
+    @RunWith( Parameterized.class )
+    public static class SingleValueProperties extends PropertyStoreBasedTestSupport
+    {
         @Parameterized.Parameter( 0 )
         public Object expectedValue;
 
@@ -299,39 +326,8 @@ public class StorePropertyCursorTest
     }
 
     @RunWith( Parameterized.class )
-    public static class TwoValueProperties
+    public static class TwoValueProperties extends PropertyStoreBasedTestSupport
     {
-        @Rule
-        public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-        @Rule
-        public PageCacheRule pageCacheRule = new PageCacheRule( true );
-
-        private final Consumer<StorePropertyCursor> cache = Consumers.noop();
-
-        private PropertyStore propertyStore;
-
-        @Before
-        public void setup() throws IOException
-        {
-            EphemeralFileSystemAbstraction fs = fsRule.get();
-            PageCache pageCache = pageCacheRule.getPageCache( fs );
-            LogProvider log = NullLogProvider.getInstance();
-            Monitors monitors = new Monitors();
-
-            File storeDir = new File( "store" );
-            fs.mkdirs( storeDir );
-            StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, log, monitors );
-            storeFactory.createPropertyStore();
-
-            propertyStore = storeFactory.newPropertyStore( storeFactory.storeFileName( PROPERTY_STORE_NAME ) );
-        }
-
-        @After
-        public void tearDown()
-        {
-            propertyStore.close();
-        }
-
         @Parameterized.Parameter( 0 )
         public Object expectedValue1;
 
@@ -429,39 +425,8 @@ public class StorePropertyCursorTest
     }
 
     @RunWith( Parameterized.class )
-    public static class CursorReuse
+    public static class CursorReuse extends PropertyStoreBasedTestSupport
     {
-        @Rule
-        public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-        @Rule
-        public PageCacheRule pageCacheRule = new PageCacheRule( true );
-
-        private final Consumer<StorePropertyCursor> cache = Consumers.noop();
-
-        private PropertyStore propertyStore;
-
-        @Before
-        public void setup() throws IOException
-        {
-            EphemeralFileSystemAbstraction fs = fsRule.get();
-            PageCache pageCache = pageCacheRule.getPageCache( fs );
-            LogProvider log = NullLogProvider.getInstance();
-            Monitors monitors = new Monitors();
-
-            File storeDir = new File( "store" );
-            fs.mkdirs( storeDir );
-            StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, log, monitors );
-            storeFactory.createPropertyStore();
-
-            propertyStore = storeFactory.newPropertyStore( storeFactory.storeFileName( PROPERTY_STORE_NAME ) );
-        }
-
-        @After
-        public void tearDown()
-        {
-            propertyStore.close();
-        }
-
         @Parameterized.Parameter( 0 )
         public Object expectedValue;
 

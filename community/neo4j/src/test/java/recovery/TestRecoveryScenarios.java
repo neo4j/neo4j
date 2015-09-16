@@ -43,7 +43,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
@@ -166,7 +166,7 @@ public class TestRecoveryScenarios
         // -- really the problem was that recovery threw exception, so mostly assert that.
         try ( Transaction tx = db.beginTx() )
         {
-            CountsTracker tracker = db.getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
+            CountsTracker tracker = db.getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
             assertEquals( 0, tracker.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
             final LabelTokenHolder holder = db.getDependencyResolver().resolveDependency( LabelTokenHolder.class );
             int labelId = holder.getIdByName( label.name() );

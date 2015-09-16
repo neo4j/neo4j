@@ -45,7 +45,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.DynamicProcessorAssigner;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static java.lang.System.currentTimeMillis;
@@ -119,7 +119,7 @@ public class ParallelBatchImporter implements BatchImporter
         boolean hasBadEntries = false;
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
         CountingStoreUpdateMonitor storeUpdateMonitor = new CountingStoreUpdateMonitor();
-        try ( BatchingNeoStore neoStore = new BatchingNeoStore( fileSystem, storeDir, config,
+        try ( BatchingNeoStores neoStore = new BatchingNeoStores( fileSystem, storeDir, config,
               logService, monitors, additionalInitialIds );
               OutputStream badOutput = new BufferedOutputStream( fileSystem.openAsOutputStream( badFile, false ) );
               Collector badCollector = input.badCollector( badOutput );

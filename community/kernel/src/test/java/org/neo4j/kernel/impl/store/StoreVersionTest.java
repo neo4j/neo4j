@@ -35,9 +35,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -59,23 +57,22 @@ public class StoreVersionTest
                 new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
-                NullLogProvider.getInstance(),
-                monitors );
-        NeoStore neoStore = sf.newNeoStore( true );
+                NullLogProvider.getInstance() );
+        NeoStores neoStores = sf.openNeoStores( true );
 
         CommonAbstractStore[] stores = {
-                neoStore.getNodeStore(),
-                neoStore.getRelationshipStore(),
-                neoStore.getRelationshipTypeTokenStore(),
-                neoStore.getPropertyStore(),
-                neoStore.getPropertyKeyTokenStore()
+                neoStores.getNodeStore(),
+                neoStores.getRelationshipStore(),
+                neoStores.getRelationshipTypeTokenStore(),
+                neoStores.getPropertyStore(),
+                neoStores.getPropertyKeyTokenStore()
         };
 
         for ( CommonAbstractStore store : stores )
         {
             assertThat( store.getTypeAndVersionDescriptor(), containsString( CommonAbstractStore.ALL_STORES_VERSION ) );
         }
-        neoStore.close();
+        neoStores.close();
     }
 
     @Test
@@ -90,17 +87,15 @@ public class StoreVersionTest
 
         try
         {
-            Monitors monitors = new Monitors();
             new NodeStore(
                     workingFile,
                     config,
                     new DefaultIdGeneratorFactory( fs.get() ),
                     pageCacheRule.getPageCache( fs.get() ),
-                    fs.get(),
                     NullLogProvider.getInstance(),
                     null,
-                    StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
-                    monitors );
+                    StoreVersionMismatchHandler.FORCE_CURRENT_VERSION
+            );
             fail( "Should have thrown exception" );
         }
         catch ( NotCurrentStoreVersionException e )
@@ -110,7 +105,7 @@ public class StoreVersionTest
     }
 
     @Test
-    public void neoStoreHasCorrectStoreVersionField()
+    public void neoStoreHasCorrectStoreVersionField() throws IOException
     {
         FileSystemAbstraction fileSystemAbstraction = this.fs.get();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
@@ -120,17 +115,17 @@ public class StoreVersionTest
                 new DefaultIdGeneratorFactory( fileSystemAbstraction ),
                 pageCache,
                 fileSystemAbstraction,
-                NullLogProvider.getInstance(),
-                monitors );
-        NeoStore neoStore = sf.newNeoStore( true );
+                NullLogProvider.getInstance() );
+        NeoStores neoStores = sf.openNeoStores( true );
 
         // The first checks the instance method, the other the public one
         assertEquals( CommonAbstractStore.ALL_STORES_VERSION,
-                NeoStore.versionLongToString( neoStore.getStoreVersion() ) );
-        neoStore.close();
-        assertEquals( CommonAbstractStore.ALL_STORES_VERSION, NeoStore.versionLongToString(
-                NeoStore.getRecord( pageCache, new File( outputDir, NeoStore.DEFAULT_NAME ),
-                        Position.STORE_VERSION ) ) );
+                MetaDataStore.versionLongToString( neoStores.getMetaDataStore().getStoreVersion() ) );
+        neoStores.close();
+        File neoStoreFile = new File( outputDir, MetaDataStore.DEFAULT_NAME );
+        long storeVersionRecord = MetaDataStore
+                .getRecord( pageCache, neoStoreFile, MetaDataStore.Position.STORE_VERSION );
+        assertEquals( CommonAbstractStore.ALL_STORES_VERSION, MetaDataStore.versionLongToString( storeVersionRecord ) );
     }
 
     @Test
@@ -142,14 +137,13 @@ public class StoreVersionTest
         {
             assertEquals(
                     string,
-                    NeoStore.versionLongToString( NeoStore.versionStringToLong( string ) ) );
+                    MetaDataStore.versionLongToString( MetaDataStore.versionStringToLong( string ) ) );
         }
     }
 
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final File outputDir = new File( "target/var/" + StoreVersionTest.class.getSimpleName() ).getAbsoluteFile();
     private final Config config = new Config( stringMap(), GraphDatabaseSettings.class );
-    private final Monitors monitors = new Monitors();
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
 }

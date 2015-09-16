@@ -31,7 +31,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.impl.transaction.state.LazyIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 
@@ -58,12 +58,12 @@ public class IndexUpdatesValidator
     private final IndexingService indexing;
     private final KernelHealth kernelHealth;
 
-    public IndexUpdatesValidator( NeoStore neoStore, KernelHealth kernelHealth, PropertyLoader propertyLoader,
+    public IndexUpdatesValidator( NeoStores neoStores, KernelHealth kernelHealth, PropertyLoader propertyLoader,
             IndexingService indexing )
     {
         this.kernelHealth = kernelHealth;
-        this.nodeStore = neoStore.getNodeStore();
-        this.propertyStore = neoStore.getPropertyStore();
+        this.nodeStore = neoStores.getNodeStore();
+        this.propertyStore = neoStores.getPropertyStore();
         this.propertyLoader = propertyLoader;
         this.indexing = indexing;
     }
@@ -123,7 +123,7 @@ public class IndexUpdatesValidator
     }
 
     private static class NodePropertyCommandsExtractor
-            extends NeoCommandHandler.Adapter implements Visitor<Command,IOException>
+            extends CommandHandler.Adapter implements Visitor<Command,IOException>
     {
         final PrimitiveLongObjectMap<NodeCommand> nodeCommandsById = Primitive.longObjectMap( 16 );
         final PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds = Primitive.longObjectMap( 16 );

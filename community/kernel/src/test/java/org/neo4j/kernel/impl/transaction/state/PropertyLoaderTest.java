@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.store.AbstractRecordStore;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -41,13 +41,11 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.kernel.api.properties.DefinedProperty.intProperty;
 
@@ -60,7 +58,7 @@ public class PropertyLoaderTest
 
     private final IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
 
-    private final NeoStore neoStore = mock( NeoStore.class );
+    private final NeoStores neoStores = mock( NeoStores.class );
     private final NodeStore nodeStore = mock( NodeStore.class );
     private final RelationshipStore relationshipStore = mock( RelationshipStore.class );
     private final PropertyStore propertyStore = mock( PropertyStore.class );
@@ -68,16 +66,16 @@ public class PropertyLoaderTest
     @Before
     public void setUpMocking() throws Exception
     {
-        doReturn( nodeStore ).when( neoStore ).getNodeStore();
-        doReturn( relationshipStore ).when( neoStore ).getRelationshipStore();
-        doReturn( propertyStore ).when( neoStore ).getPropertyStore();
+        doReturn( nodeStore ).when( neoStores ).getNodeStore();
+        doReturn( relationshipStore ).when( neoStores ).getRelationshipStore();
+        doReturn( propertyStore ).when( neoStores ).getPropertyStore();
     }
 
     @Test
     public void shouldThrowForNotInUseNodeRecord()
     {
         // Given
-        PropertyLoader loader = new PropertyLoader( neoStore() );
+        PropertyLoader loader = new PropertyLoader( neoStores() );
 
         try
         {
@@ -95,7 +93,7 @@ public class PropertyLoaderTest
     public void shouldThrowForNotInUseRelationshipRecord()
     {
         // Given
-        PropertyLoader loader = new PropertyLoader( neoStore() );
+        PropertyLoader loader = new PropertyLoader( neoStores() );
 
         try
         {
@@ -114,7 +112,7 @@ public class PropertyLoaderTest
     {
         // Given
         setUpNode( 42, 1, 2, 3 );
-        PropertyLoader loader = new PropertyLoader( neoStore );
+        PropertyLoader loader = new PropertyLoader( neoStores );
 
         // When
         loader.nodeLoadProperties( 42, receiver );
@@ -130,7 +128,7 @@ public class PropertyLoaderTest
     {
         // Given
         setUpRelationship( 42, 1111, 2222 );
-        PropertyLoader loader = new PropertyLoader( neoStore );
+        PropertyLoader loader = new PropertyLoader( neoStores );
 
         // When
         loader.relLoadProperties( 42, receiver );
@@ -141,9 +139,9 @@ public class PropertyLoaderTest
                 toList( receiver ) );
     }
 
-    private NeoStore neoStore()
+    private NeoStores neoStores()
     {
-        return db.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
+        return db.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get();
     }
 
     private void setUpNode( long id, int... propertyValues )

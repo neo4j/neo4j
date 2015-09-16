@@ -90,8 +90,8 @@ class RebuildFromLogs
         this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class )
                                     .withLegacyIndexTransactionOrdering( IdOrderingQueue.BYPASS );
         KernelHealth kernelHealth = resolver.resolveDependency( KernelHealth.class );
-        PropertyLoader propertyLoader = new PropertyLoader( stores.getRawNeoStore() );
-        this.indexUpdatesValidator = new IndexUpdatesValidator( stores.getRawNeoStore(), kernelHealth, propertyLoader,
+        PropertyLoader propertyLoader = new PropertyLoader( stores.getRawNeoStores() );
+        this.indexUpdatesValidator = new IndexUpdatesValidator( stores.getRawNeoStores(), kernelHealth, propertyLoader,
                 resolver.resolveDependency( IndexingService.class ) );
     }
 

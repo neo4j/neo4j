@@ -53,7 +53,7 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradingStoreVersionNotFoundException;
@@ -339,7 +339,7 @@ public class StoreUpgradeIntegrationTest
     {
         CountsTracker counts = db.getDependencyResolver()
                 .resolveDependency( NeoStoreDataSource.class )
-                .getNeoStore().getCounts();
+                .getNeoStores().getCounts();
         ThreadToStatementContextBridge bridge = db.getDependencyResolver()
                 .resolveDependency( ThreadToStatementContextBridge.class );
 
@@ -442,12 +442,12 @@ public class StoreUpgradeIntegrationTest
             assertThat( indexCount, is( store.indexes() ) );
 
             // check last committed tx
-            NeoStore neoStore = db.getDependencyResolver()
+            NeoStores neoStores = db.getDependencyResolver()
                     .resolveDependency( NeoStoreDataSource.class )
-                    .getNeoStore();
-            long lastCommittedTxId = neoStore.getLastCommittedTransactionId();
+                    .getNeoStores();
+            long lastCommittedTxId = neoStores.getMetaDataStore().getLastCommittedTransactionId();
 
-            CountsTracker counts = neoStore.getCounts();
+            CountsTracker counts = neoStores.getCounts();
             assertEquals( lastCommittedTxId, counts.txId() );
 
             assertThat( lastCommittedTxId, is( store.lastTxId ) );

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.state;
 import java.util.Collection;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -37,14 +37,14 @@ public class PropertyLoader
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
     private final PropertyStore propertyStore;
-    private final NeoStore neoStore;
+    private final NeoStores neoStores;
 
-    public PropertyLoader( NeoStore neoStore )
+    public PropertyLoader( NeoStores neoStores )
     {
-        this.neoStore = neoStore;
-        this.nodeStore = neoStore.getNodeStore();
-        this.relationshipStore = neoStore.getRelationshipStore();
-        this.propertyStore = neoStore.getPropertyStore();
+        this.neoStores = neoStores;
+        this.nodeStore = neoStores.getNodeStore();
+        this.relationshipStore = neoStores.getRelationshipStore();
+        this.propertyStore = neoStores.getPropertyStore();
     }
 
     public <RECEIVER extends PropertyReceiver> RECEIVER nodeLoadProperties( long nodeId, RECEIVER receiver )
@@ -68,7 +68,7 @@ public class PropertyLoader
 
     public <RECEIVER extends PropertyReceiver> RECEIVER graphLoadProperties( RECEIVER records )
     {
-        return loadProperties( neoStore.asRecord().getNextProp(), records );
+        return loadProperties( neoStores.getMetaDataStore().asRecord().getNextProp(), records );
     }
 
     private <RECEIVER extends PropertyReceiver> RECEIVER loadProperties( long nextProp, RECEIVER receiver )

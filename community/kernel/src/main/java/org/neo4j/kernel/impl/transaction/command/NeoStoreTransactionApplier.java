@@ -24,7 +24,7 @@ import java.io.IOException;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -32,26 +32,26 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 /**
- * Visits commands targeted towards the {@link NeoStore} and update corresponding stores.
+ * Visits commands targeted towards the {@link NeoStores} and update corresponding stores.
  * What happens in here is what will happen in a "internal" transaction, i.e. a transaction that has been
  * forged in this database, with transaction state, a KernelTransaction and all that and is now committing.
  * <p>
  * For other modes of application, like recovery or external there are other, added functionality, decorated
  * outside this applier.
  */
-public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
+public class NeoStoreTransactionApplier extends CommandHandler.Adapter
 {
-    private final NeoStore neoStore;
+    private final NeoStores neoStores;
     // Ideally we don't want any cache access in here, but it is how it is. At least we try to minimize use of it
     private final CacheAccessBackDoor cacheAccess;
     private final LockService lockService;
     private final LockGroup lockGroup;
     private final long transactionId;
 
-    public NeoStoreTransactionApplier( NeoStore store, CacheAccessBackDoor cacheAccess,
+    public NeoStoreTransactionApplier( NeoStores store, CacheAccessBackDoor cacheAccess,
                                        LockService lockService, LockGroup lockGroup, long transactionId )
     {
-        this.neoStore = store;
+        this.neoStores = store;
         this.cacheAccess = cacheAccess;
         this.lockService = lockService;
         this.transactionId = transactionId;
@@ -65,7 +65,7 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
         lockGroup.add( lockService.acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK ) );
 
         // update store
-        NodeStore nodeStore = neoStore.getNodeStore();
+        NodeStore nodeStore = neoStores.getNodeStore();
         nodeStore.updateRecord( command.getAfter() );
         // getDynamicLabelRecords will contain even deleted records
         nodeStore.updateDynamicLabelRecords( command.getAfter().getDynamicLabelRecords() );
@@ -77,7 +77,7 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
     public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
     {
         RelationshipRecord record = command.getRecord();
-        neoStore.getRelationshipStore().updateRecord( record );
+        neoStores.getRelationshipStore().updateRecord( record );
         return false;
     }
 
@@ -93,35 +93,35 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
 
         // track the dynamic value record high ids
         // update store
-        neoStore.getPropertyStore().updateRecord( command.getAfter() );
+        neoStores.getPropertyStore().updateRecord( command.getAfter() );
         return false;
     }
 
     @Override
     public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
     {
-        neoStore.getRelationshipGroupStore().updateRecord( command.getRecord() );
+        neoStores.getRelationshipGroupStore().updateRecord( command.getRecord() );
         return false;
     }
 
     @Override
     public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command ) throws IOException
     {
-        neoStore.getRelationshipTypeTokenStore().updateRecord( command.getRecord() );
+        neoStores.getRelationshipTypeTokenStore().updateRecord( command.getRecord() );
         return false;
     }
 
     @Override
     public boolean visitLabelTokenCommand( Command.LabelTokenCommand command ) throws IOException
     {
-        neoStore.getLabelTokenStore().updateRecord( command.getRecord() );
+        neoStores.getLabelTokenStore().updateRecord( command.getRecord() );
         return false;
     }
 
     @Override
     public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException
     {
-        neoStore.getPropertyKeyTokenStore().updateRecord( command.getRecord() );
+        neoStores.getPropertyKeyTokenStore().updateRecord( command.getRecord() );
         return false;
     }
 
@@ -138,7 +138,7 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
         // 4) the population job will apply those updates as added properties, and might end up with duplicate
         //    entries for the same property
 
-        SchemaStore schemaStore = neoStore.getSchemaStore();
+        SchemaStore schemaStore = neoStores.getSchemaStore();
         for ( DynamicRecord record : command.getRecordsAfter() )
         {
             schemaStore.updateRecord( record );
@@ -150,7 +150,7 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
             {
             case UPDATE:
             case CREATE:
-                neoStore.setLatestConstraintIntroducingTx( transactionId );
+                neoStores.getMetaDataStore().setLatestConstraintIntroducingTx( transactionId );
                 break;
             case DELETE:
                 break;
@@ -173,7 +173,7 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
     @Override
     public boolean visitNeoStoreCommand( Command.NeoStoreCommand command ) throws IOException
     {
-        neoStore.setGraphNextProp( command.getRecord().getNextProp() );
+        neoStores.getMetaDataStore().setGraphNextProp( command.getRecord().getNextProp() );
         return false;
     }
 }

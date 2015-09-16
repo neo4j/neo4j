@@ -94,7 +94,7 @@ import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
 import static org.neo4j.kernel.ha.cluster.member.ClusterMembers.hasInstanceId;
-import static org.neo4j.kernel.impl.store.NeoStore.isStorePresent;
+import static org.neo4j.kernel.impl.store.NeoStores.isStorePresent;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class SwitchToSlave

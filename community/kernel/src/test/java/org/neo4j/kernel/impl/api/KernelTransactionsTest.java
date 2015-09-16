@@ -32,7 +32,8 @@ import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -140,7 +141,9 @@ public class KernelTransactionsTest
         StoreReadLayer readLayer = mock( StoreReadLayer.class );
         when( readLayer.acquireStatement() ).thenReturn( mock( StoreStatement.class ) );
 
-        return new KernelTransactions( contextSupplier, mock( NeoStore.class ), locks,
+        NeoStores neoStores = mock( NeoStores.class );
+        when( neoStores.getMetaDataStore() ).thenReturn( mock( MetaDataStore.class ) );
+        return new KernelTransactions( contextSupplier, neoStores, locks,
                 mock( IntegrityValidator.class ), null, null, null, null, null, null, null,
                 TransactionHeaderInformationFactory.DEFAULT, readLayer, commitProcess, null,
                 null, new TransactionHooks(), mock( ConstraintSemantics.class ), mock( TransactionMonitor.class ), life, new ProcedureCache(),

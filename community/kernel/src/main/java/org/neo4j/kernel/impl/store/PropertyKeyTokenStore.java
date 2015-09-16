@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -30,7 +29,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Implementation of the property store.
@@ -47,14 +45,12 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord, To
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
             DynamicStringStore nameStore,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            StoreVersionMismatchHandler versionMismatchHandler )
     {
-        super( fileName, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                logProvider, nameStore, versionMismatchHandler, monitors, new Token.Factory() );
+        super( fileName, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache,
+                logProvider, nameStore, versionMismatchHandler, new Token.Factory() );
     }
 
     @Override

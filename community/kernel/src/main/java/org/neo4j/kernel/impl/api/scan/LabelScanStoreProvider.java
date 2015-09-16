@@ -33,7 +33,7 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -111,7 +111,7 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
         long highestNodeId();
     }
 
-    public static FullStoreChangeStream fullStoreLabelUpdateStream( final NeoStoreSupplier neoStoreSupplier )
+    public static FullStoreChangeStream fullStoreLabelUpdateStream( final NeoStoresSupplier neoStoresSupplier )
     {
         return new FullStoreChangeStream()
         {
@@ -120,7 +120,7 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
             {
                 return new PrefetchingIterator<NodeLabelUpdate>()
                 {
-                    private final NodeStore nodeStore = neoStoreSupplier.get().getNodeStore();
+                    private final NodeStore nodeStore = neoStoresSupplier.get().getNodeStore();
                     private final long highId = nodeStore.getHighestPossibleIdInUse();
                     private long current;
 
@@ -147,7 +147,7 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
             @Override
             public long highestNodeId()
             {
-                return neoStoreSupplier.get().getNodeStore().getHighestPossibleIdInUse();
+                return neoStoresSupplier.get().getNodeStore().getHighestPossibleIdInUse();
             }
         };
     }

@@ -40,14 +40,14 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 
@@ -109,8 +109,8 @@ public class StoreMigratorFrom21IT
         database = builder.newGraphDatabase();
         // Upgrade is now completed. Verify the contents:
         DependencyResolver dependencyResolver = ((GraphDatabaseAPI) database).getDependencyResolver();
-        NeoStoreSupplier supplier = dependencyResolver.resolveDependency( NeoStoreSupplier.class );
-        NeoStore store = supplier.get();
+        NeoStoresSupplier supplier = dependencyResolver.resolveDependency( NeoStoresSupplier.class );
+        NeoStores store = supplier.get();
         NodeStore nodeStore = store.getNodeStore();
         RelationshipStore relStore = store.getRelationshipStore();
         PropertyStore propertyStore = store.getPropertyStore();

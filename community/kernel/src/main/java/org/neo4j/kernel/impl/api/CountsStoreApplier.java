@@ -23,15 +23,15 @@ import java.io.IOException;
 
 import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 
-public class CountsStoreApplier extends NeoCommandHandler.Adapter
+public class CountsStoreApplier extends CommandHandler.Adapter
 {
-    static final Function<CountsAccessor.Updater, NeoCommandHandler> FACTORY =
-            new Function<CountsAccessor.Updater, NeoCommandHandler>()
+    static final Function<CountsAccessor.Updater,CommandHandler> FACTORY =
+            new Function<CountsAccessor.Updater,CommandHandler>()
             {
                 @Override
-                public NeoCommandHandler apply( CountsAccessor.Updater updater )
+                public CommandHandler apply( CountsAccessor.Updater updater )
                 {
                     return new CountsStoreApplier( updater );
                 }
