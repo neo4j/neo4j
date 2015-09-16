@@ -29,7 +29,7 @@ import scala.collection.JavaConverters._
 
 class NewMatchTest extends NewDocumentingTestBase {
   val doc =
-    Document("Match",
+    Document("Match", "id",
       initQueries = Seq("FUNKY CYPHER THAT BUILDS DATABASE"),
       Abstract("The `MATCH` clause is used to search for the pattern described in it.") ~
         Section("Introduction",
@@ -41,7 +41,7 @@ class NewMatchTest extends NewDocumentingTestBase {
               """MATCH is often coupled to a WHERE part which adds restrictions, or predicates, to the MATCH patterns, making them more specific.
                 |The predicates are part of the pattern description, not a filter applied after the matching is done.
                 |This means that WHERE should always be put together with the MATCH clause it belongs to.""".stripMargin) ~
-            Tip("To understand more about the patterns used in the MATCH clause, read Section 9.6, “Patterns”") ~
+            Tip(Paragraph("To understand more about the patterns used in the MATCH clause, read Section 9.6, “Patterns”")) ~
             Paragraph("The following graph is used for the examples below:") ~
             GraphImage(INITIAL)
         ) ~

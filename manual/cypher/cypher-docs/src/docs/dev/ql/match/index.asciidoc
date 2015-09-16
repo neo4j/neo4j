@@ -2,7 +2,9 @@
 = Match
 
 [abstract]
+====
 The `MATCH` clause is used to search for the pattern described in it.
+====
 
 == Introduction ==
 

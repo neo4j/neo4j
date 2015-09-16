@@ -19,18 +19,105 @@
  */
 package org.neo4j.cypher.docgen.tooling
 
-import org.neo4j.cypher.docgen.cookbook._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
 class DocumentTest extends CypherFunSuite {
-  test("Document containing no queries produces no tests") {
-    val doc = Document("title", initQueries = Seq.empty, Paragraph("lorem ipsum"))
+  test("Simplest possible document") {
+    val doc = Document("title", "myId", initQueries = Seq.empty, Paragraph("lorem ipsum"))
 
     doc.tests should be(empty)
+    doc.asciiDoc should equal(
+      """[[myId]]
+        |= title
+        |
+        |lorem ipsum
+        |
+        |""".stripMargin)
+  }
+
+  test("Heading inside Document") {
+    val doc = Document("title", "myId", initQueries = Seq.empty, Heading("My heading") ~ Paragraph("lorem ipsum"))
+
+    doc.tests should be(empty)
+    doc.asciiDoc should equal(
+      """[[myId]]
+        |= title
+        |
+        |.My heading
+        |lorem ipsum
+        |
+        |""".stripMargin)
+  }
+
+  test("Abstract for Document") {
+    val doc = Document("title", "myId", initQueries = Seq.empty, Abstract("abstract intro"))
+
+    doc.tests should be(empty)
+    doc.asciiDoc should equal(
+      """[[myId]]
+        |= title
+        |
+        |[abstract]
+        |====
+        |abstract intro
+        |====
+        |
+        |""".stripMargin)
+  }
+
+  test("Section inside Section") {
+    val doc = Document("title", "myId", initQueries = Seq.empty,
+      Section("outer",
+        Paragraph("first") ~ Section("inner", Paragraph("second"))
+      ))
+
+    doc.tests should be(empty)
+    doc.asciiDoc should equal(
+      """[[myId]]
+        |= title
+        |
+        |== outer
+        |
+        |first
+        |
+        |=== inner
+        |
+        |second
+        |
+        |""".stripMargin)
+  }
+
+  test("Tip with and without heading") {
+    val doc = Document("title", "myId", initQueries = Seq.empty,
+      Tip(Paragraph("tip text")) ~
+      Tip("custom heading", Paragraph("tip text again"))
+    )
+
+    doc.tests should be(empty)
+    doc.asciiDoc should equal(
+      """[[myId]]
+        |= title
+        |
+        |[TIP]
+        |====
+        |tip text
+        |
+        |
+        |====
+        |
+        |[TIP]
+        |.custom heading
+        |====
+        |tip text again
+        |
+        |
+        |====
+        |
+        |""".stripMargin)
   }
 
   test("Document containing a query produces a test") {
-    val doc = Document("title", initQueries = Seq.empty, Query("MATCH n RETURN n", NoAssertions, QueryResultTable))
+    val doc = Document("title", "myId", initQueries = Seq.empty, Query("MATCH n RETURN n", NoAssertions, QueryResultTable))
 
     doc.tests.toList should be(Seq("MATCH n RETURN n" -> NoAssertions))
   }
