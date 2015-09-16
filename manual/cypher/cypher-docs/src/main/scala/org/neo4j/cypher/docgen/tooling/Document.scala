@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
 import org.neo4j.graphdb.GraphDatabaseService
 
 
-case class AsciiDocResult(asciiDoc: String, testResults: Seq[(String, Option[Exception])])
+case class AsciiDocResult(text: String, testResults: Seq[(String, Option[Exception])])
 
 case class Document(title: String, id: String, initQueries: Seq[String], content: Content) {
   def asciiDoc: AsciiDocResult  = {
