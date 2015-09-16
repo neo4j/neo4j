@@ -33,6 +33,8 @@ import org.neo4j.function.BiFunction;
 import org.neo4j.function.Function;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Args.Option;
+import org.neo4j.helpers.ArrayUtil;
+import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -64,6 +66,7 @@ import static java.nio.charset.Charset.defaultCharset;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
+import static org.neo4j.helpers.Strings.TAB;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 import static org.neo4j.unsafe.impl.batchimport.cache.AvailableMemoryCalculator.RUNTIME;
@@ -259,7 +262,7 @@ public class ImportTool
     public static void main( String[] incomingArguments, boolean defaultSettingsSuitableForTests ) throws IOException
     {
         Args args = Args.parse( incomingArguments );
-        if ( asksForUsage( args ) )
+        if ( ArrayUtil.isEmpty( incomingArguments ) || asksForUsage( args ) )
         {
             printUsage( System.out );
             return;
@@ -533,6 +536,13 @@ public class ImportTool
         {
             option.printUsage( out );
         }
+
+        out.println( "Example:");
+        out.print( Strings.joinAsLines(
+                TAB + "bin/neo4j-import --into retail.db --id-type string --nodes:Customer customers.csv ",
+                TAB + "--nodes products.csv --nodes orders_header.csv,orders1.csv,orders2.csv ",
+                TAB + "--relationships:CONTAINS order_details.csv ",
+                TAB + "--relationships:ORDERED customer_orders_header.csv,orders1.csv,orders2.csv" ) );
     }
 
     private static boolean asksForUsage( Args args )

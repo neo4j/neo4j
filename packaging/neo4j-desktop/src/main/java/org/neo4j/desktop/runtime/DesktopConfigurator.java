@@ -30,18 +30,21 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.web.ServerInternalSettings;
 
 import static org.neo4j.helpers.Pair.pair;
+import static org.neo4j.server.configuration.ServerSettings.tls_certificate_file;
+import static org.neo4j.server.configuration.ServerSettings.tls_key_file;
+import static org.neo4j.server.web.ServerInternalSettings.auth_store;
 
 public class DesktopConfigurator
 {
     private final Installation installation;
 
     private Config config;
-    private File databaseDirectory;
+    private File dbDir;
 
     public DesktopConfigurator( Installation installation, File databaseDirectory )
     {
         this.installation = installation;
-        this.databaseDirectory = databaseDirectory;
+        this.dbDir = databaseDirectory;
         refresh();
     }
 
@@ -60,8 +63,11 @@ public class DesktopConfigurator
                 FormattedLog.toOutputStream( System.out ),
 
                 /** Desktop-specific config overrides */
-                pair( Configurator.AUTH_STORE_FILE_KEY, new File( databaseDirectory, "./dbms/auth" ).getAbsolutePath() ),
-                pair( Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath() ) );
+                pair( auth_store.name(), new File( dbDir, "./dbms/auth" ).getAbsolutePath() ),
+                pair( tls_certificate_file.name(), new File( dbDir, "./dbms/ssl/snakeoil.cert" ).getAbsolutePath() ),
+                pair( tls_key_file.name(), new File( dbDir, "./dbms/ssl/snakeoil.key" ).getAbsolutePath() ),
+
+                pair( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir.getAbsolutePath() ) );
     }
 
     public Config configuration()
@@ -70,7 +76,7 @@ public class DesktopConfigurator
     }
 
     public void setDatabaseDirectory( File directory ) {
-        databaseDirectory = directory;
+        dbDir = directory;
     }
 
     public String getDatabaseDirectory() {
@@ -82,6 +88,6 @@ public class DesktopConfigurator
     }
 
     public File getDatabaseConfigurationFile() {
-        return new File( databaseDirectory, Installation.NEO4J_PROPERTIES_FILENAME );
+        return new File( dbDir, Installation.NEO4J_PROPERTIES_FILENAME );
     }
 }

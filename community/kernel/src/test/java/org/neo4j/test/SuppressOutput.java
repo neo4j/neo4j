@@ -249,6 +249,12 @@ public final class SuppressOutput implements TestRule
             return voiceStream.toString().contains( message );
         }
 
+        @Override
+        public String toString()
+        {
+            return voiceStream.toString();
+        }
+
         abstract void restore( boolean failure ) throws IOException;
     }
 
