@@ -465,8 +465,17 @@ public abstract class GraphDatabaseSettings
     public static final Setting<File> log_queries_filename = setting("dbms.querylog.filename", PATH, NO_DEFAULT );
 
     @Description("If the execution of query takes more time than this threshold, the query is logged - " +
-            "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged.")
+                 "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged.")
     public static final Setting<Long> log_queries_threshold = setting("dbms.querylog.threshold", DURATION, "0s");
+
+    @Description( "Specifies at which file size the query log will auto-rotate. " +
+                  "`0` means that no rotation will automatically occur based on file size." )
+    public static final Setting<Long> log_queries_rotation_threshold = setting("dbms.querylog.rotation.threshold",
+            BYTES, "20m",  min( 0L ), max( Long.MAX_VALUE ) );
+
+    @Description( "Maximum number of history files for the query log." )
+    public static final Setting<Integer> log_queries_max_archives = setting( "dbms.querylog.max_archives", INTEGER,
+            "7", min( 1 ) );
 
     @Description( "Specifies number of operations that batch inserter will try to group into one batch before " +
                   "flushing data into underlying storage.")

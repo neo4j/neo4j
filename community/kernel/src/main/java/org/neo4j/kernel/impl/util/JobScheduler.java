@@ -132,6 +132,11 @@ public interface JobScheduler extends Lifecycle
         public static final Group internalLogRotation = new Group( "InternalLogRotation", POOLED );
 
         /**
+         * Rotates internal diagnostic logs
+         */
+        public static final Group queryLogRotation = new Group( "queryLogRotation", POOLED );
+
+        /**
          * Checkpoint and store flush
          */
         public static final Group checkPoint = new Group( "CheckPoint", POOLED );
