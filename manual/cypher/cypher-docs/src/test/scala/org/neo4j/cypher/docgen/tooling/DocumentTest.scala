@@ -21,24 +21,22 @@ package org.neo4j.cypher.docgen.tooling
 
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
-class DocumentTest extends CypherFunSuite {
+class DocumentAsciiDocTest extends CypherFunSuite {
   test("Simplest possible document") {
     val doc = Document("title", "myId", initQueries = Seq.empty, Paragraph("lorem ipsum"))
 
-    doc.tests should be(empty)
     doc.asciiDoc should equal(
       """[[myId]]
         |= title
         |
         |lorem ipsum
         |
-        |""".stripMargin)
+        | """.stripMargin)
   }
 
   test("Heading inside Document") {
     val doc = Document("title", "myId", initQueries = Seq.empty, Heading("My heading") ~ Paragraph("lorem ipsum"))
 
-    doc.tests should be(empty)
     doc.asciiDoc should equal(
       """[[myId]]
         |= title
@@ -46,13 +44,12 @@ class DocumentTest extends CypherFunSuite {
         |.My heading
         |lorem ipsum
         |
-        |""".stripMargin)
+        | """.stripMargin)
   }
 
   test("Abstract for Document") {
     val doc = Document("title", "myId", initQueries = Seq.empty, Abstract("abstract intro"))
 
-    doc.tests should be(empty)
     doc.asciiDoc should equal(
       """[[myId]]
         |= title
@@ -62,7 +59,7 @@ class DocumentTest extends CypherFunSuite {
         |abstract intro
         |====
         |
-        |""".stripMargin)
+        | """.stripMargin)
   }
 
   test("Section inside Section") {
@@ -71,7 +68,6 @@ class DocumentTest extends CypherFunSuite {
         Paragraph("first") ~ Section("inner", Paragraph("second"))
       ))
 
-    doc.tests should be(empty)
     doc.asciiDoc should equal(
       """[[myId]]
         |= title
@@ -84,16 +80,15 @@ class DocumentTest extends CypherFunSuite {
         |
         |second
         |
-        |""".stripMargin)
+        | """.stripMargin)
   }
 
   test("Tip with and without heading") {
     val doc = Document("title", "myId", initQueries = Seq.empty,
       Tip(Paragraph("tip text")) ~
-      Tip("custom heading", Paragraph("tip text again"))
+        Tip("custom heading", Paragraph("tip text again"))
     )
 
-    doc.tests should be(empty)
     doc.asciiDoc should equal(
       """[[myId]]
         |= title
@@ -113,16 +108,15 @@ class DocumentTest extends CypherFunSuite {
         |
         |====
         |
-        |""".stripMargin)
+        | """.stripMargin)
   }
 
   test("Note with and without heading") {
     val doc = Document("title", "myId", initQueries = Seq.empty,
       Note(Paragraph("tip text")) ~
-      Note("custom heading", Paragraph("tip text again"))
+        Note("custom heading", Paragraph("tip text again"))
     )
 
-    doc.tests should be(empty)
     doc.asciiDoc should equal(
       """[[myId]]
         |= title
@@ -142,16 +136,15 @@ class DocumentTest extends CypherFunSuite {
         |
         |====
         |
-        |""".stripMargin)
+        | """.stripMargin)
   }
 
   test("Warning with and without heading") {
     val doc = Document("title", "myId", initQueries = Seq.empty,
       Warning(Paragraph("tip text")) ~
-      Warning("custom heading", Paragraph("tip text again"))
+        Warning("custom heading", Paragraph("tip text again"))
     )
 
-    doc.tests should be(empty)
     doc.asciiDoc should equal(
       """[[myId]]
         |= title
@@ -171,16 +164,15 @@ class DocumentTest extends CypherFunSuite {
         |
         |====
         |
-        |""".stripMargin)
+        | """.stripMargin)
   }
 
   test("Caution with and without heading") {
     val doc = Document("title", "myId", initQueries = Seq.empty,
       Caution(Paragraph("tip text")) ~
-      Caution("custom heading", Paragraph("tip text again"))
+        Caution("custom heading", Paragraph("tip text again"))
     )
 
-    doc.tests should be(empty)
     doc.asciiDoc should equal(
       """[[myId]]
         |= title
@@ -200,16 +192,15 @@ class DocumentTest extends CypherFunSuite {
         |
         |====
         |
-        |""".stripMargin)
+        | """.stripMargin)
   }
 
   test("Important with and without heading") {
     val doc = Document("title", "myId", initQueries = Seq.empty,
       Important(Paragraph("tip text")) ~
-      Important("custom heading", Paragraph("tip text again"))
+        Important("custom heading", Paragraph("tip text again"))
     )
 
-    doc.tests should be(empty)
     doc.asciiDoc should equal(
       """[[myId]]
         |= title
@@ -229,12 +220,53 @@ class DocumentTest extends CypherFunSuite {
         |
         |====
         |
+        | """.stripMargin)
+  }
+
+//  test("Document containing a query produces a test") {
+//    val doc = Document("title", "myId", initQueries = Seq.empty, Query("MATCH n RETURN n", NoAssertions, QueryResultTable))
+//
+//    doc.tests.toList should be(Seq("MATCH n RETURN n" -> NoAssertions))
+//  }
+}
+
+class DocumentQueryTest extends CypherFunSuite {
+  test("Simplest possible document with a query in it") {
+    val query = "match (n) return n"
+    val doc = Document("title", "myId", initQueries = Seq.empty,
+      Query(query, NoAssertions, Paragraph("hello world")))
+
+    doc.asciiDoc should equal(
+      """[[myId]]
+        |= title
+        |
+        |[source,cypher]
+        |.Query
+        |----
+        |MATCH (n)
+        |RETURN n
+        |----
+        |
         |""".stripMargin)
   }
 
-  test("Document containing a query produces a test") {
-    val doc = Document("title", "myId", initQueries = Seq.empty, Query("MATCH n RETURN n", NoAssertions, QueryResultTable))
+  test("Simple query with assertions") {
+    val query = "match (n:TheNode) return n"
+    val doc = Document("title", "myId", initQueries = Seq("CREATE (:TheNode)"),
+      Query(query, ResultAssertions(p => fail("this is expected")), Paragraph("hello world")))
 
-    doc.tests.toList should be(Seq("MATCH n RETURN n" -> NoAssertions))
+    doc.asciiDoc should equal(
+      """[[myId]]
+        |= title
+        |
+        |[source,cypher]
+        |.Query
+        |----
+        |MATCH (n)
+        |RETURN n
+        |----
+        |
+        |""".stripMargin)
   }
+
 }

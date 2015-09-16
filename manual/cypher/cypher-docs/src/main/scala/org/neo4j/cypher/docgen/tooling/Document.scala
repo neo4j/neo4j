@@ -20,16 +20,22 @@
 package org.neo4j.cypher.docgen.tooling
 
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
 import org.neo4j.graphdb.GraphDatabaseService
 
-case class Document(title: String, id: String, initQueries: Seq[String], content: Content) {
-  def tests: Seq[(String, QueryAssertions)] = content.tests
 
-  def asciiDoc: String =
-    s"""[[$id]]
-        |= $title
-        |
-        |""".stripMargin + content.asciiDoc(0)
+case class AsciiDocResult(asciiDoc: String, testResults: Seq[(String, Option[Exception])])
+
+case class Document(title: String, id: String, initQueries: Seq[String], content: Content) {
+  def asciiDoc: AsciiDocResult  = {
+    val apa =
+      s"""[[$id]]
+         |= $title
+         |
+         |""".stripMargin + content.asciiDoc(0)
+
+    AsciiDocResult(apa, Seq.empty)
+  }
 }
 
 sealed trait Content {
@@ -134,7 +140,16 @@ case class GraphImage(s: ImageType) extends Content with NoTests {
 case class Query(queryText: String, assertions: QueryAssertions, content: Content) extends Content {
   override def tests: Seq[(String, QueryAssertions)] = Seq(queryText -> assertions)
 
-  override def asciiDoc(level: Int) = ???
+  override def asciiDoc(level: Int) = {
+    val inner = Prettifier(queryText)
+   s"""[source,cypher]
+      |.Query
+      |----
+      |$inner
+      |----
+      |
+      |""".stripMargin
+    }
 }
 
 case class Section(heading: String, content: Content) extends Content {
@@ -153,6 +168,8 @@ case class ResultAssertions(f: InternalExecutionResult => Unit) extends QueryAss
 case class ResultAndDbAssertions(f: (InternalExecutionResult, GraphDatabaseService) => Unit) extends QueryAssertions
 
 case object NoAssertions extends QueryAssertions
+
+case class ExpectedException(e: Exception) extends QueryAssertions
 
 case object QueryResultTable extends Content with NoTests {
   override def asciiDoc(level: Int) = ???
