@@ -35,7 +35,7 @@ metrics.ganglia.interval=<how often to send data, defaults to 3s>
 metrics.prefix=<Neo4j instance name, e.g. wwwneo1>
 ```
 
-[[metrics-ganglia]]
+[[metrics-csv]]
 == Export to CSV Configuration ==
 
 For storing metrics in local CSV files add the following settings to neo4j.properties:
