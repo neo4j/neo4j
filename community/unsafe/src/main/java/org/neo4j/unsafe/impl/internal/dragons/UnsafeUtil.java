@@ -740,6 +740,14 @@ public final class UnsafeUtil
     }
 
     /**
+     * Copy the given number of bytes from the source address to the destination address.
+     */
+    public static void copyMemory( long srcAddress, long destAddress, long bytes )
+    {
+        unsafe.copyMemory( srcAddress, destAddress, bytes );
+    }
+
+    /**
      * Create a new DirectByteBuffer that wraps the given address and has the given capacity.
      * <p>
      * The ByteBuffer does NOT create a Cleaner, or otherwise register the pointer for freeing.
