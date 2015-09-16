@@ -149,6 +149,15 @@ public class Neo4jMetrics implements Closeable
                     return pageCacheCounters.countFlushes();
                 }
             } );
+
+            registry.register( name( "neo4j.page_cache", "eviction_exceptions" ), new Gauge<Long>()
+            {
+                @Override
+                public Long getValue()
+                {
+                    return pageCacheCounters.countEvictionExceptions();
+                }
+            } );
         }
 
         // Node/rel count metrics

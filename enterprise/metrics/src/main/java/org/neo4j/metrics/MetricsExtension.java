@@ -41,7 +41,7 @@ public class MetricsExtension extends LifecycleAdapter
 
     private Config config;
 
-    private List<Closeable> services = new ArrayList<Closeable>();
+    private List<Closeable> services = new ArrayList<>();
 
     public MetricsExtension( MetricsKernelExtensionFactory.Dependencies dependencies )
     {
@@ -55,7 +55,8 @@ public class MetricsExtension extends LifecycleAdapter
         // Setup metrics
         final MetricRegistry registry = new MetricRegistry();
 
-        System.out.println( "Creating metrics.." );
+        logger.info( "Initiating metrics.." );
+
         // Setup output
         String prefix = computePrefix();
 
