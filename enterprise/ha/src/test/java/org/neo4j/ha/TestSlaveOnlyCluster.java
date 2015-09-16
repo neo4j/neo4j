@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.fromXml;
@@ -73,7 +73,6 @@ public class TestSlaveOnlyCluster
 
             cluster.await( allSeesAllAsAvailable() );
 
-            clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
             long nodeId = createNodeWithPropertyOn( cluster.getAnySlave(), PROPERTY, VALUE );
 
             try ( Transaction ignore = master.beginTx() )
