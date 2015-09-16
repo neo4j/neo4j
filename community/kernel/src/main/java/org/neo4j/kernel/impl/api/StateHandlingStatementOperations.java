@@ -321,8 +321,7 @@ public class StateHandlingStatementOperations implements
     public long nodeCreate( KernelStatement state )
     {
         long nodeId = storeLayer.reserveNode();
-        state.txState().nodeDoCreate( nodeId );
-        System.out.println("NODE CREATED WITH ID " + nodeId);
+        state.txState().nodeDoCreate(nodeId);
         return nodeId;
     }
 
@@ -382,9 +381,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public PrimitiveLongIterator nodesGetAll( KernelStatement state )
     {
-        System.out.println("GETTING ALL NODES");
-        PrimitiveLongIterator committed = storeLayer.nodesGetAll();
-        return state.txState().augmentNodesGetAll( committed );
+        return state.txState().augmentNodesGetAll( storeLayer.nodesGetAll() );
     }
 
     @Override

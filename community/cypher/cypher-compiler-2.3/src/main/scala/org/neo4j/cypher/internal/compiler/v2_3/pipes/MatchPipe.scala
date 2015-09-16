@@ -46,7 +46,11 @@ case class MatchPipe(source: Pipe,
     }
   }
 
-  override def localEffects = Effects()
+  override def localEffects = {
+    val effects = patternGraph.effects
+    if (isLeaf) effects.asLeafEffects
+    else effects
+  }
 
   override def planDescription =
     source.planDescription.andThen(this.id, matchingContext.builder.name, identifiers)

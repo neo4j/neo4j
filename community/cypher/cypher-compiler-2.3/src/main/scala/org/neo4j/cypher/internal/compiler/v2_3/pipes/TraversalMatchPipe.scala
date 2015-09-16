@@ -57,7 +57,7 @@ case class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Tr
     val matcherEffects =
       if (trail.typ.isEmpty) Effects(ReadsRelationshipBoundNodes, ReadsAllRelationships)
       else trail.typ.foldLeft(Effects(ReadsRelationshipBoundNodes)) { (effects, typ) =>
-        effects ++ Effects(ReadsRelationshipsWithType(typ))
+        effects ++ Effects(ReadsRelationshipsWithTypes(typ))
       }
     // Add effects from predicates
     val allEffects = trail.predicates.flatten.foldLeft(matcherEffects)(_ ++ _.effects(symbols))

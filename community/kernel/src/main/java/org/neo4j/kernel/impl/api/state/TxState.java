@@ -1086,7 +1086,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public ReadableDiffSets<Long> addedAndRemovedNodes()
     {
-        System.out.println("CREATES DIFFSET OF TXSTATE NODES");
         return ReadableDiffSets.Empty.ifNull( nodes );
     }
 
@@ -1640,9 +1639,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed )
     {
-        ReadableDiffSets<Long> addAndRemoved = addedAndRemovedNodes();
-        PrimitiveLongIterator augmented = addAndRemoved.augment( committed );
-        return augmented;
+        return addedAndRemovedNodes().augment( committed );
     }
 
     @Override

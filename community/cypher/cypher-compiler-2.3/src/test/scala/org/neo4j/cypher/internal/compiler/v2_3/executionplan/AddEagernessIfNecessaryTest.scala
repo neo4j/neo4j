@@ -145,7 +145,7 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
       .to(Effects(CreatesNodesWithLabels("foo")))
       .doesNotIntroduceEagerness()
   }
-  
+
   test("READS ALL NODES in leaf -> WRITES LABEL needs eagerness") {
     testThatGoingFrom(Effects(ReadsAllNodes))
       .to(Effects(CreatesNodesWithLabels("foo")))
@@ -195,7 +195,7 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
 
     result should equal(eagerD)
   }
-  
+
   test("NONE -> READS ALL -> READS ALL -> WRITE NODES -> NONE needs eagerness") {
     val a = FakePipeWithSources("a", List.empty, Effects())
     val b = FakePipeWithSources("b", List(a), AllReadEffects)

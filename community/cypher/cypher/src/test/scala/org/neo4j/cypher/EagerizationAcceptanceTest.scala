@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.graphdb.Node
 import org.neo4j.io.fs.FileUtils
 import org.scalatest.prop.TableDrivenPropertyChecks
 
@@ -60,6 +61,8 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
   }
 
   ignore("should not introduce eagerness between DELETE and MERGE for nodes when deleting identifier not bound for same label") {
+    // TODO: Delete must know what label(s) on nodes it deletes to be able to solve this
+
     createLabeledNode("B")
     createLabeledNode("B")
     createLabeledNode("C")
@@ -127,7 +130,14 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertStats(execute(query), relationshipsDeleted = 2, relationshipsCreated = 1)
   }
 
-  test("should not introduce eagerness between DELETE and MERGE for relationships when deleting identifier not bound for same label") {
+  ignore("should not introduce eagerness between DELETE and MERGE for relationships when deleting identifier not bound for same type") {
+    // TODO: Delete must know what type(s) of relationship it deletes to be able to solve this
+    val a = createNode()
+    val b = createNode()
+    relate(a, b, "T1")
+    relate(a, b, "T1")
+    relate(a, b, "T2")
+    relate(a, b, "T2")
     val query =
       """
         |MATCH (a)-[t:T1]->(b)
@@ -137,6 +147,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
         |RETURN t2
       """.stripMargin
 
+    assertStats(execute(query), relationshipsDeleted = 2)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -498,12 +509,19 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 1)
   }
 
-  test("single match followed by write does not need eager") {
-//    val query = "MATCH n WHERE NOT(n.prop1 = 42) SET n.prop1 = 5"
-//    val query = "MATCH a,(b {id: 0}) SET a.id = 0" // NEEDS EAGER
-//    val query = "MATCH a,(b {id: 0}) SET b.id = 1" // NEEDS EAGER
-//    val query = "MATCH (b {id: 0}) SET b.id = 1" // NEEDS NOT EAGER
-//    assertNumberOfEagerness(query, 1)
+  test("match property on right-side followed by property write on left-side match needs eager") {
+    val query = "MATCH a,(b {id: 0}) SET a.id = 0"
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("match property on right-side followed by property write on right-side match needs eager") {
+    val query = "MATCH a,(b {id: 0}) SET b.id = 1"
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("match property on left-side followed by property write does not need eager") {
+    val query = "MATCH (b {id: 0}) SET b.id = 1"
+    assertNumberOfEagerness(query, 0)
   }
 
   test("matching property using RegEx and writing should be eager") {
@@ -664,108 +682,98 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query,  0)
   }
 
-//  test("foo") {
-//    createLabeledNode("Label")
-//    createLabeledNode("Label")
-//    createLabeledNode("Label")
-//    val query = "match (:Label) create (:Label)"
-//
-//    //    println(graph.execute("explain " + query).getExecutionPlanDescription)
-//
-//    println(graph.execute(query).resultAsString())
-//  }
-//
-//  test("foo2") {
-//    createNode()
-//    val query = "match () create ()"
-//
-//    //    println(graph.execute("explain " + query).getExecutionPlanDescription)
-//
-//    println(graph.execute(query).resultAsString())
-//  }
-//
-//  test("foo32") {
-//    import java.io.File
-//
-//    import org.neo4j.graphdb.factory.GraphDatabaseFactory
-//    val dir: String = "/Users/mats/tempstuff/eager.db/"
-//    FileUtils.deleteRecursively(new File(dir))
-//    val db = new GraphDatabaseFactory().newEmbeddedDatabase(dir)
-//
-//    val engine = new ExecutionEngine(db)
-//
-//    engine.execute("create ()")
-//    engine.execute("create ()")
-//    engine.execute("create ()")
-//
-//    val result = engine.execute("match () create ()")
-//
-//    println(result.executionPlanDescription())
-//    println(result.dumpToString())
-//  }
-//
-//  test("foo3") {
-//    import java.io.File
-//
-//    import org.neo4j.graphdb.factory.GraphDatabaseFactory
-//    val dir: String = "/Users/mats/tempstuff/eager.db/"
-//    FileUtils.deleteRecursively(new File(dir))
-//    val db = new GraphDatabaseFactory().newEmbeddedDatabase(dir)
-//
-//    val engine = new ExecutionEngine(db)
-//
-//    engine.execute("create ()")
-//    engine.execute("create ()")
-//
-//    val result = engine.execute("match () create () WITH * match () create ()")
-//
-//    println(result.executionPlanDescription())
-//    println(result.dumpToString())
-//  }
-//
-//  test("foo6") {
-//    import java.io.File
-//
-//    import org.neo4j.graphdb.factory.GraphDatabaseFactory
-//    import org.neo4j.io.fs.FileUtils
-//    val dir: String = "/Users/mats/tempstuff/eager.db/"
-//    FileUtils.deleteRecursively(new File(dir))
-//    val db = new GraphDatabaseFactory().newEmbeddedDatabase(dir)
-//
-////    db.execute("create ()")
-////    db.execute("create ()")
-////    db.execute("create ()")
-//
-//    val tx = db.beginTx()
-//    db.execute("create ()")
-//    db.execute("create ()")
-//    val result = db.execute("profile match (n) return n")
-//    println(result.resultAsString())
-//    println(result.getExecutionPlanDescription)
-//
-//    tx.success()
-//    tx.close()
-//
-//  }
-//
-//  test("foo5") {
-//    import java.io.File
-//
-//    import org.neo4j.graphdb.factory.GraphDatabaseFactory
-//    import org.neo4j.io.fs.FileUtils
-//    val dir: String = "/Users/mats/tempstuff/eager.db/"
-//    FileUtils.deleteRecursively(new File(dir))
-//    val db = new GraphDatabaseFactory().newEmbeddedDatabase(dir)
-//
-//    val tx = db.beginTx()
-//    val result = db.execute("profile create () WITH * create () WITH * match (n) return n")
-//    println(result.resultAsString())
-//    println(result.getExecutionPlanDescription)
-//
-//    tx.success()
-//    tx.close()
-//
-//  }
+  test("should not introduce an eager pipe between two node reads and a relationships create") {
+    createNode()
+    createNode()
+    val query = "MATCH (a), (b) CREATE (a)-[:TYPE]->(b)"
+
+    assertNumberOfEagerness(query, 0)
+    assertStats(execute(query), relationshipsCreated = 4)
+  }
+
+  test("should not introduce an eager pipe between two node reads and a relationships create when there is sorting between the two") {
+    createNode()
+    createNode()
+    val query = "MATCH (a), (b) WITH a, b ORDER BY id(a) CREATE (a)-[:TYPE]->(b)"
+
+    assertNumberOfEagerness(query, 0)
+    assertStats(execute(query), relationshipsCreated = 4)
+  }
+
+  test("should not introduce an eager pipe between a leaf node read and a relationship + node create") {
+    createNode()
+    createNode()
+    val query = "MATCH (a) CREATE (a)-[:TYPE]->()"
+
+    assertNumberOfEagerness(query, 0)
+    assertStats(execute(query), nodesCreated = 2, relationshipsCreated = 2)
+  }
+
+  test("should introduce an eager pipe between a non-leaf node read and a relationship + node create") {
+    createNode()
+    createNode()
+    val query = "MATCH (), (a) CREATE (a)-[:TYPE]->()"
+
+    assertNumberOfEagerness(query, 1)
+    assertStats(execute(query), nodesCreated = 4, relationshipsCreated = 4)
+  }
+
+  test("should not introduce an eager pipe between a leaf relationship read and a relationship create") {
+    relate(createNode(), createNode(), "TYPE")
+    relate(createNode(), createNode(), "TYPE")
+    val query = "MATCH (a)-[:TYPE]->(b) CREATE (a)-[:TYPE]->(b)"
+
+    assertNumberOfEagerness(query, 0)
+    assertStats(execute(query), relationshipsCreated = 2)
+  }
+
+  test("should introduce an eager pipe between a non-leaf relationship read, rel uniqueness, and a relationship create") {
+    relate(createNode(), createNode(), "TYPE")
+    relate(createNode(), createNode(), "TYPE")
+    val query = "MATCH ()-[:TYPE]->(), (a)-[:TYPE]->(b) CREATE (a)-[:TYPE]->(b)"
+
+    assertNumberOfEagerness(query, 1)
+    assertStats(execute(query), relationshipsCreated = 2)
+  }
+
+  test("should introduce an eager pipe between a non-leaf relationship read and a relationship create") {
+    relate(createLabeledNode("LabelOne"), createLabeledNode("LabelTwo"), "TYPE")
+    relate(createLabeledNode("LabelOne"), createLabeledNode("LabelTwo"), "TYPE")
+    val query = "MATCH ()-[:TYPE]->() MATCH (a:LabelOne)-[:TYPE]->(b:LabelTwo) CREATE (a)-[:TYPE]->(b)"
+
+    assertNumberOfEagerness(query, 1)
+    assertStats(execute(query), relationshipsCreated = 4)
+  }
+
+  ignore("should not introduce an eager pipe between a non-leaf relationship read and a relationship create on different nodes") {
+    // TODO: ExecuteUpdateCommandsPipe could interpret that it creates only rel-bound nodes in this case
+    relate(createLabeledNode("LabelOne"), createLabeledNode("LabelTwo"), "TYPE")
+    relate(createLabeledNode("LabelOne"), createLabeledNode("LabelTwo"), "TYPE")
+    val query = "MATCH ()-[:TYPE]->() MATCH (a:LabelOne)-[:TYPE]->(b:LabelTwo) CREATE ()-[:TYPE]->()"
+
+    assertStats(execute(query), relationshipsCreated = 4, nodesCreated = 8)
+    assertNumberOfEagerness(query, 0)
+  }
+
+  ignore("should not introduce eagerness for a non-leaf match on simple pattern and create single node") {
+    // TODO: SimplePatternMatcher uses an AllNodes item in a NodeStartPipe, losing us information
+    // about the match actually being on relationship-bound nodes.
+    relate(createNode(), createNode())
+    relate(createNode(), createNode())
+    val query = "MATCH ()-->() MATCH ()-->() CREATE ()"
+
+    assertStats(execute(query), nodesCreated = 4)
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("should not introduce eagerness for match - create on different relationship types") {
+    relate(createNode(), createNode(), "T1")
+    relate(createNode(), createNode(), "T1")
+    val query = "MATCH ()-[:T1]->() CREATE ()-[:T2]->()"
+
+    assertStats(execute(query), nodesCreated = 4, relationshipsCreated = 2)
+    assertNumberOfEagerness(query, 0)
+  }
 
   private def assertNumberOfEagerness(query: String, expectedEagerCount: Int) {
     val q = if (query.contains("EXPLAIN")) query else "EXPLAIN " + query

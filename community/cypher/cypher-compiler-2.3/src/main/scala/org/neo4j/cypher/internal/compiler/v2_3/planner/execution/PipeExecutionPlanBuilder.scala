@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.EntityProducerFactory
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{AggregationExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{True, _}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.prepare.KeyTokenResolver
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{PipeInfo, PlanFingerprint}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsAllNodes, PipeInfo, PlanFingerprint}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{LazyTypes, _}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics
@@ -212,7 +212,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         case LegacyIndexSeek(id, hint: NodeStartItem, _) =>
           val source = new SingleRowPipe()
           val ep = entityProducerFactory.nodeStartItems((planContext, StatementConverters.StartItemConverter(hint).asCommandStartItem))
-          NodeStartPipe(source, id.name, ep)()
+          NodeStartPipe(source, id.name, ep, Effects(ReadsAllNodes))()
 
         case ProduceResult(columns, lhs) =>
           val source = buildPipe(lhs)

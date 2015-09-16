@@ -102,15 +102,4 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
     // THEN
     result should equal(false)
   }
-
-  test("should indicate reading nodes and rels as a side effect") {
-    // GIVEN
-    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, SemanticDirection.OUTGOING, Map.empty)
-
-    // WHEN
-    val expression = PathExpression(Seq(pattern))
-
-    // THEN
-    expression.effects(SymbolTable()) should equal(AllReadEffects)
-  }
 }
