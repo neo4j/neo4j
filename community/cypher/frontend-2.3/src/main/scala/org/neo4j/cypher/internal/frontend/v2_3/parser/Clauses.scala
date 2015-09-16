@@ -33,7 +33,7 @@ trait Clauses extends Parser
   def LoadCSV: Rule1[ast.LoadCSV] = rule("LOAD CSV") {
       keyword("LOAD CSV") ~~
       group(keyword("WITH HEADERS") ~ push(true) | push(false)) ~~
-      keyword("FROM") ~~ (StringLiteral | Parameter) ~~
+      keyword("FROM") ~~ (Expression) ~~
       keyword("AS") ~~ Identifier ~~
       optional(keyword("FIELDTERMINATOR") ~~ StringLiteral) ~~>>
       (ast.LoadCSV(_, _, _, _))
