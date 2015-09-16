@@ -52,6 +52,32 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
       })
   }
 
+  test("counts nodes using count store and projection expression") {
+    // Given
+    withModel(label1 = "Admin",
+
+      // When
+      query = "MATCH (n:User) RETURN count(n) > 0", f = { result =>
+
+        // Then
+        result.columnAs("count(n) > 0").toSet[Boolean] should equal(Set(true))
+
+      })
+  }
+
+  test("counts nodes using count store and projection expression with identifier") {
+    // Given
+    withModel(
+
+      // When
+      query = "MATCH (n) RETURN count(n)/2*5 as someNum", f = { result =>
+
+        // Then
+        result.columnAs("someNum").toSet[Int] should equal(Set(5))
+
+      })
+  }
+
   test("counts relationships with unspecified type using count store") {
     // Given
     withRelationshipsModel(
@@ -222,6 +248,32 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
       })
   }
 
+  test("counts nodes using count store and projection expression considering transaction state") {
+    // Given
+    withModelAndTransaction(label1 = "Admin",
+
+      // When
+      query = "MATCH (n:User) RETURN count(n) > 1", f = { result =>
+
+        // Then
+        result.columnAs("count(n) > 1").toSet[Boolean] should equal(Set(true))
+
+      })
+  }
+
+  test("counts nodes using count store and projection expression with identifier considering transaction state") {
+    // Given
+    withModelAndTransaction(
+
+      // When
+      query = "MATCH (n) RETURN count(n)/3*5 as someNum", f = { result =>
+
+        // Then
+        result.columnAs("someNum").toSet[Int] should equal(Set(5))
+
+      })
+  }
+
   test("counts relationships using count store considering transaction state") {
     // Given
     withRelationshipsModelAndTransaction(
@@ -248,6 +300,64 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
       })
   }
 
+  test("counts relationships with multiple types using count store considering transaction state") {
+    // Given
+    withRelationshipsModelAndTransaction(type1 = "KNOWS", type2 = "FOLLOWS", type3 = "FRIEND_OF",
+
+      // When
+      query = "MATCH ()-[r:KNOWS|FOLLOWS]->() RETURN count(r)", f = { result =>
+
+        // Then
+        result.columnAs("count(r)").toSet[Int] should equal(Set(2))
+
+      })
+  }
+
+  test("counts relationships using count store and projection with expression considering transaction state") {
+    // Given
+    withRelationshipsModelAndTransaction(
+
+      // When
+      query = "MATCH ()-[r]->() RETURN count(r) > 2", f = { result =>
+
+        // Then
+        result.columnAs("count(r) > 2").toSet[Boolean] should equal(Set(true))
+
+      })
+  }
+
+  test("counts relationships using count store and projection with expression and identifier considering transaction state") {
+    // Given
+    withRelationshipsModelAndTransaction(
+
+      // When
+      query = "MATCH ()-[r]->() RETURN count(r)/3*5 as someNum", f = { result =>
+
+        // Then
+        result.columnAs("someNum").toSet[Int] should equal(Set(5))
+
+      })
+  }
+
+  test("counts relationships using count store and horizon with further query") {
+    // Given
+    withRelationshipsModelAndTransaction(label1 = "User", label2 = "Admin", label3 = "Person",
+
+      // When
+      query =
+        """
+          |MATCH (:User)-[r:KNOWS]->() WITH count(r) as userKnows
+          |MATCH (n)-[r:KNOWS]->() WITH count(r) as otherKnows, n, userKnows WHERE otherKnows <> userKnows
+          |RETURN userKnows, otherKnows
+        """.stripMargin, f = { result =>
+
+        // Then
+        result.toList should equal(List(Map("userKnows" -> 2, "otherKnows" -> 1)))
+
+      })
+  }
+
+//  MATCH (n:X)-[r:Y]->() WITH count(r) as rcount MATCH (n)-[r:Y]->() WHERE count(r) = rcount RETURN rcount, labels(n)
   test("counts relationships with type using count store considering transaction state and multiple types in model") {
     // Given
     withRelationshipsModelAndTransaction(type1 = "KNOWS", type2 = "FOLLOWS", type3 = "KNOWS",

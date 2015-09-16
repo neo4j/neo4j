@@ -24,29 +24,30 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.{AggregatingQueryProjecti
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, PlanTransformer}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{HasLabels, FunctionName, FunctionInvocation, Identifier}
+import org.neo4j.cypher.internal.frontend.v3_0.ast._
 
 object considerAggregationByCountStore extends PlanTransformer[PlannerQuery] {
 
   def apply(plan: LogicalPlan, query: PlannerQuery)(implicit context: LogicalPlanningContext) = query.horizon match {
     case AggregatingQueryProjection(groupingKeys, aggregatingExpressions, shuffle)
-      if (groupingKeys.isEmpty && aggregatingExpressions.size == 1) => aggregatingExpressions.head._2 match {
-      case FunctionInvocation(FunctionName("count"), false, Vector(Identifier(countName))) => plan match {
+      if (groupingKeys.isEmpty && aggregatingExpressions.size == 1) => aggregatingExpressions.head match {
+      case (aggregationIdent, FunctionInvocation(FunctionName("count"), false, Vector(Identifier(countName)))) => plan match {
         case a: Aggregation => a.left match {
           // MATCH (n) RETURN count(n)
           case AllNodesScan(nodeId, argumentIds) if (countName == nodeId.name) =>
-            context.logicalPlanProducer.planCountStoreNodeAggregation(plan, nodeId, None, argumentIds)
+            context.logicalPlanProducer.planCountStoreNodeAggregation(plan, IdName(aggregationIdent), None, argumentIds)
           // MATCH ()-[r]->(), MATCH ()-[r:X]->(), MATCH ()-[r:X|Y]->()
           case Expand(AllNodesScan(nodeId, argumentIds), from, direction, types, to, relId, ExpandAll) if (countName == relId.name) =>
-            context.logicalPlanProducer.planCountStoreRelationshipAggregation(plan, relId, None, types, None, argumentIds)
+            context.logicalPlanProducer.planCountStoreRelationshipAggregation(plan, IdName(aggregationIdent), None, types, None, argumentIds)
           // MATCH (:A)-[r]->(), MATCH (:A)<-[r]-()
           case Expand(NodeByLabelScan(nodeId, label, argumentIds), from, direction, types, to, relId, ExpandAll) if (countName == relId.name) => direction match {
             // MATCH (:A)-[r]->()
             case OUTGOING =>
-              context.logicalPlanProducer.planCountStoreRelationshipAggregation(plan, relId, Some(label), types, None, argumentIds)
+              context.logicalPlanProducer.planCountStoreRelationshipAggregation(plan, IdName(aggregationIdent), Some(label), types, None, argumentIds)
             // MATCH (:A)<-[r]-()
+              // TODO: Consider BOTH!!!
             case _ =>
-              context.logicalPlanProducer.planCountStoreRelationshipAggregation(plan, relId, None, types, Some(label), argumentIds)
+              context.logicalPlanProducer.planCountStoreRelationshipAggregation(plan, IdName(aggregationIdent), None, types, Some(label), argumentIds)
           }
           // MATCH (:A)-[r]->(), MATCH (:A)<-[r]-()
           case Selection(predicates, Expand(AllNodesScan(nodeId, argumentIds), from, direction, types, to, relId, ExpandAll))
@@ -55,17 +56,18 @@ object considerAggregationByCountStore extends PlanTransformer[PlannerQuery] {
               case HasLabels(Identifier(nodeIdentifier), labels) if(labels.length == 1) => direction match {
                 // MATCH (:A)<-[r]-()
                 case OUTGOING =>
-                  context.logicalPlanProducer.planCountStoreRelationshipAggregation(plan, relId, None, types, Some(LazyLabel(labels.head)(context.semanticTable)), argumentIds)
+                  context.logicalPlanProducer.planCountStoreRelationshipAggregation(plan, IdName(aggregationIdent), None, types, Some(LazyLabel(labels.head)(context.semanticTable)), argumentIds)
                 // MATCH (:A)-[r]->()
+                // TODO: Consider BOTH!!!
                 case _ =>
-                  context.logicalPlanProducer.planCountStoreRelationshipAggregation(plan, relId, Some(LazyLabel(labels.head)(context.semanticTable)), types, None, argumentIds)
+                  context.logicalPlanProducer.planCountStoreRelationshipAggregation(plan, IdName(aggregationIdent), Some(LazyLabel(labels.head)(context.semanticTable)), types, None, argumentIds)
               }
               case _ => plan
           }
           // MATCH (n:A) RETURN count(n)
             // TODO: This query could be planned with Selection(HasLabels,AllNodeScan), so we should consider this too!
           case NodeByLabelScan(nodeId, label, argumentIds) if (countName == nodeId.name) =>
-            context.logicalPlanProducer.planCountStoreNodeAggregation(plan, nodeId, Some(label), argumentIds)
+            context.logicalPlanProducer.planCountStoreNodeAggregation(plan, IdName(aggregationIdent), Some(label), argumentIds)
           case _ => plan
         }
         case _ => plan

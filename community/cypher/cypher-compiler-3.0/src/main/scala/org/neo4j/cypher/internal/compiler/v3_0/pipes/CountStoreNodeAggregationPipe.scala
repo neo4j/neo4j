@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{CountNodesExpression, CountRelationshipsExpression}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.NameId
@@ -39,12 +40,13 @@ case class CountStoreNodeAggregationPipe(ident: String, label: Option[LazyLabel]
       case _ => NameId.WILDCARD
     }
     val count = state.query.nodeCountByCountStore(labelId)
-    Seq(baseContext.newWith1(s"count($ident)", count)).iterator
+    Seq(baseContext.newWith1(ident, count)).iterator
   }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def planDescriptionWithoutCardinality = PlanDescriptionImpl(this.id, "CountStoreNodeAggregation", NoChildren, Seq(), identifiers)
+  def planDescriptionWithoutCardinality = PlanDescriptionImpl(
+    this.id, "CountStoreNodeAggregation", NoChildren, Seq(CountNodesExpression(ident, label)), identifiers)
 
   def symbols = new SymbolTable(Map(ident -> CTInteger))
 

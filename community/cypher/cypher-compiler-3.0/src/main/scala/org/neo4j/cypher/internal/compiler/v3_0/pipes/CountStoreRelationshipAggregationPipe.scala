@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{CountRelationshipsExpression, ExpandExpression}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.NameId
@@ -34,16 +35,14 @@ case class CountStoreRelationshipAggregationPipe(ident: String, startLabel: Opti
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
-    val labelIds: Seq[Int] = Seq(startLabel, endLabel).map { labelOption =>
-      labelOption match {
-        case Some(label) =>
-          val labelId: Int = label.id(state.query) match {
-            case Some(id) => id
-            case _ => throw new IllegalArgumentException("Cannot find id for label: " + label)
-          }
-          labelId
-        case _ => NameId.WILDCARD
-      }
+    val labelIds: Seq[Int] = Seq(startLabel, endLabel).map {
+      case Some(label) =>
+        val labelId: Int = label.id(state.query) match {
+          case Some(x) => x
+          case _ => throw new IllegalArgumentException("Cannot find id for label: " + label)
+        }
+        labelId
+      case _ => NameId.WILDCARD
     }
     val count = if (typeNames.isEmpty) {
       state.query.relationshipCountByCountStore(labelIds(0), NameId.WILDCARD, labelIds(1))
@@ -53,12 +52,15 @@ case class CountStoreRelationshipAggregationPipe(ident: String, startLabel: Opti
         count + state.query.relationshipCountByCountStore(labelIds(0), typeId, labelIds(1))
       }
     }
-    Seq(baseContext.newWith1(s"count($ident)", count)).iterator
+    Seq(baseContext.newWith1(ident, count)).iterator
   }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def planDescriptionWithoutCardinality = PlanDescriptionImpl(this.id, "CountStoreRelationshipAggregation", NoChildren, Seq(), identifiers)
+  def planDescriptionWithoutCardinality = PlanDescriptionImpl(
+    this.id, "CountStoreRelationshipAggregation", NoChildren,
+    Seq(CountRelationshipsExpression(ident: String, startLabel: Option[LazyLabel],
+      typeNames: Seq[RelTypeName], endLabel: Option[LazyLabel])), identifiers)
 
   def symbols = new SymbolTable(Map(ident -> CTInteger))
 

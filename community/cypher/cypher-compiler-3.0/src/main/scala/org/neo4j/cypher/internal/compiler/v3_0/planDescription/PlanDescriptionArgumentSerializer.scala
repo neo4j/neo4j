@@ -61,6 +61,14 @@ object PlanDescriptionArgumentSerializer {
         val types = typeNames.mkString(":", "|:", "")
         val relInfo = if (!varLength && typeNames.isEmpty && rel.unnamed) "" else s"[$rel$types$asterisk]"
         s"($from)$left$relInfo$right($to)"
+      case CountNodesExpression(ident, label) =>
+        val node = label.map(l => ":" + l.name).mkString
+        s"count( ($node) )" + (if (ident.startsWith(" ")) "" else s" AS $ident")
+      case CountRelationshipsExpression(ident, startLabel, typeNames, endLabel) =>
+        val start = startLabel.map(l => ":" + l.name).mkString
+        val end = endLabel.map(l => ":" + l.name).mkString
+        val types = typeNames.map(t => t.name).mkString(":", "|:", "")
+        s"count( ($start)-[$types]-($end) )" + (if (ident.startsWith(" ")) "" else s" AS $ident")
 
       // Do not add a fallthrough here - we rely on exhaustive checking to ensure
       // that we don't forget to add new types of arguments here
