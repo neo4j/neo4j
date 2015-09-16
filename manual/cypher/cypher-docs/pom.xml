@@ -100,13 +100,11 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher</artifactId>
       <type>test-jar</type>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-compiler-2.3</artifactId>
       <version>${project.version}</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>

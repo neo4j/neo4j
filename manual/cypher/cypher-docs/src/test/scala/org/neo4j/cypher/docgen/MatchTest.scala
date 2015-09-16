@@ -23,7 +23,6 @@ import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.junit.Test
 import org.neo4j.graphdb._
-import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 
