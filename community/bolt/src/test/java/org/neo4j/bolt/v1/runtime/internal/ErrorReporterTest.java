@@ -54,5 +54,4 @@ public class ErrorReporterTest
         provider.assertExactly(
                 inLog( "userlog" ).error( CoreMatchers.containsString( error.reference().toString() ) ) );
     }
-
 }
