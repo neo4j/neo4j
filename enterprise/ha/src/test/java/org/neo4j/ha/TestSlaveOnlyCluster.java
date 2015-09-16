@@ -75,7 +75,6 @@ public class TestSlaveOnlyCluster
 
             cluster.await( allSeesAllAsAvailable() );
 
-            clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
             long nodeId = createNodeWithPropertyOn( cluster.getAnySlave(), PROPERTY, VALUE );
 
             try ( Transaction ignore = master.beginTx() )
