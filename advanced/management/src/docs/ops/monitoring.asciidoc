@@ -76,4 +76,9 @@ Once you have access to this information, you can use it to for instance expose 
 
 include::{importdir}/neo4j-ha-docs-jar/ops/jmx.asciidoc[]
 
+:leveloffset: 2
+
+include::{importdir}/neo4j-metrics-docs-jar/ops/metrics.asciidoc[]
+
+:leveloffset: 1
 

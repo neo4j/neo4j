@@ -1,48 +1,51 @@
 [[metrics-extension]]
-Metrics Kernel Extension
-======
+= Metrics Extension
 
-NOTE: The Metrics Kernel extension is only available in the Neo4j Enterprise Edition.
+NOTE: The Metrics extension is only available in the Neo4j Enterprise Edition.
 
 [[metrics-introduction]]
 == Introducing Metrics ==
 
-The +Metrics Kernel extension+ for Neo4j exports Neo4j-specific metrics to Graphite, Ganglia, or CSV files.
+The _Metrics extension_ for Neo4j exports Neo4j-specific metrics to Graphite, Ganglia, or CSV files.
 
 [[metrics-graphite]]
 == Graphite Configuration ==
 
-For Graphite integration add the following settings to neo4j.properties:
+For Graphite integration add the following settings to _neo4j.properties:_
 
-```
+[source,properties]
+----
 metrics.graphite.enabled=true
 metrics.graphite.server=<ip>:2003
 metrics.graphite.interval=<how often to send data, defaults to 3s>
 metrics.prefix=<Neo4j instance name, e.g. wwwneo1>
-```
+----
 
 Start the Neo4j Server and connect to Graphite via a web browser in order to monitor your Neo4j metrics.
 
 [[metrics-ganglia]]
 == Ganglia Configuration ==
 
-For Ganglia integration add the following settings to neo4j.properties:
+For Ganglia integration add the following settings to _neo4j.properties:_
 
-```
+[source,properties]
+----
 metrics.ganglia.enabled=true
 metrics.ganglia.server=<ip>:8469
 metrics.ganglia.interval=<how often to send data, defaults to 3s>
 metrics.prefix=<Neo4j instance name, e.g. wwwneo1>
-```
+----
 
 [[metrics-csv]]
 == Export to CSV Configuration ==
 
-For storing metrics in local CSV files add the following settings to neo4j.properties:
+For storing metrics in local CSV files add the following settings to _neo4j.properties:_
 
-```
+[source,properties]
+----
 metrics.csv.enabled=true
-metrics.csv.path=<file or directory path, defaults to "metrics/" in the store directory)
+metrics.csv.path=<file or directory path, defaults to "metrics/" in the store directory>
 metrics.csv.file=<single/split, if split then each metric gets its own file in given directory>
 metrics.csv.interval=<how often to store data, defaults to 3s>
-```
+----
+
