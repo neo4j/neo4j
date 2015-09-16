@@ -116,6 +116,122 @@ class DocumentTest extends CypherFunSuite {
         |""".stripMargin)
   }
 
+  test("Note with and without heading") {
+    val doc = Document("title", "myId", initQueries = Seq.empty,
+      Note(Paragraph("tip text")) ~
+      Note("custom heading", Paragraph("tip text again"))
+    )
+
+    doc.tests should be(empty)
+    doc.asciiDoc should equal(
+      """[[myId]]
+        |= title
+        |
+        |[NOTE]
+        |====
+        |tip text
+        |
+        |
+        |====
+        |
+        |[NOTE]
+        |.custom heading
+        |====
+        |tip text again
+        |
+        |
+        |====
+        |
+        |""".stripMargin)
+  }
+
+  test("Warning with and without heading") {
+    val doc = Document("title", "myId", initQueries = Seq.empty,
+      Warning(Paragraph("tip text")) ~
+      Warning("custom heading", Paragraph("tip text again"))
+    )
+
+    doc.tests should be(empty)
+    doc.asciiDoc should equal(
+      """[[myId]]
+        |= title
+        |
+        |[WARNING]
+        |====
+        |tip text
+        |
+        |
+        |====
+        |
+        |[WARNING]
+        |.custom heading
+        |====
+        |tip text again
+        |
+        |
+        |====
+        |
+        |""".stripMargin)
+  }
+
+  test("Caution with and without heading") {
+    val doc = Document("title", "myId", initQueries = Seq.empty,
+      Caution(Paragraph("tip text")) ~
+      Caution("custom heading", Paragraph("tip text again"))
+    )
+
+    doc.tests should be(empty)
+    doc.asciiDoc should equal(
+      """[[myId]]
+        |= title
+        |
+        |[CAUTION]
+        |====
+        |tip text
+        |
+        |
+        |====
+        |
+        |[CAUTION]
+        |.custom heading
+        |====
+        |tip text again
+        |
+        |
+        |====
+        |
+        |""".stripMargin)
+  }
+
+  test("Important with and without heading") {
+    val doc = Document("title", "myId", initQueries = Seq.empty,
+      Important(Paragraph("tip text")) ~
+      Important("custom heading", Paragraph("tip text again"))
+    )
+
+    doc.tests should be(empty)
+    doc.asciiDoc should equal(
+      """[[myId]]
+        |= title
+        |
+        |[IMPORTANT]
+        |====
+        |tip text
+        |
+        |
+        |====
+        |
+        |[IMPORTANT]
+        |.custom heading
+        |====
+        |tip text again
+        |
+        |
+        |====
+        |
+        |""".stripMargin)
+  }
+
   test("Document containing a query produces a test") {
     val doc = Document("title", "myId", initQueries = Seq.empty, Query("MATCH n RETURN n", NoAssertions, QueryResultTable))
 

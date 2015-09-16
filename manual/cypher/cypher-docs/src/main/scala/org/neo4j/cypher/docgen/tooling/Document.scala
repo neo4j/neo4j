@@ -71,25 +71,60 @@ case class Paragraph(s: String) extends Content with NoTests {
   override def asciiDoc(level: Int) = s + NewLine + NewLine
 }
 
+trait Admonitions extends Content with NoTests {
+  def innerContent: Content
+  def heading: Option[String]
+  def name: String = this.getClass.getSimpleName.toUpperCase
+
+  override def asciiDoc(level: Int) = {
+    val inner = innerContent.asciiDoc(level)
+    val head = heading.map("." + _ + NewLine).getOrElse("")
+
+    s"[$name]" + NewLine + head +
+      s"""====
+         |$inner
+          |====
+          |
+          |""".
+        stripMargin
+  }
+}
+
 object Tip {
   def apply(s: Content) = new Tip(None, s)
-
   def apply(heading: String, s: Content) = new Tip(Some(heading), s)
 }
 
-case class Tip(heading: Option[String], s: Content) extends Content with NoTests {
-  override def asciiDoc(level: Int) = {
-    val inner = s.asciiDoc(level)
-    val head = heading.map("." + _ + NewLine).getOrElse("")
+case class Tip(heading: Option[String], innerContent: Content) extends Admonitions
 
-    "[TIP]" + NewLine + head +
-    s"""====
-       |$inner
-       |====
-       |
-       |""".
-      stripMargin
-  }
+object Warning {
+  def apply(s: Content) = new Warning(None, s)
+  def apply(heading: String, s: Content) = new Warning(Some(heading), s)
+}
+
+case class Warning(heading: Option[String], innerContent: Content) extends Admonitions
+
+object Note {
+  def apply(s: Content) = new Note(None, s)
+  def apply(heading: String, s: Content) = new Note(Some(heading), s)
+}
+
+case class Note(heading: Option[String], innerContent: Content) extends Admonitions
+
+object Caution {
+  def apply(s: Content) = new Caution(None, s)
+  def apply(heading: String, s: Content) = new Caution(Some(heading), s)
+}
+
+case class Caution(heading: Option[String], innerContent: Content) extends Admonitions
+
+object Important {
+  def apply(s: Content) = new Important(None, s)
+  def apply(heading: String, s: Content) = new Important(Some(heading), s)
+}
+
+case class Important(heading: Option[String], innerContent: Content) extends Admonitions {
+  override def name = "IMPORTANT"
 }
 
 case class GraphImage(s: ImageType) extends Content with NoTests {
