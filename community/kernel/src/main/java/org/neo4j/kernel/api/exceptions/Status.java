@@ -400,7 +400,7 @@ public interface Status
     public enum Classification
     {
         /** The Client sent a bad request - changing the request might yield a successful outcome. */
-        ClientError( TransactionEffect.NONE,
+        ClientError( TransactionEffect.ROLLBACK,
                 "The Client sent a bad request - changing the request might yield a successful outcome." ),
         /** The database failed to service the request. */
         DatabaseError( TransactionEffect.ROLLBACK,
