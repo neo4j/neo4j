@@ -129,4 +129,3 @@ case class LoadCSVPipe(source: Pipe,
     copy(source = head)
   }
 }
-

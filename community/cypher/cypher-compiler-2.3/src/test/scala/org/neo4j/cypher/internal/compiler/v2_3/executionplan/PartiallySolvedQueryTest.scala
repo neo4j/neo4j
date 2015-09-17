@@ -125,5 +125,5 @@ class PartiallySolvedQueryTest extends CypherFunSuite {
 
   private def mergeNode(name: String) = MergeNodeAction(name, Map.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty, None)
 
-  private def mergePattern(pattern: Pattern) = MergePatternAction(Seq(pattern), Seq.empty, Seq.empty)
+  private def mergePattern(pattern: Pattern) = MergePatternAction(Seq(pattern), Seq.empty, Seq.empty, Seq.empty)
 }

@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.helpers.ThisShouldNotHappenError
 
-case class PropertySetAction(prop: Property, e: Expression)
-  extends UpdateAction with GraphElementPropertyFunctions {
+case class PropertySetAction(prop: Property, valueExpression: Expression)
+  extends SetAction {
 
   val Property(mapExpr, propertyKey) = prop
 
@@ -47,7 +47,7 @@ case class PropertySetAction(prop: Property, e: Expression)
         case _ => throw new ThisShouldNotHappenError("Stefan", "This should be a node or a relationship")
       }
 
-      makeValueNeoSafe(e(context)) match {
+      makeValueNeoSafe(valueExpression(context)) match {
         case null => propertyKey.getOptId(qtx).foreach(ops.removeProperty(id, _))
         case value => ops.setProperty(id, propertyKey.getOrCreateId(qtx), value)
       }
@@ -58,9 +58,9 @@ case class PropertySetAction(prop: Property, e: Expression)
 
   def identifiers = Nil
 
-  def children = Seq(prop, e)
+  def children = Seq(prop, valueExpression)
 
-  def rewrite(f: (Expression) => Expression): UpdateAction = PropertySetAction(prop, e.rewrite(f))
+  def rewrite(f: (Expression) => Expression): PropertySetAction = PropertySetAction(prop, valueExpression.rewrite(f))
 
-  def symbolTableDependencies = prop.symbolTableDependencies ++ e.symbolTableDependencies
+  def symbolTableDependencies = prop.symbolTableDependencies ++ valueExpression.symbolTableDependencies
 }

@@ -17,21 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3
+package org.neo4j.cypher.internal.compiler.v2_3.mutation
 
-import org.neo4j.cypher.internal.compiler.v2_3.mutation.SetAction
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 
-case class OnAction(verb: Action, set: Seq[SetAction])
-
-trait Action
-
-object On {
-
-  case object Create extends Action
-
-  case object Match extends Action
-
+trait SetAction extends UpdateAction with GraphElementPropertyFunctions {
+  def rewrite(f: (Expression) => Expression): SetAction
 }
-
-
-

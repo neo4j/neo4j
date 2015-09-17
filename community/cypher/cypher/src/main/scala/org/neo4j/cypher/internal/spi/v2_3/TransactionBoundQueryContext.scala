@@ -115,6 +115,11 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def createRelationship(start: Node, end: Node, relType: String) =
     start.createRelationshipTo(end, withName(relType))
 
+  def createRelationship(start: Long, end: Long, relType: Int) = {
+    val relId = statement.dataWriteOperations().relationshipCreate(relType, start, end)
+    relationshipOps.getById(relId)
+  }
+
   def getOrCreateRelTypeId(relTypeName: String): Int =
     statement.tokenWriteOperations().relationshipTypeGetOrCreateForName(relTypeName)
 

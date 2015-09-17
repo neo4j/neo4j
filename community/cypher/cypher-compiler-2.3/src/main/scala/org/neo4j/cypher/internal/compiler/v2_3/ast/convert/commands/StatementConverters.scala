@@ -24,8 +24,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionCo
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{And, Predicate, True}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => commandexpressions, values => commandvalues, _}
+import org.neo4j.cypher.internal.compiler.v2_3.mutation.SetAction
 import org.neo4j.cypher.internal.compiler.v2_3.{InternalNotificationLogger, On, OnAction, commands, mutation}
-import org.neo4j.cypher.internal.frontend.v2_3.ast
+import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, ast}
+import org.neo4j.cypher.internal.frontend.v2_3.ast.SetClause
 import org.neo4j.cypher.internal.frontend.v2_3.notification.JoinHintUnsupportedNotification
 import org.neo4j.helpers.ThisShouldNotHappenError
 
@@ -247,13 +249,29 @@ object StatementConverters {
       builder.updates(updates: _*).namedPaths(namedPaths: _*)
     }
 
+    private def update(action: SetClause): Seq[SetAction] = action.items.map {
+      case setItem: ast.SetPropertyItem =>
+        mutation
+          .PropertySetAction(toCommandProperty(setItem.property), toCommandExpression(setItem.expression))
+      case setItem: ast.SetExactPropertiesFromMapItem =>
+        mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name),
+          toCommandExpression(setItem.expression), removeOtherProps = true)
+      case setItem: ast.SetIncludingPropertiesFromMapItem =>
+        mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name),
+          toCommandExpression(setItem.expression), removeOtherProps = false)
+      case setItem: ast.SetLabelItem =>
+        commands.LabelAction(toCommandExpression(setItem.expression), commands.LabelSetOp, setItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
+
+      case e => throw new InternalException(s"MERGE cannot contain ${e.getClass.getSimpleName}")
+    }
+
     def toCommand = {
       val toAbstractPatterns = clause.pattern.asAbstractPatterns
       val map = clause.actions.map {
-        case ast.OnCreate(action) =>
-          OnAction(On.Create, action.updateActions)
+        case ast.OnCreate(action: SetClause) =>
+          OnAction(On.Create, update(action))
         case ast.OnMatch(action) =>
-          OnAction(On.Match, action.updateActions)
+          OnAction(On.Match, update(action))
       }
       val legacyPatterns = clause.pattern.asLegacyPatterns.filterNot(_.isInstanceOf[commands.SingleNode])
       val creates = clause.pattern.asLegacyCreates.filterNot(_.isInstanceOf[mutation.CreateNode])
@@ -289,7 +307,7 @@ object StatementConverters {
       builder.updates(updates: _*)
     }
 
-    def updateActions: Seq[mutation.UpdateAction] = clause match {
+    def updateActions(): Seq[mutation.UpdateAction] = clause match {
       case c: ast.Merge =>
         c.toCommand.nextStep()
       case c: ast.Create =>
@@ -303,9 +321,9 @@ object StatementConverters {
           case setItem: ast.SetLabelItem =>
             commands.LabelAction(toCommandExpression(setItem.expression), commands.LabelSetOp, setItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
           case setItem: ast.SetExactPropertiesFromMapItem =>
-            mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name), toCommandExpression(setItem.expression), true)
+            mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name), toCommandExpression(setItem.expression), removeOtherProps = true)
           case setItem: ast.SetIncludingPropertiesFromMapItem =>
-            mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name), toCommandExpression(setItem.expression), false)
+            mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name), toCommandExpression(setItem.expression), removeOtherProps = false)
         }
       case c: ast.Delete =>
         c.expressions.map(e => mutation.DeleteEntityAction(toCommandExpression(e), c.forced))
@@ -318,7 +336,7 @@ object StatementConverters {
         }
       case c: ast.Foreach =>
         Seq(mutation.ForeachAction(toCommandExpression(c.expression), c.identifier.name, c.updates.flatMap {
-          case update: ast.UpdateClause => update.updateActions
+          case update: ast.UpdateClause => update.updateActions()
           case _                        => throw new ThisShouldNotHappenError("cleishm", "a non-update clause in FOREACH didn't fail semantic check")
         }))
     }

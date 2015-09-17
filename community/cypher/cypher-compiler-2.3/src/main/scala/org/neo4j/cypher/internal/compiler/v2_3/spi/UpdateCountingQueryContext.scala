@@ -78,6 +78,11 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     inner.createRelationship(start, end, relType)
   }
 
+  override def createRelationship(start: Long, end: Long, relType: Int) = {
+    relationshipsCreated.increase()
+    inner.createRelationship(start, end, relType)
+  }
+
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int = {
     val removed = inner.removeLabelsFromNode(node, labelIds)
     labelsRemoved.increase(removed)

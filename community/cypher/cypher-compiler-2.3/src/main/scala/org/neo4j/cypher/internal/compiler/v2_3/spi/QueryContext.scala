@@ -49,6 +49,8 @@ trait QueryContext extends TokenContext {
 
   def createRelationship(start: Node, end: Node, relType: String): Relationship
 
+  def createRelationship(start: Long, end: Long, relType: Int): Relationship
+
   def getOrCreateRelTypeId(relTypeName: String): Int
 
   def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship]

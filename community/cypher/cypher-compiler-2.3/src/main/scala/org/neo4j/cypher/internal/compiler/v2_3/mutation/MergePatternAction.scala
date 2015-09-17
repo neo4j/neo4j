@@ -33,11 +33,12 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class MergePatternAction(patterns: Seq[Pattern],
                               actions: Seq[UpdateAction],
-                              onMatch: Seq[UpdateAction],
+                              onCreate: Seq[SetAction],
+                              onMatch: Seq[SetAction],
                               maybeUpdateActions: Option[Seq[UpdateAction]] = None,
                               maybeMatchPipe: Option[Pipe] = None) extends UpdateAction {
 
-  def children: Seq[AstNode[_]] = patterns ++ actions ++ onMatch
+  def children: Seq[AstNode[_]] = patterns ++ actions ++ onCreate ++ onMatch
 
   def readyToExecute = maybeMatchPipe.nonEmpty && maybeUpdateActions.nonEmpty
 
@@ -63,7 +64,7 @@ case class MergePatternAction(patterns: Seq[Pattern],
   private def matchPipe: Pipe =
     maybeMatchPipe.getOrElse(throw new InternalException("Query not prepared correctly!"))
 
-  private def updateActions: Seq[UpdateAction] =
+  private def updateActions(): Seq[UpdateAction] =
     maybeUpdateActions.getOrElse(throw new InternalException("Query not prepared correctly!"))
 
   private def doMatch(state: QueryState) = matchPipe.createResults(state)
@@ -78,7 +79,7 @@ case class MergePatternAction(patterns: Seq[Pattern],
 
   private def createThePattern(state: QueryState, ctx: ExecutionContext) = {
     // Runs all commands, from left to right, updating the execution context as it passes through
-    val resultingContext = updateActions.foldLeft(ctx) {
+    val resultingContext = updateActions().foldLeft(ctx) {
       case (accumulatedContext, action) => singleElementOrFail(action.exec(accumulatedContext, state))
     }
     Iterator(resultingContext)
@@ -99,6 +100,7 @@ case class MergePatternAction(patterns: Seq[Pattern],
     MergePatternAction(
       patterns = patterns.map(_.rewrite(f)),
       actions = actions.map(_.rewrite(f)),
+      onCreate = onCreate.map(_.rewrite(f)),
       onMatch = onMatch.map(_.rewrite(f)),
       maybeUpdateActions = maybeUpdateActions.map(_.map(_.rewrite(f))),
       maybeMatchPipe = maybeMatchPipe)
@@ -107,6 +109,7 @@ case class MergePatternAction(patterns: Seq[Pattern],
     val dependencies = (
       patterns.flatMap(_.symbolTableDependencies) ++
       actions.flatMap(_.symbolTableDependencies) ++
+      onCreate.flatMap(_.symbolTableDependencies) ++
       onMatch.flatMap(_.symbolTableDependencies)).toSet
 
     val introducedIdentifiers = patterns.flatMap(_.identifiers).toSet
@@ -130,10 +133,11 @@ case class MergePatternAction(patterns: Seq[Pattern],
 
     val allSymbols = updateSymbols(externalSymbols)
     val actionEffects = actions.effects(allSymbols)
+    val onCreateEffects = onCreate.effects(allSymbols)
     val onMatchEffects = onMatch.effects(allSymbols)
-    val updateActionsEffects = updateActions.effects(allSymbols)
+    val updateActionsEffects = updateActions().effects(allSymbols)
 
-    actionEffects | onMatchEffects | updateActionsEffects | effectsFromReading
+    actionEffects | onCreateEffects | onMatchEffects | updateActionsEffects | effectsFromReading
   }
 
   override def updateSymbols(symbol: SymbolTable): SymbolTable = symbol.add(identifiers.toMap)

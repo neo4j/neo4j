@@ -176,6 +176,7 @@ The Neo4j Team""")
   private def updates = new Phase {
     def myBuilders: Seq[PlanBuilder] = Seq(
       new NamedPathBuilder,
+      new MergeIntoBuilder,
       new MergePatternBuilder(prepare andThen matching),
       new UpdateActionBuilder
     )

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{WritesNodesWithLabels, Effect, Effects}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{CastSupport, CollectionSupport}
-import org.neo4j.cypher.internal.compiler.v2_3.mutation.{GraphElementPropertyFunctions, UpdateAction}
+import org.neo4j.cypher.internal.compiler.v2_3.mutation.{SetAction}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.graphdb.Node
@@ -36,7 +36,7 @@ case object LabelRemoveOp extends LabelOp
 
 //TODO: Should take single label
 case class LabelAction(entity: Expression, labelOp: LabelOp, labels: Seq[KeyToken])
-  extends UpdateAction with GraphElementPropertyFunctions with CollectionSupport {
+  extends SetAction with CollectionSupport {
 
   def localEffects(ignored: SymbolTable) = Effects(labels.map(l => WritesNodesWithLabels(l.name)).toSet[Effect])
 
