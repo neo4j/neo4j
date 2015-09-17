@@ -2,6 +2,7 @@
 -------
 
 Cypher:
+o SKIP/LIMIT now allows arbitrary expressions that does not depend on identifiers
 o Allow arbitrary expressions for URL in LOAD CSV
 o Added reverse function for reversing strings
 o Unfulfillable index hints (e.g. on non-existing indices) will now produce a warning or throw an error as configured

@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.frontend.v2_3.ast
 
 import org.neo4j.cypher.internal.frontend.v2_3.Rewritable._
 import org.neo4j.cypher.internal.frontend.v2_3.perty.PageDocFormatting
-import org.neo4j.cypher.internal.frontend.v2_3.{Foldable, InputPosition, Rewritable}
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3._
 
 trait ASTNode
   extends Product
@@ -68,4 +69,35 @@ trait ASTParticle extends ASTNodeType { self: ASTNode => }
 trait ASTPhrase extends ASTNodeType { self: ASTNode => }
 
 // Skip/Limit
-trait ASTSlicingPhrase extends ASTPhrase { self: ASTNode => }
+trait ASTSlicingPhrase extends ASTPhrase with SemanticCheckable {
+  self: ASTNode =>
+  def name: String
+  def dependencies = expression.dependencies
+  def expression: Expression
+
+  def semanticCheck =
+    containsNoIdentifiers chain
+      literalShouldBeUnsignedInteger chain
+      expression.semanticCheck(Expression.SemanticContext.Simple) chain
+      expression.expectType(CTInteger.covariant)
+
+  private def containsNoIdentifiers: SemanticCheck = {
+    val deps = dependencies
+    if (deps.nonEmpty) {
+      val id = deps.toSeq.sortBy(_.position).head
+      SemanticError(s"It is not allowed to refer to identifiers in $name", id.position)
+    }
+    else SemanticCheckResult.success
+  }
+
+  private def literalShouldBeUnsignedInteger: SemanticCheck = {
+    expression match {
+      case lit: Literal => lit match {
+        case _: UnsignedDecimalIntegerLiteral => SemanticCheckResult.success
+        case i: SignedDecimalIntegerLiteral if i.value >= 0 => SemanticCheckResult.success
+        case l => SemanticError(s"Invalid input '${l.asCanonicalStringVal}' is not a valid value, must be a positive integer", l.position)
+      }
+      case _ => SemanticCheckResult.success
+    }
+  }
+}

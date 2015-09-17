@@ -526,6 +526,26 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
       "o not defined (line 1, column 25 (offset: 24))")
   }
 
+  test("not allowed to refer to identifiers in SKIP")(
+    executeAndEnsureError("MATCH n RETURN n SKIP n.count",
+                          "It is not allowed to refer to identifiers in SKIP (line 1, column 23 (offset: 22))")
+  )
+
+  test("only allowed to use positive integer literals in SKIP") (
+    executeAndEnsureError("MATCH n RETURN n SKIP -1",
+                          "Invalid input '-1' is not a valid value, must be a positive integer (line 1, column 23 (offset: 22))")
+  )
+
+  test("not allowed to refer to identifiers in LIMIT")(
+    executeAndEnsureError("MATCH n RETURN n LIMIT n.count",
+                          "It is not allowed to refer to identifiers in LIMIT (line 1, column 24 (offset: 23))")
+  )
+
+  test("only allowed to use positive integer literals in LIMIT") (
+    executeAndEnsureError("MATCH n RETURN n LIMIT 1.7",
+                          "Invalid input '1.7' is not a valid value, must be a positive integer (line 1, column 24 (offset: 23))")
+  )
+
   def executeAndEnsureError(query: String, expected: String) {
     import org.neo4j.cypher.internal.frontend.v2_3.helpers.StringHelper._
 
