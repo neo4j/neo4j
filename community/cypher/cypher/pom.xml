@@ -47,6 +47,7 @@
     <scala.binary.version>2.11</scala.binary.version>
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
     <doclint-groups>none</doclint-groups>
+    <jetty.version>9.2.4.v20141103</jetty.version>
   </properties>
 
   <build>
@@ -344,6 +345,19 @@
         <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+      <version>${jetty.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlet</artifactId>
+      <version>${jetty.version}</version>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
-  
+
 </project>

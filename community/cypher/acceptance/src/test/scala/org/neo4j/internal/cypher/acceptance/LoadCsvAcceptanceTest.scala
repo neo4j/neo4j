@@ -35,63 +35,74 @@ class LoadCsvAcceptanceTest
   extends ExecutionEngineFunSuite with BeforeAndAfterAll
   with QueryStatisticsTestSupport with CreateTempFileTestSupport {
 
+  def csvUrls(f: PrintWriter => Unit) = Seq(
+    createCSVTempFileURL(f),
+    createGzipCSVTempFileURL(f),
+    createZipCSVTempFileURL(f)
+  )
+
   test("import three strings") {
-    val url = createCSVTempFileURL({
+    val urls = csvUrls({
       writer =>
         writer.println("'Foo'")
         writer.println("'Foo'")
         writer.println("'Foo'")
-    }).cypherEscape
+    })
 
-    val result = execute(s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
-    assertStats(result, nodesCreated = 3, propertiesSet = 3)
+    for (url <- urls) {
+      val result = execute(s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
+      assertStats(result, nodesCreated = 3, propertiesSet = 3)
+    }
   }
 
   test("import three numbers") {
-    val url = createCSVTempFileURL({
+    val urls = csvUrls({
       writer =>
         writer.println("1")
         writer.println("2")
         writer.println("3")
-    }).cypherEscape
+    })
+    for (url <- urls) {
+      val result =
+        execute(s"LOAD CSV FROM '$url' AS line CREATE (a {number: line[0]}) RETURN a.number")
+      assertStats(result, nodesCreated = 3, propertiesSet = 3)
 
-    val result =
-      execute(s"LOAD CSV FROM '$url' AS line CREATE (a {number: line[0]}) RETURN a.number")
-    assertStats(result, nodesCreated = 3, propertiesSet = 3)
-
-    result.columnAs[Long]("a.number").toList === List("")
+      result.columnAs[Long]("a.number").toList === List("")
+    }
   }
 
   test("import three rows numbers and strings") {
-    val url = createCSVTempFileURL({
+    val urls = csvUrls({
       writer =>
         writer.println("1, 'Aadvark'")
         writer.println("2, 'Babs'")
         writer.println("3, 'Cash'")
-    }).cypherEscape
-
-    val result = execute(s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
-    assertStats(result, nodesCreated = 3, propertiesSet = 3)
+    })
+    for (url <- urls) {
+      val result = execute(s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
+      assertStats(result, nodesCreated = 3, propertiesSet = 3)
+    }
   }
 
   test("import three rows with headers") {
-    val url = createCSVTempFileURL({
+    val urls = csvUrls({
       writer =>
         writer.println("id,name")
         writer.println("1, 'Aadvark'")
         writer.println("2, 'Babs'")
         writer.println("3, 'Cash'")
-    }).cypherEscape
+    })
+    for (url <- urls) {
+      val result = execute(
+        s"LOAD CSV WITH HEADERS FROM '$url' AS line CREATE (a {id: line.id, name: line.name}) RETURN a.name"
+      )
 
-    val result = execute(
-      s"LOAD CSV WITH HEADERS FROM '$url' AS line CREATE (a {id: line.id, name: line.name}) RETURN a.name"
-    )
-
-    assertStats(result, nodesCreated = 3, propertiesSet = 6)
+      assertStats(result, nodesCreated = 3, propertiesSet = 6)
+    }
   }
 
   test("import three rows with headers messy data") {
-    val url = createCSVTempFileURL({
+    val urls = csvUrls({
       writer =>
         writer.println("id,name,x")
         writer.println("1,'Aadvark',0")
@@ -99,89 +110,100 @@ class LoadCsvAcceptanceTest
         writer.println("3,'Cash',1")
         writer.println("4,'Dice',\"\"")
         writer.println("5,'Emerald',")
-    }).cypherEscape
-
-    val result = execute(s"LOAD CSV WITH HEADERS FROM '$url' AS line RETURN line.x")
-    assert(result.toList === List(
-      Map("line.x" -> "0"),
-      Map("line.x" -> null),
-      Map("line.x" -> "1"),
-      Map("line.x" -> ""),
-      Map("line.x" -> null))
-    )
+    })
+    for (url <- urls) {
+      val result = execute(s"LOAD CSV WITH HEADERS FROM '$url' AS line RETURN line.x")
+      assert(result.toList === List(
+        Map("line.x" -> "0"),
+        Map("line.x" -> null),
+        Map("line.x" -> "1"),
+        Map("line.x" -> ""),
+        Map("line.x" -> null))
+      )
+    }
   }
 
   test("should handle quotes") {
-    val url = createCSVTempFileURL()({
+    val urls = csvUrls({
       writer =>
         writer.println("String without quotes")
         writer.println("'String, with single quotes'")
         writer.println("\"String, with double quotes\"")
-        writer.println(""""String with ""quotes"" in it"""")
-    }).cypherEscape
-
-    val result = execute(s"LOAD CSV FROM '$url' AS line RETURN line as string").toList
-    assert(result === List(
-      Map("string" -> Seq("String without quotes")),
-      Map("string" -> Seq("'String", " with single quotes'")),
-      Map("string" -> Seq("String, with double quotes")),
-      Map("string" -> Seq("""String with "quotes" in it"""))))
+        writer.println( """"String with ""quotes"" in it"""")
+    })
+    for (url <- urls) {
+      val result = execute(s"LOAD CSV FROM '$url' AS line RETURN line as string").toList
+      assert(result === List(
+        Map("string" -> Seq("String without quotes")),
+        Map("string" -> Seq("'String", " with single quotes'")),
+        Map("string" -> Seq("String, with double quotes")),
+        Map("string" -> Seq( """String with "quotes" in it"""))))
+    }
   }
 
   test("should handle crlf line termination") {
-    val url = createCSVTempFileURL({
+    val urls = csvUrls({
       writer =>
         writer.print("1,'Aadvark',0\r\n")
         writer.print("2,'Babs'\r\n")
         writer.print("3,'Cash',1\r\n")
-    }).cypherEscape
+    })
 
-    val result = execute(s"LOAD CSV FROM '$url' AS line RETURN line")
-    assert(result.toList === List(Map("line" -> Seq("1","'Aadvark'","0")), Map("line" -> Seq("2","'Babs'")), Map("line" -> Seq("3","'Cash'","1"))))
+    for (url <- urls) {
+      val result = execute(s"LOAD CSV FROM '$url' AS line RETURN line")
+      assert(result.toList === List(Map("line" -> Seq("1", "'Aadvark'", "0")), Map("line" -> Seq("2", "'Babs'")),
+        Map("line" -> Seq("3", "'Cash'", "1"))))
+    }
   }
 
   test("should handle lf line termination") {
-    val url = createCSVTempFileURL({
+    val urls = csvUrls({
       writer =>
         writer.print("1,'Aadvark',0\n")
         writer.print("2,'Babs'\n")
         writer.print("3,'Cash',1\n")
-    }).cypherEscape
-
-    val result = execute(s"LOAD CSV FROM '$url' AS line RETURN line")
-    assert(result.toList === List(Map("line" -> Seq("1","'Aadvark'","0")), Map("line" -> Seq("2","'Babs'")), Map("line" -> Seq("3","'Cash'","1"))))
+    })
+    for (url <- urls) {
+      val result = execute(s"LOAD CSV FROM '$url' AS line RETURN line")
+      assert(result.toList === List(Map("line" -> Seq("1", "'Aadvark'", "0")), Map("line" -> Seq("2", "'Babs'")),
+        Map("line" -> Seq("3", "'Cash'", "1"))))
+    }
   }
 
   test("should handle cr line termination") {
-    val url = createCSVTempFileURL({
+    val urls = csvUrls({
       writer =>
         writer.print("1,'Aadvark',0\r")
         writer.print("2,'Babs'\r")
         writer.print("3,'Cash',1\r")
-    }).cypherEscape
-
-    val result = execute(s"LOAD CSV FROM '$url' AS line RETURN line")
-    assert(result.toList === List(Map("line" -> Seq("1","'Aadvark'","0")), Map("line" -> Seq("2","'Babs'")), Map("line" -> Seq("3","'Cash'","1"))))
+    })
+    for (url <- urls) {
+      val result = execute(s"LOAD CSV FROM '$url' AS line RETURN line")
+      assert(result.toList === List(Map("line" -> Seq("1", "'Aadvark'", "0")), Map("line" -> Seq("2", "'Babs'")),
+        Map("line" -> Seq("3", "'Cash'", "1"))))
+    }
   }
 
   test("should handle custom field terminator") {
-    val url = createCSVTempFileURL ({
+    val urls = csvUrls({
       writer =>
         writer.println("1;'Aadvark';0")
         writer.println("2;'Babs'")
         writer.println("3;'Cash';1")
-    }).cypherEscape
-
-    val result = execute(s"LOAD CSV FROM '$url' AS line FIELDTERMINATOR ';' RETURN line")
-    assert(result.toList === List(Map("line" -> Seq("1","'Aadvark'","0")), Map("line" -> Seq("2","'Babs'")), Map("line" -> Seq("3","'Cash'","1"))))
+    })
+    for (url <- urls) {
+      val result = execute(s"LOAD CSV FROM '$url' AS line FIELDTERMINATOR ';' RETURN line")
+      assert(result.toList === List(Map("line" -> Seq("1", "'Aadvark'", "0")), Map("line" -> Seq("2", "'Babs'")),
+        Map("line" -> Seq("3", "'Cash'", "1"))))
+    }
   }
 
   test("should open file containing strange chars with '") {
     val filename = ensureNoIllegalCharsInWindowsFilePath("cypher '%^&!@#_)(098.:,;[]{}\\~$*+-")
-    val url = createCSVTempFileURL (filename)({
+    val url = createCSVTempFileURL(filename)({
       writer =>
         writer.println("something")
-    }).cypherEscape
+    })
 
     val result = execute("LOAD CSV FROM \"" + url + "\" AS line RETURN line as string").toList
     assert(result === List(Map("string" -> Seq("something"))))
@@ -189,7 +211,7 @@ class LoadCsvAcceptanceTest
 
   test("should open file containing strange chars with \"") {
     val filename = ensureNoIllegalCharsInWindowsFilePath("cypher \"%^&!@#_)(098.:,;[]{}\\~$*+-")
-    val url = createCSVTempFileURL (filename)({
+    val url = createCSVTempFileURL(filename)({
       writer =>
         writer.println("something")
     })
@@ -199,10 +221,11 @@ class LoadCsvAcceptanceTest
   }
 
   test("empty file does not create anything") {
-    val url = createCSVTempFileURL(writer => {}).cypherEscape
-
-    val result = execute(s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
-    assertStats(result, nodesCreated = 0)
+    val urls = csvUrls(writer => {})
+    for (url <- urls) {
+      val result = execute(s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
+      assertStats(result, nodesCreated = 0)
+    }
   }
 
   test("should be able to open relative paths with dot") {
@@ -226,20 +249,24 @@ class LoadCsvAcceptanceTest
   }
 
   test("should handle null keys in maps as result value") {
-    val url = createCSVTempFileURL ({
+    val urls = csvUrls({
       writer =>
         writer.println("DEPARTMENT ID;DEPARTMENT NAME;")
         writer.println("010-1010;MFG Supplies;")
         writer.println("010-1011;Corporate Procurement;")
         writer.println("010-1015;MFG - Engineering HQ;")
-    }).cypherEscape
-
-    val result = execute(s"LOAD CSV WITH HEADERS FROM '$url' AS line FIELDTERMINATOR ';' RETURN *").toList
-    assert(result === List(
-      Map("line" -> Map("DEPARTMENT ID" -> "010-1010", "DEPARTMENT NAME" -> "MFG Supplies", null.asInstanceOf[String] -> null)),
-      Map("line" -> Map("DEPARTMENT ID" -> "010-1011", "DEPARTMENT NAME" -> "Corporate Procurement", null.asInstanceOf[String] -> null)),
-      Map("line" -> Map("DEPARTMENT ID" -> "010-1015", "DEPARTMENT NAME" -> "MFG - Engineering HQ", null.asInstanceOf[String] -> null))
-    ))
+    })
+    for (url <- urls) {
+      val result = execute(s"LOAD CSV WITH HEADERS FROM '$url' AS line FIELDTERMINATOR ';' RETURN *").toList
+      assert(result === List(
+        Map("line" -> Map("DEPARTMENT ID" -> "010-1010", "DEPARTMENT NAME" -> "MFG Supplies",
+          null.asInstanceOf[String] -> null)),
+        Map("line" -> Map("DEPARTMENT ID" -> "010-1011", "DEPARTMENT NAME" -> "Corporate Procurement",
+          null.asInstanceOf[String] -> null)),
+        Map("line" -> Map("DEPARTMENT ID" -> "010-1015", "DEPARTMENT NAME" -> "MFG - Engineering HQ",
+          null.asInstanceOf[String] -> null))
+      ))
+    }
   }
 
   test("should fail gracefully when loading missing file") {
@@ -249,14 +276,14 @@ class LoadCsvAcceptanceTest
   }
 
   test("should be able to download data from the web") {
-    val url = s"http://127.0.0.1:${port}/test.csv".cypherEscape
+    val url = s"http://127.0.0.1:$port/test.csv".cypherEscape
 
     val result = executeScalar[Long](s"LOAD CSV FROM '${url}' AS line RETURN count(line)")
     result should equal(3)
   }
 
   test("should be able to download from a website when redirected and cookies are set") {
-    val url = s"http://127.0.0.1:${port}/redirect_test.csv".cypherEscape
+    val url = s"http://127.0.0.1:$port/redirect_test.csv".cypherEscape
 
     val result = executeScalar[Long](s"LOAD CSV FROM '${url}' AS line RETURN count(line)")
     result should equal(3)
@@ -264,7 +291,7 @@ class LoadCsvAcceptanceTest
 
   test("should fail gracefully when getting 404") {
     intercept[LoadExternalResourceException] {
-      execute(s"LOAD CSV FROM 'http://127.0.0.1:${port}/these_are_not_the_droids_you_are_looking_for/' AS line CREATE (a {name:line[0]})")
+      execute(s"LOAD CSV FROM 'http://127.0.0.1:$port/these_are_not_the_droids_you_are_looking_for/' AS line CREATE (a {name:line[0]})")
     }
   }
 
@@ -362,24 +389,27 @@ class LoadCsvAcceptanceTest
   }
 
   test("eager queries should be handled correctly") {
-    val url = createCSVTempFileURL({
+    val urls = csvUrls({
       writer =>
         writer.println("id,title,country,year")
         writer.println("1,Wall Street,USA,1987")
         writer.println("2,The American President,USA,1995")
         writer.println("3,The Shawshank Redemption,USA,1994")
-    }).cypherEscape
+    })
+    for (url <- urls) {
+      execute(s"LOAD CSV WITH HEADERS FROM '$url' AS csvLine " +
+        "MERGE (country:Country {name: csvLine.country}) " +
+        "CREATE (movie:Movie {id: toInt(csvLine.id), title: csvLine.title, year:toInt(csvLine.year)})" +
+        "CREATE (movie)-[:MADE_IN]->(country)")
 
-    execute(s"LOAD CSV WITH HEADERS FROM '$url' AS csvLine " +
-      "MERGE (country:Country {name: csvLine.country}) " +
-      "CREATE (movie:Movie {id: toInt(csvLine.id), title: csvLine.title, year:toInt(csvLine.year)})" +
-      "CREATE (movie)-[:MADE_IN]->(country)")
 
+      //make sure three unique movies are created
+      val result = execute("match (m:Movie) return m.id AS id ORDER BY m.id").toList
 
-    //make sure three unique movies are created
-    val result = execute("match (m:Movie) return m.id AS id ORDER BY m.id").toList
-
-    result should equal(List(Map("id" -> 1), Map("id" -> 2), Map("id" -> 3)))
+      result should equal(List(Map("id" -> 1), Map("id" -> 2), Map("id" -> 3)))
+      //empty database
+      execute("MATCH (n) DETACH DELETE n")
+    }
   }
 
   test("should be able to use expression as url") {
@@ -438,5 +468,5 @@ class LoadCsvAcceptanceTest
   }
 
   private def createFile(f: PrintWriter => Unit): String = createFile()(f)
-  private def createFile(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit): String = createTempFileURL(filename, ".csv")(f).cypherEscape
+  private def createFile(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit): String = createTempFileURL(filename, ".csv")(f)
 }

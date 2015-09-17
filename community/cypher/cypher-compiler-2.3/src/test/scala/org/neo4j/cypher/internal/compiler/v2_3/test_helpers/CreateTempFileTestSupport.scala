@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.test_helpers
 
 import java.io.PrintWriter
 import java.nio.file.{Files, Path}
+import java.io.{OutputStreamWriter, FileOutputStream, PrintWriter}
+import java.util.zip.{ZipEntry, ZipOutputStream, GZIPOutputStream}
 
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.io.fs.FileUtils
@@ -41,13 +43,27 @@ trait CreateTempFileTestSupport extends CypherTestSupport {
     }
   }
 
-  def createCSVTempFileURL(f: PrintWriter => Unit): String =
-    createCSVTempFileURL()(f)
+  def createCSVTempFileURL(f: PrintWriter => Unit)(implicit writer: File => PrintWriter = normalWriter): String =
+    createCSVTempFileURL("cypher", null)(f)
 
-  def createCSVTempFileURL(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit): String =
+  def createCSVTempFileURL(filename: String)(f: PrintWriter => Unit)(implicit writer: File => PrintWriter): String = createCSVTempFileURL(filename, null)(f)
+
+  def createCSVTempFileURL(filename: String, dir: String)(f: PrintWriter => Unit)(implicit writer: File => PrintWriter): String =
     createTempFileURL(filename, ".csv")(f)
 
-  def createTempFile(name: String, ext: String, f: PrintWriter => Unit): String = synchronized {
+  def createGzipCSVTempFileURL(f: PrintWriter => Unit)(implicit writer: File => PrintWriter): String =
+    createGzipCSVTempFileURL()(f)
+
+  def createGzipCSVTempFileURL(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit)(implicit writer: (File => PrintWriter)): String =
+    createTempFileURL(filename, ".csv.gz")(f)(gzipWriter)
+
+  def createZipCSVTempFileURL(f: PrintWriter => Unit)(implicit writer: File => PrintWriter): String =
+    createZipCSVTempFileURL()(f)
+
+  def createZipCSVTempFileURL(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit)(implicit writer: (File => PrintWriter)): String =
+    createTempFileURL(filename, ".csv.zip")(f)(zipWriter)
+
+  def createTempFile(name: String, ext: String, f: PrintWriter => Unit)(implicit writer: (File => PrintWriter)): String = synchronized {
     withTempFileWriter(name, ext)(f).toAbsolute.path
   }
 
@@ -57,11 +73,11 @@ trait CreateTempFileTestSupport extends CypherTestSupport {
     dir
   }
 
-  def createTempFileURL(name: String, ext: String)(f: PrintWriter => Unit): String = synchronized {
+  def createTempFileURL(name: String, ext: String)(f: PrintWriter => Unit)(implicit writer: File => PrintWriter): String = synchronized {
     withTempFileWriter(name, ext)(f).toURI.toURL.toString
   }
 
-  private def withTempFileWriter(name: String, ext: String)(f: PrintWriter => Unit): File = {
+  private def withTempFileWriter(name: String, ext: String)(f: PrintWriter => Unit)(implicit writer: File => PrintWriter) = {
     val path = Files.createTempFile(name, ext)
     val file = new File(path.toFile)
     try {
@@ -78,8 +94,8 @@ trait CreateTempFileTestSupport extends CypherTestSupport {
     path
   }
 
-  def fileWrite(file: File)(f: PrintWriter => Unit): File = {
-    val writer = new PrintWriter(file.bufferedWriter(append = false, Codec.UTF8), true)
+  def fileWrite(file: File)(f: PrintWriter => Unit)(implicit writerFactory: File => PrintWriter): File = {
+    val writer = writerFactory(file)
     try {
       f(writer)
       file
@@ -87,4 +103,20 @@ trait CreateTempFileTestSupport extends CypherTestSupport {
       writer.close()
     }
   }
-}
+
+    implicit def normalWriter(file: File): PrintWriter = new PrintWriter(file.bufferedWriter(append = false, Codec.UTF8))
+
+    def gzipWriter(file: File): PrintWriter = new PrintWriter(new OutputStreamWriter(
+      new GZIPOutputStream(
+        new FileOutputStream(file.jfile, false)
+      ), Codec.UTF8.charSet))
+
+    def zipWriter(file: File): PrintWriter = {
+      val zos = new ZipOutputStream(new FileOutputStream(file.jfile))
+      val ze = new ZipEntry(file.name)
+      zos.putNextEntry(ze)
+
+      new PrintWriter(new OutputStreamWriter(zos))
+    }
+
+    }
