@@ -60,16 +60,16 @@ import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
-import org.neo4j.kernel.impl.store.record.RelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.RelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
@@ -579,8 +579,7 @@ public class DiskLayer implements StoreReadLayer
     {
         return new PrimitiveLongBaseIterator()
         {
-            private final NodeStore store = neoStores.getNodeStore();
-            private long highId = store.getHighestPossibleIdInUse();
+            private long highId = nodeStore.getHighestPossibleIdInUse();
             private long currentId;
             private final NodeRecord reusableNodeRecord = new NodeRecord( -1 ); // reused
 
@@ -593,7 +592,7 @@ public class DiskLayer implements StoreReadLayer
                     {
                         try
                         {
-                            NodeRecord record = store.loadRecord( currentId, reusableNodeRecord );
+                            NodeRecord record = nodeStore.loadRecord( currentId, reusableNodeRecord );
                             if ( record != null && record.inUse() )
                             {
                                 return next( record.getId() );
@@ -605,7 +604,7 @@ public class DiskLayer implements StoreReadLayer
                         }
                     }
 
-                    long newHighId = store.getHighestPossibleIdInUse();
+                    long newHighId = nodeStore.getHighestPossibleIdInUse();
                     if ( newHighId > highId )
                     {
                         highId = newHighId;
@@ -625,8 +624,7 @@ public class DiskLayer implements StoreReadLayer
     {
         return new RelationshipIterator.BaseIterator()
         {
-            private final RelationshipStore store = neoStores.getRelationshipStore();
-            private long highId = store.getHighestPossibleIdInUse();
+            private long highId = relationshipStore.getHighestPossibleIdInUse();
             private long currentId;
             private final RelationshipRecord reusableRecord = new RelationshipRecord( -1 ); // reused
 
@@ -639,7 +637,7 @@ public class DiskLayer implements StoreReadLayer
                     {
                         try
                         {
-                            if ( store.fillRecord( currentId, reusableRecord, CHECK ) && reusableRecord.inUse() )
+                            if ( relationshipStore.fillRecord( currentId, reusableRecord, CHECK ) && reusableRecord.inUse() )
                             {
                                 return next( reusableRecord.getId() );
                             }
@@ -650,7 +648,7 @@ public class DiskLayer implements StoreReadLayer
                         }
                     }
 
-                    long newHighId = store.getHighestPossibleIdInUse();
+                    long newHighId = relationshipStore.getHighestPossibleIdInUse();
                     if ( newHighId > highId )
                     {
                         highId = newHighId;

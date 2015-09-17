@@ -121,6 +121,11 @@ public class StoreFactory
 
     public NeoStores openNeoStores( boolean createIfNotExist )
     {
+        return openNeoStores( createIfNotExist, true );
+    }
+
+    public NeoStores openNeoStores( boolean createIfNotExist, boolean eagerlyInitializeStores )
+    {
         if ( createIfNotExist )
         {
             try
@@ -133,8 +138,10 @@ public class StoreFactory
                         "Could not create store directory: " + neoStoreFileName.getParent(), e );
             }
         }
-        return new NeoStores( neoStoreFileName, config, idGeneratorFactory, pageCache, logProvider,
-                fileSystemAbstraction, createIfNotExist );
+        return new NeoStores( neoStoreFileName, config, idGeneratorFactory, pageCache,
+                logProvider,
+                fileSystemAbstraction,
+                createIfNotExist, eagerlyInitializeStores );
     }
 
     public abstract static class Configuration

@@ -273,7 +273,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * map their own temporary PagedFile for the store file, and do their file IO through that,
      * if they need to access the data in the store file.
      */
-    protected void rebuildIdGenerator()
+    protected final void rebuildIdGenerator()
     {
         int blockSize = getRecordSize();
         if ( blockSize <= 0 )
@@ -401,7 +401,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     /**
      * Throws cause of not being OK if {@link #getStoreOk()} returns {@code false}.
      */
-    protected void checkStoreOk()
+    protected final void checkStoreOk()
     {
         if ( !storeOk )
         {
@@ -470,7 +470,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * IdGenerator} used by this store and if successful mark it as
      * <CODE>ok</CODE>.
      */
-    public void makeStoreOk()
+    public final void makeStoreOk()
     {
         if ( !storeOk )
         {
@@ -696,18 +696,28 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         return idType;
     }
 
-    public void logVersions( Logger logger )
+    public final void logVersions( Logger logger )
     {
         logger.log( getTypeDescriptor() + " " + ALL_STORES_VERSION );
     }
 
-    public void logIdUsage( Logger logger )
+    public final void logIdUsage( Logger logger )
     {
         logger.log( String.format( "  %s: used=%s high=%s",
                 getTypeDescriptor() + " " + ALL_STORES_VERSION, getNumberOfIdsInUse(), getHighestPossibleIdInUse() ) );
     }
 
-    public void visitStore( Visitor<CommonAbstractStore,RuntimeException> visitor )
+    /**
+     * Visits this store, and any other store managed by this store.
+     * TODO this could, and probably should, replace all override-and-do-the-same-thing-to-all-my-managed-stores
+     * methods like:
+     * {@link #makeStoreOk()},
+     * {@link #closeStorage()} (where that method could be deleted all together and do a visit in {@link #close()}),
+     * {@link #logIdUsage(Logger)},
+     * {@link #logVersions(Logger)}
+     * For a good samaritan to pick up later.
+     */
+    public final void visitStore( Visitor<CommonAbstractStore,RuntimeException> visitor )
     {
         visitor.visit( this );
     }
