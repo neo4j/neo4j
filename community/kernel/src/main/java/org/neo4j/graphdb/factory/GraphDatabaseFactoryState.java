@@ -20,11 +20,14 @@
 package org.neo4j.graphdb.factory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -36,6 +39,7 @@ public class GraphDatabaseFactoryState
     private final List<KernelExtensionFactory<?>> kernelExtensions;
     private Monitors monitors;
     private LogProvider userLogProvider;
+    private Map<String,URLAccessRule> urlAccessRules;
 
     public GraphDatabaseFactoryState() {
         settingsClasses = new ArrayList<>();
@@ -45,12 +49,14 @@ public class GraphDatabaseFactoryState
         {
             kernelExtensions.add( factory );
         }
+        urlAccessRules = new HashMap<>();
     }
 
     public GraphDatabaseFactoryState( GraphDatabaseFactoryState previous )
     {
         settingsClasses = new ArrayList<>( previous.settingsClasses );
         kernelExtensions = new ArrayList<>( previous.kernelExtensions );
+        urlAccessRules = new HashMap<>( previous.urlAccessRules );
         monitors = previous.monitors;
         monitors = previous.monitors;
         userLogProvider = previous.userLogProvider;
@@ -75,6 +81,11 @@ public class GraphDatabaseFactoryState
         }
     }
 
+    public void addURLAccessRule( String protocol, URLAccessRule rule )
+    {
+        urlAccessRules.put( protocol, rule );
+    }
+
     public void setUserLogProvider( LogProvider userLogProvider )
     {
         this.userLogProvider = userLogProvider;
@@ -91,6 +102,7 @@ public class GraphDatabaseFactoryState
                 monitors(monitors).
                 userLogProvider(userLogProvider).
                 settingsClasses(settingsClasses).
+                urlAccessRules( urlAccessRules ).
                 kernelExtensions(kernelExtensions);
     }
 }

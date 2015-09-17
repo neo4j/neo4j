@@ -28,6 +28,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.Arrays.asList;
@@ -179,8 +180,14 @@ public class GraphDatabaseFactory
         return this;
     }
 
+    public GraphDatabaseFactory addURLAccessRule( String protocol, URLAccessRule rule )
+    {
+        getCurrentState().addURLAccessRule( protocol, rule );
+        return this;
+    }
+
     public GraphDatabaseFactory setUserLogProvider( LogProvider userLogProvider )
-   {
+    {
         getCurrentState().setUserLogProvider( userLogProvider );
         return this;
     }

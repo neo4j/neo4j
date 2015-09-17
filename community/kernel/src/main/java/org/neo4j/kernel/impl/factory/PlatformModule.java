@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
+import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -56,6 +57,7 @@ import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
+import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -93,6 +95,8 @@ public class PlatformModule
     public final DataSourceManager dataSourceManager;
 
     public final KernelExtensions kernelExtensions;
+
+    public final URLAccessRule urlAccessRule;
 
     public final JobScheduler jobScheduler;
 
@@ -183,6 +187,8 @@ public class PlatformModule
                 externalDependencies.kernelExtensions(),
                 dependencies,
                 UnsatisfiedDependencyStrategies.fail() ) );
+
+        urlAccessRule = dependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
 
         publishPlatformInfo( dependencies.resolveDependency( UsageData.class ) );
     }

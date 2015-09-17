@@ -17,40 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.graphdb.security;
 
 import java.net.URL;
 
-import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.security.URLAccessValidationError;
 
 /**
- * This API can be used to get access to services.
- *
- * @deprecated This will be moved to internal packages in the next major release.
+ * A rule to evaluate if Neo4j is permitted to reach out to the specified URL (e.g. when using {@code LOAD CSV} in Cypher).
  */
-@Deprecated
-public interface GraphDatabaseAPI extends GraphDatabaseService
+public interface URLAccessRule
 {
     /**
-     * Look up database components for direct access.
-     * Usage of this method is generally an indication of architectural error.
-     */
-    DependencyResolver getDependencyResolver();
-
-    /** Provides the unique id assigned to this database. */
-    StoreId storeId();
-
-    /**
-     * Validate whether this database instance is permitted to reach out to the specified URL (e.g. when using {@code LOAD CSV} in Cypher).
+     * Validate this rule against the specified URL and configuration, and throw a {@link URLAccessValidationError}
+     * if the URL is not permitted for access.
      *
+     * @param gdb the current graph database
      * @param url the URL being validated
      * @return an updated URL that should be used for accessing the resource
+     * @throws URLAccessValidationError thrown if the url does not pass the validation rule
      */
-    URL validateURLAccess( URL url ) throws URLAccessValidationError;
-
-    @Deprecated
-    String getStoreDir();
+    URL validate( GraphDatabaseAPI gdb, URL url ) throws URLAccessValidationError;
 }

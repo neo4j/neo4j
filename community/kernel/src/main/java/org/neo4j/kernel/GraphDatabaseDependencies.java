@@ -21,13 +21,18 @@ package org.neo4j.kernel;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
+import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.Iterables.addAll;
@@ -38,7 +43,7 @@ public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dep
     public static GraphDatabaseDependencies newDependencies( GraphDatabaseFacadeFactory.Dependencies deps )
     {
         return new GraphDatabaseDependencies( deps.monitors(), deps.userLogProvider(),
-                toList( deps.settingsClasses() ), toList( deps.kernelExtensions() ), toList( deps.executionEngines() ) );
+                toList( deps.settingsClasses() ), toList( deps.kernelExtensions() ), deps.urlAccessRules(), toList( deps.executionEngines() ) );
     }
 
     public static GraphDatabaseDependencies newDependencies()
@@ -48,14 +53,24 @@ public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dep
         {
             kernelExtensions.add( factory );
         }
+
+        Map<String,URLAccessRule> urlAccessRules = new HashMap<>();
+        urlAccessRules.put( "http", URLAccessRules.alwaysPermitted() );
+        urlAccessRules.put( "https", URLAccessRules.alwaysPermitted() );
+        urlAccessRules.put( "ftp", URLAccessRules.alwaysPermitted() );
+        urlAccessRules.put( "file", URLAccessRules.fileAccess() );
+
+        List<QueryEngineProvider> queryEngineProviders = toList( Service.load( QueryEngineProvider.class ) );
+
         return new GraphDatabaseDependencies( null, null, new ArrayList<Class<?>>(), kernelExtensions,
-                toList( Service.load( QueryEngineProvider.class ) ) );
+                urlAccessRules, queryEngineProviders );
     }
 
     private final Monitors monitors;
     private final LogProvider userLogProvider;
     private final List<Class<?>> settingsClasses;
     private final List<KernelExtensionFactory<?>> kernelExtensions;
+    private final Map<String,URLAccessRule> urlAccessRules;
     private final List<QueryEngineProvider> queryEngineProviders;
 
     private GraphDatabaseDependencies(
@@ -63,12 +78,14 @@ public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dep
             LogProvider userLogProvider,
             List<Class<?>> settingsClasses,
             List<KernelExtensionFactory<?>> kernelExtensions,
+            Map<String,URLAccessRule> urlAccessRules,
             List<QueryEngineProvider> queryEngineProviders )
     {
         this.monitors = monitors;
         this.userLogProvider = userLogProvider;
         this.settingsClasses = settingsClasses;
         this.kernelExtensions = kernelExtensions;
+        this.urlAccessRules = Collections.unmodifiableMap( urlAccessRules );
         this.queryEngineProviders = queryEngineProviders;
     }
 
@@ -76,39 +93,47 @@ public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dep
     public GraphDatabaseDependencies monitors( Monitors monitors )
     {
         return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses, kernelExtensions,
-                queryEngineProviders );
+                urlAccessRules, queryEngineProviders );
     }
 
     public GraphDatabaseDependencies userLogProvider( LogProvider userLogProvider )
     {
         return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses, kernelExtensions,
-                queryEngineProviders );
+                urlAccessRules, queryEngineProviders );
     }
 
     public GraphDatabaseDependencies settingsClasses( List<Class<?>> settingsClasses )
     {
         return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses, kernelExtensions,
-                queryEngineProviders );
+                urlAccessRules, queryEngineProviders );
     }
 
     public GraphDatabaseDependencies settingsClasses( Class<?>... settingsClass )
     {
         settingsClasses.addAll( Arrays.asList( settingsClass ) );
         return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses, kernelExtensions,
-                queryEngineProviders );
+                urlAccessRules, queryEngineProviders );
     }
 
     public GraphDatabaseDependencies kernelExtensions( Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
         return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses,
                 addAll( new ArrayList<KernelExtensionFactory<?>>(), kernelExtensions ),
-                queryEngineProviders );
+                urlAccessRules, queryEngineProviders );
+    }
+
+    public GraphDatabaseDependencies urlAccessRules( Map<String,URLAccessRule> urlAccessRules )
+    {
+        final HashMap<String,URLAccessRule> newUrlAccessRules = new HashMap<>( this.urlAccessRules );
+        newUrlAccessRules.putAll( urlAccessRules );
+        return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses, kernelExtensions,
+                newUrlAccessRules, queryEngineProviders );
     }
 
     public GraphDatabaseDependencies queryEngineProviders( Iterable<QueryEngineProvider> queryEngineProviders )
     {
         return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses, kernelExtensions,
-                addAll( this.queryEngineProviders, queryEngineProviders ) );
+                urlAccessRules, addAll( new ArrayList<>( this.queryEngineProviders ), queryEngineProviders ) );
     }
 
     // Dependencies implementation
@@ -134,6 +159,12 @@ public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dep
     public Iterable<KernelExtensionFactory<?>> kernelExtensions()
     {
         return kernelExtensions;
+    }
+
+    @Override
+    public Map<String,URLAccessRule> urlAccessRules()
+    {
+        return urlAccessRules;
     }
 
     @Override

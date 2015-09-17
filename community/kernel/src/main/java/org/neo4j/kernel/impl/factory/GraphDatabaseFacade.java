@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
+import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
 
@@ -81,6 +82,7 @@ import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
+import org.neo4j.kernel.security.URLAccessValidationError;
 import org.neo4j.logging.Log;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -549,6 +551,12 @@ public class GraphDatabaseFacade
     public StoreId storeId()
     {
         return storeId.get();
+    }
+
+    @Override
+    public URL validateURLAccess( URL url ) throws URLAccessValidationError
+    {
+        return platformModule.urlAccessRule.validate( this, url );
     }
 
     @Override

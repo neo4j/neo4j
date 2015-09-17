@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.spi
 
+import java.net.URL
+
 import org.neo4j.cypher.internal.compiler.v2_3.InternalQueryStatistics
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
@@ -107,7 +109,7 @@ trait QueryContext extends TokenContext {
 
   def getOptStatistics: Option[InternalQueryStatistics] = None
 
-  def hasLocalFileAccess: Boolean = false
+  def getImportURL(url: URL): Either[String,URL]
 
   /**
    * This should not be used. We'll remove sooner (or later). Don't do it.

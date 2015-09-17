@@ -20,6 +20,7 @@
 package org.neo4j.shell.kernel;
 
 import java.io.Serializable;
+import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -59,6 +60,7 @@ import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
+import org.neo4j.kernel.security.URLAccessValidationError;
 
 public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDatabaseAPI, IndexManager
 {
@@ -1010,6 +1012,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     public StoreId storeId()
     {
         return actual.storeId();
+    }
+
+    @Override
+    public URL validateURLAccess( URL url ) throws URLAccessValidationError
+    {
+        return actual.validateURLAccess( url );
     }
 
     @Override
