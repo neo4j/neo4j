@@ -9,7 +9,8 @@
     <version>2.3-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
-  
+
+  <groupId>org.neo4j</groupId>
   <artifactId>neo4j-metrics</artifactId>
   <version>2.3-SNAPSHOT</version>
 

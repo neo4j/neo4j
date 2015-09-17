@@ -8,6 +8,7 @@
     <relativePath>../..</relativePath>
   </parent>
 
+  <groupId>org.neo4j</groupId>
   <artifactId>neo4j-management</artifactId>
   <version>2.3-SNAPSHOT</version>
 
