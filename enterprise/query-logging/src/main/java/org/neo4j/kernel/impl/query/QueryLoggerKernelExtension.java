@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.query;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.OutputStream;
 
@@ -30,11 +31,14 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QuerySession.MetadataKey;
+import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
@@ -43,13 +47,15 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
 {
     public interface Dependencies
     {
-        FileSystemAbstraction filesystem();
+        FileSystemAbstraction fileSystem();
 
         Config config();
 
         Monitors monitoring();
 
         LogService logger();
+
+        JobScheduler jobScheduler();
     }
 
     public QueryLoggerKernelExtension()
@@ -58,48 +64,74 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
     }
 
     @Override
-    public Lifecycle newKernelExtension( final Dependencies deps ) throws Throwable
+    public Lifecycle newInstance( @SuppressWarnings( "unused" ) KernelContext context,
+            final Dependencies dependencies ) throws Throwable
     {
-        boolean queryLogEnabled = deps.config().get( GraphDatabaseSettings.log_queries );
-        final File queryLogFile = deps.config().get( GraphDatabaseSettings.log_queries_filename );
+        final Config config = dependencies.config();
+        boolean queryLogEnabled = config.get( GraphDatabaseSettings.log_queries );
+        final File queryLogFile = config.get( GraphDatabaseSettings.log_queries_filename );
 
-        if ( !queryLogEnabled || queryLogFile == null )
+        if (!queryLogEnabled)
         {
-            if ( queryLogFile == null )
-            {
-                deps.logger().getInternalLog( getClass() ).warn( GraphDatabaseSettings.log_queries.name() +
-                        " is enabled but no " +
-                        GraphDatabaseSettings.log_queries_filename.name() +
-                        " has not been provided in configuration, hence query logging is suppressed" );
-            }
-            return new LifecycleAdapter();
+            return createEmptyAdapter();
+        }
+        if ( queryLogFile == null )
+        {
+            dependencies.logger().getInternalLog( getClass() )
+                    .warn( GraphDatabaseSettings.log_queries.name() + " is enabled but no " +
+                           GraphDatabaseSettings.log_queries_filename.name() +
+                           " has not been provided in configuration, hence query logging is suppressed" );
+
+            return createEmptyAdapter();
         }
 
         return new LifecycleAdapter()
         {
-            OutputStream logOutputStream;
+            Closeable closable;
 
             @Override
             public void init() throws Throwable
             {
-                final FileSystemAbstraction filesystem = deps.filesystem();
-                logOutputStream = createOrOpenAsOuputStream( filesystem, queryLogFile, true );
-                Long thresholdMillis = deps.config().get( GraphDatabaseSettings.log_queries_threshold );
+                final FileSystemAbstraction fileSystem = dependencies.fileSystem();
 
-                QueryLogger logger = new QueryLogger(
-                        Clock.SYSTEM_CLOCK,
-                        FormattedLog.withUTCTimeZone().toOutputStream( logOutputStream ),
-                        thresholdMillis
-                );
-                deps.monitoring().addMonitorListener( logger );
+                Long thresholdMillis = config.get( GraphDatabaseSettings.log_queries_threshold );
+                Long rotationThreshold = config.get( GraphDatabaseSettings.log_queries_rotation_threshold );
+                int maxArchives = config.get( GraphDatabaseSettings.log_queries_max_archives );
+
+                FormattedLog.Builder logBuilder = FormattedLog.withUTCTimeZone();
+                Log log;
+                if (rotationThreshold == 0)
+                {
+                    OutputStream logOutputStream = createOrOpenAsOuputStream( fileSystem, queryLogFile, true );
+                    log = logBuilder.toOutputStream( logOutputStream );
+                    closable = logOutputStream;
+                }
+                else
+                {
+                    JobScheduler jobScheduler = dependencies.jobScheduler();
+                    RotatingFileOutputStreamSupplier
+                            rotatingSupplier = new RotatingFileOutputStreamSupplier( fileSystem, queryLogFile,
+                            rotationThreshold, 0, maxArchives,
+                            jobScheduler.executor( JobScheduler.Groups.queryLogRotation ) );
+                    log = logBuilder.toOutputStream( rotatingSupplier );
+                    closable = rotatingSupplier;
+                }
+
+                QueryLogger logger = new QueryLogger( Clock.SYSTEM_CLOCK, log, thresholdMillis );
+                dependencies.monitoring().addMonitorListener( logger );
             }
 
             @Override
             public void shutdown() throws Throwable
             {
-                logOutputStream.close();
+                closable.close();
             }
         };
+    }
+
+    private Lifecycle createEmptyAdapter()
+    {
+        return new LifecycleAdapter();
     }
 
     public static class QueryLogger implements QueryExecutionMonitor
