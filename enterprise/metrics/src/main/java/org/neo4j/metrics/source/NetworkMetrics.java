@@ -37,6 +37,11 @@ import static com.codahale.metrics.MetricRegistry.name;
 public class NetworkMetrics implements Closeable
 {
     private static final String NAME_PREFIX = "neo4j.network";
+    private static final String TRANSACTION_READS = name( NAME_PREFIX, "transaction_reads" );
+    private static final String SLAVE_NETWORK_TX_WRITES = name( NAME_PREFIX, "slave_network_tx_writes" );
+    private static final String MASTER_NETWORK_STORE_WRITES = name( NAME_PREFIX, "master_network_store_writes" );
+    private static final String MASTER_NETWORK_TX_WRITES = name( NAME_PREFIX, "master_network_tx_writes" );
+
     private Config config;
     private Monitors monitors;
     private MetricRegistry registry;
@@ -73,7 +78,7 @@ public class NetworkMetrics implements Closeable
             // logBufferWrites was registered above - same monitor, remember?
             monitors.addMonitorListener( networkTransactionReads, "logdeserializer" );
 
-            registry.register( name( NAME_PREFIX, "master_network_tx_writes" ), new Gauge<Long>()
+            registry.register( MASTER_NETWORK_TX_WRITES, new Gauge<Long>()
             {
                 public Long getValue()
                 {
@@ -81,7 +86,7 @@ public class NetworkMetrics implements Closeable
                 }
             } );
 
-            registry.register( name( NAME_PREFIX, "master_network_store_writes" ), new Gauge<Long>()
+            registry.register( MASTER_NETWORK_STORE_WRITES, new Gauge<Long>()
             {
                 public Long getValue()
                 {
@@ -89,7 +94,7 @@ public class NetworkMetrics implements Closeable
                 }
             } );
 
-            registry.register( name( NAME_PREFIX, "slave_network_tx_writes" ), new Gauge<Long>()
+            registry.register( SLAVE_NETWORK_TX_WRITES, new Gauge<Long>()
             {
                 public Long getValue()
                 {
@@ -97,7 +102,7 @@ public class NetworkMetrics implements Closeable
                 }
             } );
 
-            registry.register( name( NAME_PREFIX, "transaction_reads" ), new Gauge<Long>()
+            registry.register( TRANSACTION_READS, new Gauge<Long>()
             {
                 public Long getValue()
                 {
@@ -111,10 +116,10 @@ public class NetworkMetrics implements Closeable
     {
         if ( config.get( MetricsSettings.neoNetworkEnabled ) )
         {
-            registry.remove( name( NAME_PREFIX, "master_network_tx_writes" ) );
-            registry.remove( name( NAME_PREFIX, "master_network_store_writes" ) );
-            registry.remove( name( NAME_PREFIX, "slave_network_tx_writes" ) );
-            registry.remove( name( NAME_PREFIX, "transaction_reads" ) );
+            registry.remove( MASTER_NETWORK_TX_WRITES );
+            registry.remove( MASTER_NETWORK_STORE_WRITES );
+            registry.remove( SLAVE_NETWORK_TX_WRITES );
+            registry.remove( TRANSACTION_READS );
 
             monitors.removeMonitorListener( masterNetworkTransactionWrites );
             monitors.removeMonitorListener( masterNetworkStoreWrites );
