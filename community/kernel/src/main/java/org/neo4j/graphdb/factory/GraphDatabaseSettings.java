@@ -406,6 +406,10 @@ public abstract class GraphDatabaseSettings
             "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged.")
     public static final Setting<Long> log_queries_threshold = setting("dbms.querylog.threshold", DURATION, "0s");
 
+    @Description( "Specifies at which file size the query log will auto-rotate. ")
+    public static final Setting<Long> log_queries_rotation_threshold = setting("dbms.querylog.rotation.threshold",
+            BYTES, "20m", min( 1024 * 1024L ), max( Long.MAX_VALUE ) );
+
     @Description( "Specifies number of operations that batch inserter will try to group into one batch before " +
                   "flushing data into underlying storage.")
     @Internal

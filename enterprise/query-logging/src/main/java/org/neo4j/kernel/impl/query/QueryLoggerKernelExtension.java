@@ -56,28 +56,36 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
     }
 
     @Override
-    public Lifecycle newKernelExtension( Dependencies the ) throws Throwable
+    public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
-        Config config = the.config();
-        if ( config.get( GraphDatabaseSettings.log_queries ) )
+        Config config = dependencies.config();
+        boolean queryLogEnabled = config.get( GraphDatabaseSettings.log_queries );
+        final File queryLogFile = config.get( GraphDatabaseSettings.log_queries_filename );
+        if (!queryLogEnabled)
         {
-            File logFilename = config.get( GraphDatabaseSettings.log_queries_filename );
-            if ( logFilename == null)
-            {
-                the.logger().warn( GraphDatabaseSettings.log_queries.name() +
-                                   " is enabled but no " +
-                                   GraphDatabaseSettings.log_queries_filename.name() +
-                                   " has not been provided in configuration, hence query logging is suppressed" );
-                return null;
-            }
-
-            long thresholdMillis = config.get( GraphDatabaseSettings.log_queries_threshold );
-            LoggerFactory loggerFactory = new LoggerFactory( the.filesystem(), logFilename );
-            QueryLogger logger = new QueryLogger( Clock.SYSTEM_CLOCK, loggerFactory, thresholdMillis );
-            the.monitoring().addMonitorListener( logger );
-            return logger;
+            return createEmptyAdapter();
         }
-        return null;
+        if ( queryLogFile == null )
+        {
+            dependencies.logger().warn( GraphDatabaseSettings.log_queries.name() + " is enabled but no " +
+                           GraphDatabaseSettings.log_queries_filename.name() +
+                           " has not been provided in configuration, hence query logging is suppressed" );
+
+            return createEmptyAdapter();
+        }
+
+        Long rotationThreshold = config.get( GraphDatabaseSettings.log_queries_rotation_threshold );
+        long thresholdMillis = config.get( GraphDatabaseSettings.log_queries_threshold );
+
+        LoggerFactory loggerFactory = new LoggerFactory( dependencies.filesystem(), queryLogFile, rotationThreshold );
+        QueryLogger logger = new QueryLogger( Clock.SYSTEM_CLOCK, loggerFactory, thresholdMillis );
+        dependencies.monitoring().addMonitorListener( logger );
+        return logger;
+    }
+
+    private Lifecycle createEmptyAdapter()
+    {
+        return new LifecycleAdapter();
     }
 
     public static class QueryLogger extends LifecycleAdapter implements QueryExecutionMonitor
@@ -156,17 +164,19 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
     {
         private final FileSystemAbstraction filesystem;
         private final File logfile;
+        private Long rotationThreshold;
 
-        public LoggerFactory( FileSystemAbstraction filesystem, File logfile )
+        public LoggerFactory( FileSystemAbstraction filesystem, File logfile, Long rotationThreshold )
         {
             this.filesystem = filesystem;
             this.logfile = logfile;
+            this.rotationThreshold = rotationThreshold;
         }
 
         @Override
         public StringLogger newInstance()
         {
-            return StringLogger.logger( filesystem, logfile, DEFAULT_THRESHOLD_FOR_ROTATION, false );
+            return StringLogger.logger( filesystem, logfile, rotationThreshold.intValue(), false );
         }
     }
 }
