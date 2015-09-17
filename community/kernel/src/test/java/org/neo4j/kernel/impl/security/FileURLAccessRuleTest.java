@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.security;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.Test;
 
 import java.net.URL;
@@ -91,7 +92,9 @@ public class FileURLAccessRuleTest
     @Test
     public void shouldAdjustURLToWithinImportDirectory() throws Exception
     {
-        final URL url = new URL( "file:///bar/baz.csv" );
+        final URL url = SystemUtils.IS_OS_WINDOWS
+                        ? new URL( "file:///C:/bar/baz.csv" )
+                        : new URL( "file:///bar/baz.csv" );
         final GraphDatabaseAPI gdb = mock( GraphDatabaseAPI.class );
         final DependencyResolver mockResolver = mock( DependencyResolver.class );
         when( gdb.getDependencyResolver() ).thenReturn( mockResolver );
@@ -99,6 +102,9 @@ public class FileURLAccessRuleTest
         when( mockResolver.resolveDependency( eq( Config.class ) ) ).thenReturn( config );
 
         URL accessURL = URLAccessRules.fileAccess().validate( gdb, url );
-        assertThat( accessURL, equalTo( new URL( "file:///var/lib/neo4j/import/bar/baz.csv" ) ) );
+        URL expected = SystemUtils.IS_OS_WINDOWS
+                       ? new URL( "file:///C:/var/lib/neo4j/import/bar/baz.csv" )
+                       : new URL( "file:///var/lib/neo4j/import/bar/baz.csv" );
+        assertThat( accessURL, equalTo( expected ) );
     }
 }
