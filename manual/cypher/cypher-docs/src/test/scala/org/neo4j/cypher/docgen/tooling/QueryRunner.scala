@@ -21,19 +21,20 @@ package org.neo4j.cypher.docgen.tooling
 
 import org.neo4j.cypher.ExecutionEngine
 import org.neo4j.cypher.internal.RewindableExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.util.{Success, Failure, Try}
 
-object QueryRunner {
+/**
+ * QueryRunner is used to actually run queries and produce either errors or Content containing the
+ */
+class QueryRunner(formatter: (InternalExecutionResult, Content) => Content) {
 
-
-  //  (queryResult, Content) => Content
-
-  def runQueries(init: Seq[String], queries: Seq[Query]): Seq[(String, Option[Exception])] = {
+  def runQueries(init: Seq[String], queries: Seq[Query]): Seq[QueryRunResult] = {
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val engine = new ExecutionEngine(db)
-    queries.map { case Query(q, assertions, _) =>
+    queries.map { case Query(q, assertions, content) =>
       val result: Option[Exception] =
         try {
           (assertions, Try(engine.execute(q))) match {
@@ -64,9 +65,12 @@ object QueryRunner {
           case e: Exception =>
             Some(e)
         }
-      q -> result
+      QueryRunResult(q, result, content)
     }
   }
 }
+
+//TODO: instead of testResult AND content, maybe we should only keep an Either[Exception, Content]?
+case class QueryRunResult(query: String, testResult: Option[Exception], content: Content)
 
 class ExpectedExceptionNotFound(m: String) extends Exception(m)

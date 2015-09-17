@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.docgen.cookbook
 
+import org.neo4j.cypher.docgen.tooling.Admonitions._
 import org.neo4j.cypher.docgen.tooling.ImageType.INITIAL
 import org.neo4j.cypher.docgen.tooling._
 import org.neo4j.graphdb.Node

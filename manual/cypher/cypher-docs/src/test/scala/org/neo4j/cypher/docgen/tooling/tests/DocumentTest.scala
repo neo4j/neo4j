@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.docgen.tooling.tests
 
+import org.neo4j.cypher.docgen.tooling.Admonitions._
 import org.neo4j.cypher.docgen.tooling._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
@@ -224,11 +225,52 @@ class DocumentAsciiDocTest extends CypherFunSuite {
         |""".stripMargin)
   }
 
-//  test("Document containing a query produces a test") {
-//    val doc = Document("title", "myId", initQueries = Seq.empty, Query("MATCH n RETURN n", NoAssertions, QueryResultTable))
-//
-//    doc.tests.toList should be(Seq("MATCH n RETURN n" -> NoAssertions))
-//  }
+  test("QueryResult that creates data and returns nothing") {
+    val doc = QueryResult(Seq(), Seq.empty, footer = "0 rows\nNodes created: 2\nRelationships created: 1\n")
+
+    doc.asciiDoc(0) should equal(
+      """.Result
+        |[role="queryresult",options="footer",cols="1*<m"]
+        ||===
+        |1+|(empty result)
+        |1+|0 rows
+        |Nodes created: 2
+        |Relationships created: 1
+        |
+        ||===
+        |
+        |""".stripMargin)
+  }
+
+  test("QueryResult that creates nothing and but returns data") {
+    val doc = QueryResult(Seq("n1", "n2"), Seq(ResultRow(Seq(1, 2))), footer = "1 row")
+
+    doc.asciiDoc(0) should equal(
+      """.Result
+        |[role="queryresult",options="header,footer",cols="2*<m"]
+        ||===
+        ||n1|n2
+        ||1|2
+        |2+|1 row
+        ||===
+        |
+        |""".stripMargin)
+  }
+
+  test("QueryResult that returns data containing pipes") {
+    val doc = QueryResult(Seq("n1|x1", "n2"), Seq(ResultRow(Seq("1|2", 2))), footer = "1 row")
+
+    doc.asciiDoc(0) should equal(
+      """.Result
+        |[role="queryresult",options="header,footer",cols="2*<m"]
+        ||===
+        ||n1\|x1|n2
+        ||1\|2|2
+        |2+|1 row
+        ||===
+        |
+        |""".stripMargin)
+  }
 }
 
 class DocumentQueryTest extends CypherFunSuite {
@@ -254,24 +296,4 @@ class DocumentQueryTest extends CypherFunSuite {
 
     asciiDocResult.testResults.toList should be(Seq(query -> NoAssertions))
   }
-
-//  test("Simple query with assertions") {
-//    val query = "match (n:TheNode) return n"
-//    val doc = Document("title", "myId", initQueries = Seq("CREATE (:TheNode)"),
-//      Query(query, ResultAssertions(p => fail("this is expected")), Paragraph("hello world")))
-//
-//    doc.asciiDoc.text should equal(
-//      """[[myId]]
-//        |= title
-//        |
-//        |[source,cypher]
-//        |.Query
-//        |----
-//        |MATCH (n)
-//        |RETURN n
-//        |----
-//        |
-//        |""".stripMargin)
-//  }
-
 }
