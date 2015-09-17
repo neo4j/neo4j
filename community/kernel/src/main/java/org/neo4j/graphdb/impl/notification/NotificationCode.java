@@ -106,9 +106,15 @@ public enum NotificationCode
     MISSING_LABEL(
             SeverityLevel.WARNING,
             Status.Statement.LabelMissingWarning,
-            "One of the labels in your query is not available in the database, make sure you didn't misspell it or that the label is available when you run this statement in your application"
-    )
-    ;
+            "One of the labels in your query is not available in the database, make sure you didn't " +
+            "misspell it or that the label is available when you run this statement in your application"
+    ),
+    MISSING_REL_TYPE(
+            SeverityLevel.WARNING,
+            Status.Statement.RelTypeMissingWarning,
+            "One of the relationship types in your query is not available in the database, make sure you didn't " +
+            "misspell it or that the label is available when you run this statement in your application"
+    );
 
     private final Status status;
     private final String description;

@@ -170,7 +170,8 @@ public interface Status
                                          "which forces all dependent data to be materialized in main memory " +
                                          "before proceeding"),
         IndexMissingWarning( ClientNotification, "Adding a schema index may speed up this query." ),
-        LabelMissingWarning( ClientNotification, "The provided label is not in the database."  );
+        LabelMissingWarning( ClientNotification, "The provided label is not in the database." ),
+        RelTypeMissingWarning( ClientNotification, "The provided relationship type is not in the database." );
 
         private final Code code;
 

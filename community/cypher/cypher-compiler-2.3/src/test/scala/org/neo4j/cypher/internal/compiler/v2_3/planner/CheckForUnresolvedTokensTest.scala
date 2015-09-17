@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner
 
 import org.neo4j.cypher.internal.frontend.v2_3.ast.{Query, Statement, SingleQuery}
-import org.neo4j.cypher.internal.frontend.v2_3.notification.MissingLabelNotification
-import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition, LabelId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v2_3.notification.{MissingRelTypeNotification, MissingLabelNotification}
+import org.neo4j.cypher.internal.frontend.v2_3.{RelTypeId, InputPosition, LabelId, SemanticTable}
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
 class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestSupport {
@@ -47,6 +47,36 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
 
     //when
     val ast = parse("MATCH (a:A)-->(b:B) RETURN *")
+
+    //then
+    checkForUnresolvedTokens(ast, semanticTable) shouldBe empty
+  }
+
+  test("warn when missing relationship type") {
+    //given
+    val semanticTable = new SemanticTable
+    semanticTable.resolvedLabelIds.put("A", LabelId(42))
+    semanticTable.resolvedLabelIds.put("B", LabelId(84))
+
+    //when
+    val ast = parse("MATCH (a:A)-[r:R1|R2]->(b:B) RETURN *")
+
+    //then
+    checkForUnresolvedTokens(ast, semanticTable) should equal(Seq(
+      MissingRelTypeNotification(InputPosition(15, 1, 16), "R1"),
+      MissingRelTypeNotification(InputPosition(18, 1, 19), "R2")))
+  }
+
+  test("don't warn when relationship types are there") {
+    //given
+    val semanticTable = new SemanticTable
+    semanticTable.resolvedLabelIds.put("A", LabelId(42))
+    semanticTable.resolvedLabelIds.put("B", LabelId(84))
+    semanticTable.resolvedRelTypeNames.put("R1", RelTypeId(1))
+    semanticTable.resolvedRelTypeNames.put("R2", RelTypeId(2))
+
+    //when
+    val ast = parse("MATCH (a:A)-[r:R1|R2]->(b:B) RETURN *")
 
     //then
     checkForUnresolvedTokens(ast, semanticTable) shouldBe empty

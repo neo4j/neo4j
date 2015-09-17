@@ -41,6 +41,11 @@ public interface NotificationDetail
             return createNotificationDetail( "provided label", labelName, true );
         }
 
+        public static NotificationDetail relationshipType( final String relType )
+        {
+            return createNotificationDetail( "provided relationship type", relType, true );
+        }
+
         public static NotificationDetail joinKey( List<String> identifiers )
         {
             boolean singular = identifiers.size() == 1;

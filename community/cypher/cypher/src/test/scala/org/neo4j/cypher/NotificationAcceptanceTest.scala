@@ -333,11 +333,27 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("should warn for misspelled label") {
+    //given
     createLabeledNode("Person")
+
+    //when
     val resultMisspelled = innerExecute("EXPLAIN MATCH (n:Preson) RETURN n.name")
     val resultCorrectlySpelled = innerExecute("EXPLAIN MATCH (n:Person) RETURN n.name")
 
+    //then
     resultMisspelled.notifications should contain(MissingLabelNotification(InputPosition(9, 1, 10), "Preson"))
+    resultCorrectlySpelled.notifications shouldBe empty
+  }
+
+  test("should warn for misspelled relationship type") {
+    //given
+    relate(createNode(), createNode(), "R")
+
+    //when
+    val resultMisspelled = innerExecute("EXPLAIN MATCH ()-[r:r]->() RETURN r.prop")
+    val resultCorrectlySpelled = innerExecute("EXPLAIN MATCH ()-[r:R]->() RETURN r.prop")
+
+    resultMisspelled.notifications should contain(MissingRelTypeNotification(InputPosition(12, 1, 13), "r"))
     resultCorrectlySpelled.notifications shouldBe empty
   }
 }

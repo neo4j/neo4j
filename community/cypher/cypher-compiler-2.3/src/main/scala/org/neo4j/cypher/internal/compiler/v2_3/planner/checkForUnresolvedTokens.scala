@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner
 
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticTable
-import org.neo4j.cypher.internal.frontend.v2_3.ast.{LabelName, Query}
-import org.neo4j.cypher.internal.frontend.v2_3.notification.{MissingLabelNotification, InternalNotification}
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{RelTypeName, LabelName, Query}
+import org.neo4j.cypher.internal.frontend.v2_3.notification.{MissingRelTypeNotification, MissingLabelNotification, InternalNotification}
 
 /**
  * Parses ast and looks for unresolved tokens
@@ -29,11 +29,17 @@ import org.neo4j.cypher.internal.frontend.v2_3.notification.{MissingLabelNotific
 object checkForUnresolvedTokens extends ((Query, SemanticTable) => Seq[InternalNotification]) {
 
   def apply(ast: Query, table: SemanticTable) = {
-    def isEmptyLabel(label: String): Boolean = !table.resolvedLabelIds.contains(label)
+    def isEmptyLabel(label: String) = !table.resolvedLabelIds.contains(label)
+    def isEmptyRelType(label: String) = !table.resolvedRelTypeNames.contains(label)
 
     ast.treeFold(Seq.empty[InternalNotification]) {
+
       case label@LabelName(name) if isEmptyLabel(name) => (acc, children) => children(
         acc :+ MissingLabelNotification(label.position, name))
+
+      case rel@RelTypeName(name) if isEmptyRelType(name) => (acc, children) => children(
+        acc :+ MissingRelTypeNotification(rel.position, name))
+
     }
   }
 }
