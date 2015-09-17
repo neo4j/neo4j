@@ -19,17 +19,17 @@
  */
 package org.neo4j.ha;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
-
 import java.io.File;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -162,7 +162,7 @@ public class TestPullUpdates
             master = new TestHighlyAvailableGraphDatabaseFactory().
                     newHighlyAvailableDatabaseBuilder( masterDir.getAbsolutePath() )
                     .setConfig( ClusterSettings.server_id, "1" )
-                    .setConfig( ClusterSettings.initial_hosts, ":5001" )
+                    .setConfig( ClusterSettings.initial_hosts, "localhost:5001" )
                     .newGraphDatabase();
 
             // Copy the store, then shutdown, so update pulling later makes sense
@@ -170,7 +170,7 @@ public class TestPullUpdates
             slave = new TestHighlyAvailableGraphDatabaseFactory().
                     newHighlyAvailableDatabaseBuilder( slaveDir.getAbsolutePath() )
                     .setConfig( ClusterSettings.server_id, "2" )
-                    .setConfig( ClusterSettings.initial_hosts, ":5001" )
+                    .setConfig( ClusterSettings.initial_hosts, "localhost:5001" )
                     .newGraphDatabase();
 
             // Required to block until the slave has left for sure
@@ -211,7 +211,7 @@ public class TestPullUpdates
             slave = new TestHighlyAvailableGraphDatabaseFactory().
                     newHighlyAvailableDatabaseBuilder( slaveDir.getAbsolutePath() )
                     .setConfig( ClusterSettings.server_id, "2" )
-                    .setConfig( ClusterSettings.initial_hosts, ":5001" )
+                    .setConfig( ClusterSettings.initial_hosts, "localhost:5001" )
                     .setConfig( HaSettings.pull_interval, "0" ) // no pull updates, should pull on startup
                     .newGraphDatabase();
 
