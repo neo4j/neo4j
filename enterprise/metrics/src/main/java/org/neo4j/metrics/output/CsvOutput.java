@@ -25,6 +25,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
@@ -45,6 +46,7 @@ public class CsvOutput implements Closeable
         if ( config.get( csvEnabled ) )
         {
             // Setup CSV reporting
+            File outputFile = config.get( csvPath );
             switch ( config.get( MetricsSettings.csvFile ) )
             {
             case single:
@@ -53,18 +55,18 @@ public class CsvOutput implements Closeable
                         .convertRatesTo( TimeUnit.SECONDS )
                         .convertDurationsTo( TimeUnit.MILLISECONDS )
                         .filter( MetricFilter.ALL )
-                        .build( config.get( csvPath ) );
+                        .build( outputFile );
                 break;
             }
 
             case split:
             {
-                if ( !config.get( csvPath ).exists() )
+                if ( !outputFile.exists() )
                 {
-                    if ( !config.get( csvPath ).mkdirs() )
+                    if ( !outputFile.mkdirs() )
                     {
-                        throw new IllegalStateException( "Could not create path for CSV files:" + config.get(
-                                csvPath ).getAbsolutePath() );
+                        throw new IllegalStateException(
+                                "Could not create path for CSV files:" + outputFile.getAbsolutePath() );
                     }
                 }
 
@@ -72,7 +74,7 @@ public class CsvOutput implements Closeable
                         .convertRatesTo( TimeUnit.SECONDS )
                         .convertDurationsTo( TimeUnit.MILLISECONDS )
                         .filter( MetricFilter.ALL )
-                        .build( config.get( csvPath ) );
+                        .build( outputFile );
                 break;
             }
             }
@@ -80,7 +82,7 @@ public class CsvOutput implements Closeable
             // Start CSV reporter
             csvReporter.start( config.get( csvInterval ), TimeUnit.MILLISECONDS );
 
-            logger.info( "Sending metrics to CSV file at " + config.get( csvPath ) );
+            logger.info( "Sending metrics to CSV file at " + outputFile );
         }
     }
 

@@ -66,18 +66,4 @@ public class MetricsSettings
     public static Setting<Boolean> neoPageCacheEnabled = setting( "metrics.neo4j.pagecache.enabled", Settings.BOOLEAN, neoEnabled );
     public static Setting<Boolean> neoCountsEnabled = setting( "metrics.neo4j.counts.enabled", Settings.BOOLEAN, neoEnabled );
     public static Setting<Boolean> neoNetworkEnabled = setting( "metrics.neo4j.network.enabled", Settings.BOOLEAN, neoEnabled );
-//    public static Setting<Boolean> neoLogEnabled = setting( "metrics.neo4j.log.enabled", Settings.BOOLEAN, neoEnabled );
-//    public static Setting<Boolean> neoClusterEnabled = setting( "metrics.neo4j.cluster.enabled", Settings.BOOLEAN, neoEnabled );
-
-//    public static Setting<Boolean> jvmEnabled = setting( "metrics.jvm.enabled", Settings.BOOLEAN, metricsEnabled );
-//    public static Setting<Boolean> jvmGcEnabled = setting( "metrics.jvm.gc.enabled", Settings.BOOLEAN, jvmEnabled );
-//    public static Setting<Boolean> jvmMemoryEnabled = setting( "metrics.jvm.memory.enabled", Settings.BOOLEAN, jvmEnabled );
-//    public static Setting<Boolean> jvmBuffersEnabled = setting( "metrics.jvm.buffers.enabled", Settings.BOOLEAN, jvmEnabled );
-//    public static Setting<Boolean> jvmThreadsEnabled = setting( "metrics.jvm.threads.enabled", Settings.BOOLEAN, jvmEnabled );
-//    public static Setting<Boolean> jvmAllocationEnabled = setting( "metrics.jvm.allocation.enabled",
-//            Settings.BOOLEAN, Settings.FALSE);
-//    public static Setting<Boolean> jvmAllocationHistogramsEnabled = setting( "metrics.jvm.allocation.histograms.enabled",
-//            Settings.BOOLEAN, Settings.FALSE);
-//    public static Setting<File> jvmAllocationHistogramPath = setting( "metrics.jvm.allocation.histograms.path", Settings.PATH,
-//            "allocation" , basePath(GraphDatabaseSettings.store_dir ) );
 }

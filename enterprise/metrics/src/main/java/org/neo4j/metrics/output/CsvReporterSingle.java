@@ -21,7 +21,6 @@ package org.neo4j.metrics.output;
 
 import com.codahale.metrics.Clock;
 import com.codahale.metrics.Counter;
-import com.codahale.metrics.CsvReporter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
@@ -30,19 +29,20 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
+
+import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 
@@ -77,6 +77,7 @@ public class CsvReporterSingle extends ScheduledReporter
         private TimeUnit rateUnit;
         private TimeUnit durationUnit;
         private Clock clock;
+        private Log logger;
         private MetricFilter filter;
 
         private Builder( MetricRegistry registry )
@@ -125,6 +126,18 @@ public class CsvReporterSingle extends ScheduledReporter
         }
 
         /**
+         * Use the given {@link Log} for reporting any errors.
+         *
+         * @param logger A Log instance, never null.
+         * @return {@code this}
+         */
+        public Builder withLogger( Log logger )
+        {
+            this.logger = logger;
+            return this;
+        }
+
+        /**
          * Only report metrics which match the given filter.
          *
          * @param filter a {@link MetricFilter}
@@ -150,28 +163,37 @@ public class CsvReporterSingle extends ScheduledReporter
                     rateUnit,
                     durationUnit,
                     clock,
+                    logger,
                     filter );
         }
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( CsvReporter.class );
-    private static final Charset UTF_8 = Charset.forName( "UTF-8" );
-    private static final SimpleDateFormat ISO8601 = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss" );
+    private static final ThreadLocal<SimpleDateFormat> ISO8601 = new ThreadLocal<SimpleDateFormat>()
+    {
+        @Override
+        protected SimpleDateFormat initialValue()
+        {
+            return new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss" );
+        }
+    };
 
     private final File file;
     private final Clock clock;
+    private final Log logger;
     private PrintWriter out;
 
     private CsvReporterSingle( MetricRegistry registry,
-            File file,
-            TimeUnit rateUnit,
-            TimeUnit durationUnit,
-            Clock clock,
-            MetricFilter filter )
+                               File file,
+                               TimeUnit rateUnit,
+                               TimeUnit durationUnit,
+                               Clock clock,
+                               Log logger,
+                               MetricFilter filter )
     {
         super( registry, "csv-reporter-single", filter, rateUnit, durationUnit );
         this.file = file;
         this.clock = clock;
+        this.logger = logger;
     }
 
     @Override
@@ -196,88 +218,11 @@ public class CsvReporterSingle extends ScheduledReporter
         {
             try
             {
-                if ( file.exists() )
-                {
-                    // Archive existing log
-                    String fileName = file.getName();
-                    fileName = new SimpleDateFormat( "yyyy_MM_dd_HH_mm_ss" ).format( new Date( file.lastModified() ) ) +
-                               fileName;
-                    File archiveFile = new File( file.getParentFile(), fileName );
-                    if ( !file.renameTo( archiveFile ) )
-                    {
-                        throw new IllegalStateException( "Could not move old metrics log to " + archiveFile );
-                    }
-                }
-
-                out = new PrintWriter( new OutputStreamWriter( new FileOutputStream( file ), UTF_8 ) );
-
-                StringBuilder header = new StringBuilder();
-                header.append( "timestamp" ).append( SEPARATOR ).append( "datetime" );
-
-                for ( Map.Entry<String,Gauge> entry : gauges.entrySet() )
-                {
-                    header.append( SEPARATOR ).append( entry.getKey() );
-                }
-
-                for ( Map.Entry<String,Counter> entry : counters.entrySet() )
-                {
-                    header.append( SEPARATOR ).append( entry.getKey() );
-                }
-
-                for ( Map.Entry<String,Histogram> entry : histograms.entrySet() )
-                {
-                    header
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".count" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".max" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".mean" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".min" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".stddev" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".p50" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".p75" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".p95" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".p98" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".p99" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".p999" );
-                }
-
-                for ( Map.Entry<String,Meter> entry : meters.entrySet() )
-                {
-                    header
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".count" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".mean_rate" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".m1_rate" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".m5_rate" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".m15_rate" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".rate_unit" );
-                }
-
-                for ( Map.Entry<String,Timer> entry : timers.entrySet() )
-                {
-                    header
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".count" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".max" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".mean" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".min" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".stddev" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".p50" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".p75" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".p95" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".p98" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".p99" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".p999" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".mean_rate" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".m1_rate" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".m5_rate" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".m15_rate" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".rate_unit" )
-                            .append( SEPARATOR ).append( entry.getKey() ).append( ".duration_unit" );
-                }
-
-                out.println( header.toString() );
+                startNewCsvFile( gauges, counters, histograms, meters, timers );
             }
-            catch ( Throwable t )
+            catch ( Exception e )
             {
-                LOGGER.warn( "Error writing to {}", file.getAbsolutePath(), t );
+                logger.warn( "Could not create output CSV file: " + file.getAbsolutePath(), e );
             }
         }
 
@@ -285,7 +230,7 @@ public class CsvReporterSingle extends ScheduledReporter
 
         final long timestamp = TimeUnit.MILLISECONDS.toSeconds( clock.getTime() );
 
-        line.append( timestamp ).append( SEPARATOR ).append( ISO8601.format( new Date( clock.getTime() ) ) );
+        line.append( timestamp ).append( SEPARATOR ).append( ISO8601.get().format( new Date( clock.getTime() ) ) );
 
         for ( Map.Entry<String,Gauge> entry : gauges.entrySet() )
         {
@@ -314,6 +259,95 @@ public class CsvReporterSingle extends ScheduledReporter
 
         out.println( line.toString() );
         out.flush();
+    }
+
+    private void startNewCsvFile( SortedMap<String,Gauge> gauges, SortedMap<String,Counter> counters,
+                                  SortedMap<String,Histogram> histograms, SortedMap<String,Meter> meters,
+                                  SortedMap<String,Timer> timers ) throws FileNotFoundException
+    {
+        if ( file.exists() )
+        {
+            archiveExistingLogFile();
+        }
+
+        out = new PrintWriter( new OutputStreamWriter( new FileOutputStream( file ), StandardCharsets.UTF_8 ) );
+
+        StringBuilder header = new StringBuilder();
+        header.append( "timestamp" ).append( SEPARATOR ).append( "datetime" );
+
+        for ( Map.Entry<String,Gauge> entry : gauges.entrySet() )
+        {
+            header.append( SEPARATOR ).append( entry.getKey() );
+        }
+
+        for ( Map.Entry<String,Counter> entry : counters.entrySet() )
+        {
+            header.append( SEPARATOR ).append( entry.getKey() );
+        }
+
+        for ( Map.Entry<String,Histogram> entry : histograms.entrySet() )
+        {
+            header
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".count" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".max" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".mean" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".min" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".stddev" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".p50" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".p75" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".p95" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".p98" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".p99" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".p999" );
+        }
+
+        for ( Map.Entry<String,Meter> entry : meters.entrySet() )
+        {
+            header
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".count" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".mean_rate" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".m1_rate" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".m5_rate" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".m15_rate" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".rate_unit" );
+        }
+
+        for ( Map.Entry<String,Timer> entry : timers.entrySet() )
+        {
+            header
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".count" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".max" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".mean" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".min" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".stddev" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".p50" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".p75" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".p95" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".p98" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".p99" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".p999" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".mean_rate" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".m1_rate" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".m5_rate" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".m15_rate" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".rate_unit" )
+                    .append( SEPARATOR ).append( entry.getKey() ).append( ".duration_unit" );
+        }
+
+        out.println( header.toString() );
+    }
+
+    private void archiveExistingLogFile()
+    {
+        String fileName = file.getName();
+        SimpleDateFormat archivePrefix = new SimpleDateFormat( "yyyy_MM_dd_HH_mm_ss" );
+        fileName = archivePrefix.format( new Date( file.lastModified() ) ) + fileName;
+        File archiveFile = new File( file.getParentFile(), fileName );
+
+        if ( !file.renameTo( archiveFile ) )
+        {
+            throw new IllegalStateException( "Could not move old metrics log to " + archiveFile );
+        }
     }
 
     private void reportTimer( Timer timer, StringBuilder line )

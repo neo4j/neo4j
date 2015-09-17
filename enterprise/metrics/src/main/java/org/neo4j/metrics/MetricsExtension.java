@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -90,17 +91,10 @@ public class MetricsExtension extends LifecycleAdapter
         if ( prefix.equals( MetricsSettings.metricsPrefix.getDefaultValue() ) )
         {
             // If default name and in HA, try to figure out a nicer name
-            if ( config.getParams().containsKey( "ha.server_id" ) )
+            if ( config.getParams().containsKey( ClusterSettings.server_id.name() ) )
             {
-                String clusterName = config.getParams().get( "ha.cluster_name" );
-                if ( clusterName == null )
-                {
-                    clusterName = "ha";
-                }
-
-                prefix += "." + clusterName;
-
-                prefix += "." + config.getParams().get( "ha.server_id" );
+                prefix += "." + config.get( ClusterSettings.cluster_name );
+                prefix += "." + config.get( ClusterSettings.server_id );
             }
         }
         return prefix;
