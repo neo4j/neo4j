@@ -17,21 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.docgen.cookbook
+package org.neo4j.cypher.docgen
 
-import org.neo4j.cypher.docgen.tooling.Admonitions._
+import org.neo4j.cypher.docgen.tooling.Admonitions.Tip
 import org.neo4j.cypher.docgen.tooling.ImageType.INITIAL
 import org.neo4j.cypher.docgen.tooling._
 import org.neo4j.graphdb.Node
 import org.neo4j.tooling.GlobalGraphOperations
-import org.scalatest.{Assertions, FunSuiteLike, Matchers}
 
 import scala.collection.JavaConverters._
 
+
 class NewMatchTest extends NewDocumentingTestBase {
-  val doc =
+  def doc =
     Document("Match", "id",
-      initQueries = Seq("FUNKY CYPHER THAT BUILDS DATABASE"),
+      initQueries = Seq("CREATE ()"),
       Abstract("The `MATCH` clause is used to search for the pattern described in it.") ~
         Section("Introduction",
           Paragraph(
@@ -51,8 +51,11 @@ class NewMatchTest extends NewDocumentingTestBase {
             Paragraph("By just specifying a pattern with a single node and no labels, all nodes in the graph will be returned.") ~
               Query("MATCH (n) RETURN n",
                 assertions = ResultAndDbAssertions((p, db) => {
-                  val allNodes: List[Node] = GlobalGraphOperations.at(db).getAllNodes.asScala.toList
-                  allNodes should equal(p.columnAs[Node]("n").toList)
+                  val tx = db.beginTx()
+                  try {
+                    val allNodes: List[Node] = GlobalGraphOperations.at(db).getAllNodes.asScala.toList
+                    allNodes should equal(p.columnAs[Node]("n").toList)
+                  } finally tx.close()
                 }),
 
                 Paragraph("Returns all the nodes in the database.") ~
@@ -62,11 +65,3 @@ class NewMatchTest extends NewDocumentingTestBase {
         )
     )
 }
-
-
-
-
-trait NewDocumentingTestBase extends FunSuiteLike with Assertions with Matchers {
-  def doc: Document
-}
-

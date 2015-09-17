@@ -61,7 +61,7 @@ class QueryRunnerTest extends CypherFunSuite {
   }
 
   private def runQueries(query: String, assertions: QueryAssertions = NoAssertions, content: Content = NoContent): Seq[QueryRunResult] = {
-    val runner = new QueryRunner((_, content) => content)
+    val runner = new QueryRunner((_, content, _) => content)
     runner.runQueries(init = Seq.empty, queries = Seq(Query(query, assertions, content)))
   }
 

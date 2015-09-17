@@ -22,6 +22,7 @@ package org.neo4j.cypher.docgen.tooling
 import org.neo4j.cypher.ExecutionEngine
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.util.{Success, Failure, Try}
@@ -29,43 +30,56 @@ import scala.util.{Success, Failure, Try}
 /**
  * QueryRunner is used to actually run queries and produce either errors or Content containing the
  */
-class QueryRunner(formatter: (InternalExecutionResult, Content) => Content) {
+class QueryRunner(formatter: (InternalExecutionResult, Content, GraphDatabaseService) => Content) {
 
   def runQueries(init: Seq[String], queries: Seq[Query]): Seq[QueryRunResult] = {
-    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val db: GraphDatabaseService = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val engine = new ExecutionEngine(db)
-    queries.map { case Query(q, assertions, content) =>
-      val result: Option[Exception] =
+
+    init.foreach { q =>
+      try {
+        engine.execute(q)
+      } catch {
+        case e: Throwable => throw new RuntimeException(s"Initialising database failed on query: $q", e)
+      }
+    }
+
+    queries.map { case Query(query, assertions, content) =>
+      val format = formatter(_: InternalExecutionResult, content, db)
+      val (result, newContent) =
         try {
-          (assertions, Try(engine.execute(q))) match {
+          (assertions, Try(engine.execute(query))) match {
             case (e: ExpectedException[_], Success(_)) =>
-              Some(new ExpectedExceptionNotFound(s"Expected exception of type ${e.getExceptionClass}"))
+              (Some(new ExpectedExceptionNotFound(s"Expected exception of type ${e.getExceptionClass}")), NoContent)
 
             case (expectation: ExpectedException[_], Failure(exception: Exception)) =>
               expectation.handle(exception)
-              None
+              (None, content)
 
             case (_, Failure(exception: Exception)) =>
-              Some(exception)
+              (Some(exception), NoContent)
 
             case (ResultAssertions(f), Success(inner)) =>
               val result = RewindableExecutionResult(inner)
               f(result)
-              None
+              (None, format(result))
 
             case (ResultAndDbAssertions(f), Success(inner)) =>
               val result = RewindableExecutionResult(inner)
               f(result, db)
-              None
+              (None, format(result))
 
-            case (NoAssertions, Success(_)) =>
-              None
+            case (NoAssertions, Success(inner)) =>
+              val result = RewindableExecutionResult(inner)
+              (None, format(result))
           }
+
         } catch {
           case e: Exception =>
-            Some(e)
+            (Some(e), NoContent)
         }
-      QueryRunResult(q, result, content)
+
+      QueryRunResult(query, result, newContent)
     }
   }
 }

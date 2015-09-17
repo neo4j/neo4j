@@ -58,6 +58,9 @@ object Foldable {
 
     def findByClass[A : Manifest]: A =
       findAcc[A](mutable.ArrayStack(that))
+
+    def findAllByClass[A : Manifest]: Seq[A] =
+      findAllAcc(mutable.ArrayStack(that))
   }
 
   @tailrec
@@ -106,6 +109,17 @@ object Foldable {
       that match {
         case x: A => x
         case _ => findAcc(remaining ++= that.reverseChildren)
+      }
+    }
+
+  private def findAllAcc[A : ClassTag](remaining: mutable.ArrayStack[Any]): Seq[A] =
+    if (remaining.isEmpty) {
+      Seq.empty
+    } else {
+      val that = remaining.pop()
+      that match {
+        case x: A => x +: findAllAcc(remaining ++= that.reverseChildren)
+        case _ => findAllAcc(remaining ++= that.reverseChildren)
       }
     }
 }

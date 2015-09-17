@@ -28,10 +28,10 @@ import org.neo4j.graphdb.GraphDatabaseService
  * This class is responsible for replacing the Content tags asking for query results
  * with the actual results from running the queries
  */
-class QueryResultContentBuilder(db: GraphDatabaseService)
-  extends ((InternalExecutionResult, Content) => Content) {
+object QueryResultContentBuilder
+  extends ((InternalExecutionResult, Content, GraphDatabaseService) => Content) {
 
-  override def apply(result: InternalExecutionResult, content: Content): Content = {
+  override def apply(result: InternalExecutionResult, content: Content, db: GraphDatabaseService): Content = {
 
     val columns = result.columns
     var rowCount = 0

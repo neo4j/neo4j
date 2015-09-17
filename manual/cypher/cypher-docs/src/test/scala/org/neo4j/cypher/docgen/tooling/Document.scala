@@ -22,7 +22,7 @@ package org.neo4j.cypher.docgen.tooling
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
 import org.neo4j.graphdb.GraphDatabaseService
-
+import org.neo4j.cypher.internal.frontend.v2_3.Foldable._
 
 case class AsciiDocResult(text: String, testResults: Seq[(String, Option[Exception])])
 
@@ -41,31 +41,24 @@ case class Document(title: String, id: String, initQueries: Seq[String], content
 sealed trait Content {
   def ~(other: Content): Content = ContentChain(this, other)
 
-  def tests: Seq[(String, QueryAssertions)]
-
   def asciiDoc(level: Int): String
 
   def NewLine: String = "\n"
+
+  def queries: Seq[Query] = this.findAllByClass[Query]
 }
 
-trait NoTests {
-  self: Content =>
-  def tests: Seq[(String, QueryAssertions)] = Seq.empty
-}
-
-case object NoContent extends Content with NoTests {
+case object NoContent extends Content {
   override def asciiDoc(level: Int) = ""
 }
 
 case class ContentChain(a: Content, b: Content) extends Content {
-  override def tests: Seq[(String, QueryAssertions)] = a.tests ++ b.tests
-
   override def asciiDoc(level: Int) = a.asciiDoc(level) + b.asciiDoc(level)
 
   override def toString: String = s"$a ~ $b"
 }
 
-case class Abstract(s: String) extends Content with NoTests {
+case class Abstract(s: String) extends Content {
   override def asciiDoc(level: Int) =
     s"""[abstract]
        |====
@@ -75,11 +68,11 @@ case class Abstract(s: String) extends Content with NoTests {
        |""".stripMargin
 }
 
-case class Heading(s: String) extends Content with NoTests {
+case class Heading(s: String) extends Content {
   override def asciiDoc(level: Int) = "." + s + NewLine
 }
 
-case class Paragraph(s: String) extends Content with NoTests {
+case class Paragraph(s: String) extends Content {
   override def asciiDoc(level: Int) = s + NewLine + NewLine
 }
 
@@ -129,7 +122,7 @@ object Admonitions {
 
 }
 
-trait Admonitions extends Content with NoTests {
+trait Admonitions extends Content {
   def innerContent: Content
 
   def heading: Option[String]
@@ -150,15 +143,13 @@ trait Admonitions extends Content with NoTests {
   }
 }
 
-case class GraphImage(s: ImageType) extends Content with NoTests {
+case class GraphImage(s: ImageType) extends Content {
   override def asciiDoc(level: Int) = ???
 }
 
-case class ResultRow(values: Seq[Any]) extends Content with NoTests {
-  override def asciiDoc(level: Int): String = ???
-}
+case class ResultRow(values: Seq[Any])
 
-case class QueryResult(columns: Seq[String], rows: Seq[ResultRow], footer: String) extends Content with NoTests {
+case class QueryResult(columns: Seq[String], rows: Seq[ResultRow], footer: String) extends Content {
   override def asciiDoc(level: Int): String = {
 
     val header = if (columns.nonEmpty) "header," else ""
@@ -187,7 +178,6 @@ case class QueryResult(columns: Seq[String], rows: Seq[ResultRow], footer: Strin
 }
 
 case class Query(queryText: String, assertions: QueryAssertions, content: Content) extends Content {
-  override def tests: Seq[(String, QueryAssertions)] = Seq(queryText -> assertions)
 
   override def asciiDoc(level: Int) = {
     val inner = Prettifier(queryText)
@@ -202,7 +192,6 @@ case class Query(queryText: String, assertions: QueryAssertions, content: Conten
 }
 
 case class Section(heading: String, content: Content) extends Content {
-  override def tests: Seq[(String, QueryAssertions)] = content.tests
 
   override def asciiDoc(level: Int) = {
     val levelIndent = (0 to (level + 1)).map(_ => "=").mkString
@@ -229,7 +218,7 @@ case class ExpectedException[EXCEPTION <: Exception](f: EXCEPTION => Unit)
   }
 }
 
-case object QueryResultTable extends Content with NoTests {
+case object QueryResultTable extends Content {
   override def asciiDoc(level: Int) = ???
 }
 
