@@ -35,11 +35,8 @@ trait NewDocumentingTestBase extends FunSuiteLike with Assertions with Matchers 
      val runner = new QueryRunner(QueryResultContentBuilder)
 
      runner.runQueries(init = doc.initQueries, queries = doc.content.queries) foreach {
-       case QueryRunResult(q, Some(failure), _) => test(q) {
-         throw failure
-       }
-       case QueryRunResult(q, None, content) => test(q) {}
+       case QueryRunResult(q, Left(failure)) => test(q) { throw failure }
+       case QueryRunResult(q, Right(content)) => test(q) {}
      }
-
    }
  }

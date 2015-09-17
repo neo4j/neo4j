@@ -32,7 +32,7 @@ import scala.util.{Success, Failure, Try}
  */
 class QueryRunner(formatter: (InternalExecutionResult, Content, GraphDatabaseService) => Content) {
 
-  def runQueries(init: Seq[String], queries: Seq[Query]): Seq[QueryRunResult] = {
+  def runQueries(init: Seq[String], queries: Seq[Query]): TestRunResult = {
     val db: GraphDatabaseService = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val engine = new ExecutionEngine(db)
 
@@ -44,47 +44,53 @@ class QueryRunner(formatter: (InternalExecutionResult, Content, GraphDatabaseSer
       }
     }
 
-    queries.map { case Query(query, assertions, content) =>
+    val results = queries.map { case Query(query, assertions, content) =>
       val format = formatter(_: InternalExecutionResult, content, db)
-      val (result, newContent) =
+      val result: Either[Exception, Content] =
         try {
           (assertions, Try(engine.execute(query))) match {
             case (e: ExpectedException[_], Success(_)) =>
-              (Some(new ExpectedExceptionNotFound(s"Expected exception of type ${e.getExceptionClass}")), NoContent)
+              Left(new ExpectedExceptionNotFound(s"Expected exception of type ${e.getExceptionClass}"))
 
             case (expectation: ExpectedException[_], Failure(exception: Exception)) =>
               expectation.handle(exception)
-              (None, content)
+              Right(content)
 
             case (_, Failure(exception: Exception)) =>
-              (Some(exception), NoContent)
+              Left(exception)
 
             case (ResultAssertions(f), Success(inner)) =>
               val result = RewindableExecutionResult(inner)
               f(result)
-              (None, format(result))
+              Right(format(result))
 
             case (ResultAndDbAssertions(f), Success(inner)) =>
               val result = RewindableExecutionResult(inner)
               f(result, db)
-              (None, format(result))
+              Right(format(result))
 
             case (NoAssertions, Success(inner)) =>
               val result = RewindableExecutionResult(inner)
-              (None, format(result))
+              Right(format(result))
           }
 
         } catch {
           case e: Exception =>
-            (Some(e), NoContent)
+            Left(e)
         }
 
-      QueryRunResult(query, result, newContent)
+      QueryRunResult(query, result)
     }
+    TestRunResult(results)
   }
 }
 
-//TODO: instead of testResult AND content, maybe we should only keep an Either[Exception, Content]?
-case class QueryRunResult(query: String, testResult: Option[Exception], content: Content)
+case class QueryRunResult(query: String, testResult: Either[Exception,Content])
+case class TestRunResult(queryResults: Seq[QueryRunResult]) {
+  def foreach[U](f: QueryRunResult => U) = queryResults.foreach(f)
 
+  private val _map = queryResults.map(r => r.query -> r.testResult).toMap
+
+  def apply(q: String): Either[Exception, Content] = _map(q)
+}
 class ExpectedExceptionNotFound(m: String) extends Exception(m)

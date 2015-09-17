@@ -31,7 +31,7 @@ class QueryRunnerTest extends CypherFunSuite {
     val query = "match n return x"
     val result = runQueries(query)
 
-    result should have size 1
+    result.queryResults should have size 1
     result should haveATestFailureOfClass(query -> classOf[SyntaxException])
   }
 
@@ -39,7 +39,7 @@ class QueryRunnerTest extends CypherFunSuite {
     val query = "match n return n"
     val result = runQueries(query, ResultAssertions(p => 1 should equal(2)))
 
-    result should have size 1
+    result.queryResults should have size 1
     result should haveATestFailureOfClass(query -> classOf[TestFailedException])
   }
 
@@ -47,7 +47,7 @@ class QueryRunnerTest extends CypherFunSuite {
     val query = "match n return x"
     val result = runQueries(query, ExpectedException[SyntaxException](_ => {}))
 
-    result should have size 1
+    result.queryResults should have size 1
     result shouldNot haveFailureFor(query)
   }
 
@@ -56,32 +56,31 @@ class QueryRunnerTest extends CypherFunSuite {
     val expectation = ExpectedException[SyntaxException](_ => {})
     val result = runQueries(query, expectation)
 
-    result should have size 1
+    result.queryResults should have size 1
     result should haveATestFailureOfClass(query -> classOf[ExpectedExceptionNotFound])
   }
 
-  private def runQueries(query: String, assertions: QueryAssertions = NoAssertions, content: Content = NoContent): Seq[QueryRunResult] = {
+  private def runQueries(query: String, assertions: QueryAssertions = NoAssertions, content: Content = NoContent): TestRunResult = {
     val runner = new QueryRunner((_, content, _) => content)
     runner.runQueries(init = Seq.empty, queries = Seq(Query(query, assertions, content)))
   }
 
   class HasATestFailureOfClass[EXCEPTION <: Exception](queryAndClass: (String, Class[EXCEPTION]))
-    extends Matcher[Seq[QueryRunResult]] {
+    extends Matcher[TestRunResult] {
 
-    def apply(result: Seq[QueryRunResult]) = {
-      val map: Map[String, Option[Exception]] = result.map(r => r.query -> r.testResult).toMap
-      val query: String = queryAndClass._1
-      val r = map(query)
-      val typ: Class[EXCEPTION] = queryAndClass._2
+    def apply(result: TestRunResult) = {
 
-      if (r.isEmpty)
+      val (query, typ) = queryAndClass
+      val testFailure: Option[Exception] = result(query).left.toOption
+
+      if (testFailure.isEmpty)
         MatchResult(
           matches = false,
           s"""Did not contain a test failure for query [<$query>] of type $typ""",
           s"""Did contain a test failure for query [<$query>] of type $typ"""
         )
       else {
-        val c1 = r.get.getClass
+        val c1 = testFailure.get.getClass
         val c2 = typ
         MatchResult(
           c1 == c2,
@@ -96,14 +95,14 @@ class QueryRunnerTest extends CypherFunSuite {
     new HasATestFailureOfClass(queryAndClass)
 
   class HasFailure(query: String)
-    extends Matcher[Seq[QueryRunResult]] {
+    extends Matcher[TestRunResult] {
 
-    def apply(result: Seq[QueryRunResult]) = {
-      val map: Map[String, Option[Exception]] = result.map(r => r.query -> r.testResult).toMap
-      val r = map(query)
-      val maybeFailure = r.map(_.toString).getOrElse("")
+    def apply(result: TestRunResult) = {
+      val testFailure: Option[Exception] = result(query).left.toOption
+
+      val maybeFailure = testFailure.map(_.toString).getOrElse("")
       MatchResult(
-        matches = r.nonEmpty,
+        matches = testFailure.nonEmpty,
         s"""Did not contain a test failure for query [<$query>]""",
         s"""Did contain a test failure for query [<$query>]: $maybeFailure"""
       )
