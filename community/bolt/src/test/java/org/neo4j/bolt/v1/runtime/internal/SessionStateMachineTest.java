@@ -70,7 +70,7 @@ public class SessionStateMachineTest
         when( runner.run( Matchers.any( SessionState.class ), Matchers.anyString(), Matchers.anyMap() ) )
                 .thenThrow( new RollbackInducingKernelException() );
 
-        machine.initialize( "FunClient/1.2", null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
         machine.beginTransaction();
 
         // When
@@ -97,7 +97,7 @@ public class SessionStateMachineTest
         when( runner.run( Matchers.any( SessionState.class ), Matchers.anyString(), Matchers.anyMap() ) )
                 .thenThrow( new NoTransactionEffectException() );
 
-        machine.initialize( "FunClient/1.2", null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
         machine.beginTransaction();
 
         // When
@@ -118,7 +118,7 @@ public class SessionStateMachineTest
     public void shouldStopRunningTxOnHalt() throws Throwable
     {
         // When
-        machine.initialize( "FunClient/1.2", null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
         machine.beginTransaction();
         machine.close();
 
@@ -132,7 +132,7 @@ public class SessionStateMachineTest
     public void shouldPublishClientName() throws Throwable
     {
         // When
-        machine.initialize( "FunClient/1.2", null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
 
         // Then
         assertTrue( usageData.get( UsageDataKeys.clientNames ).recentItems().contains( "FunClient/1.2" ) );

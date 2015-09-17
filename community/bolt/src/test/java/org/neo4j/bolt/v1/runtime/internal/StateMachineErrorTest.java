@@ -87,7 +87,7 @@ public class StateMachineErrorTest
     {
         SessionStateMachine machine = new SessionStateMachine( new UsageData(), db, txBridge, runner, NullLogService
                 .getInstance() );
-        machine.initialize( "FunClient", null, Session.Callback.NO_OP );
+        machine.init( "FunClient", null, Session.Callback.NO_OP );
         return machine;
     }
 
@@ -176,7 +176,7 @@ public class StateMachineErrorTest
         assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
         assertThat( pulling.next(), SessionMatchers.ignored() );
 
-        machine.initialize( "", null, initializing );
+        machine.init( "", null, initializing );
         assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
         assertThat( initializing.next(), SessionMatchers.ignored() );
 

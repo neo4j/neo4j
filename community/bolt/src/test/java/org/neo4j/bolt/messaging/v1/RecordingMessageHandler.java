@@ -29,7 +29,7 @@ import org.neo4j.bolt.v1.messaging.message.AcknowledgeFailureMessage;
 import org.neo4j.bolt.v1.messaging.message.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
 import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
-import org.neo4j.bolt.v1.messaging.message.InitializeMessage;
+import org.neo4j.bolt.v1.messaging.message.InitMessage;
 import org.neo4j.bolt.v1.messaging.message.Message;
 import org.neo4j.bolt.v1.messaging.message.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.message.RecordMessage;
@@ -90,9 +90,9 @@ public class RecordingMessageHandler implements MessageHandler<RuntimeException>
     }
 
     @Override
-    public void handleInitializeMessage( String clientName ) throws RuntimeException
+    public void handleInitMessage( String clientName ) throws RuntimeException
     {
-        messages.add( new InitializeMessage( clientName ) );
+        messages.add( new InitMessage( clientName ) );
     }
 
     public List<Message> asList()
