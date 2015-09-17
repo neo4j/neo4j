@@ -171,7 +171,8 @@ public interface Status
                                          "before proceeding"),
         IndexMissingWarning( ClientNotification, "Adding a schema index may speed up this query." ),
         LabelMissingWarning( ClientNotification, "The provided label is not in the database." ),
-        RelTypeMissingWarning( ClientNotification, "The provided relationship type is not in the database." );
+        RelTypeMissingWarning( ClientNotification, "The provided relationship type is not in the database." ),
+        PropertyNameMissingWarning( ClientNotification, "The provided property name is not in the database" );
 
         private final Code code;
 

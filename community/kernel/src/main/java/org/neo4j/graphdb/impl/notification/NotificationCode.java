@@ -114,7 +114,14 @@ public enum NotificationCode
             Status.Statement.RelTypeMissingWarning,
             "One of the relationship types in your query is not available in the database, make sure you didn't " +
             "misspell it or that the label is available when you run this statement in your application"
-    );
+    ),
+    MISSING_PROPERTY_NAME(
+            SeverityLevel.WARNING,
+            Status.Statement.PropertyNameMissingWarning,
+            "One of the property names in your query is not available in the database, make sure you didn't " +
+            "misspell it or that the label is available when you run this statement in your application"
+    )
+    ;
 
     private final Status status;
     private final String description;

@@ -38,12 +38,17 @@ public interface NotificationDetail
 
         public static NotificationDetail label( final String labelName )
         {
-            return createNotificationDetail( "provided label", labelName, true );
+            return createNotificationDetail( "the missing label name is", labelName, true );
         }
 
         public static NotificationDetail relationshipType( final String relType )
         {
-            return createNotificationDetail( "provided relationship type", relType, true );
+            return createNotificationDetail( "the missing relationship type is", relType, true );
+        }
+
+        public static NotificationDetail propertyName( final String name )
+        {
+            return createNotificationDetail( "the missing property name is", name, true );
         }
 
         public static NotificationDetail joinKey( List<String> identifiers )

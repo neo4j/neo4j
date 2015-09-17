@@ -64,7 +64,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("do warn when using length on a pattern expression") {
     val result = executeWithAllPlanners("explain match (a) where a.name='Alice' return length((a)-->()-->())")
 
-    result.notifications should equal(Set(LengthOnNonPathNotification(InputPosition(45, 1, 46))))
+    result.notifications should contain(LengthOnNonPathNotification(InputPosition(45, 1, 46)))
   }
 
   test("do warn when using length on a string") {
@@ -105,7 +105,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
   test("warn once when a single index hint cannot be fulfilled") {
     val result = innerExecute("EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n")
-    result.notifications.toSet should equal(Set(IndexHintUnfulfillableNotification("Person", "name")))
+    result.notifications.toSet should contain(IndexHintUnfulfillableNotification("Person", "name"))
   }
 
   test("warn for each unfulfillable index hint") {
@@ -240,7 +240,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n:Person:Foo) WHERE n['key-' + n.name] = 'value' RETURN n")
 
-    result.notifications should equal(Set(IndexSeekUnfulfillableNotification(Set("Person")), IndexScanUnfulfillableNotification(Set("Person"))))
+    result.notifications should (contain(IndexSeekUnfulfillableNotification(Set("Person"))) and contain(IndexScanUnfulfillableNotification(Set("Person"))))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with multiple indexed labels") {
@@ -270,6 +270,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
   test("should not warn when using dynamic property lookup with a label having no index") {
     graph.createIndex("Person", "name")
+    createLabeledNode("Foo")
 
     val result = innerExecute("EXPLAIN MATCH (n:Foo) WHERE n['key-' + n.name] = 'value' RETURN n")
 
@@ -332,28 +333,39 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result.notifications should not contain LargeLabelWithLoadCsvNotification
   }
 
-  test("should warn for misspelled label") {
+  test("should warn for misspelled/missing label") {
     //given
     createLabeledNode("Person")
 
     //when
-    val resultMisspelled = innerExecute("EXPLAIN MATCH (n:Preson) RETURN n.name")
-    val resultCorrectlySpelled = innerExecute("EXPLAIN MATCH (n:Person) RETURN n.name")
+    val resultMisspelled = innerExecute("EXPLAIN MATCH (n:Preson) RETURN *")
+    val resultCorrectlySpelled = innerExecute("EXPLAIN MATCH (n:Person) RETURN *")
 
     //then
     resultMisspelled.notifications should contain(MissingLabelNotification(InputPosition(9, 1, 10), "Preson"))
     resultCorrectlySpelled.notifications shouldBe empty
   }
 
-  test("should warn for misspelled relationship type") {
+  test("should warn for misspelled/missing relationship type") {
     //given
     relate(createNode(), createNode(), "R")
 
     //when
-    val resultMisspelled = innerExecute("EXPLAIN MATCH ()-[r:r]->() RETURN r.prop")
-    val resultCorrectlySpelled = innerExecute("EXPLAIN MATCH ()-[r:R]->() RETURN r.prop")
+    val resultMisspelled = innerExecute("EXPLAIN MATCH ()-[r:r]->() RETURN *")
+    val resultCorrectlySpelled = innerExecute("EXPLAIN MATCH ()-[r:R]->() RETURN *")
 
     resultMisspelled.notifications should contain(MissingRelTypeNotification(InputPosition(12, 1, 13), "r"))
+    resultCorrectlySpelled.notifications shouldBe empty
+  }
+
+  test("should warn for misspelled/missing property names") {
+    //given
+    createNode(Map("prop" -> 42))
+    //when
+    val resultMisspelled = innerExecute("EXPLAIN MATCH (n) WHERE n.propp = 43 RETURN n")
+    val resultCorrectlySpelled = innerExecute("EXPLAIN MATCH (n) WHERE n.prop = 43 RETURN n")
+
+    resultMisspelled.notifications should contain(MissingPropertyNameNotification(InputPosition(18, 1, 19), "propp"))
     resultCorrectlySpelled.notifications shouldBe empty
   }
 }

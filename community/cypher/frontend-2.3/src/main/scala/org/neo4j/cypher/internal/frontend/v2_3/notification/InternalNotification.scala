@@ -55,3 +55,5 @@ case object LargeLabelWithLoadCsvNotification extends InternalNotification
 case class MissingLabelNotification(position: InputPosition, label: String) extends InternalNotification
 
 case class MissingRelTypeNotification(position: InputPosition, relType: String) extends InternalNotification
+
+case class MissingPropertyNameNotification(position: InputPosition, name: String) extends InternalNotification
