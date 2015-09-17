@@ -30,8 +30,8 @@ look at the web interface ...
 
 1. Open a console and navigate to the install directory.
 2. Start the server:
-   * Windows: use bin\Neo4j.bat
-   * Linux/Mac: use ./bin/neo4j console
+   * Windows, use: bin\Neo4j.bat
+   * Linux/Mac, use: ./bin/neo4j console
 3. In a browser, open http://localhost:#{org.neo4j.webserver.port}/
 4. From any REST client or browser, open http://localhost:#{org.neo4j.webserver.port}/db/data
    in order to get a REST starting point, e.g.
