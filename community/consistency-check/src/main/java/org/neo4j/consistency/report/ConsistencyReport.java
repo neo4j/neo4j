@@ -56,57 +56,29 @@ public interface ConsistencyReport
         void forSchema( DynamicRecord schema,
                         RecordCheck<DynamicRecord, SchemaConsistencyReport> checker );
 
-        void forSchemaChange( DynamicRecord oldSchema, DynamicRecord newSchema,
-                              RecordCheck<DynamicRecord, SchemaConsistencyReport> checker );
-
         void forNode( NodeRecord node,
                       RecordCheck<NodeRecord, NodeConsistencyReport> checker );
-
-        void forNodeChange( NodeRecord oldNode, NodeRecord newNode,
-                            RecordCheck<NodeRecord, NodeConsistencyReport> checker );
 
         void forRelationship( RelationshipRecord relationship,
                               RecordCheck<RelationshipRecord, RelationshipConsistencyReport> checker );
 
-        void forRelationshipChange( RelationshipRecord oldRelationship, RelationshipRecord newRelationship,
-                                    RecordCheck<RelationshipRecord, RelationshipConsistencyReport> checker );
-
         void forProperty( PropertyRecord property,
                           RecordCheck<PropertyRecord, PropertyConsistencyReport> checker );
-
-        void forPropertyChange( PropertyRecord oldProperty, PropertyRecord newProperty,
-                                RecordCheck<PropertyRecord, PropertyConsistencyReport> checker );
 
         void forRelationshipTypeName( RelationshipTypeTokenRecord relationshipType,
                                       RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> checker );
 
-        void forRelationshipTypeNameChange( RelationshipTypeTokenRecord oldType, RelationshipTypeTokenRecord newType,
-                                            RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> checker );
-
         void forLabelName( LabelTokenRecord label,
-                           RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker );
-
-        void forLabelNameChange( LabelTokenRecord oldLabel, LabelTokenRecord newLabel,
                            RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker );
 
         void forPropertyKey( PropertyKeyTokenRecord key,
                              RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> checker );
 
-        void forPropertyKeyChange( PropertyKeyTokenRecord oldKey, PropertyKeyTokenRecord newKey,
-                                   RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> checker );
-
         void forDynamicBlock( RecordType type, DynamicRecord record,
                               RecordCheck<DynamicRecord, DynamicConsistencyReport> checker );
 
-        void forDynamicBlockChange( RecordType type, DynamicRecord oldRecord, DynamicRecord newRecord,
-                                    RecordCheck<DynamicRecord, DynamicConsistencyReport> checker );
-
-
         void forDynamicLabelBlock( RecordType type, DynamicRecord record,
                                    RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker );
-
-        void forDynamicLabelBlockChange( RecordType type, DynamicRecord oldRecord, DynamicRecord newRecord,
-                                         RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker );
 
         void forNodeLabelScan( LabelScanDocument document,
                                RecordCheck<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> checker );
@@ -117,9 +89,6 @@ public interface ConsistencyReport
         void forNodeLabelMatch( NodeRecord nodeRecord, RecordCheck<NodeRecord, LabelsMatchReport> nodeLabelCheck );
 
         void forRelationshipGroup( RelationshipGroupRecord record,
-                RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> checker );
-
-        void forRelationshipGroupChange( RelationshipGroupRecord oldRecord, RelationshipGroupRecord newRecord,
                 RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> checker );
 
         void forCounts( CountsEntry countsEntry,
@@ -147,10 +116,6 @@ public interface ConsistencyReport
         /** The referenced property is owned by the neo store (graph global property). */
         @Documented
         void multipleOwners( NeoStoreRecord neoStore );
-
-        /** The first property record reference has changed, but the previous first property record has not been updated. */
-        @Documented
-        void propertyNotUpdated();
 
         /** The property chain contains multiple properties that have the same property key id, which means that the entity has at least one duplicate property. */
         @Documented
@@ -232,10 +197,6 @@ public interface ConsistencyReport
         @Documented
         void relationshipNotFirstInTargetChain( RelationshipRecord relationship );
 
-        /** The first relationship record reference has changed, but the previous first relationship record has not been updated. */
-        @Documented
-        void relationshipNotUpdated();
-
         /** The label token record referenced from a node record is not in use. */
         @Documented
         void labelNotInUse( LabelTokenRecord label );
@@ -271,10 +232,6 @@ public interface ConsistencyReport
         /** The referenced relationship group record is not in use. */
         @Documented
         void relationshipGroupNotInUse( RelationshipGroupRecord group );
-
-        /** The first relationship group record reference has changed, but the previous first relationship group record has not been updated. */
-        @Documented
-        void relationshipGroupNotUpdated();
 
         /** The first relationship group record has another node set as owner. */
         @Documented
@@ -355,36 +312,6 @@ public interface ConsistencyReport
         /** The next record in the target chain does not have this record as its previous record. */
         @Documented
         void targetNextDoesNotReferenceBack( RelationshipRecord relationship );
-
-        /** The previous source relationship reference has changed, but the previously referenced record has not been updated. */
-        @Documented
-        void sourcePrevNotUpdated();
-
-        /** The next source relationship reference has changed, but the previously referenced record has not been updated. */
-        @Documented
-        void sourceNextNotUpdated();
-
-        /** The previous target relationship reference has changed, but the previously referenced record has not been updated. */
-        @Documented
-        void targetPrevNotUpdated();
-
-        /** The next target relationship reference has changed, but the previously referenced record has not been updated. */
-        @Documented
-        void targetNextNotUpdated();
-
-        /**
-         * This relationship was first in the chain for the source node, and isn't first anymore,
-         * but the source node was not updated.
-         */
-        @Documented
-        void sourceNodeNotUpdated();
-
-        /**
-         * This relationship was first in the chain for the target node, and isn't first anymore,
-         * but the target node was not updated.
-         */
-        @Documented
-        void targetNodeNotUpdated();
     }
 
     interface PropertyConsistencyReport extends ConsistencyReport
@@ -440,14 +367,6 @@ public interface ConsistencyReport
         /** This record is first in a property chain, but no Node or Relationship records reference this record. */
         @Documented
         void orphanPropertyChain();
-
-        /** The previous reference has changed, but the referenced record has not been updated. */
-        @Documented
-        void prevNotUpdated();
-
-        /** The next reference has changed, but the referenced record has not been updated. */
-        @Documented
-        void nextNotUpdated();
 
         /** The string property is not referenced anymore, but the corresponding block has not been deleted. */
         @Documented
@@ -539,10 +458,6 @@ public interface ConsistencyReport
         @Documented
         void relationshipTypeNotInUse( RelationshipTypeTokenRecord referred );
 
-        /** The next relationship group reference has changed, but the previously referenced record has not been updated. */
-        @Documented
-        void nextNotUpdated();
-
         /** The next relationship group is not in use. */
         @Documented
         void nextGroupNotInUse();
@@ -628,10 +543,6 @@ public interface ConsistencyReport
         /** The next block references this (the same) record. */
         @Documented
         void selfReferentialNext();
-
-        /** The next block reference was changed, but the previously referenced block was not updated. */
-        @Documented
-        void nextNotUpdated();
 
         /** The next block of this record is also referenced by another dynamic record. */
         @Documented

@@ -33,7 +33,7 @@ public class LabelTokenRecordCheckTest extends
 {
     public LabelTokenRecordCheckTest()
     {
-        super( new LabelTokenRecordCheck(), ConsistencyReport.LabelTokenConsistencyReport.class );
+        super( new LabelTokenRecordCheck(), ConsistencyReport.LabelTokenConsistencyReport.class, new int[0] );
     }
 
     @Test
@@ -91,42 +91,6 @@ public class LabelTokenRecordCheckTest extends
 
         // then
         verify( report ).emptyName( name );
-        verifyNoMoreInteractions( report );
-    }
-
-    // change checking
-
-    @Test
-    public void shouldNotReportAnythingForConsistentlyChangedRecord() throws Exception
-    {
-        // given
-        LabelTokenRecord oldRecord = notInUse( new LabelTokenRecord( 42 ) );
-        LabelTokenRecord newRecord = inUse( new LabelTokenRecord( 42 ) );
-        DynamicRecord name = addLabelName( inUse( new DynamicRecord( 6 ) ) );
-        name.setData( new byte[1] );
-        newRecord.setNameId( (int) name.getId() );
-
-        // when
-        ConsistencyReport.LabelTokenConsistencyReport report = checkChange( oldRecord, newRecord );
-
-        // then
-        verifyNoMoreInteractions( report );
-    }
-
-    @Test
-    public void shouldReportProblemsWithTheNewStateWhenCheckingChanges() throws Exception
-    {
-        // given
-        LabelTokenRecord oldRecord = notInUse( new LabelTokenRecord( 42 ) );
-        LabelTokenRecord newRecord = inUse( new LabelTokenRecord( 42 ) );
-        DynamicRecord name = addLabelName( notInUse( new DynamicRecord( 6 ) ) );
-        newRecord.setNameId( (int) name.getId() );
-
-        // when
-        ConsistencyReport.LabelTokenConsistencyReport report = checkChange( oldRecord, newRecord );
-
-        // then
-        verify( report ).nameBlockNotInUse( name );
         verifyNoMoreInteractions( report );
     }
 }

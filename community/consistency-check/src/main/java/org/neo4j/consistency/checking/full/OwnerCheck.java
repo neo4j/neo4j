@@ -35,7 +35,6 @@ import org.neo4j.consistency.checking.OwningRecordCheck;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -235,14 +234,6 @@ class OwnerCheck implements CheckDecorator
                 }
                 checker.check( record, engine, records );
             }
-
-            @Override
-            public void checkChange( PropertyRecord oldRecord, PropertyRecord newRecord,
-                                     CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
-                                     DiffRecordAccess records )
-            {
-                checker.checkChange( oldRecord, newRecord, engine, records );
-            }
         };
     }
 
@@ -363,14 +354,6 @@ class OwnerCheck implements CheckDecorator
                 }
                 checker.check( record, engine, records );
             }
-
-            @Override
-            public void checkChange( DynamicRecord oldRecord, DynamicRecord newRecord,
-                                     CheckerEngine<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> engine,
-                                     DiffRecordAccess records )
-            {
-                checker.checkChange( oldRecord, newRecord, engine, records );
-            }
         };
     }
 
@@ -417,13 +400,6 @@ class OwnerCheck implements CheckDecorator
         }
 
         @Override
-        public void checkChange( RECORD oldRecord, RECORD newRecord, CheckerEngine<RECORD, REPORT> engine,
-                                 DiffRecordAccess records )
-        {
-            checker.checkChange( oldRecord, newRecord, engine, records );
-        }
-
-        @Override
         public ComparativeRecordChecker<RECORD,PrimitiveRecord,REPORT> ownerCheck()
         {
             return checker.ownerCheck();
@@ -462,13 +438,6 @@ class OwnerCheck implements CheckDecorator
         }
 
         abstract DynamicOwner.NameOwner owner( RECORD record );
-
-        @Override
-        public void checkChange( RECORD oldRecord, RECORD newRecord, CheckerEngine<RECORD, REPORT> engine,
-                                 DiffRecordAccess records )
-        {
-            checker.checkChange( oldRecord, newRecord, engine, records );
-        }
     }
 
     private static final ComparativeRecordChecker<PropertyRecord, PrimitiveRecord, ConsistencyReport.PropertyConsistencyReport> ORPHAN_CHECKER =

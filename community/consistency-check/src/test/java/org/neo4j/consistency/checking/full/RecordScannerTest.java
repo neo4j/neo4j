@@ -20,21 +20,26 @@
 package org.neo4j.consistency.checking.full;
 
 import org.junit.Test;
+
+import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 
-import static java.util.Arrays.asList;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import static java.util.Arrays.asList;
 
 public class RecordScannerTest
 {
     @Test
-    public void shouldProcessRecordsAndUpdateProgress() throws Exception
+    public void shouldProcessRecordsSequentiallyAndUpdateProgress() throws Exception
     {
         // given
         ProgressMonitorFactory.MultiPartBuilder progressBuilder = mock( ProgressMonitorFactory.MultiPartBuilder.class );
@@ -49,12 +54,45 @@ public class RecordScannerTest
         @SuppressWarnings("unchecked")
         RecordProcessor<Integer> recordProcessor = mock( RecordProcessor.class );
 
-        RecordScanner scanner = new RecordScanner<>( store, "our test task", progressBuilder, recordProcessor );
+        RecordScanner<Integer> scanner = new SequentialRecordScanner<>( "our test task", Statistics.NONE, 1, store,
+                progressBuilder, recordProcessor );
 
         // when
         scanner.run();
 
         // then
+        verifyProcessCloseAndDone( recordProcessor, store, progressListener );
+    }
+
+    @Test
+    public void shouldProcessRecordsParallelAndUpdateProgress() throws Exception
+    {
+        // given
+        ProgressMonitorFactory.MultiPartBuilder progressBuilder = mock( ProgressMonitorFactory.MultiPartBuilder.class );
+        ProgressListener progressListener = mock( ProgressListener.class );
+        when( progressBuilder.progressForPart( anyString(), anyLong() ) ).thenReturn( progressListener );
+
+        @SuppressWarnings("unchecked")
+        BoundedIterable<Integer> store = mock( BoundedIterable.class );
+
+        when( store.iterator() ).thenReturn( asList( 42, 75, 192 ).iterator() );
+
+        @SuppressWarnings("unchecked")
+        RecordProcessor<Integer> recordProcessor = mock( RecordProcessor.class );
+
+        RecordScanner<Integer> scanner = new ParallelRecordScanner<>( "our test task", Statistics.NONE, 1, store,
+                progressBuilder, recordProcessor, CacheAccess.EMPTY );
+
+        // when
+        scanner.run();
+
+        // then
+        verifyProcessCloseAndDone( recordProcessor, store, progressListener );
+    }
+
+    private void verifyProcessCloseAndDone( RecordProcessor<Integer> recordProcessor, BoundedIterable<Integer> store,
+            ProgressListener progressListener ) throws Exception
+    {
         verify( recordProcessor ).process( 42 );
         verify( recordProcessor ).process( 75 );
         verify( recordProcessor ).process( 192 );
@@ -62,9 +100,7 @@ public class RecordScannerTest
 
         verify( store ).close();
 
-        verify( progressListener ).set( 0 );
-        verify( progressListener ).set( 1 );
-        verify( progressListener ).set( 2 );
+        verify( progressListener, times( 3 ) ).add( 1 );
         verify( progressListener ).done();
     }
 }

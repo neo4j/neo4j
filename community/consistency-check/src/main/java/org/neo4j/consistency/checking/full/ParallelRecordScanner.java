@@ -1,0 +1,79 @@
+/*
+ * Copyright (c) 2002-2015 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.consistency.checking.full;
+
+import java.util.concurrent.BlockingQueue;
+
+import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.statistics.Statistics;
+import org.neo4j.function.Function;
+import org.neo4j.helpers.progress.ProgressMonitorFactory.MultiPartBuilder;
+import org.neo4j.kernel.api.direct.BoundedIterable;
+
+import static org.neo4j.consistency.checking.cache.DefaultCacheAccess.DEFAULT_QUEUE_SIZE;
+import static org.neo4j.consistency.checking.full.RecordDistributor.distributeRecords;
+
+public class ParallelRecordScanner<RECORD> extends RecordScanner<RECORD>
+{
+    private final CacheAccess cacheAccess;
+
+    public ParallelRecordScanner( String name, Statistics statistics, int threads, BoundedIterable<RECORD> store,
+            MultiPartBuilder builder, RecordProcessor<RECORD> processor, CacheAccess cacheAccess,
+            IterableStore... warmUpStores )
+    {
+        super( name, statistics, threads, store, builder, processor, warmUpStores );
+        this.cacheAccess = cacheAccess;
+    }
+
+    @Override
+    protected void scan()
+    {
+        long recordsPerCPU = (store.maxCount() / numberOfThreads) + 1;
+        cacheAccess.prepareForProcessingOfSingleStore( recordsPerCPU );
+
+        Function<BlockingQueue<RECORD>,Worker<RECORD>> workerFactory = new Function<BlockingQueue<RECORD>,Worker<RECORD>>()
+        {
+            @Override
+            public Worker<RECORD> apply( BlockingQueue<RECORD> source )
+            {
+                return new Worker<>( source, processor );
+            }
+        };
+        distributeRecords( numberOfThreads, getClass().getSimpleName() + "-" + name,
+                DEFAULT_QUEUE_SIZE, workerFactory, store, progress );
+    }
+
+    private static class Worker<RECORD> extends RecordCheckWorker<RECORD>
+    {
+        private final RecordProcessor<RECORD> processor;
+
+        Worker( BlockingQueue<RECORD> recordsQ, RecordProcessor<RECORD> processor )
+        {
+            super( recordsQ );
+            this.processor = processor;
+        }
+
+        @Override
+        protected void process( RECORD record )
+        {
+            processor.process( record );
+        }
+    }
+}

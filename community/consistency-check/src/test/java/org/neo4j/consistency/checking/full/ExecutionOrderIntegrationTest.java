@@ -28,6 +28,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.consistency.ConsistencyCheckSettings;
@@ -37,13 +38,15 @@ import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.OwningRecordCheck;
 import org.neo4j.consistency.checking.RecordCheck;
+import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.report.InconsistencyLogger;
 import org.neo4j.consistency.report.InconsistencyReport;
 import org.neo4j.consistency.report.PendingReferenceCheck;
-import org.neo4j.consistency.store.DiffRecordAccess;
+import org.neo4j.consistency.statistics.DefaultCounts;
+import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -65,12 +68,14 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.withSettings;
+
+import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
+import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -93,57 +98,35 @@ public class ExecutionOrderIntegrationTest
             }
         }
     };
-    private static final boolean LOG_DUPLICATES = false;
 
     @Test
-    public void shouldRunSameChecksInMultiPassAsInSingleSingleThreadedPass() throws Exception
+    public void shouldRunChecksInSingleThreadedPass() throws Exception
     {
         // given
         StoreAccess store = fixture.directStoreAccess().nativeStores();
-        DiffRecordAccess access = FullCheck.recordAccess( store );
+        int threads = defaultConsistencyCheckThreadsNumber();
+        CacheAccess cacheAccess = new DefaultCacheAccess( new DefaultCounts( threads ), threads );
+        RecordAccess access = FullCheck.recordAccess( store, cacheAccess );
 
-        FullCheck singlePass = new FullCheck( config( TaskExecutionOrder.SINGLE_THREADED ),
-                ProgressMonitorFactory.NONE );
-        FullCheck multiPass = new FullCheck( config( TaskExecutionOrder.MULTI_PASS ),
-                ProgressMonitorFactory.NONE );
+        FullCheck singlePass = new FullCheck( config(), ProgressMonitorFactory.NONE, Statistics.NONE, threads );
 
-        ConsistencySummaryStatistics multiPassSummary = new ConsistencySummaryStatistics();
         ConsistencySummaryStatistics singlePassSummary = new ConsistencySummaryStatistics();
         InconsistencyLogger logger = mock( InconsistencyLogger.class );
         InvocationLog singlePassChecks = new InvocationLog();
-        InvocationLog multiPassChecks = new InvocationLog();
 
         // when
         singlePass.execute( fixture.directStoreAccess(), new LogDecorator( singlePassChecks ), access, new InconsistencyReport( logger,
-                singlePassSummary ) );
-
-        multiPass.execute( fixture.directStoreAccess(), new LogDecorator( multiPassChecks ), access, new InconsistencyReport( logger,
-                multiPassSummary ) );
+                singlePassSummary ), cacheAccess, NO_MONITOR );
 
         // then
         verifyZeroInteractions( logger );
         assertEquals( "Expected no inconsistencies in single pass.",
                 0, singlePassSummary.getTotalInconsistencyCount() );
-        assertEquals( "Expected no inconsistencies in multiple passes.",
-                0, multiPassSummary.getTotalInconsistencyCount() );
-
-        assertSameChecks( singlePassChecks.data, multiPassChecks.data );
-
-        if ( singlePassChecks.duplicates.size() != multiPassChecks.duplicates.size() )
-        {
-            if ( LOG_DUPLICATES )
-            {
-                throw new Exception(
-                        format( "Duplicate checks with single pass: %s, duplicate checks with multiple passes: %s%n",
-                                singlePassChecks.duplicates, multiPassChecks.duplicates ) );
-            }
-        }
     }
 
-    static Config config( TaskExecutionOrder executionOrder )
+    static Config config()
     {
         Map<String,String> params = stringMap(
-                ConsistencyCheckSettings.consistency_check_execution_order.name(), executionOrder.name(),
                 // Enable property owners check by default in tests:
                 ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
         return new Config( params, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
@@ -297,8 +280,8 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> decorateRelationshipGroupChecker(
-                RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker )
+        public RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> decorateRelationshipGroupChecker(
+                RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> checker )
         {
             return logging( checker );
         }
@@ -319,14 +302,7 @@ public class ExecutionOrderIntegrationTest
         @Override
         public void check( REC record, CheckerEngine<REC, REP> engine, RecordAccess records )
         {
-            checker.check( record, engine, new ComparativeLogging( (DiffRecordAccess) records, log ) );
-        }
-
-        @Override
-        public void checkChange( REC oldRecord, REC newRecord, CheckerEngine<REC, REP> engine,
-                                 DiffRecordAccess records )
-        {
-            checker.checkChange( oldRecord, newRecord, engine, new ComparativeLogging( records, log ) );
+            checker.check( record, engine, new ComparativeLogging( records, log ) );
         }
 
         @SuppressWarnings( "unchecked" )
@@ -387,12 +363,12 @@ public class ExecutionOrderIntegrationTest
         }
     }
 
-    private static class ComparativeLogging implements DiffRecordAccess
+    private static class ComparativeLogging implements RecordAccess
     {
-        private final DiffRecordAccess access;
+        private final RecordAccess access;
         private final InvocationLog log;
 
-        ComparativeLogging( DiffRecordAccess access, InvocationLog log )
+        ComparativeLogging( RecordAccess access, InvocationLog log )
         {
             this.access = access;
             this.log = log;
@@ -401,72 +377,6 @@ public class ExecutionOrderIntegrationTest
         private <T extends AbstractBaseRecord> LoggingReference<T> logging( RecordReference<T> actual )
         {
             return new LoggingReference<>( actual, log );
-        }
-
-        @Override
-        public RecordReference<NodeRecord> previousNode( long id )
-        {
-            return logging( access.previousNode( id ) );
-        }
-
-        @Override
-        public RecordReference<RelationshipRecord> previousRelationship( long id )
-        {
-            return logging( access.previousRelationship( id ) );
-        }
-
-        @Override
-        public RecordReference<PropertyRecord> previousProperty( long id )
-        {
-            return logging( access.previousProperty( id ) );
-        }
-
-        @Override
-        public RecordReference<NeoStoreRecord> previousGraph()
-        {
-            return logging( access.previousGraph() );
-        }
-
-        @Override
-        public DynamicRecord changedSchema( long id )
-        {
-            return access.changedSchema( id );
-        }
-
-        @Override
-        public NodeRecord changedNode( long id )
-        {
-            return access.changedNode( id );
-        }
-
-        @Override
-        public RelationshipRecord changedRelationship( long id )
-        {
-            return access.changedRelationship( id );
-        }
-
-        @Override
-        public RelationshipGroupRecord changedRelationshipGroup( long id )
-        {
-            return access.changedRelationshipGroup( id );
-        }
-
-        @Override
-        public PropertyRecord changedProperty( long id )
-        {
-            return access.changedProperty( id );
-        }
-
-        @Override
-        public DynamicRecord changedString( long id )
-        {
-            return access.changedString( id );
-        }
-
-        @Override
-        public DynamicRecord changedArray( long id )
-        {
-            return access.changedArray( id );
         }
 
         @Override
@@ -557,6 +467,24 @@ public class ExecutionOrderIntegrationTest
         public RecordReference<NeoStoreRecord> graph()
         {
             return logging( access.graph() );
+        }
+
+        @Override
+        public boolean shouldCheck( long id, MultiPassStore store )
+        {
+            return access.shouldCheck( id, store );
+        }
+
+        @Override
+        public CacheAccess cacheAccess()
+        {
+            return access.cacheAccess();
+        }
+
+        @Override
+        public Iterator<PropertyRecord> rawPropertyChain( long firstId )
+        {
+            return access.rawPropertyChain( firstId );
         }
     }
 }

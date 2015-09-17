@@ -19,6 +19,10 @@
  */
 package org.neo4j.consistency.store;
 
+import java.util.Iterator;
+
+import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.checking.full.MultiPassStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -60,4 +64,12 @@ public interface RecordAccess
     RecordReference<NeoStoreRecord> graph();
 
     RecordReference<RelationshipGroupRecord> relationshipGroup( long id );
+
+    // The following methods doesn't belong here, but makes code in the rest of the CC immensely easier
+
+    Iterator<PropertyRecord> rawPropertyChain( long firstId );
+
+    boolean shouldCheck( long id, MultiPassStore store );
+
+    CacheAccess cacheAccess();
 }

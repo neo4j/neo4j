@@ -44,19 +44,7 @@ public class NullReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public void forSchemaChange( DynamicRecord oldSchema, DynamicRecord newSchema, RecordCheck<DynamicRecord,
-            ConsistencyReport.SchemaConsistencyReport> checker )
-    {
-    }
-
-    @Override
     public void forNode( NodeRecord node, RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> checker )
-    {
-    }
-
-    @Override
-    public void forNodeChange( NodeRecord oldNode, NodeRecord newNode, RecordCheck<NodeRecord, ConsistencyReport
-            .NodeConsistencyReport> checker )
     {
     }
 
@@ -67,28 +55,12 @@ public class NullReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public void forRelationshipChange( RelationshipRecord oldRelationship, RelationshipRecord newRelationship, RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> checker )
-    {
-    }
-
-    @Override
     public void forProperty( PropertyRecord property, RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> checker )
     {
     }
 
     @Override
-    public void forPropertyChange( PropertyRecord oldProperty, PropertyRecord newProperty,
-                                   RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> checker )
-    {
-    }
-
-    @Override
     public void forRelationshipTypeName( RelationshipTypeTokenRecord relationshipType, RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker )
-    {
-    }
-
-    @Override
-    public void forRelationshipTypeNameChange( RelationshipTypeTokenRecord oldType, RelationshipTypeTokenRecord newType, RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker )
     {
     }
 
@@ -99,21 +71,8 @@ public class NullReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public void forLabelNameChange( LabelTokenRecord oldLabel, LabelTokenRecord newLabel,
-                                    RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport>
-                                            checker )
-    {
-    }
-
-    @Override
     public void forPropertyKey( PropertyKeyTokenRecord key, RecordCheck<PropertyKeyTokenRecord,
             ConsistencyReport.PropertyKeyTokenConsistencyReport> checker )
-    {
-    }
-
-    @Override
-    public void forPropertyKeyChange( PropertyKeyTokenRecord oldKey, PropertyKeyTokenRecord newKey, RecordCheck
-            <PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> checker )
     {
     }
 
@@ -124,18 +83,7 @@ public class NullReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public void forDynamicBlockChange( RecordType type, DynamicRecord oldRecord, DynamicRecord newRecord, RecordCheck
-            <DynamicRecord, ConsistencyReport.DynamicConsistencyReport> checker )
-    {
-    }
-
-    @Override
     public void forDynamicLabelBlock( RecordType type, DynamicRecord record, RecordCheck<DynamicRecord, ConsistencyReport.DynamicLabelConsistencyReport> checker )
-    {
-    }
-
-    @Override
-    public void forDynamicLabelBlockChange( RecordType type, DynamicRecord oldRecord, DynamicRecord newRecord, RecordCheck<DynamicRecord, ConsistencyReport.DynamicLabelConsistencyReport> checker )
     {
     }
 
@@ -157,12 +105,6 @@ public class NullReporter implements ConsistencyReport.Reporter
 
     @Override
     public void forRelationshipGroup( RelationshipGroupRecord record,
-            RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker )
-    {
-    }
-
-    @Override
-    public void forRelationshipGroupChange( RelationshipGroupRecord oldRecord, RelationshipGroupRecord newRecord,
             RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker )
     {
     }

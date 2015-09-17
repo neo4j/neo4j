@@ -19,16 +19,16 @@
  */
 package org.neo4j.test.ha;
 
+import org.junit.rules.ExternalResource;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.rules.ExternalResource;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.config.Setting;
@@ -58,7 +58,7 @@ public class ClusterRule extends ExternalResource
     private final Map<String,String> config = new HashMap<>();
     private HighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
     private List<Predicate<ManagedCluster>> availabilityChecks = asList( allSeesAllAsAvailable() );
-    private TargetDirectory.TestDirectory testDirectory;
+    private final TargetDirectory.TestDirectory testDirectory;
 
     public ClusterRule( Class<?> testClass )
     {

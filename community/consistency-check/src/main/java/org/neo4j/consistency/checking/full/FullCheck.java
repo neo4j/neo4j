@@ -24,15 +24,18 @@ import java.util.List;
 
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.CheckDecorator;
+import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReporter;
+import org.neo4j.consistency.report.ConsistencyReporter.Monitor;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.report.InconsistencyMessageLogger;
 import org.neo4j.consistency.report.InconsistencyReport;
+import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.store.CacheSmallStoresRecordAccess;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.DirectRecordAccess;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.configuration.Config;
@@ -47,25 +50,28 @@ import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.Log;
 
+import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
+
 public class FullCheck
 {
     private final boolean checkPropertyOwners;
     private final boolean checkLabelScanStore;
     private final boolean checkIndexes;
-    private final TaskExecutionOrder order;
     private final ProgressMonitorFactory progressFactory;
-    private final Long totalMappedMemory;
     private final IndexSamplingConfig samplingConfig;
     private final boolean checkGraph;
+    private final int threads;
+    private final Statistics statistics;
 
-    public FullCheck( Config tuningConfiguration, ProgressMonitorFactory progressFactory )
+    public FullCheck( Config tuningConfiguration, ProgressMonitorFactory progressFactory,
+            Statistics statistics, int threads )
     {
+        this.statistics = statistics;
+        this.threads = threads;
         this.checkPropertyOwners = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_property_owners );
         this.checkLabelScanStore = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_label_scan_store );
         this.checkIndexes = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_indexes );
         this.checkGraph = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_graph );
-        this.order = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_execution_order );
-        this.totalMappedMemory = tuningConfiguration.get( GraphDatabaseSettings.pagecache_memory );
         this.samplingConfig = new IndexSamplingConfig( tuningConfiguration );
         this.progressFactory = progressFactory;
     }
@@ -73,24 +79,30 @@ public class FullCheck
     public ConsistencySummaryStatistics execute( DirectStoreAccess stores, Log log )
             throws ConsistencyCheckIncompleteException
     {
+        return execute( stores, log, NO_MONITOR );
+    }
+
+    ConsistencySummaryStatistics execute( DirectStoreAccess stores, Log log, Monitor reportMonitor )
+            throws ConsistencyCheckIncompleteException
+    {
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
         InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( log ), summary );
 
         OwnerCheck ownerCheck = new OwnerCheck( checkPropertyOwners );
         CountsBuilderDecorator countsBuilder =
-                new CountsBuilderDecorator( stores.nativeStores().getRawNeoStores().getNodeStore() );
-        PropertyExistenceChecker mpc = new PropertyExistenceChecker( stores.nativeStores().getSchemaStore() );
-        CheckDecorator decorator = new CheckDecorator.ChainCheckDecorator( ownerCheck, countsBuilder, mpc );
-        DiffRecordAccess records = recordAccess( stores.nativeStores() );
-        execute( stores, decorator, records, report );
+                new CountsBuilderDecorator( stores.nativeStores() );
+        CheckDecorator decorator = new CheckDecorator.ChainCheckDecorator( ownerCheck, countsBuilder );
+        CacheAccess cacheAccess = new DefaultCacheAccess( statistics.getCounts(), threads );
+        RecordAccess records = recordAccess( stores.nativeStores(), cacheAccess );
+        execute( stores, decorator, records, report, cacheAccess, reportMonitor );
         ownerCheck.scanForOrphanChains( progressFactory );
 
         if ( checkGraph )
         {
-            CountsAccessor counts = stores.nativeStores().getCounts();
-            if ( counts instanceof CountsTracker )
+            CountsAccessor countsAccessor = stores.nativeStores().getCounts();
+            if ( countsAccessor instanceof CountsTracker )
             {
-                CountsTracker tracker = (CountsTracker) counts;
+                CountsTracker tracker = (CountsTracker) countsAccessor;
                 try
                 {
                     tracker.start();
@@ -100,7 +112,7 @@ public class FullCheck
                     // let's hope it was already started :)
                 }
             }
-            countsBuilder.checkCounts( counts, new ConsistencyReporter( records, report ), progressFactory );
+            countsBuilder.checkCounts( countsAccessor, new ConsistencyReporter( records, report ), progressFactory );
         }
 
         if ( !summary.isConsistent() )
@@ -111,44 +123,36 @@ public class FullCheck
     }
 
     void execute( final DirectStoreAccess directStoreAccess, CheckDecorator decorator,
-            final DiffRecordAccess recordAccess, final InconsistencyReport report )
+                  final RecordAccess recordAccess, final InconsistencyReport report,
+                  CacheAccess cacheAccess, Monitor reportMonitor )
             throws ConsistencyCheckIncompleteException
     {
-        final ConsistencyReporter reporter = new ConsistencyReporter( recordAccess, report );
-        StoreProcessor processEverything = new StoreProcessor( decorator, reporter );
-
-        ProgressMonitorFactory.MultiPartBuilder progress = progressFactory.multipleParts( "Full consistency check" );
-
+        final ConsistencyReporter reporter = new ConsistencyReporter( recordAccess, report, reportMonitor );
+        StoreProcessor processEverything = new StoreProcessor( decorator, reporter, Stage.SEQUENTIAL_FORWARD, cacheAccess );
+        ProgressMonitorFactory.MultiPartBuilder progress = progressFactory.multipleParts( "Full Consistency Check" );
         final StoreAccess nativeStores = directStoreAccess.nativeStores();
         try ( IndexAccessors indexes =
                       new IndexAccessors( directStoreAccess.indexes(), nativeStores.getSchemaStore(), samplingConfig ) )
         {
             MultiPassStore.Factory multiPass = new MultiPassStore.Factory(
-                    decorator, totalMappedMemory, nativeStores, recordAccess, report );
-            List<StoppableRunnable> tasks = new ConsistencyCheckTasks( progress, order, processEverything ).createTasks(
-                    nativeStores,
-                    directStoreAccess.labelScanStore(),
-                    indexes,
-                    multiPass,
-                    reporter,
-                    checkLabelScanStore,
-                    checkIndexes,
-                    checkGraph
-            );
-
-            order.execute( tasks, progress.build() );
+                    decorator, recordAccess, cacheAccess, report, reportMonitor );
+            ConsistencyCheckTasks taskCreator = new ConsistencyCheckTasks( progress, processEverything,
+                    nativeStores, statistics, cacheAccess, directStoreAccess.labelScanStore(), indexes,
+                    multiPass, reporter, threads );
+            List<ConsistencyCheckerTask> tasks =
+                    taskCreator.createTasksForFullCheck( checkLabelScanStore, checkIndexes, checkGraph );
+            TaskExecutor.execute( tasks, progress.build() );
         }
         catch ( Exception e )
         {
             throw new ConsistencyCheckIncompleteException( e );
         }
-
     }
 
-    static DiffRecordAccess recordAccess( StoreAccess store )
+    static RecordAccess recordAccess( StoreAccess store, CacheAccess cacheAccess )
     {
         return new CacheSmallStoresRecordAccess(
-                new DirectRecordAccess( store ),
+                new DirectRecordAccess( store, cacheAccess ),
                 readAllRecords( PropertyKeyTokenRecord.class, store.getPropertyKeyTokenStore() ),
                 readAllRecords( RelationshipTypeTokenRecord.class, store.getRelationshipTypeTokenStore() ),
                 readAllRecords( LabelTokenRecord.class, store.getLabelTokenStore() ) );
@@ -164,5 +168,4 @@ public class FullCheck
         }
         return records;
     }
-
 }

@@ -207,7 +207,7 @@ public class TestIdGeneratorRebuilding
         store.makeStoreOk();
 
         // ... that contain enough records to fill several file pages ...
-        int recordsPerPage = store.recordsPerPage();
+        int recordsPerPage = store.getRecordsPerPage();
         NodeRecord record = new NodeRecord( 0 );
         record.setInUse( true );
         int highestId = recordsPerPage * 3; // 3 pages worth of records

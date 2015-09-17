@@ -21,7 +21,9 @@ package org.neo4j.consistency.checking;
 
 import org.junit.Test;
 
+import org.neo4j.consistency.checking.full.MandatoryProperties;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.function.Functions;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
@@ -33,7 +35,9 @@ public class MetaDataStoreCheckTest
 {
     public MetaDataStoreCheckTest()
     {
-        super( new NeoStoreCheck(), ConsistencyReport.NeoStoreConsistencyReport.class );
+        super( new NeoStoreCheck( new PropertyChain<NeoStoreRecord,ConsistencyReport.NeoStoreConsistencyReport>(
+                Functions.<NeoStoreRecord,MandatoryProperties.Check<NeoStoreRecord,ConsistencyReport.NeoStoreConsistencyReport>>nullFunction() ) ),
+                ConsistencyReport.NeoStoreConsistencyReport.class, new int[0] );
     }
 
     @Test
@@ -93,69 +97,6 @@ public class MetaDataStoreCheckTest
 
         // then
         verify( report ).propertyNotFirstInChain( property );
-        verifyNoMoreInteractions( report );
-    }
-
-    // Change checking
-
-    @Test
-    public void shouldNotReportAnythingForConsistentlyChangedRecord() throws Exception
-    {
-        // given
-        NeoStoreRecord oldRecord = new NeoStoreRecord();
-        NeoStoreRecord newRecord = new NeoStoreRecord();
-
-        oldRecord.setNextProp( addChange( inUse( new PropertyRecord( 1 ) ),
-                                          notInUse( new PropertyRecord( 1 ) ) ).getId() );
-
-        newRecord.setNextProp( addChange( notInUse( new PropertyRecord( 2 ) ),
-                                          inUse( new PropertyRecord( 2 ) ) ).getId() );
-
-        // when
-        ConsistencyReport.NeoStoreConsistencyReport report = checkChange( oldRecord, newRecord );
-
-        // then
-        verifyNoMoreInteractions( report );
-    }
-
-    @Test
-    public void shouldReportProblemsWithTheNewStateWhenCheckingChanges() throws Exception
-    {
-        // given
-        NeoStoreRecord oldRecord = new NeoStoreRecord();
-        NeoStoreRecord newRecord = new NeoStoreRecord();
-
-        oldRecord.setNextProp( addChange( inUse( new PropertyRecord( 1 ) ),
-                                          notInUse( new PropertyRecord( 1 ) ) ).getId() );
-
-        PropertyRecord property = addChange( notInUse( new PropertyRecord( 2 ) ),
-                                             inUse( new PropertyRecord( 2 ) ) );
-        property.setPrevProp( 10 );
-        newRecord.setNextProp( property.getId() );
-
-        // when
-        ConsistencyReport.NeoStoreConsistencyReport report = checkChange( oldRecord, newRecord );
-
-        // then
-        verify( report ).propertyNotFirstInChain( property );
-        verifyNoMoreInteractions( report );
-    }
-
-    @Test
-    public void shouldReportPropertyChainReplacedButNotUpdated() throws Exception
-    {
-        // given
-        NeoStoreRecord oldRecord = new NeoStoreRecord();
-        NeoStoreRecord newRecord = new NeoStoreRecord();
-        oldRecord.setNextProp( add( inUse( new PropertyRecord( 1 ) ) ).getId() );
-        newRecord.setNextProp( addChange( notInUse( new PropertyRecord( 2 ) ),
-                                          inUse( new PropertyRecord( 2 ) ) ).getId() );
-
-        // when
-        ConsistencyReport.NeoStoreConsistencyReport report = checkChange( oldRecord, newRecord );
-
-        // then
-        verify( report ).propertyNotUpdated();
         verifyNoMoreInteractions( report );
     }
 }

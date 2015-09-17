@@ -25,7 +25,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
 {
     private boolean inUse = false;
     private boolean created = false;
-    
+
     public abstract long getLongId();
 
     public final boolean inUse()
@@ -47,7 +47,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
     {
         return created;
     }
-    
+
     @Override
     public int hashCode()
     {
@@ -72,7 +72,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
             return false;
         return true;
     }
-    
+
     @Override
     public AbstractBaseRecord clone()
     {

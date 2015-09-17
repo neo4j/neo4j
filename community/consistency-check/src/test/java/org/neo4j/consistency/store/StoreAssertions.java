@@ -31,6 +31,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class StoreAssertions
@@ -53,7 +54,8 @@ public class StoreAssertions
                         dir,
                         configuration,
                         ProgressMonitorFactory.NONE,
-                        NullLogProvider.getInstance()
+                        NullLogProvider.getInstance(),
+                        false
                 );
 
         assertTrue( result.isSuccessful() );

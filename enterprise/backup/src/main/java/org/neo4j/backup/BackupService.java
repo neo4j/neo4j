@@ -63,12 +63,12 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.DependenciesProxy;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
-import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.com.RequestContext.anonymous;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
@@ -170,7 +170,7 @@ class BackupService
                 {
                     consistent = new ConsistencyCheckService().runFullConsistencyCheck(
                             targetDirectory, tuningConfiguration, ProgressMonitorFactory.textual( System.err ),
-                            logProvider, fileSystem, pageCache ).isSuccessful();
+                            logProvider, fileSystem, pageCache, false ).isSuccessful();
                 }
                 catch ( ConsistencyCheckIncompleteException e )
                 {

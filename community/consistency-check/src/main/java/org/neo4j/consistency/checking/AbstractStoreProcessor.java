@@ -41,9 +41,9 @@ import static org.neo4j.consistency.checking.DynamicStore.SCHEMA;
 
 public abstract class AbstractStoreProcessor extends RecordStore.Processor<RuntimeException>
 {
-    private final RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> sparseNodeChecker;
-    private final RecordCheck<NodeRecord, NodeConsistencyReport> denseNodeChecker;
-    private final RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> relationshipChecker;
+    private RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> sparseNodeChecker;
+    private RecordCheck<NodeRecord, NodeConsistencyReport> denseNodeChecker;
+    private RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> relationshipChecker;
     private final RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> propertyChecker;
     private final RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> propertyKeyTokenChecker;
     private final RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> relationshipTypeTokenChecker;
@@ -62,10 +62,27 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
         this.relationshipChecker = decorator.decorateRelationshipChecker( new RelationshipRecordCheck() );
         this.propertyChecker = decorator.decoratePropertyChecker( new PropertyRecordCheck() );
         this.propertyKeyTokenChecker = decorator.decoratePropertyKeyTokenChecker( new PropertyKeyTokenRecordCheck() );
-        this.relationshipTypeTokenChecker = decorator.decorateRelationshipTypeTokenChecker( new
-                RelationshipTypeTokenRecordCheck() );
+        this.relationshipTypeTokenChecker =
+                decorator.decorateRelationshipTypeTokenChecker( new RelationshipTypeTokenRecordCheck() );
         this.labelTokenChecker = decorator.decorateLabelTokenChecker( new LabelTokenRecordCheck() );
         this.relationshipGroupChecker = decorator.decorateRelationshipGroupChecker( new RelationshipGroupRecordCheck() );
+    }
+
+    public void reDecorateRelationship( CheckDecorator decorator, RelationshipRecordCheck newChecker )
+    {
+        this.relationshipChecker = decorator.decorateRelationshipChecker( newChecker );
+    }
+
+    public void reDecorateNode( CheckDecorator decorator, NodeRecordCheck newChecker, boolean sparseNode )
+    {
+        if ( sparseNode )
+        {
+            this.sparseNodeChecker = decorator.decorateNodeChecker( newChecker );
+        }
+        else
+        {
+            this.denseNodeChecker = decorator.decorateNodeChecker( newChecker );
+        }
     }
 
     protected abstract void checkNode(
@@ -115,7 +132,7 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
     }
 
     @Override
-    public final void processNode( RecordStore<NodeRecord> store, NodeRecord node )
+    public void processNode( RecordStore<NodeRecord> store, NodeRecord node )
     {
         if ( node.isDense() )
         {
@@ -207,4 +224,5 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
     {
         checkRelationshipGroup( store, record, relationshipGroupChecker );
     }
+
 }
