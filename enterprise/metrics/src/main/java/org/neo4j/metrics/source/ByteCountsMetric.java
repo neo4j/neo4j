@@ -19,30 +19,31 @@
  */
 package org.neo4j.metrics.source;
 
+import org.neo4j.concurrent.Counter;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 public class ByteCountsMetric implements ByteCounterMonitor
 {
-    private long bytesWritten;
-    private long bytesRead;
+    private final Counter bytesWritten = Counter.create();
+    private final Counter bytesRead = Counter.create();
 
     public long getBytesWritten()
     {
-        return bytesWritten;
+        return bytesWritten.sum();
     }
 
     public long getBytesRead()
     {
-        return bytesRead;
+        return bytesRead.sum();
     }
 
-    public void bytesWritten( long l )
+    public void bytesWritten( long bytes )
     {
-        bytesWritten += l;
+        bytesWritten.add( bytes );
     }
 
-    public void bytesRead( long l )
+    public void bytesRead( long bytes )
     {
-        bytesRead += l;
+        bytesRead.add( bytes );
     }
 }
