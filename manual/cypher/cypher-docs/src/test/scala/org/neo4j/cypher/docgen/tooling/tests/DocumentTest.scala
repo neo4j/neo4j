@@ -17,8 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.docgen.tooling
+package org.neo4j.cypher.docgen.tooling.tests
 
+import org.neo4j.cypher.docgen.tooling._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
 class DocumentAsciiDocTest extends CypherFunSuite {
@@ -236,7 +237,9 @@ class DocumentQueryTest extends CypherFunSuite {
     val doc = Document("title", "myId", initQueries = Seq.empty,
       Query(query, NoAssertions, Paragraph("hello world")))
 
-    doc.asciiDoc.text should equal(
+    val asciiDocResult = doc.asciiDoc
+
+    asciiDocResult.text should equal(
       """[[myId]]
         |= title
         |
@@ -248,6 +251,8 @@ class DocumentQueryTest extends CypherFunSuite {
         |----
         |
         |""".stripMargin)
+
+    asciiDocResult.testResults.toList should be(Seq(query -> NoAssertions))
   }
 
 //  test("Simple query with assertions") {

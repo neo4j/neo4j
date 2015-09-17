@@ -28,13 +28,13 @@ case class AsciiDocResult(text: String, testResults: Seq[(String, Option[Excepti
 
 case class Document(title: String, id: String, initQueries: Seq[String], content: Content) {
   def asciiDoc: AsciiDocResult  = {
-    val apa =
+    val text =
       s"""[[$id]]
          |= $title
          |
          |""".stripMargin + content.asciiDoc(0)
 
-    AsciiDocResult(apa, Seq.empty)
+    AsciiDocResult(text, Seq.empty)
   }
 }
 
@@ -51,6 +51,10 @@ sealed trait Content {
 trait NoTests {
   self: Content =>
   def tests: Seq[(String, QueryAssertions)] = Seq.empty
+}
+
+case object NoContent extends Content with NoTests {
+  override def asciiDoc(level: Int) = ""
 }
 
 case class ContentChain(a: Content, b: Content) extends Content {
