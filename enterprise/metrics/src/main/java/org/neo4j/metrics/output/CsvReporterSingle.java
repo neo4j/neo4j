@@ -180,7 +180,9 @@ public class CsvReporterSingle extends ScheduledReporter
         super.stop();
 
         if ( out != null )
-        { out.close(); }
+        {
+            out.close();
+        }
     }
 
     @Override
