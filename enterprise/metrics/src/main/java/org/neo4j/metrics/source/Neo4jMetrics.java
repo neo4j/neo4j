@@ -35,6 +35,10 @@ import static com.codahale.metrics.MetricRegistry.name;
 
 public class Neo4jMetrics implements Closeable
 {
+    private static final String TRANSACTION_PREFIX = "neo4j.transaction";
+    private static final String PAGE_CACHE_PREFIX = "neo4j.page_cache";
+    private static final String COUNTS_PREFIX = "neo4j.ids_in_use";
+
     private final NetworkMetrics networkMetrics;
 
     public Neo4jMetrics( MetricRegistry registry, final MetricsKernelExtensionFactory.Dependencies dependencies )
@@ -46,7 +50,7 @@ public class Neo4jMetrics implements Closeable
         // TxManager metrics
         if ( config.get( MetricsSettings.neoTxEnabled ) )
         {
-            registry.register( name( "neo4j.transaction", "active" ), new Gauge<Long>()
+            registry.register( name( TRANSACTION_PREFIX, "active" ), new Gauge<Long>()
             {
                 @Override
                 public Long getValue()
@@ -55,7 +59,7 @@ public class Neo4jMetrics implements Closeable
                 }
             } );
 
-            registry.register( name( "neo4j.transaction", "committed" ), new Gauge<Long>()
+            registry.register( name( TRANSACTION_PREFIX, "committed" ), new Gauge<Long>()
             {
                 @Override
                 public Long getValue()
@@ -64,7 +68,7 @@ public class Neo4jMetrics implements Closeable
                 }
             } );
 
-            registry.register( name( "neo4j.transaction", "rollbacks" ), new Gauge<Long>()
+            registry.register( name( TRANSACTION_PREFIX, "rollbacks" ), new Gauge<Long>()
             {
                 @Override
                 public Long getValue()
@@ -73,7 +77,7 @@ public class Neo4jMetrics implements Closeable
                 }
             } );
 
-            registry.register( name( "neo4j.transaction", "terminated" ), new Gauge<Long>()
+            registry.register( name( TRANSACTION_PREFIX, "terminated" ), new Gauge<Long>()
             {
                 @Override
                 public Long getValue()
@@ -82,7 +86,7 @@ public class Neo4jMetrics implements Closeable
                 }
             } );
 
-            registry.register( name( "neo4j.transaction", "started" ), new Gauge<Long>()
+            registry.register( name( TRANSACTION_PREFIX, "started" ), new Gauge<Long>()
             {
                 @Override
                 public Long getValue()
@@ -91,7 +95,7 @@ public class Neo4jMetrics implements Closeable
                 }
             } );
 
-            registry.register( name( "neo4j.transaction", "peak_concurrent" ), new Gauge<Long>()
+            registry.register( name( TRANSACTION_PREFIX, "peak_concurrent" ), new Gauge<Long>()
             {
                 @Override
                 public Long getValue()
@@ -105,7 +109,7 @@ public class Neo4jMetrics implements Closeable
         if ( config.get( MetricsSettings.neoPageCacheEnabled ) )
         {
             final PageCacheMonitor pageCacheCounters = dependencies.pageCacheCounters();
-            registry.register( name( "neo4j.page_cache", "page_faults" ), new Gauge<Long>()
+            registry.register( name( PAGE_CACHE_PREFIX, "page_faults" ), new Gauge<Long>()
             {
                 @Override
                 public Long getValue()
@@ -114,7 +118,7 @@ public class Neo4jMetrics implements Closeable
                 }
             } );
 
-            registry.register( name( "neo4j.page_cache", "evictions" ), new Gauge<Long>()
+            registry.register( name( PAGE_CACHE_PREFIX, "evictions" ), new Gauge<Long>()
             {
                 @Override
                 public Long getValue()
@@ -123,7 +127,7 @@ public class Neo4jMetrics implements Closeable
                 }
             } );
 
-            registry.register( name( "neo4j.page_cache", "pins" ), new Gauge<Long>()
+            registry.register( name( PAGE_CACHE_PREFIX, "pins" ), new Gauge<Long>()
             {
                 @Override
                 public Long getValue()
@@ -132,7 +136,7 @@ public class Neo4jMetrics implements Closeable
                 }
             } );
 
-            registry.register( name( "neo4j.page_cache", "unpins" ), new Gauge<Long>()
+            registry.register( name( PAGE_CACHE_PREFIX, "unpins" ), new Gauge<Long>()
             {
                 @Override
                 public Long getValue()
@@ -141,7 +145,7 @@ public class Neo4jMetrics implements Closeable
                 }
             } );
 
-            registry.register( name( "neo4j.page_cache", "flushes" ), new Gauge<Long>()
+            registry.register( name( PAGE_CACHE_PREFIX, "flushes" ), new Gauge<Long>()
             {
                 @Override
                 public Long getValue()
@@ -150,7 +154,7 @@ public class Neo4jMetrics implements Closeable
                 }
             } );
 
-            registry.register( name( "neo4j.page_cache", "eviction_exceptions" ), new Gauge<Long>()
+            registry.register( name( PAGE_CACHE_PREFIX, "eviction_exceptions" ), new Gauge<Long>()
             {
                 @Override
                 public Long getValue()
@@ -163,7 +167,7 @@ public class Neo4jMetrics implements Closeable
         // Node/rel count metrics
         if ( config.get( MetricsSettings.neoCountsEnabled ) )
         {
-            registry.register( name( "neo4j.ids_in_use", "node" ), new Gauge<Long>()
+            registry.register( name( COUNTS_PREFIX, "node" ), new Gauge<Long>()
             {
                 @Override
                 public Long getValue()
@@ -172,7 +176,7 @@ public class Neo4jMetrics implements Closeable
                 }
             } );
 
-            registry.register( name( "neo4j.ids_in_use", "relationship" ), new Gauge<Long>()
+            registry.register( name( COUNTS_PREFIX, "relationship" ), new Gauge<Long>()
             {
                 @Override
                 public Long getValue()
@@ -181,7 +185,7 @@ public class Neo4jMetrics implements Closeable
                 }
             } );
 
-            registry.register( name( "neo4j.ids_in_use", "property" ), new Gauge<Long>()
+            registry.register( name( COUNTS_PREFIX, "property" ), new Gauge<Long>()
             {
                 @Override
                 public Long getValue()
@@ -190,7 +194,7 @@ public class Neo4jMetrics implements Closeable
                 }
             } );
 
-            registry.register( name( "neo4j.ids_in_use", "relationship_type" ), new Gauge<Long>()
+            registry.register( name( COUNTS_PREFIX, "relationship_type" ), new Gauge<Long>()
             {
                 @Override
                 public Long getValue()

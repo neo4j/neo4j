@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 
@@ -45,19 +46,22 @@ public class GraphiteOutput implements Closeable
         if ( config.get( graphiteEnabled ) )
         {
             // Setup Graphite reporting
+            HostnamePort hostnamePort = config.get( graphiteServer );
+            final InetSocketAddress graphiteServerAddress = new InetSocketAddress(
+                    hostnamePort.getHost(), hostnamePort.getPort() );
+            final Graphite graphite = new Graphite( graphiteServerAddress );
 
-            final Graphite graphite = new Graphite( new InetSocketAddress( config.get( graphiteServer ).getHost(),
-                    config.get( graphiteServer ).getPort() ) );
             graphiteReporter = GraphiteReporter.forRegistry( registry )
                     .prefixedWith( prefix )
                     .convertRatesTo( TimeUnit.SECONDS )
                     .convertDurationsTo( TimeUnit.MILLISECONDS )
                     .filter( MetricFilter.ALL )
                     .build( graphite );
+
             // Start Graphite reporter
             graphiteReporter.start( config.get( graphiteInterval ), TimeUnit.MILLISECONDS );
 
-            logger.info( "Sending metrics to Graphite server at " + config.get( graphiteServer ) );
+            logger.info( "Sending metrics to Graphite server at " + hostnamePort );
         }
     }
 

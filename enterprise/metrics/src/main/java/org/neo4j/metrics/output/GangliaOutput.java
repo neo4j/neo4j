@@ -28,6 +28,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 
@@ -47,8 +48,13 @@ public class GangliaOutput implements Closeable
             {
                 // Setup Ganglia reporting
 
-                final GMetric ganglia = new GMetric( config.get( gangliaServer ).getHost(),
-                        config.get( gangliaServer ).getPort(), GMetric.UDPAddressingMode.MULTICAST, 1 );
+                final HostnamePort hostnamePort = config.get( gangliaServer );
+                final GMetric ganglia = new GMetric(
+                        hostnamePort.getHost(),
+                        hostnamePort.getPort(),
+                        GMetric.UDPAddressingMode.MULTICAST,
+                        1 );
+
                 gangliaReporter = GangliaReporter.forRegistry( registry )
                         .prefixedWith( prefix )
                         .convertRatesTo( TimeUnit.SECONDS )
@@ -59,7 +65,7 @@ public class GangliaOutput implements Closeable
                 // Start Ganglia reporter
                 gangliaReporter.start( config.get( gangliaInterval ), TimeUnit.MILLISECONDS );
 
-                logger.info( "Sending metrics to Ganglia server at " + config.get( gangliaServer ) );
+                logger.info( "Sending metrics to Ganglia server at " + hostnamePort );
             }
         }
         catch ( IOException e )

@@ -36,6 +36,7 @@ import static com.codahale.metrics.MetricRegistry.name;
 
 public class NetworkMetrics implements Closeable
 {
+    private static final String NAME_PREFIX = "neo4j.network";
     private Config config;
     private Monitors monitors;
     private MetricRegistry registry;
@@ -72,7 +73,7 @@ public class NetworkMetrics implements Closeable
             // logBufferWrites was registered above - same monitor, remember?
             monitors.addMonitorListener( networkTransactionReads, "logdeserializer" );
 
-            registry.register( name( "neo4j.network", "master_network_tx_writes" ), new Gauge<Long>()
+            registry.register( name( NAME_PREFIX, "master_network_tx_writes" ), new Gauge<Long>()
             {
                 public Long getValue()
                 {
@@ -80,7 +81,7 @@ public class NetworkMetrics implements Closeable
                 }
             } );
 
-            registry.register( name( "neo4j.network", "master_network_store_writes" ), new Gauge<Long>()
+            registry.register( name( NAME_PREFIX, "master_network_store_writes" ), new Gauge<Long>()
             {
                 public Long getValue()
                 {
@@ -88,7 +89,7 @@ public class NetworkMetrics implements Closeable
                 }
             } );
 
-            registry.register( name( "neo4j.network", "slave_network_tx_writes" ), new Gauge<Long>()
+            registry.register( name( NAME_PREFIX, "slave_network_tx_writes" ), new Gauge<Long>()
             {
                 public Long getValue()
                 {
@@ -96,7 +97,7 @@ public class NetworkMetrics implements Closeable
                 }
             } );
 
-            registry.register( name( "neo4j.network", "transaction_reads" ), new Gauge<Long>()
+            registry.register( name( NAME_PREFIX, "transaction_reads" ), new Gauge<Long>()
             {
                 public Long getValue()
                 {
@@ -110,10 +111,10 @@ public class NetworkMetrics implements Closeable
     {
         if ( config.get( MetricsSettings.neoNetworkEnabled ) )
         {
-            registry.remove( name( "neo4j.network", "master_network_tx_writes" ) );
-            registry.remove( name( "neo4j.network", "master_network_store_writes" ) );
-            registry.remove( name( "neo4j.network", "slave_network_tx_writes" ) );
-            registry.remove( name( "neo4j.network", "transaction_reads" ) );
+            registry.remove( name( NAME_PREFIX, "master_network_tx_writes" ) );
+            registry.remove( name( NAME_PREFIX, "master_network_store_writes" ) );
+            registry.remove( name( NAME_PREFIX, "slave_network_tx_writes" ) );
+            registry.remove( name( NAME_PREFIX, "transaction_reads" ) );
 
             monitors.removeMonitorListener( masterNetworkTransactionWrites );
             monitors.removeMonitorListener( masterNetworkStoreWrites );
