@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.docgen.tooling.tests
 
+import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.docgen.tooling._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.SyntaxException
-import org.scalatest._
-import matchers._
+import org.scalatest.exceptions.TestFailedException
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 
 class QueryRunnerTest extends CypherFunSuite {
@@ -40,9 +40,26 @@ class QueryRunnerTest extends CypherFunSuite {
     val result = QueryRunner.runQueries(init = Seq.empty, queries = Seq(Query(query, ResultAssertions(p => 1 should equal(2)), NoContent)))
 
     result should have size 1
-    result should haveATestFailureOfClass(query -> classOf[SyntaxException])
+    result should haveATestFailureOfClass(query -> classOf[TestFailedException])
   }
 
+  test("expected exception does not cause a failure") {
+    val query = "match n return x"
+    val exception = ExpectedException[SyntaxException](_ => {})
+    val result = QueryRunner.runQueries(init = Seq.empty, queries = Seq(Query(query, exception, NoContent)))
+
+    result should have size 1
+    result shouldNot haveFailureFor(query)
+  }
+
+  test("when expecting an exception, not throwing is an error") {
+    val query = "match n return n"
+    val exception = ExpectedException[SyntaxException](_ => {})
+    val result = QueryRunner.runQueries(init = Seq.empty, queries = Seq(Query(query, exception, NoContent)))
+
+    result should have size 1
+    result should haveATestFailureOfClass(query -> classOf[ExpectedExceptionNotFound])
+  }
 
   class HasATestFailureOfClass[EXCEPTION <: Exception](queryAndClass: (String, Class[EXCEPTION]))
     extends Matcher[Seq[(String, Option[Exception])]] {
@@ -64,7 +81,7 @@ class QueryRunnerTest extends CypherFunSuite {
         val c2 = typ
         MatchResult(
           c1 == c2,
-          s"""Did not contain a test failure for query [<$query>] of type $c1 - the failure found had type $c2""",
+          s"""Did not contain a test failure for query [<$query>] of type $c2 - the failure found had type $c1""",
           s"""Did contain a test failure for query [<$query>] of type $c1"""
         )
       }
@@ -74,6 +91,22 @@ class QueryRunnerTest extends CypherFunSuite {
   def haveATestFailureOfClass[EXCEPTION <: Exception](queryAndClass: (String, Class[EXCEPTION])) =
     new HasATestFailureOfClass(queryAndClass)
 
+  class HasFailure(query: String)
+    extends Matcher[Seq[(String, Option[Exception])]] {
 
+    def apply(result: Seq[(String, Option[Exception])]) = {
+      val map: Map[String, Option[Exception]] = result.toMap
+      val r = map(query)
+      val maybeFailure = r.map(_.toString).getOrElse("")
+      MatchResult(
+        matches = r.nonEmpty,
+        s"""Did not contain a test failure for query [<$query>]""",
+        s"""Did contain a test failure for query [<$query>]: $maybeFailure"""
+      )
+    }
+  }
+
+  def haveFailureFor(query: String) =
+    new HasFailure(query)
 }
 

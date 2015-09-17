@@ -23,28 +23,50 @@ import org.neo4j.cypher.ExecutionEngine
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.test.TestGraphDatabaseFactory
 
+import scala.util.{Success, Failure, Try}
+
 object QueryRunner {
+
+
+  //  (queryResult, Content) => Content
+
   def runQueries(init: Seq[String], queries: Seq[Query]): Seq[(String, Option[Exception])] = {
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val engine = new ExecutionEngine(db)
     queries.map { case Query(q, assertions, _) =>
-      val result =
+      val result: Option[Exception] =
         try {
-          val result = RewindableExecutionResult(engine.execute(q))
+          (assertions, Try(engine.execute(q))) match {
+            case (e: ExpectedException[_], Success(_)) =>
+              Some(new ExpectedExceptionNotFound(s"Expected exception of type ${e.getExceptionClass}"))
 
-          assertions match {
-            case ResultAssertions(f) => f(result)
-            case ResultAndDbAssertions(f) => f(result, db)
-            case NoAssertions =>
+            case (expectation: ExpectedException[_], Failure(exception: Exception)) =>
+              expectation.handle(exception)
+              None
+
+            case (_, Failure(exception: Exception)) =>
+              Some(exception)
+
+            case (ResultAssertions(f), Success(inner)) =>
+              val result = RewindableExecutionResult(inner)
+              f(result)
+              None
+
+            case (ResultAndDbAssertions(f), Success(inner)) =>
+              val result = RewindableExecutionResult(inner)
+              f(result, db)
+              None
+
+            case (NoAssertions, Success(_)) =>
+              None
           }
-          None
         } catch {
-          case e: Exception => Some(e)
+          case e: Exception =>
+            Some(e)
         }
       q -> result
     }
   }
 }
 
-
-//    val result = RewindableExecutionResult(results)
+class ExpectedExceptionNotFound(m: String) extends Exception(m)

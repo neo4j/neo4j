@@ -173,7 +173,16 @@ case class ResultAndDbAssertions(f: (InternalExecutionResult, GraphDatabaseServi
 
 case object NoAssertions extends QueryAssertions
 
-case class ExpectedException(e: Exception) extends QueryAssertions
+case class ExpectedException[EXCEPTION <: Exception](f: EXCEPTION => Unit)
+                                                    (implicit m: Manifest[EXCEPTION]) extends QueryAssertions {
+  def getExceptionClass = m.runtimeClass
+
+  def handle(e: Exception) = if(e.getClass.isAssignableFrom(m.runtimeClass)) {
+    f(e.asInstanceOf[EXCEPTION])
+  } else {
+    throw new RuntimeException("your mama")
+  }
+}
 
 case object QueryResultTable extends Content with NoTests {
   override def asciiDoc(level: Int) = ???
