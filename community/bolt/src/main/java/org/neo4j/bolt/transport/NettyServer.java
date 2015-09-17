@@ -19,13 +19,20 @@
  */
 package org.neo4j.bolt.transport;
 
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 
+import java.net.BindException;
 import java.util.Collection;
 import java.util.concurrent.ThreadFactory;
 
-import org.neo4j.function.BiConsumer;
+import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.PortBindException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
@@ -39,18 +46,27 @@ public class NettyServer extends LifecycleAdapter
     private static final int NUM_SELECTOR_THREADS = Math.max( 1, Integer.getInteger(
             "org.neo4j.selectorThreads", Runtime.getRuntime().availableProcessors() * 2 ) );
 
-    private final Collection<BiConsumer<EventLoopGroup,EventLoopGroup>> bootstrappers;
+    private final Collection<ProtocolInitializer> bootstrappers;
     private final ThreadFactory tf;
     private EventLoopGroup bossGroup;
     private EventLoopGroup selectorGroup;
 
     /**
-     * @param tf used to create IO threads to listen and handle network events
-     * @param bootstrappers functions that bootstrap protocols we should support
+     * Describes how to initialize new channels for a protocol, and which address the protocol should be bolted into.
      */
-    public NettyServer( ThreadFactory tf, Collection<BiConsumer<EventLoopGroup, EventLoopGroup>> bootstrappers )
+    public interface ProtocolInitializer
     {
-        this.bootstrappers = bootstrappers;
+        ChannelInitializer<io.netty.channel.socket.SocketChannel> channelInitializer();
+        HostnamePort address();
+    }
+
+    /**
+     * @param tf used to create IO threads to listen and handle network events
+     * @param initializers functions that bootstrap protocols we should support
+     */
+    public NettyServer( ThreadFactory tf, Collection<ProtocolInitializer> initializers )
+    {
+        this.bootstrappers = initializers;
         this.tf = tf;
     }
 
@@ -70,9 +86,32 @@ public class NettyServer extends LifecycleAdapter
         selectorGroup = new NioEventLoopGroup( NUM_SELECTOR_THREADS, tf );
 
         // Bootstrap the various ports and protocols we want to handle
-        for ( BiConsumer<EventLoopGroup,EventLoopGroup> bootstrapper : bootstrappers )
+
+        for ( ProtocolInitializer initializer : bootstrappers )
         {
-            bootstrapper.accept( bossGroup, selectorGroup );
+            try
+            {
+                new ServerBootstrap()
+                        .option( ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT )
+                        .group( bossGroup, selectorGroup )
+                        .channel( NioServerSocketChannel.class )
+                        .childHandler( initializer.channelInitializer() )
+                        .bind( initializer.address().getHost(), initializer.address().getPort() )
+                        .sync();
+            }
+            catch ( Throwable e )
+            {
+                // We catch throwable here because netty uses clever tricks to have method signatures that look like they do not
+                // throw checked exceptions, but they actually do. The compiler won't let us catch them explicitly because in theory
+                // they shouldn't be possible, so we have to catch Throwable and do our own checks to grab them
+
+                // In any case, we do all this just in order to throw a more helpful bind exception, oh, and here's that part coming right now!
+                if ( e instanceof BindException )
+                {
+                    throw new PortBindException( initializer.address(), (BindException) e );
+                }
+                throw e;
+            }
         }
     }
 

@@ -19,18 +19,13 @@
  */
 package org.neo4j.bolt.transport;
 
-import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.ssl.SslContext;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.function.BiConsumer;
 import org.neo4j.function.Function;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.logging.LogProvider;
@@ -38,7 +33,7 @@ import org.neo4j.logging.LogProvider;
 /**
  * Implements a transport for the Neo4j Messaging Protocol that uses good old regular sockets.
  */
-public class SocketTransport implements BiConsumer<EventLoopGroup, EventLoopGroup>
+public class SocketTransport implements NettyServer.ProtocolInitializer
 {
     private final HostnamePort address;
     private final SslContext sslCtx;
@@ -54,43 +49,30 @@ public class SocketTransport implements BiConsumer<EventLoopGroup, EventLoopGrou
         this.protocolVersions = protocolVersions;
     }
 
-    public HostnamePort address()
+    @Override
+    public ChannelInitializer<SocketChannel> channelInitializer()
     {
-        return address;
+        return new ChannelInitializer<SocketChannel>()
+        {
+            @Override
+            public void initChannel( SocketChannel ch ) throws Exception
+            {
+                ch.config().setAllocator( PooledByteBufAllocator.DEFAULT );
+
+                if( sslCtx != null )
+                {
+                    ch.pipeline().addLast( sslCtx.newHandler( ch.alloc() ) );
+                }
+
+                ch.pipeline().addLast( new SocketTransportHandler(
+                        new SocketTransportHandler.ProtocolChooser( protocolVersions ), logging ) );
+            }
+        } ;
     }
 
     @Override
-    public void accept( EventLoopGroup bossGroup, EventLoopGroup workerGroup )
+    public HostnamePort address()
     {
-        ServerBootstrap b = new ServerBootstrap();
-        b.option( ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT )
-         .group( bossGroup, workerGroup )
-         .channel( NioServerSocketChannel.class )
-         .childHandler( new ChannelInitializer<SocketChannel>()
-                {
-                    @Override
-                    public void initChannel( SocketChannel ch ) throws Exception
-                    {
-                        ch.config().setAllocator( PooledByteBufAllocator.DEFAULT );
-
-                        if( sslCtx != null )
-                        {
-                            ch.pipeline().addLast( sslCtx.newHandler( ch.alloc() ) );
-                        }
-
-                        ch.pipeline().addLast( new SocketTransportHandler(
-                                new SocketTransportHandler.ProtocolChooser( protocolVersions ), logging ) );
-                    }
-                } );
-
-        // Bind and start to accept incoming connections.
-        try
-        {
-            b.bind( address.getHost(), address.getPort() ).sync();
-        }
-        catch ( InterruptedException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return address;
     }
 }
