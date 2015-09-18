@@ -249,6 +249,6 @@ public class ConsistencyCheckService
 
     public static int defaultConsistencyCheckThreadsNumber()
     {
-        return Runtime.getRuntime().availableProcessors() - 1;
+        return Math.max( 1, Runtime.getRuntime().availableProcessors() - 1 );
     }
 }
