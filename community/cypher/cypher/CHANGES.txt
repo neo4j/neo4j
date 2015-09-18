@@ -1,3 +1,10 @@
+2.3-RC01
+-------
+
+Cypher:
+o Generates a warning when a plan using LOAD CSV uses MATCH or MERGE on a large label without an index
+o Generates a warning when a plan using LOAD CSV also contains an EagerPipe
+
 2.3-M03
 -------
 
