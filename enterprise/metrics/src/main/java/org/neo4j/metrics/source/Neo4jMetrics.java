@@ -26,9 +26,11 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.metrics.MetricsKernelExtensionFactory;
+import org.neo4j.kernel.impl.transaction.TransactionCounters;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.metrics.MetricsSettings;
 
 import static com.codahale.metrics.MetricRegistry.name;
@@ -59,10 +61,11 @@ public class Neo4jMetrics implements Closeable
 
     private final NetworkMetrics networkMetrics;
 
-    public Neo4jMetrics( MetricRegistry registry, final MetricsKernelExtensionFactory.Dependencies dependencies )
+    public Neo4jMetrics( MetricRegistry registry,
+                         Config config, Monitors monitors, final TransactionCounters transactionCounters,
+                         final PageCacheMonitor pageCacheCounters, final IdGeneratorFactory idGeneratorFactory )
     {
-        Config config = dependencies.configuration();
-        networkMetrics = new NetworkMetrics( config, dependencies.monitors(), registry );
+        networkMetrics = new NetworkMetrics( config, monitors, registry );
 
         // Neo stats
         // TxManager metrics
@@ -73,7 +76,7 @@ public class Neo4jMetrics implements Closeable
                 @Override
                 public Long getValue()
                 {
-                    return dependencies.transactionCounters().getNumberOfActiveTransactions();
+                    return transactionCounters.getNumberOfActiveTransactions();
                 }
             } );
 
@@ -82,7 +85,7 @@ public class Neo4jMetrics implements Closeable
                 @Override
                 public Long getValue()
                 {
-                    return dependencies.transactionCounters().getNumberOfCommittedTransactions();
+                    return transactionCounters.getNumberOfCommittedTransactions();
                 }
             } );
 
@@ -91,7 +94,7 @@ public class Neo4jMetrics implements Closeable
                 @Override
                 public Long getValue()
                 {
-                    return dependencies.transactionCounters().getNumberOfRolledbackTransactions();
+                    return transactionCounters.getNumberOfRolledbackTransactions();
                 }
             } );
 
@@ -100,7 +103,7 @@ public class Neo4jMetrics implements Closeable
                 @Override
                 public Long getValue()
                 {
-                    return dependencies.transactionCounters().getNumberOfTerminatedTransactions();
+                    return transactionCounters.getNumberOfTerminatedTransactions();
                 }
             } );
 
@@ -109,7 +112,7 @@ public class Neo4jMetrics implements Closeable
                 @Override
                 public Long getValue()
                 {
-                    return dependencies.transactionCounters().getNumberOfStartedTransactions();
+                    return transactionCounters.getNumberOfStartedTransactions();
                 }
             } );
 
@@ -118,7 +121,7 @@ public class Neo4jMetrics implements Closeable
                 @Override
                 public Long getValue()
                 {
-                    return dependencies.transactionCounters().getPeakConcurrentNumberOfTransactions();
+                    return transactionCounters.getPeakConcurrentNumberOfTransactions();
                 }
             } );
         }
@@ -126,7 +129,6 @@ public class Neo4jMetrics implements Closeable
         // Page cache metrics
         if ( config.get( MetricsSettings.neoPageCacheEnabled ) )
         {
-            final PageCacheMonitor pageCacheCounters = dependencies.pageCacheCounters();
             registry.register( PC_PAGE_FAULTS, new Gauge<Long>()
             {
                 @Override
@@ -190,7 +192,7 @@ public class Neo4jMetrics implements Closeable
                 @Override
                 public Long getValue()
                 {
-                    return dependencies.idGeneratorFactory().get( IdType.NODE ).getNumberOfIdsInUse();
+                    return idGeneratorFactory.get( IdType.NODE ).getNumberOfIdsInUse();
                 }
             } );
 
@@ -199,7 +201,7 @@ public class Neo4jMetrics implements Closeable
                 @Override
                 public Long getValue()
                 {
-                    return dependencies.idGeneratorFactory().get( IdType.RELATIONSHIP ).getNumberOfIdsInUse();
+                    return idGeneratorFactory.get( IdType.RELATIONSHIP ).getNumberOfIdsInUse();
                 }
             } );
 
@@ -208,7 +210,7 @@ public class Neo4jMetrics implements Closeable
                 @Override
                 public Long getValue()
                 {
-                    return dependencies.idGeneratorFactory().get( IdType.PROPERTY ).getNumberOfIdsInUse();
+                    return idGeneratorFactory.get( IdType.PROPERTY ).getNumberOfIdsInUse();
                 }
             } );
 
@@ -217,7 +219,7 @@ public class Neo4jMetrics implements Closeable
                 @Override
                 public Long getValue()
                 {
-                    return dependencies.idGeneratorFactory().get( IdType.RELATIONSHIP_TYPE_TOKEN )
+                    return idGeneratorFactory.get( IdType.RELATIONSHIP_TYPE_TOKEN )
                             .getNumberOfIdsInUse();
                 }
             } );

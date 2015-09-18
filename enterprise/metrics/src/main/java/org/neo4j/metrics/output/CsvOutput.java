@@ -24,12 +24,12 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.metrics.MetricsSettings;
 
@@ -37,56 +37,81 @@ import static org.neo4j.metrics.MetricsSettings.csvEnabled;
 import static org.neo4j.metrics.MetricsSettings.csvInterval;
 import static org.neo4j.metrics.MetricsSettings.csvPath;
 
-public class CsvOutput implements Closeable
+public class CsvOutput extends LifecycleAdapter
 {
+    private final Config config;
+    private final MetricRegistry registry;
+    private final Log logger;
     private ScheduledReporter csvReporter;
+    private File outputFile;
 
     public CsvOutput( Config config, MetricRegistry registry, Log logger )
+    {
+        this.config = config;
+        this.registry = registry;
+        this.logger = logger;
+    }
+
+    @Override
+    public void init()
     {
         if ( config.get( csvEnabled ) )
         {
             // Setup CSV reporting
-            File outputFile = config.get( csvPath );
-            switch ( config.get( MetricsSettings.csvFile ) )
+            outputFile = config.get( csvPath );
+            MetricsSettings.CsvFile csvFile = config.get( MetricsSettings.csvFile );
+            switch ( csvFile )
             {
             case single:
-            {
                 csvReporter = CsvReporterSingle.forRegistry( registry )
                         .convertRatesTo( TimeUnit.SECONDS )
                         .convertDurationsTo( TimeUnit.MILLISECONDS )
                         .filter( MetricFilter.ALL )
                         .build( outputFile );
                 break;
-            }
-
             case split:
-            {
-                if ( !outputFile.exists() )
-                {
-                    if ( !outputFile.mkdirs() )
-                    {
-                        throw new IllegalStateException(
-                                "Could not create path for CSV files:" + outputFile.getAbsolutePath() );
-                    }
-                }
-
                 csvReporter = CsvReporter.forRegistry( registry )
                         .convertRatesTo( TimeUnit.SECONDS )
                         .convertDurationsTo( TimeUnit.MILLISECONDS )
                         .filter( MetricFilter.ALL )
-                        .build( outputFile );
+                        .build( ensureDirectoryExists( outputFile ) );
                 break;
+            default: throw new IllegalArgumentException(
+                    "Unsupported " + MetricsSettings.csvFile.name() + " setting: " + csvFile );
             }
-            }
+        }
+    }
 
-            // Start CSV reporter
+    private File ensureDirectoryExists( File dir )
+    {
+        if ( !dir.exists() )
+        {
+            if ( !dir.mkdirs() )
+            {
+                throw new IllegalStateException(
+                        "Could not create path for CSV files: " + dir.getAbsolutePath() );
+            }
+        }
+        if ( dir.isFile() )
+        {
+            throw new IllegalStateException(
+                    "The given path for CSV files points to a file, but a directory is required: " +
+                    dir.getAbsolutePath() );
+        }
+        return dir;
+    }
+
+    @Override
+    public void start()
+    {
+        if ( csvReporter != null )
+        {
             csvReporter.start( config.get( csvInterval ), TimeUnit.MILLISECONDS );
-
             logger.info( "Sending metrics to CSV file at " + outputFile );
         }
     }
 
-    public void close() throws IOException
+    public void stop() throws IOException
     {
         if ( csvReporter != null )
         {

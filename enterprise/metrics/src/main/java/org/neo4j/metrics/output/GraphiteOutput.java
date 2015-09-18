@@ -24,48 +24,68 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.metrics.MetricsSettings.graphiteEnabled;
 import static org.neo4j.metrics.MetricsSettings.graphiteInterval;
 import static org.neo4j.metrics.MetricsSettings.graphiteServer;
 
-public class GraphiteOutput implements Closeable
+public class GraphiteOutput extends LifecycleAdapter
 {
+    private final Config config;
+    private final MetricRegistry registry;
+    private final Log logger;
+    private final String prefix;
     private GraphiteReporter graphiteReporter;
+    private HostnamePort hostnamePort;
 
     public GraphiteOutput( Config config, MetricRegistry registry, Log logger, String prefix )
+    {
+        this.config = config;
+        this.registry = registry;
+        this.logger = logger;
+        this.prefix = prefix;
+    }
+
+    @Override
+    public void init()
     {
         if ( config.get( graphiteEnabled ) )
         {
             // Setup Graphite reporting
-            HostnamePort hostnamePort = config.get( graphiteServer );
+            hostnamePort = config.get( graphiteServer );
             final InetSocketAddress graphiteServerAddress = new InetSocketAddress(
                     hostnamePort.getHost(), hostnamePort.getPort() );
             final Graphite graphite = new Graphite( graphiteServerAddress );
 
             graphiteReporter = GraphiteReporter.forRegistry( registry )
-                    .prefixedWith( prefix )
-                    .convertRatesTo( TimeUnit.SECONDS )
-                    .convertDurationsTo( TimeUnit.MILLISECONDS )
-                    .filter( MetricFilter.ALL )
-                    .build( graphite );
+                                               .prefixedWith( prefix )
+                                               .convertRatesTo( TimeUnit.SECONDS )
+                                               .convertDurationsTo( TimeUnit.MILLISECONDS )
+                                               .filter( MetricFilter.ALL )
+                                               .build( graphite );
+        }
+    }
 
-            // Start Graphite reporter
+    @Override
+    public void start()
+    {
+        if ( graphiteReporter != null )
+        {
             graphiteReporter.start( config.get( graphiteInterval ), TimeUnit.MILLISECONDS );
-
             logger.info( "Sending metrics to Graphite server at " + hostnamePort );
         }
     }
 
-    public void close() throws IOException
+    @Override
+    public void stop() throws IOException
     {
         if ( graphiteReporter != null )
         {

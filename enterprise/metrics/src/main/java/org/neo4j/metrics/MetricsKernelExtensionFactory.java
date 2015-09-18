@@ -49,7 +49,7 @@ public class MetricsKernelExtensionFactory
 
     public MetricsKernelExtensionFactory()
     {
-        super( "metrics " );
+        super( "metrics" );
     }
 
     @Override

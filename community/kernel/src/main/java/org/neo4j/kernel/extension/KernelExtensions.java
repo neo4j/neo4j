@@ -47,10 +47,10 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
     private final UnsatisfiedDependencyStrategy unsatisfiedDepencyStrategy;
 
     public KernelExtensions( KernelContext kernelContext, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
-                             Dependencies dependencies, UnsatisfiedDependencyStrategy unsatisfiedDepencyStrategy )
+                             Dependencies dependencies, UnsatisfiedDependencyStrategy unsatisfiedDependencyStrategy )
     {
         this.kernelContext = kernelContext;
-        this.unsatisfiedDepencyStrategy = unsatisfiedDepencyStrategy;
+        this.unsatisfiedDepencyStrategy = unsatisfiedDependencyStrategy;
         this.kernelExtensionFactories = Iterables.addAll( new ArrayList<KernelExtensionFactory<?>>(),
                 kernelExtensionFactories );
         this.dependencies = dependencies;

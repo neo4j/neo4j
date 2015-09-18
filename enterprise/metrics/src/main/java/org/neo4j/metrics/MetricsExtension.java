@@ -21,70 +21,85 @@ package org.neo4j.metrics;
 
 import com.codahale.metrics.MetricRegistry;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.transaction.TransactionCounters;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.metrics.output.CsvOutput;
 import org.neo4j.metrics.output.GangliaOutput;
 import org.neo4j.metrics.output.GraphiteOutput;
 import org.neo4j.metrics.source.Neo4jMetrics;
 
-public class MetricsExtension extends LifecycleAdapter
+public class MetricsExtension implements Lifecycle
 {
-    private MetricsKernelExtensionFactory.Dependencies dependencies;
-    private final Log logger;
+    private final LifeSupport life;
+    private final LogService logService;
+    private final Config configuration;
+    private final Monitors monitors;
+    private final TransactionCounters transactionCounters;
+    private final PageCacheMonitor pageCacheCounters;
+    private final IdGeneratorFactory idGeneratorFactory;
 
-    private Config config;
-
-    private List<Closeable> services = new ArrayList<>();
 
     public MetricsExtension( MetricsKernelExtensionFactory.Dependencies dependencies )
     {
-        this.dependencies = dependencies;
-        logger = dependencies.logService().getUserLog( getClass() );
-        config = dependencies.configuration();
+        life = new LifeSupport();
+        logService = dependencies.logService();
+        configuration = dependencies.configuration();
+        monitors = dependencies.monitors();
+        transactionCounters = dependencies.transactionCounters();
+        pageCacheCounters = dependencies.pageCacheCounters();
+        idGeneratorFactory = dependencies.idGeneratorFactory();
     }
 
-    public void start() throws Throwable
+    @Override
+    public void init() throws Throwable
     {
+        Log logger = logService.getUserLog( getClass() );
+
         // Setup metrics
         final MetricRegistry registry = new MetricRegistry();
 
         logger.info( "Initiating metrics.." );
 
         // Setup output
-        String prefix = computePrefix();
+        String prefix = computePrefix( configuration );
 
-        services.add( new CsvOutput( config, registry, logger ) );
-        services.add( new GraphiteOutput( config, registry, logger, prefix ) );
-        services.add( new GangliaOutput( config, registry, logger, prefix ) );
+        life.add( new CsvOutput( configuration, registry, logger ) );
+        life.add( new GraphiteOutput( configuration, registry, logger, prefix ) );
+        life.add( new GangliaOutput( configuration, registry, logger, prefix ) );
 
         // Setup metric gathering
-        services.add( new Neo4jMetrics( registry, dependencies ) );
+        life.add( new Neo4jMetrics( registry, configuration, monitors,
+                transactionCounters, pageCacheCounters,
+                idGeneratorFactory ) );
+
+        life.init();
+    }
+
+    public void start() throws Throwable
+    {
+        life.start();
     }
 
     public void stop() throws Throwable
     {
-        for ( Closeable service : services )
-        {
-            try
-            {
-                service.close();
-            }
-            catch ( IOException e )
-            {
-                logger.warn( "Could not close", e );
-            }
-        }
+        life.stop();
     }
 
-    private String computePrefix()
+    @Override
+    public void shutdown() throws Throwable
+    {
+        life.shutdown();
+    }
+
+    private String computePrefix( Config config )
     {
         String prefix = config.get( MetricsSettings.metricsPrefix );
 
