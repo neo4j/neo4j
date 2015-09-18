@@ -37,11 +37,8 @@ case class EagerPipe(src: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeW
 
   def planDescription = src.planDescription.andThen(this.id, "Eager", identifiers)
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    val list: List[ExecutionContext] = input.toList
-    println(s"the eager iterator pulled in ${list.size} elements")
-    list.toIterator
-  }
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+    input.toList.toIterator
 
   def dup(sources: List[Pipe]): Pipe = {
     val (src :: Nil) = sources

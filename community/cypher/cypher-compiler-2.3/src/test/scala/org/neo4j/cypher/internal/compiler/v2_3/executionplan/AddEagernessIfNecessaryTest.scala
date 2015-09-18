@@ -80,42 +80,6 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
     .doesNotIntroduceEagerness()
   }
 
-//  test("READS PROP -> WRITES PROP needs eagerness"){
-//    testThatGoingFrom(Effects(ReadsGivenNodeProperty("foo")))
-//      .to(Effects(WritesGivenNodeProperty("foo")))
-//      .doesIntroduceEagerness()
-//  }
-
-//  test("WRITES PROP -> READS PROP does not need eagerness") {
-//    testThatGoingFrom(Effects(WritesGivenNodeProperty("foo")))
-//      .to(Effects(ReadsGivenNodeProperty("foo")))
-//      .doesNotIntroduceEagerness()
-//  }
-
-//  test("READS ALL PROPS -> WRITES PROP needs eagerness") {
-//    testThatGoingFrom(Effects(ReadsAnyNodeProperty))
-//      .to(Effects(WritesGivenNodeProperty("bar")))
-//      .doesIntroduceEagerness()
-//  }
-
-//  test("WRITES ALL PROPS -> READS PROP does not need eagerness") {
-//    testThatGoingFrom(Effects(WritesAnyNodeProperty))
-//      .to(Effects(ReadsGivenNodeProperty("foo")))
-//      .doesNotIntroduceEagerness()
-//  }
-
-//  test("READS ALL PROPS -> WRITES ALL PROPS needs eagerness") {
-//    testThatGoingFrom(Effects(ReadsAnyNodeProperty))
-//      .to(Effects(WritesAnyNodeProperty))
-//      .doesIntroduceEagerness()
-//  }
-
-//  test("WRITES ALL PROPS -> READS ALL PROPS does not need eagerness") {
-//    testThatGoingFrom(Effects(WritesAnyNodeProperty))
-//      .to(Effects(ReadsAnyNodeProperty))
-//      .doesNotIntroduceEagerness()
-//  }
-
   test("READS LABEL -> WRITES LABEL needs eagerness") {
     testThatGoingFrom(Effects(ReadsNodesWithLabels("foo")))
       .to(Effects(SetLabel("foo")))

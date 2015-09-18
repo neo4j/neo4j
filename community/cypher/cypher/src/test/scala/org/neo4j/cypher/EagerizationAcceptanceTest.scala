@@ -209,7 +209,6 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val result = execute(query)
 
-    println(result.dumpToString())
     assertNumberOfEagerness(query, 0)
   }
 
@@ -220,7 +219,6 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val result = execute(query)
 
-    println(result.dumpToString())
     assertNumberOfEagerness(query, 0)
   }
 
@@ -231,7 +229,6 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val result = execute(query)
 
-    println(result.dumpToString())
     assertNumberOfEagerness(query, 1)
   }
 
@@ -804,7 +801,6 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     val q = if (query.contains("EXPLAIN")) query else "EXPLAIN " + query
     val result = execute(q)
     val plan = result.executionPlanDescription().toString
-    println(plan)
     result.close()
     val length = EagerRegEx.findAllIn(plan).length
     assert(length == expectedEagerCount, plan)

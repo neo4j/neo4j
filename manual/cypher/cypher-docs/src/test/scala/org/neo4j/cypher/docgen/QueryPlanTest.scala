@@ -144,7 +144,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
            | The Eager operator can cause high memory usage when importing data or migrating graph structures.
            | In such cases split up your operations into simpler steps e.g. you can import nodes and relationships separately. 
            | Alternatively return the records to be updated and run an update statement afterwards.""".stripMargin,
-      queryText = """MATCH (p:Person) MERGE (:Person:Clone {name:p.name})""",
+      queryText = """MATCH (), (p:Person) MERGE (:Person:Clone {name:p.name})""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Eager"))
     )
   }
