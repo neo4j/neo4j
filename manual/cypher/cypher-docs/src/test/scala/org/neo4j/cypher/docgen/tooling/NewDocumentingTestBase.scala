@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.docgen.tooling
 
-import org.scalatest.{Assertions, FunSuiteLike, Matchers}
+import java.io._
 
+import org.scalatest.{Assertions, FunSuiteLike, Matchers}
 trait NewDocumentingTestBase extends FunSuiteLike with Assertions with Matchers {
   /**
    * Make sure this is implemented as a def and not a val. Since we are using it in the trait constructor,
@@ -47,7 +48,11 @@ trait NewDocumentingTestBase extends FunSuiteLike with Assertions with Matchers 
 
      if(successful) {
        val asciiDocTree = contentAndResultMerger(doc, result).asciiDoc
-       println(asciiDocTree.toString)
+
+       val file = new File(s"target/docs/dev/ql/${doc.id}.adoc")
+       val pw = new PrintWriter(file)
+       pw.write(asciiDocTree)
+       pw.close()
      }
    }
  }

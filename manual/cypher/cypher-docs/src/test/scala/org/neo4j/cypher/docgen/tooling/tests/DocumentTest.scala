@@ -281,7 +281,6 @@ class DocumentQueryTest extends CypherFunSuite {
       Query(query, NoAssertions, Paragraph("hello world")))
 
     val asciiDocResult = doc.asciiDoc
-
     asciiDocResult should equal(
       """[[myId]]
         |= title
@@ -292,6 +291,8 @@ class DocumentQueryTest extends CypherFunSuite {
         |MATCH (n)
         |RETURN n
         |----
+        |
+        |hello world
         |
         |""".stripMargin)
   }

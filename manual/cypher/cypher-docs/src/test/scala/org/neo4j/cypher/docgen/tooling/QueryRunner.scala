@@ -49,6 +49,7 @@ class QueryRunner(formatter: (InternalExecutionResult, Content, GraphDatabaseSer
       val result: Either[Exception, Content] =
         try {
           val resultTry = Try(engine.execute(query))
+          //[WARNING] It would fail on the following inputs: (ExpectedException(_), Failure(_)), (NoAssertions, Failure(_)), (ResultAndDbAssertions(_), Failure(_)), (ResultAssertions(_), Failure(_))
           (assertions, resultTry) match {
             case (e: ExpectedException[_], Success(_)) =>
               Left(new ExpectedExceptionNotFound(s"Expected exception of type ${e.getExceptionClass}"))

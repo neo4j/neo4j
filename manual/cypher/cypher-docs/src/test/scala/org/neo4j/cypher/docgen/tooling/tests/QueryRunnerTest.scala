@@ -65,51 +65,56 @@ class QueryRunnerTest extends CypherFunSuite {
     runner.runQueries(init = Seq.empty, queries = Seq(Query(query, assertions, content)))
   }
 
-  class HasATestFailureOfClass[EXCEPTION <: Exception](queryAndClass: (String, Class[EXCEPTION]))
-    extends Matcher[TestRunResult] {
-
-    def apply(result: TestRunResult) = {
-
-      val (query, typ) = queryAndClass
-      val testFailure: Option[Exception] = result(query).left.toOption
-
-      if (testFailure.isEmpty)
-        MatchResult(
-          matches = false,
-          s"""Did not contain a test failure for query [<$query>] of type $typ""",
-          s"""Did contain a test failure for query [<$query>] of type $typ"""
-        )
-      else {
-        val c1 = testFailure.get.getClass
-        val c2 = typ
-        MatchResult(
-          c1 == c2,
-          s"""Did not contain a test failure for query [<$query>] of type $c2 - the failure found had type $c1""",
-          s"""Did contain a test failure for query [<$query>] of type $c1"""
-        )
-      }
-    }
-  }
-
-  def haveATestFailureOfClass[EXCEPTION <: Exception](queryAndClass: (String, Class[EXCEPTION])) =
+  private def haveATestFailureOfClass[EXCEPTION <: Exception](queryAndClass: (String, Class[EXCEPTION])) =
     new HasATestFailureOfClass(queryAndClass)
 
-  class HasFailure(query: String)
-    extends Matcher[TestRunResult] {
+  private def haveFailureFor(query: String) =
+    new HasFailure(query)
+}
 
-    def apply(result: TestRunResult) = {
-      val testFailure: Option[Exception] = result(query).left.toOption
+class HasATestFailureOfClass[EXCEPTION <: Exception](queryAndClass: (String, Class[EXCEPTION]))
+  extends Matcher[TestRunResult] {
 
-      val maybeFailure = testFailure.map(_.toString).getOrElse("")
+  def apply(result: TestRunResult) = {
+
+    val (query, expectedType) = queryAndClass
+    val testFailure: Option[Exception] = result(query).left.toOption
+
+    if (testFailure.isEmpty)
       MatchResult(
-        matches = testFailure.nonEmpty,
-        s"""Did not contain a test failure for query [<$query>]""",
-        s"""Did contain a test failure for query [<$query>]: $maybeFailure"""
+        matches = false,
+        s"""Did not contain a test failure for query [<$query>] of type $expectedType""",
+        s"""Did contain a test failure for query [<$query>] of type $expectedType"""
+      )
+    else {
+      MatchResult(
+        matchesDirectlyOrThroughCause(expectedType, testFailure.get),
+        s"""Did not contain a test failure for query [<$query>] of type $expectedType - the failure found had type ${testFailure.get.getClass}""",
+        s"""Did contain a test failure for query [<$query>] of type ${testFailure.get.getClass}"""
       )
     }
   }
 
-  def haveFailureFor(query: String) =
-    new HasFailure(query)
+  private def matchesDirectlyOrThroughCause(expected: Class[EXCEPTION], actual: Throwable): Boolean = {
+    if(expected == actual.getClass)
+      true
+    else if(actual.getCause != null) {
+      matchesDirectlyOrThroughCause(expected, actual.getCause)
+    } else false
+  }
 }
 
+class HasFailure(query: String)
+  extends Matcher[TestRunResult] {
+
+  def apply(result: TestRunResult) = {
+    val testFailure: Option[Exception] = result(query).left.toOption
+
+    val maybeFailure = testFailure.map(_.toString).getOrElse("")
+    MatchResult(
+      matches = testFailure.nonEmpty,
+      s"""Did not contain a test failure for query [<$query>]""",
+      s"""Did contain a test failure for query [<$query>]: $maybeFailure"""
+    )
+  }
+}

@@ -30,8 +30,8 @@ import scala.collection.JavaConverters._
 
 class NewMatchTest extends NewDocumentingTestBase {
   def doc =
-    Document("Match", "id",
-      initQueries = Seq("CREATE ()"),
+    Document("Match", "query-match",
+      initQueries = Seq("CREATE (:Person {name:'Apa'})"),
       Abstract("The `MATCH` clause is used to search for the pattern described in it.") ~
         Section("Introduction",
           Paragraph(
