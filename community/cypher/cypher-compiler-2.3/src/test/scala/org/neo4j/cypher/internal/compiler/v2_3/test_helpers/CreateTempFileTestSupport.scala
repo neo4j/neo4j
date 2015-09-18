@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.test_helpers
 
-import java.io.PrintWriter
+import java.io.{FileOutputStream, OutputStreamWriter, PrintWriter}
 import java.nio.file.{Files, Path}
-import java.io.{OutputStreamWriter, FileOutputStream, PrintWriter}
-import java.util.zip.{ZipEntry, ZipOutputStream, GZIPOutputStream}
+import java.util.zip.{GZIPOutputStream, ZipEntry, ZipOutputStream}
 
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.io.fs.FileUtils
@@ -37,7 +36,9 @@ trait CreateTempFileTestSupport extends CypherTestSupport {
 
   override protected def stopTest(): Unit = {
     try {
-      paths.filter(Files.exists(_)).foreach(FileUtils.deletePathRecursively)
+      paths.filter(Files.exists(_)).foreach { p =>
+        if (Files.isRegularFile(p)) p.toFile.delete() else FileUtils.deletePathRecursively(p)
+      }
     } finally {
       super.stopTest()
     }
@@ -104,19 +105,19 @@ trait CreateTempFileTestSupport extends CypherTestSupport {
     }
   }
 
-    implicit def normalWriter(file: File): PrintWriter = new PrintWriter(file.bufferedWriter(append = false, Codec.UTF8))
+  implicit def normalWriter(file: File): PrintWriter = new PrintWriter(file.bufferedWriter(append = false, Codec.UTF8))
 
-    def gzipWriter(file: File): PrintWriter = new PrintWriter(new OutputStreamWriter(
-      new GZIPOutputStream(
-        new FileOutputStream(file.jfile, false)
-      ), Codec.UTF8.charSet))
+  def gzipWriter(file: File): PrintWriter = new PrintWriter(new OutputStreamWriter(
+    new GZIPOutputStream(
+      new FileOutputStream(file.jfile, false)
+    ), Codec.UTF8.charSet))
 
-    def zipWriter(file: File): PrintWriter = {
-      val zos = new ZipOutputStream(new FileOutputStream(file.jfile))
-      val ze = new ZipEntry(file.name)
-      zos.putNextEntry(ze)
+  def zipWriter(file: File): PrintWriter = {
+    val zos = new ZipOutputStream(new FileOutputStream(file.jfile))
+    val ze = new ZipEntry(file.name)
+    zos.putNextEntry(ze)
 
-      new PrintWriter(new OutputStreamWriter(zos))
-    }
+    new PrintWriter(new OutputStreamWriter(zos))
+  }
 
-    }
+}
