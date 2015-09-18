@@ -182,7 +182,31 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
       })
   }
 
-  ignore("reverse direction of relationship with labels"){}
+  test("counts relationships with type, reverse direction and labeled source node using count store") {
+    // Given
+    withRelationshipsModel(
+
+      // When
+      query = "MATCH (:User)<-[r:KNOWS]-() RETURN count(r)", f = { result =>
+
+        // Then
+        result.columnAs("count(r)").toSet[Int] should equal(Set(1))
+
+      })
+  }
+
+  test("counts relationships with type, reverse direction and labeled destination node using count store") {
+    // Given
+    withRelationshipsModel(
+
+      // When
+      query = "MATCH ()<-[r:KNOWS]-(:User) RETURN count(r)", f = { result =>
+
+        // Then
+        result.columnAs("count(r)").toSet[Int] should equal(Set(1))
+
+      })
+  }
 
   test("counts nodes using count store considering transaction state") {
     // Given
@@ -386,6 +410,19 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
       })
   }
 
+  test("counts relationships with type, reverse direction and labeled source using count store considering transaction state") {
+    // Given
+    withRelationshipsModelAndTransaction(
+
+      // When
+      query = "MATCH (:User)<-[r:KNOWS]-() RETURN count(r)", f = { result =>
+
+        // Then
+        result.columnAs("count(r)").toSet[Int] should equal(Set(3))
+
+      })
+  }
+
   test("counts relationships with unspecified type and labeled source using count store considering transaction state") {
     // Given
     withRelationshipsModelAndTransaction(
@@ -405,6 +442,19 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
 
       // When
       query = "MATCH ()-[r:KNOWS]->(:User) RETURN count(r)", f = { result =>
+
+        // Then
+        result.columnAs("count(r)").toSet[Int] should equal(Set(3))
+
+      })
+  }
+
+  test("counts relationships with type, reverse direction and labeled destination using count store considering transaction state") {
+    // Given
+    withRelationshipsModelAndTransaction(
+
+      // When
+      query = "MATCH ()<-[r:KNOWS]-(:User) RETURN count(r)", f = { result =>
 
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
