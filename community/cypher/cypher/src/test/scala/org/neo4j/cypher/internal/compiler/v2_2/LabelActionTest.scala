@@ -162,4 +162,6 @@ class SnitchingQueryContext extends QueryContext {
   def nodeGetDegree(node: Long, dir: Direction): Int = ???
 
   def nodeGetDegree(node: Long, dir: Direction, relTypeId: Int): Int = ???
+
+  override def isLabelSetOnNode(label: Int, node: Long): Boolean = ???
 }
