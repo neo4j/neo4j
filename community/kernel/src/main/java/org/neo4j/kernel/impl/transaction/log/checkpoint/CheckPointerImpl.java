@@ -67,24 +67,25 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     }
 
     @Override
-    public void forceCheckPoint() throws IOException
+    public long forceCheckPoint() throws IOException
     {
-        doCheckPoint( LogCheckPointEvent.NULL );
+        return doCheckPoint( LogCheckPointEvent.NULL );
     }
 
     @Override
-    public void checkPointIfNeeded() throws IOException
+    public long checkPointIfNeeded() throws IOException
     {
         if ( threshold.isCheckPointingNeeded( transactionIdStore.getLastClosedTransactionId() ) )
         {
             try ( LogCheckPointEvent event = tracer.beginCheckPoint() )
             {
-                doCheckPoint( event );
+                return doCheckPoint( event );
             }
         }
+        return -1;
     }
 
-    private void doCheckPoint( LogCheckPointEvent logCheckPointEvent ) throws IOException
+    private long doCheckPoint( LogCheckPointEvent logCheckPointEvent ) throws IOException
     {
         long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
         long lastClosedTransactionId = lastClosedTransaction[0];
@@ -120,5 +121,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
          * since it might be an earlier version than the current log version.
          */
         logPruning.pruneLogs( logPosition.getLogVersion() );
+
+        return lastClosedTransactionId;
     }
 }

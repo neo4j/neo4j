@@ -136,16 +136,17 @@ public class CheckPointSchedulerTest
         CheckPointer checkPointer = new CheckPointer()
         {
             @Override
-            public void checkPointIfNeeded() throws IOException
+            public long checkPointIfNeeded() throws IOException
             {
                 checkPointerLatch.start();
                 checkPointerLatch.awaitFinish();
+                return 42;
             }
 
             @Override
-            public void forceCheckPoint() throws IOException
+            public long forceCheckPoint() throws IOException
             {
-
+                return 42;
             }
         };
 

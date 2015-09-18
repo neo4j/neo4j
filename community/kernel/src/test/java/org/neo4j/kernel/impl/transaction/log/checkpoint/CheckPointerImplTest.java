@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
@@ -67,9 +68,10 @@ public class CheckPointerImplTest
         checkPointing.start();
 
         // When
-        checkPointing.checkPointIfNeeded();
+        long txId = checkPointing.checkPointIfNeeded();
 
         // Then
+        assertEquals( -1, txId );
         verifyZeroInteractions( flusher );
         verifyZeroInteractions( tracer );
         verifyZeroInteractions( appender );
@@ -92,9 +94,10 @@ public class CheckPointerImplTest
         checkPointing.start();
 
         // When
-        checkPointing.checkPointIfNeeded();
+        long txId = checkPointing.checkPointIfNeeded();
 
         // Then
+        assertEquals( transactionId, txId );
         verify( flusher, times( 1 ) ).forceEverything();
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
         verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
