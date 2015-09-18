@@ -182,6 +182,8 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
       })
   }
 
+  ignore("reverse direction of relationship with labels"){}
+
   test("counts nodes using count store considering transaction state") {
     // Given
     withModelAndTransaction(
