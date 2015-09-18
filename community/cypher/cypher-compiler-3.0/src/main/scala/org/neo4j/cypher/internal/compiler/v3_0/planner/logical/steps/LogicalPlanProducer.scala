@@ -340,16 +340,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     Projection(inner, expressions)(solved)
   }
 
-  def planCountStoreNodeAggregation(inner: LogicalPlan, idName: IdName, label: Option[LazyLabel], argumentIds: Set[IdName])(implicit context: LogicalPlanningContext) = {
-    val solved = inner.solved
+  def planCountStoreNodeAggregation(solved: PlannerQuery with CardinalityEstimation, idName: IdName, label: Option[LazyLabel], argumentIds: Set[IdName]) = {
     CountStoreNodeAggregation(idName, label, argumentIds)(solved)
   }
 
-  def planCountStoreRelationshipAggregation(inner: LogicalPlan, idName: IdName, startLabel: Option[LazyLabel],
+  def planCountStoreRelationshipAggregation(solved: PlannerQuery with CardinalityEstimation, idName: IdName, startLabel: Option[LazyLabel],
                                             typeNames: Seq[RelTypeName], endLabel: Option[LazyLabel],
-                                            argumentIds: Set[IdName])
-                                           (implicit context: LogicalPlanningContext) = {
-    val solved = inner.solved
+                                            argumentIds: Set[IdName]) = {
     CountStoreRelationshipAggregation(idName, startLabel, typeNames, endLabel, argumentIds)(solved)
   }
 
