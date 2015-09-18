@@ -67,7 +67,7 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
   test("shouldComplainAboutWholeNumbers") {
     test(
       "match (s) where id(s) = 0 return s limit -1",
-      "Invalid input '-': expected whitespace, comment, an unsigned integer or a parameter (line 1, column 42)"
+      "Invalid input '-1' is not a valid value, must be a positive integer (line 1, column 42 (offset: 41))"
     )
   }
 

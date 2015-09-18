@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.neo4j.graphdb.Node
-import org.junit.Assert.assertEquals
+import org.junit.Assert.{assertEquals, assertTrue}
 import org.junit.Test
-import org.neo4j.visualization.graphviz.GraphStyle
-import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
+import org.neo4j.graphdb.Node
+import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 
 class LimitTest extends DocumentingTestBase with SoftReset {
   override def graphDescription = List("A KNOWS B", "A KNOWS C", "A KNOWS D", "A KNOWS E")
@@ -41,5 +40,15 @@ class LimitTest extends DocumentingTestBase with SoftReset {
         optionalResultExplanation = "The top three items are returned by the example query.",
         assertions = (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))
     }
+
+  @Test def returnFromExpression() {
+    testQuery(
+      title = "Return first from expression",
+      text = "Limit accepts any expression that evaluates to a positive integer as long as it is not referring to any external identifiers:",
+      queryText = "match (n) return n order by n.name limit toInt(3 * rand()) + 1",
+      parameters = Map("p" -> 12),
+      optionalResultExplanation = "Returns one to three top items",
+      assertions = (p) => assertTrue(p.columnAs[Node]("n").nonEmpty))
+  }
 }
 

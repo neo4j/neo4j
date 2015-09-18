@@ -19,16 +19,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v2_3.ast
 
-import org.neo4j.cypher.internal.frontend.v2_3.{SemanticCheckable, InputPosition}
-import org.neo4j.cypher.internal.frontend.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v2_3.InputPosition
 
-case class Limit(expression: Expression)(val position: InputPosition) extends ASTNode with ASTSlicingPhrase with SemanticCheckable {
-
-  def dependencies = expression.dependencies
-
-  def semanticCheck =
-    expression.semanticCheck(Expression.SemanticContext.Simple) chain
-    expression.expectType(CTInteger.covariant)
+case class Limit(expression: Expression)(val position: InputPosition) extends ASTNode with ASTSlicingPhrase {
+  override def name = "LIMIT" // ASTSlicingPhrase name
 }
-
-

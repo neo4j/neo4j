@@ -9,6 +9,7 @@ o Generates a warning when a plan using LOAD CSV also contains an EagerPipe
 -------
 
 Cypher:
+o SKIP/LIMIT now allows arbitrary expressions that does not depend on identifiers
 o Allow arbitrary expressions for URL in LOAD CSV
 o Support for using compressed data with LOAD CSV
 o Added reverse function for reversing strings

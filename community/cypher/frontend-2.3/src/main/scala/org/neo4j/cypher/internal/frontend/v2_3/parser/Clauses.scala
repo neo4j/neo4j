@@ -161,10 +161,10 @@ trait Clauses extends Parser
   )
 
   private def Skip: Rule1[ast.Skip] = rule("SKIP") {
-    group(keyword("SKIP") ~~ (UnsignedIntegerLiteral | Parameter)) ~~>> (ast.Skip(_))
+    group(keyword("SKIP") ~~ Expression) ~~>> (ast.Skip(_))
   }
 
   private def Limit: Rule1[ast.Limit] = rule("LIMIT") {
-    group(keyword("LIMIT") ~~ (UnsignedIntegerLiteral | Parameter)) ~~>> (ast.Limit(_))
+    group(keyword("LIMIT") ~~ Expression) ~~>> (ast.Limit(_))
   }
 }
