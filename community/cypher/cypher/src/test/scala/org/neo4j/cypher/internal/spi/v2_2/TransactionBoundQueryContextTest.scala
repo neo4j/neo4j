@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.spi.v2_2
 
+import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.helpers.DynamicIterable
 import org.neo4j.graphdb._
-import org.mockito.Mockito._
 import org.neo4j.kernel.api._
-import org.neo4j.kernel.impl.api.{StatementOperationParts, KernelTransactionImplementation, KernelStatement}
+import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.test.ImpermanentGraphDatabase
 
@@ -47,7 +47,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val context = new TransactionBoundQueryContext(graph, outerTx, isTopLevelTx = true, statement)
 
     // WHEN
-    context.close(success = true)
+    context.close(None)
 
     // THEN
     verify (outerTx).success ()
@@ -61,7 +61,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val context = new TransactionBoundQueryContext(graph, outerTx, isTopLevelTx = true, statement)
 
     // WHEN
-    context.close(success = false)
+    context.close(Some(new RuntimeException))
 
     // THEN
     verify (outerTx).failure ()

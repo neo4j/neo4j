@@ -33,19 +33,19 @@ class ExplainExecutionResultTest extends CypherFunSuite {
   test("should call taskCloser close on close") {
     result.close()
 
-    Mockito.verify(closer, Mockito.times(1)).close(success = true)
+    Mockito.verify(closer, Mockito.times(1)).close()
   }
 
   test("should call taskCloser close on close from java wrapper") {
     result.javaIterator.close()
 
-    Mockito.verify(closer, Mockito.times(1)).close(success = true)
+    Mockito.verify(closer, Mockito.times(1)).close()
   }
 
   test("should call taskCloser close on close from java columns wrapper") {
     result.javaColumnAs("something").close()
 
-    Mockito.verify(closer, Mockito.times(1)).close(success = true)
+    Mockito.verify(closer, Mockito.times(1)).close()
   }
 
   override protected def beforeEach() { Mockito.reset(closer) }

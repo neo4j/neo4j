@@ -21,10 +21,11 @@ package org.neo4j.cypher
 
 import java.util.{Map => JavaMap}
 
+import org.neo4j.cypher.internal.compatibility.exceptionHandlerFor2_2
+import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.LRUCache
 import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserMonitor
 import org.neo4j.cypher.internal.compiler.v2_2.prettifier.Prettifier
-import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.{CypherCompiler, _}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.config.Setting
@@ -165,11 +166,11 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
         }.next()
       }
       catch {
-        case (t: Throwable) =>
+        case error: Throwable =>
+          exceptionHandlerFor2_2.handle(error, isTopLevelTx, tx)
           kernelStatement.close()
-          tx.failure()
           tx.close()
-          throw t
+          throw error
       }
 
       if (touched) {

@@ -54,7 +54,7 @@ case class ExplainExecutionResult(closer: TaskCloser, columns: List[String],
 
   def executionType = explained(queryType)
 
-  def close() { closer.close(success = true) }
+  def close() { closer.close() }
 
   def next() = Iterator.empty.next()
 

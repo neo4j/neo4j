@@ -84,7 +84,7 @@ public class IntegrityValidator
             }
             catch ( ConstraintVerificationFailedKernelException e )
             {
-                throw new TransactionFailureException( Status.Transaction.ValidationFailed, e, "Index valiation failed" );
+                throw new TransactionFailureException( Status.Transaction.ValidationFailed, e, "Index validation failed" );
             }
             catch ( IndexNotFoundKernelException | IndexPopulationFailedKernelException e )
             {

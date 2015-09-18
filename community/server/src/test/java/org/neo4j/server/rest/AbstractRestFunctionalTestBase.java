@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Before;
+import org.junit.Rule;
+
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
-
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.Before;
-import org.junit.Rule;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -129,7 +129,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return server().getDatabase().getGraph();
     }
     
-    protected String getDataUri()
+    protected static String getDataUri()
     {
         return "http://localhost:7474/db/data/";
     }
@@ -162,6 +162,21 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     protected String postRelationshipIndexUri( String indexName )
     {
         return getDataUri() + PATH_RELATIONSHIP_INDEX + "/" + indexName;
+    }
+
+    protected String txUri()
+    {
+        return getDataUri() + "transaction";
+    }
+
+    protected static String txCommitUri()
+    {
+        return getDataUri() + "transaction/commit";
+    }
+
+    protected String txUri( long txId )
+    {
+        return getDataUri() + "transaction/" + txId;
     }
 
     protected Node getNode( String name )

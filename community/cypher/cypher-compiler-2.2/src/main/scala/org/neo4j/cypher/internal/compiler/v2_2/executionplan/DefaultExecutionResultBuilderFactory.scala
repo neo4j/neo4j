@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
-import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{CSVResources, QueryContext}
-import org.neo4j.cypher.internal.compiler.v2_2.ExplainMode
+import org.neo4j.cypher.internal.compiler.v2_2.{ExplainMode, _}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 
@@ -70,7 +69,7 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
       }
       catch {
         case (t: Throwable) =>
-          taskCloser.close(success = false)
+          taskCloser.closeFailed(t)
           throw t
       }
     }

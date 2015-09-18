@@ -39,7 +39,7 @@ class ClosingIteratorTest extends CypherFunSuite {
     val result = iterator.next()
 
     //Then
-    verify(taskCloser).close(success = true)
+    verify(taskCloser).close()
     result should equal(Map[String, Any]("k" -> 42))
   }
 
@@ -52,7 +52,7 @@ class ClosingIteratorTest extends CypherFunSuite {
     val result = iterator.hasNext
 
     //Then
-    verify(taskCloser).close(success = true)
+    verify(taskCloser).close()
     result should equal(false)
   }
 
@@ -69,28 +69,30 @@ class ClosingIteratorTest extends CypherFunSuite {
     iterator.hasNext
 
     //Then
-    verify(taskCloser, atLeastOnce()).close(success = true)
+    verify(taskCloser, atLeastOnce()).close()
     result should equal(false)
   }
 
   test("exception_in_hasNext_should_fail_transaction") {
     //Given
     val wrapee = mock[Iterator[Map[String, Any]]]
-    when(wrapee.hasNext).thenThrow(new RuntimeException)
+    val failure = new RuntimeException
+    when(wrapee.hasNext).thenThrow(failure)
     val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
 
     //When
     intercept[RuntimeException](iterator.hasNext)
 
     //Then
-    verify(taskCloser).close(success = false)
+    verify(taskCloser).closeFailed(failure)
   }
 
   test("exception_in_next_should_fail_transaction") {
     //Given
     val wrapee = mock[Iterator[Map[String, Any]]]
     when(wrapee.hasNext).thenReturn(true)
-    when(wrapee.next()).thenThrow(new RuntimeException)
+    val failure = new RuntimeException
+    when(wrapee.next()).thenThrow(failure)
 
     val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
 
@@ -98,7 +100,7 @@ class ClosingIteratorTest extends CypherFunSuite {
     intercept[RuntimeException](iterator.next())
 
     //Then
-    verify(taskCloser).close(success = false)
+    verify(taskCloser).closeFailed(failure)
   }
 
   test("close_runs_cleanup") {
@@ -111,7 +113,7 @@ class ClosingIteratorTest extends CypherFunSuite {
     iterator.close()
 
     //Then
-    verify(taskCloser).close(success = true)
+    verify(taskCloser).close()
     result should equal(Map[String, Any]("k" -> 42))
   }
 }

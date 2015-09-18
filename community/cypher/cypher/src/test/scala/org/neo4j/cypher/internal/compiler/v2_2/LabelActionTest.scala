@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_2.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{LabelAction, LabelSetOp}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{IdempotentResult, LockingQueryContext, QueryContext}
-import org.neo4j.graphdb.{Relationship, Direction, Node}
+import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
 
@@ -87,7 +87,7 @@ class SnitchingQueryContext extends QueryContext {
 
   def getLabelsForNode(node: Node) = Seq(12L)
 
-  def close(success: Boolean) {???}
+  def close(failure: Option[Throwable]) {???}
 
   def createNode() = ???
 

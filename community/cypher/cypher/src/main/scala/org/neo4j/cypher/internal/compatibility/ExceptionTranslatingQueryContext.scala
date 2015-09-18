@@ -31,8 +31,8 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
     translateException(super.setLabelsOnNode(node, labelIds))
 
-  override def close(success: Boolean) =
-    translateException(super.close(success))
+  override def close(failure: Option[Throwable]) =
+    translateException(super.close(failure))
 
   override def createNode(): Node =
     translateException(super.createNode())
