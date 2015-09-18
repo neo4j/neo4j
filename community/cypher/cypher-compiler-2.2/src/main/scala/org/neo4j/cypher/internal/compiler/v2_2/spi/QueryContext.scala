@@ -73,7 +73,7 @@ trait QueryContext extends TokenContext {
 
   def isTopLevelTx: Boolean
 
-  def close(success: Boolean)
+  def close(failure: Option[Throwable])
 
   def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node]
 

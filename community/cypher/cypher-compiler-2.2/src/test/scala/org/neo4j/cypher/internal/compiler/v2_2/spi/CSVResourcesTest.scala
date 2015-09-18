@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.spi
 
 import java.net.URL
-import org.mockito.Mockito._
+
 import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.{CreateTempFileTestSupport, CypherFunSuite}
 import org.neo4j.cypher.internal.compiler.v2_2.TaskCloser
 
@@ -129,7 +130,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     resources.getCsvIterator(new URL(url))
 
     // then
-    verify(cleaner, times(1)).addTask(any(classOf[Boolean => Unit]))
+    verify(cleaner, times(1)).addTask(any(classOf[TaskCloser.Task]))
   }
 
   test("should accept and use a custom field terminator") {

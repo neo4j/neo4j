@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.spi
 
-import org.neo4j.graphdb.{Relationship, PropertyContainer, Direction, Node}
+import org.neo4j.graphdb.{Direction, Node, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
@@ -34,8 +34,8 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
   def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
     singleDbHit(inner.setLabelsOnNode(node, labelIds))
 
-  def close(success: Boolean) {
-    inner.close(success)
+  def close(failure: Option[Throwable]) {
+    inner.close(failure)
   }
 
   def createNode(): Node = singleDbHit(inner.createNode())

@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.spi.v2_2
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compiler.v2_2.{EntityNotFoundException, FailedIndexException}
+import org.neo4j.cypher.internal.compatibility.exceptionHandlerFor2_2
 import org.neo4j.cypher.internal.compiler.v2_2.spi._
+import org.neo4j.cypher.internal.compiler.v2_2.{EntityNotFoundException, FailedIndexException}
 import org.neo4j.cypher.internal.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.helpers.JavaConversionSupport._
 import org.neo4j.graphdb.DynamicRelationshipType._
@@ -59,14 +60,14 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     case (count, labelId) => if (statement.dataWriteOperations().nodeAddLabel(node, labelId)) count + 1 else count
   }
 
-  def close(success: Boolean) {
+  def close(failure:Option[Throwable]) {
     try {
       statement.close()
 
-      if (success)
+      if (failure.isEmpty)
         tx.success()
       else
-        tx.failure()
+        exceptionHandlerFor2_2.handle(failure.get, isTopLevelTx, tx)
       tx.close()
     }
     finally {

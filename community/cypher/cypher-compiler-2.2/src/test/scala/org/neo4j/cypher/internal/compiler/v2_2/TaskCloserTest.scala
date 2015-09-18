@@ -34,7 +34,7 @@ class TaskCloserTest extends CypherFunSuite with BeforeAndAfter {
 
   test("cleanUp call methods") {
     taskCloser.addTask(closingTask)
-    taskCloser.close(success = true)
+    taskCloser.close()
 
     ran should equal(true)
     outcome should equal(true)
@@ -44,7 +44,7 @@ class TaskCloserTest extends CypherFunSuite with BeforeAndAfter {
     outcome = true
 
     taskCloser.addTask(closingTask)
-    taskCloser.close(success = false)
+    taskCloser.closeFailed(new RuntimeException)
 
     ran should equal(true)
     outcome should equal(false)
@@ -54,7 +54,7 @@ class TaskCloserTest extends CypherFunSuite with BeforeAndAfter {
     taskCloser.addTask(_ => throw new Exception("oh noes"))
     taskCloser.addTask(closingTask)
 
-    intercept[Exception](taskCloser.close(success = true))
+    intercept[Exception](taskCloser.close())
 
     ran should equal(true)
     outcome should equal(true)
@@ -65,7 +65,7 @@ class TaskCloserTest extends CypherFunSuite with BeforeAndAfter {
     taskCloser.addTask(_ => throw expected)
     taskCloser.addTask(_ => throw new Exception)
 
-    val ex = intercept[Exception](taskCloser.close(success = true))
+    val ex = intercept[Exception](taskCloser.close())
 
     ex should equal(expected)
   }
@@ -74,23 +74,23 @@ class TaskCloserTest extends CypherFunSuite with BeforeAndAfter {
     val expected = new Exception("oh noes")
     taskCloser.addTask(closingTask)
 
-    taskCloser.close(success = true)
+    taskCloser.close()
     ran = false
-    taskCloser.close(success = true)
+    taskCloser.close()
 
     // If we close the closer twice, it should only run this once
-    ran should not equal(true)
+    ran should not equal true
   }
 
   test("cleanup without any cleanups does not fail") {
-    taskCloser.close(success = true)
+    taskCloser.close()
 
     ran should equal(false)
   }
 
-  private def closingTask(success:Boolean) = {
+  private def closingTask(failure: Option[Throwable]) = {
     ran = true
-    outcome = success
+    outcome = failure.isEmpty
   }
 
 }

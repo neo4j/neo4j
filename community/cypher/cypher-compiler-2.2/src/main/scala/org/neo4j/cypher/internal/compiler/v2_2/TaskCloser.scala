@@ -19,28 +19,41 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
+import org.neo4j.cypher.internal.compiler.v2_2.TaskCloser.Task
+
 import scala.collection.mutable.ListBuffer
+
+object TaskCloser {
+  type Task = Option[Throwable] => Unit
+}
 
 class TaskCloser {
 
-  private val _tasks: ListBuffer[Boolean => Unit] = ListBuffer.empty
+  private val tasks: ListBuffer[Task] = ListBuffer.empty
   private var closed = false
 
   /**
-   *
    * @param task This task will be called, with true if the query went OK, and a false if an error occurred
    */
-  def addTask(task: Boolean => Unit) {
-    _tasks += task
+  def addTask(task: Task) {
+    tasks += task
   }
 
-  def close(success: Boolean) {
+  def close(): Unit = {
+    close(None)
+  }
+
+  def closeFailed(failure: Throwable): Unit = {
+    close(Some(failure))
+  }
+
+  private def close(failure: Option[Throwable]) {
     if (!closed) {
       closed = true
-      val errors = _tasks.toSeq.flatMap {
-        f =>
+      val errors = tasks.toSeq.flatMap {
+        task =>
           try {
-            f(success)
+            task(failure)
             None
           } catch {
             case e: Throwable => Some(e)

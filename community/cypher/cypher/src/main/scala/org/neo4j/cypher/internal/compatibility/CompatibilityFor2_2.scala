@@ -24,15 +24,14 @@ import java.util
 
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v2_2
+import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlan => ExecutionPlan_v2_2, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Planner, Rows, Version}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
-import org.neo4j.cypher.internal.compiler.v2_2.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v2_2.{CypherException => CypherException_v2_2, _}
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
-import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, HintException,  _}
+import org.neo4j.cypher.{InternalException, _}
 import org.neo4j.graphdb.{GraphDatabaseService, QueryExecutionType, ResourceIterator}
 import org.neo4j.helpers.{Assertion, Clock}
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -50,76 +49,6 @@ object helpers {
   }
 }
 
-object exceptionHandlerFor2_2 extends MapToPublicExceptions[CypherException] {
-  def syntaxException(message: String, query: String, offset: Option[Int]) = new SyntaxException(message, query, offset)
-
-  def arithmeticException(message: String, cause: Throwable) = new ArithmeticException(message, cause)
-
-  def profilerStatisticsNotReadyException() = {
-    throw new ProfilerStatisticsNotReadyException()
-  }
-
-  def incomparableValuesException(lhs: String, rhs: String) = new IncomparableValuesException(lhs, rhs)
-
-  def unknownLabelException(s: String) = new UnknownLabelException(s)
-
-  def patternException(message: String) = new PatternException(message)
-
-  def invalidArgumentException(message: String, cause: Throwable) = new InvalidArgumentException(message, cause)
-
-  def mergeConstraintConflictException(message: String) = new MergeConstraintConflictException(message)
-
-  def internalException(message: String) = new InternalException(message)
-
-  def missingConstraintException() = new MissingConstraintException
-
-  def loadCsvStatusWrapCypherException(extraInfo: String, cause: CypherException_v2_2) =
-    new LoadCsvStatusWrapCypherException(extraInfo, cause.mapToPublic(exceptionHandlerFor2_2))
-
-  def loadExternalResourceException(message: String, cause: Throwable) = throw new LoadExternalResourceException(message, cause)
-
-  def parameterNotFoundException(message: String, cause: Throwable) = throw new ParameterNotFoundException(message, cause)
-
-  def uniquePathNotUniqueException(message: String) = throw new UniquePathNotUniqueException(message)
-
-  def entityNotFoundException(message: String, cause: Throwable) = throw new EntityNotFoundException(message, cause)
-
-  def cypherTypeException(message: String, cause: Throwable) = throw new CypherTypeException(message, cause)
-
-  def hintException(message: String): CypherException = throw new HintException(message)
-
-  def labelScanHintException(identifier: String, label: String, message: String) = throw new LabelScanHintException(identifier, label, message)
-
-  def invalidSemanticException(message: String) = throw new InvalidSemanticsException(message)
-
-
-  def parameterWrongTypeException(message: String, cause: Throwable) = throw new ParameterWrongTypeException(message, cause)
-
-  def outOfBoundsException(message: String) = throw new OutOfBoundsException(message)
-
-  def nodeStillHasRelationshipsException(nodeId: Long, cause: Throwable) = throw new NodeStillHasRelationshipsException(nodeId, cause)
-
-  def indexHintException(identifier: String, label: String, property: String, message: String) = throw new IndexHintException(identifier, label, property, message)
-
-  def periodicCommitInOpenTransactionException() = throw new PeriodicCommitInOpenTransactionException
-
-  def runSafely[T](body: => T)(implicit f: Throwable => Unit = (_) => ()) = {
-    try {
-      body
-    }
-    catch {
-      case e: CypherException_v2_2 =>
-        f(e)
-        throw e.mapToPublic(exceptionHandlerFor2_2)
-      case e: Throwable =>
-        f(e)
-        throw e
-    }
-  }
-
-  def failedIndexException(indexName: String): CypherException = throw new FailedIndexException(indexName)
-}
-
 import scala.reflect.ClassTag
 
 case class WrappedMonitors(kernelMonitors: KernelMonitors) extends Monitors {
@@ -132,7 +61,6 @@ case class WrappedMonitors(kernelMonitors: KernelMonitors) extends Monitors {
     kernelMonitors.newMonitor(clazz, tags: _*)
   }
 }
-
 
 trait CompatibilityFor2_2 {
   val graph: GraphDatabaseService

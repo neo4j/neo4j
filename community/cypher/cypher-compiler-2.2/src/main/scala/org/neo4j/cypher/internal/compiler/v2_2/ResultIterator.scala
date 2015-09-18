@@ -60,7 +60,7 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
     if (!closer.isClosed) {
       val innerHasNext: Boolean = inner.hasNext
       if (!innerHasNext) {
-        close(success = true)
+        close()
       }
       innerHasNext
     } else {
@@ -74,7 +74,7 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
     val input: collection.Map[String, Any] = inner.next()
     val result: Map[String, Any] = Eagerly.immutableMapValues(input, materialize)
     if (!inner.hasNext) {
-      close(success = true)
+      close()
     }
     result
   }
@@ -86,12 +86,12 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
     case x => x
   }
 
-  def close() {
-    close(success = true)
+  def close() = translateException {
+    closer.close()
   }
 
-  def close(success: Boolean) = translateException {
-    closer.close(success)
+  private def close(failure: Throwable) = translateException {
+    closer.closeFailed(failure)
   }
 
   private def translateException[U](f: => U): U = decoratedCypherException({
@@ -120,7 +120,7 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
       f
     } catch {
       case t: Throwable =>
-        close(success = false)
+        close(t)
         throw t
     }
   })
