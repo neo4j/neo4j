@@ -35,7 +35,7 @@ object QueryResultContentBuilder
 
     val columns = result.columns
     var rowCount = 0
-    val rows = result.map { m =>
+    val rows = result.toList.map { m =>
       rowCount += 1
       val values = columns.map(k => m(k))
       ResultRow(values)
@@ -55,8 +55,7 @@ object QueryResultContentBuilder
   }
 
 
-  case class insertResults(result: Content) extends Rewriter {
-
+  private case class insertResults(result: Content) extends Rewriter {
     def apply(input: AnyRef) = bottomUp(instance).apply(input)
 
     private val instance: Rewriter = Rewriter.lift {

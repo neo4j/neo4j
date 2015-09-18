@@ -27,7 +27,7 @@ class DocumentAsciiDocTest extends CypherFunSuite {
   test("Simplest possible document") {
     val doc = Document("title", "myId", initQueries = Seq.empty, Paragraph("lorem ipsum"))
 
-    doc.asciiDoc.text should equal(
+    doc.asciiDoc should equal(
       """[[myId]]
         |= title
         |
@@ -39,7 +39,7 @@ class DocumentAsciiDocTest extends CypherFunSuite {
   test("Heading inside Document") {
     val doc = Document("title", "myId", initQueries = Seq.empty, Heading("My heading") ~ Paragraph("lorem ipsum"))
 
-    doc.asciiDoc.text should equal(
+    doc.asciiDoc should equal(
       """[[myId]]
         |= title
         |
@@ -52,7 +52,7 @@ class DocumentAsciiDocTest extends CypherFunSuite {
   test("Abstract for Document") {
     val doc = Document("title", "myId", initQueries = Seq.empty, Abstract("abstract intro"))
 
-    doc.asciiDoc.text should equal(
+    doc.asciiDoc should equal(
       """[[myId]]
         |= title
         |
@@ -70,7 +70,7 @@ class DocumentAsciiDocTest extends CypherFunSuite {
         Paragraph("first") ~ Section("inner", Paragraph("second"))
       ))
 
-    doc.asciiDoc.text should equal(
+    doc.asciiDoc should equal(
       """[[myId]]
         |= title
         |
@@ -91,7 +91,7 @@ class DocumentAsciiDocTest extends CypherFunSuite {
         Tip("custom heading", Paragraph("tip text again"))
     )
 
-    doc.asciiDoc.text should equal(
+    doc.asciiDoc should equal(
       """[[myId]]
         |= title
         |
@@ -119,7 +119,7 @@ class DocumentAsciiDocTest extends CypherFunSuite {
         Note("custom heading", Paragraph("tip text again"))
     )
 
-    doc.asciiDoc.text should equal(
+    doc.asciiDoc should equal(
       """[[myId]]
         |= title
         |
@@ -147,7 +147,7 @@ class DocumentAsciiDocTest extends CypherFunSuite {
         Warning("custom heading", Paragraph("tip text again"))
     )
 
-    doc.asciiDoc.text should equal(
+    doc.asciiDoc should equal(
       """[[myId]]
         |= title
         |
@@ -175,7 +175,7 @@ class DocumentAsciiDocTest extends CypherFunSuite {
         Caution("custom heading", Paragraph("tip text again"))
     )
 
-    doc.asciiDoc.text should equal(
+    doc.asciiDoc should equal(
       """[[myId]]
         |= title
         |
@@ -203,7 +203,7 @@ class DocumentAsciiDocTest extends CypherFunSuite {
         Important("custom heading", Paragraph("tip text again"))
     )
 
-    doc.asciiDoc.text should equal(
+    doc.asciiDoc should equal(
       """[[myId]]
         |= title
         |
@@ -274,6 +274,7 @@ class DocumentAsciiDocTest extends CypherFunSuite {
 }
 
 class DocumentQueryTest extends CypherFunSuite {
+
   test("Simplest possible document with a query in it") {
     val query = "match (n) return n"
     val doc = Document("title", "myId", initQueries = Seq.empty,
@@ -281,7 +282,7 @@ class DocumentQueryTest extends CypherFunSuite {
 
     val asciiDocResult = doc.asciiDoc
 
-    asciiDocResult.text should equal(
+    asciiDocResult should equal(
       """[[myId]]
         |= title
         |
@@ -293,7 +294,5 @@ class DocumentQueryTest extends CypherFunSuite {
         |----
         |
         |""".stripMargin)
-
-    asciiDocResult.testResults.toList should be(Seq(query -> NoAssertions))
   }
 }

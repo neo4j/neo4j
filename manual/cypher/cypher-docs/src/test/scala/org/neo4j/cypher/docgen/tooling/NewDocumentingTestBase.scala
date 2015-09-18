@@ -33,10 +33,21 @@ trait NewDocumentingTestBase extends FunSuiteLike with Assertions with Matchers 
    def runTestsFor(doc: Document) = {
 
      val runner = new QueryRunner(QueryResultContentBuilder)
+     val result = runner.runQueries(init = doc.initQueries, queries = doc.content.queries)
+     var successful = true
 
-     runner.runQueries(init = doc.initQueries, queries = doc.content.queries) foreach {
-       case QueryRunResult(q, Left(failure)) => test(q) { throw failure }
-       case QueryRunResult(q, Right(content)) => test(q) {}
+     result foreach {
+       case QueryRunResult(q, Left(failure)) =>
+         successful = false
+         test(q.queryText) { throw failure }
+
+       case QueryRunResult(q, Right(content)) =>
+         test(q.queryText) {}
+     }
+
+     if(successful) {
+       val asciiDocTree = contentAndResultMerger(doc, result).asciiDoc
+       println(asciiDocTree.toString)
      }
    }
  }

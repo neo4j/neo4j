@@ -43,8 +43,8 @@ class NewMatchTest extends NewDocumentingTestBase {
                 |The predicates are part of the pattern description, not a filter applied after the matching is done.
                 |This means that WHERE should always be put together with the MATCH clause it belongs to.""".stripMargin) ~
             Tip(Paragraph("To understand more about the patterns used in the MATCH clause, read Section 9.6, “Patterns”")) ~
-            Paragraph("The following graph is used for the examples below:") ~
-            GraphImage(INITIAL)
+            Paragraph("The following graph is used for the examples below:") //~
+//            GraphImage(INITIAL)
         ) ~
         Section("Basic node finding",
           Section("Get all nodes",

@@ -24,18 +24,12 @@ import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.frontend.v2_3.Foldable._
 
-case class AsciiDocResult(text: String, testResults: Seq[(String, Option[Exception])])
-
 case class Document(title: String, id: String, initQueries: Seq[String], content: Content) {
-  def asciiDoc: AsciiDocResult = {
-    val text =
+  def asciiDoc =
       s"""[[$id]]
          |= $title
          |
          |""".stripMargin + content.asciiDoc(0)
-
-    AsciiDocResult(text, Seq.empty)
-  }
 }
 
 sealed trait Content {
@@ -179,6 +173,9 @@ case class QueryResult(columns: Seq[String], rows: Seq[ResultRow], footer: Strin
 
 case class Query(queryText: String, assertions: QueryAssertions, content: Content) extends Content {
 
+  // We do this to remember where the code line that created this object lives. When fixing a test, that is what we want
+  val createdAt = QueryOriginatedHere.createdAt
+
   override def asciiDoc(level: Int) = {
     val inner = Prettifier(queryText)
     s"""[source,cypher]
@@ -187,9 +184,11 @@ case class Query(queryText: String, assertions: QueryAssertions, content: Conten
        |$inner
        |----
        |
-       |""".stripMargin
+       |""".stripMargin + content.asciiDoc(level)
   }
 }
+
+
 
 case class Section(heading: String, content: Content) extends Content {
 

@@ -44,11 +44,12 @@ class QueryRunner(formatter: (InternalExecutionResult, Content, GraphDatabaseSer
       }
     }
 
-    val results = queries.map { case Query(query, assertions, content) =>
+    val results = queries.map { case q@Query(query, assertions, content) =>
       val format = formatter(_: InternalExecutionResult, content, db)
       val result: Either[Exception, Content] =
         try {
-          (assertions, Try(engine.execute(query))) match {
+          val resultTry = Try(engine.execute(query))
+          (assertions, resultTry) match {
             case (e: ExpectedException[_], Success(_)) =>
               Left(new ExpectedExceptionNotFound(s"Expected exception of type ${e.getExceptionClass}"))
 
@@ -57,7 +58,8 @@ class QueryRunner(formatter: (InternalExecutionResult, Content, GraphDatabaseSer
               Right(content)
 
             case (_, Failure(exception: Exception)) =>
-              Left(exception)
+              q.createdAt.initCause(exception)
+              Left(q.createdAt)
 
             case (ResultAssertions(f), Success(inner)) =>
               val result = RewindableExecutionResult(inner)
@@ -79,17 +81,17 @@ class QueryRunner(formatter: (InternalExecutionResult, Content, GraphDatabaseSer
             Left(e)
         }
 
-      QueryRunResult(query, result)
+      QueryRunResult(q, result)
     }
     TestRunResult(results)
   }
 }
 
-case class QueryRunResult(query: String, testResult: Either[Exception,Content])
+case class QueryRunResult(query: Query, testResult: Either[Exception,Content])
 case class TestRunResult(queryResults: Seq[QueryRunResult]) {
   def foreach[U](f: QueryRunResult => U) = queryResults.foreach(f)
 
-  private val _map = queryResults.map(r => r.query -> r.testResult).toMap
+  private val _map = queryResults.map(r => r.query.queryText -> r.testResult).toMap
 
   def apply(q: String): Either[Exception, Content] = _map(q)
 }
