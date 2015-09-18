@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsRelationships, WritesRelationships}
-import org.neo4j.cypher.internal.compiler.v2_3.mutation.{SetAction, GraphElementPropertyFunctions}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CreatesRelationship, Effects, ReadsRelationshipsWithTypes}
+import org.neo4j.cypher.internal.compiler.v2_3.mutation.{GraphElementPropertyFunctions, SetAction}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
-import org.neo4j.cypher.internal.frontend.v2_3.{InvalidSemanticsException, InternalException, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, InvalidSemanticsException, SemanticDirection}
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.helpers.collection.PrefetchingIterator
 
@@ -167,12 +167,12 @@ case class MergeIntoPipe(source: Pipe,
   val symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 
   override def localEffects = {
-    val effects = Effects(ReadsRelationships, WritesRelationships)
+    val effects = Effects(ReadsRelationshipsWithTypes(typ), CreatesRelationship(typ))
     val onCreateEffects = onCreateActions.foldLeft(effects) {
-      case (acc, action) => acc | action.localEffects(symbols)
+      case (acc, action) => acc ++ action.localEffects(symbols)
     }
     onMatchActions.foldLeft(onCreateEffects) {
-      case (acc, action) => acc | action.localEffects(symbols)
+      case (acc, action) => acc ++ action.localEffects(symbols)
     }
   }
 
