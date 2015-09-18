@@ -17,21 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.frontend.v3_0
+package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
-package object symbols {
-  val CTAny = AnyType.instance
-  val CTBoolean = BooleanType.instance
-  val CTString = StringType.instance
-  val CTNumber = NumberType.instance
-  val CTFloat = FloatType.instance
-  val CTInteger = IntegerType.instance
-  val CTMap = MapType.instance
-  val CTNode = NodeType.instance
-  val CTRelationship = RelationshipType.instance
-  val CTGeometry = GeometryType.instance
-  val CTPath = PathType.instance
-  def CTCollection(inner: CypherType) = CollectionType(inner)
+import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import pipes.QueryState
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
-  implicit def invariantTypeSpec(that: CypherType): TypeSpec = that.invariant
+case class Point(data: Expression) extends Expression {
+
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = data match {
+    case Identifier(name) => ctx(name)
+    case m:LiteralMap => m(ctx)
+  }
+
+  def rewrite(f: (Expression) => Expression) = f(Point(data.rewrite(f)))
+
+  def arguments = data.arguments
+
+  def calculateType(symbols: SymbolTable): CypherType = CTGeometry
+
+  def symbolTableDependencies = data.symbolTableDependencies
+
+  override def toString = "Point(" + data + ")"
 }
