@@ -48,7 +48,7 @@ class QueryRunnerTest extends CypherFunSuite {
 
   test("expected exception does not cause a failure") {
     val query = "match n return x"
-    val result = runQueries(query, ExpectedException[SyntaxException](_ => {}))
+    val result = runQueries(query, ExpectedFailure[SyntaxException](_ => {}))
 
     result.queryResults should have size 1
     result shouldNot haveFailureFor(query)
@@ -56,7 +56,7 @@ class QueryRunnerTest extends CypherFunSuite {
 
   test("when expecting an exception, not throwing is an error") {
     val query = "match n return n"
-    val expectation = ExpectedException[SyntaxException](_ => {})
+    val expectation = ExpectedFailure[SyntaxException](_ => {})
     val result = runQueries(query, expectation)
 
     result.queryResults should have size 1

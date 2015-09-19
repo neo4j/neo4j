@@ -22,6 +22,10 @@ package org.neo4j.cypher.docgen.tooling
 import org.neo4j.cypher.internal.frontend.v2_3.Rewritable._
 import org.neo4j.cypher.internal.frontend.v2_3.{bottomUp, Rewriter}
 
+/**
+ * Takes the document tree and the execution result and rewrites the
+ * tree to include the result content
+ */
 object contentAndResultMerger {
   def apply(originalContent: Document, result: TestRunResult): Document = {
     val rewritesToDo = for {
@@ -33,9 +37,9 @@ object contentAndResultMerger {
     val rewriter = new Rewriter {
       override def apply(value: AnyRef): AnyRef = instance(value)
 
-      private val _map = rewritesToDo.toMap
+      private val queryResultMap = rewritesToDo.toMap
       val instance = bottomUp(Rewriter.lift {
-        case q: Query if _map.contains(q) => q.copy(content = _map(q))
+        case q: Query if queryResultMap.contains(q) => q.copy(content = queryResultMap(q))
       })
     }
 

@@ -22,6 +22,7 @@ package org.neo4j.cypher.docgen.tooling
 import org.neo4j.cypher.ExecutionEngine
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.frontend.v2_3.InternalException
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
 
@@ -37,14 +38,6 @@ class QueryRunner(db: GraphDatabaseService,
   def runQueries(init: Seq[String], queries: Seq[Query]): TestRunResult = {
     val engine = new ExecutionEngine(db)
 
-    init.foreach { q =>
-      try {
-        engine.execute(q)
-      } catch {
-        case e: Throwable => throw new RuntimeException(s"Initialising database failed on query: $q", e)
-      }
-    }
-
     val results = queries.map { case q@Query(query, assertions, content) =>
 
       val format: (Transaction) => (InternalExecutionResult) => Content = (tx: Transaction) => formatter(tx)(_, content)
@@ -52,18 +45,11 @@ class QueryRunner(db: GraphDatabaseService,
       val result: Either[Exception, Transaction => Content] =
         try {
           val resultTry = Try(engine.execute(query))
-          //[WARNING] It would fail on the following inputs: (ExpectedException(_), Failure(_)), (NoAssertions, Failure(_)), (ResultAndDbAssertions(_), Failure(_)), (ResultAssertions(_), Failure(_))
           (assertions, resultTry) match {
-            case (e: ExpectedException[_], Success(_)) =>
-              Left(new ExpectedExceptionNotFound(s"Expected exception of type ${e.getExceptionClass}"))
-
-            case (expectation: ExpectedException[_], Failure(exception: Exception)) =>
+            // *** Success conditions
+            case (expectation: ExpectedFailure[_], Failure(exception: Exception)) =>
               expectation.handle(exception)
               Right(_ => content)
-
-            case (_, Failure(exception: Exception)) =>
-              q.createdAt.initCause(exception)
-              Left(q.createdAt)
 
             case (ResultAssertions(f), Success(inner)) =>
               val result = RewindableExecutionResult(inner)
@@ -78,13 +64,22 @@ class QueryRunner(db: GraphDatabaseService,
             case (NoAssertions, Success(inner)) =>
               val result = RewindableExecutionResult(inner)
               Right(format(_)(result))
-          }
 
+            // *** Error conditions
+            case (e: ExpectedFailure[_], _: Success) =>
+              Left(new ExpectedExceptionNotFound(s"Expected exception of type ${e.getExceptionClass}"))
+
+            case (_, Failure(exception: Exception)) =>
+              q.createdAt.initCause(exception)
+              Left(q.createdAt)
+
+            case x =>
+              throw new InternalException(s"This not see this one coming $x")
+          }
         } catch {
           case e: Exception =>
             Left(e)
         }
-
 
       val formattedResult = db.withTx { tx =>
         result fold(

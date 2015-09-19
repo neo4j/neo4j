@@ -45,6 +45,15 @@ trait DocumentingTest extends FunSuiteLike with Assertions with Matchers with Gr
   def runTestsFor(doc: Document) = {
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     try {
+
+      doc.initQueries.foreach { q =>
+        try {
+          db.execute(q)
+        } catch {
+          case e: Throwable => throw new RuntimeException(s"Initialising database failed on query: $q", e)
+        }
+      }
+
       val builder = (tx: Transaction) => new QueryResultContentBuilder(new ValueFormatter(db, tx))
 
       val runner = new QueryRunner(db, builder)
@@ -54,12 +63,10 @@ trait DocumentingTest extends FunSuiteLike with Assertions with Matchers with Gr
       result foreach {
         case QueryRunResult(q, Left(failure)) =>
           successful = false
-          test(q.queryText) {
-            throw failure
-          }
+          test(q.queryText)(throw failure)
 
         case QueryRunResult(q, Right(content)) =>
-          test(q.queryText) {}
+          test(q.queryText)({})
       }
 
       if (successful) {
