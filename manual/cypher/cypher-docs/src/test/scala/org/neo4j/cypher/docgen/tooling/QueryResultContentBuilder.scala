@@ -37,12 +37,16 @@ class QueryResultContentBuilder(valueFormatter: Any => String)
     val columns = result.columns
     var rowCount = 0
 
-    val rows = result.toSeq.map { resultRow =>
+    /* Need to do .toList here, to see the results. The iterator has been emptied,
+     but it is a RewindableExecutionResult we have here that can still provide
+     the backing List. Yeah, it's a hack, but it allows us to both assert on the
+     results and produce text output */
+    val rows = result.toList.map { resultRow =>
       rowCount += 1
       val values = columns.map { key =>
         val value = resultRow(key)
         valueFormatter(value)
-      }
+      }.toSeq
       ResultRow(values)
     }
 

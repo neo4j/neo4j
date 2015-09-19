@@ -72,7 +72,7 @@ class QueryRunner(db: GraphDatabaseService,
 
             case (ResultAndDbAssertions(f), Success(inner)) =>
               val result = RewindableExecutionResult(inner)
-//              f(result, db)
+              f(result, db)
               Right(format(_)(result))
 
             case (NoAssertions, Success(inner)) =>
