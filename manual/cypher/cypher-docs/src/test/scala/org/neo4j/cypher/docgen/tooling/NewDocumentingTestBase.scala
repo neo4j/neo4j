@@ -27,32 +27,34 @@ trait NewDocumentingTestBase extends FunSuiteLike with Assertions with Matchers 
    * Make sure this is implemented as a def and not a val. Since we are using it in the trait constructor,
    * and that runs before the class constructor, if it is a val, it will not have been initialised when we need it
    */
-   def doc: Document
+  def doc: Document
 
-   runTestsFor(doc)
+  runTestsFor(doc)
 
-   def runTestsFor(doc: Document) = {
+  def runTestsFor(doc: Document) = {
+    val runner = new QueryRunner(QueryResultContentBuilder)
+    val result = runner.runQueries(init = doc.initQueries, queries = doc.content.queries)
+    var successful = true
 
-     val runner = new QueryRunner(QueryResultContentBuilder)
-     val result = runner.runQueries(init = doc.initQueries, queries = doc.content.queries)
-     var successful = true
+    result foreach {
+      case QueryRunResult(q, Left(failure)) =>
+        successful = false
+        test(q.queryText) {
+          throw failure
+        }
 
-     result foreach {
-       case QueryRunResult(q, Left(failure)) =>
-         successful = false
-         test(q.queryText) { throw failure }
+      case QueryRunResult(q, Right(content)) =>
+        test(q.queryText) {}
+    }
 
-       case QueryRunResult(q, Right(content)) =>
-         test(q.queryText) {}
-     }
+    if (successful) {
+      val asciiDocTree = contentAndResultMerger(doc, result).asciiDoc
 
-     if(successful) {
-       val asciiDocTree = contentAndResultMerger(doc, result).asciiDoc
+      val file = new File(s"target/docs/dev/ql/${doc.id}.adoc")
+      val pw = new PrintWriter(file)
+      pw.write(asciiDocTree)
+      pw.close()
+    }
+  }
+}
 
-       val file = new File(s"target/docs/dev/ql/${doc.id}.adoc")
-       val pw = new PrintWriter(file)
-       pw.write(asciiDocTree)
-       pw.close()
-     }
-   }
- }

@@ -19,49 +19,47 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.neo4j.cypher.docgen.tooling.Admonitions.Tip
-import org.neo4j.cypher.docgen.tooling.ImageType.INITIAL
 import org.neo4j.cypher.docgen.tooling._
 import org.neo4j.graphdb.Node
 import org.neo4j.tooling.GlobalGraphOperations
-
-import scala.collection.JavaConverters._
-
+import collection.JavaConverters._
 
 class NewMatchTest extends NewDocumentingTestBase {
-  def doc =
-    Document("Match", "query-match",
-      initQueries = Seq("CREATE (:Person {name:'Apa'})"),
-      Abstract("The `MATCH` clause is used to search for the pattern described in it.") ~
-        Section("Introduction",
-          Paragraph(
-            s"""The `MATCH` clause allows you to specify the patterns Neo4j will search for in the database.
-               |This is the primary way of getting data into the current set of bindings.
-               |It is worth reading up more on the specification of the patterns themselves in <<introduction-pattern>>""".stripMargin) ~
-            Paragraph(
-              """MATCH is often coupled to a WHERE part which adds restrictions, or predicates, to the MATCH patterns, making them more specific.
-                |The predicates are part of the pattern description, not a filter applied after the matching is done.
-                |This means that WHERE should always be put together with the MATCH clause it belongs to.""".stripMargin) ~
-            Tip(Paragraph("To understand more about the patterns used in the MATCH clause, read Section 9.6, “Patterns”")) ~
-            Paragraph("The following graph is used for the examples below:") //~
-//            GraphImage(INITIAL)
-        ) ~
-        Section("Basic node finding",
-          Section("Get all nodes",
-            Paragraph("By just specifying a pattern with a single node and no labels, all nodes in the graph will be returned.") ~
-              Query("MATCH (n) RETURN n",
-                assertions = ResultAndDbAssertions((p, db) => {
-                  val tx = db.beginTx()
-                  try {
-                    val allNodes: List[Node] = GlobalGraphOperations.at(db).getAllNodes.asScala.toList
-                    allNodes should equal(p.columnAs[Node]("n").toList)
-                  } finally tx.close()
-                }),
-
-                Paragraph("Returns all the nodes in the database.") ~
-                  QueryResultTable
-              )
-          )
-        )
+  override def doc = new DocBuilder {
+    doc("Match", "query-match")
+    initQueries(
+      "CREATE (:Person {name:'Apa'})"
     )
+    abstraCt("The `MATCH` clause is used to search for the pattern described in it.")
+    section("Introduction") {
+      p(
+        """The `MATCH` clause allows you to specify the patterns Neo4j will search for in the database.
+          |This is the primary way of getting data into the current set of bindings.
+          |It is worth reading up more on the specification of the patterns themselves in <<introduction-pattern>>""")
+      p(
+        """MATCH is often coupled to a WHERE part which adds restrictions, or predicates, to the MATCH patterns, making them more specific.
+          |The predicates are part of the pattern description, not a filter applied after the matching is done.
+          |This means that WHERE should always be put together with the MATCH clause it belongs to.""")
+      tip {
+        p("To understand more about the patterns used in the MATCH clause, read <<query-pattern>>")
+      }
+    }
+    section("Basic node finding") {
+      section("Get all nodes") {
+        p("By just specifying a pattern with a single node and no labels, all nodes in the graph will be returned.")
+        query("MATCH (n) RETURN n", assert1) {
+          p("Returns all the nodes in the database.")
+          resultTable()
+        }
+      }
+    }
+  }.build()
+
+  private def assert1 = ResultAndDbAssertions((p, db) => {
+    val tx = db.beginTx()
+    try {
+      val allNodes: List[Node] = GlobalGraphOperations.at(db).getAllNodes.asScala.toList
+      allNodes should equal(p.columnAs[Node]("n").toList)
+    } finally tx.close()
+  })
 }
