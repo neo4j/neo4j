@@ -22,13 +22,31 @@ package org.neo4j.cypher.docgen
 import org.neo4j.cypher.docgen.tooling._
 import org.neo4j.graphdb.Node
 import org.neo4j.tooling.GlobalGraphOperations
+import org.scalatest.Suite
 import collection.JavaConverters._
 
-class NewMatchTest extends NewDocumentingTestBase {
+class NewMatchTest extends DocumentingTest with Suite {
   override def doc = new DocBuilder {
     doc("Match", "query-match")
     initQueries(
-      "CREATE (:Person {name:'Apa'})"
+      """CREATE (charlie:Person {name:'Charlie Sheen'}),
+        |       (martin:Person {name: 'Martin Sheen'}),
+        |       (michael:Person {name: 'Michael Douglas'}),
+        |       (oliver:Person {name: 'Martin Sheen'}),
+        |       (rob:Person {name: 'Rob Reiner'}),
+        |
+        |       (wallStreet:Movie {title: 'Wall Street'}),
+        |       (charlie)-[:ACTED_IN]->(wallStreet),
+        |       (martin)-[:ACTED_IN]->(wallStreet),
+        |       (michael)-[:ACTED_IN]->(wallStreet),
+        |       (oliver)-[:DIRECTED]->(wallStreet),
+        |
+        |       (thePresident:Movie {title: 'The American President'}),
+        |       (martin)-[:ACTED_IN]->(thePresident),
+        |       (michael)-[:ACTED_IN]->(thePresident),
+        |       (rob)-[:DIRECTED]->(thePresident),
+        |
+        |       (charlie)-[:FATHER]->(martin)"""
     )
     abstraCt("The `MATCH` clause is used to search for the pattern described in it.")
     section("Introduction") {
@@ -43,6 +61,7 @@ class NewMatchTest extends NewDocumentingTestBase {
       tip {
         p("To understand more about the patterns used in the MATCH clause, read <<query-pattern>>")
       }
+      p("The following graph is used for the examples below:")
     }
     section("Basic node finding") {
       section("Get all nodes") {
@@ -51,6 +70,9 @@ class NewMatchTest extends NewDocumentingTestBase {
           p("Returns all the nodes in the database.")
           resultTable()
         }
+      }
+      section("Get all nodes with a label") {
+        p("Getting all nodes with a label on them is done with a single node pattern where the node has a label on it.")
       }
     }
   }.build()
