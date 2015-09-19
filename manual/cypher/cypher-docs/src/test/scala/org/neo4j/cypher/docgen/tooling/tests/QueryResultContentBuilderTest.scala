@@ -62,9 +62,9 @@ class QueryResultContentBuilderTest extends CypherFunSuite {
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     if (init != "") db.execute(init)
     val engine = new ExecutionEngine(db)
-    val builder = QueryResultContentBuilder
+    val builder = new QueryResultContentBuilder(x => x.toString)
     val queryResult = RewindableExecutionResult(engine.execute(query))
 
-    builder.apply(queryResult, content, db)
+    builder.apply(queryResult, content)
   }
 }

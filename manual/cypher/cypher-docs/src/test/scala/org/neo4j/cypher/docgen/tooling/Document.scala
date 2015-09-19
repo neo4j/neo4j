@@ -141,7 +141,7 @@ case class GraphImage(s: ImageType) extends Content {
   override def asciiDoc(level: Int) = ???
 }
 
-case class ResultRow(values: Seq[Any])
+case class ResultRow(values: Seq[String])
 
 case class QueryResult(columns: Seq[String], rows: Seq[ResultRow], footer: String) extends Content {
   override def asciiDoc(level: Int): String = {

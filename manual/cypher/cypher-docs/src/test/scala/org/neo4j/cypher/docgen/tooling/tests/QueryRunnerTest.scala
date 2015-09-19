@@ -21,7 +21,9 @@ package org.neo4j.cypher.docgen.tooling.tests
 
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.docgen.tooling._
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.Transaction
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.exceptions.TestFailedException
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -64,7 +66,8 @@ class QueryRunnerTest extends CypherFunSuite {
   private def runQueries(query: String, assertions: QueryAssertions = NoAssertions, content: Content = NoContent): TestRunResult = {
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     try {
-      val runner = new QueryRunner(db, (_, content, _) => content)
+      val formatter = (_: Transaction) => (_: InternalExecutionResult, content: Content) => content
+      val runner = new QueryRunner(db, formatter)
       runner.runQueries(init = Seq.empty, queries = Seq(Query(query, assertions, content)))
     }
     finally

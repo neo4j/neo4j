@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import java.io.File
 import java.nio.file.Files
-import java.util.concurrent.TimeUnit
 
 import org.apache.commons.math3.stat.regression.{OLSMultipleLinearRegression, SimpleRegression}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.SingleQueryExpression
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Literal
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v2_3.{LabelId, PropertyKeyId, SemanticDirection, ast}
+import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
@@ -41,7 +41,7 @@ import scala.collection.mutable.ListBuffer
  * Estimates values used by CardinalityCostModel, note that this takes at least on the order
  * of a couple of minutes to finish.
  */
-class ActualCostCalculationTest extends CypherFunSuite {
+class ActualCostCalculationTest extends CypherFunSuite with GraphIcing {
 
   implicit val monitor = new PipeMonitor {
     def stopStep(queryId: AnyRef, pipe: Pipe) {}
@@ -59,7 +59,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
     val path = Files.createTempDirectory("apa").toFile.getAbsolutePath
     val graph: GraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(path))
     try {
-      graph.createIndex(LABEL, PROPERTY)
+      graph.createIndex(LABEL.name(), PROPERTY)
       val results = ResultTable.empty
       val chunk = N / STEPS
       for (count <- 1 to STEPS) {
@@ -261,31 +261,6 @@ class ActualCostCalculationTest extends CypherFunSuite {
       val propertyKeyToken = ast.PropertyKeyToken(PROPERTY, PropertyKeyId(propKeyId))
 
       new NodeIndexSeekPipe(LABEL.name(), labelToken, propertyKeyToken, SingleQueryExpression(literal), IndexSeek)()
-    }
-  }
-
-  implicit class RichGraph(graph: GraphDatabaseService) {
-    def statement = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-
-    def withTx[T](f: Transaction => T): T = {
-      val tx = graph.beginTx()
-      try {
-        val result = f(tx)
-        tx.success()
-        result
-      } finally {
-        tx.close()
-      }
-    }
-
-    def createIndex(label: Label, propertyName: String) = {
-      graph.withTx { _ =>
-        graph.schema().indexFor(label).on(propertyName).create()
-      }
-
-      graph.withTx { _ =>
-        graph.schema().awaitIndexesOnline(10, TimeUnit.SECONDS)
-      }
     }
   }
 }

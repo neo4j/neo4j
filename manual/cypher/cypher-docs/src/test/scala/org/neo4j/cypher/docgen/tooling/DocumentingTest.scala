@@ -21,9 +21,19 @@ package org.neo4j.cypher.docgen.tooling
 
 import java.io._
 
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper
+import org.neo4j.cypher.internal.helpers.GraphIcing
+import org.neo4j.cypher.internal.spi.v2_3.TransactionBoundQueryContext
+import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
+import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.{Assertions, FunSuiteLike, Matchers}
-trait NewDocumentingTestBase extends FunSuiteLike with Assertions with Matchers {
+
+
+/**
+ * Base class for documentation classes
+ */
+trait DocumentingTest extends FunSuiteLike with Assertions with Matchers with GraphIcing {
   /**
    * Make sure this is implemented as a def and not a val. Since we are using it in the trait constructor,
    * and that runs before the class constructor, if it is a val, it will not have been initialised when we need it
@@ -35,7 +45,9 @@ trait NewDocumentingTestBase extends FunSuiteLike with Assertions with Matchers 
   def runTestsFor(doc: Document) = {
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     try {
-      val runner = new QueryRunner(db, QueryResultContentBuilder)
+      val builder = (tx: Transaction) => new QueryResultContentBuilder(new ValueFormatter(db, tx))
+
+      val runner = new QueryRunner(db, builder)
       val result = runner.runQueries(init = doc.initQueries, queries = doc.content.queries)
       var successful = true
 
@@ -51,7 +63,9 @@ trait NewDocumentingTestBase extends FunSuiteLike with Assertions with Matchers 
       }
 
       if (successful) {
-        val asciiDocTree = contentAndResultMerger(doc, result).asciiDoc
+        val document: Document = contentAndResultMerger(doc, result)
+
+        val asciiDocTree = db.inTx(document.asciiDoc)
 
         val file = new File(s"target/docs/dev/ql/${doc.id}.adoc")
         val pw = new PrintWriter(file)
@@ -60,6 +74,15 @@ trait NewDocumentingTestBase extends FunSuiteLike with Assertions with Matchers 
         pw.close()
       }
     } finally db.shutdown()
+  }
+}
+
+// Used to format values coming from Cypher. Maps, collections, nodes, relationships and paths all have custom
+// formatting applied to them
+class ValueFormatter(db: GraphDatabaseService, tx: Transaction) extends (Any => String) with StringHelper with GraphIcing {
+  def apply(x: Any): String = {
+    val ctx = new TransactionBoundQueryContext(db.asInstanceOf[GraphDatabaseAPI], tx, true, db.statement)
+    text(x, ctx)
   }
 }
 

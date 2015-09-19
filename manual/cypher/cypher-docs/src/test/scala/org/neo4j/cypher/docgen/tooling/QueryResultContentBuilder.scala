@@ -22,24 +22,29 @@ package org.neo4j.cypher.docgen.tooling
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.frontend.v2_3.Rewritable._
 import org.neo4j.cypher.internal.frontend.v2_3._
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.cypher.internal.helpers.GraphIcing
 
 /**
  * This class is responsible for replacing the Content tags asking for query results
- * with the actual results from running the queries
+ * with the actual results from running the queries, formatted according to the normal
+ * textual output of ExecutionResultDumper
  */
-object QueryResultContentBuilder
-  extends ((InternalExecutionResult, Content, GraphDatabaseService) => Content) {
+class QueryResultContentBuilder(valueFormatter: Any => String)
+  extends ((InternalExecutionResult, Content) => Content) with GraphIcing {
 
-  override def apply(result: InternalExecutionResult, content: Content, db: GraphDatabaseService): Content = {
+  override def apply(result: InternalExecutionResult, content: Content): Content = {
 
     val columns = result.columns
     var rowCount = 0
-    val rows = result.toList.map { m =>
+
+    val rows = result.toSeq.map { resultRow =>
       rowCount += 1
-      val values = columns.map(k => m(k))
+      val values = columns.map { key =>
+        val value = resultRow(key)
+        valueFormatter(value)
+      }
       ResultRow(values)
-    }.toSeq
+    }
 
     val footerRows = if (rowCount == 1) "1 row" else s"$rowCount rows"
     val footer = if (result.queryStatistics().containsUpdates)
