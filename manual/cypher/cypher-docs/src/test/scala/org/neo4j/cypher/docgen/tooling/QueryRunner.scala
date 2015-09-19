@@ -23,17 +23,16 @@ import org.neo4j.cypher.ExecutionEngine
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.util.{Success, Failure, Try}
 
 /**
  * QueryRunner is used to actually run queries and produce either errors or Content containing the
  */
-class QueryRunner(formatter: (InternalExecutionResult, Content, GraphDatabaseService) => Content) {
+class QueryRunner(db: GraphDatabaseService,
+                  formatter: (InternalExecutionResult, Content, GraphDatabaseService) => Content) {
 
   def runQueries(init: Seq[String], queries: Seq[Query]): TestRunResult = {
-    val db: GraphDatabaseService = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val engine = new ExecutionEngine(db)
 
     init.foreach { q =>
