@@ -103,15 +103,14 @@
       <artifactId>jersey-client</artifactId>
     </dependency>
 
-    <!-- Test dependencies -->
-
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
-      <scope>test</scope>
     </dependency>
+
+    <!-- Test dependencies -->
 
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>

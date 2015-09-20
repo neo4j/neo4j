@@ -37,6 +37,7 @@
     <module>javadocs</module>
     <module>refcard</module>
     <module>contents</module>
+    <module>neo4j-harness-test</module>
   </modules>
 
   <scm>
