@@ -19,23 +19,17 @@
  */
 package org.neo4j.cypher.docgen.tooling.tests
 
+import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.docgen.tooling._
-import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
-class ContentAndResultMergerTest extends CypherFunSuite {
-  test("simple doc with query") {
-    // given
-    val query = "match (n) return n"
-    val queryObj = Query(query, NoAssertions, QueryResultTablePlaceholder)
-    val doc = Document("title", "myId", initQueries = Seq.empty, queryObj)
+class captureStateAsGraphVizTest extends ExecutionEngineFunSuite {
+  test("replaces single content node in a document") {
+    createNode()
 
-    val testResult = TestRunResult(Seq(QueryRunResult(queryObj, Right(Paragraph("14")))))
+    val doc = Document("Apa", "apa", Seq.empty, NoContent)
 
-    // when
-    val result = contentAndResultMerger(doc, testResult)
+    val result = captureStateAsGraphViz(doc, graph, NoContent)
 
-    // then
-    result should equal(
-      Document("title", "myId", initQueries = Seq.empty, Query(query, NoAssertions, Paragraph("14"))))
+    result.content shouldBe a[GraphViz]
   }
 }

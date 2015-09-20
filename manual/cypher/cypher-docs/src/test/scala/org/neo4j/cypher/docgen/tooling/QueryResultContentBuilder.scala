@@ -21,7 +21,6 @@ package org.neo4j.cypher.docgen.tooling
 
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.frontend.v2_3.Rewritable._
-import org.neo4j.cypher.internal.frontend.v2_3._
 import org.neo4j.cypher.internal.helpers.GraphIcing
 
 /**
@@ -56,21 +55,10 @@ class QueryResultContentBuilder(valueFormatter: Any => String)
     else
       footerRows
 
-    val table = QueryResult(result.columns, rows, footer)
+    val table = QueryResultTable(result.columns, rows, footer)
 
-    val rewriter = insertResults(table)
+    val rewriter = replaceSingleObject(QueryResultTablePlaceholder, table)
 
     content.endoRewrite(rewriter)
   }
-
-
-  private case class insertResults(result: Content) extends Rewriter {
-    def apply(input: AnyRef) = bottomUp(instance).apply(input)
-
-    private val instance: Rewriter = Rewriter.lift {
-      case QueryResultTable =>
-        result
-    }
-  }
-
 }

@@ -50,7 +50,9 @@ trait DocBuilder {
 
   def p(text: String) = current.addContent(Paragraph(text.stripMargin))
 
-  def resultTable() = current.addContent(QueryResultTable)
+  def resultTable() = current.addContent(QueryResultTablePlaceholder)
+  def graphVizBefore() = current.addContent(GraphVizBefore)
+  def graphVixAfter() = current.addContent(GraphVizAfter)
 
   def abstraCt(text: String) = current.addContent(Abstract(text))
 

@@ -33,13 +33,13 @@ class QueryResultContentBuilderTest extends CypherFunSuite {
   }
 
   test("should handle query with result table output and empty results") {
-    val result = runQuery("match (n) return n", QueryResultTable)
+    val result = runQuery("match (n) return n", QueryResultTablePlaceholder)
 
-    result should equal(QueryResult(Seq("n"), Seq.empty, footer = "0 rows"))
+    result should equal(QueryResultTable(Seq("n"), Seq.empty, footer = "0 rows"))
   }
 
   test("should handle query with result table output and non-empty results") {
-    val result = runQuery("match (x) return x", QueryResultTable, init = "CREATE ()").asInstanceOf[QueryResult]
+    val result = runQuery("match (x) return x", QueryResultTablePlaceholder, init = "CREATE ()").asInstanceOf[QueryResultTable]
 
     result.columns should equal(Seq("x"))
     result.footer should equal("1 row")
@@ -47,15 +47,15 @@ class QueryResultContentBuilderTest extends CypherFunSuite {
   }
 
   test("should handle simple query with result table output") {
-    val result = runQuery("match (n) return n", Paragraph("hello world") ~ QueryResultTable)
+    val result = runQuery("match (n) return n", Paragraph("hello world") ~ QueryResultTablePlaceholder)
 
-    result should equal(Paragraph("hello world") ~ QueryResult(Seq("n"), Seq.empty, footer = "0 rows"))
+    result should equal(Paragraph("hello world") ~ QueryResultTable(Seq("n"), Seq.empty, footer = "0 rows"))
   }
 
   test("updating query should report changes") {
-    val result = runQuery("create ()-[:T]->()", Paragraph("start") ~ QueryResultTable ~ Paragraph("end"))
+    val result = runQuery("create ()-[:T]->()", Paragraph("start") ~ QueryResultTablePlaceholder ~ Paragraph("end"))
 
-    result should equal(Paragraph("start") ~ QueryResult(Seq(), Seq.empty, footer = "0 rows\nNodes created: 2\nRelationships created: 1\n") ~ Paragraph("end"))
+    result should equal(Paragraph("start") ~ QueryResultTable(Seq(), Seq.empty, footer = "0 rows\nNodes created: 2\nRelationships created: 1\n") ~ Paragraph("end"))
   }
 
   def runQuery(query: String, content: Content, init: String = ""): Content = {

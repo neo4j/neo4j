@@ -66,7 +66,7 @@ class QueryRunner(db: GraphDatabaseService,
               Right(format(_)(result))
 
             // *** Error conditions
-            case (e: ExpectedFailure[_], _: Success) =>
+            case (e: ExpectedFailure[_], _: Success[_]) =>
               Left(new ExpectedExceptionNotFound(s"Expected exception of type ${e.getExceptionClass}"))
 
             case (_, Failure(exception: Exception)) =>
@@ -88,7 +88,6 @@ class QueryRunner(db: GraphDatabaseService,
           )
       }
 
-
       QueryRunResult(q, formattedResult)
     }
     TestRunResult(results)
@@ -98,6 +97,8 @@ class QueryRunner(db: GraphDatabaseService,
 case class QueryRunResult(query: Query, testResult: Either[Exception, Content])
 
 case class TestRunResult(queryResults: Seq[QueryRunResult]) {
+  def success = !queryResults.exists(_.testResult.isLeft)
+
   def foreach[U](f: QueryRunResult => U) = queryResults.foreach(f)
 
   private val _map = queryResults.map(r => r.query.queryText -> r.testResult).toMap

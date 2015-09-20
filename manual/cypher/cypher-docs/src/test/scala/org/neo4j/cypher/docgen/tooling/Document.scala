@@ -21,6 +21,7 @@ package org.neo4j.cypher.docgen.tooling
 
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
+import org.neo4j.cypher.internal.frontend.v2_3.InternalException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.frontend.v2_3.Foldable._
 
@@ -30,6 +31,8 @@ case class Document(title: String, id: String, initQueries: Seq[String], content
          |= $title
          |
          |""".stripMargin + content.asciiDoc(0)
+
+  def queries: Seq[Query] = content.findAllByClass[Query]
 }
 
 sealed trait Content {
@@ -38,8 +41,6 @@ sealed trait Content {
   def asciiDoc(level: Int): String
 
   def NewLine: String = "\n"
-
-  def queries: Seq[Query] = this.findAllByClass[Query]
 }
 
 case object NoContent extends Content {
@@ -137,13 +138,9 @@ trait Admonitions extends Content {
   }
 }
 
-case class GraphImage(s: ImageType) extends Content {
-  override def asciiDoc(level: Int) = ???
-}
-
 case class ResultRow(values: Seq[String])
 
-case class QueryResult(columns: Seq[String], rows: Seq[ResultRow], footer: String) extends Content {
+case class QueryResultTable(columns: Seq[String], rows: Seq[ResultRow], footer: String) extends Content {
   override def asciiDoc(level: Int): String = {
 
     val header = if (columns.nonEmpty) "header," else ""
@@ -188,7 +185,9 @@ case class Query(queryText: String, assertions: QueryAssertions, content: Conten
   }
 }
 
-
+case class GraphViz(s: String) extends Content {
+  override def asciiDoc(level: Int) = s + NewLine + NewLine
+}
 
 case class Section(heading: String, content: Content) extends Content {
 
@@ -206,25 +205,25 @@ case class ResultAndDbAssertions(f: (InternalExecutionResult, GraphDatabaseServi
 
 case object NoAssertions extends QueryAssertions
 
-case class ExpectedException[EXCEPTION <: Exception](f: EXCEPTION => Unit)
+case class ExpectedFailure[EXCEPTION <: Exception](f: EXCEPTION => Unit)
                                                     (implicit m: Manifest[EXCEPTION]) extends QueryAssertions {
   def getExceptionClass = m.runtimeClass
 
   def handle(e: Exception) = if (e.getClass.isAssignableFrom(m.runtimeClass)) {
     f(e.asInstanceOf[EXCEPTION])
   } else {
-    throw new RuntimeException("your mama")
+    throw new InternalException(s"Expected a ${m.runtimeClass} but got a ${e.getClass}")
   }
 }
 
-case object QueryResultTable extends Content {
-  override def asciiDoc(level: Int) = ???
+// These objects are used to mark where in the document tree
+// dynamic content should be inserted
+trait QueryResultPlaceholder[T] {
+  self: Content =>
+  override def asciiDoc(level: Int) =
+    throw new InternalException("This object should have been rewritten away already")
 }
 
-trait ImageType
-
-object ImageType {
-
-  case object INITIAL extends ImageType
-
-}
+case object QueryResultTablePlaceholder extends Content with QueryResultPlaceholder[QueryResultTable]
+case object GraphVizBefore extends Content with QueryResultPlaceholder[GraphViz]
+case object GraphVizAfter extends Content with QueryResultPlaceholder[GraphViz]

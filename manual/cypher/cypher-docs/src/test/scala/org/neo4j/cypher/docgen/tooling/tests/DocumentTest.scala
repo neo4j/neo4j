@@ -226,7 +226,7 @@ class DocumentAsciiDocTest extends CypherFunSuite {
   }
 
   test("QueryResult that creates data and returns nothing") {
-    val doc = QueryResult(Seq(), Seq.empty, footer = "0 rows\nNodes created: 2\nRelationships created: 1\n")
+    val doc = QueryResultTable(Seq(), Seq.empty, footer = "0 rows\nNodes created: 2\nRelationships created: 1\n")
 
     doc.asciiDoc(0) should equal(
       """.Result
@@ -243,7 +243,7 @@ class DocumentAsciiDocTest extends CypherFunSuite {
   }
 
   test("QueryResult that creates nothing and but returns data") {
-    val doc = QueryResult(Seq("n1", "n2"), Seq(ResultRow(Seq("1", "2"))), footer = "1 row")
+    val doc = QueryResultTable(Seq("n1", "n2"), Seq(ResultRow(Seq("1", "2"))), footer = "1 row")
 
     doc.asciiDoc(0) should equal(
       """.Result
@@ -258,7 +258,7 @@ class DocumentAsciiDocTest extends CypherFunSuite {
   }
 
   test("QueryResult that returns data containing pipes") {
-    val doc = QueryResult(Seq("n1|x1", "n2"), Seq(ResultRow(Seq("1|2", "2"))), footer = "1 row")
+    val doc = QueryResultTable(Seq("n1|x1", "n2"), Seq(ResultRow(Seq("1|2", "2"))), footer = "1 row")
 
     doc.asciiDoc(0) should equal(
       """.Result

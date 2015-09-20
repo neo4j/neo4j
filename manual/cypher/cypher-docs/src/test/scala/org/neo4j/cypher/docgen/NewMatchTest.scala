@@ -62,6 +62,7 @@ class NewMatchTest extends DocumentingTest with Suite {
         p("To understand more about the patterns used in the MATCH clause, read <<query-pattern>>")
       }
       p("The following graph is used for the examples below:")
+      graphVizBefore()
     }
     section("Basic node finding") {
       section("Get all nodes") {
