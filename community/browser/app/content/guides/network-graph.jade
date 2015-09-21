@@ -290,7 +290,7 @@ article.guide
         p.lead Delete all Movie and Person nodes, and their relationships
         figure
           pre.pre-scrollable.code.runnable.
-            MATCH (a:Person),(m:Movie) OPTIONAL MATCH (a)-[r1]-(), (m)-[r2]-() DELETE a,r1,m,r2
+            MATCH (a:Person) MATCH (m:Movie) OPTIONAL MATCH (a)-[r1]-() OPTIONAL MATCH (m)-[r2]-() DELETE a,r1,m,r2
         p.lead Prove that the Movie Graph is gone
         figure
           pre.pre-scrollable.code.runnable.

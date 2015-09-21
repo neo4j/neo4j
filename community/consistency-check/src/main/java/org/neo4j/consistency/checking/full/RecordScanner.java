@@ -19,43 +19,44 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.neo4j.consistency.statistics.Statistics;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 
-public class RecordScanner<RECORD> implements StoppableRunnable
+abstract class RecordScanner<RECORD> extends ConsistencyCheckerTask
 {
-    private final ProgressListener progress;
-    private final BoundedIterable<RECORD> store;
-    private final RecordProcessor<RECORD> processor;
+    protected final ProgressListener progress;
+    protected final BoundedIterable<RECORD> store;
+    protected final RecordProcessor<RECORD> processor;
+    private final IterableStore[] warmUpStores;
 
-    private volatile boolean continueScanning = true;
-
-    public RecordScanner( BoundedIterable<RECORD> store,
-                          String taskName,
-                          ProgressMonitorFactory.MultiPartBuilder builder,
-                          RecordProcessor<RECORD> processor )
+    public RecordScanner( String name, Statistics statistics, int threads, BoundedIterable<RECORD> store,
+            ProgressMonitorFactory.MultiPartBuilder builder, RecordProcessor<RECORD> processor,
+            IterableStore... warmUpStores )
     {
+        super( name, statistics, threads );
         this.store = store;
         this.processor = processor;
-        this.progress = builder.progressForPart( taskName, store.maxCount() );
+        this.progress = builder.progressForPart( name, store.maxCount() );
+        this.warmUpStores = warmUpStores;
     }
 
     @Override
     public void run()
     {
+        statistics.reset();
+        if ( warmUpStores != null )
+        {
+            for ( IterableStore store : warmUpStores )
+            {
+                store.warmUpCache();
+            }
+        }
         try
         {
-            int entryCount = 0;
-            for ( RECORD record : store )
-            {
-                if ( !continueScanning )
-                {
-                    return;
-                }
-                processor.process( record );
-                progress.set( entryCount++ );
-            }
+            scan();
         }
         finally
         {
@@ -66,15 +67,16 @@ public class RecordScanner<RECORD> implements StoppableRunnable
             catch ( Exception e )
             {
                 progress.failed( e );
+                throw Exceptions.launderedException( e );
             }
-            processor.close();
-            progress.done();
+            finally
+            {
+                processor.close();
+                progress.done();
+            }
         }
+        statistics.print( name );
     }
 
-    @Override
-    public void stopScanning()
-    {
-        continueScanning = false;
-    }
+    protected abstract void scan();
 }

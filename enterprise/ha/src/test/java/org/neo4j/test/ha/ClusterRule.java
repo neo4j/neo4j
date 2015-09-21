@@ -22,7 +22,6 @@ package org.neo4j.test.ha;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-import org.omg.PortableInterceptor.ClientRequestInfo;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -33,6 +32,7 @@ import java.util.Map;
 
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -64,6 +64,7 @@ public class ClusterRule extends ExternalResource
     {
         this.testDirectory = TargetDirectory.testDirForTest( testClass );
         config.putAll( stringMap(
+                GraphDatabaseSettings.store_internal_log_level.name(), "DEBUG",
                 default_timeout.name(), "1s",
                 tx_push_factor.name(), "0",
                 pagecache_memory.name(), "8m" ) );

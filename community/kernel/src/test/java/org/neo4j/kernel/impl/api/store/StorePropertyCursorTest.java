@@ -94,10 +94,13 @@ public class StorePropertyCursorTest
                     PropertyType.ARRAY},
             new Object[]{"thisisaveryveryveryverylongstringwhichisnotgonnafiteverintothepropertyblock",
                     PropertyType.STRING},
-            new Object[]{"thisisaveryveryveryverylongstringwhichisnotgonnafiteverintothepropertyblock" + "\n" +
+            new Object[]{new BigProperty(
+                         "thisisaveryveryveryverylongstringwhichisnotgonnafiteverintothepropertyblock" + "\n" +
                          "thisisaveryveryveryverylongstringwhichisnotgonnafiteverintothepropertyblock",
+                         "two very long lines..." ),
                     PropertyType.STRING},
-            new Object[]{"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec ornare augue a felis" +
+            new Object[]{new BigProperty(
+                         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec ornare augue a felis" +
                          " interdum, id sodales magna tempor. Donec aliquam, nunc eu semper semper, orci " +
                          "metus tincidunt urna, non sagittis eros tellus vel tellus. Maecenas vel nisi magna." +
                          " Morbi tincidunt pretium nibh, eu tristique magna cursus vitae. Sed vel ultricies " +
@@ -174,9 +177,45 @@ public class StorePropertyCursorTest
                          "eget elementum elit commodo sit amet. Quisque molestie finibus est vel bibendum. " +
                          "Vestibulum a imperdiet turpis, ut volutpat orci. Morbi erat augue, varius sed " +
                          "ullamcorper auctor, varius tincidunt ante. Vivamus mattis justo nulla, auctor " +
-                         "euismod nulla mollis id. ",
+                         "euismod nulla mollis id. ", "Lorem ipsum... ad infinitum..." ),
                     PropertyType.STRING}
     );
+
+    /**
+     * This is a work-around for a problem in Eclipse where a toString of a Parameter containing newline
+     * would trigger a bug, making it impossible to run that test and any other test if this test
+     * would be included in the set.
+     */
+    private static class BigProperty
+    {
+        private final Object actualValue;
+        private final String toStringForUnitTest;
+
+        BigProperty( Object value, String toStringForUnitTest )
+        {
+            this.actualValue = value;
+            this.toStringForUnitTest = toStringForUnitTest;
+        }
+
+        Object value()
+        {
+            return actualValue;
+        }
+
+        @Override
+        public String toString()
+        {
+            return toStringForUnitTest;
+        }
+    }
+
+    /**
+     * See {@link BigProperty} for explanation.
+     */
+    private static Object actualValue( Object parameter )
+    {
+        return parameter instanceof BigProperty ? ((BigProperty)parameter).value() : parameter;
+    }
 
     public static class ErrorTest
     {
@@ -307,6 +346,7 @@ public class StorePropertyCursorTest
             // given
             int recordId = 42;
             int keyId = 11;
+            Object expectedValue = actualValue( this.expectedValue );
 
             createSinglePropertyValue( propertyStore, recordId, keyId, expectedValue );
 
@@ -368,6 +408,8 @@ public class StorePropertyCursorTest
             int recordId = 42;
             int keyId1 = 11;
             int keyId2 = 22;
+            Object expectedValue1 = actualValue( this.expectedValue1 );
+            Object expectedValue2 = actualValue( this.expectedValue2 );
 
             createTwoPropertyValues( propertyStore, recordId, keyId1, expectedValue1, keyId2, expectedValue2 );
 
@@ -398,6 +440,8 @@ public class StorePropertyCursorTest
             int recordId = 42;
             int keyId1 = 11;
             int keyId2 = 22;
+            Object expectedValue1 = actualValue( this.expectedValue1 );
+            Object expectedValue2 = actualValue( this.expectedValue2 );
 
             createTwoPropertyValues( propertyStore, recordId, keyId1, expectedValue1, keyId2, expectedValue2 );
 
@@ -445,6 +489,7 @@ public class StorePropertyCursorTest
             // given
             int recordId = 42;
             int keyId = 11;
+            Object expectedValue = actualValue( this.expectedValue );
 
             createSinglePropertyValue( propertyStore, recordId, keyId, expectedValue );
 

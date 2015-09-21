@@ -84,7 +84,8 @@ article.guide
         h4 Create data relationships
         figure
           pre.pre-scrollable.code.runnable.
-            MATCH (p:Product),(c:Category)
+            MATCH (p:Product)
+            MATCH (c:Category)
             WHERE p.categoryID = c.categoryID
             CREATE (p)-[:PART_OF]-&gt;(c)
           figcaption Calculate join, materialize relationship. (See&nbsp;
@@ -92,7 +93,8 @@ article.guide
             |  for more details)
         figure
           pre.pre-scrollable.code.runnable.
-            MATCH (p:Product),(s:Supplier)
+            MATCH (p:Product)
+            Match (s:Supplier)
             WHERE p.supplierID = s.supplierID
             CREATE (s)-[:SUPPLIES]-&gt;(p)
         h4 Query using patterns
@@ -140,7 +142,8 @@ article.guide
         h4 Create data relationships
         figure
           pre.pre-scrollable.code.runnable.
-            MATCH (c:Customer),(o:Order)
+            MATCH (c:Customer)
+            MATCH (o:Order)
             WHERE c.customerID = o.customerID
             CREATE (c)-[:PURCHASED]-&gt;(o)
     slide.row-fluid
@@ -165,7 +168,8 @@ article.guide
         figure
           pre.pre-scrollable.code.runnable.
             LOAD CSV WITH HEADERS FROM "http://data.neo4j.com/northwind/order-details.csv" AS row
-            MATCH (p:Product), (o:Order)
+            MATCH (p:Product)
+            MATCH (o:Order)
             WHERE p.productID = row.productID AND o.orderID = row.orderID
             CREATE (o)-[details:ORDERS]-&gt;(p)
             SET details = row,

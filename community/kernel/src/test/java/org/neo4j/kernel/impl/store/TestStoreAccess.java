@@ -55,7 +55,7 @@ public class TestStoreAccess
         snapshot.deleteFile( messages );
 
         PageCache pageCache = pageCacheRule.getPageCache( snapshot );
-        new StoreAccess( snapshot, pageCache, storeDir ).close();
+        new StoreAccess( snapshot, pageCache, storeDir ).initialize().close();
         assertTrue( "Store should be unclean", isUnclean( snapshot ) );
     }
 

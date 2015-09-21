@@ -19,8 +19,8 @@
  */
 package org.neo4j.consistency.checking;
 
+import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -30,7 +30,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.firstDynamicLabelRecor
 import static org.neo4j.kernel.impl.store.NodeStore.readOwnerFromDynamicLabelsRecord;
 
 /**
- * Used by {@link org.neo4j.consistency.checking.full.FullCheck} to verify orphanage for node dynamic label records.
+ * Used by {@link FullCheck} to verify orphanage for node dynamic label records.
  *
  * Actual list of labels is verified from {@link NodeRecordCheck}
  */
@@ -89,14 +89,6 @@ public class NodeDynamicLabelOrphanChainStartCheck
                 engine.comparativeCheck( records.node( ownerId ), VALID_NODE_RECORD );
             }
         }
-    }
-
-    @Override
-    public void checkChange( DynamicRecord oldRecord, DynamicRecord newRecord,
-                             CheckerEngine<DynamicRecord, DynamicLabelConsistencyReport> engine,
-                             DiffRecordAccess records )
-    {
-        check( newRecord, engine, records );
     }
 
     @Override

@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.spi
 
+import java.net.URL
+
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.graphdb.{Path, Relationship, PropertyContainer, Node}
@@ -43,6 +45,8 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
   def createNode(): Node = singleDbHit(inner.createNode())
 
   def createRelationship(start: Node, end: Node, relType: String): Relationship = singleDbHit(inner.createRelationship(start, end, relType))
+
+  override def createRelationship(start: Long, end: Long, relType: Int): Relationship = singleDbHit(inner.createRelationship(start, end, relType))
 
   def getOrCreateRelTypeId(relTypeName: String): Int = singleDbHit(inner.getOrCreateRelTypeId(relTypeName))
 
@@ -119,7 +123,7 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def getRelTypeName(id: Int): String = singleDbHit(inner.getRelTypeName(id))
 
-  override def hasLocalFileAccess: Boolean = inner.hasLocalFileAccess
+  def getImportURL(url: URL): Either[String,URL] = inner.getImportURL(url)
 
   def relationshipStartNode(rel: Relationship) = inner.relationshipStartNode(rel)
 

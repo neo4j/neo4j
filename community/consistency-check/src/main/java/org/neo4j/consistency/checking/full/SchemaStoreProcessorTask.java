@@ -20,22 +20,27 @@
 package org.neo4j.consistency.checking.full;
 
 import org.neo4j.consistency.checking.SchemaRecordCheck;
+import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 public class SchemaStoreProcessorTask<R extends AbstractBaseRecord> extends StoreProcessorTask<R>
 {
     private final SchemaRecordCheck schemaRecordCheck;
 
-    public SchemaStoreProcessorTask( RecordStore<R> store,
-                                     String builderPrefix,
-                                     SchemaRecordCheck schemaRecordCheck,
-                                     ProgressMonitorFactory.MultiPartBuilder builder,
-                                     TaskExecutionOrder order, StoreProcessor singlePassProcessor, StoreProcessor...
-            multiPassProcessors )
+    public SchemaStoreProcessorTask( String name, Statistics statistics, int threads, RecordStore<R> store,
+            StoreAccess storeAccess,
+            String builderPrefix,
+            SchemaRecordCheck schemaRecordCheck,
+            ProgressMonitorFactory.MultiPartBuilder builder,
+            CacheAccess cacheAccess,
+            StoreProcessor processor )
     {
-        super( store, builderPrefix, builder, order, singlePassProcessor, multiPassProcessors );
+        super( name, statistics, threads, store, storeAccess, builderPrefix,
+                builder, cacheAccess, processor );
         this.schemaRecordCheck = schemaRecordCheck;
     }
 

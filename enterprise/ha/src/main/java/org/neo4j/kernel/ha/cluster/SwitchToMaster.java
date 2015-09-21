@@ -140,9 +140,9 @@ public class SwitchToMaster implements AutoCloseable
 
     private URI getMasterUri( URI me, MasterServer masterServer )
     {
-        String hostname = ServerUtil.getHostString( masterServer.getSocketAddress() ).contains( "0.0.0.0" ) ?
+        String hostname = config.get( HaSettings.ha_server ).getHost( ServerUtil.getHostString( masterServer.getSocketAddress() ).contains( "0.0.0.0" ) ?
                             me.getHost() :
-                            ServerUtil.getHostString( masterServer.getSocketAddress() );
+                            ServerUtil.getHostString( masterServer.getSocketAddress() ));
 
         int port = masterServer.getSocketAddress().getPort();
 

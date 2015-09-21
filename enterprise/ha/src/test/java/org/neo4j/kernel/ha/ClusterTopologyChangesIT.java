@@ -104,8 +104,6 @@ public class ClusterTopologyChangesIT
     @Test
     public void masterRejoinsAfterFailureAndReelection() throws Throwable
     {
-        System.out.println(repeat.getCount());
-
         // Given
         HighlyAvailableGraphDatabase initialMaster = cluster.getMaster();
 

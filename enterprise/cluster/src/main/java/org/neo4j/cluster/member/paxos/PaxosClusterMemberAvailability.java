@@ -120,7 +120,8 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
     {
         try
         {
-            Payload payload = serializer.broadcast( new MemberIsUnavailable( role, myId, serverClusterId ) );
+            MemberIsUnavailable message = new MemberIsUnavailable( role, myId, serverClusterId );
+            Payload payload = serializer.broadcast( message );
             atomicBroadcast.broadcast( payload );
         }
         catch ( Throwable e )

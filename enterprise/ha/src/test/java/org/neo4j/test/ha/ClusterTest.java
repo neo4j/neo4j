@@ -24,7 +24,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.net.InetAddress;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
@@ -101,11 +100,10 @@ public class ClusterTest
     @Test
     public void testClusterWithHostnames() throws Throwable
     {
-        String hostName = InetAddress.getLocalHost().getHostName();
         Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
         for ( int i = 0; i < 3; i++ )
         {
-            cluster.getMembers().add( new Clusters.Member( hostName +":"+(5001 + i), true ) );
+            cluster.getMembers().add( new Clusters.Member( "localhost:" + (5001 + i), true ) );
         }
 
         final Clusters clusters = new Clusters();
@@ -113,7 +111,7 @@ public class ClusterTest
 
         ClusterManager clusterManager = new ClusterManager( ClusterManager.provided( clusters ),
                 testDirectory.directory( "testCluster" ),
-                MapUtil.stringMap( HaSettings.ha_server.name(), hostName+":6001-6005",
+                MapUtil.stringMap( HaSettings.ha_server.name(), "localhost:6001-6005",
                         HaSettings.tx_push_factor.name(), "2" ));
         try
         {

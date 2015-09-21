@@ -6,11 +6,12 @@
 
 By using `SKIP`, the result set will get trimmed from the top.
 Please note that no guarantees are made on the order of the result unless the query specifies the `ORDER BY` clause.
+`SKIP` accepts any expression that evaluates to a positive integer -- however the expression cannot refer to nodes or relationships.
 
 .Graph
 include::includes/cypher-skip-graph.asciidoc[]
 
 include::skip-first-three.asciidoc[]
-
 include::return-middle-two.asciidoc[]
+include::skip-first-from-expression.asciidoc[]
 

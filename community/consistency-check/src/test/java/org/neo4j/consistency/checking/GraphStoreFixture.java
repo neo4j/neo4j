@@ -26,6 +26,11 @@ import org.junit.runners.model.Statement;
 import java.io.File;
 import java.util.Collection;
 
+import org.neo4j.consistency.statistics.AccessStatistics;
+import org.neo4j.consistency.statistics.AccessStatsKeepingStoreAccess;
+import org.neo4j.consistency.statistics.DefaultCounts;
+import org.neo4j.consistency.statistics.Statistics;
+import org.neo4j.consistency.statistics.VerboseStatistics;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -49,6 +54,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
+import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -61,15 +67,32 @@ import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.NullLog;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.System.currentTimeMillis;
 
+import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
+
 public abstract class GraphStoreFixture extends PageCacheRule implements TestRule
 {
     private DirectStoreAccess directStoreAccess;
+    private Statistics statistics;
+    private final boolean keepStatistics;
+    private NeoStores neoStore;
+
+    public GraphStoreFixture( boolean keepStatistics )
+    {
+        this.keepStatistics = keepStatistics;
+    }
+
+    public GraphStoreFixture()
+    {
+        this( false );
+    }
 
     public void apply( Transaction transaction ) throws TransactionFailureException
     {
@@ -82,7 +105,21 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         {
             DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
-            StoreAccess nativeStores = new StoreAccess( fileSystem, pageCache, directory );
+            neoStore = new StoreFactory( fileSystem, directory, pageCache, NullLogProvider.getInstance() ).openNeoStores( false );
+            StoreAccess nativeStores;
+            if ( keepStatistics )
+            {
+                AccessStatistics accessStatistics = new AccessStatistics();
+                statistics = new VerboseStatistics( accessStatistics,
+                        new DefaultCounts( defaultConsistencyCheckThreadsNumber() ), NullLog.getInstance() );
+                nativeStores = new AccessStatsKeepingStoreAccess( neoStore, accessStatistics );
+            }
+            else
+            {
+                statistics = Statistics.NONE;
+                nativeStores = new StoreAccess( neoStore );
+            }
+            nativeStores.initialize();
             directStoreAccess = new DirectStoreAccess(
                     nativeStores,
                     new LuceneLabelScanStoreBuilder(
@@ -105,6 +142,11 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     public File directory()
     {
         return directory;
+    }
+
+    public Statistics getAccessStatistics()
+    {
+        return statistics;
     }
 
     public abstract static class Transaction
@@ -321,6 +363,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     {
         if ( directStoreAccess != null )
         {
+            neoStore.close();
             directStoreAccess.close();
             directStoreAccess = null;
         }
@@ -387,7 +430,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         try
         {
             generateInitialData( graphDb );
-            StoreAccess stores = new StoreAccess( graphDb );
+            StoreAccess stores = new StoreAccess( graphDb ).initialize();
             schemaId = stores.getSchemaStore().getHighId();
             nodeId = stores.getNodeStore().getHighId();
             labelId = (int) stores.getLabelTokenStore().getHighId();

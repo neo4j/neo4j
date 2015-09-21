@@ -19,14 +19,14 @@
  */
 package org.neo4j.ha;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -51,10 +51,10 @@ import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static java.lang.String.format;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
-import static java.lang.String.format;
 
 import static org.neo4j.helpers.SillyUtils.nonNull;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -82,7 +82,7 @@ public class TestBranchedData
         new TestHighlyAvailableGraphDatabaseFactory().
                 newEmbeddedDatabaseBuilder( dir )
                 .setConfig( ClusterSettings.server_id, "1" )
-                .setConfig( ClusterSettings.initial_hosts, ":5001" )
+                .setConfig( ClusterSettings.initial_hosts, "localhost:5001" )
                 .newGraphDatabase().shutdown();
         // It should have migrated those to the new location. Verify that.
         for ( long timestamp : timestamps )

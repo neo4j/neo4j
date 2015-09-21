@@ -30,7 +30,6 @@ import java.io.PrintStream;
 import java.util.Properties;
 
 import org.neo4j.consistency.ConsistencyCheckSettings;
-import org.neo4j.consistency.checking.full.TaskExecutionOrder;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.TargetDirectory;
@@ -149,8 +148,6 @@ public class BackupToolTest
         verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), eq( new File( "my_backup" ) ), anyBoolean(),
                 config.capture(), eq( BackupClient.BIG_READ_TIMEOUT ), eq( false ) );
         assertFalse( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
-        assertEquals( TaskExecutionOrder.MULTI_PASS,
-                config.getValue().get( ConsistencyCheckSettings.consistency_check_execution_order ) );
     }
 
     @Test

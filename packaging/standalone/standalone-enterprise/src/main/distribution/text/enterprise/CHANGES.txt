@@ -1,5 +1,12 @@
 For Release Notes, see http://neo4j.com/release-notes/neo4j-#{project.version}/
 
+2.3-RC01
+-------
+
+Cypher:
+o Generates a warning when a plan using LOAD CSV uses MATCH or MERGE on a large label without an index
+o Generates a warning when a plan using LOAD CSV also contains an EagerPipe
+
 2.3-M03
 -------
 
@@ -8,6 +15,8 @@ o Fixes bad assumption about all messages containing instance ID
 o No longer resolves hostnames into IPs. This should help in data center installations where a hostname might resolve into different IPs depending on which center the server is running in
 
 Cypher:
+o Allow arbitrary expressions for URL in LOAD CSV
+o Support for using compressed data with LOAD CSV
 o Added reverse function for reversing strings
 o Unfulfillable index hints (e.g. on non-existing indices) will now produce a warning or throw an error as configured
 o Now supports dynamic property lookup (f.e. using n['property'])

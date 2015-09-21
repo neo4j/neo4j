@@ -93,8 +93,6 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
       case NodePattern(Some(id), _, _, _) => list => list + id
     })
 
-    def pickFirst(a: Identifier, b: Identifier) = if (a.position.offset < b.position.offset) a else b
-
     @tailrec
     def loop(compare: Set[Identifier], rest: Seq[Set[Identifier]], intermediateState: SemanticState): SemanticState = {
       val updatedState = rest.filter { o =>

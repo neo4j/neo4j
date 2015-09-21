@@ -37,6 +37,11 @@ import scala.collection.mutable.ArrayBuffer
 /**
  * Expand when both end-points are known, find all relationships of the given
  * type in the given direction between the two end-points.
+ *
+ * This is done by checking both nodes and starts from any non-dense node of the two.
+ * If both nodes are dense, we find the degree of each and expand from the smaller of the two
+ *
+ * This pipe also caches relationship information between nodes for the duration of the query
  */
 case class ExpandIntoPipe(source: Pipe,
                           fromName: String,

@@ -28,7 +28,6 @@ import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.LookupFilter;
@@ -36,6 +35,12 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 
+/*
+ * This is superseded by PropertyAndNode2LabelIndex.java that is a superset of
+ * logic in this file with the addition of logic to check Properties.
+ * This is being done to avoid repeated reading of property chains.
+ * In the new CC this file is not being used. Retained for review only.
+ */
 public class NodeCorrectlyIndexedCheck implements RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport>
 {
     private final IndexAccessors indexes;
@@ -163,13 +168,5 @@ public class NodeCorrectlyIndexedCheck implements RecordCheck<NodeRecord, Consis
             }
         }
         return null;
-    }
-
-    @Override
-    public void checkChange( NodeRecord oldRecord, NodeRecord newRecord,
-                             CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine,
-                             DiffRecordAccess records )
-    {
-        check( newRecord, engine, records );
     }
 }

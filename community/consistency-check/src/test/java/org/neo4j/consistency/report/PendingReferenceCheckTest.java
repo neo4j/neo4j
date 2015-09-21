@@ -23,23 +23,27 @@ import org.junit.Test;
 
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
+import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
+import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
+
 public class PendingReferenceCheckTest
 {
     // given
     {
+        RecordAccess records = mock( RecordAccess.class );
         @SuppressWarnings("unchecked")
         ConsistencyReporter.ReportHandler handler =
                 new ConsistencyReporter.ReportHandler(
                         mock( InconsistencyReport.class ),
                         mock( ConsistencyReporter.ProxyFactory.class ),
                         RecordType.PROPERTY,
-                        new PropertyRecord( 0 ) );
+                        records, new PropertyRecord( 0 ), NO_MONITOR );
         this.referenceCheck = new PendingReferenceCheck<>( handler, mock( ComparativeRecordChecker.class ) );
     }
 

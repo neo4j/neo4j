@@ -21,12 +21,14 @@ package org.neo4j.cypher.internal.compiler.v2_3.spi
 
 import java.net.URL
 
+import org.apache.commons.lang3.SystemUtils
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_3.TaskCloser
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-
+import org.neo4j.io.fs.FileUtils
+import org.scalatest.fixture
 
 class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
 
@@ -190,7 +192,15 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
 
     // when
     val e = intercept[IllegalStateException](resources.getCsvIterator(new URL(url)))
-    e.getMessage should include(url)
+
+    var path = url.replace("file:", "")
+    if (SystemUtils.IS_OS_WINDOWS) {
+      // remove first '/' before something like C:
+      path = path.substring(1, path.length)
+      // fix '/' into '\'
+      path = FileUtils.fixSeparatorsInPath(path)
+    }
+    e.getMessage should include(path)
   }
 
   test("should parse multiline fields") {

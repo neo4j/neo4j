@@ -72,6 +72,18 @@ public class Workers<R extends Runnable> implements Iterable<R>
         return error;
     }
 
+    public Throwable awaitStrict()
+    {
+        try
+        {
+            return await();
+        }
+        catch ( InterruptedException e )
+        {
+            throw handleInterrupted( e );
+        }
+    }
+
     public <EXCEPTION extends Throwable> void awaitAndThrowOnError( Class<EXCEPTION> launderingException )
             throws EXCEPTION, InterruptedException
     {
@@ -82,13 +94,23 @@ public class Workers<R extends Runnable> implements Iterable<R>
         }
     }
 
-    public void awaitAndThrowOnError() throws InterruptedException
+    public <EXCEPTION extends Throwable> void awaitAndThrowOnErrorStrict( Class<EXCEPTION> launderingException )
+            throws EXCEPTION
     {
-        Throwable error = await();
-        if ( error != null )
+        try
         {
-            throw Exceptions.launderedException( error );
+            awaitAndThrowOnError( launderingException );
         }
+        catch ( InterruptedException e )
+        {
+            throw handleInterrupted( e );
+        }
+    }
+
+    private RuntimeException handleInterrupted( InterruptedException e )
+    {
+        Thread.interrupted();
+        return new RuntimeException( "Got interrupted while awaiting workers (" + names + ") to complete", e );
     }
 
     @Override

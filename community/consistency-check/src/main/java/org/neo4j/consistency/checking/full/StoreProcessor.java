@@ -19,15 +19,23 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import java.util.concurrent.BlockingQueue;
+
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.AbstractStoreProcessor;
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.checking.SchemaRecordCheck;
+import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
+import org.neo4j.consistency.statistics.Counts;
+import org.neo4j.function.Function;
+import org.neo4j.function.Predicate;
+import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -37,46 +45,99 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
+import static org.neo4j.consistency.checking.cache.DefaultCacheAccess.DEFAULT_QUEUE_SIZE;
+import static org.neo4j.consistency.checking.full.RecordDistributor.distributeRecords;
+import static org.neo4j.kernel.impl.store.RecordStore.Scanner.scan;
+
 /**
  * Full check works by spawning StoreProcessorTasks that call StoreProcessor. StoreProcessor.applyFiltered()
  * then scans the store and in turn calls down to store.accept which then knows how to check the given record.
  */
-class StoreProcessor extends AbstractStoreProcessor
+public class StoreProcessor extends AbstractStoreProcessor
 {
+    private final int qSize = DEFAULT_QUEUE_SIZE;
+    protected final CacheAccess cacheAccess;
     private final ConsistencyReport.Reporter report;
     private SchemaRecordCheck schemaRecordCheck;
+    private final Stage stage;
 
-    public StoreProcessor( CheckDecorator decorator, ConsistencyReport.Reporter report )
+    public StoreProcessor( CheckDecorator decorator, ConsistencyReport.Reporter report,
+            Stage stage, CacheAccess cacheAccess )
     {
         super( decorator );
+        assert stage != null;
         this.report = report;
-        this.schemaRecordCheck = null;
+        this.stage = stage;
+        this.cacheAccess = cacheAccess;
     }
 
-    @SuppressWarnings("UnusedParameters")
-    protected void checkSchema( RecordType type, RecordStore<DynamicRecord> store, DynamicRecord schema, RecordCheck
-            <DynamicRecord, ConsistencyReport.SchemaConsistencyReport> checker )
+    public Stage getStage()
+    {
+        return stage;
+    }
+
+    public int getStageIndex()
+    {
+        return stage.ordinal();
+    }
+
+    @Override
+    public void processNode( RecordStore<NodeRecord> store, NodeRecord node )
+    {
+        cacheAccess.client().incAndGetCount( node.isDense() ? Counts.Type.nodeDense : Counts.Type.nodeSparse );
+        super.processNode( store, node );
+    }
+
+    protected void checkSchema( RecordType type, RecordStore<DynamicRecord> store, DynamicRecord schema,
+            RecordCheck<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> checker )
     {
         report.forSchema( schema, checker );
     }
 
     @Override
     protected void checkNode( RecordStore<NodeRecord> store, NodeRecord node,
-                              RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> checker )
+            RecordCheck<NodeRecord,ConsistencyReport.NodeConsistencyReport> checker )
     {
         report.forNode( node, checker );
     }
 
+    public void countLinks( long id1, long id2, CacheAccess.Client client )
+    {
+        Counts.Type type = null;
+        if ( id2 == -1 )
+        {
+            type = Counts.Type.nullLinks;
+        }
+        else if ( id2 > id1 )
+        {
+            type = Counts.Type.forwardLinks;
+        }
+        else
+        {
+            type = Counts.Type.backLinks;
+        }
+        client.incAndGetCount( type );
+    }
+
     @Override
     protected void checkRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel,
-                                      RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> checker )
+                                      RecordCheck<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport> checker )
     {
+        if ( stage != null && (stage == CheckStage.Stage6_RS_Forward || stage == CheckStage.Stage7_RS_Backward) )
+        {
+            long id = rel.getId();
+            CacheAccess.Client client = cacheAccess.client();
+            countLinks( id, rel.getFirstNextRel(), client );
+            countLinks( id, rel.getFirstPrevRel(), client );
+            countLinks( id, rel.getSecondNextRel(), client );
+            countLinks( id, rel.getSecondPrevRel(), client );
+        }
         report.forRelationship( rel, checker );
     }
 
     @Override
     protected void checkProperty( RecordStore<PropertyRecord> store, PropertyRecord property,
-                                  RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> checker )
+            RecordCheck<PropertyRecord,ConsistencyReport.PropertyConsistencyReport> checker )
     {
         report.forProperty( property, checker );
     }
@@ -108,21 +169,21 @@ class StoreProcessor extends AbstractStoreProcessor
 
     @Override
     protected void checkDynamic( RecordType type, RecordStore<DynamicRecord> store, DynamicRecord string,
-                                 RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> checker )
+                                 RecordCheck<DynamicRecord,ConsistencyReport.DynamicConsistencyReport> checker )
     {
         report.forDynamicBlock( type, string, checker );
     }
 
     @Override
     protected void checkDynamicLabel( RecordType type, RecordStore<DynamicRecord> store, DynamicRecord string,
-                                      RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker )
+                                      RecordCheck<DynamicRecord,DynamicLabelConsistencyReport> checker )
     {
         report.forDynamicLabelBlock( type, string, checker );
     }
 
     @Override
     protected void checkRelationshipGroup( RecordStore<RelationshipGroupRecord> store, RelationshipGroupRecord record,
-            RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker )
+            RecordCheck<RelationshipGroupRecord,RelationshipGroupConsistencyReport> checker )
     {
         report.forRelationshipGroup( record, checker );
     }
@@ -137,12 +198,46 @@ class StoreProcessor extends AbstractStoreProcessor
     {
         if ( null == schemaRecordCheck )
         {
-
             super.processSchema( store, schema );
         }
         else
         {
             checkSchema( RecordType.SCHEMA, store, schema, schemaRecordCheck );
+        }
+    }
+
+    public <R extends AbstractBaseRecord> void applyFilteredParallel( final RecordStore<R> store,
+            final ProgressListener progressListener, int numberOfThreads, long recordsPerCpu,
+            Predicate<? super R>... filters )
+            throws Exception
+    {
+        cacheAccess.prepareForProcessingOfSingleStore( recordsPerCpu );
+        Function<BlockingQueue<R>,Worker<R>> workerFactory = new Function<BlockingQueue<R>,Worker<R>>()
+        {
+            @Override
+            public Worker<R> apply( BlockingQueue<R> source )
+            {
+                return new Worker<>( source, store );
+            }
+        };
+        distributeRecords( numberOfThreads, getClass().getSimpleName(), qSize, workerFactory,
+                scan( store, stage.isForward(), filters ), progressListener );
+    }
+
+    private class Worker<RECORD extends AbstractBaseRecord> extends RecordCheckWorker<RECORD>
+    {
+        private final RecordStore<RECORD> store;
+
+        public Worker( BlockingQueue<RECORD> recordsQ, RecordStore<RECORD> store )
+        {
+            super( recordsQ );
+            this.store = store;
+        }
+
+        @Override
+        protected void process( RECORD record )
+        {
+            store.accept( StoreProcessor.this, record );
         }
     }
 }

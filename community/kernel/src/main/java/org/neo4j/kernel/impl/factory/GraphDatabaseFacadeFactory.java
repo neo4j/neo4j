@@ -30,6 +30,7 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 
@@ -69,6 +70,8 @@ public abstract class GraphDatabaseFacadeFactory
         Iterable<Class<?>> settingsClasses();
 
         Iterable<KernelExtensionFactory<?>> kernelExtensions();
+
+        Map<String,URLAccessRule> urlAccessRules();
 
         Iterable<QueryEngineProvider> executionEngines();
     }

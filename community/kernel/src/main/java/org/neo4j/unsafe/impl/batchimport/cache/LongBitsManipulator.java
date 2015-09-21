@@ -19,6 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+import java.util.Arrays;
+
+import org.neo4j.kernel.impl.util.Bits;
+
 /**
  * Turns a long into 64 bits of memory where variables can be allocated in, for example:
  * <pre>
@@ -68,6 +72,12 @@ public class LongBitsManipulator
                     // all bits in this slot as 0
                     otherBits;
         }
+
+        @Override
+        public String toString()
+        {
+            return getClass().getSimpleName() + "[" + Bits.numbersToBitString( new long[] {maxValue << bitOffset} ) + "]";
+        }
     }
 
     private final Slot[] slots;
@@ -90,6 +100,11 @@ public class LongBitsManipulator
             bitCursor += bits;
         }
         return slots;
+    }
+
+    public int slots()
+    {
+        return slots.length;
     }
 
     public long set( long field, int slotIndex, long value )
@@ -126,8 +141,14 @@ public class LongBitsManipulator
     {
         if ( slotIndex < 0 || slotIndex >= slots.length )
         {
-            throw new IllegalArgumentException( "Invalid slot " + slotIndex );
+            throw new IllegalArgumentException( "Invalid slot " + slotIndex + ", I've got " + this );
         }
         return slots[slotIndex];
+    }
+
+    @Override
+    public String toString()
+    {
+        return Arrays.toString( slots );
     }
 }

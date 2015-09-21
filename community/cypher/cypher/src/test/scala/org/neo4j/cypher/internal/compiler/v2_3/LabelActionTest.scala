@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
+import java.net.URL
+
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType}
@@ -181,4 +183,7 @@ class SnitchingQueryContext extends QueryContext {
 
   // Legacy dependency between kernel and compiler
   override def variableLengthPathExpand(node: PatternNode, realNode: Node, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]): Iterator[Path] = ???
+
+  def getImportURL(url: URL): Either[String,URL] = ???
+  override def createRelationship(start: Long, end: Long, relType: Int) = ???
 }

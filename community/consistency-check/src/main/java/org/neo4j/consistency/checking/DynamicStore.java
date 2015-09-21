@@ -20,7 +20,6 @@
 package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.RecordType;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -34,12 +33,6 @@ public enum DynamicStore
         {
             return records.schema( block );
         }
-
-        @Override
-        DynamicRecord changed( DiffRecordAccess records, long id )
-        {
-            return records.changedSchema( id );
-        }
     },
     STRING( RecordType.STRING_PROPERTY )
     {
@@ -47,12 +40,6 @@ public enum DynamicStore
         RecordReference<DynamicRecord> lookup( RecordAccess records, long block )
         {
             return records.string( block );
-        }
-
-        @Override
-        DynamicRecord changed( DiffRecordAccess records, long id )
-        {
-            return records.changedString( id );
         }
     },
     ARRAY( RecordType.ARRAY_PROPERTY )
@@ -62,12 +49,6 @@ public enum DynamicStore
         {
             return records.array( block );
         }
-
-        @Override
-        DynamicRecord changed( DiffRecordAccess records, long id )
-        {
-            return records.changedArray( id );
-        }
     },
     PROPERTY_KEY( RecordType.PROPERTY_KEY_NAME )
     {
@@ -75,12 +56,6 @@ public enum DynamicStore
         RecordReference<DynamicRecord> lookup( RecordAccess records, long block )
         {
             return records.propertyKeyName( (int) block );
-        }
-
-        @Override
-        DynamicRecord changed( DiffRecordAccess records, long id )
-        {
-            return null; // never needed
         }
     },
     RELATIONSHIP_TYPE( RecordType.RELATIONSHIP_TYPE_NAME )
@@ -90,12 +65,6 @@ public enum DynamicStore
         {
             return records.relationshipTypeName( (int) block );
         }
-
-        @Override
-        DynamicRecord changed( DiffRecordAccess records, long id )
-        {
-            return null; // never needed
-        }
     },
     LABEL( RecordType.LABEL_NAME )
     {
@@ -104,12 +73,6 @@ public enum DynamicStore
         {
             return records.labelName( (int) block );
         }
-
-        @Override
-        DynamicRecord changed( DiffRecordAccess records, long id )
-        {
-            return null; // never needed
-        }
     },
     NODE_LABEL( RecordType.NODE_DYNAMIC_LABEL )
     {
@@ -117,12 +80,6 @@ public enum DynamicStore
         RecordReference<DynamicRecord> lookup( RecordAccess records, long block )
         {
             return records.nodeLabels( block );
-        }
-
-        @Override
-        DynamicRecord changed( DiffRecordAccess records, long id )
-        {
-            return null; // never needed (?)
         }
     };
 
@@ -134,6 +91,4 @@ public enum DynamicStore
     }
 
     abstract RecordReference<DynamicRecord> lookup(RecordAccess records, long block);
-
-    abstract DynamicRecord changed( DiffRecordAccess records, long id );
 }

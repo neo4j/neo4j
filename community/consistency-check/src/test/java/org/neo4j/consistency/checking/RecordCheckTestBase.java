@@ -19,10 +19,13 @@
  */
 package org.neo4j.consistency.checking;
 
+import org.neo4j.consistency.checking.full.MandatoryProperties;
+import org.neo4j.consistency.checking.full.MultiPassStore;
+import org.neo4j.consistency.checking.full.Stage;
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordAccessStub;
+import org.neo4j.function.Functions;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -45,12 +48,29 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
     public static final int NONE = -1;
     protected final CHECKER checker;
     private final Class<REPORT> reportClass;
-    protected final RecordAccessStub records = new RecordAccessStub();
+    protected RecordAccessStub records;
+    private Stage stage;
 
-    RecordCheckTestBase( CHECKER checker, Class<REPORT> reportClass )
+    RecordCheckTestBase( CHECKER checker, Class<REPORT> reportClass, int[] cacheFields, MultiPassStore... storesToCheck )
+    {
+        this( checker, reportClass, new Stage.Adapter( false, true, "Test stage", cacheFields ), storesToCheck );
+    }
+
+    RecordCheckTestBase( CHECKER checker, Class<REPORT> reportClass, Stage stage, MultiPassStore... storesToCheck )
     {
         this.checker = checker;
         this.reportClass = reportClass;
+        this.stage = stage;
+        initialize( storesToCheck );
+    }
+
+    protected void initialize( MultiPassStore... storesToCheck )
+    {
+        this.records = new RecordAccessStub( stage, storesToCheck );
+        if ( stage.getCacheSlotSizes().length > 0 )
+        {
+            records.cacheAccess().setCacheSlotSizes( stage.getCacheSlotSizes() );
+        }
     }
 
     public static PrimitiveRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> dummyNodeCheck()
@@ -61,13 +81,6 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
             public void check( NodeRecord record,
                                CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine,
                                RecordAccess records )
-            {
-            }
-
-            @Override
-            public void checkChange( NodeRecord oldRecord, NodeRecord newRecord,
-                                     CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine,
-                                     DiffRecordAccess records )
             {
             }
         };
@@ -83,13 +96,6 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
                                RecordAccess records )
             {
             }
-
-            @Override
-            public void checkChange( RelationshipRecord oldRecord, RelationshipRecord newRecord,
-                                     CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> engine,
-                                     DiffRecordAccess records )
-            {
-            }
         };
     }
 
@@ -103,31 +109,18 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
                                RecordAccess records )
             {
             }
-
-            @Override
-            public void checkChange( PropertyRecord oldRecord, PropertyRecord newRecord,
-                                     CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
-                                     DiffRecordAccess records )
-            {
-            }
         };
     }
 
     public static PrimitiveRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> dummyNeoStoreCheck()
     {
-        return new NeoStoreCheck()
+        return new NeoStoreCheck( new PropertyChain<NeoStoreRecord,ConsistencyReport.NeoStoreConsistencyReport>(
+                Functions.<NeoStoreRecord,MandatoryProperties.Check<NeoStoreRecord,ConsistencyReport.NeoStoreConsistencyReport>>nullFunction() ) )
         {
             @Override
             public void check( NeoStoreRecord record,
                                CheckerEngine<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> engine,
                                RecordAccess records )
-            {
-            }
-
-            @Override
-            public void checkChange( NeoStoreRecord oldRecord, NeoStoreRecord newRecord,
-                                     CheckerEngine<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> engine,
-                                     DiffRecordAccess records )
             {
             }
         };
@@ -144,13 +137,6 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
                                RecordAccess records )
             {
             }
-
-            @Override
-            public void checkChange( DynamicRecord oldRecord, DynamicRecord newRecord,
-                                     CheckerEngine<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> engine,
-                                     DiffRecordAccess records )
-            {
-            }
         };
     }
 
@@ -162,13 +148,6 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
             public void check( PropertyKeyTokenRecord record,
                                CheckerEngine<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> engine,
                                RecordAccess records )
-            {
-            }
-
-            @Override
-            public void checkChange( PropertyKeyTokenRecord oldRecord, PropertyKeyTokenRecord newRecord,
-                                     CheckerEngine<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> engine,
-                                     DiffRecordAccess records )
             {
             }
         };
@@ -184,19 +163,17 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
                                RecordAccess records )
             {
             }
-
-            @Override
-            public void checkChange( RelationshipTypeTokenRecord oldRecord, RelationshipTypeTokenRecord newRecord,
-                                     CheckerEngine<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> engine,
-                                     DiffRecordAccess records )
-            {
-            }
         };
     }
 
-    final REPORT check( RECORD record )
+    REPORT check( RECORD record )
     {
         return check( reportClass, checker, record, records );
+    }
+
+    void check( REPORT report, RECORD record )
+    {
+        check( report, checker, record, records );
     }
 
     final REPORT check( CHECKER externalChecker, RECORD record )
@@ -204,29 +181,21 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         return check( reportClass, externalChecker, record, records );
     }
 
-    final REPORT checkChange( RECORD oldRecord, RECORD newRecord )
-    {
-        return checkChange( reportClass, checker, oldRecord, newRecord, records );
-    }
-
     public static <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
     REPORT check( Class<REPORT> reportClass, RecordCheck<RECORD, REPORT> checker, RECORD record,
                   final RecordAccessStub records )
     {
         REPORT report = mock( reportClass );
-        checker.check( record, records.engine( record, report ), records );
-        records.checkDeferred();
+        check( report, checker, record, records );
         return report;
     }
 
-    static <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
-    REPORT checkChange( Class<REPORT> reportClass, RecordCheck<RECORD, REPORT> checker,
-                        RECORD oldRecord, RECORD newRecord, final RecordAccessStub records )
+    public static <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
+    void check( REPORT report, RecordCheck<RECORD, REPORT> checker, RECORD record,
+                  final RecordAccessStub records )
     {
-        REPORT report = mock( reportClass );
-        checker.checkChange( oldRecord, newRecord, records.engine( oldRecord, newRecord, report ), records );
+        checker.check( record, records.engine( record, report ), records );
         records.checkDeferred();
-        return report;
     }
 
     <R extends AbstractBaseRecord> R addChange( R oldRecord, R newRecord )

@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.spi.v2_3
 
+import java.net.URL
+
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
 import org.neo4j.cypher.InternalException
@@ -32,15 +34,14 @@ import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, Bound, EntityNotFoundException, FailedIndexException}
 import org.neo4j.graphdb.DynamicRelationshipType._
 import org.neo4j.graphdb._
-import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.traversal.{TraversalDescription, Evaluators}
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.kernel.security.URLAccessValidationError
 import org.neo4j.kernel.{Uniqueness, Traversal, GraphDatabaseAPI}
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
-import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.{RelationshipProxy, ThreadToStatementContextBridge}
 import org.neo4j.tooling.GlobalGraphOperations
@@ -62,6 +63,8 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   val relationshipActions = graph.getDependencyResolver.resolveDependency(classOf[RelationshipProxy.RelationshipActions])
 
   def isOpen = open
+
+  private val protocolWhiteList: Seq[String] = Seq("file", "http", "https", "ftp")
 
   def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (statement.dataWriteOperations().nodeAddLabel(node, labelId)) count + 1 else count
@@ -111,6 +114,11 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   def createRelationship(start: Node, end: Node, relType: String) =
     start.createRelationshipTo(end, withName(relType))
+
+  def createRelationship(start: Long, end: Long, relType: Int) = {
+    val relId = statement.dataWriteOperations().relationshipCreate(relType, start, end)
+    relationshipOps.getById(relId)
+  }
 
   def getOrCreateRelTypeId(relTypeName: String): Int =
     statement.tokenWriteOperations().relationshipTypeGetOrCreateForName(relTypeName)
@@ -449,9 +457,13 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
     statement.schemaWriteOperations().constraintDrop(new RelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
-  override def hasLocalFileAccess: Boolean = graph match {
-    case db: GraphDatabaseAPI => db.getDependencyResolver.resolveDependency(classOf[Config]).get(GraphDatabaseSettings.allow_file_urls)
-    case _ => true
+  override def getImportURL(url: URL): Either[String,URL] = graph match {
+    case db: GraphDatabaseAPI =>
+      try {
+        Right(db.validateURLAccess(url))
+      } catch {
+        case error: URLAccessValidationError => Left(error.getMessage)
+      }
   }
 
   def relationshipStartNode(rel: Relationship) = rel.getStartNode

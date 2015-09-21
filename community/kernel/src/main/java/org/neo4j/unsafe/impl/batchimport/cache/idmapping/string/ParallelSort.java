@@ -88,7 +88,7 @@ public class ParallelSort
         }
         try
         {
-            sortWorkers.awaitAndThrowOnError();
+            sortWorkers.awaitAndThrowOnError( RuntimeException.class );
         }
         finally
         {

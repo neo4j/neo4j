@@ -33,7 +33,7 @@ trait Clauses extends Parser
   def LoadCSV: Rule1[ast.LoadCSV] = rule("LOAD CSV") {
       keyword("LOAD CSV") ~~
       group(keyword("WITH HEADERS") ~ push(true) | push(false)) ~~
-      keyword("FROM") ~~ (StringLiteral | Parameter) ~~
+      keyword("FROM") ~~ (Expression) ~~
       keyword("AS") ~~ Identifier ~~
       optional(keyword("FIELDTERMINATOR") ~~ StringLiteral) ~~>>
       (ast.LoadCSV(_, _, _, _))
@@ -161,10 +161,10 @@ trait Clauses extends Parser
   )
 
   private def Skip: Rule1[ast.Skip] = rule("SKIP") {
-    group(keyword("SKIP") ~~ (UnsignedIntegerLiteral | Parameter)) ~~>> (ast.Skip(_))
+    group(keyword("SKIP") ~~ Expression) ~~>> (ast.Skip(_))
   }
 
   private def Limit: Rule1[ast.Limit] = rule("LIMIT") {
-    group(keyword("LIMIT") ~~ (UnsignedIntegerLiteral | Parameter)) ~~>> (ast.Limit(_))
+    group(keyword("LIMIT") ~~ Expression) ~~>> (ast.Limit(_))
   }
 }

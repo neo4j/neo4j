@@ -22,8 +22,7 @@ package org.neo4j.perftest.enterprise.ccheck;
 import java.io.File;
 import java.util.Map;
 
-import org.neo4j.consistency.ConsistencyCheckSettings;
-import org.neo4j.consistency.checking.full.TaskExecutionOrder;
+import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -49,6 +48,7 @@ import org.neo4j.perftest.enterprise.util.Configuration;
 import org.neo4j.perftest.enterprise.util.Parameters;
 import org.neo4j.perftest.enterprise.util.Setting;
 
+import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
 import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
 import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.param;
@@ -62,8 +62,6 @@ public class ConsistencyPerformanceCheck
     static final Setting<Boolean> generate_graph = booleanSetting( "generate_graph", false );
     static final Setting<String> report_file = stringSetting( "report_file", "target/report.json" );
     static final Setting<CheckerVersion> checker_version = enumSetting( "checker_version", CheckerVersion.NEW );
-    static final Setting<TaskExecutionOrder> execution_order =
-            enumSetting( "execution_order", TaskExecutionOrder.SINGLE_THREADED );
     static final Setting<Boolean> wait_before_check = booleanSetting( "wait_before_check", false );
     static final Setting<String> pagecache_memory =
             stringSetting( "dbms.pagecache.memory", "2G" );
@@ -129,7 +127,8 @@ public class ConsistencyPerformanceCheck
 
         try
         {
-            configuration.get( checker_version ).run( progressMonitor, directStoreAccess, tuningConfiguration );
+            configuration.get( checker_version ).run( progressMonitor, directStoreAccess, tuningConfiguration,
+                    Statistics.NONE, defaultConsistencyCheckThreadsNumber() );
         }
         finally
         {
@@ -154,7 +153,7 @@ public class ConsistencyPerformanceCheck
                 fileSystem,
                 DirectoryFactory.PERSISTENT,
                 storeDir );
-        return new DirectStoreAccess( new StoreAccess( neoStores ),
+        return new DirectStoreAccess( new StoreAccess( neoStores ).initialize(),
                 new LuceneLabelScanStoreBuilder( storeDir, neoStores, fileSystem, NullLogProvider.getInstance() ).build(), indexes );
     }
 
@@ -162,8 +161,7 @@ public class ConsistencyPerformanceCheck
     {
         Map<String, String> passedOnConfiguration = passOn( configuration,
                 param( GraphDatabaseSettings.pagecache_memory, pagecache_memory ),
-                param( GraphDatabaseSettings.mapped_memory_page_size, mapped_memory_page_size ),
-                param( ConsistencyCheckSettings.consistency_check_execution_order, execution_order ) );
+                param( GraphDatabaseSettings.mapped_memory_page_size, mapped_memory_page_size ) );
 
         return new Config( passedOnConfiguration, GraphDatabaseSettings.class );
     }

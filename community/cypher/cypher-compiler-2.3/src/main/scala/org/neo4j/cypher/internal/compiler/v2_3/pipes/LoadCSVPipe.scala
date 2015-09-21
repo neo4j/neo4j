@@ -41,24 +41,21 @@ case class LoadCSVPipe(source: Pipe,
                   identifier: String,
                   fieldTerminator: Option[String])(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) {
-  private val protocolWhiteList: Seq[String] = Seq("file", "http", "https", "ftp")
 
-  protected def checkURL(urlString: String, context: QueryContext): URL = {
+  protected def getImportURL(urlString: String, context: QueryContext): URL = {
     val url: URL = try {
       new URL(urlString)
     } catch {
       case e: java.net.MalformedURLException =>
-        throw new LoadExternalResourceException(s"Invalid URL specified (${e.getMessage})", null)
+        throw new LoadExternalResourceException(s"Invalid URL '$urlString': ${e.getMessage}")
     }
 
-    val protocol = url.getProtocol
-    if (!protocolWhiteList.contains(protocol)) {
-      throw new LoadExternalResourceException(s"Unsupported URL protocol: $protocol", null)
+    context.getImportURL(url) match {
+      case Left(error) =>
+        throw new LoadExternalResourceException(s"Cannot load from URL '$urlString': $error")
+      case Right(urlToLoad) =>
+        urlToLoad
     }
-    if (url.getProtocol == "file" && !context.hasLocalFileAccess) {
-      throw new LoadExternalResourceException("Accessing local files not allowed by the configuration")
-    }
-    url
   }
 
   //Uses an ArrayBackedMap to store header-to-values mapping
@@ -104,7 +101,7 @@ case class LoadCSVPipe(source: Pipe,
 
     input.flatMap(context => {
       implicit val s = state
-      val url = checkURL(urlExpression(context).asInstanceOf[String], state.query)
+      val url = getImportURL(urlExpression(context).asInstanceOf[String], state.query)
 
       val iterator: Iterator[Array[String]] = state.resources.getCsvIterator(url, fieldTerminator)
       format match {
@@ -132,4 +129,3 @@ case class LoadCSVPipe(source: Pipe,
     copy(source = head)
   }
 }
-
