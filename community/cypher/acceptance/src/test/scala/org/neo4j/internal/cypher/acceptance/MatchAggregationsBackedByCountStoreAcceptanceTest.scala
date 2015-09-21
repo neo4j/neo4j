@@ -208,6 +208,45 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
       })
   }
 
+  test("counts relationships with type, any direction and labeled source node without using count store") {
+    // Given
+    withRelationshipsModel(expectedLogicalPlan = "NodeByLabelScan",
+
+      // When
+      query = "MATCH (:User)-[r:KNOWS]-() RETURN count(r)", f = { result =>
+
+        // Then
+        result.columnAs("count(r)").toSet[Int] should equal(Set(2))
+
+      })
+  }
+
+  test("counts relationships with type, any direction and labeled destination node without using count store") {
+    // Given
+    withRelationshipsModel(expectedLogicalPlan = "NodeByLabelScan",
+
+      // When
+      query = "MATCH ()-[r:KNOWS]-(:User) RETURN count(r)", f = { result =>
+
+        // Then
+        result.columnAs("count(r)").toSet[Int] should equal(Set(2))
+
+      })
+  }
+
+  test("counts relationships with type, any direction and no labeled nodes without using count store") {
+    // Given
+    withRelationshipsModel(expectedLogicalPlan = "AllNodesScan",
+
+      // When
+      query = "MATCH ()-[r:KNOWS]-() RETURN count(r)", f = { result =>
+
+        // Then
+        result.columnAs("count(r)").toSet[Int] should equal(Set(2))
+
+      })
+  }
+
   test("counts nodes using count store considering transaction state") {
     // Given
     withModelAndTransaction(
