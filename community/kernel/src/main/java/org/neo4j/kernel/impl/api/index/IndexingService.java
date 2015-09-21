@@ -87,7 +87,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * If, however, it is {@link org.neo4j.kernel.api.index.InternalIndexState#ONLINE}, the index provider is required to
  * also guarantee that the index had been flushed to disk.
  */
-public class IndexingService extends LifecycleAdapter
+public class IndexingService extends LifecycleAdapter implements PrimitiveLongVisitor<RuntimeException>
 {
     private final IndexSamplingController samplingController;
     private final IndexProxySetup proxySetup;
@@ -401,29 +401,22 @@ public class IndexingService extends LifecycleAdapter
         indexMapRef.setIndexMap( indexMap );
     }
 
-    public void addRecoveredNodeIds( PrimitiveLongSet nodeIds )
+    @Override
+    public boolean visited( long recoveredNodeId ) throws RuntimeException
     {
         if ( state != State.NOT_STARTED )
         {
             throw new IllegalStateException(
-                    "Can't queue recovered node ids " + nodeIds + " while indexing service is " + state );
+                    "Can't queue recovered node ids " + recoveredNodeId + " while indexing service is " + state );
         }
 
-        recoveredNodeIds.addAll( nodeIds.iterator() );
+        recoveredNodeIds.add( recoveredNodeId );
+        return false;
     }
 
-    public ValidatedIndexUpdates validate( Iterable<NodePropertyUpdate> updates )
+    public ValidatedIndexUpdates validate( Iterable<NodePropertyUpdate> updates, IndexUpdateMode updateMode )
     {
-        IndexUpdateMode updateMode;
-        if ( state == State.RUNNING )
-        {
-            updateMode = IndexUpdateMode.ONLINE;
-        }
-        else if ( state == State.STARTING )
-        {
-            updateMode = IndexUpdateMode.RECOVERY;
-        }
-        else
+        if ( state != State.STARTING && state != State.RUNNING )
         {
             throw new IllegalStateException(
                     "Can't validate index updates " + toList( updates ) + " while indexing service is " + state );
@@ -546,7 +539,7 @@ public class IndexingService extends LifecycleAdapter
         monitor.applyingRecoveredData( recoveredNodeIds );
         if ( !recoveredNodeIds.isEmpty() )
         {
-            try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( IndexUpdateMode.RECOVERY ) )
+            try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( IndexUpdateMode.BATCHED ) )
             {
                 for ( IndexUpdater updater : updaterMap )
                 {
@@ -556,7 +549,7 @@ public class IndexingService extends LifecycleAdapter
 
             List<NodePropertyUpdate> recoveredUpdates = readRecoveredUpdatesFromStore();
 
-            try ( ValidatedIndexUpdates validatedUpdates = validate( recoveredUpdates ) )
+            try ( ValidatedIndexUpdates validatedUpdates = validate( recoveredUpdates, IndexUpdateMode.BATCHED ) )
             {
                 validatedUpdates.flush();
                 monitor.appliedRecoveredData( recoveredUpdates );
@@ -753,13 +746,28 @@ public class IndexingService extends LifecycleAdapter
         getIndexProxy( indexId ).validate();
     }
 
-    public void flushAll()
+    public void forceAll()
     {
         for ( IndexProxy index : indexMapRef.getAllIndexProxies() )
         {
             try
             {
                 index.force();
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( "Unable to force " + index, e );
+            }
+        }
+    }
+
+    public void flushAll()
+    {
+        for ( IndexProxy index : indexMapRef.getAllIndexProxies() )
+        {
+            try
+            {
+                index.flush();
             }
             catch ( IOException e )
             {

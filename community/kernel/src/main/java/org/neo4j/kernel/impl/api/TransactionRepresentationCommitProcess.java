@@ -52,7 +52,7 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
     public long commit( TransactionRepresentation transaction, LockGroup locks, CommitEvent commitEvent,
             TransactionApplicationMode mode ) throws TransactionFailureException
     {
-        try ( ValidatedIndexUpdates indexUpdates = validateIndexUpdates( transaction, mode ) )
+        try ( ValidatedIndexUpdates indexUpdates = validateIndexUpdates( transaction ) )
         {
             Commitment commitment = appendToLog( transaction, commitEvent );
             applyToStore( transaction, locks, commitEvent, indexUpdates, commitment, mode );
@@ -60,12 +60,12 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         }
     }
 
-    private ValidatedIndexUpdates validateIndexUpdates( TransactionRepresentation transaction,
-            TransactionApplicationMode mode ) throws TransactionFailureException
+    private ValidatedIndexUpdates validateIndexUpdates( TransactionRepresentation transaction )
+            throws TransactionFailureException
     {
         try
         {
-            return indexUpdatesValidator.validate( transaction, mode );
+            return indexUpdatesValidator.validate( transaction );
         }
         catch ( Throwable e )
         {

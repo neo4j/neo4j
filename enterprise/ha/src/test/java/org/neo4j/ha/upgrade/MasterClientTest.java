@@ -37,6 +37,7 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.com.monitor.RequestMonitor;
+import org.neo4j.com.storecopy.DefaultUnpackerDependencies;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.helpers.HostnamePort;
@@ -50,8 +51,8 @@ import org.neo4j.kernel.ha.com.master.MasterImpl.Monitor;
 import org.neo4j.kernel.ha.com.master.MasterImplTest;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
+import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
-import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
@@ -73,14 +74,12 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.DependenciesProxy;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.CleanupRule;
 
-import static java.util.Arrays.asList;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doReturn;
@@ -89,7 +88,11 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import static java.util.Arrays.asList;
+
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_RESPONSE_UNPACKER;
+import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class MasterClientTest
@@ -143,10 +146,11 @@ public class MasterClientTest
                         return new FakeCommitment( (Long) invocation.getArguments()[1], txIdStore );
                     }
                 } );
-        TransactionRepresentationStoreApplier txApplier = mock( TransactionRepresentationStoreApplier.class );
-        IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
-        when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ),
-                any( TransactionApplicationMode.class ) ) ).thenReturn( ValidatedIndexUpdates.NONE );
+        final BatchingTransactionRepresentationStoreApplier txApplier =
+                mock( BatchingTransactionRepresentationStoreApplier.class );
+        final IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
+        when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ) ) )
+                .thenReturn( ValidatedIndexUpdates.NONE );
 
         final Dependencies deps = new Dependencies();
         deps.satisfyDependencies(
@@ -160,8 +164,22 @@ public class MasterClientTest
                 indexUpdatesValidator
         );
 
-        ResponseUnpacker unpacker = initAndStart( new TransactionCommittingResponseUnpacker(
-                DependenciesProxy.dependencies( deps, TransactionCommittingResponseUnpacker.Dependencies.class ) ) );
+        TransactionCommittingResponseUnpacker.Dependencies dependencies = new DefaultUnpackerDependencies( deps )
+        {
+            @Override
+            public BatchingTransactionRepresentationStoreApplier transactionRepresentationStoreApplier()
+            {
+                return txApplier;
+            }
+
+            @Override
+            public IndexUpdatesValidator indexUpdatesValidator()
+            {
+                return indexUpdatesValidator;
+            }
+        };
+        ResponseUnpacker unpacker = initAndStart( new TransactionCommittingResponseUnpacker( dependencies,
+                DEFAULT_BATCH_SIZE) );
 
         MasterClient masterClient = cleanupRule.add( newMasterClient214( StoreId.DEFAULT, unpacker ) );
 

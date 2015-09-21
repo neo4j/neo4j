@@ -30,7 +30,6 @@ import java.util.List;
 
 import org.neo4j.cursor.GenericCursor;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -659,7 +658,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         long blockId;
         int noNextBlock;
 
-        private DynamicRecord record = new DynamicRecord( blockId );
+        private final DynamicRecord record = new DynamicRecord( blockId );
 
         public void init( long startBlockId, PageCursor cursor, boolean readBothHeaderAndData )
         {

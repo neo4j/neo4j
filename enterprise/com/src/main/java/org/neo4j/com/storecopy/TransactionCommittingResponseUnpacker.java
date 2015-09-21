@@ -27,6 +27,8 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.function.Supplier;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -58,25 +60,24 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
 {
     public interface Dependencies
     {
-        TransactionRepresentationStoreApplier transactionRepresentationStoreApplier();
+        BatchingTransactionRepresentationStoreApplier transactionRepresentationStoreApplier();
 
         IndexUpdatesValidator indexUpdatesValidator();
-
-        TransactionIdStore transactionIdStore();
 
         LogFile logFile();
 
         LogRotation logRotation();
+
+        KernelHealth kernelHealth();
 
         // Components that change during role switches
 
         Supplier<TransactionObligationFulfiller> transactionObligationFulfiller();
 
         Supplier<TransactionAppender> transactionAppender();
-
     }
 
-    private static final int DEFAULT_BATCH_SIZE = 100;
+    public static final int DEFAULT_BATCH_SIZE = 100;
     private final TransactionQueue transactionQueue;
     // Visits all queued transactions, committing them
     private final TransactionVisitor batchCommitter = new TransactionVisitor()
@@ -102,17 +103,23 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
             long transactionId = transaction.getCommitEntry().getTxId();
             Commitment commitment = commitmentAccess.get();
             TransactionRepresentation representation = transaction.getTransactionRepresentation();
-            try
+            commitment.publishAsCommitted();
+            try ( LockGroup locks = new LockGroup();
+                  ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate( representation ) )
             {
-                commitment.publishAsCommitted();
-                try ( LockGroup locks = new LockGroup();
-                      ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate( representation, EXTERNAL ) )
-                {
-                    storeApplier.apply( representation, indexUpdates, locks, transactionId, EXTERNAL );
-                    handler.accept( transaction );
-                }
+                storeApplier.apply( representation, indexUpdates, locks, transactionId, EXTERNAL );
+                handler.accept( transaction );
             }
-            finally
+        }
+    };
+    private final TransactionVisitor batchCloser = new TransactionVisitor()
+    {
+        @Override
+        public void visit( CommittedTransactionRepresentation transaction, TxHandler handler,
+                Access<Commitment> commitmentAccess ) throws IOException
+        {
+            Commitment commitment = commitmentAccess.get();
+            if ( commitment.markedAsCommitted() )
             {
                 commitment.publishAsApplied();
             }
@@ -121,13 +128,13 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
 
     private final Dependencies dependencies;
     private TransactionAppender appender;
-    private TransactionRepresentationStoreApplier storeApplier;
+    private BatchingTransactionRepresentationStoreApplier storeApplier;
     private IndexUpdatesValidator indexUpdatesValidator;
-    private TransactionIdStore transactionIdStore;
     private TransactionObligationFulfiller obligationFulfiller;
     private LogFile logFile;
     private LogRotation logRotation;
-    private volatile boolean stopped = false;
+    private volatile boolean stopped;
+    private KernelHealth kernelHealth;
 
     public TransactionCommittingResponseUnpacker( Dependencies dependencies )
     {
@@ -140,7 +147,8 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         this.transactionQueue = new TransactionQueue( maxBatchSize );
     }
 
-    private static TransactionObligationFulfiller resolveTransactionObligationFulfiller( Supplier<TransactionObligationFulfiller> supplier)
+    private static TransactionObligationFulfiller resolveTransactionObligationFulfiller(
+            Supplier<TransactionObligationFulfiller> supplier)
     {
         try
         {
@@ -198,8 +206,31 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
                     // changed before that change would have ended up in the log, it would be fine sine as a slave
                     // you would pull that transaction again anyhow before making changes to (after reading) any record.
                     appender.force();
-                    transactionQueue.accept( batchApplier );
+                    try
+                    {
+                        // Apply all transactions to the store. Only apply, i.e. mark as committed, not closed.
+                        // We mark as closed below.
+                        transactionQueue.accept( batchApplier );
+                        // Ensure that all changes are flushed to the store, we're doing some batching of transactions
+                        // here so some shortcuts are taken in places. Although now comes the time where we must
+                        // ensure that all pending changes are applied and flushed properly.
+                        storeApplier.closeBatch();
+                    }
+                    finally
+                    {
+                        // Mark the applied transactions as closed. We must do this as a separate step after
+                        // applying them, with a closeBatch() call in between, otherwise there might be
+                        // threads waiting for transaction obligations to be fulfilled and since they are looking
+                        // at last closed transaction id they might get notified to continue before all data
+                        // has actually been flushed properly.
+                        transactionQueue.accept( batchCloser );
+                    }
                 }
+            }
+            catch ( Throwable panic )
+            {
+                kernelHealth.panic( panic );
+                throw panic;
             }
             finally
             {
@@ -219,10 +250,10 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         this.appender = dependencies.transactionAppender().get();
         this.storeApplier = dependencies.transactionRepresentationStoreApplier();
         this.indexUpdatesValidator = dependencies.indexUpdatesValidator();
-        this.transactionIdStore = dependencies.transactionIdStore();
         this.obligationFulfiller = resolveTransactionObligationFulfiller( dependencies.transactionObligationFulfiller() );
         this.logFile = dependencies.logFile();
         this.logRotation = dependencies.logRotation();
+        this.kernelHealth = dependencies.kernelHealth();
         this.stopped = false;
     }
 

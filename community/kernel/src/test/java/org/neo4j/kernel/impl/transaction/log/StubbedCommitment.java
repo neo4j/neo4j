@@ -17,10 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.impl.transaction.log;
 
-public enum IndexUpdateMode
+public class StubbedCommitment implements Commitment
 {
-    ONLINE,
-    BATCHED
+    private boolean markedAsCommitted;
+
+    @Override
+    public void publishAsCommitted()
+    {
+        markedAsCommitted = true;
+    }
+
+    @Override
+    public boolean markedAsCommitted()
+    {
+        return markedAsCommitted;
+    }
+
+    @Override
+    public void publishAsApplied()
+    {
+    }
+
+    @Override
+    public long transactionId()
+    {
+        throw new UnsupportedOperationException();
+    }
 }

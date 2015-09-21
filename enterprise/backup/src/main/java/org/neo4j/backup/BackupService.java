@@ -71,6 +71,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.com.RequestContext.anonymous;
+import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
 /**
@@ -313,7 +314,8 @@ class BackupService
 
         ProgressTxHandler handler = new ProgressTxHandler();
         TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
-                DependenciesProxy.dependencies(resolver, TransactionCommittingResponseUnpacker.Dependencies.class) );
+                DependenciesProxy.dependencies( resolver, TransactionCommittingResponseUnpacker.Dependencies.class ),
+                DEFAULT_BATCH_SIZE );
 
         Monitors monitors = resolver.resolveDependency( Monitors.class );
         LogProvider logProvider = resolver.resolveDependency( LogService.class ).getInternalLogProvider();

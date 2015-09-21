@@ -38,7 +38,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
 /**
- * WHat is a tentative constraint index proxy? Well, the way we build uniqueness constraints is as follows:
+ * What is a tentative constraint index proxy? Well, the way we build uniqueness constraints is as follows:
  * <ol>
  * <li>Begin a transaction T, which will be the "parent" transaction in this process</li>
  * <li>Execute a mini transaction Tt which will create the index rule to start the index population</li>
@@ -104,7 +104,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
                     }
                 };
 
-            case RECOVERY:
+            case BATCHED:
                 return super.newUpdater( mode );
 
             default:

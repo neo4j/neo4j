@@ -43,7 +43,7 @@ public class StoreFlusher
 
     public void forceEverything()
     {
-        indexingService.flushAll();
+        indexingService.forceAll();
         labelScanStore.force();
         for ( IndexImplementation index : indexProviders )
         {
