@@ -22,18 +22,19 @@ package org.neo4j.cypher.docgen.tooling
 import java.io._
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.spi.v2_3.TransactionBoundQueryContext
 import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.test.TestGraphDatabaseFactory
-import org.scalatest.{Assertions, FunSuiteLike, Matchers}
+import org.scalatest.{Assertions, Matchers}
 
 
 /**
  * Base class for documentation classes
  */
-trait DocumentingTest extends FunSuiteLike with Assertions with Matchers with GraphIcing {
+trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with GraphIcing {
   /**
    * Make sure this is implemented as a def and not a val. Since we are using it in the trait constructor,
    * and that runs before the class constructor, if it is a val, it will not have been initialised when we need it
@@ -62,6 +63,10 @@ trait DocumentingTest extends FunSuiteLike with Assertions with Matchers with Gr
     val document: Document = contentAndResultMerger(doc, result)
 
     val asciiDocTree = document.asciiDoc
+
+    val dir = new File(s"target/docs/dev/ql/");
+    if (!dir.exists())
+      dir.mkdirs()
 
     val file = new File(s"target/docs/dev/ql/${doc.id}.adoc")
     val pw = new PrintWriter(file)
