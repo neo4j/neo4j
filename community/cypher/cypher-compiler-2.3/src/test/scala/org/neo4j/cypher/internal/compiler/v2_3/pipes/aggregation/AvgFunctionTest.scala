@@ -19,8 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes.aggregation
 
+import java.math.MathContext
+
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+
+import scala.util.Random
 
 class AvgFunctionTest extends CypherFunSuite with AggregateTest {
   def createAggregator(inner: Expression) = new AvgFunction(inner)
@@ -65,5 +69,17 @@ class AvgFunctionTest extends CypherFunSuite with AggregateTest {
     val result = aggregateOn(3, null, 6)
 
      result should equal(4.5)
+  }
+
+  test("noOverflowOnLongListOfLargeNumbers") {
+    val result = aggregateOn(Long.MaxValue / 2, Long.MaxValue / 2, Long.MaxValue / 2)
+
+      result should equal(Long.MaxValue / 2)
+  }
+
+  test("onEmpty") {
+    val result = aggregateOn()
+
+      Option(result) should be (None)
   }
 }

@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes.aggregation
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.TypeSafeMathSupport
-import pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 
 class AvgFunction(val value: Expression)
   extends AggregationFunction
@@ -32,18 +32,26 @@ class AvgFunction(val value: Expression)
   def name = "AVG"
 
   private var count: Int = 0
-  private var sofar: Any = 0
+  // avg computation is performed using Kahan's summation algorithm
+  private var sum = 0d
+  private var c = 0d
 
   def result =
-    if (count > 0)
-      divide(sofar, count.toDouble)
-    else
+    if (count > 0) {
+      sum
+    } else {
       null
+    }
 
   def apply(data: ExecutionContext)(implicit state: QueryState) {
     actOnNumber(value(data), (number) => {
       count += 1
-      sofar = plus(sofar, number)
+      val add = (number.doubleValue() - sum) / count.toDouble
+
+      val y = add - c
+      val t = sum + y
+      c = (t - sum) - y
+      sum = t
     })
   }
 }
