@@ -144,9 +144,15 @@ public class CheckPointSchedulerTest
             }
 
             @Override
+            public long tryCheckPoint() throws IOException
+            {
+                throw new RuntimeException( "this should have not been called" );
+            }
+
+            @Override
             public long forceCheckPoint() throws IOException
             {
-                return 42;
+                throw new RuntimeException( "this should have not been called" );
             }
         };
 
