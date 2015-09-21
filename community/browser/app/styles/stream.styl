@@ -15,7 +15,7 @@
 
   .frame
     overflow: hidden
-
+  
     .btn.btn-small
       background: #FFF
 
@@ -191,6 +191,13 @@
             min-height: (frame-min-height - middlebar-height)
             overflow: auto
             background: #fff
+          &.ascii-result-table
+            article
+              height: (frame-result-height - middlebar-height)
+              .ascii-table
+                overflow: visible
+                word-wrap: normal
+                background: none
 
         .view-result-plan
           background-color: #F9FBFD
@@ -288,6 +295,35 @@
         border-top: 1px solid #c8cbd2
         height: 39px
         line-height: 39px
+
+.frame-slider-wrapper
+  position: absolute
+  top: 6px
+  right: 20px
+  width: 225px
+  span
+    color: #9b9da2
+    text-transform: uppercase
+    font-weight: bold
+    font-size: 11px
+  .frame-slider
+    position: absolute
+    top: 0
+    right: 0
+    width: 100px
+    .slider.slider-horizontal 
+      width: 100%
+      .slider-track
+        margin-left: 5px
+        height: 4px
+        margin-top:  -2px
+    .slider-handle
+      background: RGBA(82, 88, 100, 1)
+      width: 10px
+      height: 10px
+      margin-top: -3px
+      &:hover
+          background: #5DADE2
 
 .frame-notifications
   width: 30%
