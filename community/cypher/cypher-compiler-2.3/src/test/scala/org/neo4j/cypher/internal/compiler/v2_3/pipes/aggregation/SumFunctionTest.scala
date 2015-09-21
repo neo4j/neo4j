@@ -71,4 +71,19 @@ class SumFunctionTest extends CypherFunSuite with AggregateTest {
   test("noNumberValuesThrowAnException") {
     intercept[CypherTypeException](aggregateOn(1, "wut"))
   }
+
+  test("intOverflowTransformsSumToLong") {
+    val halfInt= Int.MaxValue
+    val result = aggregateOn(halfInt, halfInt, halfInt)
+    val expected = 3L * halfInt
+    result should equal(expected)
+  }
+
+  test("typesArentUnnecessaryWidened") {
+    val thirdOfMaxInt: Int = Int.MaxValue / 3
+    val result = aggregateOn(thirdOfMaxInt, thirdOfMaxInt)
+    val expected = thirdOfMaxInt + thirdOfMaxInt
+    result should equal(expected)
+    result shouldBe a [java.lang.Integer]
+  }
 }
