@@ -33,6 +33,12 @@ o Replaced use of logback for internal logging with neo4j-logging API
 o Allow GraphDatabaseFactory to accept a LogProvider for user logging, allowing
   programatic customization of user log output.
 
+2.2.6
+-----
+o Fixes an issue where label updates where supplied unordered during batch import
+  when deduplicating nodes. This issue could prevent any import containing duplicate
+  input ids from completing successfully.
+
 2.2.5
 -----
 o Adds timeout for log rotation
