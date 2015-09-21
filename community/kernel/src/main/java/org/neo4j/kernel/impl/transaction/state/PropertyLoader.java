@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.state;
 import java.util.Collection;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -37,12 +38,12 @@ public class PropertyLoader
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
     private final PropertyStore propertyStore;
-    private final NeoStores neoStores;
+    private final MetaDataStore metaDataStore;
 
     public PropertyLoader( NeoStores neoStores )
     {
-        this.neoStores = neoStores;
         this.nodeStore = neoStores.getNodeStore();
+        this.metaDataStore = neoStores.getMetaDataStore();
         this.relationshipStore = neoStores.getRelationshipStore();
         this.propertyStore = neoStores.getPropertyStore();
     }
@@ -68,7 +69,7 @@ public class PropertyLoader
 
     public <RECEIVER extends PropertyReceiver> RECEIVER graphLoadProperties( RECEIVER records )
     {
-        return loadProperties( neoStores.getMetaDataStore().asRecord().getNextProp(), records );
+        return loadProperties( metaDataStore.asRecord().getNextProp(), records );
     }
 
     private <RECEIVER extends PropertyReceiver> RECEIVER loadProperties( long nextProp, RECEIVER receiver )
