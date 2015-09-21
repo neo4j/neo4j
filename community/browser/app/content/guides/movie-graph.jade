@@ -675,15 +675,15 @@ article.guide
         p.lead Extend Tom Hanks co-actors, to find co-co-actors who haven't work with Tom Hanks...
         figure
           pre.pre-scrollable.code.runnable.
-            MATCH (tom:Person {name:"Tom Hanks"})-[:ACTED_IN]->(m)<-[:ACTED_IN]-(coActors)
-            MATCH (coActors)-[:ACTED_IN]->(m2)<-[:ACTED_IN]-(cocoActors)
+            MATCH (tom:Person {name:"Tom Hanks"})-[:ACTED_IN]->(m)<-[:ACTED_IN]-(coActors),
+                  (coActors)-[:ACTED_IN]->(m2)<-[:ACTED_IN]-(cocoActors)
             WHERE NOT (tom)-[:ACTED_IN]->(m2)
             RETURN cocoActors.name AS Recommended, count(*) AS Strength ORDER BY Strength DESC
         p.lead Find someone to introduce Tom Hanks to Tom Cruise
         figure
           pre.pre-scrollable.code.runnable.
-            MATCH (tom:Person {name:"Tom Hanks"})-[:ACTED_IN]->(m)<-[:ACTED_IN]-(coActors)
-            MATCH (coActors)-[:ACTED_IN]->(m2)<-[:ACTED_IN]-(cruise:Person {name:"Tom Cruise"})
+            MATCH (tom:Person {name:"Tom Hanks"})-[:ACTED_IN]->(m)<-[:ACTED_IN]-(coActors),
+                  (coActors)-[:ACTED_IN]->(m2)<-[:ACTED_IN]-(cruise:Person {name:"Tom Cruise"})
             RETURN tom, m, coActors, m2, cruise
     slide.row-fluid
       .col-sm-3
@@ -705,7 +705,7 @@ article.guide
         p.lead Delete all Movie and Person nodes, and their relationships
         figure
           pre.pre-scrollable.code.runnable.
-            MATCH (a:Person) MATCH (m:Movie) OPTIONAL MATCH (a)-[r1]-() OPTIONAL MATCH (m)-[r2]-() DELETE a,r1,m,r2
+            MATCH (a:Person),(m:Movie) OPTIONAL MATCH (a)-[r1]-(), (m)-[r2]-() DELETE a,r1,m,r2
         p.lead Prove that the Movie Graph is gone
         figure
           pre.pre-scrollable.code.runnable.
