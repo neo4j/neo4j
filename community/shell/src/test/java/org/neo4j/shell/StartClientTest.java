@@ -28,20 +28,33 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.Serializable;
+import java.rmi.RemoteException;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.Settings;
 import org.neo4j.shell.impl.AbstractClient;
+import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.Mute;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyMap;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class StartClientTest
 {
+
+    @Rule
+    public Mute mute = Mute.muteAll();
+
     @Rule
     public ImpermanentDatabaseRule db = new ImpermanentDatabaseRule()
     {
@@ -127,6 +140,36 @@ public class StartClientTest
 
         // Then we should get a warning
         assertThat( output, not( containsString( AbstractClient.WARN_UNTERMINATED_INPUT ) ) );
+    }
+
+    @Test
+    public void testShellCloseAfterCommandExecution() throws Exception
+    {
+        PrintStream out = mock( PrintStream.class );
+        PrintStream err = mock( PrintStream.class );
+        CtrlCHandler ctrlCHandler = mock( CtrlCHandler.class );
+        final GraphDatabaseShellServer databaseShellServer = mock( GraphDatabaseShellServer.class );
+        when( databaseShellServer.welcome( anyMap() ) )
+                .thenReturn( new Welcome( "", 1, "" ) );
+        when( databaseShellServer.interpretLine( any( Serializable.class ), any( String.class ), any( Output.class ) ) )
+                .thenReturn( new Response( "", Continuation.INPUT_COMPLETE ) );
+
+        StartClient startClient = new StartClient( out, err )
+        {
+            @Override
+            protected GraphDatabaseShellServer getGraphDatabaseShellServer( String dbPath, boolean readOnly,
+                    String configFile ) throws RemoteException
+            {
+                return databaseShellServer;
+            }
+        };
+
+        // when
+        startClient.start( new String[]{"-path", db.getGraphDatabaseAPI().getStoreDir(),
+                "-c", "CREATE (n {foo:'bar'});"}, ctrlCHandler );
+
+        // verify
+        verify( databaseShellServer ).shutdown();
     }
 
     private String runAndCaptureOutput( String[] arguments )

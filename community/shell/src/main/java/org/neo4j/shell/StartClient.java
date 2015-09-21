@@ -112,7 +112,8 @@ public class StartClient
     private final PrintStream out;
     private final PrintStream err;
 
-    private StartClient( PrintStream out, PrintStream err )
+    // vivible for testing
+    StartClient( PrintStream out, PrintStream err )
     {
         this.out = out;
         this.err = err;
@@ -140,7 +141,8 @@ public class StartClient
         }
     }
 
-    private void start( String[] arguments, CtrlCHandler signalHandler )
+    // visible for testing
+    void start( String[] arguments, CtrlCHandler signalHandler )
     {
         Args args = Args.withFlags( ARG_READONLY ).parse( arguments );
         if ( args.has( "?" ) || args.has( "h" ) || args.has( "help" ) || args.has( "usage" ) )
@@ -254,7 +256,7 @@ public class StartClient
             CtrlCHandler signalHandler ) throws Exception
     {
         String configFile = args.get( ARG_CONFIG, null );
-        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( dbPath, readOnly, configFile );
+        final GraphDatabaseShellServer server = getGraphDatabaseShellServer( dbPath, readOnly, configFile );
         Runtime.getRuntime().addShutdownHook( new Thread()
         {
             @Override
@@ -274,11 +276,19 @@ public class StartClient
         shutdownIfNecessary( server );
     }
 
+
+    protected GraphDatabaseShellServer getGraphDatabaseShellServer( String dbPath, boolean readOnly, String configFile )
+            throws RemoteException
+    {
+        return new GraphDatabaseShellServer( dbPath, readOnly, configFile );
+    }
+
+
     private void shutdownIfNecessary( ShellServer server )
     {
         try
         {
-            if ( !hasBeenShutdown.compareAndSet( false, true ) )
+            if ( hasBeenShutdown.compareAndSet( false, true ) )
             {
                 server.shutdown();
             }
