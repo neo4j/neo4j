@@ -29,11 +29,23 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputId
 
 import static java.lang.String.format;
 import static java.util.Arrays.copyOf;
+import static java.util.Arrays.sort;
 
 import static org.neo4j.helpers.Exceptions.withMessage;
 
 public class BadCollector implements Collector
 {
+    /**
+     * Introduced to avoid creating an exception for every reported bad thing, since it can be
+     * quite the performance hogger for scenarios where there are many many bad things to collect.
+     */
+    private interface ProblemReporter
+    {
+        String message();
+
+        InputException exception();
+    }
+
     public static final int BAD_RELATIONSHIPS = 0x1;
     public static final int DUPLICATE_NODES = 0x2;
     public static final int COLLECT_ALL = BAD_RELATIONSHIPS | DUPLICATE_NODES;
@@ -42,7 +54,7 @@ public class BadCollector implements Collector
     private final int tolerance;
     private final int collect;
     private long[] leftOverDuplicateNodeIds = new long[10];
-    private int leftOverDuplicateNodeIdsCursor = 0;
+    private int leftOverDuplicateNodeIdsCursor;
 
     // volatile since one importer thread calls collect(), where this value is incremented and later the "main"
     // thread calls badEntries() to get a count.
@@ -56,16 +68,44 @@ public class BadCollector implements Collector
     }
 
     @Override
-    public void collectBadRelationship( InputRelationship relationship, Object specificValue )
+    public void collectBadRelationship( final InputRelationship relationship, final Object specificValue )
     {
-        checkTolerance( BAD_RELATIONSHIPS,
-                new InputException( format( "%s refering to missing node %s", relationship, specificValue ) ) );
+        checkTolerance( BAD_RELATIONSHIPS, new ProblemReporter()
+        {
+            private final String message = format( "%s refering to missing node %s", relationship, specificValue );
+
+            @Override
+            public String message()
+            {
+                return message;
+            }
+
+            @Override
+            public InputException exception()
+            {
+                return new InputException( message );
+            }
+        } );
     }
 
     @Override
-    public void collectDuplicateNode( Object id, long actualId, String group, String firstSource, String otherSource )
+    public void collectDuplicateNode( final Object id, long actualId, final String group,
+            final String firstSource, final String otherSource )
     {
-        checkTolerance( DUPLICATE_NODES, new DuplicateInputIdException( id, group, firstSource, otherSource ) );
+        checkTolerance( DUPLICATE_NODES, new ProblemReporter()
+        {
+            @Override
+            public String message()
+            {
+                return DuplicateInputIdException.message( id, group, firstSource, otherSource );
+            }
+
+            @Override
+            public InputException exception()
+            {
+                return new DuplicateInputIdException( id, group, firstSource, otherSource );
+            }
+        } );
 
         if ( leftOverDuplicateNodeIdsCursor == leftOverDuplicateNodeIds.length )
         {
@@ -77,7 +117,9 @@ public class BadCollector implements Collector
     @Override
     public PrimitiveLongIterator leftOverDuplicateNodesIds()
     {
-        return PrimitiveLongCollections.iterator( copyOf( leftOverDuplicateNodeIds, leftOverDuplicateNodeIdsCursor ) );
+        leftOverDuplicateNodeIds = copyOf( leftOverDuplicateNodeIds, leftOverDuplicateNodeIdsCursor );
+        sort( leftOverDuplicateNodeIds );
+        return PrimitiveLongCollections.iterator( leftOverDuplicateNodeIds );
     }
 
     @Override
@@ -97,20 +139,21 @@ public class BadCollector implements Collector
         return (collect & bit) != 0;
     }
 
-    private void checkTolerance( int bit, InputException exception )
+    private void checkTolerance( int bit, ProblemReporter report )
     {
         boolean collect = collects( bit );
         if ( collect )
         {
-            out.println( exception.getMessage() );
+            out.println( report.message() );
             badEntries++;
         }
 
         if ( !collect || badEntries > tolerance )
         {
+            InputException exception = report.exception();
             throw collect
-                    ? withMessage( exception, format( "Too many bad entries %d, where last one was: ", badEntries ) +
-                            exception.getMessage() )
+                    ? withMessage( exception, format( "Too many bad entries %d, where last one was: %s", badEntries,
+                            exception.getMessage() ) )
                     : exception;
         }
     }

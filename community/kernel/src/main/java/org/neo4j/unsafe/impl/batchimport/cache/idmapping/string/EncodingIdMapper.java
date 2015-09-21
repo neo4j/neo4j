@@ -38,6 +38,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelSort.Comparator;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
+import org.neo4j.unsafe.impl.batchimport.input.InputException;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -355,7 +356,7 @@ public class EncodingIdMapper implements IdMapper
     {
         progress.started( "DETECT" );
         long max = highestSetIndex; // excluding the last one because we compare i w/ i+1
-        int numberOfCollisions = 0;
+        long numberOfCollisions = 0;
         SameGroupDetector sameGroupDetector = new SameGroupDetector();
         for ( int i = 0; i < max; )
         {
@@ -414,8 +415,14 @@ public class EncodingIdMapper implements IdMapper
             progress.add( batch );
         }
         progress.done();
-        monitor.numberOfCollisions( numberOfCollisions );
-        return numberOfCollisions;
+
+        if ( numberOfCollisions > Integer.MAX_VALUE )
+        {
+            throw new InputException( "Too many collisions: " + numberOfCollisions );
+        }
+
+        monitor.numberOfCollisions( (int) numberOfCollisions );
+        return (int) numberOfCollisions;
     }
 
     /**
@@ -455,14 +462,16 @@ public class EncodingIdMapper implements IdMapper
                 {
                     // Store this collision input id for matching later in get()
                     long eIdFromInputId = encode( id );
-                    assert eIdFromInputId == clearCollision( eId ) : format( "Encoding mismatch during building of " +
+                    long eIdWithoutCollisionBit = clearCollision( eId );
+                    assert eIdFromInputId == eIdWithoutCollisionBit : format( "Encoding mismatch during building of " +
                             "collision info. input id %s (a %s) marked as collision where this id was encoded into " +
                             "%d when put, but was now encoded into %d",
-                            id, id.getClass().getSimpleName(), clearCollision( eId ), eIdFromInputId );
+                            id, id.getClass().getSimpleName(), eIdWithoutCollisionBit, eIdFromInputId );
                     int collisionIndex = collisionValues.size();
                     collisionValues.add( id );
                     collisionNodeIdCache.set( collisionIndex, i );
-                    radix.registerRadixOf( eId );
+                    // The base of our sorting this time is going to be node id, so register that in the radix
+                    radix.registerRadixOf( eIdWithoutCollisionBit );
                     String currentSourceDescription = ids.sourceDescription();
                     if ( lastSourceDescription == null || !currentSourceDescription.equals( lastSourceDescription ) )
                     {
@@ -478,7 +487,7 @@ public class EncodingIdMapper implements IdMapper
         progress.done();
 
         // Detect input id duplicates within the same group, with source information, line number and the works
-        detectDuplicateInputIds( radix, numberOfCollisions, sourceDescriptions, collector );
+        detectDuplicateInputIds( radix, numberOfCollisions, sourceDescriptions, collector, progress );
 
         // We won't be needing these anymore
         collisionSourceDataCache = null;
@@ -486,17 +495,18 @@ public class EncodingIdMapper implements IdMapper
     }
 
     private void detectDuplicateInputIds( Radix radix, int numberOfCollisions,
-            List<String> sourceDescriptions, Collector collector ) throws InterruptedException
+            List<String> sourceDescriptions, Collector collector, ProgressListener progress )
+                    throws InterruptedException
     {
         // We do this collision sort using ParallelSort which has the data cache and the tracker cache,
         // the tracker cache gets sorted, data cache stays intact. In the collision data case we actually
-        // have one more layer in here so we have tracker cache pointing to collisionDataIndexCache
+        // have one more layer in here so we have tracker cache pointing to collisionNodeIdCache
         // pointing to dataCache. This can be done using the ParallelSort.Comparator abstraction.
         //
         // The Comparator below takes into account dataIndex for each eId its comparing so that an extra
         // comparison based on dataIndex is done if it's comparing two equal eIds. We do this so that
-        // stretches of multiple equal eIds are sorted by dataIndex order, to be able to write an efficient
-        // duplication scanning below and to have deterministic duplication reporting.
+        // stretches of multiple equal eIds are sorted by dataIndex (i.e. node id) order,
+        // to be able to write an efficient duplication scanning below and to have deterministic duplication reporting.
         Comparator duplicateComparator = new Comparator()
         {
             @Override
@@ -526,27 +536,44 @@ public class EncodingIdMapper implements IdMapper
                 }
                 return false;
             }
+
+            @Override
+            public long dataValue( long nodeId )
+            {
+                return dataCache.get( nodeId );
+            }
         };
 
         new ParallelSort( radix, collisionNodeIdCache, numberOfCollisions-1,
-                collisionTrackerCache, processorsForSorting, ProgressListener.NONE, duplicateComparator ).run();
+                collisionTrackerCache, processorsForSorting, progress, duplicateComparator ).run();
+
         // Here we have a populated C
         // We want to detect duplicate input ids within the
         long previousEid = 0;
-        int previousGroupId = 0;
+        int previousGroupId = -1;
         SourceInformation source = new SourceInformation();
         SameInputIdDetector detector = new SameInputIdDetector();
+        progress.started( "DEDUPLICATE" );
         for ( int i = 0; i < numberOfCollisions; i++ )
         {
-            int collisionIndex = collisionTrackerCache.get( i );
-            long dataIndex = collisionNodeIdCache.get( collisionIndex );
-            long eid = dataCache.get( dataIndex );
-            long sourceInformation = collisionSourceDataCache.get( collisionIndex );
-            source.decode( sourceInformation );
-            IdGroup group = groupOf( dataIndex );
-            int groupId = group.id();
-            if ( i == 0 || (eid == previousEid && previousGroupId == groupId ) )
-            {   // Potential duplicate
+            long j = 0;
+            for ( ; j < 10_000 && i < numberOfCollisions; j++, i++ )
+            {
+                int collisionIndex = collisionTrackerCache.get( i );
+                long dataIndex = collisionNodeIdCache.get( collisionIndex );
+                long eid = dataCache.get( dataIndex );
+                long sourceInformation = collisionSourceDataCache.get( collisionIndex );
+                source.decode( sourceInformation );
+                IdGroup group = groupOf( dataIndex );
+                int groupId = group.id();
+                // collisions of same eId AND groupId are always together
+                boolean same = eid == previousEid && previousGroupId == groupId;
+                if ( !same )
+                {
+                    detector.clear();
+                }
+
+                // Potential duplicate
                 Object inputId = collisionValues.get( collisionIndex );
                 int detectorIndex = detector.add( inputId, sourceInformation );
                 if ( detectorIndex != -1 )
@@ -555,14 +582,13 @@ public class EncodingIdMapper implements IdMapper
                     String otherDataPoint = source.describe( sourceDescriptions );
                     collector.collectDuplicateNode( inputId, dataIndex, group.name(), firstDataPoint, otherDataPoint );
                 }
+
+                previousEid = eid;
+                previousGroupId = groupId;
             }
-            else
-            {
-                detector.clear();
-            }
-            previousEid = eid;
-            previousGroupId = groupId;
+            progress.add( j );
         }
+        progress.done();
     }
 
     private static class SameInputIdDetector
