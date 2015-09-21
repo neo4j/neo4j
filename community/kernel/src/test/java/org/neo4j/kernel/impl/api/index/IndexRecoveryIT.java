@@ -58,7 +58,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -271,8 +270,7 @@ public class IndexRecoveryIT
         when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) )
                 .thenReturn( 1 ); // always pretend to have highest priority
         when( mockedIndexProvider.storeMigrationParticipant(
-                any( FileSystemAbstraction.class), any( PageCache.class ), any( UpgradableDatabase.class)) )
-                .thenReturn( NOT_PARTICIPATING );
+                any( FileSystemAbstraction.class), any( PageCache.class ) ) ).thenReturn( NOT_PARTICIPATING );
     }
 
     @SuppressWarnings("deprecation")

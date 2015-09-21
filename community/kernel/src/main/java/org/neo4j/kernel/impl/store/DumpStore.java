@@ -60,12 +60,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
                 @Override
                 public StoreFactory apply( File file )
                 {
-                    return new StoreFactory(
-                            file.getParentFile(),
-                            new Config(),
-                            idGeneratorFactory,
-                            pageCache,
-                            fs,
+                    return new StoreFactory( file.getParentFile(), new Config(), idGeneratorFactory, pageCache, fs,
                             logProvider() );
                 }
             };

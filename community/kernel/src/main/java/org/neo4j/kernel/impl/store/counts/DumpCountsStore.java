@@ -65,6 +65,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
             if ( fs.isDirectory( path ) )
             {
                 StoreFactory factory = new StoreFactory( fs, path, pages, NullLogProvider.getInstance() );
+
                 NeoStores neoStores = life.add( factory.openNeoStores( false ) );
                 neoStores.getCounts().accept( new DumpCountsStore( out, neoStores ) );
             }

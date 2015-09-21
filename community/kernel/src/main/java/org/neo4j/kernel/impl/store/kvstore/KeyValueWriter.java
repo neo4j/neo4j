@@ -23,9 +23,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
 
-import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -54,17 +52,7 @@ class KeyValueWriter implements Closeable
     public boolean writeHeader( BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value ) throws IOException
     {
         boolean result = state.header( this, value.allZeroes() );
-        this.keySize = key.size();
-        this.valueSize = value.size();
-        assert key.allZeroes() : "key should have been cleared by previous call";
-        if ( !write( key, value ) )
-        {
-            if ( state != State.writing_trailer )
-            {
-                state = State.in_error;
-                throw new IllegalStateException( "MetadataCollector stopped before trailer reached." );
-            }
-        }
+        doWrite( key, value, State.writing_trailer );
         return result;
     }
 
@@ -85,6 +73,31 @@ class KeyValueWriter implements Closeable
         }
     }
 
+    public boolean writeTrailer( BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value ) throws IOException
+    {
+        boolean result = state.trailer( this, value.allZeroes() );
+        doWrite( key, value, State.done );
+        return result;
+    }
+
+
+    private void doWrite( BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value, State expectedNextState )
+            throws IOException
+    {
+        this.keySize = key.size();
+        this.valueSize = value.size();
+        assert key.allZeroes() : "key should have been cleared by previous call";
+        if ( !write( key, value ) )
+        {
+            if ( state != expectedNextState )
+            {
+                state = State.in_error;
+                throw new IllegalStateException(
+                        "MetadataCollector stopped before " + expectedNextState + " reached." );
+            }
+        }
+    }
+
     private boolean write( BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value ) throws IOException
     {
         boolean result = metadata.visit( key, value );
@@ -93,15 +106,6 @@ class KeyValueWriter implements Closeable
         key.clear();
         value.clear();
         return result;
-    }
-
-    public void writeTrailer( String trailer ) throws IOException
-    {
-        state.trailer( this );
-        if ( trailer != null )
-        {
-            writer.writeTrailer( trailer );
-        }
     }
 
     public KeyValueStoreFile openStoreFile() throws IOException
@@ -211,9 +215,18 @@ class KeyValueWriter implements Closeable
         writing_trailer
         {
             @Override
-            void trailer( KeyValueWriter writer )
+            boolean trailer( KeyValueWriter writer, boolean zeroValue )
             {
-                writer.state = done;
+                if ( zeroValue )
+                {
+                    writer.state = in_error;
+                    return false;
+                }
+                else
+                {
+                    writer.state = done;
+                    return true;
+                }
             }
         },
         done
@@ -237,7 +250,7 @@ class KeyValueWriter implements Closeable
             throw illegalState( writer, "write data" );
         }
 
-        void trailer( KeyValueWriter writer )
+        boolean trailer( KeyValueWriter writer, boolean zeroValue )
         {
             throw illegalState( writer, "write trailer" );
         }
@@ -265,7 +278,6 @@ class KeyValueWriter implements Closeable
 
         abstract void close() throws IOException;
 
-        abstract void writeTrailer( String trailer ) throws IOException;
         static Writer create( FileSystemAbstraction fs, PageCache pages, File path, int pageSize ) throws IOException
         {
             if ( pages == null )
@@ -296,12 +308,6 @@ class KeyValueWriter implements Closeable
         void write( byte[] data ) throws IOException
         {
             out.write( data );
-        }
-
-        @Override
-        void writeTrailer( String trailer ) throws IOException
-        {
-            write( UTF8.encode( trailer ) );
         }
 
         @Override
@@ -360,21 +366,6 @@ class KeyValueWriter implements Closeable
                 cursor.next();
             }
             cursor.putBytes( data );
-        }
-
-        @Override
-        void writeTrailer( String trailer ) throws IOException
-        {
-            byte[] data = UTF8.encode( trailer );
-            int remaining = file.pageSize() - cursor.getOffset();
-            while ( data.length > remaining )
-            {
-                byte[] chunk = Arrays.copyOf( data, remaining );
-                write( chunk );
-                data = Arrays.copyOfRange( data, remaining, data.length );
-                remaining = file.pageSize();
-            }
-            write( data );
         }
 
         @Override

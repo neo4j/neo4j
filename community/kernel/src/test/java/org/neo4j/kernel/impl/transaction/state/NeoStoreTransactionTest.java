@@ -1425,17 +1425,9 @@ public class NeoStoreTransactionTest
     {
         config = new Config( stringMap(
                 GraphDatabaseSettings.dense_node_threshold.name(), "" + denseNodeThreshold ) );
-
         File storeDir = new File( "dir" );
         fs.mkdir( storeDir );
-
-        storeFactory = new StoreFactory(
-                storeDir,
-                config,
-                idGeneratorFactory,
-                pageCache,
-                fs,
-                NULL_LOG_PROVIDER );
+        storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, NULL_LOG_PROVIDER );
         neoStores = storeFactory.openNeoStores( true );
         neoStores.rebuildCountStoreIfNeeded();
         lockMocks.clear();

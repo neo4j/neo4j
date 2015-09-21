@@ -25,8 +25,6 @@ import org.junit.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import org.neo4j.helpers.UTF8;
-
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -60,7 +58,8 @@ public class KeyValueWriterTest
         assertTrue( "format specifier", writer.writeHeader( key, value ) );
         assertTrue( "end-of-header marker", writer.writeHeader( key, value ) );
         assertTrue( "end marker + number of data items", writer.writeHeader( key, value ) );
-        writer.writeTrailer( "all ok" );
+        byte[] bytes = {'a', 'l', 'l', ' ', 'o', 'k'};
+        writer.writeTrailer( new BigEndianByteArrayBuffer( 0 ), new BigEndianByteArrayBuffer( bytes ) );
 
         // then
 
@@ -263,12 +262,6 @@ public class KeyValueWriterTest
         void close() throws IOException
         {
             io();
-        }
-
-        @Override
-        void writeTrailer( String trailer ) throws IOException
-        {
-            write( UTF8.encode( trailer ) );
         }
 
         public void assertData( byte... expected )

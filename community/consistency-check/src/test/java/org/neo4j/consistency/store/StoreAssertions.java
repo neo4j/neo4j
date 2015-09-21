@@ -31,7 +31,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class StoreAssertions
@@ -42,21 +41,11 @@ public class StoreAssertions
 
     public static void assertConsistentStore( File dir ) throws ConsistencyCheckIncompleteException, IOException
     {
-        final Config configuration =
-                new Config(
-                        stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ),
-                        GraphDatabaseSettings.class,
-                        ConsistencyCheckSettings.class
-                );
+        final Config configuration = new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ),
+                GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
 
-        final ConsistencyCheckService.Result result =
-                new ConsistencyCheckService().runFullConsistencyCheck(
-                        dir,
-                        configuration,
-                        ProgressMonitorFactory.NONE,
-                        NullLogProvider.getInstance(),
-                        false
-                );
+        final ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
+                dir, configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
 
         assertTrue( result.isSuccessful() );
     }
