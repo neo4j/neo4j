@@ -37,7 +37,6 @@ import static com.codahale.metrics.MetricRegistry.name;
 public class NetworkMetrics implements Closeable
 {
     private static final String NAME_PREFIX = "neo4j.network";
-    private static final String TRANSACTION_READS = name( NAME_PREFIX, "transaction_reads" );
     private static final String SLAVE_NETWORK_TX_WRITES = name( NAME_PREFIX, "slave_network_tx_writes" );
     private static final String MASTER_NETWORK_STORE_WRITES = name( NAME_PREFIX, "master_network_store_writes" );
     private static final String MASTER_NETWORK_TX_WRITES = name( NAME_PREFIX, "master_network_tx_writes" );
@@ -48,15 +47,6 @@ public class NetworkMetrics implements Closeable
     private final ByteCountsMetric masterNetworkTransactionWrites;
     private final ByteCountsMetric masterNetworkStoreWrites;
     private final ByteCountsMetric slaveNetworkTransactionWrites;
-    private final ByteCountsMetric networkTransactionReads;
-    /*
-     * COM: Server.class -> Writes transaction streams (writes)
-     *      ToNetworkStoreWriter.class, "storeCopier -> Storage files write to network (writes)
-     *
-     * HA: MasterClientXXX.class -> Transactions written to network for commit (writes)
-     *
-     * KERNEL: "logdeserializer"  -> Bytes read from network (read - updates for slaves, commits from slaves for master)
-     */
 
     public NetworkMetrics( Config config, Monitors monitors, MetricRegistry registry )
     {
@@ -67,16 +57,21 @@ public class NetworkMetrics implements Closeable
         masterNetworkTransactionWrites = new ByteCountsMetric();
         masterNetworkStoreWrites = new ByteCountsMetric();
         slaveNetworkTransactionWrites = new ByteCountsMetric();
-        networkTransactionReads = new ByteCountsMetric();
 
         if ( config.get( MetricsSettings.neoNetworkEnabled ) )
         {
+            /*
+             * COM: MasterServer.class -> Writes transaction streams (writes)
+             *      ToNetworkStoreWriter.class, "storeCopier -> Storage files write to network (writes)
+             *
+             * HA: MasterClientXXX.class -> Transactions written to network for commit (writes)
+             *
+             * KERNEL: "logdeserializer"  -> Bytes read from network (read - updates for slaves, commits from slaves for master)
+             */
             monitors.addMonitorListener( masterNetworkTransactionWrites, MasterServer.class.getName() );
             monitors.addMonitorListener( masterNetworkStoreWrites, ToNetworkStoreWriter.class.getName(),
-                    "storeCopier" );
+                    ToNetworkStoreWriter.STORE_COPIER_MONITOR_TAG );
             monitors.addMonitorListener( slaveNetworkTransactionWrites, MasterClient210.class.getName() );
-            // logBufferWrites was registered above - same monitor, remember?
-            monitors.addMonitorListener( networkTransactionReads, "logdeserializer" );
 
             registry.register( MASTER_NETWORK_TX_WRITES, new Gauge<Long>()
             {
@@ -101,14 +96,6 @@ public class NetworkMetrics implements Closeable
                     return slaveNetworkTransactionWrites.getBytesWritten();
                 }
             } );
-
-            registry.register( TRANSACTION_READS, new Gauge<Long>()
-            {
-                public Long getValue()
-                {
-                    return networkTransactionReads.getBytesRead();
-                }
-            } );
         }
     }
 
@@ -119,12 +106,10 @@ public class NetworkMetrics implements Closeable
             registry.remove( MASTER_NETWORK_TX_WRITES );
             registry.remove( MASTER_NETWORK_STORE_WRITES );
             registry.remove( SLAVE_NETWORK_TX_WRITES );
-            registry.remove( TRANSACTION_READS );
 
             monitors.removeMonitorListener( masterNetworkTransactionWrites );
             monitors.removeMonitorListener( masterNetworkStoreWrites );
             monitors.removeMonitorListener( slaveNetworkTransactionWrites );
-            monitors.removeMonitorListener( networkTransactionReads );
         }
     }
 }

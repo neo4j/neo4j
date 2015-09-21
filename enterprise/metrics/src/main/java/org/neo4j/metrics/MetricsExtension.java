@@ -83,11 +83,13 @@ public class MetricsExtension implements Lifecycle
         life.init();
     }
 
+    @Override
     public void start() throws Throwable
     {
         life.start();
     }
 
+    @Override
     public void stop() throws Throwable
     {
         life.stop();
