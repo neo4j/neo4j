@@ -19,21 +19,16 @@
  */
 package org.neo4j.bolt.transport;
 
-import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.ssl.SslContext;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.function.BiConsumer;
 import org.neo4j.function.Function;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.logging.LogProvider;
@@ -42,7 +37,7 @@ import org.neo4j.logging.LogProvider;
  * Carries the Neo4j protocol over websockets. Apart from the initial websocket handshake, this works with the exact
  * same protocol as {@link SocketTransport}.
  */
-public class WebSocketTransport implements BiConsumer<EventLoopGroup,EventLoopGroup>
+public class WebSocketTransport implements NettyServer.ProtocolInitializer
 {
     private static final int MAX_WEBSOCKET_HANDSHAKE_SIZE = 65536;
 
@@ -61,42 +56,34 @@ public class WebSocketTransport implements BiConsumer<EventLoopGroup,EventLoopGr
     }
 
     @Override
-    public void accept( EventLoopGroup bossGroup, EventLoopGroup workerGroup )
+    public ChannelInitializer<SocketChannel> channelInitializer()
     {
-        ServerBootstrap b = new ServerBootstrap();
-        b.option( ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT )
-         .group( bossGroup, workerGroup )
-         .channel( NioServerSocketChannel.class )
-         .childHandler( new ChannelInitializer<SocketChannel>()
+        return new ChannelInitializer<SocketChannel>()
+        {
+            @Override
+            public void initChannel( SocketChannel ch ) throws Exception
+            {
+                ch.config().setAllocator( PooledByteBufAllocator.DEFAULT );
+
+                if ( sslCtx != null )
                 {
-                    @Override
-                    public void initChannel( SocketChannel ch ) throws Exception
-                    {
-                        ch.config().setAllocator( PooledByteBufAllocator.DEFAULT );
+                    ch.pipeline().addLast( sslCtx.newHandler( ch.alloc() ) );
+                }
 
-                        if( sslCtx != null )
-                        {
-                            ch.pipeline().addLast( sslCtx.newHandler( ch.alloc() ) );
-                        }
+                ch.pipeline().addLast(
+                        new HttpServerCodec(),
+                        new HttpObjectAggregator( MAX_WEBSOCKET_HANDSHAKE_SIZE ),
+                        new WebSocketServerProtocolHandler( "" ),
+                        new WebSocketFrameTranslator(),
+                        new SocketTransportHandler(
+                                new SocketTransportHandler.ProtocolChooser( availableVersions ), logging ) );
+            }
+        };
+    }
 
-                        ch.pipeline().addLast(
-                                new HttpServerCodec(),
-                                new HttpObjectAggregator( MAX_WEBSOCKET_HANDSHAKE_SIZE ),
-                                new WebSocketServerProtocolHandler( "" ),
-                                new WebSocketFrameTranslator(),
-                                new SocketTransportHandler(
-                                        new SocketTransportHandler.ProtocolChooser( availableVersions ), logging ) );
-                    }
-                } );
-
-        // Bind and start to accept incoming connections.
-        try
-        {
-            b.bind( address.getHost(), address.getPort() ).sync();
-        }
-        catch ( InterruptedException e )
-        {
-            throw new RuntimeException( e );
-        }
+    @Override
+    public HostnamePort address()
+    {
+        return address;
     }
 }
