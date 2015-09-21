@@ -28,42 +28,54 @@ class AvgFunctionTest extends CypherFunSuite with AggregateTest {
   test("singleOne") {
     val result = aggregateOn(1)
 
-     result should equal(1.0)
+    result should equal(1.0)
   }
 
   test("allOnesAvgIsOne") {
     val result = aggregateOn(1, 1)
 
-     result should equal(1.0)
+    result should equal(1.0)
   }
 
   test("twoAndEightAvgIs10") {
     val result = aggregateOn(2, 8)
 
-     result should equal(5.0)
+    result should equal(5.0)
   }
 
   test("negativeOneIsStillOk") {
     val result = aggregateOn(-1)
 
-     result should equal(-1.0)
+    result should equal(-1.0)
   }
 
   test("ZeroIsAnOKAvg") {
     val result = aggregateOn(-10, 10)
 
-     result should equal(0.0)
+    result should equal(0.0)
   }
 
   test("ADoubleInTheListTurnsTheAvgToDouble") {
     val result = aggregateOn(1, 1.0, 1)
 
-     result should equal(1.0)
+    result should equal(1.0)
   }
 
   test("nullDoesntChangeThings") {
     val result = aggregateOn(3, null, 6)
 
-     result should equal(4.5)
+    result should equal(4.5)
+  }
+
+  test("noOverflowOnLongListOfLargeNumbers") {
+    val result = aggregateOn(Long.MaxValue / 2, Long.MaxValue / 2, Long.MaxValue / 2)
+
+    result should equal(Long.MaxValue / 2)
+  }
+
+  test("onEmpty") {
+    val result = aggregateOn()
+
+    Option(result) should be (None)
   }
 }
