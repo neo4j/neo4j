@@ -14,6 +14,11 @@ div(ng-controller="CypherResultCtrl", fullscreen)
               i.fa.fa-table
               span.mini-menu-item-text Rows
             br
+          .button-holder(ng-show="isAvailable('text')")
+            button.btn(ng-class='{active: isActive("text")}', ng-click='setActive("text")')
+              i.fa.fa-font
+              span.mini-menu-item-text Text
+            br  
           .button-holder(ng-show="isAvailable('plan')")
             button.btn(ng-class='{active: isActive("plan")}', ng-click='setActive("plan")')
               i.fa.fa-code-fork
@@ -79,6 +84,14 @@ div(ng-controller="CypherResultCtrl", fullscreen)
                 p
                   | (no rows)
               neo-table(table-data='frame.response.table', ng-show='frame.response.table._response.data.length')
+            .status-bar
+              .status
+                include partials/result-status
+
+          .view-result-table.result.ascii-result-table(ng-show='isActive("text")')
+            .table-holder
+              article.help.no-data.has-status-bar
+                pre.ascii-table(ng-bind='ascii')
             .status-bar
               .status
                 include partials/result-status

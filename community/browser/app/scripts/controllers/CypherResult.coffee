@@ -21,12 +21,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 'use strict'
 
 angular.module('neo4jApp.controllers')
-  .controller 'CypherResultCtrl', ['$rootScope', '$scope', ($rootScope, $scope) ->
-
+  .controller 'CypherResultCtrl', ['$rootScope', '$scope', 'AsciiTable', ($rootScope, $scope, AsciiTable) ->
     $scope.displayInternalRelationships = $rootScope.stickyDisplayInternalRelationships ? true
     $scope.availableModes = []
     $scope.$watch 'frame.response', (resp) ->
+    asciiTable = new AsciiTable()
+    $scope.slider = {min: 4, max: 20}
+    $scope.ascii = ''
+    $scope.ascii_col_width = 30
+
+    $scope.$watch 'frame.response', (resp, old) ->
       return unless resp
+      return if old
       # available combos:
       # - Graph + Table
       # - Table only
@@ -38,6 +44,8 @@ angular.module('neo4jApp.controllers')
       $scope.availableModes.push('raw') if resp.raw
       $scope.availableModes.push('errors') if resp.errors
       $scope.availableModes.push('messages') if resp.raw?.response.data.notifications
+      $scope.availableModes.push('text') if resp.table?.size
+      $scope.loadAscii resp.table
 
       # Initialise tab state from user selected if any
       $scope.tab = $rootScope.stickyTab
@@ -57,6 +65,19 @@ angular.module('neo4jApp.controllers')
       # Override user tab selection if that mode doesn't exists
       $scope.tab = 'table' unless $scope.availableModes.indexOf($scope.tab) >= 0
 
+    $scope.loadAscii = (data) ->
+      return unless data
+      rows = data._response.data.map((data_obj) -> return data_obj.row)
+      res = asciiTable.get(rows, {columns: data._response.columns, max_column_width: $scope.ascii_col_width})
+      $scope.slider.max = asciiTable.max_original_col_width
+      $scope.ascii = res
+
+    $scope.reloadAscii = ->
+      $scope.ascii = asciiTable.reloadWithOptions({max_column_width: $scope.ascii_col_width})
+
+    $scope.$watch('ascii_col_width', (n, o) ->
+      $scope.reloadAscii()
+    )
 
     $scope.setActive = (tab) ->
       tab ?= if $scope.tab is 'graph' then 'table' else 'graph'

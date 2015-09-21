@@ -3,3 +3,7 @@ span(ng-show='frame.hasErrors')
 p(ng-hide='frame.hasErrors')
   span
     | {{resultStatistics(frame)}}
+  div.frame-slider-wrapper(ng-show='isActive("text")')
+    span Max column width: 
+    div.frame-slider
+      slider(ng-model="ascii_col_width", min="slider.min", max="slider.max", slider-tooltip="hide")
