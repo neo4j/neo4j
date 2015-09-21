@@ -1,7 +1,7 @@
 NOTICE
 This package contains software licensed under different
 licenses, please refer to the NOTICE.txt file for further
-information.
+information and LICENSES.txt for full license texts.
 
 The software ("Software") developed and owned by Network Engine for
 Objects in Lund AB (referred to in this notice as "Neo Technology") is

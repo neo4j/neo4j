@@ -85,7 +85,7 @@
         <executions>
           <execution>
             <id>unpack-doctools</id>
-            <phase>generate-sources</phase>
+            <phase>package</phase>
             <goals>
               <goal>unpack-dependencies</goal>
             </goals>
@@ -97,7 +97,7 @@
           </execution>
           <execution>
             <id>unpack-asciidoc-sources</id>
-            <phase>generate-sources</phase>
+            <phase>package</phase>
             <goals>
               <goal>unpack-dependencies</goal>
             </goals>
@@ -120,7 +120,7 @@
         <executions>
           <execution>
             <id>execute-asciidoc-html5</id>
-            <phase>compile</phase>
+            <phase>package</phase>
             <goals>
               <goal>exec</goal>
             </goals>
