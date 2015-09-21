@@ -33,6 +33,20 @@ import org.scalatest.{Assertions, Matchers}
 
 /**
  * Base class for documentation classes
+ *
+ * When working with the documentation framework, it helps having the modeling
+ * idea clear before trying to understand the code.
+ *
+ * The model used here is that these tests describe a tree structure that
+ * contains both queries to be run and checked, and documentation in the same
+ * class.
+ *
+ * Each DocumentingTest builds up one of these tree-structures, and this tree
+ * is worked on in multiple steps, extracting queries and running them,
+ * checking the results, and then inserting the results into the tree.
+ *
+ * Finally, if all the tests were successful, the results are written out to
+ * disk as a single AsciiDoc file.
  */
 trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with GraphIcing {
   /**
@@ -47,7 +61,7 @@ trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with 
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     try {
 
-      intialiseDatabase(doc, db)
+      initializeDatabase(doc, db)
       val doc2 = captureStateAsGraphViz(doc, db, GraphVizBefore)
       val result = runQueries(doc2, db)
       reportResults(result)
@@ -93,7 +107,7 @@ trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with 
     result
   }
 
-  private def intialiseDatabase(doc: Document, db: GraphDatabaseService) {
+  private def initializeDatabase(doc: Document, db: GraphDatabaseService) {
     doc.initQueries.foreach { q =>
       try {
         db.execute(q)
