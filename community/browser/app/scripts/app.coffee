@@ -44,4 +44,5 @@ app = angular.module('neo4jApp', [
   'ui.sortable'
   #'angularMoment'
   'ngSanitize'
+  'ui.bootstrap-slider'
 ])

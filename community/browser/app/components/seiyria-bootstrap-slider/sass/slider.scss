@@ -1,0 +1,211 @@
+/*
+ * Slider for Bootstrap
+ *
+ * Copyright 2012 Stefan Petre
+ * Licensed under the Apache License v2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * SCSS File by Detlef Beyer
+ */
+
+ @import "compass";
+
+ @mixin slider_background-image ($colorstart:#f5f5f5, $colorend:#f9f9f9, $backcolor: #f7f7f7) {
+  background-color: $backcolor;
+  background-image: -moz-linear-gradient(top, $colorstart, $colorend);
+  background-image: -webkit-gradient(linear, 0 0, 0 100%, from($colorstart), to($colorend));
+  background-image: -webkit-linear-gradient(top, $colorstart, $colorend);
+  background-image: -o-linear-gradient(top, $colorstart, $colorend);
+  background-image: linear-gradient(to bottom, $colorstart, $colorend);
+  background-repeat: repeat-x;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#{$colorstart}', endColorstr='#{$colorend}',GradientType=0);
+}
+
+/* Variables should be defined outside of this file     */
+/* doing it here just to keep things together in github */
+$baseLineHeight:  20px;
+$baseBorderRadius: 4px;
+
+
+.slider {
+  display: inline-block;
+  vertical-align: middle;
+  position: relative;
+  &.slider-horizontal {
+    width: 210px;
+    height: $baseLineHeight;
+    .slider-track {
+      height: $baseLineHeight/2;
+      width: 100%;
+      margin-top: -$baseLineHeight/4;
+      top:  50%;
+      left: 0;
+    }
+    .slider-selection, .slider-track-low, .slider-track-high {
+      height: 100%;
+      top: 0;
+      bottom: 0;
+    }
+    .slider-tick,
+    .slider-handle {
+      margin-left: -$baseLineHeight/2;
+      margin-top: -$baseLineHeight/4;
+      &.triangle {
+        border-width: 0 $baseLineHeight/2 $baseLineHeight/2 $baseLineHeight/2;
+        width: 0;
+        height: 0;
+        border-bottom-color: #0480be;
+        margin-top: 0;
+      }
+    }
+    .slider-tick-label-container {
+      white-space: nowrap;
+
+      .slider-tick-label {
+        margin-top: $baseLineHeight * 1.2;
+        display: inline-block;
+        text-align: center;
+      }
+    }
+  }
+  &.slider-vertical {
+    height: 210px;
+    width: $baseLineHeight;
+    .slider-track {
+      width: $baseLineHeight/2;
+      height: 100%;
+      margin-left: -$baseLineHeight/4;
+      left: 50%;
+      top: 0;
+    }
+    .slider-selection {
+      width: 100%;
+      left: 0;
+      top: 0;
+      bottom: 0;
+    }
+    .slider-track-low, .slider-track-high {
+     width: 100%;
+     left: 0;
+     right: 0;
+   }
+   .slider-tick,
+   .slider-handle {
+    margin-left: -$baseLineHeight/4;
+    margin-top: -$baseLineHeight/2;
+    &.triangle {
+      border-width: $baseLineHeight/2 0 $baseLineHeight/2 $baseLineHeight/2;
+      width:  1px;
+      height: 1px;
+      border-left-color: #0480be;
+      margin-left: 0;
+    }
+  }
+}
+&.slider-disabled {
+  .slider-handle {
+    @include slider_background-image(#dfdfdf, #bebebe, #f7f7f7);
+  }
+  .slider-track {
+    @include slider_background-image(#e5e5e5, #e9e9e9, #f7f7f7);
+    cursor: not-allowed;
+  }
+}
+input {
+  display: none;
+}
+.tooltip-inner {
+  white-space: nowrap;
+}
+.tooltip {
+  &.top {
+    margin-top: -36px;
+  }
+}
+
+.hide {
+  display: none;
+}
+}
+
+.slider-track {
+	position: absolute;
+	cursor: pointer;
+	@include slider_background-image(#f5f5f5, #f9f9f9, #f7f7f7);
+	@include box-shadow(inset 0 1px 2px rgba(0,0,0,0.1));
+	@include border-radius($baseBorderRadius);
+}
+
+.slider-selection {
+	position: absolute;
+	@include slider_background-image(#f9f9f9, #f5f5f5, #f7f7f7);
+ @include box-shadow(inset 0 -1px 0 rgba(0,0,0,0.15));
+ @include box-sizing(border-box);
+ @include border-radius($baseBorderRadius);
+}
+.slider-selection.tick-slider-selection {
+  @include slider_background-image(#89cdef, #81bfde, #f7f7f7);
+}
+
+.slider-track-low, .slider-track-high {
+  position: absolute;
+  background: transparent;
+  @include box-sizing(border-box);
+  border-radius: border-radius($baseBorderRadius);
+}
+
+.slider-handle {
+	position: absolute;
+	width:  $baseLineHeight;
+	height: $baseLineHeight;
+  background-color: #337ab7;
+  @include slider_background-image(#149bdf, #0480be, #0e90d2);
+  @include box-shadow(inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05));
+  border: 0px solid transparent;
+  &.round {
+    @include border-radius($baseLineHeight);
+  }
+  &.triangle {
+    background: transparent none;
+  }
+  &.custom {
+    background: transparent none;
+    &::before{
+      line-height: $baseLineHeight;
+      font-size: 20px;
+      content: '\2605'; //unicode star character
+      color: #726204;
+    }
+  }
+}
+
+.slider-tick {
+  position: absolute;
+  width: $baseLineHeight;
+  height: $baseLineHeight;
+  @include slider_background-image(#f9f9f9, #f5f5f5, #f7f7f7);
+  @include box-shadow(inset 0 -1px 0 rgba(0,0,0,0.15));
+  @include box-sizing(border-box);
+  filter: none;
+  opacity: 0.8;
+  border: 0px solid transparent;
+  &.round {
+    border-radius: 50%;
+  }
+  &.triangle {
+    background: transparent none;
+  }
+  &.custom {
+    background: transparent none;
+    &::before{
+      line-height: $baseLineHeight;
+      font-size: 20px;
+          content: '\2605'; //unicode star character
+          color: #726204;
+        }
+      }
+      &.in-selection {
+        @include slider_background-image(#89cdef, #81bfde, #f7f7f7);
+        opacity: 1;
+      }
+    }
