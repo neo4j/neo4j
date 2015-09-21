@@ -39,8 +39,10 @@ import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.OnlineIndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
@@ -62,6 +64,7 @@ import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.lang.String.format;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
@@ -80,6 +83,7 @@ class RebuildFromLogs
     private final NeoStoreDataSource dataSource;
     private final TransactionRepresentationStoreApplier storeApplier;
     private final IndexUpdatesValidator indexUpdatesValidator;
+    private final IndexingService indexingService;
 
     RebuildFromLogs( GraphDatabaseAPI graphdb )
     {
@@ -89,10 +93,10 @@ class RebuildFromLogs
         this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class )
                                     .withLegacyIndexTransactionOrdering( IdOrderingQueue.BYPASS );
         PropertyLoader propertyLoader = new PropertyLoader( stores.getRawNeoStore() );
-        this.indexUpdatesValidator = new IndexUpdatesValidator( stores.getRawNeoStore(), propertyLoader,
-                resolver.resolveDependency( IndexingService.class ) );
+        this.indexingService = resolver.resolveDependency( IndexingService.class );
+        this.indexUpdatesValidator = new OnlineIndexUpdatesValidator( stores.getRawNeoStore(), propertyLoader,
+                indexingService, IndexUpdateMode.BATCHED );
     }
-
 
     void applyTransactionsFrom( File sourceDir, long upToTxId ) throws IOException
     {
@@ -110,7 +114,7 @@ class RebuildFromLogs
                 long txId = cursor.get().getCommitEntry().getTxId();
                 TransactionRepresentation transaction = cursor.get().getTransactionRepresentation();
                 try ( LockGroup locks = new LockGroup();
-                      ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate( transaction, EXTERNAL ) )
+                      ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate( transaction ) )
                 {
                     storeApplier.apply( transaction, indexUpdates, locks, txId, EXTERNAL );
                 }
@@ -120,6 +124,7 @@ class RebuildFromLogs
                 }
             }
         }
+        indexingService.flushAll();
     }
 
     public static void main( String[] args ) throws Exception

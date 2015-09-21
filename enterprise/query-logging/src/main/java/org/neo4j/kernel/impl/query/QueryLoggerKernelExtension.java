@@ -34,8 +34,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static org.neo4j.kernel.impl.util.StringLogger.DEFAULT_THRESHOLD_FOR_ROTATION;
-
 @Service.Implementation( KernelExtensionFactory.class )
 public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLoggerKernelExtension.Dependencies>
 {
@@ -164,7 +162,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
     {
         private final FileSystemAbstraction filesystem;
         private final File logfile;
-        private Long rotationThreshold;
+        private final Long rotationThreshold;
 
         public LoggerFactory( FileSystemAbstraction filesystem, File logfile, Long rotationThreshold )
         {
