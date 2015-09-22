@@ -38,6 +38,7 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.SuppressOutput;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -48,9 +49,13 @@ import static org.mockito.Mockito.anyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.test.SuppressOutput.suppressAll;
 
 public class StartClientTest
 {
+    @Rule
+    public SuppressOutput mute = suppressAll();
+
     @Rule
     public ImpermanentDatabaseRule db = new ImpermanentDatabaseRule()
     {
@@ -153,8 +158,7 @@ public class StartClientTest
         {
             @Override
             protected GraphDatabaseShellServer getGraphDatabaseShellServer( String dbPath, boolean readOnly,
-                    String configFile )
-                    throws RemoteException
+                    String configFile ) throws RemoteException
             {
                 return databaseShellServer;
             }
@@ -167,7 +171,6 @@ public class StartClientTest
         // verify
         verify( databaseShellServer ).shutdown();
     }
-
 
     private String runAndCaptureOutput( String[] arguments )
     {
