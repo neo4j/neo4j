@@ -5,14 +5,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.2.6-SNAPSHOT</version>
+    <version>2.3-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.neo4j.test</groupId>
   <artifactId>neo4j-harness-test</artifactId>
-  <version>2.2.6-SNAPSHOT</version>
+  <version>2.3-SNAPSHOT</version>
 
   <packaging>jar</packaging>
 
@@ -25,6 +25,7 @@
     <docs-plugin.skip>true</docs-plugin.skip>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
     <neo4j.version>${project.version}</neo4j.version>
+    <attach-java-test-sources-phase>package</attach-java-test-sources-phase>
   </properties>
 
   <scm>
