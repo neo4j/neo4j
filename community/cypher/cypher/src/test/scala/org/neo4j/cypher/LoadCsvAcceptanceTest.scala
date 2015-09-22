@@ -290,14 +290,14 @@ class LoadCsvAcceptanceTest
     val exception = intercept[LoadExternalResourceException] {
       execute(s"LOAD CSV FROM 'morsecorba://sos' AS line CREATE (a {name:line[0]})")
     }
-    exception.getMessage should equal("Invalid URL specified (unknown protocol: morsecorba)")
+    exception.getMessage should equal("Invalid URL 'morsecorba://sos': unknown protocol: morsecorba")
   }
 
   test("should reject invalid URLs") {
     val exception = intercept[LoadExternalResourceException] {
       execute(s"LOAD CSV FROM 'foo.bar' AS line CREATE (a {name:line[0]})")
     }
-    exception.getMessage should equal("Invalid URL specified (no protocol: foo.bar)")
+    exception.getMessage should equal("Invalid URL 'foo.bar': no protocol: foo.bar")
   }
 
   private def ensureNoIllegalCharsInWindowsFilePath(filename: String) = {

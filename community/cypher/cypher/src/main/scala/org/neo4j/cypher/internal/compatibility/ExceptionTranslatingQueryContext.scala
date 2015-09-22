@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility
 
+import java.net.URL
+
 import org.neo4j.cypher.CypherExecutionException
 import org.neo4j.cypher.internal.compiler.v2_2.spi
 import org.neo4j.cypher.internal.compiler.v2_2.spi._
@@ -133,8 +135,8 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
   override def commitAndRestartTx() =
     translateException(super.commitAndRestartTx())
 
-  override def hasLocalFileAccess =
-    translateException(super.hasLocalFileAccess)
+  override def getImportURL(url: URL): Either[String,URL] =
+    translateException(super.getImportURL(url))
 
   override def relationshipStartNode(rel: Relationship) =
     translateException(super.relationshipStartNode(rel))

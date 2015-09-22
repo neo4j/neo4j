@@ -19,14 +19,19 @@
  */
 package org.neo4j.cypher.internal.spi.v2_2
 
+import java.net.URL
+
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.helpers.DynamicIterable
 import org.neo4j.graphdb._
 import org.mockito.Mockito._
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.impl.api.{StatementOperationParts, KernelTransactionImplementation, KernelStatement}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.test.ImpermanentGraphDatabase
+
+import scala.collection.JavaConverters._
 
 class TransactionBoundQueryContextTest extends CypherFunSuite {
 
@@ -39,6 +44,10 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     graph = new ImpermanentGraphDatabase
     outerTx = mock[Transaction]
     statement = new KernelStatement(mock[KernelTransactionImplementation], null, null, null, null, null)
+  }
+
+  override def afterEach() {
+    graph.shutdown()
   }
 
   test ("should_mark_transaction_successful_if_successful") {
@@ -87,6 +96,37 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     iteratorA should not equal iteratorB
     iteratorA.toList should equal (iteratorB.toList)
     2 should equal (iterable.size)
+
+    tx.success()
+    tx.finish()
+  }
+
+  test ("should deny non-whitelisted URL protocols for loading") {
+    // GIVEN
+    val tx = graph.beginTx()
+    val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).instance()
+    val context = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, stmt)
+
+    // THEN
+    context.getImportURL(new URL("http://localhost:7474/data.csv")) should equal (Right(new URL("http://localhost:7474/data.csv")))
+    context.getImportURL(new URL("file:///tmp/foo/data.csv")) should equal (Right(new URL("file:///tmp/foo/data.csv")))
+    context.getImportURL(new URL("jar:file:/tmp/blah.jar!/tmp/foo/data.csv")) should equal (Left("loading resources via protocol 'jar' is not permitted"))
+
+    tx.success()
+    tx.finish()
+  }
+
+  test ("should deny file URLs when not allowed by config") {
+    // GIVEN
+    graph.shutdown()
+    graph = new ImpermanentGraphDatabase(Map(GraphDatabaseSettings.allow_file_urls.name() -> "false").asJava)
+    val tx = graph.beginTx()
+    val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).instance()
+    val context = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, stmt)
+
+    // THEN
+    context.getImportURL(new URL("http://localhost:7474/data.csv")) should equal (Right(new URL("http://localhost:7474/data.csv")))
+    context.getImportURL(new URL("file:///tmp/foo/data.csv")) should equal (Left("configuration property 'allow_file_urls' is false"))
 
     tx.success()
     tx.finish()
