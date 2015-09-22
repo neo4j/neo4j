@@ -20,6 +20,8 @@
 package org.neo4j.bolt.v1.messaging.msgprocess;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.logging.Log;
 import org.neo4j.bolt.v1.runtime.spi.Record;
@@ -27,6 +29,8 @@ import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 
 public class RecordStreamCallback extends MessageProcessingCallback<RecordStream>
 {
+    private final Map<String,Object> successMetadata = new HashMap<>();
+
     public RecordStreamCallback( Log log )
     {
         super( log );
@@ -42,6 +46,18 @@ public class RecordStreamCallback extends MessageProcessingCallback<RecordStream
             {
                 out.handleRecordMessage( record );
             }
+
+            @Override
+            public void addMetadata( String key, Object value )
+            {
+                successMetadata.put( key, value );
+            }
         } );
+    }
+
+    @Override
+    protected Map<String,Object> successMetadata()
+    {
+        return successMetadata;
     }
 }

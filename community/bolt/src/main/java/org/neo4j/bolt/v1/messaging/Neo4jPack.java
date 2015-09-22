@@ -27,17 +27,17 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueNode;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueRelationship;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueUnboundRelationship;
 import org.neo4j.bolt.v1.packstream.PackInput;
 import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.bolt.v1.packstream.PackType;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.api.exceptions.Status;
 
 import static org.neo4j.bolt.v1.packstream.PackStream.UNKNOWN_SIZE;
 
@@ -106,7 +106,7 @@ public class Neo4jPack
             }
             else if ( obj instanceof Collection )
             {
-                List list = (List) obj;
+                Collection list = (Collection) obj;
                 packListHeader( list.size() );
                 for ( Object item : list )
                 {
@@ -236,6 +236,7 @@ public class Neo4jPack
 
     }
 
+
     public static class Unpacker extends PackStream.Unpacker
     {
         private IdentityPack.Unpacker identityUnpacker = new IdentityPack.Unpacker();
@@ -295,7 +296,7 @@ public class Neo4jPack
                         }
                         default:
                             throw new BoltIOException( Status.Request.InvalidFormat,
-                                    "Unknown struct type: " + signature );
+                                    "Unknown struct type: " + Integer.toHexString(signature) );
                     }
                 }
                 case END_OF_STREAM:
