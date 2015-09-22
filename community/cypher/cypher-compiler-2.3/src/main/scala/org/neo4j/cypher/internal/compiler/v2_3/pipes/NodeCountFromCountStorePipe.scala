@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v2_3.NameId
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
-case class CountStoreNodeAggregationPipe(ident: String, label: Option[LazyLabel])(val estimatedCardinality: Option[Double] = None)
+case class NodeCountFromCountStorePipe(ident: String, label: Option[LazyLabel])(val estimatedCardinality: Option[Double] = None)
                                                            (implicit pipeMonitor: PipeMonitor) extends Pipe with RonjaPipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {

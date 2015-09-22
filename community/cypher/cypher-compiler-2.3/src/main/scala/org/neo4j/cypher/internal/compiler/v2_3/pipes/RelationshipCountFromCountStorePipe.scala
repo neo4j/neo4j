@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v2_3.NameId
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
-case class CountStoreRelationshipAggregationPipe(ident: String, startLabel: Option[LazyLabel],
+case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option[LazyLabel],
                                                  typeNames: LazyTypes, endLabel: Option[LazyLabel],
                                                  bothDirections: Boolean)
                                                 (val estimatedCardinality: Option[Double] = None)

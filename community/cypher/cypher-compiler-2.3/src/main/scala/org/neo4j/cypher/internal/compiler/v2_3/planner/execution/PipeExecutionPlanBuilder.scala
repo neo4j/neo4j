@@ -76,11 +76,11 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         case AllNodesScan(IdName(id), _) =>
           AllNodesScanPipe(id)()
 
-        case CountStoreNodeAggregation(IdName(id), label, _) =>
-          CountStoreNodeAggregationPipe(id, label)()
+        case NodeCountFromCountStore(IdName(id), label, _) =>
+          NodeCountFromCountStorePipe(id, label)()
 
-        case CountStoreRelationshipAggregation(IdName(id), startLabel, typeNames, endLabel, bothDirections, _) =>
-          CountStoreRelationshipAggregationPipe(id, startLabel, typeNames, endLabel, bothDirections)()
+        case RelationshipCountFromCountStore(IdName(id), startLabel, typeNames, endLabel, bothDirections, _) =>
+          RelationshipCountFromCountStorePipe(id, startLabel, typeNames, endLabel, bothDirections)()
 
         case NodeByLabelScan(IdName(id), label, _) =>
           NodeByLabelScanPipe(id, label)()
