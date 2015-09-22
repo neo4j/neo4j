@@ -49,13 +49,13 @@ public class MetricsSettings
 
     // The below settings define what metrics to gather
     // By default everything is on
-    @Description( "The default enablement value for all the supported metrics. Set this to 'false' to turn off all " +
+    @Description( "The default enablement value for all the supported metrics. Set this to `false` to turn off all " +
                   "metrics by default. The individual settings can then be used to selectively re-enable specific " +
                   "metrics." )
     public static Setting<Boolean> metricsEnabled = setting( "metrics.enabled", Settings.BOOLEAN, Settings.TRUE );
 
-    @Description( "The default enablement value for all Neo4j specific support metrics. Set this to 'false' to turn " +
-                  "off all Neo4j specific metrics by default. The individual 'metrics.neo4j.*' metrics can then be " +
+    @Description( "The default enablement value for all Neo4j specific support metrics. Set this to `false` to turn " +
+                  "off all Neo4j specific metrics by default. The individual `metrics.neo4j.*` metrics can then be " +
                   "turned on selectively." )
     public static Setting<Boolean> neoEnabled = setting( "metrics.neo4j.enabled", Settings.BOOLEAN, metricsEnabled );
     @Description( "Enable reporting metrics about transactions; number of transactions started, committed, etc." )
@@ -68,41 +68,42 @@ public class MetricsSettings
                   "relationships, properties, etc." )
     public static Setting<Boolean> neoCountsEnabled = setting(
             "metrics.neo4j.counts.enabled", Settings.BOOLEAN, neoEnabled );
-    @Description( "Enable reporting metrics about the network usage the of the HA cluster component" )
+    @Description( "Enable reporting metrics about the network usage of the HA cluster component." )
     public static Setting<Boolean> neoNetworkEnabled = setting(
             "metrics.neo4j.network.enabled", Settings.BOOLEAN, neoEnabled );
 
     // CSV settings
-    @Description( "Set to 'true' to enable exporting metrics to CSV files" )
+    @Description( "Set to `true` to enable exporting metrics to CSV files" )
     public static Setting<Boolean> csvEnabled = setting( "metrics.csv.enabled", Settings.BOOLEAN, Settings.FALSE );
-    @Description( "The target location of the CSV files. Depending on the 'metrics.csv.file' setting, this is either " +
+    @Description( "The target location of the CSV files. Depending on the metrics.csv.file setting, this is either " +
                   "the path to an individual CSV file, that have each of the reported metrics fields as columns, or " +
                   "it is a path to a directory wherein a CSV file per reported field will be written. Relative paths " +
                   "will be intepreted relative to the configured Neo4j store directory." )
     public static Setting<File> csvPath = setting(
             "metrics.csv.path", Settings.PATH, "metrics.csv" , basePath( GraphDatabaseSettings.store_dir ) );
-    @Description( "Set to 'single' (the default) for reporting the metrics in a single CSV file (given by " +
-                  "'metrics.csv.path'), with a column per metrics field. Or set to 'split' to produce a CSV file for " +
-                  "each metrics field, in a directory given by 'metrics.csv.path'." )
+    @Description( "Write to a single CSV file or to multiple files. " +
+                  "Set to `single` (the default) for reporting the metrics in a single CSV file (given by " +
+                  "metrics.csv.path), with a column per metrics field. Or set to `split` to produce a CSV file for " +
+                  "each metrics field, in a directory given by metrics.csv.path." )
     public static Setting<CsvFile> csvFile = setting(
             "metrics.csv.file", Settings.options( CsvFile.class ), CsvFile.single.name() );
-    @Description( "The reporting interval for the CSV files, i.e. how often new rows with numbers are appended to " +
+    @Description( "The reporting interval for the CSV files. That is, how often new rows with numbers are appended to " +
                   "the CSV files." )
     public static Setting<Long> csvInterval = setting( "metrics.csv.interval", Settings.DURATION, "3s" );
 
     // Graphite settings
-    @Description( "Set to 'true' to enable exporting metrics to Graphite" )
+    @Description( "Set to `true` to enable exporting metrics to Graphite." )
     public static Setting<Boolean> graphiteEnabled = setting( "metrics.graphite.enabled", Settings.BOOLEAN, Settings.FALSE );
     @Description( "The hostname or IP address of the Graphite server" )
     public static Setting<HostnamePort> graphiteServer = setting( "metrics.graphite.server", Settings.HOSTNAME_PORT, ":2003" );
-    @Description( "The reporting interval for Graphite, i.e. how often to send updated metrics to Graphite" )
+    @Description( "The reporting interval for Graphite. That is, how often to send updated metrics to Graphite." )
     public static Setting<Long> graphiteInterval = setting( "metrics.graphite.interval", Settings.DURATION, "3s" );
 
     // Ganglia settings
-    @Description( "Set to 'true' to enable exporting metrics to Ganglia" )
+    @Description( "Set to `true` to enable exporting metrics to Ganglia." )
     public static Setting<Boolean> gangliaEnabled = setting( "metrics.ganglia.enabled", Settings.BOOLEAN, Settings.FALSE );
     @Description( "The hostname or IP address of the Ganglia server" )
     public static Setting<HostnamePort> gangliaServer = setting( "metrics.ganglia.server", Settings.HOSTNAME_PORT, ":8469" );
-    @Description( "The reporting interval for Ganglia, i.e. how often to send updated metrics to Ganglia" )
+    @Description( "The reporting interval for Ganglia. That is, how often to send updated metrics to Ganglia." )
     public static Setting<Long> gangliaInterval = setting( "metrics.ganglia.interval", Settings.DURATION, "3s" );
 }

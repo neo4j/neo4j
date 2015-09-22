@@ -75,3 +75,8 @@ metrics.csv.interval=<how often to store data, defaults to 3s>
 
 NOTE: The CSV exporter does not automatically rotate the output files, so it is recommended to also set up a CRON job to periodically archive the files.
 
+[[metrics-config-reference]]
+== Configuration Settings Reference for Metrics
+
+include::configuration-attributes.asciidoc[]
+
