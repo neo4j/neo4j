@@ -53,7 +53,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
@@ -100,9 +99,9 @@ class BackupService
         }
     }
 
-    static final String TOO_OLD_BACKUP = "It's been too long since this backup was last " + "updated, and it has " +
+    static final String TOO_OLD_BACKUP = "It's been too long since this backup was last updated, and it has " +
             "fallen too far behind the database transaction stream for incremental backup to be possible. You need to" +
-            " perform a full backup at this point. " + "You can modify this time interval by setting the '" +
+            " perform a full backup at this point. You can modify this time interval by setting the '" +
             GraphDatabaseSettings.keep_logical_logs.name() + "' configuration on the database to a higher value.";
 
     static final String DIFFERENT_STORE = "Target directory contains full backup of a logically different store.";
@@ -187,22 +186,15 @@ class BackupService
     }
 
     BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, File targetDirectory,
-            boolean verification, long timeout, Config config ) throws IncrementalBackupNotPossibleException
+            long timeout, Config config ) throws IncrementalBackupNotPossibleException
     {
         if ( !directoryContainsDb( targetDirectory ) )
         {
             throw new RuntimeException( targetDirectory + " doesn't contain a database" );
         }
-        // In case someone deleted the logical log from a full backup
-        ConfigParam keepLogs = new ConfigParam()
-        {
-            @Override
-            public void configure( Map<String, String> config )
-            {
-                config.put( GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
-            }
-        };
-        config = config.with( buildTempDbConfig( keepLogs ) );
+
+        Map<String,String> temporaryDbConfig = getTemporaryDbConfig();
+        config = config.with( temporaryDbConfig );
         try ( PageCache pageCache = createPageCache( new DefaultFileSystemAbstraction(), config ) )
         {
             GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory, pageCache, config.getParams() );
@@ -222,8 +214,17 @@ class BackupService
         }
         catch ( IOException e )
         {
-            throw new IncrementalBackupNotPossibleException( e );
+            throw new RuntimeException( e );
         }
+    }
+
+    private Map<String,String> getTemporaryDbConfig()
+    {
+        Map<String, String> tempDbConfig = new HashMap<>();
+        tempDbConfig.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
+        // In case someone deleted the logical log from a full backup
+        tempDbConfig.put( GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
+        return tempDbConfig;
     }
 
     BackupOutcome doIncrementalBackupOrFallbackToFull( String sourceHostNameOrIp, int sourcePort,
@@ -236,14 +237,13 @@ class BackupService
         }
         try
         {
-            return doIncrementalBackup(
-                    sourceHostNameOrIp, sourcePort, targetDirectory, verification, timeout, config );
+            return doIncrementalBackup( sourceHostNameOrIp, sourcePort, targetDirectory, timeout, config );
         }
         catch ( IncrementalBackupNotPossibleException e )
         {
             try
             {
-                // Our existing backup is out of date.
+                log.warn( "Attempt to do incremental backup failed.", e );
                 log.info( "Existing backup is too far out of date, a new full backup will be performed." );
                 FileUtils.deleteRecursively( targetDirectory );
                 return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, verification,
@@ -280,20 +280,6 @@ class BackupService
         GraphDatabaseFactory factory = ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
         return (GraphDatabaseAPI) factory.newEmbeddedDatabaseBuilder( targetDirectory )
                                          .setConfig( config ).newGraphDatabase();
-    }
-
-    private static Map<String,String> buildTempDbConfig( ConfigParam... params )
-    {
-        Map<String, String> config = new HashMap<>();
-        config.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
-        for ( ConfigParam param : params )
-        {
-            if ( param != null )
-            {
-                param.configure( config );
-            }
-        }
-        return config;
     }
 
     /**
