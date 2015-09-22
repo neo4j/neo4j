@@ -122,7 +122,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
     withRelationshipsModel(
 
       // When
-      query = "MATCH (:User)-[r:KNOWS]->() RETURN count(r)", f = { result =>
+      query = "MATCH ()<-[r:KNOWS]-(:User) RETURN count(r)", f = { result =>
 
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
@@ -210,7 +210,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
 
   test("counts relationships with type, any direction and labeled source node without using count store") {
     // Given
-    withRelationshipsModel(expectedLogicalPlan = "NodeByLabelScan",
+    withRelationshipsModel(
 
       // When
       query = "MATCH (:User)-[r:KNOWS]-() RETURN count(r)", f = { result =>
@@ -223,7 +223,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
 
   test("counts relationships with type, any direction and labeled destination node without using count store") {
     // Given
-    withRelationshipsModel(expectedLogicalPlan = "NodeByLabelScan",
+    withRelationshipsModel(
 
       // When
       query = "MATCH ()-[r:KNOWS]-(:User) RETURN count(r)", f = { result =>
@@ -236,7 +236,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
 
   test("counts relationships with type, any direction and no labeled nodes without using count store") {
     // Given
-    withRelationshipsModel(expectedLogicalPlan = "AllNodesScan",
+    withRelationshipsModel(
 
       // When
       query = "MATCH ()-[r:KNOWS]-() RETURN count(r)", f = { result =>
@@ -552,7 +552,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
          |CREATE (p)-[:$type1]->(s)
       """.stripMargin)
 
-    val result: InternalExecutionResult = executeWithCostPlannerOnly(query)
+    val result: InternalExecutionResult = executeWithAllPlanners(query)
     result.executionPlanDescription() should includeOperation(expectedLogicalPlan)
     f(result)
   }
@@ -575,12 +575,15 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
                 query: String, f: InternalExecutionResult => Unit): Unit = {
     executeWithRulePlanner(
       s"""
+         |CREATE (m:X {name: 'Mats'})
          |CREATE (p:$label1 {name: 'Petra'})
          |CREATE (s:$label2 {name: 'Steve'})
          |CREATE (p)-[:$type1]->(s)
+         |CREATE (m)-[:$type1]->(s)
       """.stripMargin)
 
     graph.inTx {
+      executeWithRulePlanner("MATCH (m:X)-[r]->() DELETE m, r")
       executeWithRulePlanner(
         s"""
            |MATCH (p:$label1 {name: 'Petra'})

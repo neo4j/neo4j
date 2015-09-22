@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{LazyLabel, SortDescription}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{LazyTypes, LazyLabel, SortDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.CardinalityModel
@@ -347,11 +347,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   }
 
   def planCountStoreRelationshipAggregation(query: PlannerQuery, idName: IdName, startLabel: Option[LazyLabel],
-                                            typeNames: Seq[RelTypeName], endLabel: Option[LazyLabel],
+                                            typeNames: LazyTypes, endLabel: Option[LazyLabel], bothDirections: Boolean,
                                             argumentIds: Set[IdName])
                                            (implicit context: LogicalPlanningContext) = {
     val solved: PlannerQuery = PlannerQuery(query.graph, query.horizon)
-    CountStoreRelationshipAggregation(idName, startLabel, typeNames, endLabel, argumentIds)(solved)
+    CountStoreRelationshipAggregation(idName, startLabel, typeNames, endLabel, bothDirections, argumentIds)(solved)
   }
 
   def planSkip(inner: LogicalPlan, count: Expression)(implicit context: LogicalPlanningContext) = {
