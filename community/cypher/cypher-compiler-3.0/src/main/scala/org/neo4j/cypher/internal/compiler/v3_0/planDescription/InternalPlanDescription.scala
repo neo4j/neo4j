@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planDescription
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{SeekArgs => PipeEntityByIdRhs, LazyLabel}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyLabel, LazyTypes, SeekArgs => PipeEntityByIdRhs}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.frontend.v3_0.ast.RelTypeName
 import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, ast}
 
 /**
@@ -111,7 +110,8 @@ object InternalPlanDescription {
                                 direction: SemanticDirection, varLength: Boolean = false) extends Argument
     case class CountNodesExpression(ident: String, label: Option[LazyLabel]) extends Argument
     case class CountRelationshipsExpression(ident: String, startLabel: Option[LazyLabel],
-                                            typeNames: Seq[RelTypeName], endLabel: Option[LazyLabel]) extends Argument
+                                            typeNames: LazyTypes, endLabel: Option[LazyLabel],
+                                            bothDirections: Boolean) extends Argument
     case class SourceCode(className: String, sourceCode: String) extends Argument {
       override def name = className
     }

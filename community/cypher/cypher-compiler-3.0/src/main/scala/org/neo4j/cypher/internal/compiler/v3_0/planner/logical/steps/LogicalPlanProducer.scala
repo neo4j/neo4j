@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyLabel, SortDescription}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyTypes, LazyLabel, SortDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
-import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection, ast, symbols}
+import org.neo4j.cypher.internal.frontend.v3_0._
 
 case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends CollectionSupport {
   def solvePredicate(plan: LogicalPlan, solved: Expression)(implicit context: LogicalPlanningContext) =
@@ -347,11 +347,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   }
 
   def planCountStoreRelationshipAggregation(query: PlannerQuery, idName: IdName, startLabel: Option[LazyLabel],
-                                            typeNames: Seq[RelTypeName], endLabel: Option[LazyLabel],
+                                            typeNames: LazyTypes, endLabel: Option[LazyLabel], bothDirections: Boolean,
                                             argumentIds: Set[IdName])
                                            (implicit context: LogicalPlanningContext) = {
     val solved: PlannerQuery = PlannerQuery(query.graph, query.horizon)
-    CountStoreRelationshipAggregation(idName, startLabel, typeNames, endLabel, argumentIds)(solved)
+    CountStoreRelationshipAggregation(idName, startLabel, typeNames, endLabel, bothDirections, argumentIds)(solved)
   }
 
   def planSkip(inner: LogicalPlan, count: Expression)(implicit context: LogicalPlanningContext) = {

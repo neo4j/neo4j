@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyLabel, LazyTypes}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.RelTypeName
 
 case class CountStoreRelationshipAggregation(idName: IdName, startLabel: Option[LazyLabel],
-                                             typeNames: Seq[RelTypeName], endLabel: Option[LazyLabel],
+                                             typeNames: LazyTypes, endLabel: Option[LazyLabel], bothDirections: Boolean,
                                              argumentIds: Set[IdName])
                                             (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan with LogicalPlanWithoutExpressions {

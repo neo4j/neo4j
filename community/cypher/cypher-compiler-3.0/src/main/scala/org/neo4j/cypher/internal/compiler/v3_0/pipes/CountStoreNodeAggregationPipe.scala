@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{CountNodesExpression, CountRelationshipsExpression}
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.CountNodesExpression
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.NameId
@@ -33,9 +33,9 @@ case class CountStoreNodeAggregationPipe(ident: String, label: Option[LazyLabel]
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
     val labelId: Int = label match {
-      case Some(label) => label.id(state.query) match {
-        case Some(id) => id
-        case _ => throw new IllegalArgumentException("Cannot find id for label: " + label)
+      case Some(lazyLabel) => lazyLabel.id(state.query) match {
+        case Some(idOfLabel) => idOfLabel
+        case _ => throw new IllegalArgumentException("Cannot find id for label: " + lazyLabel)
       }
       case _ => NameId.WILDCARD
     }

@@ -19,18 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{CountStoreRelationshipAggregation, IdName, CountStoreNodeAggregation, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{CountStoreRelationshipAggregation, CountStoreNodeAggregation, IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, Metrics, QueryGraphProducer, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{AggregatingQueryProjection, LogicalPlanningTestSupport}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{QueryGraphSolver, Metrics, LogicalPlanningContext, QueryGraphProducer}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Identifier, FunctionName, FunctionInvocation, AstConstructionTestSupport}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{AstConstructionTestSupport, FunctionInvocation, FunctionName, Identifier}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSupport with QueryGraphProducer with AstConstructionTestSupport {
 
-  test("should ignore tail") {}
+  test("should ignore tail") {
+    val pq = producePlannerQuery("MATCH (n)", "n")
+
+    countStorePlanner(pq.withTail(null)) should beCountPlanFor("n")
+  }
 
   test("should plan a count for node count no labels") {
     val plannerQuery = producePlannerQuery("MATCH (n)", "n")
@@ -78,10 +82,10 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     countStorePlanner(plannerQuery) should notBeCountPlan
   }
 
-  test("should not plan a count for rel count with no direction") {
+  test("should plan a count for rel count with no direction") {
     val plannerQuery = producePlannerQuery("MATCH ()-[r]-()", "r")
 
-    countStorePlanner(plannerQuery) should notBeCountPlan
+    countStorePlanner(plannerQuery) should beCountPlanFor("r")
   }
 
   test("should plan a count for rel count with no type") {
@@ -111,7 +115,7 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
   test("should not plan a count for rel count with type but no direction") {
     val plannerQuery = producePlannerQuery("MATCH ()-[r:X]-()", "r")
 
-    countStorePlanner(plannerQuery) should notBeCountPlan
+    countStorePlanner(plannerQuery) should beCountPlanFor("r")
   }
 
   test("should plan a count for rel count with rel type") {
@@ -156,7 +160,7 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
           plan match {
             case Some(CountStoreNodeAggregation(IdName(countId), _, _)) if countId == s"count($identifier)" =>
               true
-            case Some(CountStoreRelationshipAggregation(IdName(countId), _, _, _, _)) if countId == s"count($identifier)" =>
+            case Some(CountStoreRelationshipAggregation(IdName(countId), _, _, _, _, _)) if countId == s"count($identifier)" =>
               true
             case _ =>
               false

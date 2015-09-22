@@ -21,15 +21,15 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{CountRelationshipsExpression, ExpandExpression}
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.CountRelationshipsExpression
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.NameId
-import org.neo4j.cypher.internal.frontend.v3_0.ast.RelTypeName
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 case class CountStoreRelationshipAggregationPipe(ident: String, startLabel: Option[LazyLabel],
-                                                 typeNames: Seq[RelTypeName], endLabel: Option[LazyLabel])
+                                                 typeNames: LazyTypes, endLabel: Option[LazyLabel],
+                                                 bothDirections: Boolean)
                                                 (val estimatedCardinality: Option[Double] = None)
                                                 (implicit pipeMonitor: PipeMonitor) extends Pipe with RonjaPipe {
 
@@ -44,23 +44,26 @@ case class CountStoreRelationshipAggregationPipe(ident: String, startLabel: Opti
         labelId
       case _ => NameId.WILDCARD
     }
-    val count = if (typeNames.isEmpty) {
-      state.query.relationshipCountByCountStore(labelIds(0), NameId.WILDCARD, labelIds(1))
-    } else {
-      typeNames.foldLeft(0L) { (count, typeName) =>
-        val typeId = state.query.getRelTypeId(typeName.name)
-        count + state.query.relationshipCountByCountStore(labelIds(0), typeId, labelIds(1))
-      }
-    }
+    val count = if (bothDirections)
+      countOneDirection(state, typeNames, labelIds) + countOneDirection(state, typeNames, labelIds.reverse)
+    else
+      countOneDirection(state, typeNames, labelIds)
     Seq(baseContext.newWith1(ident, count)).iterator
   }
+
+  def countOneDirection(state: QueryState, typeNames: LazyTypes, labelIds: Seq[Int]) =
+    typeNames.types(state.query) match {
+      case None => state.query.relationshipCountByCountStore(labelIds.head, NameId.WILDCARD, labelIds(1))
+      case Some(types) => types.foldLeft(0L) { (count, typeId) =>
+        count + state.query.relationshipCountByCountStore(labelIds.head, typeId, labelIds(1))
+      }
+    }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
   def planDescriptionWithoutCardinality = PlanDescriptionImpl(
     this.id, "CountStoreRelationshipAggregation", NoChildren,
-    Seq(CountRelationshipsExpression(ident: String, startLabel: Option[LazyLabel],
-      typeNames: Seq[RelTypeName], endLabel: Option[LazyLabel])), identifiers)
+    Seq(CountRelationshipsExpression(ident, startLabel, typeNames, endLabel, bothDirections)), identifiers)
 
   def symbols = new SymbolTable(Map(ident -> CTInteger))
 
