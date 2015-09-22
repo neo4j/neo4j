@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -51,7 +51,7 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
 
         NeoStoreDataSource neoStoreDataSource();
 
-        Supplier<StoreFlusher> storeFlusherSupplier();
+        Supplier<CheckPointer> checkPointer();
 
         Supplier<TransactionIdStore> transactionIdStoreSupplier();
 
@@ -79,7 +79,7 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
         return new OnlineBackupKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI(),
                 dependencies.logService().getInternalLogProvider(), dependencies.monitors(),
                 dependencies.neoStoreDataSource(),
-                dependencies.storeFlusherSupplier(),
+                dependencies.checkPointer(),
                 dependencies.transactionIdStoreSupplier(),
                 dependencies.logicalTransactionStoreSupplier(),
                 dependencies.logFileInformationSupplier(),
