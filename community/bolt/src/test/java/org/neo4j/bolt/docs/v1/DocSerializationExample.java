@@ -26,6 +26,8 @@ import java.util.Map;
 
 import org.neo4j.function.Function;
 
+import static org.neo4j.bolt.docs.v1.DocPartParser.Decoration.withDetailedExceptions;
+
 /**
  * Value: 1.1
  * <p/>
@@ -33,15 +35,16 @@ import org.neo4j.function.Function;
  */
 public class DocSerializationExample
 {
-    public static Function<Element,DocSerializationExample> serialization_example
-            = new Function<Element,DocSerializationExample>()
-    {
-        @Override
-        public DocSerializationExample apply( Element s ) throws RuntimeException
-        {
-            return new DocSerializationExample( s.text() );
-        }
-    };
+    public static DocPartParser<DocSerializationExample> serialization_example =
+        withDetailedExceptions( DocSerializationExample.class, new DocPartParser<DocSerializationExample>()
+            {
+                @Override
+                public DocSerializationExample parse( String fileName, String title, Element s )
+                {
+                    return new DocSerializationExample( s.text() );
+                }
+            }
+        );
 
     private final Map<String,String> attributes = new HashMap<>();
     private final String raw;

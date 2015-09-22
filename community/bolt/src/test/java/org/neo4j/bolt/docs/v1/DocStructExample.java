@@ -27,28 +27,32 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 
-import org.neo4j.function.Function;
+import static java.lang.String.format;
+
+import static org.neo4j.bolt.docs.v1.DocPartParser.Decoration.withDetailedExceptions;
 
 /**
  * Unlike {@link DocStruct}, this represents a "real" example struct with values, rather than the blueprint for one.
  */
 public class DocStructExample implements Iterable<String>
 {
-    public static Function<Element,DocStructExample> struct_example = new Function<Element,DocStructExample>()
-    {
-        @Override
-        public DocStructExample apply( Element s ) throws RuntimeException
-        {
-            return new DocStructExample( s.text() );
-        }
-    };
+    public static DocPartParser<DocStructExample> struct_example =
+        withDetailedExceptions( DocStructExample.class, new DocPartParser<DocStructExample>()
+            {
+                @Override
+                public DocStructExample parse( String fileName, String title, Element s )
+                {
+                    return new DocStructExample( DocPartName.create( fileName, title ), s.text() );
+                }
+            }
+        );
 
-    private final String name;
+    private final DocPartName name;
     private final Map<String,String> attributes;
     private final List<String> fields;
     private final String raw;
 
-    public DocStructExample( String structDefinition )
+    public DocStructExample( DocPartName name, String structDefinition )
     {
         Matcher matcher = DocStruct.STRUCT_PATTERN.matcher( structDefinition );
         if ( !matcher.matches() )
@@ -56,14 +60,14 @@ public class DocStructExample implements Iterable<String>
             throw new RuntimeException( "Unable to parse struct definition: \n" + structDefinition );
         }
         this.raw = structDefinition;
-        this.name = matcher.group( "name" );
+        this.name = name.withDetail( matcher.group( "name" ) );
         this.attributes = DocStruct.parseAttributes( matcher.group( "attrs" ) );
         this.fields = parseFields( matcher.group( "fields" ) );
     }
 
     public String name()
     {
-        return name;
+        return name.toString();
     }
 
     public String attribute( String key )

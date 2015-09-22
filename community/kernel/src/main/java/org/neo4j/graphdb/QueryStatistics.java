@@ -27,6 +27,8 @@ package org.neo4j.graphdb;
  */
 public interface QueryStatistics
 {
+    // NOTE: If you change this interface, be sure to update bolt
+
     /**
      * Returns the number of nodes created by this query.
      *

@@ -28,17 +28,21 @@ import java.util.List;
 
 import org.neo4j.function.Function;
 
+import static org.neo4j.bolt.docs.v1.DocPartParser.Decoration.withDetailedExceptions;
+
 /** A table from an asciidoc file */
 public class DocTable implements Iterable<DocTable.Row>
 {
-    public static Function<Element,DocTable> table = new Function<Element,DocTable>()
-    {
-        @Override
-        public DocTable apply( Element s ) throws RuntimeException
-        {
-            return new DocTable( s );
-        }
-    };
+    public static DocPartParser<DocTable> table =
+        withDetailedExceptions( DocTable.class, new DocPartParser<DocTable>()
+            {
+                @Override
+                public DocTable parse( String fileName, String title, Element s )
+                {
+                    return new DocTable( s );
+                }
+            }
+        );
 
     private final List<Row> rows;
 

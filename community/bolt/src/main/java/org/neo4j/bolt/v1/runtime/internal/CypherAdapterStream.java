@@ -19,8 +19,12 @@
  */
 package org.neo4j.bolt.v1.runtime.internal;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.graphdb.QueryExecutionType;
+import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
 import org.neo4j.bolt.v1.runtime.spi.Record;
 
@@ -63,11 +67,65 @@ public class CypherAdapterStream implements RecordStream
         } );
 
         QueryExecutionType qt = delegate.getQueryExecutionType();
+        visitor.addMetadata( "type", queryTypeCode( qt.queryType() ) );
+
+        if ( delegate.getQueryStatistics().containsUpdates() )
+        {
+            Object stats = queryStats( delegate.getQueryStatistics() );
+            visitor.addMetadata( "stats", stats );
+        }
         if ( qt.requestedExecutionPlanDescription() )
         {
             visitor.addMetadata( "plan", ExecutionPlanConverter.convert( delegate.getExecutionPlanDescription() ) );
         }
     }
+
+    private Map<String, Integer> queryStats( QueryStatistics queryStatistics )
+    {
+        Map<String, Integer> result = new HashMap<>();
+        addIfNonZero( result, "nodes-created", queryStatistics.getNodesCreated() );
+        addIfNonZero( result, "nodes-deleted", queryStatistics.getNodesDeleted() );
+        addIfNonZero( result, "relationships-created", queryStatistics.getRelationshipsCreated() );
+        addIfNonZero( result, "relationships-deleted", queryStatistics.getRelationshipsDeleted() );
+        addIfNonZero( result, "properties-set", queryStatistics.getPropertiesSet() );
+        addIfNonZero( result, "labels-added", queryStatistics.getLabelsAdded() );
+        addIfNonZero( result, "labels-removed", queryStatistics.getLabelsRemoved() );
+        addIfNonZero( result, "indexes-added", queryStatistics.getIndexesAdded() );
+        addIfNonZero( result, "indexes-removed", queryStatistics.getIndexesRemoved() );
+        addIfNonZero( result, "constraints-added", queryStatistics.getConstraintsAdded() );
+        addIfNonZero( result, "constraints-removed", queryStatistics.getConstraintsRemoved() );
+        return result;
+    }
+
+
+    private void addIfNonZero( Map<String, Integer> map, String name, int count )
+    {
+        if ( count > 0 )
+        {
+            map.put( name, count );
+        }
+    }
+
+    private String queryTypeCode( QueryExecutionType.QueryType queryType )
+    {
+        switch (queryType)
+        {
+            case READ_ONLY:
+                return "r";
+
+            case READ_WRITE:
+                return "rw";
+
+            case WRITE:
+                return "w";
+
+            case SCHEMA_WRITE:
+                return "s";
+
+            default:
+                return queryType.name();
+        }
+    };
 
     private static class CypherAdapterRecord implements Record
     {

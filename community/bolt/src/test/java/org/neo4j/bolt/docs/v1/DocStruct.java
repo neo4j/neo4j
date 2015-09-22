@@ -29,11 +29,11 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.neo4j.function.Function;
-
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.regex.Pattern.COMMENTS;
 import static java.util.regex.Pattern.DOTALL;
+
+import static org.neo4j.bolt.docs.v1.DocPartParser.Decoration.withDetailedExceptions;
 
 /**
  * Node (signature=0x4E) {
@@ -44,16 +44,19 @@ import static java.util.regex.Pattern.DOTALL;
  */
 public class DocStruct implements Iterable<DocStruct.Field>
 {
-    public static Function<Element,DocStruct> struct_definition = new Function<Element,DocStruct>()
-    {
-        @Override
-        public DocStruct apply( Element s ) throws RuntimeException
-        {
-            return new DocStruct( s.text() );
-        }
-    };
+    public static DocPartParser<DocStruct> struct_definition =
+        withDetailedExceptions( DocStruct.class, new DocPartParser<DocStruct>()
+            {
+                @Override
+                public DocStruct parse( String fileName, String title, Element s )
+                {
+                    return new DocStruct( DocPartName.create( fileName, title ), s.text() );
+                }
+            }
+        );
 
     private final String name;
+    private final DocPartName partName;
     private final Map<String,String> attributes;
     private final List<Field> fields;
     private final String raw;
@@ -102,7 +105,7 @@ public class DocStruct implements Iterable<DocStruct.Field>
             "(.*)$" +
             "", CASE_INSENSITIVE | COMMENTS | DOTALL );
 
-    public DocStruct( String structDefinition )
+    public DocStruct( DocPartName partName, String structDefinition )
     {
         Matcher matcher = STRUCT_PATTERN.matcher( structDefinition );
         if ( !matcher.matches() )
@@ -113,6 +116,7 @@ public class DocStruct implements Iterable<DocStruct.Field>
         this.name = matcher.group( "name" );
         this.attributes = parseAttributes( matcher.group( "attrs" ) );
         this.fields = parseFields( matcher.group( "fields" ) );
+        this.partName = partName.withDetail( name );
     }
 
     public String name()

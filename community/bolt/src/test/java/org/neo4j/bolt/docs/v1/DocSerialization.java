@@ -87,7 +87,7 @@ public class DocSerialization
         // 1: Is the value a struct definition?
         if ( value.startsWith( "Struct" ) )
         {
-            DocStructExample struct = new DocStructExample( value );
+            DocStructExample struct = new DocStructExample( DocPartName.unknown(), value );
             packer.packStructHeader( struct.size(), (byte) struct.signature() );
 
             for ( String s : struct )

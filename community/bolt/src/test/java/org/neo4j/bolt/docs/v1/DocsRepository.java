@@ -23,6 +23,7 @@ import org.asciidoctor.Asciidoctor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.io.File;
 import java.util.HashMap;
@@ -63,14 +64,32 @@ public class DocsRepository
      * @param cssSelector is a regular css selector, for instance "code[data-lang=\"bolt-struct\"]"
      * @param parser is something that converts the documentation excerpt to your desired representation
      */
-    public <T> List<T> read( String fileName, String cssSelector, Function<Element,T> parser )
+    public <T> List<T> read( String fileName, String cssSelector, DocPartParser<T> parser )
     {
         List<T> out = new LinkedList<>();
         for ( Element el : doc( fileName ).select( cssSelector ) )
         {
-            out.add( parser.apply( el ) );
+            out.add( parser.parse( fileName, findTitle( el ), el ) );
         }
         return out;
+    }
+
+    private String findTitle( Element el )
+    {
+        // To find a name for the test, search backwards up the tree until we find a header
+        String title = "<no title found>";
+        Element parent = el.parent();
+        while (parent != null)
+        {
+            Elements titleEl = parent.select( "div.title" );
+            if( titleEl.size() > 0 )
+            {
+                title = titleEl.first().text();
+                break;
+            }
+            parent = parent.parent();
+        }
+        return title;
     }
 
     private Document doc( String fileName )
@@ -91,7 +110,7 @@ public class DocsRepository
     {
         if ( maxDepth == 0 )
         {
-            throw new RuntimeException( "Couldn't find " + dir );
+            throw new RuntimeException( "Couldn't find " + dir + ". Looked in: " + new File(dir).getAbsolutePath() );
         }
         else if ( !new File( dir ).exists() )
         {
