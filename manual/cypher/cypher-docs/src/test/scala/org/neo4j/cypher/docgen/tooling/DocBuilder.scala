@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.docgen.tooling
 
-import org.neo4j.cypher.docgen.tooling.Admonitions.Tip
+import org.neo4j.cypher.docgen.tooling.Admonitions.{Note, Tip}
 
 import scala.collection.mutable
 
@@ -66,7 +66,8 @@ trait DocBuilder {
 
   def section(title: String)(f: => Unit) = inScope(new SectionScope(title), f)
 
-  def tip(f: => Unit) = inScope(new TipScope, f)
+  def tip(f: => Unit) = inScope(new AdmonitionScope(Tip.apply), f)
+  def note(f: => Unit) = inScope(new AdmonitionScope(Note.apply), f)
 
   def query(q: String, assertions: QueryAssertions)(f: => Unit) = inScope(new QueryScope(q, assertions), f)
 
@@ -102,10 +103,10 @@ object DocBuilder {
     override def toContent = Section(name, content)
   }
 
-  class TipScope extends Scope {
+  class AdmonitionScope(f: Content => Content) extends Scope {
     override def initQueries = throw new LiskovSubstitutionPrincipleException
 
-    override def toContent = Tip(content)
+    override def toContent = f(content)
   }
 
   class QueryScope(queryText: String, assertions: QueryAssertions) extends Scope {

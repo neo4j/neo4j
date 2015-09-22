@@ -28,7 +28,7 @@ object QueryOriginatedHere {
   } catch {
     case e: QueryOriginatedHere =>
       val original = e.getStackTrace
-      e.setStackTrace(Array(original(2)))
+      e.setStackTrace(Array(original(6)))
       e
   }
 }

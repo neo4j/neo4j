@@ -82,10 +82,7 @@ class QueryRunner(db: GraphDatabaseService,
         }
 
       val formattedResult = db.withTx { tx =>
-        result fold(
-          l => Left(l),
-          (r: (Transaction) => Content) => Right(r(tx))
-          )
+        result.right.map(contentBuilder => contentBuilder(tx))
       }
 
       QueryRunResult(q, formattedResult)

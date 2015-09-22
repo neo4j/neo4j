@@ -78,7 +78,7 @@ trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with 
 
     val asciiDocTree = document.asciiDoc
 
-    val dir = new File(s"target/docs/dev/ql/");
+    val dir = new File(s"target/docs/dev/ql/")
     if (!dir.exists())
       dir.mkdirs()
 
