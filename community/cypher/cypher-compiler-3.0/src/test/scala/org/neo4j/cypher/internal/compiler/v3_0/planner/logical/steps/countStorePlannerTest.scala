@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{CountStoreRelationshipAggregation, CountStoreNodeAggregation, IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{RelationshipCountFromCountStore, NodeCountFromCountStore, IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, Metrics, QueryGraphProducer, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{AggregatingQueryProjection, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
@@ -158,9 +158,9 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
       } else {
         MatchResult(
           plan match {
-            case Some(CountStoreNodeAggregation(IdName(countId), _, _)) if countId == s"count($identifier)" =>
+            case Some(NodeCountFromCountStore(IdName(countId), _, _)) if countId == s"count($identifier)" =>
               true
-            case Some(CountStoreRelationshipAggregation(IdName(countId), _, _, _, _, _)) if countId == s"count($identifier)" =>
+            case Some(RelationshipCountFromCountStore(IdName(countId), _, _, _, _, _)) if countId == s"count($identifier)" =>
               true
             case _ =>
               false

@@ -25,9 +25,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.NameId
-import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
-case class CountStoreRelationshipAggregationPipe(ident: String, startLabel: Option[LazyLabel],
+case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option[LazyLabel],
                                                  typeNames: LazyTypes, endLabel: Option[LazyLabel],
                                                  bothDirections: Boolean)
                                                 (val estimatedCardinality: Option[Double] = None)

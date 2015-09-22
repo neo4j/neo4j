@@ -17,21 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.pipes
+package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
-import org.neo4j.cypher.internal.frontend.v2_3.NameId.WILDCARD
-import org.neo4j.cypher.internal.frontend.v2_3.ast.{AstConstructionTestSupport, RelTypeName, LabelName}
-import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v2_3.{RelTypeId, LabelId, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
+import org.neo4j.cypher.internal.frontend.v3_0.NameId._
+import org.neo4j.cypher.internal.frontend.v3_0.{LabelId, RelTypeId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{LabelName, RelTypeName, AstConstructionTestSupport}
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
-class CountStoreRelationshipAggregationPipeTest extends CypherFunSuite with AstConstructionTestSupport {
+class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstConstructionTestSupport {
 
   implicit val monitor = mock[PipeMonitor]
 
   test("should return a count for relationships without a type or any labels") {
-    val pipe = CountStoreRelationshipAggregationPipe("count(r)", None, LazyTypes.empty, None, bothDirections = false)()
+    val pipe = RelationshipCountFromCountStorePipe("count(r)", None, LazyTypes.empty, None, bothDirections = false)()
 
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].relationshipCountByCountStore(WILDCARD, WILDCARD, WILDCARD)).thenReturn(42L).getMock[QueryContext]
@@ -43,7 +43,7 @@ class CountStoreRelationshipAggregationPipeTest extends CypherFunSuite with AstC
     implicit val table = new SemanticTable()
     table.resolvedRelTypeNames.put("X", RelTypeId(22))
 
-    val pipe = CountStoreRelationshipAggregationPipe("count(r)", None, LazyTypes(Seq(RelTypeName("X")(pos))), None, bothDirections = false)()
+    val pipe = RelationshipCountFromCountStorePipe("count(r)", None, LazyTypes(Seq(RelTypeName("X")(pos))), None, bothDirections = false)()
 
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].relationshipCountByCountStore(WILDCARD, 22, WILDCARD)).thenReturn(42L).getMock[QueryContext]
@@ -56,7 +56,7 @@ class CountStoreRelationshipAggregationPipeTest extends CypherFunSuite with AstC
     table.resolvedRelTypeNames.put("X", RelTypeId(22))
     table.resolvedLabelIds.put("A", LabelId(12))
 
-    val pipe = CountStoreRelationshipAggregationPipe("count(r)", Some(LazyLabel(LabelName("A") _)), LazyTypes(Seq(RelTypeName("X")(pos))), None, bothDirections = false)()
+    val pipe = RelationshipCountFromCountStorePipe("count(r)", Some(LazyLabel(LabelName("A") _)), LazyTypes(Seq(RelTypeName("X")(pos))), None, bothDirections = false)()
 
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].relationshipCountByCountStore(12, 22, WILDCARD)).thenReturn(42L).getMock[QueryContext]
@@ -69,7 +69,7 @@ class CountStoreRelationshipAggregationPipeTest extends CypherFunSuite with AstC
     table.resolvedRelTypeNames.put("X", RelTypeId(22))
     table.resolvedLabelIds.put("A", LabelId(12))
 
-    val pipe = CountStoreRelationshipAggregationPipe("count(r)", Some(LazyLabel(LabelName("A") _)), LazyTypes(Seq(RelTypeName("X")(pos))), None, bothDirections = true)()
+    val pipe = RelationshipCountFromCountStorePipe("count(r)", Some(LazyLabel(LabelName("A") _)), LazyTypes(Seq(RelTypeName("X")(pos))), None, bothDirections = true)()
 
     val mockedContext: QueryContext = mock[QueryContext]
     when(mockedContext.relationshipCountByCountStore(12, 22, WILDCARD)).thenReturn(42L)
@@ -82,7 +82,7 @@ class CountStoreRelationshipAggregationPipeTest extends CypherFunSuite with AstC
   test("should throw an exception when the label id can not be resolved") {
     implicit val table = new SemanticTable()
 
-    val pipe = CountStoreRelationshipAggregationPipe("count(r)", None, LazyTypes(Seq("X")), Some(LazyLabel(LabelName("A") _)), bothDirections = false)()
+    val pipe = RelationshipCountFromCountStorePipe("count(r)", None, LazyTypes(Seq("X")), Some(LazyLabel(LabelName("A") _)), bothDirections = false)()
 
     val mockedContext: QueryContext = mock[QueryContext]
     // try to guarantee that the mock won't be the reason for the exception

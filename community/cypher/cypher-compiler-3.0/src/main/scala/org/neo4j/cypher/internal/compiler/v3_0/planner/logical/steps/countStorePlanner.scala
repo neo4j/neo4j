@@ -63,6 +63,7 @@ case object countStorePlanner {
                         case (startLabel, OUTGOING, None)     => planRelAggr(startLabel, None)
                         case (None,       INCOMING, endLabel) => planRelAggr(endLabel, None)
                         case (startLabel, INCOMING, None)     => planRelAggr(None, startLabel)
+                        case _ => None
                       }
 
                     case _ => None
