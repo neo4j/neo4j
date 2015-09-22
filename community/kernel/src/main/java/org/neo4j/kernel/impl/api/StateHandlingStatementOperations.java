@@ -1147,7 +1147,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public long countsForNode( final KernelStatement statement, int labelId )
     {
-        long count = storeLayer.countsForNode( labelId );
+        long count = countsForNodeWithoutTxState( statement, labelId );
         if ( statement.hasTxStateWithChanges() )
         {
             CountsRecordState counts = new CountsRecordState();
@@ -1169,9 +1169,15 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
+    public long countsForNodeWithoutTxState( final KernelStatement statement, int labelId )
+    {
+        return storeLayer.countsForNode( labelId );
+    }
+
+    @Override
     public long countsForRelationship( KernelStatement statement, int startLabelId, int typeId, int endLabelId )
     {
-        long count = storeLayer.countsForRelationship( startLabelId, typeId, endLabelId );
+        long count = countsForRelationshipWithoutTxState( statement, startLabelId, typeId, endLabelId );
         if ( statement.hasTxStateWithChanges() )
         {
             CountsRecordState counts = new CountsRecordState();
@@ -1191,6 +1197,13 @@ public class StateHandlingStatementOperations implements
             }
         }
         return count;
+    }
+
+    @Override
+    public long countsForRelationshipWithoutTxState( KernelStatement statement, int startLabelId, int typeId,
+            int endLabelId )
+    {
+        return storeLayer.countsForRelationship( startLabelId, typeId, endLabelId );
     }
 
     @Override
