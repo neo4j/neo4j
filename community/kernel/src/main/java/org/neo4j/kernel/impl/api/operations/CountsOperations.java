@@ -26,6 +26,13 @@ public interface CountsOperations
     /** @see org.neo4j.kernel.api.CountsRead#countsForNode(int) */
     long countsForNode( KernelStatement statement, int labelId );
 
+    /** @see org.neo4j.kernel.api.CountsRead#countsForNodeWithoutTxState(int) */
+    long countsForNodeWithoutTxState( KernelStatement statement, int labelId );
+
     /** @see org.neo4j.kernel.api.CountsRead#countsForRelationship(int, int, int) */
     long countsForRelationship( KernelStatement statement, int startLabelId, int typeId, int endLabelId );
+
+    /** @see org.neo4j.kernel.api.CountsRead#countsForRelationshipWithoutTxState(int, int, int) */
+    long countsForRelationshipWithoutTxState( KernelStatement statement, int startLabelId, int typeId, int endLabelId );
+
 }
