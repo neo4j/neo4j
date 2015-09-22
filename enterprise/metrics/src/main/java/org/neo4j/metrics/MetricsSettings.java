@@ -33,6 +33,7 @@ import static org.neo4j.helpers.Settings.setting;
 /**
  * Settings for the Neo4j Enterprise metrics reporting.
  */
+@Description( "Metrics settings" )
 public class MetricsSettings
 {
     public enum CsvFile
