@@ -1694,7 +1694,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @RepeatRule.Repeat( times = 12000 )
+    @RepeatRule.Repeat( times = 1000 )
     @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void mustNotLoseUpdates() throws Exception
     {
@@ -1734,6 +1734,10 @@ public abstract class PageCacheTest<T extends PageCache>
             for ( int i = 0; i < filePages; i++ )
             {
                 assertTrue( "failed to initialise file page " + i, cursor.next() );
+                for ( int j = 0; j < pageSize; j++ )
+                {
+                    cursor.putByte( (byte) 0 );
+                }
             }
         }
         pageCache.flushAndForce();
@@ -1813,7 +1817,7 @@ public abstract class PageCacheTest<T extends PageCache>
             futures.add( executor.submit( new Worker( i ) ) );
         }
 
-        Thread.sleep( 1 );
+        Thread.sleep( 10 );
         shouldStop.set( true );
 
         for ( Future<Result> future : futures )
