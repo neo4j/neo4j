@@ -101,7 +101,7 @@ neo4j-graph-algo::
   as is illustrated http://neo4j.com/docs/milestone/query-match.html#match-shortest-path[here].
 
 neo4j-graph-matching::
-  This module provides an http://neo4j.com/docs/milestone/javadocs/org/neo4j/graphmatching/package-summary.html[API]
+  This module provides an API
   to perform pattern matching on graphs.
   It is mainly intended for internal use by the Cypher Execution Engine.
   Although its API can be used when using an embedded version of Neo4j,
@@ -110,10 +110,10 @@ neo4j-graph-matching::
 neo4j-lucene-index::
   This module provides indexing capabilities to allow users to lookup nodes based on their properties.
   As described in http://neo4j.com/docs/milestone/indexing.html[the manual],
-  this way of indexing is no longer recommended if http://neo4j.com/docs/milestone/graphdb-neo4j-schema.html[schema indexing] would suffice.
+  this way of indexing is no longer recommended if http://neo4j.com/docs/milestone/query-schema-index.html[schema indexing] would suffice.
 
 neo4j-server::
-  The community version of http://neo4j.com/docs/milestone/server.html[the Neo4j server].
+  The community version of http://neo4j.com/docs/milestone/reference-documentation.html[the Neo4j server].
   It contains the functionality of the http://neo4j.com/docs/milestone/rest-api.html[REST API]
   and http://neo4j.com/docs/milestone/tools-webadmin.html[the WebAdmin tool].
 
@@ -131,11 +131,11 @@ neo4j-shell::
 neo4j-cypher::
   This module provides the Cypher Execution Engine, which allows users to query using the Cypher Query Language.
   As it is partly written in Scala, 
-  working with this module requires some extra setup as discussed link:community/cypher/README.txt[here].
+  working with this module requires some extra setup as discussed link:community/cypher/cypher/README.txt[here].
 
 neo4j-kernel::
   The kernel is the core of Neo4j.
-  It contains the custom storage system, the embedded API of Neo4j and transaction support as listed link:community/kernel/README.sources.txt[here].
+  It contains the custom storage system, the embedded API of Neo4j and transaction support as listed link:community/kernel/README.md[here].
 
 ==== Advanced Modules ====
 
@@ -279,8 +279,8 @@ This also allows the following names:
 === Contributing Process ===
 
 If you want to contribute to the system,
-please read http://neo4j.com/docs/milestone/community-contributing-code.html[this section]
-of the manual, which describes some general guidelines for contributing.
+please read http://neo4j.com/developer/contributing-code/[this page],
+which describes some general guidelines for contributing.
 Note that test-driven development (write tests first, code later) is recommended.
 Your contribution should adhere to the structure as described
 in section Overview of the directory structure.
@@ -293,5 +293,5 @@ as they are located on their own branch.
 
 Configuration files for the http://www.eclipse.org[Eclipse]
 and http://www.jetbrains.com/idea/[Intellij IDEA]
-IDEs can be found link:code-style[here].
+IDEs can be found https://github.com/neo4j/neo4j.github.com/tree/master/code-style[here].
 These files will configure your IDE to use the Neo4j coding style.
