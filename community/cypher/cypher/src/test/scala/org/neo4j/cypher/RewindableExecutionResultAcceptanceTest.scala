@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.graphdb.Node
 
 class RewindableExecutionResultAcceptanceTest extends ExecutionEngineFunSuite {

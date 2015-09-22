@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor}
@@ -143,15 +143,15 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     verify(monitor, times(1)).endSuccess(session)
   }
 
-  test("triggering monitor in 2.2") {
+  test("triggering monitor in 2.3") {
     // given
     val session = QueryEngineProvider.embeddedSession()
 
     // when
-    val result = engine.profile("CYPHER 2.2 RETURN [1, 2, 3, 4, 5]", Map.empty[String, Any], session).javaIterator
+    val result = engine.profile("CYPHER 2.3 RETURN [1, 2, 3, 4, 5]", Map.empty[String, Any], session).javaIterator
 
     //then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.2 RETURN [1, 2, 3, 4, 5]")
+    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.3 RETURN [1, 2, 3, 4, 5]")
     while (result.hasNext) {
       verify(monitor, never).endSuccess(session)
       result.next()
@@ -159,24 +159,24 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     verify(monitor, times(1)).endSuccess(session)
   }
 
-  test("monitor is called when iterator closes in 2.2") {
+  test("monitor is called when iterator closes in 2.3") {
     // given
     val session = QueryEngineProvider.embeddedSession()
 
     // when
-    val result = engine.execute("CYPHER 2.2 RETURN 42", Map.empty[String, Any], session).javaIterator.close()
+    val result = engine.execute("CYPHER 2.3 RETURN 42", Map.empty[String, Any], session).javaIterator.close()
 
     // then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.2 RETURN 42")
+    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.3 RETURN 42")
     verify(monitor, times(1)).endSuccess(session)
   }
 
-  test("monitor is called when next on empty iterator in 2.2") {
+  test("monitor is called when next on empty iterator in 2.3") {
     // given
     val session = QueryEngineProvider.embeddedSession()
 
     // when
-    val iterator = engine.execute("CYPHER 2.2 RETURN 42", Map.empty[String, Any], session).javaIterator
+    val iterator = engine.execute("CYPHER 2.3 RETURN 42", Map.empty[String, Any], session).javaIterator
     iterator.next()
     var throwable: Throwable = null
     try {
@@ -188,80 +188,19 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     }
 
     // then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.2 RETURN 42")
+    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.3 RETURN 42")
     verify(monitor, times(1)).endFailure(session, throwable)
   }
 
-  test("monitor is called directly when return is empty in 2.2") {
+  test("monitor is called directly when return is empty in 2.3") {
     // given
     val session = QueryEngineProvider.embeddedSession()
 
     // when
-    val result = engine.execute("CYPHER 2.2 CREATE()", Map.empty[String, Any], session).javaIterator
+    val result = engine.execute("CYPHER 2.3 CREATE()", Map.empty[String, Any], session).javaIterator
 
     // then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.2 CREATE()")
-    verify(monitor, times(1)).endSuccess(session)
-  }
-
-  test("triggering monitor in 1.9") {
-    // given
-    val session = QueryEngineProvider.embeddedSession()
-
-    // when
-    val result = engine.profile("CYPHER 1.9 CREATE() RETURN [1, 2, 3, 4, 5]", Map.empty[String, Any], session).javaIterator
-
-    //then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 1.9 CREATE() RETURN [1, 2, 3, 4, 5]")
-    while (result.hasNext) {
-      verify(monitor, never).endSuccess(session)
-      result.next()
-    }
-    verify(monitor, times(1)).endSuccess(session)
-  }
-
-  test("monitor is called when iterator closes in 1.9") {
-    // given
-    val session = QueryEngineProvider.embeddedSession()
-
-    // when
-    val result = engine.execute("CYPHER 1.9 CREATE() RETURN 42", Map.empty[String, Any], session).javaIterator.close()
-
-    // then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 1.9 CREATE() RETURN 42")
-    verify(monitor, times(1)).endSuccess(session)
-  }
-
-  test("monitor is called when next on empty iterator in 1.9") {
-    // given
-    val session = QueryEngineProvider.embeddedSession()
-
-    // when
-    val iterator = engine.execute("CYPHER 1.9 CREATE() RETURN 42", Map.empty[String, Any], session).javaIterator
-    iterator.next()
-    var throwable: Throwable = null
-    try {
-      iterator.next()
-      fail("we expect an exception here")
-    }
-    catch {
-      case e: Throwable => throwable = e
-    }
-
-    // then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 1.9 CREATE() RETURN 42")
-    verify(monitor, times(1)).endFailure(session, throwable)
-  }
-
-  test("monitor is called directly when return is empty in 1.9 ") {
-    // given
-    val session = QueryEngineProvider.embeddedSession()
-
-    // when
-    val result = engine.execute("CYPHER 1.9 CREATE()", Map.empty[String, Any], session).javaIterator
-
-    // then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 1.9 CREATE()")
+    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.3 CREATE()")
     verify(monitor, times(1)).endSuccess(session)
   }
 

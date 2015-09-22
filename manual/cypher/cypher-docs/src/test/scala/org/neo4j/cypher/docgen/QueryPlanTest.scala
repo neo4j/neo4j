@@ -22,8 +22,9 @@ package org.neo4j.cypher.docgen
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{IndexSeekByRange, UniqueIndexSeekByRange}
 import org.scalatest.Ignore
+import org.junit.{Ignore, Test}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.IndexSeekByRange
 
 class QueryPlanTest extends DocumentingTestBase with SoftReset {
   override val setupQueries = List(
@@ -139,10 +140,10 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(
       title = "Eager",
       text =
-        """For isolation purposes this operator makes sure that operations that affect subsequent operations are executed fully for the whole dataset before continuing execution. 
+        """For isolation purposes this operator makes sure that operations that affect subsequent operations are executed fully for the whole dataset before continuing execution.
            | Otherwise it could trigger endless loops, matching data again, that was just created.
            | The Eager operator can cause high memory usage when importing data or migrating graph structures.
-           | In such cases split up your operations into simpler steps e.g. you can import nodes and relationships separately. 
+           | In such cases split up your operations into simpler steps e.g. you can import nodes and relationships separately.
            | Alternatively return the records to be updated and run an update statement afterwards.""".stripMargin,
       queryText = """MATCH (p:Person) MERGE (:Person:Clone {name:p.name})""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Eager"))

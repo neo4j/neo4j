@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{NewPlannerTestSupport, ExecutionEngineFunSuite}
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CustomMatchers
+import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CustomMatchers
 
 class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers with NewPlannerTestSupport {
 

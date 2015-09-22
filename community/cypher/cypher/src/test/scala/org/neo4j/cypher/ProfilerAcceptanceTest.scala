@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_3
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows}
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CreateTempFileTestSupport
-import org.neo4j.cypher.internal.frontend.v2_3.helpers.StringHelper.RichString
+import org.neo4j.cypher.internal.compiler.v3_0
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows}
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, InternalPlanDescription}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.helpers.TxCounts
 
 class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFileTestSupport with NewPlannerTestSupport {
@@ -87,11 +87,11 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(2)(result)("NodeByLabelScan", "Expand(All)")
   }
 
-  test("PROFILE for Cypher 2.2") {
-    val result = eengine.profile("cypher 2.2 match n where n-[:FOO]->() return *")
+  test("PROFILE for Cypher 2.3") {
+    val result = eengine.profile("cypher 2.3 match n where n-[:FOO]->() return *")
 
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
-    result.executionPlanDescription().toString should include("DbHits")
+    result.executionPlanDescription().toString should include("DB Hits")
   }
 
   test("match n where not n-[:FOO]->() return *") {
@@ -99,7 +99,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     relate( createNode(), createNode(), "FOO")
 
     //WHEN
-    val result = profileWithAllPlanners("CYPHER 2.3 match n where not n-[:FOO]->() return *")
+    val result = profileWithAllPlanners("CYPHER 3.0 match n where not n-[:FOO]->() return *")
 
     //THEN
     assertRows(1)(result)("AntiSemiApply")
@@ -552,7 +552,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   def profileWithPlanner(planner: Planner, q: String, params: (String, Any)*): InternalExecutionResult = {
     val result = planner("profile " + q, params)
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
-    val planDescription: v2_3.planDescription.InternalPlanDescription = result.executionPlanDescription()
+    val planDescription: v3_0.planDescription.InternalPlanDescription = result.executionPlanDescription()
     planDescription.flatten.foreach {
       p =>
         if (!p.arguments.exists(_.isInstanceOf[DbHits])) {
@@ -571,11 +571,11 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   def legacyProfile(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(innerExecute(_,_:_*), q, params:_*)
 
-  private def getArgument[A <: Argument](plan: v2_3.planDescription.InternalPlanDescription)(implicit manifest: Manifest[A]): A = plan.arguments.collectFirst {
+  private def getArgument[A <: Argument](plan: v3_0.planDescription.InternalPlanDescription)(implicit manifest: Manifest[A]): A = plan.arguments.collectFirst {
     case x: A => x
   }.getOrElse(fail(s"Failed to find plan description argument where expected. Wanted ${manifest.toString()} but only found ${plan.arguments}"))
 
-  private def getPlanDescriptions(result: InternalExecutionResult, names: Seq[String]): Seq[v2_3.planDescription.InternalPlanDescription] = {
+  private def getPlanDescriptions(result: InternalExecutionResult, names: Seq[String]): Seq[v3_0.planDescription.InternalPlanDescription] = {
     result.toList
     val description = result.executionPlanDescription()
     if (names.isEmpty)

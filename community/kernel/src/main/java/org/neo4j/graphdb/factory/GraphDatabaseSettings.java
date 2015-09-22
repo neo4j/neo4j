@@ -99,7 +99,7 @@ public abstract class GraphDatabaseSettings
     @Description( "Set this to specify the default parser (language version)." )
     public static final Setting<String> cypher_parser_version = setting(
             "cypher_parser_version",
-            options( "1.9", "2.2", "2.3", DEFAULT ), DEFAULT );
+            options("2.3", "3.0", DEFAULT ), DEFAULT );
 
     @Description( "Set this to specify the default planner for the default language version." )
     public static final Setting<String> cypher_planner = setting(

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, PropertyContainer}
 import org.scalatest.matchers.{MatchResult, Matcher}
 

@@ -308,7 +308,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin_and_execute_cypher_22_periodic_commit_that_returns_data_and_commit() throws Exception
+    public void begin_and_execute_cypher_23_periodic_commit_that_returns_data_and_commit() throws Exception
     {
         ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()
         {
@@ -320,7 +320,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                 // begin and execute and commit
                 Response response = http.POST(
                         "/db/data/transaction/commit",
-                        quotedJson( "{ 'statements': [ { 'statement': 'CYPHER 2.2 USING PERIODIC COMMIT LOAD CSV FROM" +
+                        quotedJson( "{ 'statements': [ { 'statement': 'CYPHER 2.3 USING PERIODIC COMMIT LOAD CSV FROM" +
                                     " \\\"" + url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
                 );
 

@@ -22,9 +22,9 @@ package org.neo4j.cypher
 import java.io.{File, PrintWriter}
 import java.util.concurrent.TimeUnit
 
-import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathImpl
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.compiler.v3_0.CompilationPhaseTracer.CompilationPhase
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.PathImpl
+import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer.QueryEvent
 import org.neo4j.graphdb._
@@ -485,7 +485,7 @@ order by a.COL1""")
   }
 
   test("createEngineWithSpecifiedParserVersion") {
-    val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.9").asJava)
+    val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "2.3").asJava)
     val engine = new ExecutionEngine(db)
 
     try {
@@ -529,57 +529,6 @@ order by a.COL1""")
     result.toList should equal(List(Map("count(*)" -> 0)))
   }
 
-  test("should_return_paths_in_1_9") {
-    val a = createNode()
-    val b = createNode()
-    val c = createNode()
-    val d = createNode()
-    relate(a, b, "X")
-    relate(a, c, "X")
-    relate(a, d, "X")
-
-    val result = eengine.execute("cypher 1.9 start n = node(0) return n-->()")
-      .columnAs[List[Path]]("n-->()").toList.flatMap(p => p.map(_.endNode()))
-
-    result should equal(List(d, c, b))
-  }
-
-  test("var_length_expression_on_1_9") {
-    val a = createNode()
-    val b = createNode()
-    val r = relate(a, b)
-
-    val resultPath = eengine.execute("CYPHER 1.9 START a=node(0), b=node(1) RETURN a-[*]->b as path")
-      .toList.head("path").asInstanceOf[List[Path]].head
-
-    resultPath.startNode() should equal(a)
-    resultPath.endNode() should equal(b)
-    resultPath.lastRelationship() should equal(r)
-  }
-
-  test("optional_expression_used_to_be_supported") {
-    graph.inTx {
-      val a = createNode()
-      val b = createNode()
-      val r = relate(a, b)
-
-      val result = eengine.execute("CYPHER 1.9 start a=node(0) match a-->b RETURN a-[?]->b")
-      result.toList should equal(List(Map("a-[?]->b" -> List(PathImpl(a, r, b)))))
-    }
-  }
-
-  test("pattern_expression_deep_in_function_call_in_1_9") {
-    val a = createNode()
-    val b = createNode()
-    val c = createNode()
-    relate(a,b)
-    relate(a,c)
-
-    graph.inTx {
-      eengine.execute("CYPHER 1.9 start a=node(0) foreach(n in extract(p in a-->() | last(p)) | set n.touched = true) return a-->()").toList
-    }
-  }
-
   test("with_should_not_forget_original_type") {
     val result = executeWithRulePlanner("create (a{x:8}) with a.x as foo return sum(foo)")
 
@@ -592,9 +541,9 @@ order by a.COL1""")
     val result = executeWithRulePlanner("start n=node:test(name={id}) with count(*) as c where c=0 create (x{name:{id}}) return c, x", "id" -> id).toList
 
     result should have size 1
-    result(0)("c").asInstanceOf[Long] should equal(0)
+    result.head("c").asInstanceOf[Long] should equal(0)
     graph.inTx {
-      result(0)("x").asInstanceOf[Node].getProperty("name") should equal(id)
+      result.head("x").asInstanceOf[Node].getProperty("name") should equal(id)
     }
   }
 
@@ -605,7 +554,7 @@ order by a.COL1""")
 
     result should have size 1
     graph.inTx {
-      result(0)("n").asInstanceOf[Node].getProperty("foo") should equal(id)
+      result.head("n").asInstanceOf[Node].getProperty("foo") should equal(id)
     }
   }
 
@@ -1021,7 +970,7 @@ order by a.COL1""")
       writer.println("1,2,3")
       writer.println("4,5,6")
     }
-    val result = eengine.execute(s"cypher 2.2 using periodic commit load csv from '$url' as line create x return x")
+    val result = eengine.execute(s"cypher 2.3 using periodic commit load csv from '$url' as line create x return x")
     result should have size 2
   }
 

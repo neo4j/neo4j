@@ -20,7 +20,7 @@
 
 package org.neo4j.cypher.internal.tracing;
 
-import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer;
+import org.neo4j.cypher.internal.compiler.v3_0.CompilationPhaseTracer;
 
 public interface CompilationTracer
 {

@@ -24,9 +24,9 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
 import org.mockito.Mockito.verify
-import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer.CompilationPhase.{LOGICAL_PLANNING, PARSING}
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.{closing, using}
-import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_0.CompilationPhaseTracer.CompilationPhase.{LOGICAL_PLANNING, PARSING}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{closing, using}
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.tracing.CompilationTracer.NO_COMPILATION_TRACING
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer.QueryEvent
 

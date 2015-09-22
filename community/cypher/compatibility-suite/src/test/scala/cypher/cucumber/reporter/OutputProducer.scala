@@ -19,7 +19,7 @@
  */
 package cypher.cucumber.reporter
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.QueryTagger
+import org.neo4j.cypher.internal.compiler.v3_0.ast.QueryTagger
 
 import scala.collection.mutable
 

@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.cypher.CypherException;
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult;
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;

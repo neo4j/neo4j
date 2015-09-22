@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.IndexSeekByRange
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.{IndexSeekByRange, UniqueIndexSeekByRange}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.{Node, ResourceIterator}
 

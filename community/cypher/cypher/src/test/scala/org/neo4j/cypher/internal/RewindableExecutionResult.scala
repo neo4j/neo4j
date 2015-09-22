@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor2_3, exceptionHandlerFor2_3}
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledExecutionResult, InternalExecutionResult}
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
-import org.neo4j.cypher.internal.compiler.v2_3.{PipeExecutionResult, PlannerName, RuntimeName}
+import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor3_0, exceptionHandlerFor3_0}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{CompiledExecutionResult, InternalExecutionResult}
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
+import org.neo4j.cypher.internal.compiler.v3_0.{PipeExecutionResult, PlannerName, RuntimeName}
 import org.neo4j.cypher.{ExecutionResult, InternalException}
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 
@@ -33,7 +33,7 @@ object RewindableExecutionResult {
   def apply(inner: InternalExecutionResult, planner: PlannerName, runtime: RuntimeName): InternalExecutionResult =
     inner match {
       case other: PipeExecutionResult =>
-        exceptionHandlerFor2_3.runSafely {
+        exceptionHandlerFor3_0.runSafely {
           new PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder,
             other.executionMode, QueryType.READ_WRITE) {
             override def executionPlanDescription(): InternalPlanDescription = super.executionPlanDescription()
@@ -41,7 +41,7 @@ object RewindableExecutionResult {
           }
         }
       case other: CompiledExecutionResult =>
-        exceptionHandlerFor2_3.runSafely {
+        exceptionHandlerFor3_0.runSafely {
           other.toEagerIterableResult(planner, runtime)
         }
 
@@ -50,7 +50,7 @@ object RewindableExecutionResult {
     }
 
   def apply(in: ExecutionResult): InternalExecutionResult = in match {
-    case e@ExecutionResultWrapperFor2_3(inner, _, _) => exceptionHandlerFor2_3
+    case e@ExecutionResultWrapperFor3_0(inner, _, _) => exceptionHandlerFor3_0
       .runSafely(apply(inner, e.planner, e.runtime))
 
     case _ => throw new InternalException("Can't get the internal execution result of an older compiler")

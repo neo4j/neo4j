@@ -311,7 +311,7 @@ Server: SUCCESS {
             "args": {
               "runtime-impl": "INTERPRETED",
               "planner-impl": "IDP",
-              "version": "CYPHER 2.3",
+              "version": "CYPHER 3.0",
               "KeyNames": "num",
               "EstimatedRows": 1.0,
               "planner": "COST",
@@ -335,7 +335,7 @@ Server: SUCCESS {
   2D 69 6D 70  6C 8B 49 4E  54 45 52 50  52 45 54 45
   44 8C 70 6C  61 6E 6E 65  72 2D 69 6D  70 6C 83 49
   44 50 87 76  65 72 73 69  6F 6E 8A 43  59 50 48 45
-  52 20 32 2E  33 88 4B 65  79 4E 61 6D  65 73 83 6E
+  52 20 33 2E  30 88 4B 65  79 4E 61 6D  65 73 83 6E
   75 6D 8D 45  73 74 69 6D  61 74 65 64  52 6F 77 73
   C1 3F F0 00  00 00 00 00  00 87 70 6C  61 6E 6E 65
   72 84 43 4F  53 54 87 72  75 6E 74 69  6D 65 8B 49
@@ -379,7 +379,7 @@ Server: SUCCESS {
             "args": {
               "runtime-impl": "INTERPRETED",
               "planner-impl": "IDP",
-              "version": "CYPHER 2.3",
+              "version": "CYPHER 3.0",
               "KeyNames": "num",
               "EstimatedRows": 1.0,
               "planner": "COST",
@@ -408,7 +408,7 @@ Server: SUCCESS {
   2D 69 6D 70  6C 8B 49 4E  54 45 52 50  52 45 54 45
   44 8C 70 6C  61 6E 6E 65  72 2D 69 6D  70 6C 83 49
   44 50 87 76  65 72 73 69  6F 6E 8A 43  59 50 48 45
-  52 20 32 2E  33 88 4B 65  79 4E 61 6D  65 73 83 6E
+  52 20 33 2E  30 88 4B 65  79 4E 61 6D  65 73 83 6E
   75 6D 8D 45  73 74 69 6D  61 74 65 64  52 6F 77 73
   C1 3F F0 00  00 00 00 00  00 87 70 6C  61 6E 6E 65
   72 84 43 4F  53 54 87 72  75 6E 74 69  6D 65 8B 49

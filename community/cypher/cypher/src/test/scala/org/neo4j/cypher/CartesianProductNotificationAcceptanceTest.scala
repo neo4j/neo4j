@@ -21,13 +21,13 @@ package org.neo4j.cypher
 
 import org.mockito.Matchers._
 import org.mockito.Mockito.{verify, _}
-import org.neo4j.cypher.internal.compatibility.{StringInfoLogger2_3, WrappedMonitors2_3}
-import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.frontend.v2_3.notification.CartesianProductNotification
-import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v2_3.InputPosition
-import org.neo4j.cypher.internal.spi.v2_3.GeneratedQueryStructure
+import org.neo4j.cypher.internal.compatibility.{WrappedMonitors3_0, StringInfoLogger3_0, StringInfoLogger2_3, WrappedMonitors2_3}
+import org.neo4j.cypher.internal.compiler.v3_0._
+import org.neo4j.cypher.internal.frontend.v3_0.notification.CartesianProductNotification
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
+import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
 import org.neo4j.helpers.Clock
 import org.neo4j.logging.NullLog
 
@@ -98,8 +98,8 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       ),
       Clock.SYSTEM_CLOCK,
       GeneratedQueryStructure,
-      new WrappedMonitors2_3(kernelMonitors),
-      new StringInfoLogger2_3(NullLog.getInstance),
+      new WrappedMonitors3_0(kernelMonitors),
+      new StringInfoLogger3_0(NullLog.getInstance),
       plannerName = Some(GreedyPlannerName),
       runtimeName = Some(CompiledRuntimeName),
       rewriterSequencer = RewriterStepSequencer.newValidating

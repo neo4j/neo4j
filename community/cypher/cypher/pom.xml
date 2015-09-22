@@ -188,39 +188,8 @@
     <!-- neo4j-cypher -->
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-1.9_2.11</artifactId>
-      <version>2.0.5</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-kernel</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-lucene-index</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-graph-matching</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-graph-algo</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-cypher-commons</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.scala-lang</groupId>
-          <artifactId>scala-library</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-2.2_2.11</artifactId>
-      <version>2.2.3</version>
+      <artifactId>neo4j-cypher-compiler-2.3</artifactId>
+      <version>2.3-SNAPSHOT</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
@@ -258,7 +227,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-2.3</artifactId>
+      <artifactId>neo4j-cypher-compiler-3.0</artifactId>
       <version>${project.version}</version>
       <exclusions>
         <exclusion>
@@ -304,7 +273,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-2.3</artifactId>
+      <artifactId>neo4j-cypher-compiler-3.0</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

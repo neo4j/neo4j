@@ -156,7 +156,7 @@
     <!-- neo4j-cypher -->
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-2.3</artifactId>
+      <artifactId>neo4j-cypher-compiler-3.0</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
       <exclusions>

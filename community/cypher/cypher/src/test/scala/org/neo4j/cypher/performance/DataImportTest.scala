@@ -20,7 +20,7 @@
 package org.neo4j.cypher.performance
 
 import java.io.File
-import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.DynamicRelationshipType
 import org.neo4j.index.impl.lucene.LuceneBatchInserterIndexProviderNewImpl
 import org.neo4j.unsafe.batchinsert.{BatchInserter, BatchInserterIndex, BatchInserters}

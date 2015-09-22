@@ -19,11 +19,11 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{NestedPipeExpression, PathImpl}
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{ArgumentPipe, ExpandAllPipe, LazyTypes}
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{EstimatedRows, LegacyExpression}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.BeLikeMatcher._
-import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{NestedPipeExpression, PathImpl}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ArgumentPipe, ExpandAllPipe, LazyTypes}
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{EstimatedRows, LegacyExpression}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.BeLikeMatcher._
+import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb.Relationship
 import org.scalatest.Matchers

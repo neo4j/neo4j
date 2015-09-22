@@ -65,10 +65,10 @@ object TransactionBoundGraphStatistics {
       }
 
     def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
-      statement.readOperations().countsForNode(labelId)
+      Cardinality(statement.readOperations().countsForNode(labelId))
 
     def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
-      statement.readOperations().countsForRelationship(fromLabel, relTypeId, toLabel)
+      Cardinality(statement.readOperations().countsForRelationship(fromLabel, relTypeId, toLabel))
   }
 }
 

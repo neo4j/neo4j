@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.frontend.v2_3.InputPosition
-import org.neo4j.cypher.internal.frontend.v2_3.parser.Base
+import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_0.parser.Base
 import org.parboiled.scala._
 
 final case class PreParsedStatement(statement: String, options: Seq[PreParserOption], offset: InputPosition)

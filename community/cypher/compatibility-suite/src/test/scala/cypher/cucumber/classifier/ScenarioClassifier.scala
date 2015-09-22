@@ -28,7 +28,7 @@ import cucumber.runtime.xstream.LocalizedXStreams
 import cucumber.runtime.{RuntimeGlue, RuntimeOptionsFactory, UndefinedStepsTracker}
 import cypher.cucumber.DataTableConverter._
 import gherkin.formatter.model.DocString
-import org.neo4j.cypher.internal.compiler.v2_3.ast.QueryTagger
+import org.neo4j.cypher.internal.compiler.v3_0.ast.QueryTagger
 
 import scala.collection.JavaConverters._
 
