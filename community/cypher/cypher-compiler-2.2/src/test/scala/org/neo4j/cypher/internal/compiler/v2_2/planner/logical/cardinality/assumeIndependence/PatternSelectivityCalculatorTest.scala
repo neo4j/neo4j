@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assu
 
 import org.mockito.Matchers.any
 import org.mockito.Mockito._
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.LabelId
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{AstConstructionTestSupport, HasLabels, LabelName}
@@ -66,7 +68,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
     implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(ident("a"), Seq(label))(pos))))
     val result = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
 
-    result should equal(Selectivity(42))
+    result should equal(Selectivity.ONE)
   }
 
   test("handles variable length paths over 32 in length") {
@@ -83,6 +85,34 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
     implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(ident("a"), Seq(label))(pos))))
     val result = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
 
-    result should equal(Selectivity(Math.pow(3, 32)))
+    result should equal(Selectivity.ONE)
+  }
+
+  test("should not produce selectivities larger than 1.0") {
+    val stats: GraphStatistics = mock[GraphStatistics]
+    when(stats.nodesWithLabelCardinality(any())).thenAnswer(new Answer[Cardinality] {
+      override def answer(invocationOnMock: InvocationOnMock): Cardinality = {
+        val arg = invocationOnMock.getArguments()(0).asInstanceOf[Option[LabelId]]
+        arg match {
+          case None => Cardinality(10)
+          case Some(_) => Cardinality(1)
+        }
+      }
+    })
+    when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(42))
+
+    val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
+    val relationship = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+
+    val labels = new mutable.HashMap[String, LabelId]()
+    for (i <- 1 to 100) labels.put(i.toString, LabelId(i))
+    val labelNames = labels.keys.map(LabelName(_)(pos))
+    val predicates = labelNames.map(l => Predicate(Set[IdName]("a"), HasLabels(ident("a"), Seq(l))(pos))).toSet
+
+    implicit val semanticTable = new SemanticTable(resolvedLabelIds = labels)
+    implicit val selections = Selections(predicates)
+    val result = calculator.apply(relationship, Map.empty)
+
+    result should equal(Selectivity.ONE)
   }
 }

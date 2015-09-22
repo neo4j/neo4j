@@ -2282,4 +2282,17 @@ return b
       Map("p" -> PathImpl(b, r2, a, r1, b)))
   }
 
+  test("should be able to match on nodes with MANY labels") {
+    //given
+    val start = createLabeledNode('A' to 'M' map(_.toString):_* )
+    val end = createLabeledNode('U' to 'Z' map(_.toString):_* )
+    relate(start, end, "REL")
+
+    //when
+    val result = executeWithAllPlanners("match (n:A:B:C:D:E:F:G:H:I:J:K:L:M)-[:REL]->(m:Z:Y:X:W:V:U) return n,m")
+
+    //then
+    result.toList should equal(List(Map("n" -> start, "m" -> end)))
+  }
+
 }

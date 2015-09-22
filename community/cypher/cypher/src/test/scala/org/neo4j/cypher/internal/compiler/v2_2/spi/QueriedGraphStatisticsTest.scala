@@ -104,7 +104,7 @@ class QueriedGraphStatisticsTest extends CypherFunSuite with GraphDatabaseTestSu
       val xLabel = LabelId(qtx.getLabelId("X"))
       val pkId = PropertyKeyId(qtx.getPropertyKeyId("age"))
 
-      stats.indexSelectivity(xLabel, pkId) should equal(Some(Selectivity(1.0/3.0)))
+      stats.indexSelectivity(xLabel, pkId) should equal(Selectivity.of(1.0/3.0))
     }
   }
 
@@ -116,7 +116,7 @@ class QueriedGraphStatisticsTest extends CypherFunSuite with GraphDatabaseTestSu
       val xLabel = LabelId(qtx.getLabelId("X"))
       val pkId = PropertyKeyId(qtx.getPropertyKeyId("age"))
 
-      stats.indexSelectivity(xLabel, pkId) should equal(Some(Selectivity(1.0/4.0)))
+      stats.indexSelectivity(xLabel, pkId) should equal(Selectivity.of(1.0/4.0))
     }
   }
 

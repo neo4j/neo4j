@@ -35,7 +35,7 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
       Cardinality(relTypeId.fold(5000)(_.id * 10) * FACTOR)
 
     def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
-      Some(1.0 / ((property.id + 1) * FACTOR))
+      Selectivity.of(1.0 / ((property.id + 1) * FACTOR))
   }
 
   test("records queries and its observed values") {

@@ -27,10 +27,10 @@ case object HardcodedGraphStatistics extends HardcodedGraphStatisticsValues
 
 class HardcodedGraphStatisticsValues extends GraphStatistics {
   val NODES_CARDINALITY = Cardinality(10000)
-  val NODES_WITH_LABEL_SELECTIVITY = Selectivity(0.2)
+  val NODES_WITH_LABEL_SELECTIVITY = Selectivity.of(0.2).get
   val NODES_WITH_LABEL_CARDINALITY = NODES_CARDINALITY * NODES_WITH_LABEL_SELECTIVITY
   val RELATIONSHIPS_CARDINALITY = Cardinality(50000)
-  val INDEX_SELECTIVITY = Selectivity(.02)
+  val INDEX_SELECTIVITY = Selectivity.of(.02).get
 
   def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
     Some(INDEX_SELECTIVITY)

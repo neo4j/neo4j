@@ -43,8 +43,7 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
   def apply(pattern: PatternRelationship, labels: Map[IdName, Set[LabelName]])
            (implicit semanticTable: SemanticTable, selections: Selections): Selectivity = {
     val allNodes = stats.nodesWithLabelCardinality(None)
-    val lhs = pattern.nodes._1
-    val rhs = pattern.nodes._2
+    val (lhs, rhs) = pattern.nodes
     val labelsOnLhs: Seq[TokenSpec[LabelId]] = mapToLabelTokenSpecs(selections.labelsOnNode(lhs) ++ labels.getOrElse(lhs, Set.empty))
     val labelsOnRhs: Seq[TokenSpec[LabelId]] = mapToLabelTokenSpecs(selections.labelsOnNode(rhs) ++ labels.getOrElse(rhs, Set.empty))
 
@@ -53,7 +52,7 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
 
     // If either side of our pattern is empty, it's all empty
     if (lhsCardinality == Cardinality.EMPTY || lhsCardinality == Cardinality.EMPTY)
-      Selectivity(1)
+      Selectivity.ONE
     else {
       val types: Seq[TokenSpec[RelTypeId]] = mapToRelTokenSpecs(pattern.types.toSet)
 
@@ -133,12 +132,12 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
 
   private def calculateLabelSelectivity(specs: Seq[TokenSpec[LabelId]]): Selectivity = {
     val selectivities = specs map {
-      case SpecifiedButUnknown() => Selectivity(0)
+      case SpecifiedButUnknown() => Selectivity.ONE
       case spec: TokenSpec[LabelId] =>
         stats.nodesWithLabelCardinality(spec.id) / stats.nodesWithLabelCardinality(None) getOrElse Selectivity.ZERO
     }
 
-    combiner.andTogetherSelectivities(selectivities).getOrElse(Selectivity(1))
+    combiner.andTogetherSelectivities(selectivities).getOrElse(Selectivity.ONE)
   }
 
   // These two methods should be one, but I failed to conjure up the proper Scala type magic to make it work

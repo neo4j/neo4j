@@ -41,6 +41,6 @@ class DbStructureGraphStatistics(lookup: DbStructureLookup) extends GraphStatist
    */
   override def indexSelectivity( label: LabelId, property: PropertyKeyId ): Option[Selectivity] = {
     val result = lookup.indexSelectivity( label.id, property.id )
-    if (result.isNaN) None else Some(Selectivity(result))
+    Selectivity.of(result)
   }
 }
