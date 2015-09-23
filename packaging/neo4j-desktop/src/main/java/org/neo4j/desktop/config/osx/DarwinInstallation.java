@@ -40,8 +40,8 @@ public class DarwinInstallation extends UnixInstallation
         {
             String[] scriptCommands = {
                     "#!/bin/bash",
-                    "export PATH=$PATH:" + this.getInstallationBinDirectory().getAbsolutePath().toString() + ":" +
-                    this.getInstallationJreBinDirectory().getAbsolutePath().toString(),
+                    "export PATH=$PATH:'" + this.getInstallationBinDirectory().getAbsolutePath().toString() + "':'" +
+                    this.getInstallationJreBinDirectory().getAbsolutePath().toString() + "'",
                     "echo Neo4j Command Prompt",
                     "echo",
                     "echo This window is configured with Neo4j on the path.",
