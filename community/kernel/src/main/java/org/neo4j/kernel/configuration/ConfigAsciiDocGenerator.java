@@ -39,7 +39,7 @@ public class ConfigAsciiDocGenerator
     private static final Pattern CONFIG_SETTING_PATTERN = Pattern.compile( "[a-z0-9]+((\\.|_)[a-z0-9]+)+" );
     private static final Pattern NUMBER_OR_IP = Pattern.compile( "[0-9\\.]+" );
     private static final List<String> CONFIG_NAMES_BLACKLIST = Arrays.asList( "round_robin", "keep_all", "keep_last",
-            "keep_none" );
+            "keep_none", "metrics.neo4j", "i.e", "e.g" );
 
     public String generateDocsFor(
             Class<? extends SettingsResourceBundle> settingsResource )

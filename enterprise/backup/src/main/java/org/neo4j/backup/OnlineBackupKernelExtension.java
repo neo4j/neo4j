@@ -39,9 +39,9 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
-import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -75,7 +75,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
 
     public OnlineBackupKernelExtension( Config config, final GraphDatabaseAPI graphDatabaseAPI, final LogProvider logProvider,
                                         final Monitors monitors, final NeoStoreDataSource neoStoreDataSource,
-                                        final Supplier<StoreFlusher> storeFlusherSupplier,
+                                        final Supplier<CheckPointer> checkPointerSupplier,
                                         final Supplier<TransactionIdStore> transactionIdStoreSupplier,
                                         final Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
                                         final Supplier<LogFileInformation> logFileInformationSupplier,
@@ -87,12 +87,8 @@ public class OnlineBackupKernelExtension implements Lifecycle
             public TheBackupInterface newBackup()
             {
                 TransactionIdStore transactionIdStore = transactionIdStoreSupplier.get();
-                StoreCopyServer copier = new StoreCopyServer(
-                        transactionIdStore,
-                        neoStoreDataSource,
-                        storeFlusherSupplier.get(),
-                        fileSystemAbstraction,
-                        new File( graphDatabaseAPI.getStoreDir() ),
+                StoreCopyServer copier = new StoreCopyServer( neoStoreDataSource, checkPointerSupplier.get(),
+                        fileSystemAbstraction, new File( graphDatabaseAPI.getStoreDir() ),
                         monitors.newMonitor( StoreCopyServer.Monitor.class ) );
                 LogicalTransactionStore logicalTransactionStore = logicalTransactionStoreSupplier.get();
                 LogFileInformation logFileInformation = logFileInformationSupplier.get();

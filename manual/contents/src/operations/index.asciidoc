@@ -1,6 +1,5 @@
 [[operations]]
-Operations
-==========
+= Operations
 
 [partintro]
 --
@@ -31,4 +30,5 @@ include::security.asciidoc[]
 :leveloffset: 1
 
 include::{importdir}/neo4j-management-docs-jar/ops/monitoring.asciidoc[]
+
 

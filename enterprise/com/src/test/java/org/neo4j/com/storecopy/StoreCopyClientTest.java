@@ -47,8 +47,8 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
@@ -290,17 +290,17 @@ public class StoreCopyClientTest
                     NeoStoreDataSource neoStoreDataSource =
                             original.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
 
-                    TransactionIdStore transactionIdStore = original.getDependencyResolver().resolveDependency(
-                            TransactionIdStore.class );
+                    TransactionIdStore transactionIdStore =
+                            original.getDependencyResolver().resolveDependency( TransactionIdStore.class );
 
-                    LogicalTransactionStore logicalTransactionStore  = original.getDependencyResolver().resolveDependency(
-                            LogicalTransactionStore.class );
+                    LogicalTransactionStore logicalTransactionStore  =
+                            original.getDependencyResolver().resolveDependency( LogicalTransactionStore.class );
 
-                    StoreFlusher storeFlusher = original.getDependencyResolver().resolveDependency(
-                            StoreFlusher.class );
+                    CheckPointer checkPointer =
+                            original.getDependencyResolver().resolveDependency( CheckPointer.class );
 
-                    RequestContext requestContext = new StoreCopyServer(transactionIdStore, neoStoreDataSource,
-                            storeFlusher, fs, originalDir, new Monitors().newMonitor( StoreCopyServer.Monitor.class ) )
+                    RequestContext requestContext = new StoreCopyServer( neoStoreDataSource,
+                            checkPointer, fs, originalDir, new Monitors().newMonitor( StoreCopyServer.Monitor.class ) )
                             .flushStoresAndStreamStoreFiles( writer, false );
 
                     final StoreId storeId =

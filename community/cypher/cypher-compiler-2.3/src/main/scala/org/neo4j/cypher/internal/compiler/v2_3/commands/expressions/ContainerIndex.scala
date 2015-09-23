@@ -38,7 +38,7 @@ with CollectionSupport {
 
       case IsCollection(collection) =>
         var idx = CastSupport.castOrFail[Number](index(ctx)).intValue()
-        val collectionValue = collection.toList
+        val collectionValue = collection.toVector
 
         if (idx < 0)
           idx = collectionValue.size + idx

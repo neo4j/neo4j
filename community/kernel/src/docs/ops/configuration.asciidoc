@@ -14,6 +14,7 @@ For additional configuration settings, see:
 * <<config-org.neo4j.backup.OnlineBackupSettings>>
 * <<config-org.neo4j.consistency.ConsistencyCheckSettings>>
 * <<config-org.neo4j.ext.udc.UdcSettings>>
+* <<config-org.neo4j.metrics.MetricsSettings>>
 
 
 include::configuration-attributes.asciidoc[]

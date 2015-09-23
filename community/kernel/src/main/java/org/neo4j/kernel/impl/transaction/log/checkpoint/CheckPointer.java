@@ -32,18 +32,31 @@ public interface CheckPointer
      *
      * This method does NOT handle concurrency since there should be only one check point thread running.
      *
+     * @return the transaction id used for the check pointing or -1 if check pointing wasn't needed
      * @throws IOException if writing the check point fails
      */
-    void checkPointIfNeeded() throws IOException;
+    long checkPointIfNeeded() throws IOException;
+
+    /**
+     * This method tries the write of a check point in the transaction log. If there is no running check pointing it
+     * will check point otherwise it will wait for the running check pointing to complete.
+     *
+     * It is mostly used for testing purpose and to force a check point when shutting down the database.
+     *
+     * @return the transaction id used for the check pointing
+     * @throws IOException if writing the check point fails
+     */
+    long tryCheckPoint() throws IOException;
 
     /**
      * This method forces the write of a check point in the transaction log.
      *
      * It is mostly used for testing purpose and to force a check point when shutting down the database.
      *
+     * @return the transaction id used for the check pointing
      * @throws IOException if writing the check point fails
      */
-    void forceCheckPoint() throws IOException;
+    long forceCheckPoint() throws IOException;
 
     class PrintFormat
     {
