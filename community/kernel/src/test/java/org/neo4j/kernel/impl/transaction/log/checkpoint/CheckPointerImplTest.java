@@ -25,7 +25,8 @@ import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -36,7 +37,6 @@ import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.DoubleLatch;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
@@ -47,6 +47,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -67,7 +68,6 @@ public class CheckPointerImplTest
     private final long initialTransactionId = 2l;
     private final long transactionId = 42l;
     private final LogPosition logPosition = new LogPosition( 16l, 233l );
-
 
 
     @Test
@@ -171,26 +171,31 @@ public class CheckPointerImplTest
     public void forceCheckPointShouldWaitTheCurrentCheckPointingToCompleteBeforeRunning() throws Throwable
     {
         // Given
-        final CheckPointerImpl checkPointing = checkPointer();
-        when( threshold.isCheckPointingNeeded( anyLong() ) ).thenReturn( true, false );
+        ReentrantLock reentrantLock = new ReentrantLock();
+        final Lock spyLock = spy( reentrantLock );
+
+        doAnswer( new Answer()
+        {
+            @Override
+            public Object answer( InvocationOnMock invocation ) throws Throwable
+            {
+                verify( appender ).checkPoint( any( LogPosition.class ), any( LogCheckPointEvent.class ) );
+                reset( appender );
+                invocation.callRealMethod();
+                return null;
+            }
+        } ).when( spyLock ).unlock();
+
+        final CheckPointerImpl checkPointing = checkPointer( spyLock );
         mockTxIdStore();
 
-        final DoubleLatch checkPointIfNeededLatch = new DoubleLatch();
-        final DoubleLatch forceCheckPointLatch = new DoubleLatch();
-        final CountDownLatch verify = new CountDownLatch( 1 );
-
-        final long forcedTransactionId = 65l;
-        final LogPosition forceLogPosition = new LogPosition( 24l, 466l );
-
-        LogPruningAnswer answer = new LogPruningAnswer( checkPointIfNeededLatch, forcedTransactionId,
-                forceLogPosition, forceCheckPointLatch, verify );
-        doAnswer( answer ).when( logPruning ).pruneLogs( logPosition.getLogVersion() );
+        final CountDownLatch startSignal = new CountDownLatch( 2 );
+        final CountDownLatch completed = new CountDownLatch( 2 );
 
         checkPointing.start();
 
-        Thread checkPointerThread = new CheckPointerThread( checkPointing );
+        Thread checkPointerThread = new CheckPointerThread( checkPointing, startSignal, completed );
 
-        final AtomicLong forcedTxId = new AtomicLong();
         Thread forceCheckPointThread = new Thread()
         {
             @Override
@@ -198,10 +203,11 @@ public class CheckPointerImplTest
             {
                 try
                 {
-                    forceCheckPointLatch.awaitStart();
-                    forcedTxId.set( checkPointing.forceCheckPoint() );
+                    startSignal.countDown();
+                    startSignal.await();
+                    checkPointing.forceCheckPoint();
 
-                    forceCheckPointLatch.finish();
+                    completed.countDown();
                 }
                 catch ( Throwable e )
                 {
@@ -214,23 +220,10 @@ public class CheckPointerImplTest
         checkPointerThread.start();
         forceCheckPointThread.start();
 
-        checkPointIfNeededLatch.start();
+        completed.await();
 
-        verify.await();
-        verifyZeroInteractions( txIdStore, flusher, logPruning, appender, health );
-
-        checkPointIfNeededLatch.finish();
-        forceCheckPointLatch.awaitFinish();
-
-        // Then
-        assertEquals( forcedTransactionId, forcedTxId.get() );
-        verify( flusher, times( 1 ) ).forceEverything();
-        verify( health, times( 2 ) ).assertHealthy( IOException.class );
-        verify( appender, times( 1 ) ).checkPoint( eq( forceLogPosition ), any( LogCheckPointEvent.class ) );
-        verify( threshold, times( 1 ) ).checkPointHappened( forcedTransactionId );
-        verify( threshold, never() ).isCheckPointingNeeded( forcedTransactionId );
-        verify( logPruning, times( 1 ) ).pruneLogs( forceLogPosition.getLogVersion() );
-        verifyNoMoreInteractions( flusher, health, appender, threshold );
+        verify( spyLock, times( 2 ) ).lock();
+        verify( spyLock, times( 2 ) ).unlock();
     }
 
     @Test
@@ -238,66 +231,29 @@ public class CheckPointerImplTest
             throws Throwable
     {
         // Given
-        final CheckPointerImpl checkPointing = checkPointer();
-        when( threshold.isCheckPointingNeeded( anyLong() ) ).thenReturn( true, false );
+        Lock lock = mock( Lock.class );
+        final CheckPointerImpl checkPointing = checkPointer( lock );
         mockTxIdStore();
 
-        final DoubleLatch checkPointIfNeededLatch = new DoubleLatch();
-        final DoubleLatch tryCheckPointLatch = new DoubleLatch();
-        final CountDownLatch verify = new CountDownLatch( 1 );
+        checkPointing.forceCheckPoint();
 
-        final long notToBeUsedTransactionId = 65l;
-        final LogPosition notToBeUsedLogPosition = new LogPosition( 24l, 466l );
+        verify( appender ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
+        reset( appender );
 
-        LogPruningAnswer answer = new LogPruningAnswer( checkPointIfNeededLatch, notToBeUsedTransactionId,
-                notToBeUsedLogPosition, tryCheckPointLatch, verify );
-        doAnswer( answer ).when( logPruning ).pruneLogs( logPosition.getLogVersion() );
+        checkPointing.tryCheckPoint();
 
-        checkPointing.start();
+        verifyNoMoreInteractions( appender );
+    }
 
-        Thread checkPointerThread = new CheckPointerThread( checkPointing );
-
-        final AtomicLong forcedTxId = new AtomicLong();
-        Thread tryCheckPointerThread = new Thread()
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    tryCheckPointLatch.awaitStart();
-                    forcedTxId.set( checkPointing.tryCheckPoint() );
-
-                    tryCheckPointLatch.finish();
-                }
-                catch ( Throwable e )
-                {
-                    throw new RuntimeException( e );
-                }
-            }
-        };
-
-        // when
-        checkPointerThread.start();
-        tryCheckPointerThread.start();
-
-        checkPointIfNeededLatch.start();
-
-        verify.await();
-        verifyZeroInteractions( txIdStore, flusher, logPruning, appender, health );
-
-        checkPointIfNeededLatch.finish();
-        tryCheckPointLatch.awaitFinish();
-
-        // Then
-        assertEquals( transactionId, forcedTxId.get() );
-        verifyZeroInteractions( flusher, health, threshold, logPruning );
+    private CheckPointerImpl checkPointer( Lock lock )
+    {
+        return new CheckPointerImpl( txIdStore, threshold, flusher, logPruning, appender, health,
+                NullLogProvider.getInstance(), tracer, lock );
     }
 
     private CheckPointerImpl checkPointer()
     {
-        return new CheckPointerImpl( txIdStore, threshold, flusher, logPruning, appender, health,
-                NullLogProvider.getInstance(), tracer );
+        return checkPointer( new ReentrantLock() );
     }
 
     private void mockTxIdStore()
@@ -307,20 +263,18 @@ public class CheckPointerImplTest
         when( txIdStore.getLastClosedTransactionId() ).thenReturn( initialTransactionId, transactionId, transactionId );
     }
 
-    private void mockTxIdStore( long transactionId, LogPosition logPosition )
-    {
-        long[] triggerCommittedTransaction = {transactionId, logPosition.getLogVersion(), logPosition.getByteOffset()};
-        when( txIdStore.getLastClosedTransaction() ).thenReturn( triggerCommittedTransaction );
-        when( txIdStore.getLastClosedTransactionId() ).thenReturn( transactionId );
-    }
-
     private static class CheckPointerThread extends Thread
     {
         private final CheckPointerImpl checkPointing;
+        private CountDownLatch startSignal;
+        private CountDownLatch completed;
 
-        public CheckPointerThread( CheckPointerImpl checkPointing )
+        public CheckPointerThread( CheckPointerImpl checkPointing, CountDownLatch startSignal,
+                CountDownLatch completed )
         {
             this.checkPointing = checkPointing;
+            this.startSignal = startSignal;
+            this.completed = completed;
         }
 
         @Override
@@ -328,46 +282,16 @@ public class CheckPointerImplTest
         {
             try
             {
-                checkPointing.checkPointIfNeeded();
+                startSignal.countDown();
+                startSignal.await();
+                checkPointing.forceCheckPoint();
+                completed.countDown();
             }
-            catch ( IOException e )
+            catch ( Exception e )
             {
                 throw new RuntimeException( e );
             }
         }
     }
 
-    private class LogPruningAnswer implements Answer
-    {
-        private final DoubleLatch checkPointIfNeededLatch;
-        private final long forcedTransactionId;
-        private final LogPosition forceLogPosition;
-        private final DoubleLatch forceCheckPointLatch;
-        private final CountDownLatch verify;
-
-        public LogPruningAnswer( DoubleLatch checkPointIfNeededLatch, long forcedTransactionId,
-                LogPosition forceLogPosition, DoubleLatch forceCheckPointLatch, CountDownLatch verify )
-        {
-            this.checkPointIfNeededLatch = checkPointIfNeededLatch;
-            this.forcedTransactionId = forcedTransactionId;
-            this.forceLogPosition = forceLogPosition;
-            this.forceCheckPointLatch = forceCheckPointLatch;
-            this.verify = verify;
-        }
-
-        @Override
-        public Void answer( InvocationOnMock invocation ) throws Throwable
-        {
-            checkPointIfNeededLatch.awaitStart();
-
-            reset( txIdStore, threshold, flusher, logPruning, appender, health );
-            mockTxIdStore( forcedTransactionId, forceLogPosition );
-
-            forceCheckPointLatch.start();
-            verify.countDown();
-            checkPointIfNeededLatch.awaitFinish();
-
-            return null;
-        }
-    }
 }
