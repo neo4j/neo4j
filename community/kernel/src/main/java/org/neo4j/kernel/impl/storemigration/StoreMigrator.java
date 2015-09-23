@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -47,6 +46,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.CountsComputer;
+import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
@@ -67,6 +68,7 @@ import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogs;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyTokenStoreHighIdReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
@@ -159,7 +161,6 @@ public class StoreMigrator implements StoreMigrationParticipant
         // Write the tx checksum to file in migrationDir, because we need it later when moving files into storeDir
         writeLastTxChecksum( migrationDir, lastTxChecksum );
         writeLastTxLogPosition( migrationDir, lastTxLogPosition );
-
 
         switch ( versionToMigrateFrom )
         {
@@ -279,7 +280,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         {
             // The legacy store we're migrating doesn't have this record in neostore so try to extract it from tx log
             return lastTxId == TransactionIdStore.BASE_TX_ID
-                   ? new LogPosition(TransactionIdStore.BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET )
+                   ? new LogPosition( TransactionIdStore.BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET )
                    : new LogPosition( MetaDataStore.getRecord( pageCache, neoStore, Position.LOG_VERSION ),
                            BASE_TX_LOG_BYTE_OFFSET );
         }
@@ -301,15 +302,11 @@ public class StoreMigrator implements StoreMigrationParticipant
     {
         copyStores( storeDir, migrationDir,
                 StoreFactory.PROPERTY_STORE_NAME,
-                StoreFactory.PROPERTY_STORE_NAME + ".id",
                 StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME,
-                StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME + ".id",
                 StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME,
-                StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME + ".id",
                 StoreFactory.PROPERTY_STRINGS_STORE_NAME,
                 StoreFactory.PROPERTY_ARRAYS_STORE_NAME,
                 StoreFactory.NODE_STORE_NAME,
-                StoreFactory.NODE_STORE_NAME + ".id",
                 StoreFactory.NODE_LABELS_STORE_NAME,
                 StoreFactory.SCHEMA_STORE_NAME
         );
@@ -331,10 +328,14 @@ public class StoreMigrator implements StoreMigrationParticipant
         {
             NodeStore nodeStore = neoStores.getNodeStore();
             RelationshipStore relationshipStore = neoStores.getRelationshipStore();
+            LabelTokenStore labelTokenStore = neoStores.getLabelTokenStore();
+            RelationshipTypeTokenStore relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
+            neoStores.makeStoreOk();
+            int highLabelId = (int) labelTokenStore.getHighId();
+            int highRelationshipTypeId = (int) relationshipTypeTokenStore.getHighId();
+
             try ( Lifespan life = new Lifespan() )
             {
-                int highLabelId = (int) neoStores.getLabelTokenStore().getHighId();
-                int highRelationshipTypeId = (int) neoStores.getRelationshipTypeTokenStore().getHighId();
                 CountsComputer initializer = new CountsComputer(
                         lastTxId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId );
                 life.add( new CountsTracker(
@@ -351,23 +352,32 @@ public class StoreMigrator implements StoreMigrationParticipant
         prepareBatchImportMigration( storeDir, migrationDir );
 
         LegacyStore legacyStore;
+        LegacyTokenStoreHighIdReader legacyTokenStoreHighIdReader;
         switch ( versionToUpgradeFrom )
         {
         case Legacy19Store.LEGACY_VERSION:
-            legacyStore = new Legacy19Store( fileSystem, new File( storeDir, MetaDataStore.DEFAULT_NAME ) );
+            Legacy19Store legacy19Store =
+                    new Legacy19Store( fileSystem, new File( storeDir, MetaDataStore.DEFAULT_NAME ) );
+            legacyStore = legacy19Store;
+            legacyTokenStoreHighIdReader = legacy19Store;
             break;
         case Legacy20Store.LEGACY_VERSION:
-            legacyStore = new Legacy20Store( fileSystem, new File( storeDir, MetaDataStore.DEFAULT_NAME ) );
+            Legacy20Store legacy20Store =
+                    new Legacy20Store( fileSystem, new File( storeDir, MetaDataStore.DEFAULT_NAME ) );
+            legacyStore = legacy20Store;
+            legacyTokenStoreHighIdReader = legacy20Store;
             break;
         default:
             throw new IllegalStateException( "Unknown version to upgrade from: " + versionToUpgradeFrom );
         }
 
         Configuration importConfig = new Configuration.Overridden( config );
+        AdditionalInitialIds additionalInitialIds = readAdditionalIds( legacyStore, legacyTokenStoreHighIdReader,
+                storeDir, lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset );
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem,
                 importConfig, logService, withDynamicProcessorAssignment( migrationBatchImporterMonitor(
                 legacyStore ), importConfig ),
-                readAdditionalIds( storeDir, lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset ) );
+                additionalInitialIds );
         InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         InputIterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
         importer.doImport(
@@ -410,15 +420,23 @@ public class StoreMigrator implements StoreMigrationParticipant
                 false, StoreFileType.values() );
     }
 
-    private AdditionalInitialIds readAdditionalIds( File storeDir, final long lastTxId, final long lastTxChecksum,
-            final long lastTxLogVersion, final long lastTxLogByteOffset ) throws IOException
+    private AdditionalInitialIds readAdditionalIds( LegacyStore legacyStore, LegacyTokenStoreHighIdReader highIdReader,
+            File storeDir, final long lastTxId, final long lastTxChecksum, final long lastTxLogVersion,
+            final long lastTxLogByteOffset ) throws IOException
     {
         final int propertyKeyTokenHighId =
-                readHighIdFromIdFileIfExists( storeDir, StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME );
+                legacyStore.hasTokenStore( StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME )
+                ? readHighIdFromIdFileIfExists( highIdReader, storeDir, StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME )
+                : 0;
         final int labelTokenHighId =
-                readHighIdFromIdFileIfExists( storeDir, StoreFactory.LABEL_TOKEN_STORE_NAME );
+                legacyStore.hasTokenStore( StoreFactory.LABEL_TOKEN_STORE_NAME )
+                ? readHighIdFromIdFileIfExists( highIdReader, storeDir, StoreFactory.LABEL_TOKEN_STORE_NAME )
+                : 0;
         final int relationshipTypeTokenHighId =
-                readHighIdFromIdFileIfExists( storeDir, StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME );
+                legacyStore.hasTokenStore( StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME )
+                ? readHighIdFromIdFileIfExists( highIdReader, storeDir, StoreFactory
+                        .RELATIONSHIP_TYPE_TOKEN_STORE_NAME )
+                : 0;
         return new AdditionalInitialIds()
         {
             @Override
@@ -465,17 +483,18 @@ public class StoreMigrator implements StoreMigrationParticipant
         };
     }
 
-    private int readHighIdFromIdFileIfExists( File storeDir, String storeName ) throws IOException
+    private int readHighIdFromIdFileIfExists( LegacyTokenStoreHighIdReader highIdReader, File storeDir, String
+            storeName )
+            throws IOException
     {
-        String file = StoreFileType.ID.augment( new File( storeDir, DEFAULT_NAME + storeName ).getPath() );
-        try
+        File storeFile = new File( storeDir, DEFAULT_NAME + storeName );
+        File storeIdFile = new File( StoreFileType.ID.augment( storeFile.getPath() ) );
+        if ( fileSystem.fileExists( storeIdFile ) )
         {
-            return (int) IdGeneratorImpl.readHighId( fileSystem, new File( file ) );
+            return (int) IdGeneratorImpl.readHighId( fileSystem, storeIdFile );
         }
-        catch ( FileNotFoundException e )
-        {
-            return 0;
-        }
+
+        return (int) highIdReader.findHighIdBackwards( storeFile, storeName );
     }
 
     private ExecutionMonitor migrationBatchImporterMonitor( LegacyStore legacyStore )
