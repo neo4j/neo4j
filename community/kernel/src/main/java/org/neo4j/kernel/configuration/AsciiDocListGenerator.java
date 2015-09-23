@@ -68,9 +68,13 @@ public class AsciiDocListGenerator
             if ( shortenDescription )
             {
                 int pos = description.indexOf( ". " );
+                if  ( pos == -1 )
+                {
+                    pos = description.indexOf( "; " );
+                }
                 if ( pos > 10 )
                 {
-                    description = description.substring( 0, pos + 1 );
+                    description = description.substring( 0, pos );
                 }
             }
             sb.append( "|<<" )

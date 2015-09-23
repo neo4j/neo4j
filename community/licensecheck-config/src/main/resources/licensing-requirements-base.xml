@@ -95,6 +95,7 @@
       <aka>Apache Software Licenses</aka>
       <aka>Apache 2</aka>
       <aka>Apache License, Version 2.0</aka>
+      <aka>Apache License 2.0</aka>
     </license>
     <license name="BSD License">
       <aka>BSD</aka>
@@ -141,6 +142,7 @@
     </license>
     <license name="MIT License">
       <aka>MIT</aka>
+      <aka>The MIT License</aka>
     </license>
     <license name="Bouncy Castle License">
       <aka>Bouncy Castle Licence</aka>
@@ -152,6 +154,6 @@
       <option>GNU General Public License, version 2 with the Classpath Exception</option>
     </dual-license>
   </dual-licenses>
-  
+
 </licensing-requirements>
 
