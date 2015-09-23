@@ -29,6 +29,8 @@ import java.util.List;
 import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.util.Codecs;
 
+import static org.neo4j.bolt.docs.v1.DocPartParser.Decoration.withDetailedExceptions;
+
 /**
  * Client: <connect>
  * Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
@@ -40,15 +42,16 @@ import org.neo4j.kernel.impl.util.Codecs;
  */
 public class DocExchangeExample implements Iterable<DocExchangeExample.Event>
 {
-    public static Function<Element,DocExchangeExample> exchange_example
-            = new Function<Element,DocExchangeExample>()
-    {
-        @Override
-        public DocExchangeExample apply( Element s ) throws RuntimeException
-        {
-            return new DocExchangeExample( s.text() );
-        }
-    };
+    public static DocPartParser<DocExchangeExample> exchange_example =
+        withDetailedExceptions( DocExchangeExample.class, new DocPartParser<DocExchangeExample>()
+            {
+                @Override
+                public DocExchangeExample parse( String fileName, String title, Element s )
+                {
+                    return new DocExchangeExample( DocPartName.create( fileName, title ), s.text() );
+                }
+            }
+        );
 
     public enum Type
     {
@@ -116,14 +119,16 @@ public class DocExchangeExample implements Iterable<DocExchangeExample.Event>
 
     private final List<Event> events = new ArrayList<>();
     private final String raw;
+    private final DocPartName name;
 
     public String name()
     {
-        return raw;
+        return name.toString();
     }
 
-    public DocExchangeExample( String raw )
+    public DocExchangeExample( DocPartName name, String raw )
     {
+        this.name = name;
         this.raw = raw;
 
         // Generally "client" or "server", but up to the spec we're parsing

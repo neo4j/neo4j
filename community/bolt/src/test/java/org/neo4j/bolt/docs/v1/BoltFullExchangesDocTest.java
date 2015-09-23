@@ -34,6 +34,7 @@ import org.neo4j.bolt.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.bolt.transport.socket.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.messaging.message.Message;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.impl.util.HexPrinter;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,7 +44,6 @@ import static org.neo4j.bolt.docs.v1.DocsRepository.docs;
 import static org.neo4j.bolt.messaging.v1.util.MessageMatchers.message;
 import static org.neo4j.bolt.transport.socket.integration.TransportTestUtil.dechunk;
 import static org.neo4j.bolt.transport.socket.integration.TransportTestUtil.recvOneMessage;
-import static org.neo4j.kernel.impl.util.HexPrinter.hex;
 
 @RunWith( Parameterized.class )
 public class BoltFullExchangesDocTest
@@ -170,5 +170,10 @@ public class BoltFullExchangesDocTest
                 }
             }
         }
+    }
+
+    private static String hex( byte[] payload )
+    {
+        return HexPrinter.hex( payload, 4, "  " );
     }
 }

@@ -30,6 +30,7 @@ import java.util.Set;
 import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
 
 import static java.util.Arrays.asList;
@@ -38,20 +39,69 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
+import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_WRITE;
 import static org.neo4j.graphdb.QueryExecutionType.explained;
+import static org.neo4j.graphdb.QueryExecutionType.query;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class CypherAdapterStreamTest
 {
     @Test
+    public void shouldIncludeBasicMetadata() throws Throwable
+    {
+        // Given
+        QueryStatistics queryStatistics = mock( QueryStatistics.class );
+        when( queryStatistics.containsUpdates() ).thenReturn( true );
+        when( queryStatistics.getNodesCreated() ).thenReturn( 1 );
+        when( queryStatistics.getNodesDeleted() ).thenReturn( 2 );
+        when( queryStatistics.getRelationshipsCreated() ).thenReturn( 3 );
+        when( queryStatistics.getRelationshipsDeleted() ).thenReturn( 4 );
+        when( queryStatistics.getPropertiesSet() ).thenReturn( 5 );
+        when( queryStatistics.getIndexesAdded() ).thenReturn( 6 );
+        when( queryStatistics.getIndexesRemoved() ).thenReturn( 7 );
+        when( queryStatistics.getConstraintsAdded() ).thenReturn( 8 );
+        when( queryStatistics.getConstraintsRemoved() ).thenReturn( 9 );
+        when( queryStatistics.getLabelsAdded() ).thenReturn( 10 );
+        when( queryStatistics.getLabelsRemoved() ).thenReturn( 11 );
+
+        Result result = mock( Result.class );
+        when( result.getQueryExecutionType() ).thenReturn( query( READ_WRITE ) );
+        when( result.getQueryStatistics() ).thenReturn( queryStatistics );
+
+        CypherAdapterStream stream = new CypherAdapterStream( result );
+
+        // When
+        Map<String,Object> meta = metadataOf( stream );
+
+        // Then
+        assertThat( meta.get("type").toString(), equalTo( "rw") );
+        assertThat( meta.get("stats"), equalTo( map(
+                "nodes-created", 1,
+                "nodes-deleted", 2,
+                "relationships-created", 3,
+                "relationships-deleted", 4,
+                "properties-set", 5,
+                "indexes-added", 6,
+                "indexes-removed", 7,
+                "constraints-added", 8,
+                "constraints-removed", 9,
+                "labels-added", 10,
+                "labels-removed", 11
+        ) ) );
+    }
+
+    @Test
     public void shouldIncludePlanIfPresent() throws Throwable
     {
         // Given
+        QueryStatistics queryStatistics = mock( QueryStatistics.class );
+        when( queryStatistics.containsUpdates() ).thenReturn( false );
         Result result = mock( Result.class );
         when( result.getQueryExecutionType() ).thenReturn( explained( READ_ONLY ) );
+        when( result.getQueryStatistics() ).thenReturn( queryStatistics );
         when( result.getExecutionPlanDescription() ).thenReturn(
                 plan("Join", map( "arg1", 1 ), asList( "id1" ),
-                    plan("Scan", map( "arg2", 1 ), asList("id2")) ) );
+                plan("Scan", map( "arg2", 1 ), asList("id2")) ) );
 
         CypherAdapterStream stream = new CypherAdapterStream( result );
 
