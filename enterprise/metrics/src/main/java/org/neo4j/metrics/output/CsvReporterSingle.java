@@ -31,9 +31,7 @@ import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -263,14 +261,14 @@ public class CsvReporterSingle extends ScheduledReporter
 
     private void startNewCsvFile( SortedMap<String,Gauge> gauges, SortedMap<String,Counter> counters,
                                   SortedMap<String,Histogram> histograms, SortedMap<String,Meter> meters,
-                                  SortedMap<String,Timer> timers ) throws FileNotFoundException
+                                  SortedMap<String,Timer> timers ) throws IOException
     {
         if ( file.exists() )
         {
             archiveExistingLogFile();
         }
 
-        out = new PrintWriter( new OutputStreamWriter( new FileOutputStream( file ), StandardCharsets.UTF_8 ) );
+        out = new PrintWriter( file, StandardCharsets.UTF_8.name() );
 
         StringBuilder header = new StringBuilder();
         header.append( "timestamp" ).append( SEPARATOR ).append( "datetime" );
