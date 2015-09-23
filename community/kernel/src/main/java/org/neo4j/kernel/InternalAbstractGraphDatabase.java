@@ -345,6 +345,7 @@ public abstract class InternalAbstractGraphDatabase
                 }
                 catch ( Throwable shutdownError )
                 {
+                    msgLog.error( "Failed to start database", error );
                     error = Exceptions.withSuppressed( shutdownError, error );
                 }
             }
