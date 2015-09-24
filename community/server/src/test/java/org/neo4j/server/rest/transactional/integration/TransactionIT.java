@@ -167,17 +167,19 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                       "} ] }";
 
         // begin and execute
+        // given statement is badly escaped and it is a client error, thus tx is rolled back at once
         Response begin = http.POST( "/db/data/transaction", quotedJson( json ) );
 
         String commitResource = begin.stringFromContent( "commit" );
 
-        // commit
+        // commit fails because tx was rolled back on the previous step
         Response commit = http.POST( commitResource );
 
         assertThat( begin.status(), equalTo( 201 ) );
         assertThat( begin, hasErrors( Status.Request.InvalidFormat ) );
-        assertThat( commit.status(), equalTo( 200 ) );
-        assertThat( commit, containsNoErrors() );
+
+        assertThat( commit.status(), equalTo( 404 ) );
+        assertThat( commit, hasErrors( Status.Transaction.UnknownId ) );
 
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
     }

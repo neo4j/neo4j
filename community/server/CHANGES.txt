@@ -1,3 +1,7 @@
+2.2.6
+-----
+o ClientError and TransientError make REST API transactions rollback
+
 2.2.3
 -----
 o Improve force shutdown when stopping an unresponsive Neo4j server

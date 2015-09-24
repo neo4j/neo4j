@@ -37,6 +37,7 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.TestData;
+import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.SharedServerTestBase;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
@@ -90,12 +91,12 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
                 .description( AsciidocHelper.createAsciiDocSnippet( "cypher", snippet ) );
         return gen().post( endpoint ).entity();
     }
-    
+
     private Long idFor( String name )
     {
         return data.get().get( name ).getId();
     }
-    
+
     private String createParameterString( Pair<String, String>[] params )
     {
         String paramString = "";
@@ -117,7 +118,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         }
         return template;
     }
-    
+
     protected String startGraph( String name )
     {
         return AsciidocHelper.createGraphVizWithNodeId( "Starting Graph", graphdb(), name );
@@ -128,8 +129,8 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     {
         return server().getDatabase().getGraph();
     }
-    
-    protected String getDataUri()
+
+    protected static String getDataUri()
     {
         return "http://localhost:7474/db/data/";
     }
@@ -158,10 +159,32 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     {
         return getDataUri() + PATH_NODE_INDEX + "/" + indexName;
     }
-    
+
     protected String postRelationshipIndexUri( String indexName )
     {
         return getDataUri() + PATH_RELATIONSHIP_INDEX + "/" + indexName;
+    }
+
+    protected String txUri()
+    {
+        return getDataUri() + "transaction";
+    }
+
+    protected static String txCommitUri()
+    {
+        return getDataUri() + "transaction/commit";
+    }
+
+    protected String txUri( long txId )
+    {
+        return getDataUri() + "transaction/" + txId;
+    }
+
+    public static long extractTxId( HTTP.Response response )
+    {
+        int lastSlash = response.location().lastIndexOf( "/" );
+        String txIdString = response.location().substring( lastSlash + 1 );
+        return Long.parseLong( txIdString );
     }
 
     protected Node getNode( String name )
@@ -179,7 +202,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         }
         return result.toArray(nodes);
     }
-    
+
     public void assertSize( int expectedSize, String entity )
     {
         Collection<?> hits;
@@ -193,7 +216,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
             throw new RuntimeException( e );
         }
     }
-    
+
     public String getPropertiesUri( Relationship rel )
     {
         return getRelationshipUri(rel)+  "/properties";
@@ -202,17 +225,17 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     {
         return getNodeUri(node)+  "/properties";
     }
-    
+
     public RESTDocsGenerator gen() {
         return gen.get();
     }
-    
+
     public void description( String description )
     {
         gen().description( description );
-        
+
     }
-    
+
     protected String getDocumentationSectionName() {
         return "dev/rest-api";
     }
