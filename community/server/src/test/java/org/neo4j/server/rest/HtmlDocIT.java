@@ -31,6 +31,7 @@ import javax.ws.rs.core.Response.Status;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.RelationshipDirection;
+import org.neo4j.test.server.HTTP;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -90,6 +91,13 @@ public class HtmlDocIT extends AbstractRestFunctionalTestBase
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         assertValidHtml( response.getEntity() );
         response.close();
+    }
+
+    @Test
+    public void shouldGetRootWithHTTP() {
+        HTTP.Response response = HTTP.withHeaders("Accept", MediaType.TEXT_HTML).GET(functionalTestHelper.dataUri());
+        assertEquals(Status.OK.getStatusCode(), response.status());
+        assertValidHtml( response.rawContent() );
     }
 
     @Test

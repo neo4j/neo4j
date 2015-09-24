@@ -47,13 +47,21 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final KernelHealth kernelHealth;
     private final Log msgLog;
     private final CheckPointTracer tracer;
+    private final Lock lock;
 
     private long lastCheckPointedTx;
-    private Lock lock = new ReentrantLock();
 
     public CheckPointerImpl( TransactionIdStore transactionIdStore, CheckPointThreshold threshold,
             StoreFlusher storeFlusher, LogPruning logPruning, TransactionAppender appender, KernelHealth kernelHealth,
             LogProvider logProvider, CheckPointTracer tracer )
+    {
+        this( transactionIdStore, threshold, storeFlusher, logPruning, appender, kernelHealth, logProvider, tracer,
+                new ReentrantLock() );
+    }
+
+    public CheckPointerImpl( TransactionIdStore transactionIdStore, CheckPointThreshold threshold,
+            StoreFlusher storeFlusher, LogPruning logPruning, TransactionAppender appender, KernelHealth kernelHealth,
+            LogProvider logProvider, CheckPointTracer tracer, Lock lock )
     {
         this.appender = appender;
         this.transactionIdStore = transactionIdStore;
@@ -63,6 +71,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         this.kernelHealth = kernelHealth;
         this.msgLog = logProvider.getLog( CheckPointerImpl.class );
         this.tracer = tracer;
+        this.lock = lock;
     }
 
     @Override
