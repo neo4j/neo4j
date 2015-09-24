@@ -142,8 +142,8 @@ public class HTTP
         public Builder withHeaders( Map<String, String> newHeaders )
         {
             HashMap<String, String> combined = new HashMap<>();
-            combined.putAll( newHeaders );
             combined.putAll( headers );
+            combined.putAll( newHeaders );
             return new Builder( combined, baseUri );
         }
 
