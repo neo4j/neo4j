@@ -631,12 +631,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             @Override
             public void start() throws IOException
             {
-                // TODO: we should not need it anymore in case if we track ids during recovery,
-                // needs to be cleaned up in latest version
-                if ( startupStatistics.numberOfRecoveredTransactions() > 0 )
-                {
-                    neoStoreModule.neoStores().rebuildIdGenerators();
-                }
                 neoStoreModule.neoStores().makeStoreOk();
 
                 propertyKeyTokenHolder.setInitialTokens(
