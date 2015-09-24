@@ -25,7 +25,7 @@ class LiteralReplacementTest extends CypherFunSuite  {
 
   import org.neo4j.cypher.internal.compiler.v2_3.parser.ParserFixture.parser
 
-  test("should extract literal like patterns") {
+  test("should extract starts with patterns") {
     assertRewrite("RETURN x STARTS WITH 'Pattern' as X", "RETURN x STARTS WITH {`  AUTOSTRING0`} as X", Map("  AUTOSTRING0" -> "Pattern"))
   }
 

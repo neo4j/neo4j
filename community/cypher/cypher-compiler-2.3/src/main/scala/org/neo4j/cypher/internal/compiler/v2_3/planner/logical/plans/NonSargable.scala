@@ -65,7 +65,7 @@ object AsDynamicPropertyNonScannable {
 // This is when dynamic properties are used
 object AsStringRangeNonSeekable {
   def unapply(v: Any) = v match {
-    case like@StartsWith(prop@ContainerIndex(identifier: Identifier, _), _) =>
+    case startsWith@StartsWith(prop@ContainerIndex(identifier: Identifier, _), _) =>
       Some(identifier)
     case _ =>
       None

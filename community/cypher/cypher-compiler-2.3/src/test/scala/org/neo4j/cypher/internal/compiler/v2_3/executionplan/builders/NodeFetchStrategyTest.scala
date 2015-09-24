@@ -99,8 +99,8 @@ class NodeFetchStrategyTest extends CypherFunSuite {
         val nodeName = "n"
         val symbols = new SymbolTable(Map(nodeName -> CTNode))
         val labelPredicate = HasLabel(Identifier(nodeName), UnresolvedLabel(labelName))
-        val like: ast.StartsWith = ast.StartsWith(ast.Property(ident(nodeName), ast.PropertyKeyName(propertyName)_)_, ast.StringLiteral("prefix%")_)_
-        val likePredicate = toCommandPredicate(like)
+        val startsWith: ast.StartsWith = ast.StartsWith(ast.Property(ident(nodeName), ast.PropertyKeyName(propertyName)_)_, ast.StringLiteral("prefix%")_)_
+        val startsWithPredicate = toCommandPredicate(startsWith)
 
         val planCtx = mock[PlanContext]
         val indexDescriptor = new IndexDescriptor(0, 0)
@@ -109,7 +109,7 @@ class NodeFetchStrategyTest extends CypherFunSuite {
         when(planCtx.getUniquenessConstraint(labelName, propertyName)).thenReturn(None)
 
         // When
-        val foundStartItem = NodeFetchStrategy.findStartStrategy(nodeName, Seq(likePredicate, labelPredicate), planCtx, symbols)
+        val foundStartItem = NodeFetchStrategy.findStartStrategy(nodeName, Seq(startsWithPredicate, labelPredicate), planCtx, symbols)
 
         // Then
         foundStartItem.rating should equal(NodeFetchStrategy.IndexRange)
@@ -130,7 +130,7 @@ class NodeFetchStrategyTest extends CypherFunSuite {
         val prop: ast.Property = ast.Property(ident("n"), ast.PropertyKeyName("prop") _) _
         val inequality = ast.AndedPropertyInequalities(ident("n"), prop, NonEmptyList(ast.GreaterThan(prop, ast.SignedDecimalIntegerLiteral("42") _) _))
 
-        val likePredicate = toCommandPredicate(inequality)
+        val inequalityPredicate = toCommandPredicate(inequality)
 
         val planCtx = mock[PlanContext]
         val indexDescriptor = new IndexDescriptor(0, 0)
@@ -139,7 +139,7 @@ class NodeFetchStrategyTest extends CypherFunSuite {
         when(planCtx.getUniquenessConstraint(labelName, propertyName)).thenReturn(None)
 
         // When
-        val foundStartItem = NodeFetchStrategy.findStartStrategy(nodeName, Seq(likePredicate, labelPredicate), planCtx, symbols)
+        val foundStartItem = NodeFetchStrategy.findStartStrategy(nodeName, Seq(inequalityPredicate, labelPredicate), planCtx, symbols)
 
         // Then
         foundStartItem.rating should equal(NodeFetchStrategy.IndexRange)
