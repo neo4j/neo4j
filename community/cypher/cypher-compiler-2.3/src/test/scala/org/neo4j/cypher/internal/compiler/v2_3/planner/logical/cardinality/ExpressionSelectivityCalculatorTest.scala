@@ -103,11 +103,11 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     when(stats.indexPropertyExistsSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity.ONE))
     val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
 
-    val prefixes = Map("p"          -> 0.24551328138282763,
-                       "p2"         -> 0.23384596099184043,
-                       "p33"        -> 0.2299568541948447,
-                       "p5555"      -> 0.22684556875724812,
-                       "reallylong" -> 0.22451210467905067)
+    val prefixes = Map("p"          -> 0.23384596099184043,
+                       "p2"         -> 0.2299568541948447,
+                       "p33"        -> 0.22801230079634685,
+                       "p5555"      -> 0.22606774739784896,
+                       "reallylong" -> 0.22429997158103274)
 
     prefixes.foreach { case (prefix, selectivity) =>
       calculator(StartsWith(Property(Identifier("a") _, propKey) _, StringLiteral(prefix)(InputPosition.NONE)) _) should equal(
@@ -127,14 +127,15 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val stats = mock[GraphStatistics]
     when(stats.indexSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity.of(0.01).get))
-    when(stats.indexPropertyExistsSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity.of(.23).get))
+    val existenceSelectivity = .2285
+    when(stats.indexPropertyExistsSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity.of(existenceSelectivity).get))
     val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
 
-    val prefixes = Map("p"          -> 0.23,
-                       "p2"         -> 0.23,
-                       "p33"        -> 0.2299568541948447,
-                       "p5555"      -> 0.22684556875724812,
-                       "reallylong" -> 0.22451210467905067)
+    val prefixes = Map("p"          -> existenceSelectivity,
+                       "p2"         -> existenceSelectivity,
+                       "p33"        -> 0.22801230079634685,
+                       "p5555"      -> 0.22606774739784896,
+                       "reallylong" -> 0.22429997158103274)
 
     prefixes.foreach { case (prefix, selectivity) =>
       calculator(StartsWith(Property(Identifier("a") _, propKey) _, StringLiteral(prefix)(InputPosition.NONE)) _) should equal(

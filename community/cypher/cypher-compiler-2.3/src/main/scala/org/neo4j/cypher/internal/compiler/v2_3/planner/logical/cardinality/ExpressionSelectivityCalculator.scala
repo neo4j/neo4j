@@ -150,9 +150,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
      */
     val equality = math.BigDecimal.valueOf(calculateSelectivityForPropertyEquality(identifier, None, selections, propertyKey).factor)
     val prefixLength = math.BigDecimal.valueOf(prefix match {
-      case Some("") => 1
-      case Some(n) => n.length
-      case None => 5
+      case Some(n) => n.length + 1
+      case None => DEFAULT_PREFIX_LENGTH
     })
     val factor = math.BigDecimal.ONE.divide(prefixLength, 17, RoundingMode.HALF_UP)
       .multiply(math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR)).stripTrailingZeros()
