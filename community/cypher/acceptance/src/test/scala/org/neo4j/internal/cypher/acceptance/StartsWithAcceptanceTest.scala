@@ -106,6 +106,66 @@ class StartsWithAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
     )
   }
 
+  test("STARTS WITH against a whitespace should work") {
+    createNode(Map("name" -> " Mats "))
+    createNode(Map("name" -> "\nMats\n"))
+    createNode(Map("name" -> "\tMats\t"))
+
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name STARTS WITH ' ' RETURN a.name AS name")
+
+    result.toSeq should equal(Seq(Map("name" -> " Mats ")))
+  }
+
+  test("STARTS WITH against a newline should work") {
+    createNode(Map("name" -> " Mats "))
+    createNode(Map("name" -> "\nMats\n"))
+    createNode(Map("name" -> "\tMats\t"))
+
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name STARTS WITH '\n' RETURN a.name AS name")
+
+    result.toSeq should equal(Seq(Map("name" -> "\nMats\n")))
+  }
+
+  test("ENDS WITH against a whitespace should work") {
+    createNode(Map("name" -> " Mats "))
+    createNode(Map("name" -> "\nMats\n"))
+    createNode(Map("name" -> "\tMats\t"))
+
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name ENDS WITH ' ' RETURN a.name AS name")
+
+    result.toSeq should equal(Seq(Map("name" -> " Mats ")))
+  }
+
+  test("ENDS WITH against a newline should work") {
+    createNode(Map("name" -> " Mats "))
+    createNode(Map("name" -> "\nMats\n"))
+    createNode(Map("name" -> "\tMats\t"))
+
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name ENDS WITH '\n' RETURN a.name AS name")
+
+    result.toSeq should equal(Seq(Map("name" -> "\nMats\n")))
+  }
+
+  test("CONTAINS against a whitespace should work") {
+    createNode(Map("name" -> " Mats "))
+    createNode(Map("name" -> "\nMats\n"))
+    createNode(Map("name" -> "\tMats\t"))
+
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name CONTAINS ' ' RETURN a.name AS name")
+
+    result.toSeq should equal(Seq(Map("name" -> " Mats ")))
+  }
+
+  test("CONTAINS against a newline should work") {
+    createNode(Map("name" -> " Mats "))
+    createNode(Map("name" -> "\nMats\n"))
+    createNode(Map("name" -> "\tMats\t"))
+
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name CONTAINS '\n' RETURN a.name AS name")
+
+    result.toSeq should equal(Seq(Map("name" -> "\nMats\n")))
+  }
+
   test("STARTS WITH against a null value returns no matches") {
     val result = executeWithAllPlanners("MATCH (a) WHERE a.name STARTS WITH NULL RETURN a")
 
