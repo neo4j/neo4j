@@ -91,7 +91,7 @@ public class SessionStateMachineTest
     }
 
     @Test
-    public void shouldLeaveTransactionOpenOnClientErrors() throws Throwable
+    public void shouldNotLeaveTransactionOpenOnClientErrors() throws Throwable
     {
         // Given
         final TopLevelTransaction tx = mock( TopLevelTransaction.class );
@@ -106,14 +106,15 @@ public class SessionStateMachineTest
         machine.run( "Hello, world!", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
 
         // Then
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.RECOVERABLE_ERROR ) );
-        verifyNoMoreInteractions( tx );
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
+        verify(tx).failure();
+        verify(tx).close();
 
         // And when
         machine.acknowledgeFailure( null, Session.Callback.NO_OP );
 
         // Then the machine goes back to an idle (no open transaction) state
-        assertThat(machine.state(), equalTo( SessionStateMachine.State.IN_TRANSACTION ));
+        assertThat(machine.state(), equalTo( SessionStateMachine.State.IDLE ));
     }
 
     @Test
