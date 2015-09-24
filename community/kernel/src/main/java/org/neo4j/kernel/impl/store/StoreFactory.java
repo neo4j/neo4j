@@ -59,6 +59,10 @@ public class StoreFactory
     public static final String RELATIONSHIP_GROUP_STORE_NAME = ".relationshipgroupstore.db";
     public static final String COUNTS_STORE = ".counts.db";
 
+    private static final byte SF_DEFAULT = 0;
+    public static final byte SF_CREATE = 1;
+    public static final byte SF_LAZY = 1 << 1;
+
     private Config config;
     @SuppressWarnings( "deprecation" )
     private IdGeneratorFactory idGeneratorFactory;
@@ -119,14 +123,16 @@ public class StoreFactory
         this.pageCache = pageCache;
     }
 
-    public NeoStores openNeoStores( boolean createIfNotExist )
+    public NeoStores openNeoStoresEagerly()
     {
-        return openNeoStores( createIfNotExist, true );
+        return openNeoStores( SF_DEFAULT );
     }
 
-    public NeoStores openNeoStores( boolean createIfNotExist, boolean eagerlyInitializeStores )
+    public NeoStores openNeoStores( int flags )
     {
-        if ( createIfNotExist )
+        boolean createIfNotExists = (flags & SF_CREATE) != 0;
+        boolean eagerlyInitializeStores = (flags & SF_LAZY) == 0;
+        if ( createIfNotExists )
         {
             try
             {
@@ -138,10 +144,8 @@ public class StoreFactory
                         "Could not create store directory: " + neoStoreFileName.getParent(), e );
             }
         }
-        return new NeoStores( neoStoreFileName, config, idGeneratorFactory, pageCache,
-                logProvider,
-                fileSystemAbstraction,
-                createIfNotExist, eagerlyInitializeStores );
+        return new NeoStores( neoStoreFileName, config, idGeneratorFactory, pageCache, logProvider,
+                fileSystemAbstraction, createIfNotExists, eagerlyInitializeStores );
     }
 
     public abstract static class Configuration

@@ -54,6 +54,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.ShortArray.LONG;
+import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
@@ -212,7 +213,7 @@ public class NodeCommandTest
         @SuppressWarnings("deprecation")
         StoreFactory storeFactory = new StoreFactory( dir, new Config(), new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
-        neoStores = storeFactory.openNeoStores( true );
+        neoStores = storeFactory.openNeoStores( SF_CREATE );
         nodeStore = neoStores.getNodeStore();
     }
 

@@ -99,6 +99,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 
 public class TransactionRepresentationCommitProcessIT
 {
@@ -141,7 +142,7 @@ public class TransactionRepresentationCommitProcessIT
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         storeDir = testDirectory.graphDbDir();
         StoreFactory storeFactory = new StoreFactory( fileSystem, storeDir, pageCache, NullLogProvider.getInstance() );
-        neoStores = storeFactory.openNeoStores( true );
+        neoStores = storeFactory.openNeoStores( SF_CREATE );
     }
 
     @After

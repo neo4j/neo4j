@@ -75,7 +75,7 @@ public class RecoveryIT
     }
 
     @Test
-    public void deleteAndRemoveNodePropertyDuringOneRecoveryRun() throws IOException
+    public void shouldRecoverIdsCorrectlyWhenWeCreateAndDeleteANodeInTheSameRecoveryRun() throws IOException
     {
         GraphDatabaseService database = startDatabase( directory.graphDbDir() );
         Label testLabel = DynamicLabel.label( "testLabel" );

@@ -84,7 +84,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         NeoStores neoStores = null;
         try
         {
-            neoStores = factory.openNeoStores( false );
+            neoStores = factory.openNeoStoresEagerly();
             // emulate a failure during rebuild:
             emulateFailureOnRebuildOf( neoStores );
         }

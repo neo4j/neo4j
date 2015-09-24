@@ -134,7 +134,7 @@ public class ConsistencyCheckService
             }
         } ) );
 
-        try ( NeoStores neoStores = factory.openNeoStores( false ) )
+        try ( NeoStores neoStores = factory.openNeoStoresEagerly() )
         {
             StoreAccess store = new StoreAccess( neoStores ).initialize();
             LabelScanStore labelScanStore = null;

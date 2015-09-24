@@ -318,7 +318,7 @@ public class BatchInsertTest
         File dir = new File( inserter.getStoreDir() );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance() );
-        return storeFactory.openNeoStores( false );
+        return storeFactory.openNeoStoresEagerly();
     }
 
     @Test

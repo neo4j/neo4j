@@ -86,6 +86,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 
 public class NeoStoreTest
 {
@@ -114,7 +115,7 @@ public class NeoStoreTest
         pageCache = pageCacheRule.getPageCache( fs.get() );
         StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
                 fs.get(), NullLogProvider.getInstance() );
-        sf.openNeoStores( true ).close();
+        sf.openNeoStores( SF_CREATE ).close();
     }
 
     private static class MyPropertyKeyToken extends Token
@@ -1095,7 +1096,7 @@ public class NeoStoreTest
         StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
                 fileSystem, NullLogProvider.getInstance() );
 
-        NeoStores neoStores = sf.openNeoStores( false );
+        NeoStores neoStores = sf.openNeoStoresEagerly();
         assertEquals( 12, neoStores.getMetaDataStore().getCurrentLogVersion() );
         neoStores.close();
     }
@@ -1107,7 +1108,7 @@ public class NeoStoreTest
         File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
         StoreFactory factory = new StoreFactory( fileSystem, neoStoreDir, pageCache, NullLogProvider.getInstance() );
 
-        try ( NeoStores neoStores = factory.openNeoStores( true ) )
+        try ( NeoStores neoStores = factory.openNeoStores( SF_CREATE ) )
         {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
             metaDataStore.setCreationTime( (long) 3 );
@@ -1126,7 +1127,7 @@ public class NeoStoreTest
             channel.write( ByteBuffer.wrap( UTF8.encode( "This is some data that is not a record." ) ) );
         }
 
-        try ( NeoStores neoStores = factory.openNeoStores( false ) )
+        try ( NeoStores neoStores = factory.openNeoStoresEagerly() )
         {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
             assertEquals( MetaDataStore.FIELD_NOT_PRESENT, metaDataStore.getCreationTime() );
@@ -1148,7 +1149,7 @@ public class NeoStoreTest
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
 
         // when
-        NeoStores neoStores = sf.openNeoStores( true );
+        NeoStores neoStores = sf.openNeoStores( SF_CREATE );
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
 
         // then the default is 0
@@ -1163,7 +1164,7 @@ public class NeoStoreTest
         // when
         neoStores.flush();
         neoStores.close();
-        neoStores = sf.openNeoStores( false );
+        neoStores = sf.openNeoStoresEagerly();
 
         // then the value should have been stored
         assertEquals( 10l, metaDataStore.getLatestConstraintIntroducingTx() );
@@ -1176,12 +1177,12 @@ public class NeoStoreTest
         StoreFactory factory =
                 new StoreFactory( fs.get(), new File( "graph.db/neostore" ), pageCache, NullLogProvider.getInstance() );
 
-        try ( NeoStores neoStores = factory.openNeoStores( true ) )
+        try ( NeoStores neoStores = factory.openNeoStores( SF_CREATE ) )
         {
             neoStores.getMetaDataStore();
         }
 
-        try ( NeoStores neoStores = factory.openNeoStores( false ) )
+        try ( NeoStores neoStores = factory.openNeoStoresEagerly() )
         {
             long lastCommittedTransactionId = neoStores.getMetaDataStore().getLastCommittedTransactionId();
             assertEquals( TransactionIdStore.BASE_TX_ID, lastCommittedTransactionId );
@@ -1195,7 +1196,7 @@ public class NeoStoreTest
         File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
         StoreFactory factory = new StoreFactory( fileSystem, neoStoreDir, pageCache, NullLogProvider.getInstance() );
 
-        try ( NeoStores neoStores = factory.openNeoStores( true ) )
+        try ( NeoStores neoStores = factory.openNeoStores( SF_CREATE ) )
         {
             neoStores.getMetaDataStore();
         }
@@ -1203,7 +1204,7 @@ public class NeoStoreTest
         fileSystem.deleteFile( file );
 
         exception.expect( StoreNotFoundException.class );
-        try ( NeoStores neoStores = factory.openNeoStores( false ) )
+        try ( NeoStores neoStores = factory.openNeoStoresEagerly() )
         {
             neoStores.getMetaDataStore();
         }
@@ -1216,7 +1217,7 @@ public class NeoStoreTest
         File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
         StoreFactory factory = new StoreFactory( fileSystem, neoStoreDir, pageCache, NullLogProvider.getInstance() );
 
-        try ( NeoStores neoStores = factory.openNeoStores( true ) )
+        try ( NeoStores neoStores = factory.openNeoStores( SF_CREATE ) )
         {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
             metaDataStore.setCreationTime( (long) 3 );
@@ -1237,7 +1238,7 @@ public class NeoStoreTest
         MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM, (long) 11 );
         MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TIME, (long) 12 );
 
-        try ( NeoStores neoStores = factory.openNeoStores( false ) )
+        try ( NeoStores neoStores = factory.openNeoStoresEagerly() )
         {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
             assertEquals( 3, metaDataStore.getCreationTime() );

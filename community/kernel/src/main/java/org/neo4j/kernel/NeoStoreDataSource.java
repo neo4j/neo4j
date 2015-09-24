@@ -177,6 +177,7 @@ import org.neo4j.logging.Logger;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.neo4j.helpers.collection.Iterables.toList;
+import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
 public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexProviders
@@ -625,8 +626,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             labelTokens, final RelationshipTypeTokenHolder relationshipTypeTokens,
             final PropertyKeyTokenHolder propertyKeyTokenHolder )
     {
-        final NeoStores neoStores = storeFactory.openNeoStores( true );
-
         life.add( new LifecycleAdapter()
         {
             @Override
@@ -636,7 +635,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                 // needs to be cleaned up in latest version
                 if ( startupStatistics.numberOfRecoveredTransactions() > 0 )
                 {
-                    neoStores.rebuildIdGenerators();
+                    neoStoreModule.neoStores().rebuildIdGenerators();
                 }
                 neoStoreModule.neoStores().makeStoreOk();
 
@@ -644,13 +643,14 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                         neoStoreModule.neoStores().getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
                 relationshipTypeTokens.setInitialTokens(
                         neoStoreModule.neoStores().getRelationshipTypeTokenStore().getTokens( Integer.MAX_VALUE ) );
-                labelTokens.setInitialTokens( neoStoreModule.neoStores().getLabelTokenStore().getTokens( Integer
-                        .MAX_VALUE ) );
+                labelTokens.setInitialTokens(
+                        neoStoreModule.neoStores().getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
 
-                neoStores.rebuildCountStoreIfNeeded(); // TODO: move this to lifecycle
+                neoStoreModule.neoStores().rebuildCountStoreIfNeeded(); // TODO: move this to counts store lifecycle
             }
         } );
 
+        final NeoStores neoStores = storeFactory.openNeoStores( SF_CREATE );
         return new NeoStoreModule()
         {
             @Override
