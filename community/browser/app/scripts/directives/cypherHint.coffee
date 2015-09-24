@@ -26,12 +26,14 @@ angular.module('neo4jApp.directives')
     link: (scope, element, attrs) ->
       unbind = scope.$watch attrs.cypherHint, (val) ->
         return unless val
+        if not val.position
+          val.position = {line: 1, column: 1, offset: 0}
         inputArr = attrs.cypherInput.replace(/^\s*(EXPLAIN|PROFILE)\s*/, '').split("\n")
-        if val.line is 1 and val.column is 1 and val.offset is 0
+        if val.position.line is 1 and val.position.column is 1 and val.position.offset is 0
           outputArr = inputArr
         else
-          outputArr = [inputArr[val.line-1]]
-          outputArr.push (' ' for i in [0...(val.column)]).join('')+"^"
+          outputArr = [inputArr[val.position.line-1]]
+          outputArr.push (' ' for i in [0...(val.position.column)]).join('')+"^"
         element.text(outputArr.join("\n"))
         unbind()
   ])

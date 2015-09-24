@@ -137,7 +137,7 @@ div(ng-controller="CypherResultCtrl", fullscreen)
                   h4
                     {{message.title}}
                   p {{message.description}}
-                  pre(cypher-hint="message.position", cypher-input="{{frame.input}}")
+                  pre(cypher-hint="message", cypher-input="{{frame.input}}")
                   hr(ng-show="!$last")
             include partials/messages-status-bar
 

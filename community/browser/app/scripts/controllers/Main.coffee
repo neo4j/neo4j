@@ -34,16 +34,17 @@ angular.module('neo4jApp.controllers')
       'UsageDataCollectionService'
       'Utils'
       ($scope, $window, Server, Frame, AuthService, ConnectionStatusService, Settings, motdService, UDC, Utils) ->
+        $scope.kernel = {}
         $scope.refresh = ->
           return '' if $scope.unauthorized || $scope.offline
 
-          $scope.labels = Server.labels()
-          $scope.relationships = Server.relationships()
-          $scope.propertyKeys = Server.propertyKeys()
-          $scope.server = Server.info()
-          $scope.version = Server.version()
+          $scope.labels = Server.labels $scope.labels
+          $scope.relationships = Server.relationships $scope.relationships
+          $scope.propertyKeys = Server.propertyKeys $scope.propertyKeys
+          $scope.server = Server.info $scope.server
+          $scope.version = Server.version $scope.version
           $scope.host = $window.location.host
-          $scope.kernel = {}
+
           # gather info from jmx
           Server.jmx(
             [
