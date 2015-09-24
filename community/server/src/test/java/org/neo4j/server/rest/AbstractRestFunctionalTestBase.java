@@ -38,6 +38,7 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.TestData;
+import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.SharedServerTestBase;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
@@ -136,7 +137,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return ((GraphDatabaseAPI)graphdb()).getDependencyResolver().resolveDependency( cls );
     }
 
-    protected String getDataUri()
+    protected static String getDataUri()
     {
         return "http://localhost:7474/db/data/";
     }
@@ -169,6 +170,28 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     protected String postRelationshipIndexUri( String indexName )
     {
         return getDataUri() + PATH_RELATIONSHIP_INDEX + "/" + indexName;
+    }
+
+    protected String txUri()
+    {
+        return getDataUri() + "transaction";
+    }
+
+    protected static String txCommitUri()
+    {
+        return getDataUri() + "transaction/commit";
+    }
+
+    protected String txUri( long txId )
+    {
+        return getDataUri() + "transaction/" + txId;
+    }
+
+    public static long extractTxId( HTTP.Response response )
+    {
+        int lastSlash = response.location().lastIndexOf( "/" );
+        String txIdString = response.location().substring( lastSlash + 1 );
+        return Long.parseLong( txIdString );
     }
 
     protected Node getNode( String name )

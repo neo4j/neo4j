@@ -415,7 +415,7 @@ public interface Status
     enum Classification
     {
         /** The Client sent a bad request - changing the request might yield a successful outcome. */
-        ClientError( TransactionEffect.NONE, PublishingPolicy.PUBLISHABLE,
+        ClientError( TransactionEffect.ROLLBACK, PublishingPolicy.PUBLISHABLE,
                 "The Client sent a bad request - changing the request might yield a successful outcome."),
         /** There are notifications about the request sent by the client.*/
         ClientNotification( TransactionEffect.NONE, PublishingPolicy.PUBLISHABLE,

@@ -117,19 +117,8 @@ public class TransactionErrorIT extends AbstractRestFunctionalTestBase
         }
     }
 
-    private String txUri()
-    {
-        return getDataUri() + "transaction";
-    }
-
-    private String txCommitUri()
-    {
-        return getDataUri() + "transaction/commit";
-    }
-
     private long countNodes()
     {
         return TransactionMatchers.countNodes( graphdb() );
     }
-
 }

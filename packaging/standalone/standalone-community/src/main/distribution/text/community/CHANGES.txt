@@ -123,6 +123,11 @@ o Added ability to skip duplicate nodes, i.e. multiple nodes with the same ID in
   using --bad-tolerance=<max bad entries>. Skipping of bad relationships/nodes can be enabled/disabled
   individually with --skip-duplicate-nodes and --skip-bad-relationships.
 
+2.2.6
+-----
+Server:
+o Fixes #5258 - ClientError and TransientError make REST API transactions rollback
+
 2.2.5
 -----
 Csv:
