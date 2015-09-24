@@ -997,7 +997,7 @@ return b
     result.executionPlanDescription.toString should include("IndexSeek")
   }
 
-  ignore("should be able to use index hints with LIKE predicates") { // Rewrite using startsWith
+  test("should be able to use index hints with STARTS WITH predicates") {
     // given
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
     val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
@@ -1007,7 +1007,7 @@ return b
     graph.createIndex("Person", "name")
 
     // when
-    val result = executeWithAllPlanners("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name LIKE 'Jac%' RETURN n")
+    val result = executeWithAllPlanners("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name STARTS WITH 'Jac' RETURN n")
 
     // then
     result.toList should equal (List(Map("n" -> jake)))

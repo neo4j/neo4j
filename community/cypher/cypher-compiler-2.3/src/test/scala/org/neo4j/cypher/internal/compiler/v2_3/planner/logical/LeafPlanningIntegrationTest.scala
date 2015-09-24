@@ -34,98 +34,62 @@ import org.neo4j.cypher.internal.frontend.v2_3.{ExclusiveBound, InclusiveBound, 
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  ignore("should plan index seek by prefix for simple prefix search based on LIKE with %") {
+  test("should plan index seek by prefix for simple prefix search based on STARTS WITH with %") {
     (new given {
       indexOn("Person", "name")
       cost = nodeIndexScanCost
-    } planFor "MATCH (a:Person) WHERE a.name LIKE 'prefix%' RETURN a").plan should equal(
+    } planFor "MATCH (a:Person) WHERE a.name STARTS WITH 'prefix' RETURN a").plan should equal(
       NodeIndexSeek(
         "a",
         LabelToken("Person", LabelId(0)),
         PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
-        RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange("prefix")) _),
+        RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("prefix")_)) _),
         Set.empty)(solved)
     )
   }
 
-  ignore("should plan index seek by prefix for empty prefix search based on LIKE with %") {
-    val result = (new given {
-      indexOn("Person", "name")
-      cost = nodeIndexScanCost
-    } planFor "MATCH (a:Person) WHERE a.name LIKE '%' RETURN a").plan
-
-    result should equal(
-      Selection(Seq(Like(Property(Identifier("a") _, PropertyKeyName("name") _) _,
-                         LikePattern(StringLiteral("%") _)) _),
-        NodeIndexScan(
-          "a",
-          LabelToken("Person", LabelId(0)),
-          PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
-          Set.empty)(solved)
-      )(solved))
-  }
-
-  ignore("should plan index seek by prefix for prefix search based on multiple LIKEs combined with AND, and choose the longer prefix") {
+  test("should plan index seek by prefix for prefix search based on multiple STARTS WITHSs combined with AND, and choose the longer prefix") {
     (new given {
       indexOn("Person", "name")
       indexOn("Person", "lastname")
       cost = nodeIndexScanCost
-    } planFor "MATCH (a:Person) WHERE a.name LIKE 'short%' AND a.lastname LIKE 'longer%' RETURN a")
+    } planFor "MATCH (a:Person) WHERE a.name STARTS WITH 'short' AND a.lastname STARTS WITH 'longer' RETURN a")
       .plan should equal(
-      Selection(Seq(Like(Property(Identifier("a") _, PropertyKeyName("name") _) _,
-                         LikePattern(StringLiteral("short%") _)) _),
+      Selection(Seq(StartsWith(Property(Identifier("a") _, PropertyKeyName("name") _) _, StringLiteral("short") _) _),
                 NodeIndexSeek(
                   "a",
                   LabelToken("Person", LabelId(0)),
                   PropertyKeyToken(PropertyKeyName("lastname") _, PropertyKeyId(1)),
-                  RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange("longer")) _),
+                  RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("longer") _)) _),
                   Set.empty)(solved)
       )(solved))
   }
 
-  ignore("should plan index seek by prefix for prefix search based on multiple LIKEs combined with AND NOT") {
+  test("should plan index seek by prefix for prefix search based on multiple STARTS WITHs combined with AND NOT") {
     (new given {
       indexOn("Person", "name")
       indexOn("Person", "lastname")
       cost = nodeIndexScanCost
-    } planFor "MATCH (a:Person) WHERE a.name LIKE 'longer%' AND NOT a.lastname LIKE 'short%' RETURN a")
+    } planFor "MATCH (a:Person) WHERE a.name STARTS WITH 'longer' AND NOT a.lastname STARTS WITH 'short' RETURN a")
       .plan should equal(
-      Selection(Seq(Not(Like(Property(Identifier("a") _, PropertyKeyName("lastname") _) _,
-                             LikePattern(StringLiteral("short%") _)) _) _),
+      Selection(Seq(Not(StartsWith(Property(Identifier("a") _, PropertyKeyName("lastname") _) _, StringLiteral("short") _) _) _),
                 NodeIndexSeek(
                   "a",
                   LabelToken("Person", LabelId(0)),
                   PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
-                  RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange("longer")) _),
+                  RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("longer") _)) _),
                   Set.empty)(solved)
       )(solved))
   }
 
-  ignore("should plan index seek by prefix for complex prefix search based on LIKE with %") {
+  test("should plan property equality index seek instead of index seek by prefix") {
+    val startsWith: StartsWith = StartsWith(Property(Identifier("a") _, PropertyKeyName("name") _) _,
+                                            StringLiteral("prefix") _) _
     (new given {
       indexOn("Person", "name")
       cost = nodeIndexScanCost
-    } planFor "MATCH (a:Person) WHERE a.name LIKE 'prefix%suffix' RETURN a").plan should equal(
-      Selection(
-        Seq(Like(Property(ident("a"), PropertyKeyName("name")_)_, LikePattern(StringLiteral("prefix%suffix")_))_),
-        NodeIndexSeek(
-          "a",
-          LabelToken("Person", LabelId(0)),
-          PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
-          RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange("prefix")) _),
-          Set.empty)(solved)
-      )(solved)
-    )
-  }
-
-  ignore("should plan property equality index seek instead of index seek by prefix") {
-    val like: Like = Like(Property(Identifier("a") _, PropertyKeyName("name") _) _,
-                          LikePattern(StringLiteral("prefix%") _)) _
-    (new given {
-      indexOn("Person", "name")
-      cost = nodeIndexScanCost
-    } planFor "MATCH (a:Person) WHERE a.name LIKE 'prefix%' AND a.name = 'prefix1' RETURN a").plan should equal(
-      Selection(Seq(like),
+    } planFor "MATCH (a:Person) WHERE a.name STARTS WITH 'prefix' AND a.name = 'prefix1' RETURN a").plan should equal(
+      Selection(Seq(startsWith),
                 NodeIndexSeek(
                   "a",
                   LabelToken("Person", LabelId(0)),
@@ -135,14 +99,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       )(solved))
   }
 
-  ignore("should plan property equality index seek using IN instead of index seek by prefix") {
-    val like: Like = Like(Property(Identifier("a") _, PropertyKeyName("name") _) _,
-                          LikePattern(StringLiteral("prefix%") _)) _
+  test("should plan property equality index seek using IN instead of index seek by prefix") {
+    val startsWith: StartsWith = StartsWith(Property(Identifier("a") _, PropertyKeyName("name") _) _,
+                                            StringLiteral("prefix%") _) _
     (new given {
       indexOn("Person", "name")
       cost = nodeIndexScanCost
-    } planFor "MATCH (a:Person) WHERE a.name LIKE 'prefix%' AND a.name in ['prefix1', 'prefix2'] RETURN a").plan should equal(
-      Selection(Seq(like),
+    } planFor "MATCH (a:Person) WHERE a.name STARTS WITH 'prefix%' AND a.name in ['prefix1', 'prefix2'] RETURN a").plan should equal(
+      Selection(Seq(startsWith),
                 NodeIndexSeek(
                   "a",
                   LabelToken("Person", LabelId(0)),

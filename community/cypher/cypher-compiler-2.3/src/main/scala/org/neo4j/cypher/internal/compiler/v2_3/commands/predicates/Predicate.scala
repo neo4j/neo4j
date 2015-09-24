@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
-import org.neo4j.cypher.internal.frontend.v2_3.parser.ParsedLikePattern
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.graphdb._
 
@@ -170,17 +169,39 @@ case class PropertyExists(identifier: Expression, propertyKey: KeyToken) extends
   override def localEffects(symbols: SymbolTable) = Effects.propertyRead(identifier, symbols)(propertyKey.name)
 }
 
-case class LiteralLikePattern(predicate: LiteralRegularExpression, pattern: ParsedLikePattern, caseInsensitive: Boolean = false) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState) = predicate.isMatch(m)
-  def containsIsNull = predicate.containsIsNull
+trait StringOperator {
+  self: Predicate =>
+  override def isMatch(m: ExecutionContext)(implicit state: QueryState) = (lhs(m), rhs(m)) match {
+    case (null, _) => None
+    case (_, null) => None
+    case (l: String, r: String) => Some(compare(l,r))
+    case (l, r) => throw new CypherTypeException(s"Expected two strings, but got $l and $r")
+  }
 
-  def rewrite(f: (Expression) => Expression) = f(copy(predicate = predicate.rewrite(f).asInstanceOf[LiteralRegularExpression]))
+  def lhs: Expression
+  def rhs: Expression
+  def compare(a: String, b: String): Boolean
+  override def containsIsNull = false
+  override def arguments = Seq(lhs, rhs)
+  override def symbolTableDependencies = lhs.symbolTableDependencies ++ rhs.symbolTableDependencies
+}
 
-  def arguments = predicate.arguments
+case class StartsWith(lhs: Expression, rhs: Expression) extends Predicate with StringOperator {
+  override def compare(a: String, b: String) = a.startsWith(b)
 
-  def symbolTableDependencies = predicate.symbolTableDependencies
+  override def rewrite(f: (Expression) => Expression) = f(copy(lhs.rewrite(f), rhs.rewrite(f)))
+}
 
-  override def toString = s"${predicate.lhsExpr} ${if (caseInsensitive) "ILIKE" else "LIKE"} $pattern"
+case class EndsWith(lhs: Expression, rhs: Expression) extends Predicate with StringOperator {
+  override def compare(a: String, b: String) = a.endsWith(b)
+
+  override def rewrite(f: (Expression) => Expression) = f(copy(lhs.rewrite(f), rhs.rewrite(f)))
+}
+
+case class Contains(lhs: Expression, rhs: Expression) extends Predicate with StringOperator {
+  override def compare(a: String, b: String) = a.contains(b)
+
+  override def rewrite(f: (Expression) => Expression) = f(copy(lhs.rewrite(f), rhs.rewrite(f)))
 }
 
 case class LiteralRegularExpression(lhsExpr: Expression, regexExpr: Literal)(implicit converter: String => String = identity) extends Predicate {

@@ -13,10 +13,7 @@ The mathematical operators are `+`, `-`, `*`, `/` and `%`, `^`.
 The comparison operators are `=`, `<>`, `<`, `>`, `<=`, `>=`, `IS NULL`, and `IS NOT NULL`.
 See <<cypher-comparison>> on how they behave.
 
-The operator `LIKE` can be used to compare a string using pattern matching.
-There are two wildcards supported: `%` and `_`.
-`%` will match zero or more characters and `_` will match exactly one character.
-Wildcards are escaped using a single backslash (`\`).
+The operators `STARTS WITH`, `ENDS WITH` and `CONTAINS` can be used to search for a string value by it's content.
 
 [[query-operators-boolean]]
 == Boolean operators ==

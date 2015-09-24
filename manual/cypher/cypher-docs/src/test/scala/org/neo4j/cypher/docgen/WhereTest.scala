@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.junit.{Ignore, Test}
+import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.{Relationship, Node}
 import org.neo4j.visualization.graphviz.GraphStyle
@@ -106,41 +106,21 @@ class WhereTest extends DocumentingTestBase {
       assertions = (p) => assertEquals(List(Map("n" -> node("Andres"))), p.toList))
   }
 
-  @Ignore("Should use startsWith instead") def string_pattern_matching_case_sensitive() {
+  @Test def string_pattern_matching_case_sensitive() {
     testQuery(
       title = "Case-sensitive pattern matching",
-      text = "The `LIKE` keyword can be used to perform case-sensitive matching on strings. Two wildcards are supported: `%` matches zero or more characters, `_` matches exactly one character. " +
-        "Matches using `LIKE` in a prefix pattern (`LIKE 'prefix%'` or `LIKE 'prefix_'`) can be solved using indexes.",
-      queryText = """match (n) where n.name LIKE 'Pet%' return n""",
+      text = """The `STARTS WITH` operator can be used to perform case-sensitive matching on strings.""".stripMargin,
+      queryText = """match (n) where n.name STARTS WITH 'Pet' return n""",
       optionalResultExplanation = """"+Peter+" will be returned because his name starts with `Pet`.""",
       assertions = (p) => assertEquals(List(node("Peter")), p.columnAs[Node]("n").toList))
   }
 
-  @Ignore("Should use startsWith instead") def string_pattern_matching_case_insensitive() {
-    testQuery(
-      title = "Case-insensitive pattern matching",
-      text = "The `ILIKE` keyword can be used to perform case-insensitive matching on strings. Two wildcards are supported: `%` matches zero or more characters, `_` matches exactly one character.",
-      queryText = """match (n) where n.name ILIKE 'ANDR_S' return n""",
-      optionalResultExplanation = """"+Andres+" will be returned because his name has six characters starting with `ANDR` and ending with `S` regardless of case.""",
-      assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
-  }
-
-  @Ignore("Should use startsWith instead") def string_pattern_matching_negation() {
+  @Test def string_pattern_matching_negation() {
     testQuery(
       title = "Pattern matching negation",
       text = "Use the `NOT` keyword to exclude all matches on given string from your result:",
-      queryText = """match (n) where n.name NOT LIKE '%s' return n""",
+      queryText = """match (n) where NOT n.name ENDS WITH 's' return n""",
       optionalResultExplanation = """"+Peter+" will be returned because his name does not end with `s`.""",
-      assertions = (p) => assertEquals(List(node("Peter")), p.columnAs[Node]("n").toList))
-  }
-
-  @Ignore("Should use startsWith instead") def string_pattern_matching_escaped() {
-    testQuery(
-      title = "Escaping in pattern matching",
-      text = "If one of the wildcard characters (`%` or `_`) is needed inside your string, escape it. Remember that backslash needs " +
-        "to be escaped in string literals.",
-      queryText = """match (n) where n.email LIKE '%\_%' return n""",
-      optionalResultExplanation = """"+Peter+" will be returned because his email contains an `_`.""",
       assertions = (p) => assertEquals(List(node("Peter")), p.columnAs[Node]("n").toList))
   }
 

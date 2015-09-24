@@ -37,7 +37,7 @@ object PlanDescriptionArgumentSerializer {
       case UpdateActionName(action) => action
       case LegacyIndex(index) => index
       case Index(label, property) => s":$label($property)"
-      case PrefixIndex(label, property, likePrefix) => s":$label($property LIKE $likePrefix%)"
+      case PrefixIndex(label, property, prefix) => s":$label($property STARTS WITH $prefix)"
       case InequalityIndex(label, property, bounds) => s":$label($property) ${bounds.mkString(", ")}"
       case LabelName(label) => s":$label"
       case KeyNames(keys) => keys.map(removeGeneratedNames).mkString(SEPARATOR)

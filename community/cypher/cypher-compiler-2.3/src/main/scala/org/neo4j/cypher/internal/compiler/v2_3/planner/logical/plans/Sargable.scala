@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.{ManyQueryExpression, Qu
 import org.neo4j.cypher.internal.compiler.v2_3.helpers._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{ManySeekArgs, SeekArgs, SingleSeekArg}
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
-import org.neo4j.cypher.internal.frontend.v2_3.parser.{LikePatternOp, LikePatternParser, MatchText, WildcardLikePatternOp}
 import org.neo4j.cypher.internal.frontend.v2_3.{ExclusiveBound, InclusiveBound}
 
 object WithSeekableArgs {
@@ -70,8 +69,8 @@ object AsPropertyScannable {
     case expr: InequalityExpression =>
       partialPropertyPredicate(expr, expr.lhs)
 
-    case like: Like =>
-      partialPropertyPredicate(like, like.lhs)
+    case startsWith: StartsWith =>
+      partialPropertyPredicate(startsWith, startsWith.lhs)
 
     case regex: RegexMatch =>
       partialPropertyPredicate(regex, regex.lhs)
@@ -97,26 +96,12 @@ object AsPropertyScannable {
 
 object AsStringRangeSeekable {
   def unapply(v: Any): Option[PrefixRangeSeekable] = v match {
-    case like@Like(Property(ident: Identifier, propertyKey), LikePattern(lit@StringLiteral(value)), _)
-      if !like.caseInsensitive =>
-        for ((range, prefix) <- getRange(value))
-          yield {
-            val prefixPattern = LikePattern(StringLiteral(prefix)(lit.position))
-            val predicate = like.copy(pattern = prefixPattern)(like.position)
-            PrefixRangeSeekable(range, predicate, ident, propertyKey)
-          }
+    case startsWith@StartsWith(Property(ident: Identifier, propertyKey), lit@StringLiteral(prefix)) if prefix.length > 0 =>
+      Some(PrefixRangeSeekable(PrefixRange(lit), startsWith, ident, propertyKey))
+    case startsWith@StartsWith(Property(ident: Identifier, propertyKey), rhs) =>
+      Some(PrefixRangeSeekable(PrefixRange(rhs), startsWith, ident, propertyKey))
     case _ =>
       None
-  }
-
-  def getRange(literal: String): Option[(PrefixRange, String)] = {
-    val ops: List[LikePatternOp] = LikePatternParser(literal).compact.ops
-    ops match {
-      case MatchText(prefix) :: (_: WildcardLikePatternOp) :: tl =>
-        Some(PrefixRange(prefix) -> s"$prefix%")
-      case _ =>
-        None
-    }
   }
 }
 
@@ -161,8 +146,8 @@ sealed trait RangeSeekable[T <: Expression, V] extends Seekable[T] {
   def range: SeekRange[V]
 }
 
-case class PrefixRangeSeekable(override val range: PrefixRange, expr: Like, ident: Identifier, propertyKey: PropertyKeyName)
-  extends RangeSeekable[Like, String] {
+case class PrefixRangeSeekable(override val range: PrefixRange[Expression], expr: StartsWith, ident: Identifier, propertyKey: PropertyKeyName)
+  extends RangeSeekable[StartsWith, Expression] {
 
   def dependencies = Set.empty
 

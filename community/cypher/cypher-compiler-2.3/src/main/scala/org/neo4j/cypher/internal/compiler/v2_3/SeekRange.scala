@@ -179,4 +179,8 @@ final case class RangeLessThan[+V](bounds: Bounds[V]) extends HalfOpenSeekRange[
   - It removes the need to construct a proper upper bound value for an interval that
   would describe the prefix search (which can be difficult due to unicode issues)
 */
-final case class PrefixRange(prefix: String) extends SeekRange[String]
+final case class PrefixRange[T](prefix: T) extends SeekRange[T] {
+  def map[X](f: T => X): PrefixRange[X] = copy(f(prefix))
+
+  override def toString: String = prefix.toString
+}

@@ -31,28 +31,14 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   val nodeA = ident("a")
 
-  test("StringRangeSeekable finds n.prop LIKE 'prefix%'") {
+  test("StringRangeSeekable finds n.prop STARTS WITH 'prefix'") {
     val propKey: PropertyKeyName = PropertyKeyName("prop") _
     val leftExpr: Property = Property(nodeA, propKey) _
-    val like: Like = Like(leftExpr, LikePattern(StringLiteral("prefix%") _)) _
-    assertMatches(like) {
+    val startsWith: StartsWith = StartsWith(leftExpr, StringLiteral("prefix") _) _
+    assertMatches(startsWith) {
       case AsStringRangeSeekable(PrefixRangeSeekable(range, expr, ident, propertyKey)) =>
-        range should equal(PrefixRange("prefix"))
-        expr should equal(like)
-        ident should equal(nodeA)
-        propertyKey should equal(propKey)
-    }
-  }
-
-  test("StringRangeSeekable finds n.prop LIKE 'prefix%suffix'") {
-    val propKey: PropertyKeyName = PropertyKeyName("prop") _
-    val leftExpr: Property = Property(nodeA, propKey) _
-    val originalLike: Like = Like(leftExpr, LikePattern(StringLiteral("prefix%suffix") _)) _
-    val prefixLike: Like = Like(leftExpr, LikePattern(StringLiteral("prefix%") _)) _
-    assertMatches(originalLike) {
-      case AsStringRangeSeekable(PrefixRangeSeekable(range, expr, ident, propertyKey)) =>
-        range should equal(PrefixRange("prefix"))
-        expr should equal(prefixLike)
+        range should equal(PrefixRange(StringLiteral("prefix")(pos)))
+        expr should equal(startsWith)
         ident should equal(nodeA)
         propertyKey should equal(propKey)
     }

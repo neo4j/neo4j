@@ -131,12 +131,13 @@ trait Expressions extends Parser
       | "[" ~~ optional(Expression) ~~ ".." ~~ optional(Expression) ~~ "]" ~~>> (ast.CollectionSlice(_: ast.Expression, _, _))
       | group(operator("=~") ~~ Expression2) ~~>> (ast.RegexMatch(_: ast.Expression, _))
       | group(keyword("IN") ~~ Expression2) ~~>> (ast.In(_: ast.Expression, _))
+      | group(keyword("STARTS WITH") ~~ Expression2) ~~>> (ast.StartsWith(_: ast.Expression, _))
+      | group(keyword("ENDS WITH") ~~ Expression2) ~~>> (ast.EndsWith(_: ast.Expression, _))
+      | group(keyword("CONTAINS") ~~ Expression2) ~~>> (ast.Contains(_: ast.Expression, _))
       | keyword("IS NULL") ~~>> (ast.IsNull(_: ast.Expression))
       | keyword("IS NOT NULL") ~~>> (ast.IsNotNull(_: ast.Expression))
     ): ReductionRule1[ast.Expression, ast.Expression])
   }
-
-  private def LikePattern: Rule1[ast.LikePattern] = Expression2 ~~> (expr => ast.LikePattern(expr))
 
   private def Expression2: Rule1[ast.Expression] = rule("an expression") {
     Expression1 ~ zeroOrMore(WS ~ (

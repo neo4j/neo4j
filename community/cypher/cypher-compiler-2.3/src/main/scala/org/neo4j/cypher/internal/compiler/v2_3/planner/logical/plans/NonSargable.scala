@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
-import org.neo4j.cypher.internal.frontend.v2_3.parser.{LikePatternOp, LikePatternParser, MatchText, WildcardLikePatternOp}
 
 // This is when dynamic properties are used
 object AsDynamicPropertyNonSeekable {
@@ -49,7 +48,7 @@ object AsDynamicPropertyNonScannable {
         case _ => None
       }
 
-    case Like(ContainerIndex(identifier: Identifier, _), _, _) =>
+    case StartsWith(ContainerIndex(identifier: Identifier, _), _) =>
       Some(identifier)
 
     case RegexMatch(ContainerIndex(identifier: Identifier, _), _) =>
@@ -66,19 +65,10 @@ object AsDynamicPropertyNonScannable {
 // This is when dynamic properties are used
 object AsStringRangeNonSeekable {
   def unapply(v: Any) = v match {
-    case like@Like(prop@ContainerIndex(identifier: Identifier, _), LikePattern(lit@StringLiteral(value)), _)
-      if !like.caseInsensitive && isPrefixPattern(value) =>
+    case like@StartsWith(prop@ContainerIndex(identifier: Identifier, _), _) =>
       Some(identifier)
     case _ =>
       None
-  }
-
-  def isPrefixPattern(literal: String): Boolean = {
-    val ops: List[LikePatternOp] = LikePatternParser(literal).compact.ops
-    ops match {
-      case MatchText(prefix) :: (_: WildcardLikePatternOp) :: tl => true
-      case _ => false
-    }
   }
 }
 

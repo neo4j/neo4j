@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
-import org.junit.{Ignore, Test}
+import org.junit.Test
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.IndexSeekByRange
@@ -142,7 +142,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
     )
   }
 
-  @Ignore("Should use startsWith instead") def use_index_with_like() {
+  @Test def use_index_with_like() {
     executePreparationQueries {
       val a = (0 to 100).map { i => "CREATE (:Person)" }.toList
       val b = (0 to 300).map { i => s"CREATE (:Person {name: '$i'})" }.toList
@@ -152,10 +152,10 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
     sampleAllIndicesAndWait()
 
     profileQuery(
-      title = "Use index with LIKE",
+      title = "Use index with STARTS WITH",
       text =
-        "The `LIKE` predicate on `person.name` in the following query will use the `Person(name)` index, if it exists. ",
-      queryText = "MATCH (person:Person) WHERE person.name LIKE 'And%' return person",
+        "The `STARTS WITH` predicate on `person.name` in the following query will use the `Person(name)` index, if it exists. ",
+      queryText = "MATCH (person:Person) WHERE person.name STARTS WITH 'And' return person",
       assertions = {
         (p) =>
           assertEquals(1, p.size)
