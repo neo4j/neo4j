@@ -66,6 +66,9 @@ angular.module('neo4jApp.services')
             @isShowing = true
             @do('show')
 
+        showMessenger: () ->
+          @do('show')
+
         newMessage: (message) ->
           @do('showNewMessage', message)
 

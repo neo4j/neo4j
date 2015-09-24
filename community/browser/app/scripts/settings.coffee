@@ -52,6 +52,7 @@ angular.module('neo4jApp.settings', ['neo4jApp.utils'])
     userName: "Graph Friend"
     theme: "normal"
     storeCredentials: yes
+    shouldReportUdc: no
   })
 
 angular.module('neo4jApp.settings')
