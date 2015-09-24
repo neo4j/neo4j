@@ -30,7 +30,7 @@
     <!-- filter plain text -->
     <fileSet>
       <directory>src/main/distribution/text/advanced</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <lineEnding>keep</lineEnding>
       <filtered>true</filtered>
       <excludes>
@@ -42,7 +42,7 @@
     <!-- password files -->
     <fileSet>
       <directory>src/main/distribution/text/advanced</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <lineEnding>unix</lineEnding>
       <filtered>true</filtered>
       <includes>
@@ -53,7 +53,7 @@
     <!-- non-maven jars -->
     <fileSet>
       <directory>src/main/distribution/binary</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <includes>
         <include>system/lib/*.jar</include>
         <include>lib/*.jar</include>
@@ -62,7 +62,7 @@
     <!-- filter and chmod 755 shell scripts -->
     <fileSet>
       <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <lineEnding>unix</lineEnding>
       <fileMode>0755</fileMode>
       <excludes>
@@ -79,7 +79,7 @@
     <!--add MacOS *.plist installer files -->
     <fileSet>
       <directory>${project.parent.basedir}/src/main/distribution/resources</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <lineEnding>unix</lineEnding>
       <fileMode>0755</fileMode>
       <excludes>
@@ -90,7 +90,7 @@
     <!-- upgrade text file -->
     <fileSet>
       <directory>target/upgrade</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <fileMode>0644</fileMode>
       <includes>
         <include>UPGRADE.txt</include>
@@ -110,7 +110,8 @@
         <include>org.neo4j:*</include>
         <include>jline:jline</include>
         <include>org.apache.lucene:lucene-core</include>
-        <include>org.scala-lang:scala-library</include>
+        <include>org.scala-lang:*</include>
+        <include>org.scala-lang.modules:*</include>
         <include>org.parboiled:*</include>
         <include>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</include>
         <include>net.sf.opencsv:opencsv</include>
@@ -134,7 +135,8 @@
         <exclude>org.neo4j.doc:*</exclude>
         <exclude>jline:jline</exclude>
         <exclude>org.apache.lucene:lucene-core</exclude>
-        <exclude>org.scala-lang:scala-library</exclude>
+        <exclude>org.scala-lang:*</exclude>
+        <exclude>org.scala-lang.modules:*</exclude>
         <exclude>org.parboiled:*</exclude>
         <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
         <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>
