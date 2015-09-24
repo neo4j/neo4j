@@ -100,9 +100,9 @@ class QueriedGraphStatistics(graph: GraphDatabaseService, queryContext: QueryCon
       }
 
       if (values.isEmpty)
-        Some(Selectivity(0)) // Avoids division by zero
+        Some(Selectivity.ZERO) // Avoids division by zero
       else
-        Some(Selectivity(1.0 / values.size))
+        Selectivity.of(1.0 / values.size)
     }
   }
 

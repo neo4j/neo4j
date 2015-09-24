@@ -39,7 +39,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val stats = mock[GraphStatistics]
     Mockito.when(stats.nodesWithLabelCardinality(None)).thenReturn(1000.0)
-    Mockito.when(stats.indexSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity(0.1d)))
+    Mockito.when(stats.indexSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Selectivity.of(0.1d))
 
     val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
 

@@ -107,6 +107,6 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
 
     val selectivity = combiner.andTogetherSelectivities(expressionSelectivities ++ patternSelectivities.flatten)
 
-    (selectivity.getOrElse(Selectivity(1)), numberOfZeroZeroRels)
+    (selectivity.getOrElse(Selectivity.ONE), numberOfZeroZeroRels)
   }
 }

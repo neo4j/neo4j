@@ -40,7 +40,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     // WHERE false
     case False() =>
-      Selectivity(0)
+      Selectivity.of(0).get
 
     // WHERE x.prop IN [...]
     case In(Property(Identifier(name), propertyKey), Collection(expressions)) =>
@@ -104,15 +104,13 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
             stats.indexSelectivity(labelId, propertyKeyId)
 
           case _ =>
-            Some(Selectivity(0))
+            Some(Selectivity.ZERO)
         }
     }
 
-    val expandedSelectivities = Stream.from(0).take(sizeHint).flatMap(_ => indexSelectivities)
+    val itemSelectivity = combiner.orTogetherSelectivities(indexSelectivities).getOrElse(DEFAULT_EQUALITY_SELECTIVITY)
+    val selectivity = combiner.orTogetherSelectivities(1.to(sizeHint).map(_ => itemSelectivity)).getOrElse(DEFAULT_EQUALITY_SELECTIVITY)
 
-    val selectivity: Option[Selectivity] = combiner.orTogetherSelectivities(expandedSelectivities)
-
-    selectivity.
-      getOrElse(DEFAULT_EQUALITY_SELECTIVITY * Multiplier(sizeHint)) // If no index exist, use default equality selectivity
+    selectivity
   }
 }

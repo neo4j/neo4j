@@ -49,7 +49,7 @@ case object IndependenceCombiner extends SelectivityCombiner {
   }
 
   private def fromBigDecimal(bigDecimal: math.BigDecimal): Selectivity = {
-    Selectivity(bigDecimal.doubleValue())
+    Selectivity.of(bigDecimal.doubleValue()).get
   }
 }
 

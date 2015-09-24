@@ -84,7 +84,7 @@ case class Cardinality(amount: Double) extends Ordered[Cardinality] {
   def *(that: Selectivity): Cardinality = amount * that.factor
   def +(that: Cardinality): Cardinality = amount + that.amount
   def *(that: Cardinality): Cardinality = amount * that.amount
-  def /(that: Cardinality): Option[Selectivity] = if (that.amount == 0) None else Some(amount / that.amount)
+  def /(that: Cardinality): Option[Selectivity] = if (that.amount == 0) None else Selectivity.of(amount / that.amount)
   def *(that: CostPerRow): Cost = amount * that.cost
   def *(that: Cost): Cost = amount * that.gummyBears
   def ^(a: Int): Cardinality = Math.pow(amount, a)
@@ -153,15 +153,14 @@ object Multiplier {
     Multiplier(Math.max(l.coefficient, r.coefficient))
 }
 
-case class Selectivity(factor: Double) extends Ordered[Selectivity] {
-  def -(other: Selectivity): Selectivity = factor - other.factor
-  def *(other: Selectivity): Selectivity = other.factor * factor
-  def *(other: Multiplier): Selectivity = factor * other.coefficient
-  def ^(a: Int): Selectivity = Math.pow(factor, a)
+case class Selectivity private(factor: Double) extends Ordered[Selectivity] {
+  assert(factor >= 0 && factor <= 1.0)
+  def *(other: Selectivity): Selectivity = Selectivity(other.factor * factor)
+  def ^(a: Int): Selectivity = Selectivity(Math.pow(factor, a))
   def negate: Selectivity = {
     val f = 1.0 - factor
     if (factor == 0 || f < 1)
-      f
+      Selectivity(f)
     else
       Selectivity.CLOSEST_TO_ONE
   }
@@ -170,13 +169,13 @@ case class Selectivity(factor: Double) extends Ordered[Selectivity] {
 }
 
 object Selectivity {
-  def of(value: Double): Option[Selectivity] = if (value.isInfinite || value.isNaN) None else Some(value)
+
+  def of(value: Double): Option[Selectivity] = if (value.isInfinite || value.isNaN || value < 0.0 || value > 1.0) None else Some(Selectivity(value))
 
   val ZERO = Selectivity(0.0d)
   val ONE = Selectivity(1.0d)
   val CLOSEST_TO_ONE = Selectivity(1 - 5.56e-17)    // we can get closer, but this is close enough
 
-  implicit def lift(amount: Double): Selectivity = Selectivity(amount)
 
   implicit def turnSeqIntoSingleSelectivity(p: Seq[Selectivity]): Selectivity =
     p.reduceOption(_ * _).getOrElse(Selectivity(1))
