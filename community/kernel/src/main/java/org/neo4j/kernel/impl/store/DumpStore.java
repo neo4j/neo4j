@@ -266,7 +266,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
 
         if ( ids == null )
         {
-            out.printf( "used = %s / highId = %s (%.2f%%)%n", used, highId, used * 100.0 / store.getHighId() );
+            out.printf( "used = %s / highId = %s (%.2f%%)%n", used, highId, used * 100.0 / highId );
         }
     }
 
