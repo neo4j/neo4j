@@ -38,7 +38,7 @@ import scala.util.Random
 class JoinHintPlanningIntegrationTest extends CypherFunSuite with PropertyChecks with LogicalPlanningTestSupport2 {
 
   val MinPatternLength = 2
-  val MaxPatternLength = 10
+  val MaxPatternLength = 8
   val NumberOfTestRuns = 100
   val MaxDiscardedInputs = 500
 
