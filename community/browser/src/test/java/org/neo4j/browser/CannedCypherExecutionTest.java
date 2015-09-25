@@ -33,16 +33,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionException;
-import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.util.Charsets;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -51,6 +52,7 @@ import static java.lang.String.format;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.jsoup.helper.StringUtil.join;
 import static org.junit.Assert.assertNotNull;
@@ -67,13 +69,11 @@ import static org.junit.Assert.assertTrue;
 public class CannedCypherExecutionTest
 {
     @Test
-    @Ignore
     public void shouldBeAbleToExecuteAllTheCannedCypherQueriesContainedInStaticHtmlFiles() throws Exception
     {
         URL resourceLoc = getClass().getClassLoader().getResource( "browser" );
         assertNotNull( resourceLoc );
 
-        final GraphDatabaseService database = new TestGraphDatabaseFactory().newImpermanentDatabase();
         final AtomicInteger explainCount = new AtomicInteger( 0 );
         final AtomicInteger executionCount = new AtomicInteger( 0 );
 
@@ -82,10 +82,14 @@ public class CannedCypherExecutionTest
             @Override
             public FileVisitResult visitFile( Path file, BasicFileAttributes attributes ) throws IOException
             {
-                if ( file.getFileName().toString().endsWith( ".html" ) )
+                final GraphDatabaseService database = new TestGraphDatabaseFactory().newImpermanentDatabase();
+
+                String fileName = file.getFileName().toString();
+                if ( fileName.endsWith( ".html" ) )
                 {
                     String content = FileUtils.readTextFile( file.toFile(), Charsets.UTF_8 );
-                    Elements cypherElements = Jsoup.parse( content ).select( "pre.runnable" );
+                    Elements cypherElements = Jsoup.parse( content ).select( "pre.runnable" )
+                            .not( ".standalone-example" );
                     for ( Element cypherElement : cypherElements )
                     {
                         String statement = replaceAngularExpressions( cypherElement.text() );
@@ -96,11 +100,44 @@ public class CannedCypherExecutionTest
                             {
                                 try ( Transaction transaction = database.beginTx() )
                                 {
-                                    Result result = database.execute( prependExplain( statement ) );
-                                    assertThat( format( "Query [%s] should produce no notifications", statement ),
-                                            result.getNotifications(), is( emptyIterable() ) );
-                                    explainCount.incrementAndGet();
-                                    transaction.success();
+                                    Iterable<Notification> actual = database.execute(
+                                            prependExplain( statement ) ).getNotifications();
+                                    boolean skipKnownInefficientCypher = !cypherElement.parent().select( ".warn" ).isEmpty();
+                                    if ( skipKnownInefficientCypher  )
+                                    {
+
+                                        List<Notification> targetCollection = new ArrayList<Notification>();
+                                        CollectionUtils.addAll( targetCollection, actual );
+                                        CollectionUtils.filter( targetCollection, new org.apache.commons.collections4
+                                                .Predicate<Notification>()
+
+                                        {
+                                            @Override
+                                            public boolean evaluate( Notification notification )
+                                            {
+                                                return notification.getDescription().contains( NotificationCode.CARTESIAN_PRODUCT.values()
+                                                        .toString() );
+                                            }
+                                        } );
+
+
+                                        assertThat( format( "Query [%s] should only produce cartesian product " +
+                                                                "notifications. [%s]",
+                                                        statement, fileName ),
+                                                targetCollection, empty() );
+
+                                        explainCount.incrementAndGet();
+                                        transaction.success();
+
+                                    }
+                                    else
+                                    {
+                                        assertThat( format( "Query [%s] should produce no notifications. [%s]",
+                                                        statement, fileName ),
+                                                actual, is( emptyIterable() ) );
+                                        explainCount.incrementAndGet();
+                                        transaction.success();
+                                    }
                                 }
                                 catch ( QueryExecutionException e )
                                 {
