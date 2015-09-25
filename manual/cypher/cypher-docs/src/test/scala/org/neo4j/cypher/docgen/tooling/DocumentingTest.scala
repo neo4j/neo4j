@@ -58,22 +58,14 @@ trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with 
   runTestsFor(doc)
 
   def runTestsFor(doc: Document) = {
-    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    try {
-
-      initializeDatabase(doc, db)
-      val doc2 = captureStateAsGraphViz(doc, db, GraphVizBefore)
-      val result = runQueries(doc2, db)
-      reportResults(result)
-
-      if (result.success) {
-        val doc3 = captureStateAsGraphViz(doc2, db, GraphVizAfter)
-        writeResultsToFile(doc3, db, result)
-      }
-    } finally db.shutdown()
+    val result = runQueries(doc)
+    reportResults(result)
+    if (result.success) {
+      writeResultsToFile(doc, result)
+    }
   }
 
-  private def writeResultsToFile(doc: Document, db: GraphDatabaseService, result: TestRunResult) {
+  private def writeResultsToFile(doc: Document, result: TestRunResult) {
     val document: Document = contentAndResultMerger(doc, result)
 
     val asciiDocTree = document.asciiDoc
@@ -90,31 +82,30 @@ trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with 
   }
 
   private def reportResults(result: TestRunResult) {
+    var count = 0
+
+    def testName(q: String) = {
+      count +=1
+      s"$count: $q"
+    }
+
     result foreach {
-      case QueryRunResult(q, Left(failure)) =>
-        test(q.queryText)(throw failure)
+      case QueryRunResult(q, _, Left(failure)) =>
+        test(testName(q))(throw failure)
 
-      case QueryRunResult(q, Right(content)) =>
-        test(q.queryText)({})
+      case QueryRunResult(q, _, Right(content)) =>
+        test(testName(q))({})
+
+      case _:GraphVizRunResult => // Nothing to report here, unless we got a failure
     }
   }
 
-  private def runQueries(doc: Document, db: GraphDatabaseService): TestRunResult = {
-    val builder = (tx: Transaction) => new QueryResultContentBuilder(new ValueFormatter(db, tx))
+  private def runQueries(doc: Document): TestRunResult = {
+    val builder = (db: GraphDatabaseService, tx: Transaction) => new QueryResultContentBuilder(new ValueFormatter(db, tx))
 
-    val runner = new QueryRunner(db, builder)
-    val result = runner.runQueries(init = doc.initQueries, queries = doc.queries)
+    val runner = new QueryRunner(builder)
+    val result = runner.runQueries(contentsWithInit = doc.contentWithQueries, doc.title)
     result
-  }
-
-  private def initializeDatabase(doc: Document, db: GraphDatabaseService) {
-    doc.initQueries.foreach { q =>
-      try {
-        db.execute(q)
-      } catch {
-        case e: Throwable => throw new scala.RuntimeException(s"Initialising database failed on query: $q", e)
-      }
-    }
   }
 }
 
@@ -126,4 +117,3 @@ class ValueFormatter(db: GraphDatabaseService, tx: Transaction) extends (Any => 
     text(x, ctx)
   }
 }
-

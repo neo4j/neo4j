@@ -66,8 +66,8 @@ class DocumentAsciiDocTest extends CypherFunSuite {
 
   test("Section inside Section") {
     val doc = Document("title", "myId", initQueries = Seq.empty,
-      Section("outer",
-        Paragraph("first") ~ Section("inner", Paragraph("second"))
+      Section("outer", Seq.empty,
+        Paragraph("first") ~ Section("inner", Seq.empty, Paragraph("second"))
       ))
 
     doc.asciiDoc should equal(
@@ -275,10 +275,24 @@ class DocumentAsciiDocTest extends CypherFunSuite {
 
 class DocumentQueryTest extends CypherFunSuite {
 
+
+  test("finds all queries and the init-queries they need") {
+    val doc = Document("title", "myId", Seq("1"), Section("h1", Seq("2"),
+      Section("h2", Seq("3"),
+        Query("q", NoAssertions, Seq.empty, NoContent)
+      ) ~ Query("q2", NoAssertions, Seq.empty, NoContent)
+    ))
+
+    doc.contentWithQueries should equal(Seq(
+      ContentWithInit(Seq("1", "2", "3") , Query("q", NoAssertions, Seq.empty, NoContent)),
+      ContentWithInit(Seq("1", "2"), Query("q2", NoAssertions, Seq.empty, NoContent)))
+    )
+  }
+
   test("Simplest possible document with a query in it") {
     val query = "match (n) return n"
     val doc = Document("title", "myId", initQueries = Seq.empty,
-      Query(query, NoAssertions, Paragraph("hello world")))
+      Query(query, NoAssertions, Seq.empty, Paragraph("hello world")))
 
     val asciiDocResult = doc.asciiDoc
     asciiDocResult should equal(

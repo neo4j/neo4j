@@ -21,7 +21,6 @@ package org.neo4j.cypher.docgen.tooling
 
 import java.io.ByteArrayOutputStream
 
-import org.neo4j.cypher.internal.frontend.v2_3.Rewritable._
 import org.neo4j.cypher.internal.frontend.v2_3._
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.graphdb.GraphDatabaseService
@@ -34,12 +33,7 @@ import org.neo4j.walk.Walker
  */
 object captureStateAsGraphViz extends GraphIcing {
 
-  // TODO: Make this cleverer, and don't produce the graph viz unless it's known to be needed
-  def apply(doc: Document, db: GraphDatabaseService, contentToReplace: Content): Document = {
-    val viz = GraphViz(emitGraphviz("apa", "", db))
-    val rewriter = replaceSingleObject(contentToReplace, viz)
-    doc.endoRewrite(rewriter)
-  }
+  def apply(db: GraphDatabaseService, name: String, count: Int): GraphViz = GraphViz(emitGraphviz(s"$name-$count", "", db))
 
   private def emitGraphviz(testid: String, graphVizOptions: String, db: GraphDatabaseService): String = {
     val out = new ByteArrayOutputStream()

@@ -23,8 +23,7 @@ import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.docgen.tooling._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Transaction
-import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
 import org.scalatest.exceptions.TestFailedException
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -32,7 +31,7 @@ import org.scalatest.matchers.{MatchResult, Matcher}
 class QueryRunnerTest extends CypherFunSuite {
   test("invalid query fails") {
     val query = "match n return x"
-    val result = runQueries(query)
+    val result = runQuery(query)
 
     result.queryResults should have size 1
     result should haveATestFailureOfClass(query -> classOf[SyntaxException])
@@ -40,7 +39,7 @@ class QueryRunnerTest extends CypherFunSuite {
 
   test("assertion failure comes through nicely") {
     val query = "match n return n"
-    val result = runQueries(query, ResultAssertions(p => 1 should equal(2)))
+    val result = runQuery(query, ResultAssertions(p => 1 should equal(2)))
 
     result.queryResults should have size 1
     result should haveATestFailureOfClass(query -> classOf[TestFailedException])
@@ -48,7 +47,7 @@ class QueryRunnerTest extends CypherFunSuite {
 
   test("expected exception does not cause a failure") {
     val query = "match n return x"
-    val result = runQueries(query, ExpectedFailure[SyntaxException](_ => {}))
+    val result = runQuery(query, ExpectedFailure[SyntaxException](_ => {}))
 
     result.queryResults should have size 1
     result shouldNot haveFailureFor(query)
@@ -57,21 +56,27 @@ class QueryRunnerTest extends CypherFunSuite {
   test("when expecting an exception, not throwing is an error") {
     val query = "match n return n"
     val expectation = ExpectedFailure[SyntaxException](_ => {})
-    val result = runQueries(query, expectation)
+    val result = runQuery(query, expectation)
 
     result.queryResults should have size 1
     result should haveATestFailureOfClass(query -> classOf[ExpectedExceptionNotFound])
   }
 
-  private def runQueries(query: String, assertions: QueryAssertions = NoAssertions, content: Content = NoContent): TestRunResult = {
-    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    try {
-      val formatter = (_: Transaction) => (_: InternalExecutionResult, content: Content) => content
-      val runner = new QueryRunner(db, formatter)
-      runner.runQueries(init = Seq.empty, queries = Seq(Query(query, assertions, content)))
-    }
-    finally
-      db.shutdown()
+  test("init query failing is reported as such") {
+    val failingQuery = "YOU SHALL NOT PASS"
+    val result = run(Seq(failingQuery), new GraphVizPlaceHolder())
+
+    result.queryResults should have size 1
+    result should haveATestFailureOfClass(failingQuery -> classOf[SyntaxException])
+  }
+
+  private def runQuery(query: String, assertions: QueryAssertions = NoAssertions, content: Content = NoContent): TestRunResult =
+    run(Seq.empty, Query(query, assertions, Seq.empty, content))
+
+  private def run(initQueries: Seq[String], content: Content): TestRunResult = {
+    val formatter = (_: GraphDatabaseService, _: Transaction) => (_: InternalExecutionResult, content: Content) => content
+    val runner = new QueryRunner(formatter)
+    runner.runQueries(contentsWithInit = Seq(ContentWithInit(initQueries, content)), "title")
   }
 
   private def haveATestFailureOfClass[EXCEPTION <: Exception](queryAndClass: (String, Class[EXCEPTION])) =
@@ -87,15 +92,15 @@ class HasATestFailureOfClass[EXCEPTION <: Exception](queryAndClass: (String, Cla
   def apply(result: TestRunResult) = {
 
     val (query, expectedType) = queryAndClass
-    val testFailure: Option[Exception] = result(query).left.toOption
 
-    if (testFailure.isEmpty)
+    if (result.success)
       MatchResult(
         matches = false,
         s"""Did not contain a test failure for query [<$query>] of type $expectedType""",
         s"""Did contain a test failure for query [<$query>] of type $expectedType"""
       )
     else {
+      val testFailure = QueryRunnerTest.errorForQuery(result, query)
       MatchResult(
         matchesDirectlyOrThroughCause(expectedType, testFailure.get),
         s"""Did not contain a test failure for query [<$query>] of type $expectedType - the failure found had type ${testFailure.get.getClass}""",
@@ -117,7 +122,7 @@ class HasFailure(query: String)
   extends Matcher[TestRunResult] {
 
   def apply(result: TestRunResult) = {
-    val testFailure: Option[Exception] = result(query).left.toOption
+    val testFailure = QueryRunnerTest.errorForQuery(result, query)
 
     val maybeFailure = testFailure.map(_.toString).getOrElse("")
     MatchResult(
@@ -126,4 +131,10 @@ class HasFailure(query: String)
       s"""Did contain a test failure for query [<$query>]: $maybeFailure"""
     )
   }
+}
+
+object QueryRunnerTest {
+  def errorForQuery(result: TestRunResult, query: String) = result.queryResults.collectFirst {
+    case QueryRunResult(q, _, r) if query == q => r.left.toOption
+  }.flatten
 }

@@ -23,16 +23,19 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionRe
 import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
 import org.neo4j.cypher.internal.frontend.v2_3.InternalException
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.internal.frontend.v2_3.Foldable._
 
-case class Document(title: String, id: String, initQueries: Seq[String], content: Content) {
+ // TODO: query can only be a Query and a GraphVizPlaceHolder. is this the correct type to use?
+case class ContentWithInit(init: Seq[String], query: Content)
+
+case class Document(title: String, id: String, private val initQueries: Seq[String], content: Content) {
+
   def asciiDoc =
       s"""[[$id]]
          |= $title
          |
          |""".stripMargin + content.asciiDoc(0)
 
-  def queries: Seq[Query] = content.findAllByClass[Query]
+  def contentWithQueries: Seq[ContentWithInit] = content.runnableContent(initQueries)
 }
 
 sealed trait Content {
@@ -41,9 +44,16 @@ sealed trait Content {
   def asciiDoc(level: Int): String
 
   def NewLine: String = "\n"
+
+  def runnableContent(initQueries: Seq[String]): Seq[ContentWithInit]
 }
 
-case object NoContent extends Content {
+trait NoQueries {
+  self: Content =>
+  override def runnableContent(initQueries: Seq[String]) = Seq.empty
+}
+
+case object NoContent extends Content with NoQueries {
   override def asciiDoc(level: Int) = ""
 }
 
@@ -51,9 +61,11 @@ case class ContentChain(a: Content, b: Content) extends Content {
   override def asciiDoc(level: Int) = a.asciiDoc(level) + b.asciiDoc(level)
 
   override def toString: String = s"$a ~ $b"
+
+  override def runnableContent(initQueries: Seq[String]): Seq[ContentWithInit] = a.runnableContent(initQueries) ++ b.runnableContent(initQueries)
 }
 
-case class Abstract(s: String) extends Content {
+case class Abstract(s: String) extends Content with NoQueries {
   override def asciiDoc(level: Int) =
     s"""[abstract]
        |====
@@ -63,11 +75,11 @@ case class Abstract(s: String) extends Content {
        |""".stripMargin
 }
 
-case class Heading(s: String) extends Content {
+case class Heading(s: String) extends Content with NoQueries {
   override def asciiDoc(level: Int) = "." + s + NewLine
 }
 
-case class Paragraph(s: String) extends Content {
+case class Paragraph(s: String) extends Content with NoQueries {
   override def asciiDoc(level: Int) = s + NewLine + NewLine
 }
 
@@ -117,7 +129,7 @@ object Admonitions {
 
 }
 
-trait Admonitions extends Content {
+trait Admonitions extends Content with NoQueries {
   def innerContent: Content
 
   def heading: Option[String]
@@ -140,7 +152,7 @@ trait Admonitions extends Content {
 
 case class ResultRow(values: Seq[String])
 
-case class QueryResultTable(columns: Seq[String], rows: Seq[ResultRow], footer: String) extends Content {
+case class QueryResultTable(columns: Seq[String], rows: Seq[ResultRow], footer: String) extends Content with NoQueries {
   override def asciiDoc(level: Int): String = {
 
     val header = if (columns.nonEmpty) "header," else ""
@@ -168,10 +180,7 @@ case class QueryResultTable(columns: Seq[String], rows: Seq[ResultRow], footer: 
   }
 }
 
-case class Query(queryText: String, assertions: QueryAssertions, content: Content) extends Content {
-
-  // We do this to remember where the code line that created this object lives. When fixing a test, that is what we want
-  val createdAt = QueryOriginatedHere.createdAt
+case class Query(queryText: String, assertions: QueryAssertions, initQueries: Seq[String], content: Content) extends Content {
 
   override def asciiDoc(level: Int) = {
     val inner = Prettifier(queryText)
@@ -183,18 +192,25 @@ case class Query(queryText: String, assertions: QueryAssertions, content: Conten
        |
        |""".stripMargin + content.asciiDoc(level)
   }
+
+  override def runnableContent(initQueries: Seq[String]) = {
+    val newInitQueries = initQueries ++ this.initQueries
+    ContentWithInit(newInitQueries, this) +: content.runnableContent(newInitQueries :+ queryText)
+  }
 }
 
-case class GraphViz(s: String) extends Content {
+case class GraphViz(s: String) extends Content with NoQueries {
   override def asciiDoc(level: Int) = s + NewLine + NewLine
 }
 
-case class Section(heading: String, content: Content) extends Content {
+case class Section(heading: String, initQueries: Seq[String], content: Content) extends Content {
 
   override def asciiDoc(level: Int) = {
     val levelIndent = (0 to (level + 1)).map(_ => "=").mkString
     levelIndent + " " + heading + NewLine + NewLine + content.asciiDoc(level + 1)
   }
+
+  override def runnableContent(initQueries: Seq[String]): Seq[ContentWithInit] = content.runnableContent(initQueries ++ this.initQueries)
 }
 
 sealed trait QueryAssertions
@@ -221,9 +237,10 @@ case class ExpectedFailure[EXCEPTION <: Exception](f: EXCEPTION => Unit)
 trait QueryResultPlaceholder[T] {
   self: Content =>
   override def asciiDoc(level: Int) =
-    throw new InternalException("This object should have been rewritten away already")
+    throw new InternalException(s"This object should have been rewritten away already ${this.getClass.getSimpleName}")
 }
 
-case object QueryResultTablePlaceholder extends Content with QueryResultPlaceholder[QueryResultTable]
-case object GraphVizBefore extends Content with QueryResultPlaceholder[GraphViz]
-case object GraphVizAfter extends Content with QueryResultPlaceholder[GraphViz]
+case object QueryResultTablePlaceholder extends Content with QueryResultPlaceholder[QueryResultTable] with NoQueries
+class GraphVizPlaceHolder() extends Content with QueryResultPlaceholder[GraphViz] {
+  override def runnableContent(initQueries: Seq[String]) = Seq(ContentWithInit(initQueries, this))
+}

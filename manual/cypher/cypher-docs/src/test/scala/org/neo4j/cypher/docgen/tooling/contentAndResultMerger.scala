@@ -20,29 +20,39 @@
 package org.neo4j.cypher.docgen.tooling
 
 import org.neo4j.cypher.internal.frontend.v2_3.Rewritable._
-import org.neo4j.cypher.internal.frontend.v2_3.{bottomUp, Rewriter}
+import org.neo4j.cypher.internal.frontend.v2_3.{Rewriter, bottomUp}
 
 /**
- * Takes the document tree and the execution result and rewrites the
+ * Takes the document tree and the execution results and rewrites the
  * tree to include the result content
  */
 object contentAndResultMerger {
   def apply(originalContent: Document, result: TestRunResult): Document = {
     val rewritesToDo = for {
       runResult <- result.queryResults
-      newContent <- runResult.testResult.right.toOption
-      query = runResult.query
-    } yield query -> newContent
+      newContent <- runResult.newContent
+      original = runResult.original
+    } yield original -> newContent
 
-    val rewriter = new Rewriter {
-      override def apply(value: AnyRef): AnyRef = instance(value)
-
-      private val queryResultMap = rewritesToDo.toMap
-      val instance = bottomUp(Rewriter.lift {
-        case q: Query if queryResultMap.contains(q) => q.copy(content = queryResultMap(q))
-      })
-    }
-
-    originalContent.endoRewrite(rewriter)
+    val replacer = new ContentReplacer(rewritesToDo.toMap)
+    originalContent.endoRewrite(replacer)
   }
+
+  private class ContentReplacer(rewrites: Map[Content, Content]) extends Rewriter {
+    override def apply(value: AnyRef): AnyRef = instance(value)
+
+    val instance: Rewriter = bottomUp(Rewriter.lift {
+      // Here we are not rewriting away the Query object, we want to replace the inner content, inside of the Query
+      case q: Query =>
+        val resultTable = rewrites.collectFirst {
+          case (p: Query, x) if q.queryText == p.queryText => x
+        }
+        val innerRewriter = replaceSingleObject(QueryResultTablePlaceholder, resultTable.get)
+        q.copy(content = q.content.endoRewrite(innerRewriter))
+
+      case q: GraphVizPlaceHolder =>
+        rewrites(q)
+    })
+  }
+
 }

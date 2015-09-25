@@ -17,18 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.docgen.tooling
+package org.neo4j.cypher.docgen.tooling.tests
 
-case class QueryOriginatedHere() extends RuntimeException
+import org.neo4j.cypher.docgen.tooling._
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
-object QueryOriginatedHere {
-  // We do this to remember where the code line that created this object lives. When fixing a test, that is what we want
-  def createdAt = try {
-    throw new QueryOriginatedHere
-  } catch {
-    case e: QueryOriginatedHere =>
-      val original = e.getStackTrace
-      e.setStackTrace(Array(original(6)))
-      e
+class RunnableContentTest extends CypherFunSuite {
+  test("graph viz includes all init queries, and the actual query when inside a Query object") {
+    val graphVizPlaceHolder = new GraphVizPlaceHolder
+    val queryObject = Query("5", NoAssertions, Seq("3", "4"), graphVizPlaceHolder)
+    val doc = Document("title", "id", Seq("1","2"), queryObject)
+
+    doc.contentWithQueries should equal(Seq(
+      ContentWithInit(Seq("1", "2", "3", "4"), queryObject),
+      ContentWithInit(Seq("1", "2", "3", "4", "5"), graphVizPlaceHolder)
+    ))
   }
 }

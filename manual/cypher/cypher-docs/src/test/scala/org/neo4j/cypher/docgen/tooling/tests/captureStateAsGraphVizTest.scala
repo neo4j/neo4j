@@ -23,13 +23,11 @@ import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.docgen.tooling._
 
 class captureStateAsGraphVizTest extends ExecutionEngineFunSuite {
-  test("replaces single content node in a document") {
+  test("creates graphviz object representing the current db state") {
     createNode()
 
-    val doc = Document("Apa", "apa", Seq.empty, NoContent)
+    val result = captureStateAsGraphViz(graph, "apa", 0)
 
-    val result = captureStateAsGraphViz(doc, graph, NoContent)
-
-    result.content shouldBe a[GraphViz]
+    result shouldBe a[GraphViz]
   }
 }

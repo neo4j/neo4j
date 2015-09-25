@@ -24,83 +24,184 @@ import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.frontend.v2_3.InternalException
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
+import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
+import org.neo4j.test.TestGraphDatabaseFactory
 
+import scala.collection.immutable.Iterable
 import scala.util.{Failure, Success, Try}
 
 /**
  * QueryRunner is used to actually run queries and produce either errors or
- * Content containing the result of the execution
+ * Content containing the runSingleQuery of the execution
+ *
+ * It works by grouping queries and graph-vizualisations by the initiation they need, and running all queries with the same
+ * init queries together. After running the query, we check if it updated the graph. If a query updates the graph,
+ * we drop the database and create a new one. This way we can make sure that two queries don't affect each other more than
+ * necessary.
  */
-class QueryRunner(db: GraphDatabaseService,
-                  formatter: Transaction => (InternalExecutionResult, Content) => Content) extends GraphIcing {
+class QueryRunner(formatter: (GraphDatabaseService, Transaction) => (InternalExecutionResult, Content) => Content) extends GraphIcing {
 
-  def runQueries(init: Seq[String], queries: Seq[Query]): TestRunResult = {
-    val engine = new ExecutionEngine(db)
+  def runQueries(contentsWithInit: Seq[ContentWithInit], title: String): TestRunResult = {
 
-    val results = queries.map { case q@Query(query, assertions, content) =>
+      val groupedByInits: Map[Seq[String], Seq[Content]] = contentsWithInit.groupBy(_.init).mapValues(_.map(_.query))
+      var graphVizCounter = 0
 
-      val format: (Transaction) => (InternalExecutionResult) => Content = (tx: Transaction) => formatter(tx)(_, content)
+    val results: Iterable[RunResult] = groupedByInits.flatMap {
+      case (init, queries) =>
 
-      val result: Either[Exception, Transaction => Content] =
+        val db = new RestartableDatabase(init)
         try {
-          val resultTry = Try(engine.execute(query))
+          if (db.failures.nonEmpty) db.failures
+          else {
+            queries.map {
+              case q: Query =>
+                val (result, needsRestart) = runSingleQuery(db, q.queryText, q.assertions, q)
+                if (needsRestart)
+                  db.restart()
+
+                result
+
+              case gv: GraphVizPlaceHolder =>
+                graphVizCounter = graphVizCounter + 1
+                GraphVizRunResult(gv, captureStateAsGraphViz(db.getInnerDb, title, graphVizCounter))
+
+              case _ =>
+                ???
+            }
+          }
+        } finally db.shutdown()
+    }
+
+    TestRunResult(results.toSeq)
+  }
+
+  private def initialize(engine: ExecutionEngine, init: Seq[String], failContent: Content): Seq[QueryRunResult] =
+    init.flatMap { q =>
+      val result = Try(engine.execute(q))
+      result.failed.toOption.map((e: Throwable) => QueryRunResult(q, failContent, Left(e)))
+    }
+
+  private def runSingleQuery(database: RestartableDatabase, queryText: String, assertions: QueryAssertions, content: Content): (QueryRunResult, Boolean) = {
+    val format: (Transaction) => (InternalExecutionResult) => Content = (tx: Transaction) => formatter(database.getInnerDb, tx)(_, content)
+
+    val NEEDS_RESTART = true
+
+      val result: Either[Throwable, Transaction => (Content, Boolean)] =
+        try {
+          val resultTry = Try(database.execute(queryText))
           (assertions, resultTry) match {
             // *** Success conditions
             case (expectation: ExpectedFailure[_], Failure(exception: Exception)) =>
               expectation.handle(exception)
-              Right(_ => content)
+              Right(_ => content -> NEEDS_RESTART)
 
             case (ResultAssertions(f), Success(inner)) =>
               val result = RewindableExecutionResult(inner)
               f(result)
-              Right(format(_)(result))
+              Right(format(_)(result) -> result.queryStatistics().containsUpdates)
 
             case (ResultAndDbAssertions(f), Success(inner)) =>
               val result = RewindableExecutionResult(inner)
-              f(result, db)
-              Right(format(_)(result))
+              f(result, database.getInnerDb)
+              Right(format(_)(result) -> result.queryStatistics().containsUpdates)
 
             case (NoAssertions, Success(inner)) =>
               val result = RewindableExecutionResult(inner)
-              Right(format(_)(result))
+              Right(format(_)(result) -> result.queryStatistics().containsUpdates)
 
             // *** Error conditions
             case (e: ExpectedFailure[_], _: Success[_]) =>
               Left(new ExpectedExceptionNotFound(s"Expected exception of type ${e.getExceptionClass}"))
 
-            case (_, Failure(exception: Exception)) =>
-              q.createdAt.initCause(exception)
-              Left(q.createdAt)
+            case (_, Failure(exception: Throwable)) =>
+              Left(exception)
 
             case x =>
               throw new InternalException(s"This not see this one coming $x")
           }
         } catch {
-          case e: Exception =>
+          case e: Throwable =>
             Left(e)
         }
 
-      val formattedResult = db.withTx { tx =>
-        result.right.map(contentBuilder => contentBuilder(tx))
+      val (formattedResult: Either[Throwable, Content], needsRestart) = database.getInnerDb.withTx { tx =>
+        result match {
+          case _: Left[_, _] => result -> true
+          case Right(contentBuilder) =>
+            val (newContent, restart) = contentBuilder(tx)
+            Right(newContent) -> restart
+        }
       }
 
-      QueryRunResult(q, formattedResult)
+      QueryRunResult(queryText, content, formattedResult) -> needsRestart
     }
-    TestRunResult(results)
+
+  /* I exist so my users can have a restartable database that is lazily created */
+  class RestartableDatabase(init: Seq[String]) {
+    val factory = new TestGraphDatabaseFactory()
+    private var _db: GraphDatabaseService = null
+    private var _engine: ExecutionEngine = null
+    private var _failures: Seq[QueryRunResult] = null
+
+    private def createAndStartIfNecessary() {
+      if (_db != null) return
+      _db = factory.newImpermanentDatabase()
+      _engine = new ExecutionEngine(_db)
+      _failures = initialize(_engine, init, NoContent)
+    }
+
+    def failures = {
+      createAndStartIfNecessary()
+      _failures
+    }
+
+    def getInnerDb = {
+      createAndStartIfNecessary()
+      _db
+    }
+
+    def shutdown() {
+      restart()
+    }
+
+    def execute(q: String) = {
+      createAndStartIfNecessary()
+      _engine.execute(q)
+    }
+
+    def restart() {
+      if (_db == null) return
+      _db.shutdown()
+      _db = null
+    }
   }
 }
 
-case class QueryRunResult(query: Query, testResult: Either[Exception, Content])
+sealed trait RunResult {
+  def success: Boolean
+  def original: Content
+  def newContent: Option[Content]
+  def newFailure: Option[Throwable]
+}
 
-case class TestRunResult(queryResults: Seq[QueryRunResult]) {
-  def success = !queryResults.exists(_.testResult.isLeft)
+case class QueryRunResult(queryText: String, original: Content, testResult: Either[Throwable, Content]) extends RunResult {
+  override def success = testResult.isRight
 
-  def foreach[U](f: QueryRunResult => U) = queryResults.foreach(f)
+  override def newContent: Option[Content] = testResult.right.toOption
 
-  private val _map = queryResults.map(r => r.query.queryText -> r.testResult).toMap
+  override def newFailure: Option[Throwable] = testResult.left.toOption
+}
 
-  def apply(q: String): Either[Exception, Content] = _map(q)
+case class GraphVizRunResult(original: GraphVizPlaceHolder, graphViz: GraphViz) extends RunResult {
+  override def success = true
+  override def newContent = Some(graphViz)
+  override def newFailure = None
+}
+
+case class TestRunResult(queryResults: Seq[RunResult]) {
+  def success = queryResults.forall(_.success)
+
+  def foreach[U](f: RunResult => U) = queryResults.foreach(f)
 }
 
 class ExpectedExceptionNotFound(m: String) extends Exception(m)

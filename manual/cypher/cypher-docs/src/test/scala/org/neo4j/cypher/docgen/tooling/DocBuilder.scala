@@ -46,15 +46,14 @@ trait DocBuilder {
     scope.push(new DocScope(name, id))
   }
 
-  def initQueries(queries: String*) = current.init(queries.map(_.stripMargin))
+  def initQueries(queries: String*) = current.setInitQueries(queries.map(_.stripMargin))
 
   def p(text: String) = current.addContent(Paragraph(text.stripMargin))
 
   def resultTable() = current.addContent(QueryResultTablePlaceholder)
-  def graphVizBefore() = current.addContent(GraphVizBefore)
-  def graphVixAfter() = current.addContent(GraphVizAfter)
+  def graphViz() = current.addContent(new GraphVizPlaceHolder())
 
-  def abstraCt(text: String) = current.addContent(Abstract(text))
+  def abstr(text: String) = current.addContent(Abstract(text))
 
   // Scopes
   private def inScope(newScope: Scope, f: => Unit) = {
@@ -69,7 +68,7 @@ trait DocBuilder {
   def tip(f: => Unit) = inScope(new AdmonitionScope(Tip.apply), f)
   def note(f: => Unit) = inScope(new AdmonitionScope(Note.apply), f)
 
-  def query(q: String, assertions: QueryAssertions)(f: => Unit) = inScope(new QueryScope(q, assertions), f)
+  def query(q: String, assertions: QueryAssertions)(f: => Unit) = inScope(new QueryScope(q.stripMargin, assertions), f)
 
 }
 
@@ -77,16 +76,16 @@ object DocBuilder {
 
   trait Scope {
     private var _initQueries = Seq.empty[String]
-    var content: Content = NoContent
+    private var _content: Content = NoContent
 
     def initQueries = _initQueries
-
-    def init(queries: Seq[String]) {
+    def content = _content
+    def setInitQueries(queries: Seq[String]) {
       _initQueries = queries
     }
 
     def addContent(newContent: Content) {
-      content = content match {
+      _content = _content match {
         case NoContent => newContent
         case _ => ContentChain(content, newContent)
       }
@@ -100,7 +99,7 @@ object DocBuilder {
   }
 
   class SectionScope(name: String) extends Scope {
-    override def toContent = Section(name, content)
+    override def toContent = Section(name, initQueries, content)
   }
 
   class AdmonitionScope(f: Content => Content) extends Scope {
@@ -110,9 +109,7 @@ object DocBuilder {
   }
 
   class QueryScope(queryText: String, assertions: QueryAssertions) extends Scope {
-    override def initQueries = throw new LiskovSubstitutionPrincipleException
-
-    override def toContent = Query(queryText, assertions, content)
+    override def toContent = Query(queryText, assertions, initQueries, content)
   }
 }
 
