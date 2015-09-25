@@ -24,7 +24,8 @@ import java.util.Map;
 
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
+import org.neo4j.kernel.impl.transaction.command.CommandRecordVisitor;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
 
 import static java.lang.String.format;
@@ -88,6 +89,12 @@ public abstract class IndexCommand extends Command
         return value;
     }
 
+    @Override
+    public void accept( CommandRecordVisitor visitor )
+    {
+        // no op
+    }
+
     public byte startNodeNeedsLong()
     {
         return 0;
@@ -144,7 +151,7 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public boolean handle( CommandHandler visitor ) throws IOException
+        public boolean handle( NeoCommandHandler visitor ) throws IOException
         {
             return visitor.visitIndexAddNodeCommand( this );
         }
@@ -217,7 +224,7 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public boolean handle( CommandHandler visitor ) throws IOException
+        public boolean handle( NeoCommandHandler visitor ) throws IOException
         {
             return visitor.visitIndexAddRelationshipCommand( this );
         }
@@ -241,7 +248,7 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public boolean handle( CommandHandler visitor ) throws IOException
+        public boolean handle( NeoCommandHandler visitor ) throws IOException
         {
             return visitor.visitIndexRemoveCommand( this );
         }
@@ -262,7 +269,7 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public boolean handle( CommandHandler visitor ) throws IOException
+        public boolean handle( NeoCommandHandler visitor ) throws IOException
         {
             return visitor.visitIndexDeleteCommand( this );
         }
@@ -302,7 +309,7 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public boolean handle( CommandHandler visitor ) throws IOException
+        public boolean handle( NeoCommandHandler visitor ) throws IOException
         {
             return visitor.visitIndexCreateCommand( this );
         }

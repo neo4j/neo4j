@@ -22,13 +22,13 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 
-final class IndexCommandDetector extends CommandHandler.Delegator
+final class IndexCommandDetector extends NeoCommandHandler.Delegator
 {
     private boolean hasWrittenAnyLegacyIndexCommand;
 
-    public IndexCommandDetector( CommandHandler delegate )
+    public IndexCommandDetector( NeoCommandHandler delegate )
     {
         super( delegate );
     }

@@ -38,13 +38,16 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.CountsComputer;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.LabelTokenStore;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
+import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
@@ -292,7 +295,7 @@ public class CountsComputerTest
         emptyConfig = new Config();
     }
 
-    private static final String COUNTS_STORE_BASE = MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
+    private static final String COUNTS_STORE_BASE = NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
 
     private File alphaStoreFile()
     {
@@ -306,8 +309,8 @@ public class CountsComputerTest
 
     private long getLastTxId( @SuppressWarnings( "deprecation" ) GraphDatabaseAPI db )
     {
-        return db.getDependencyResolver().resolveDependency( NeoStores.class ).getMetaDataStore().getLastCommittedTransactionId();
-
+        return db.getDependencyResolver().resolveDependency( NeoStore.class )
+                .getLastCommittedTransactionId();
     }
 
     private void cleanupCountsForRebuilding()
@@ -326,18 +329,17 @@ public class CountsComputerTest
     {
         cleanupCountsForRebuilding();
 
-        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance(), new Monitors() );
         try ( Lifespan life = new Lifespan();
-              NeoStores neoStores = storeFactory.openNeoStores( false ) )
+              NodeStore nodeStore = storeFactory.newNodeStore();
+              RelationshipStore relationshipStore = storeFactory.newRelationshipStore() )
         {
-            NodeStore nodeStore = neoStores.getNodeStore();
-            RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-            int highLabelId = (int) neoStores.getLabelTokenStore().getHighId();
-            int highRelationshipTypeId = (int) neoStores.getRelationshipTypeTokenStore().getHighId();
+            int highLabelId = (int) storeFactory.getHighId( StoreFile.LABEL_TOKEN_STORE, LabelTokenStore.RECORD_SIZE );
+            int highRelationshipTypeId = (int) storeFactory.getHighId(
+                    StoreFile.RELATIONSHIP_TYPE_TOKEN_STORE, RelationshipTypeTokenStore.RECORD_SIZE );
             CountsComputer countsComputer = new CountsComputer(
                     lastCommittedTransactionId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId );
-            CountsTracker countsTracker = createCountsTracker();
-            life.add( countsTracker.setInitializer( countsComputer ) );
+            life.add( storeFactory.newCountsStore().setInitializer( countsComputer ) );
         }
     }
 

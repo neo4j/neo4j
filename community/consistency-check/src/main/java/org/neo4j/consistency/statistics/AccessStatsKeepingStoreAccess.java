@@ -20,7 +20,7 @@
 package org.neo4j.consistency.statistics;
 
 import org.neo4j.consistency.statistics.AccessStatistics.AccessStats;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -32,7 +32,7 @@ public class AccessStatsKeepingStoreAccess extends StoreAccess
 {
     private final AccessStatistics accessStatistics;
 
-    public AccessStatsKeepingStoreAccess( NeoStores neoStore, AccessStatistics accessStatistics )
+    public AccessStatsKeepingStoreAccess( NeoStore neoStore, AccessStatistics accessStatistics )
     {
         super( neoStore );
         this.accessStatistics = accessStatistics;

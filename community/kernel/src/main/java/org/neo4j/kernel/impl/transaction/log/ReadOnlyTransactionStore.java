@@ -39,7 +39,6 @@ public class ReadOnlyTransactionStore extends LifecycleAdapter implements Logica
     private final LogicalTransactionStore physicalStore;
 
     public ReadOnlyTransactionStore( PageCache pageCache, FileSystemAbstraction fs, File fromPath, Monitors monitors )
-            throws IOException
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( fromPath, fs );
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10, 100 );

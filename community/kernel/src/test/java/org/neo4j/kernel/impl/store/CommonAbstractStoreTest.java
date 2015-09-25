@@ -63,7 +63,6 @@ public class CommonAbstractStoreTest
         when( idGeneratorFactory.open( any( File.class ), anyInt(), eq( idType ), anyInt() ) )
                 .thenReturn( idGenerator );
         CommonAbstractStore store = new TheStore( storeFile, config, idType, idGeneratorFactory, pageCache, LOG );
-        store.initialise( false );
 
         // this is needed to forget all interaction with the mocks during the construction of the store
         reset( storePagedFile, idGenerator );
@@ -83,18 +82,14 @@ public class CommonAbstractStoreTest
         public TheStore( File fileName, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory,
                 PageCache pageCache, LogProvider logProvider )
         {
-            super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider );
+            super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider,
+                    StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
         }
 
         @Override
-        protected String getTypeDescriptor()
+        public String getTypeDescriptor()
         {
             return null;
-        }
-
-        @Override
-        protected void initialiseNewStoreFile( PagedFile file ) throws IOException
-        {
         }
 
         @Override

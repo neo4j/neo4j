@@ -21,12 +21,13 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -38,7 +39,7 @@ public class RecordChangeSetTest
     public void shouldStartWithSetsInitializedAndEmpty() throws Exception
     {
         // GIVEN
-        RecordChangeSet changeSet = new RecordChangeSet( mock( NeoStores.class ) );
+        RecordChangeSet changeSet = new RecordChangeSet( mock( NeoStore.class ) );
 
         // WHEN
         // nothing really
@@ -55,7 +56,7 @@ public class RecordChangeSetTest
     public void shouldClearStateOnClose() throws Exception
     {
         // GIVEN
-        NeoStores mockStore = mock( NeoStores.class );
+        NeoStore mockStore = mock( NeoStore.class );
         when( mockStore.getNodeStore() ).thenReturn( mock( NodeStore.class ) );
         when( mockStore.getRelationshipStore() ).thenReturn( mock( RelationshipStore.class ) );
         when( mockStore.getPropertyStore() ).thenReturn( mock( PropertyStore.class ) );

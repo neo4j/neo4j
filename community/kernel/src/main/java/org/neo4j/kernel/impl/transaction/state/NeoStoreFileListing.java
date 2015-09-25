@@ -32,9 +32,10 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
-import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStore;
 
 import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.SillyUtils.nonNull;
 import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 
@@ -106,7 +107,7 @@ public class NeoStoreFileListing
             String name = dbFile.getName();
             if ( dbFile.isFile() )
             {
-                if ( name.equals( MetaDataStore.DEFAULT_NAME ) )
+                if ( name.equals( NeoStore.DEFAULT_NAME ) )
                 {   // Keep it, to add last
                     neostoreFile = dbFile;
                 }
@@ -135,13 +136,13 @@ public class NeoStoreFileListing
             return true;
         }
 
-        return name.startsWith( MetaDataStore.DEFAULT_NAME ) &&
-                !name.startsWith( MetaDataStore.DEFAULT_NAME + ".transaction" );
+        return name.startsWith( NeoStore.DEFAULT_NAME ) &&
+                !name.startsWith( NeoStore.DEFAULT_NAME + ".transaction" );
     }
 
     private boolean transactionLogFile( String name )
     {
-        return name.startsWith( MetaDataStore.DEFAULT_NAME + ".transaction" ) && !name.endsWith( ".active" );
+        return name.startsWith( NeoStore.DEFAULT_NAME + ".transaction" ) && !name.endsWith( ".active" );
     }
 
     private static final class MultiResource implements Resource

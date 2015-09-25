@@ -58,7 +58,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -165,7 +165,7 @@ public class CommunityEditionModule
         {
             @Override
             public TransactionCommitProcess create( TransactionAppender appender,
-                                                    KernelHealth kernelHealth, NeoStores neoStores,
+                                                    KernelHealth kernelHealth, NeoStore neoStore,
                                                     TransactionRepresentationStoreApplier storeApplier,
                                                     NeoStoreInjectedTransactionValidator txValidator,
                                                     IndexUpdatesValidator indexUpdatesValidator,

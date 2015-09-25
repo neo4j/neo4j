@@ -37,9 +37,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -155,14 +155,15 @@ public class TestMigrateToDenseNodeSupport
     public void migrateDbWithDenseNodes() throws Exception
     {
         // migrate
-        new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir )
-                .setConfig( allow_store_upgrade, "true" ).newGraphDatabase().shutdown();
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir.getAbsolutePath() )
+                .setConfig( allow_store_upgrade, "true" ).newGraphDatabase();
+        db.shutdown();
 
         // check consistency
         assertConsistentStore( dir );
 
         // open again to do extra checks
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir ).newGraphDatabase();
+        db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir.getAbsolutePath() ).newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             ResourceIterator<Node> allNodesWithLabel = db.findNodes( referenceNode );
@@ -218,9 +219,9 @@ public class TestMigrateToDenseNodeSupport
 
     private void verifyDenseRepresentation( GraphDatabaseService db, Node node, boolean dense )
     {
-        NeoStores neoStores = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(
-                NeoStoresSupplier.class ).get();
-        NodeRecord record = neoStores.getNodeStore().getRecord( node.getId() );
+        NeoStore neoStore = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(
+                NeoStoreSupplier.class ).get();
+        NodeRecord record = neoStore.getNodeStore().getRecord( node.getId() );
         assertEquals( dense, record.isDense() );
     }
 

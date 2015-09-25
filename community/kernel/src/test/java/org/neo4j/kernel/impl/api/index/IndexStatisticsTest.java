@@ -54,7 +54,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -406,7 +406,7 @@ public class IndexStatisticsTest
 
     private CountsTracker getTracker()
     {
-        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
+        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
     }
 
     private void createSomePersons() throws KernelException

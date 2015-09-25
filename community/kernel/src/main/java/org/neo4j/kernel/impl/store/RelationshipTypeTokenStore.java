@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -29,6 +30,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 /**
@@ -45,16 +47,18 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
-            DynamicStringStore nameStore )
+            DynamicStringStore nameStore,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
-        super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
-                new RelationshipTypeToken.Factory() );
+        super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache, fileSystemAbstraction,
+                logProvider, nameStore, versionMismatchHandler, monitors, new RelationshipTypeToken.Factory() );
     }
 
     @Override
-    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, RelationshipTypeTokenRecord record )
-            throws FAILURE
+    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, RelationshipTypeTokenRecord record ) throws FAILURE
     {
         processor.processRelationshipTypeToken( this, record );
     }

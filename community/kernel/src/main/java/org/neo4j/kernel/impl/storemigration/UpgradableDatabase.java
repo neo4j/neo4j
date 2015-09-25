@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
-import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
@@ -37,15 +37,13 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 public class UpgradableDatabase
 {
     private final StoreVersionCheck storeVersionCheck;
-    private final LegacyStoreVersionCheck legacyStoreVersionCheck;
 
-    public UpgradableDatabase( StoreVersionCheck storeVersionCheck, LegacyStoreVersionCheck legacyStoreVersionCheck )
+    public UpgradableDatabase( StoreVersionCheck storeVersionCheck )
     {
         this.storeVersionCheck = storeVersionCheck;
-        this.legacyStoreVersionCheck = legacyStoreVersionCheck;
     }
 
-    boolean storeFilesUpgradeable( File storeDirectory )
+    public boolean storeFilesUpgradeable( File storeDirectory )
     {
         try
         {
@@ -96,7 +94,7 @@ public class UpgradableDatabase
                 throw new StoreUpgrader.UnexpectedUpgradingStoreVersionException(
                         path, Legacy21Store.LEGACY_VERSION, result.actualVersion );
             default:
-                throw new IllegalArgumentException( "Unexpected outcome: " + result.outcome.name() );
+                throw new IllegalArgumentException( result.outcome.name() );
         }
     }
 
@@ -107,7 +105,7 @@ public class UpgradableDatabase
         {
             String expectedVersion = store.forVersion( version );
             File storeFile = new File( storeDirectory, store.storeFileName() );
-            result = legacyStoreVersionCheck.hasVersion( storeFile, expectedVersion, store.isOptional() );
+            result = storeVersionCheck.hasVersion( storeFile, expectedVersion );
             if ( !result.outcome.isSuccessful() )
             {
                 break;
@@ -116,23 +114,11 @@ public class UpgradableDatabase
         return result;
     }
 
-    public boolean hasCurrentVersion( File storeDir )
+    public boolean hasCurrentVersion( PageCache pageCache, File storeDir )
     {
-        File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
-        Result result = storeVersionCheck.hasVersion( neoStore, CommonAbstractStore.ALL_STORES_VERSION );
-        switch ( result.outcome )
-        {
-        case ok:
-            return true;
-        case missingStoreFile:
-            // let's assume the db is empty
-            return true;
-        case storeVersionNotFound:
-            return false;
-        case unexpectedUpgradingStoreVersion:
-            return false;
-        default:
-            throw new IllegalArgumentException( "Unknown outcome: " + result.outcome.name() );
-        }
+        File neoStore = new File( storeDir, NeoStore.DEFAULT_NAME );
+        long versionLong = NeoStore.getRecord( pageCache, neoStore, NeoStore.Position.STORE_VERSION );
+        String versionAsString = NeoStore.versionLongToString( versionLong );
+        return CommonAbstractStore.ALL_STORES_VERSION.equals( versionAsString );
     }
 }

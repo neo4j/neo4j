@@ -38,9 +38,10 @@ import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.perftest.enterprise.generator.DataGenerator;
@@ -139,15 +140,27 @@ public class ConsistencyPerformanceCheck
 
     private static DirectStoreAccess createScannableStores( File storeDir, Config tuningConfiguration )
     {
-        StoreFactory factory = new StoreFactory( storeDir, tuningConfiguration,
-                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, NullLogProvider.getInstance() );
-        NeoStores neoStores = factory.openNeoStores( true );
+        Monitors monitors = new Monitors();
+        StoreFactory factory = new StoreFactory(
+                storeDir,
+                tuningConfiguration,
+                new DefaultIdGeneratorFactory( fileSystem ),
+                pageCache,
+                fileSystem,
+                NullLogProvider.getInstance(),
+                monitors );
+
+        NeoStore neoStore = factory.newNeoStore( true );
+
         SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
                 fileSystem,
                 DirectoryFactory.PERSISTENT,
                 storeDir );
-        return new DirectStoreAccess( new StoreAccess( neoStores ).initialize(),
-                new LuceneLabelScanStoreBuilder( storeDir, neoStores, fileSystem, NullLogProvider.getInstance() ).build(), indexes );
+
+        LuceneLabelScanStoreBuilder labelScanStoreBuilder = new LuceneLabelScanStoreBuilder( storeDir, neoStore,
+                fileSystem, NullLogProvider.getInstance() );
+
+        return new DirectStoreAccess( new StoreAccess( neoStore ), labelScanStoreBuilder.build(), indexes );
     }
 
     private static Config buildTuningConfiguration( Configuration configuration )
@@ -155,6 +168,7 @@ public class ConsistencyPerformanceCheck
         Map<String, String> passedOnConfiguration = passOn( configuration,
                 param( GraphDatabaseSettings.pagecache_memory, pagecache_memory ),
                 param( GraphDatabaseSettings.mapped_memory_page_size, mapped_memory_page_size ) );
+
         return new Config( passedOnConfiguration, GraphDatabaseSettings.class );
     }
 }

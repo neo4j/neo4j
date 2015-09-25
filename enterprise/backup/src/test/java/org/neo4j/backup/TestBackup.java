@@ -50,9 +50,9 @@ import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.StoreLogService;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
@@ -63,15 +63,13 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.subprocess.SubProcess;
 
+import static java.lang.Integer.parseInt;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.Integer.parseInt;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
@@ -350,10 +348,10 @@ public class TestBackup
         }
     }
 
-    private long getLastCommittedTx( String path, PageCache pageCache ) throws IOException
+    private long getLastCommittedTx( String path, PageCache pageCache )
     {
-        File neoStore = new File( path, MetaDataStore.DEFAULT_NAME );
-        return MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
+        File neoStore = new File( path, NeoStore.DEFAULT_NAME );
+        return NeoStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
     }
 
     @Test
@@ -568,10 +566,10 @@ public class TestBackup
         return new File( directory, StoreLogService.INTERNAL_LOG_NAME ).exists();
     }
 
-    private long lastTxChecksumOf( File storeDir, PageCache pageCache ) throws IOException
+    private long lastTxChecksumOf( File storeDir, PageCache pageCache )
     {
-        File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
-        return MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
+        File neoStore = new File( storeDir, NeoStore.DEFAULT_NAME );
+        return NeoStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
     }
 
     private ServerInterface startServer( File path ) throws Exception

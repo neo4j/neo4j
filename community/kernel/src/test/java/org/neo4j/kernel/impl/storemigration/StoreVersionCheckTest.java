@@ -26,110 +26,97 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class StoreVersionCheckTest
 {
     @Rule
-    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Test
-    public void shouldFailIfFileDoesNotExist()
+    public void shouldReportMissingFileDoesNotHaveSpecifiedVersion()
     {
         // given
         File missingFile = new File("/you/will/never/find/me");
-        PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
+        PageCache pageCache = pageCacheRule.getPageCache( new EphemeralFileSystemAbstraction() );
         StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCache );
 
-        // when
-        StoreVersionCheck.Result result = storeVersionCheck.hasVersion( missingFile, "version" );
-
         // then
-        assertFalse( result.outcome.isSuccessful() );
-        assertEquals( StoreVersionCheck.Result.Outcome.missingStoreFile, result.outcome );
-        assertNull( result.actualVersion );
+        assertFalse( storeVersionCheck.hasVersion( missingFile, "version" ).outcome.isSuccessful() );
     }
 
     @Test
     public void shouldReportShortFileDoesNotHaveSpecifiedVersion() throws IOException
     {
         // given
-        File shortFile = fileContaining( fs.get(), "nothing interesting" );
-        StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCacheRule.getPageCache( fs.get() ) );
+        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        File shortFile = fileContaining( fs, "a" );
 
-        // when
-        StoreVersionCheck.Result result = storeVersionCheck.hasVersion( shortFile, "version" );
+        StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCacheRule.getPageCache( fs ) );
 
         // then
-        assertFalse( result.outcome.isSuccessful() );
-        assertEquals( StoreVersionCheck.Result.Outcome.storeVersionNotFound, result.outcome );
-        assertNull( result.actualVersion );
+        assertFalse( storeVersionCheck.hasVersion( shortFile, "version" ).outcome.isSuccessful() );
     }
 
     @Test
     public void shouldReportFileWithIncorrectVersion() throws IOException
     {
         // given
-        File neoStore = emptyFile( fs.get() );
-        long v1 = MetaDataStore.versionStringToLong( "V1" );
-        PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
-        MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1 );
-        StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCache );
+        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        File shortFile = fileContaining( fs, "versionWhichIsIncorrect" );
 
-        // when
-        StoreVersionCheck.Result result = storeVersionCheck.hasVersion( neoStore, "V2" );
+        StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCacheRule.getPageCache( fs ) );
 
         // then
-        assertFalse( result.outcome.isSuccessful() );
-        assertEquals( StoreVersionCheck.Result.Outcome.unexpectedUpgradingStoreVersion, result.outcome );
-        assertEquals( "V1", result.actualVersion );
+        assertFalse( storeVersionCheck.hasVersion( shortFile, "correctVersion 1" ).outcome.isSuccessful() );
     }
 
     @Test
     public void shouldReportFileWithCorrectVersion() throws IOException
     {
         // given
-        File neoStore = emptyFile( fs.get() );
-        long v1 = MetaDataStore.versionStringToLong( "V1" );
-        PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
-        MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1 );
-        StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCache );
+        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        File shortFile = fileContaining( fs, "correctVersion 1" );
 
-        // when
-        StoreVersionCheck.Result result = storeVersionCheck.hasVersion( neoStore, "V1" );
+        StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCacheRule.getPageCache( fs ) );
 
         // then
-        assertTrue( result.outcome.isSuccessful() );
-        assertEquals( StoreVersionCheck.Result.Outcome.ok, result.outcome );
-        assertNull( result.actualVersion );
+        assertTrue( storeVersionCheck.hasVersion( shortFile, "correctVersion 1" ).outcome.isSuccessful() );
     }
 
-    private File emptyFile( FileSystemAbstraction fs ) throws IOException
+    @Test
+    public void shouldReportFileWithCorrectVersionWhenTrailerSpansMultiplePages() throws IOException
     {
-        File shortFile = new File( "shortFile" );
-        fs.create( shortFile );
-        return shortFile;
+        // given
+        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        String trailer = "correctVersion 1";
+        byte[] trailerData = UTF8.encode( trailer );
+        byte[] data = new byte[pageCache.pageSize() + trailerData.length / 2];
+        System.arraycopy( trailerData, 0, data, pageCache.pageSize() - trailerData.length / 2, trailerData.length );
+        File shortFile = fileContaining( fs, UTF8.decode( data ) );
+
+        StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCache );
+
+        // then
+        assertTrue( storeVersionCheck.hasVersion( shortFile, trailer ).outcome.isSuccessful() );
     }
 
     private File fileContaining( FileSystemAbstraction fs, String content ) throws IOException
     {
-        File shortFile = new File( "shortFile" );
-        try ( OutputStream outputStream = fs.openAsOutputStream( shortFile, true ) )
-        {
-            outputStream.write( UTF8.encode( content ) );
-            return shortFile;
-        }
+        File shortFile = File.createTempFile( "shortFile", "" );
+        shortFile.deleteOnExit();
+        OutputStream outputStream = fs.openAsOutputStream( shortFile, true );
+        outputStream.write( UTF8.encode( content ) );
+        outputStream.close();
+        return shortFile;
     }
 }

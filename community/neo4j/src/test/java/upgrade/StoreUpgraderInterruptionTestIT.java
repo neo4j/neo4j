@@ -31,9 +31,9 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
@@ -59,19 +58,22 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allLegacyStoreFilesHaveVersion;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveNoTrailer;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasLatestVersion;
+import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 
-@RunWith( Parameterized.class )
+@RunWith(Parameterized.class)
 public class StoreUpgraderInterruptionTestIT
 {
-    @Parameterized.Parameter( 0 )
-    public String version;
+    private final String version;
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
 
-    @Parameters( name = "{0}" )
+    public StoreUpgraderInterruptionTestIT( String version )
+    {
+        this.version = version;
+    }
+
+    @Parameters(name = "{0}")
     public static Collection<Object[]> versions()
     {
         return Arrays.asList(
@@ -88,31 +90,31 @@ public class StoreUpgraderInterruptionTestIT
     {
         File workingDirectory = directory.directory( "working" );
         File prepareDirectory = directory.directory( "prepare" );
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDirectory, prepareDirectory );
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreVersionCheck check = new StoreVersionCheck( pageCache );
-        UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( check, new LegacyStoreVersionCheck( fs ) );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fileSystem, workingDirectory, prepareDirectory );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         LogService logService = NullLogService.getInstance();
         final Config config = new Config();
-        StoreMigrator failingStoreMigrator = new StoreMigrator( progressMonitor, fs, pageCache, config, logService )
+        StoreMigrator failingStoreMigrator =
+                new StoreMigrator( progressMonitor, fileSystem, pageCache, upgradableDatabase, config, logService )
         {
             @Override
-            public void migrate( File sourceStoreDir, File targetStoreDir, SchemaIndexProvider schemaIndexProvider,
-                    String versionToMigrateFrom ) throws IOException
+            public void migrate(
+                    File sourceStoreDir,
+                    File targetStoreDir,
+                    SchemaIndexProvider schemaIndexProvider ) throws IOException
             {
-                super.migrate( sourceStoreDir, targetStoreDir, schemaIndexProvider, versionToMigrateFrom );
+                super.migrate( sourceStoreDir, targetStoreDir, schemaIndexProvider );
                 throw new RuntimeException( "This upgrade is failing" );
             }
         };
 
-        assertTrue( allLegacyStoreFilesHaveVersion( fs, workingDirectory, version ) );
+        assertTrue( allStoreFilesHaveVersion( pageCache, workingDirectory, version ) );
 
         try
         {
-            newUpgrader( failingStoreMigrator )
-                    .migrateIfNeeded( workingDirectory, upgradableDatabase, schemaIndexProvider );
+            newUpgrader( failingStoreMigrator ).migrateIfNeeded( workingDirectory, schemaIndexProvider );
             fail( "Should throw exception" );
         }
         catch ( RuntimeException e )
@@ -120,76 +122,21 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
-        assertTrue( allLegacyStoreFilesHaveVersion( fs, workingDirectory, version ) );
-
+        assertTrue( allStoreFilesHaveVersion( pageCache, workingDirectory, version ) );
+        upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
         progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( progressMonitor, fs, pageCache, config, logService );
-        newUpgrader( migrator ).migrateIfNeeded( workingDirectory, upgradableDatabase, schemaIndexProvider );
+        StoreMigrator migrator =
+                new StoreMigrator( progressMonitor, fileSystem, pageCache, upgradableDatabase, config, logService );
+        newUpgrader( migrator ).migrateIfNeeded( workingDirectory, schemaIndexProvider );
 
-        assertTrue( checkNeoStoreHasLatestVersion( check, workingDirectory ) );
-        assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
-
-        assertConsistentStore( workingDirectory );
-    }
-
-    @Test
-    public void shouldSucceedWithUpgradeAfterPreviousAttemptDiedDuringMovingFiles()
-            throws IOException, ConsistencyCheckIncompleteException
-    {
-        File workingDirectory = directory.directory( "working" );
-        File prepareDirectory = directory.directory( "prepare" );
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDirectory, prepareDirectory );
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreVersionCheck check = new StoreVersionCheck( pageCache );
-        UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( check, new LegacyStoreVersionCheck( fs ) );
-        SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-        LogService logService = NullLogService.getInstance();
-        final Config config = new Config();
-        StoreMigrator failingStoreMigrator = new StoreMigrator( progressMonitor, fs, pageCache, config, logService )
-        {
-            @Override
-            public void moveMigratedFiles( File migrationDir, File storeDir, String versionToUpgradeFrom ) throws IOException
-            {
-                super.moveMigratedFiles( migrationDir, storeDir, versionToUpgradeFrom );
-                throw new RuntimeException( "This upgrade is failing" );
-            }
-        };
-
-        assertTrue( allLegacyStoreFilesHaveVersion( fs, workingDirectory, version ) );
-
-        try
-        {
-            newUpgrader( failingStoreMigrator )
-                    .migrateIfNeeded( workingDirectory, upgradableDatabase, schemaIndexProvider );
-            fail( "Should throw exception" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( "This upgrade is failing", e.getMessage() );
-        }
-
-        assertTrue( checkNeoStoreHasLatestVersion( check, workingDirectory ) );
-        assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
-
-        assertConsistentStore( workingDirectory );
-
-        progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( progressMonitor, fs, pageCache, config, logService );
-        newUpgrader( migrator ).migrateIfNeeded( workingDirectory, upgradableDatabase, schemaIndexProvider );
-
-        assertTrue( checkNeoStoreHasLatestVersion( check, workingDirectory ) );
-        assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
-
-        pageCache.close();
-
+        assertTrue( allStoreFilesHaveVersion( pageCache, workingDirectory, ALL_STORES_VERSION ) );
         assertConsistentStore( workingDirectory );
     }
 
     private StoreUpgrader newUpgrader( StoreMigrator migrator )
     {
         StoreUpgrader upgrader =
-                new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, NullLogProvider.getInstance() );
+                new StoreUpgrader( ALLOW_UPGRADE, fileSystem, StoreUpgrader.NO_MONITOR, NullLogProvider.getInstance() );
         upgrader.addParticipant( migrator );
         return upgrader;
     }
@@ -198,5 +145,7 @@ public class StoreUpgraderInterruptionTestIT
     public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+
+    @SuppressWarnings( "deprecation" )
+    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 }

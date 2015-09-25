@@ -52,9 +52,10 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -75,17 +76,24 @@ public class ConsistencyCheckService
         this.timestamp = timestamp;
     }
 
-    public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
-            ProgressMonitorFactory progressFactory, LogProvider logProvider, boolean verbose )
-            throws ConsistencyCheckIncompleteException, IOException
+    public Result runFullConsistencyCheck( File storeDir,
+            Config tuningConfiguration,
+            ProgressMonitorFactory progressFactory,
+            LogProvider logProvider,
+            boolean verbose )
+                    throws ConsistencyCheckIncompleteException, IOException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider,
                 new DefaultFileSystemAbstraction(), verbose );
     }
 
-    public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
-            ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem,
-            boolean verbose ) throws ConsistencyCheckIncompleteException, IOException
+    public Result runFullConsistencyCheck( File storeDir,
+                                           Config tuningConfiguration,
+                                           ProgressMonitorFactory progressFactory,
+                                           LogProvider logProvider,
+                                           FileSystemAbstraction fileSystem,
+                                           boolean verbose )
+                                                   throws ConsistencyCheckIncompleteException, IOException
     {
         Log log = logProvider.getLog( getClass() );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
@@ -111,15 +119,24 @@ public class ConsistencyCheckService
     }
 
     public Result runFullConsistencyCheck( final File storeDir, Config tuningConfiguration,
-            ProgressMonitorFactory progressFactory, final LogProvider logProvider,
-            final FileSystemAbstraction fileSystem, final PageCache pageCache, final boolean verbose )
-            throws ConsistencyCheckIncompleteException
+                                           ProgressMonitorFactory progressFactory,
+                                           final LogProvider logProvider,
+                                           final FileSystemAbstraction fileSystem,
+                                           final PageCache pageCache,
+                                           final boolean verbose )
+                                                   throws ConsistencyCheckIncompleteException
     {
         Log log = logProvider.getLog( getClass() );
+        Monitors monitors = new Monitors();
         Config consistencyCheckerConfig = tuningConfiguration.with(
                 MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
-        StoreFactory factory = new StoreFactory( storeDir, consistencyCheckerConfig,
-                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
+        StoreFactory factory = new StoreFactory(
+                storeDir,
+                consistencyCheckerConfig,
+                new DefaultIdGeneratorFactory( fileSystem ),
+                pageCache, fileSystem, logProvider,
+                monitors
+        );
 
         ConsistencySummaryStatistics summary;
         final File reportFile = chooseReportPath( storeDir, tuningConfiguration );
@@ -131,21 +148,20 @@ public class ConsistencyCheckService
                 try
                 {
                     return new PrintWriter( createOrOpenAsOuputStream( fileSystem, reportFile, true ) );
-                }
-                catch ( IOException e )
+                } catch ( IOException e )
                 {
                     throw new RuntimeException( e );
                 }
             }
         } ) );
 
-        try ( NeoStores neoStores = factory.openNeoStores( false ) )
+        try ( NeoStore neoStore = factory.newNeoStore( false ) )
         {
             LabelScanStore labelScanStore = null;
             try
             {
                 labelScanStore = new LuceneLabelScanStoreBuilder(
-                        storeDir, neoStores, fileSystem, logProvider ).build();
+                        storeDir, neoStore, fileSystem, logProvider ).build();
                 SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
                         fileSystem,
                         DirectoryFactory.PERSISTENT,
@@ -158,14 +174,13 @@ public class ConsistencyCheckService
                 if ( verbose )
                 {
                     statistics = new VerboseStatistics( stats, new DefaultCounts( numberOfThreads ), log );
-                    storeAccess = new AccessStatsKeepingStoreAccess( neoStores, stats );
+                    storeAccess = new AccessStatsKeepingStoreAccess( neoStore, stats );
                 }
                 else
                 {
                     statistics = Statistics.NONE;
-                    storeAccess = new StoreAccess( neoStores );
+                    storeAccess = new StoreAccess( neoStore );
                 }
-                storeAccess.initialize();
                 DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes );
                 FullCheck check = new FullCheck( tuningConfiguration, progressFactory, statistics, numberOfThreads );
                 summary = check.execute( stores, new DuplicatingLog( log, reportLog ) );

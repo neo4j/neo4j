@@ -53,11 +53,10 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.lifecycle.LifecycleException;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradingStoreVersionNotFoundException;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.server.Bootstrapper;
@@ -74,6 +73,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -284,10 +284,8 @@ public class StoreUpgradeIntegrationTest
             }
             catch ( RuntimeException ex )
             {
-                assertTrue( ex.getCause() instanceof LifecycleException );
-                Throwable realException = ex.getCause().getCause();
-                assertTrue( Exceptions.contains( realException, StoreFile.NODE_STORE.storeFileName(),
-                        StoreUpgrader.UnexpectedUpgradingStoreVersionException.class ) );
+                assertTrue( Exceptions.contains( ex, StoreFile.NODE_STORE.storeFileName(),
+                        UpgradingStoreVersionNotFoundException.class ) );
             }
         }
     }
@@ -341,7 +339,7 @@ public class StoreUpgradeIntegrationTest
     {
         CountsTracker counts = db.getDependencyResolver()
                 .resolveDependency( NeoStoreDataSource.class )
-                .getNeoStores().getCounts();
+                .getNeoStore().getCounts();
         ThreadToStatementContextBridge bridge = db.getDependencyResolver()
                 .resolveDependency( ThreadToStatementContextBridge.class );
 
@@ -444,12 +442,12 @@ public class StoreUpgradeIntegrationTest
             assertThat( indexCount, is( store.indexes() ) );
 
             // check last committed tx
-            NeoStores neoStores = db.getDependencyResolver()
+            NeoStore neoStore = db.getDependencyResolver()
                     .resolveDependency( NeoStoreDataSource.class )
-                    .getNeoStores();
-            long lastCommittedTxId = neoStores.getMetaDataStore().getLastCommittedTransactionId();
+                    .getNeoStore();
+            long lastCommittedTxId = neoStore.getLastCommittedTransactionId();
 
-            CountsTracker counts = neoStores.getCounts();
+            CountsTracker counts = neoStore.getCounts();
             assertEquals( lastCommittedTxId, counts.txId() );
 
             assertThat( lastCommittedTxId, is( store.lastTxId ) );

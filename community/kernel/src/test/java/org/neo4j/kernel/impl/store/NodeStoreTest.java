@@ -48,6 +48,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -73,14 +74,14 @@ public class NodeStoreTest
     public final EphemeralFileSystemRule efs = new EphemeralFileSystemRule();
 
     private NodeStore nodeStore;
-    private NeoStores neoStores;
 
     @After
     public void tearDown()
     {
-        if ( neoStores != null )
+        if ( nodeStore != null )
         {
-            neoStores.close();
+            nodeStore.close();
+            nodeStore = null;
         }
     }
 
@@ -309,10 +310,17 @@ public class NodeStoreTest
         File storeDir = new File( "dir" );
         fs.mkdirs( storeDir );
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        StoreFactory factory = new StoreFactory( storeDir, new Config(), idGeneratorFactory, pageCache, fs,
-                NullLogProvider.getInstance() );
-        neoStores = factory.openNeoStores( true );
-        nodeStore = neoStores.getNodeStore();
+        Monitors monitors = new Monitors();
+        StoreFactory factory = new StoreFactory(
+                storeDir,
+                new Config(),
+                idGeneratorFactory,
+                pageCache,
+                fs,
+                NullLogProvider.getInstance(),
+                monitors );
+        factory.createNodeStore();
+        nodeStore = factory.newNodeStore();
         return nodeStore;
     }
 }

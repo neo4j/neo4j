@@ -32,11 +32,11 @@ import org.neo4j.kernel.impl.api.index.OnlineIndexUpdatesValidator;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
@@ -55,7 +55,7 @@ public class DefaultUnpackerDependencies implements TransactionCommittingRespons
         return new BatchingTransactionRepresentationStoreApplier(
                 resolver.resolveDependency( IndexingService.class ),
                 resolver.resolveDependency( LabelScanStore.class ),
-                resolver.resolveDependency( NeoStoresSupplier.class ).get(),
+                resolver.resolveDependency( NeoStoreSupplier.class ).get(),
                 resolver.resolveDependency( CacheAccessBackDoor.class ),
                 resolver.resolveDependency( LockService.class ),
                 resolver.resolveDependency( LegacyIndexApplierLookup.class ),
@@ -72,7 +72,7 @@ public class DefaultUnpackerDependencies implements TransactionCommittingRespons
     @Override
     public IndexUpdatesValidator indexUpdatesValidator()
     {
-        NeoStores neoStore = resolver.resolveDependency( NeoStoresSupplier.class ).get();
+        NeoStore neoStore = resolver.resolveDependency( NeoStoreSupplier.class ).get();
         KernelHealth kernelHealth = resolver.resolveDependency( KernelHealth.class );
         return new OnlineIndexUpdatesValidator( neoStore, kernelHealth, new PropertyLoader( neoStore ),
                 resolver.resolveDependency( IndexingService.class ), IndexUpdateMode.BATCHED );

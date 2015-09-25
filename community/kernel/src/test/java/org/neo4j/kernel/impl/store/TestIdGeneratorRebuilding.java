@@ -33,10 +33,13 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -75,11 +78,20 @@ public class TestIdGeneratorRebuilding
         Config config = new Config( MapUtil.stringMap(
                 GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "false" ) );
         File storeFile = file( "nodes" );
+        fs.create( storeFile );
+        IdGeneratorImpl.createGenerator( fs, file( "nodes.id" ), 0, false );
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
-        NodeStore store = new NodeStore( storeFile, config, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore );
-        store.initialise( true );
+        NodeStore store = new NodeStore(
+                storeFile,
+                config,
+                new DefaultIdGeneratorFactory( fs ),
+                pageCacheRule.getPageCache( fs ),
+                fs,
+                NullLogProvider.getInstance(),
+                labelStore,
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
+                new Monitors() );
         store.makeStoreOk();
 
         // ... that contain a number of records ...
@@ -125,11 +137,19 @@ public class TestIdGeneratorRebuilding
         // Given we have a store ...
         Config config = new Config( MapUtil.stringMap(
                 GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "false" ) );
+        File storeFile = file( "strings" );
 
-        StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
-        NeoStores neoStores = storeFactory.openNeoStores( true );
-        DynamicStringStore store = neoStores.getPropertyStore().getStringStore();
+        StoreFactory storeFactory = new StoreFactory(
+                storeDir,
+                config,
+                new DefaultIdGeneratorFactory( fs ),
+                pageCacheRule.getPageCache( fs ),
+                fs,
+                NullLogProvider.getInstance(),
+                new Monitors() );
+        storeFactory.createDynamicStringStore( storeFile, 30, IdType.STRING_BLOCK );
+        DynamicStringStore store = storeFactory.newDynamicStringStore(
+                storeFile, IdType.STRING_BLOCK );
 
         // ... that contain a number of records ...
         DynamicRecord record = new DynamicRecord( 1 );
@@ -169,7 +189,7 @@ public class TestIdGeneratorRebuilding
         nextIds.add( store.nextId() ); // 7
         nextIds.add( store.nextId() ); // 51
         assertThat( nextIds, contains( 2L, 3L, 5L, 7L, 51L ) );
-        neoStores.close();
+        store.close();
     }
 
     @Test
@@ -179,11 +199,20 @@ public class TestIdGeneratorRebuilding
         Config config = new Config( MapUtil.stringMap(
                 GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "false" ) );
         File storeFile = file( "nodes" );
+        fs.create( storeFile );
+        IdGeneratorImpl.createGenerator( fs, file( "nodes.id" ), 0, false );
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
-        NodeStore store = new NodeStore( storeFile, config, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore );
-        store.initialise( true );
+        NodeStore store = new NodeStore(
+                storeFile,
+                config,
+                new DefaultIdGeneratorFactory( fs ),
+                pageCacheRule.getPageCache( fs ),
+                fs,
+                NullLogProvider.getInstance(),
+                labelStore,
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
+                new Monitors() );
         store.makeStoreOk();
 
         // ... that contain enough records to fill several file pages ...

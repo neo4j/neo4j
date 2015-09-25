@@ -52,10 +52,9 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
-import org.neo4j.kernel.impl.store.MetaDataStore.Position;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
@@ -71,7 +70,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependenciesProxy;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -159,7 +158,7 @@ public class BackupServiceIT
     {
         // given
         fileSystem.mkdir( backupDir );
-        fileSystem.create( new File( backupDir, MetaDataStore.DEFAULT_NAME ) ).close();
+        fileSystem.create( new File( backupDir, NeoStore.DEFAULT_NAME ) ).close();
 
         try
         {
@@ -322,8 +321,8 @@ public class BackupServiceIT
         }
         rotateAndCheckPoint( db );
 
-        long lastCommittedTxBefore = db.getDependencyResolver().resolveDependency( NeoStores.class ).getMetaDataStore()
-                                       .getLastCommittedTransactionId();
+        long lastCommittedTxBefore = db.getDependencyResolver().resolveDependency( NeoStore.class )
+                .getLastCommittedTransactionId();
 
         db = dbRule.restartDatabase( new DatabaseRule.RestartAction()
         {
@@ -334,8 +333,8 @@ public class BackupServiceIT
             }
         } );
 
-        long lastCommittedTxAfter = db.getDependencyResolver().resolveDependency( NeoStores.class ).getMetaDataStore()
-                                      .getLastCommittedTransactionId();
+        long lastCommittedTxAfter = db.getDependencyResolver().resolveDependency( NeoStore.class )
+                .getLastCommittedTransactionId();
 
         // when
         BackupService backupService = backupService();
@@ -351,7 +350,7 @@ public class BackupServiceIT
     }
 
     @Test
-    public void shouldFindTransactionLogContainingLastNeoStoreTransactionInAnEmptyStore() throws IOException
+    public void shouldFindTransactionLogContainingLastNeoStoreTransactionInAnEmptyStore()
     {
         // This test highlights a special case where an empty store can return transaction metadata for transaction 0.
 
@@ -401,9 +400,9 @@ public class BackupServiceIT
         createAndIndexNode( db, 3 );
         createAndIndexNode( db, 4 );
 
-        NeoStores neoStores = db.getDependencyResolver().resolveDependency( NeoStores.class );
-        neoStores.flush();
-        long txId = neoStores.getMetaDataStore().getLastCommittedTransactionId();
+        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStore.class );
+        neoStore.flush();
+        long txId = neoStore.getLastCommittedTransactionId();
 
         // when
         BackupService backupService = backupService();
@@ -614,7 +613,7 @@ public class BackupServiceIT
 
         final DependencyResolver resolver = db.getDependencyResolver();
         NeoStoreDataSource ds = resolver.resolveDependency( DataSourceManager.class ).getDataSource();
-        long expectedLastTxId = ds.getNeoStores().getMetaDataStore().getLastCommittedTransactionId();
+        long expectedLastTxId = ds.getNeoStore().getLastCommittedTransactionId();
 
         // This monitor is added server-side...
         monitors.addMonitorListener( new StoreSnoopingMonitor( barrier ) );
@@ -637,7 +636,7 @@ public class BackupServiceIT
                 barrier.awaitUninterruptibly();
 
                 createAndIndexNode( db, 1 );
-                resolver.resolveDependency( NeoStoresSupplier.class ).get().flush();
+                resolver.resolveDependency( NeoStoreSupplier.class ).get().flush();
 
                 barrier.release();
             }
@@ -652,9 +651,9 @@ public class BackupServiceIT
 
         // then
         checkPreviousCommittedTxIdFromLog( 0, expectedLastTxId );
-        File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
-        long txIdFromOrigin = MetaDataStore
-                .getRecord( resolver.resolveDependency( PageCache.class ), neoStore, Position.LAST_TRANSACTION_ID );
+        File neoStore = new File( storeDir, NeoStore.DEFAULT_NAME );
+        long txIdFromOrigin = NeoStore.getRecord(
+                resolver.resolveDependency( PageCache.class ), neoStore, Position.LAST_TRANSACTION_ID );
         checkLastCommittedTxIdInLogAndNeoStore( expectedLastTxId+1, txIdFromOrigin );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupDir ) );
         assertTrue( backupOutcome.isConsistent() );
@@ -794,10 +793,10 @@ public class BackupServiceIT
         assertEquals( txId, txIdFromOrigin );
     }
 
-    private long getLastTxChecksum( PageCache pageCache ) throws IOException
+    private long getLastTxChecksum( PageCache pageCache )
     {
-        File neoStore = new File( backupDir, MetaDataStore.DEFAULT_NAME );
-        return MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
+        File neoStore = new File( backupDir, NeoStore.DEFAULT_NAME );
+        return NeoStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
     }
 
     private void deleteAllBackedUpTransactionLogs()

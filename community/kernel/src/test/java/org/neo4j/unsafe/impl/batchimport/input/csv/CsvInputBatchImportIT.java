@@ -50,9 +50,9 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.TokenStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
@@ -293,28 +293,28 @@ public class CsvInputBatchImportIT
             assertEquals( 0, expectedRelationships.size() );
 
             // Verify counts, TODO how to get counts store other than this way?
-            NeoStores neoStores = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency(
-                    NeoStoresSupplier.class ).get();
+            NeoStore neoStore = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency(
+                    NeoStoreSupplier.class ).get();
             Function<String, Integer> labelTranslationTable =
-                    translationTable( neoStores.getLabelTokenStore(), ReadOperations.ANY_LABEL );
+                    translationTable( neoStore.getLabelTokenStore(), ReadOperations.ANY_LABEL );
             for ( Pair<Integer,Long> count : allNodeCounts( labelTranslationTable, expectedNodeCounts ) )
             {
                 assertEquals( "Label count mismatch for label " + count.first(),
                         count.other().longValue(),
-                        neoStores.getCounts()
+                        neoStore.getCounts()
                                 .nodeCount( count.first().intValue(), newDoubleLongRegister() )
                                 .readSecond() );
             }
 
             Function<String, Integer> relationshipTypeTranslationTable =
-                    translationTable( neoStores.getRelationshipTypeTokenStore(), ReadOperations.ANY_RELATIONSHIP_TYPE );
+                    translationTable( neoStore.getRelationshipTypeTokenStore(), ReadOperations.ANY_RELATIONSHIP_TYPE );
             for ( Pair<RelationshipCountKey,Long> count : allRelationshipCounts( labelTranslationTable,
                     relationshipTypeTranslationTable, expectedRelationshipCounts ) )
             {
                 RelationshipCountKey key = count.first();
                 assertEquals( "Label count mismatch for label " + key,
                         count.other().longValue(),
-                        neoStores.getCounts()
+                        neoStore.getCounts()
                                 .relationshipCount( key.startLabel, key.type, key.endLabel, newDoubleLongRegister() )
                                 .readSecond() );
             }

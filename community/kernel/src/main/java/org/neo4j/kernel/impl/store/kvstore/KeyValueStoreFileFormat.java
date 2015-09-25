@@ -27,6 +27,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.impl.store.StoreVersionTrailerUtil;
 
 import static java.util.Objects.requireNonNull;
 
@@ -81,6 +82,9 @@ public abstract class KeyValueStoreFileFormat
     }
 
     protected abstract void writeFormatSpecifier( WritableBuffer formatSpecifier );
+
+    /** A trailer for writing at the end of a new file. */
+    protected abstract String fileTrailer();
 
     protected HeaderField<?>[] headerFieldsForFormat( ReadableBuffer formatSpecifier )
     {
@@ -151,15 +155,12 @@ public abstract class KeyValueStoreFileFormat
 
         BigEndianByteArrayBuffer key = new BigEndianByteArrayBuffer( new byte[keySize] );
         BigEndianByteArrayBuffer value = new BigEndianByteArrayBuffer( new byte[valueSize] );
-
-        // format specifier
         writeFormatSpecifier( value );
         if ( !validFormatSpecifier( value.buffer, keySize ) )
         {
             throw new IllegalArgumentException( "Invalid Format specifier: " +
                                                 BigEndianByteArrayBuffer.toString( value.buffer ) );
         }
-
         int pageSize = pageSize( pages, keySize, valueSize );
         try ( KeyValueWriter writer = newWriter( fs, path, value, pages, pageSize, keySize, valueSize );
               DataProvider data = dataProvider )
@@ -201,14 +202,7 @@ public abstract class KeyValueStoreFileFormat
             {
                 throw new IllegalStateException( "The trailing size header should be valid" );
             }
-
-            // write again the format specifier as trailer
-            writeFormatSpecifier( value );
-            if ( !writer.writeTrailer( key, value ) )
-            {
-                throw new IllegalStateException( "The trailer should be valid" );
-            }
-
+            writer.writeTrailer( fileTrailer() );
             return writer.openStoreFile();
         }
     }
@@ -275,21 +269,20 @@ public abstract class KeyValueStoreFileFormat
         int pageSize = pageSize( pages, keySize, valueSize );
         // read the store metadata
         {
-            BigEndianByteArrayBuffer formatSpecifier = new BigEndianByteArrayBuffer( new byte[valueSize] );
-            writeFormatSpecifier( formatSpecifier );
-
             PagedFile file = pages.map( path, pageSize );
             try
             {
+                if ( StoreVersionTrailerUtil.getTrailerOffset( file, fileTrailer() ) == -1 )
+                {
+                    throw new IOException( "Invalid file trailer. Expected trailer not found." );
+                }
                 BigEndianByteArrayBuffer key = new BigEndianByteArrayBuffer( new byte[keySize] );
                 BigEndianByteArrayBuffer value = new BigEndianByteArrayBuffer( new byte[valueSize] );
                 // the first value is the format identifier, pass it along
                 buffer.position( keySize );
                 buffer.limit( keySize + valueSize );
                 value.dataFrom( buffer );
-
-
-                MetadataCollector metadata = metadata( formatSpecifier, pageSize, keySize, valueSize );
+                MetadataCollector metadata = metadata( value, pageSize, keySize, valueSize );
                 // scan and catalogue all entries in the file
                 KeyValueStoreFile.scanAll( file, 0, metadata, key, value );
                 KeyValueStoreFile storeFile = new KeyValueStoreFile( file, keySize, valueSize, metadata );

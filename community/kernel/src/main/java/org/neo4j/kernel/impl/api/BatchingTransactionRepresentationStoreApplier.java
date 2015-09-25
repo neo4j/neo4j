@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
 /**
@@ -42,7 +42,7 @@ public class BatchingTransactionRepresentationStoreApplier extends TransactionRe
     private final RecoveryLegacyIndexApplierLookup legacyIndexApplierLookup;
 
     public BatchingTransactionRepresentationStoreApplier( IndexingService indexingService,
-            LabelScanStore labelScanStore, NeoStores neoStore, CacheAccessBackDoor cacheAccess,
+            LabelScanStore labelScanStore, NeoStore neoStore, CacheAccessBackDoor cacheAccess,
             LockService lockService, LegacyIndexApplierLookup legacyIndexProviderLookup,
             IndexConfigStore indexConfigStore, KernelHealth kernelHealth, IdOrderingQueue legacyIndexTransactionOrdering )
     {
@@ -55,7 +55,7 @@ public class BatchingTransactionRepresentationStoreApplier extends TransactionRe
     private BatchingTransactionRepresentationStoreApplier(
             IndexingService indexingService,
             RecoveryLabelScanWriterProvider labelScanWriterProvider,
-            NeoStores neoStore,
+            NeoStore neoStore,
             CacheAccessBackDoor cacheAccess,
             LockService lockService,
             RecoveryLegacyIndexApplierLookup legacyIndexApplierLookup,

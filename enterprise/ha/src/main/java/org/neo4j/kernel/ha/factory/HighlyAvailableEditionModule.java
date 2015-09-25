@@ -139,7 +139,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByDatabaseModeException;
@@ -234,7 +234,7 @@ public class HighlyAvailableEditionModule
                 new NotElectableElectionCredentialsProvider() :
                 new DefaultElectionCredentialsProvider(
                         config.get( ClusterSettings.server_id ),
-                        new OnDiskLastTxIdGetter( platformModule.dependencies.provideDependency( NeoStores.class ) ),
+                        new OnDiskLastTxIdGetter( platformModule.dependencies.provideDependency( NeoStore.class ) ),
                         new HighAvailabilityMemberInfoProvider()
                         {
                             @Override
@@ -525,7 +525,7 @@ public class HighlyAvailableEditionModule
 
         life.add( dependencies.satisfyDependency(
                 createKernelData( config, platformModule.graphDatabaseFacade, members, fs, platformModule.pageCache,
-                        storeDir, lastUpdateTime, dependencies.provideDependency( NeoStores.class ) ) ) );
+                        storeDir, lastUpdateTime, dependencies.provideDependency( NeoStore.class ) ) ) );
 
         commitProcessFactory = createCommitProcessFactory( dependencies, logging, monitors, config, paxosLife,
                 clusterClient, members, platformModule.jobScheduler, master, requestContextFactory,
@@ -604,7 +604,7 @@ public class HighlyAvailableEditionModule
         {
             @Override
             public TransactionCommitProcess create( TransactionAppender appender,
-                                                    KernelHealth kernelHealth, NeoStores neoStores,
+                                                    KernelHealth kernelHealth, NeoStore neoStore,
                                                     TransactionRepresentationStoreApplier storeApplier,
                                                     NeoStoreInjectedTransactionValidator txValidator,
                                                     IndexUpdatesValidator indexUpdatesValidator,
@@ -743,7 +743,7 @@ public class HighlyAvailableEditionModule
 
     protected KernelData createKernelData( Config config, GraphDatabaseAPI graphDb, ClusterMembers members,
                                            FileSystemAbstraction fs, PageCache pageCache, File storeDir,
-                                           LastUpdateTime lastUpdateTime, Supplier<NeoStores> neoStoreSupplier )
+                                           LastUpdateTime lastUpdateTime, Supplier<NeoStore> neoStoreSupplier )
     {
         OnDiskLastTxIdGetter txIdGetter = new OnDiskLastTxIdGetter( neoStoreSupplier );
         ClusterDatabaseInfoProvider databaseInfo = new ClusterDatabaseInfoProvider( members,

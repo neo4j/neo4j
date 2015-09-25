@@ -127,7 +127,7 @@ public class KeyValueStoreFile implements Closeable
 
     public int entryCount()
     {
-        return totalEntries - headerEntries - trailerEntries;
+        return totalEntries - headerEntries;
     }
 
     @Override
@@ -141,8 +141,7 @@ public class KeyValueStoreFile implements Closeable
     private final int valueSize;
     private final Headers headers;
     private final int headerEntries;
-    private final int trailerEntries;
-    /** Includes header, data and trailer entries. */
+    /** Includes header entries (and data entries), but not the trailer entry. */
     private final int totalEntries;
     /**
      * The page catalogue is used to find the appropriate (first) page without having to do I/O.
@@ -157,7 +156,6 @@ public class KeyValueStoreFile implements Closeable
         this.keySize = keySize;
         this.valueSize = valueSize;
         this.headerEntries = metadata.headerEntries();
-        this.trailerEntries = metadata.trailerEntries();
         this.totalEntries = metadata.totalEntries();
         this.headers = metadata.headers();
         this.pageCatalogue = metadata.pageCatalogue();
@@ -210,7 +208,14 @@ public class KeyValueStoreFile implements Closeable
 
     private static boolean visitable( BigEndianByteArrayBuffer key, boolean acceptZeroKey )
     {
-        return acceptZeroKey || !key.allZeroes();
+        if ( !acceptZeroKey )
+        {
+            if ( key.allZeroes() )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static void readKeyValuePair( PageCursor cursor, int offset, WritableBuffer key, WritableBuffer value )

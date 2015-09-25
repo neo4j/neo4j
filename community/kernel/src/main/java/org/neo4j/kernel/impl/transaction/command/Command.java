@@ -92,6 +92,8 @@ public abstract class Command
         this.key = key;
     }
 
+    public abstract void accept( CommandRecordVisitor visitor );
+
     @Override
     public int hashCode()
     {
@@ -118,7 +120,7 @@ public abstract class Command
         return o != null && o.getClass().equals( getClass() ) && getKey() == ((Command) o).getKey();
     }
 
-    public abstract boolean handle( CommandHandler handler ) throws IOException;
+    public abstract boolean handle( NeoCommandHandler handler ) throws IOException;
 
     protected String beforeAndAfterToString( AbstractBaseRecord before, AbstractBaseRecord after )
     {
@@ -139,7 +141,13 @@ public abstract class Command
         }
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public void accept( CommandRecordVisitor visitor )
+        {
+            visitor.visitNode( after );
+        }
+
+        @Override
+        public boolean handle( NeoCommandHandler handler ) throws IOException
         {
             return handler.visitNodeCommand( this );
         }
@@ -173,13 +181,19 @@ public abstract class Command
         }
 
         @Override
+        public void accept( CommandRecordVisitor visitor )
+        {
+            visitor.visitRelationship( record );
+        }
+
+        @Override
         public String toString()
         {
             return record.toString();
         }
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( NeoCommandHandler handler ) throws IOException
         {
             return handler.visitRelationshipCommand( this );
         }
@@ -202,13 +216,19 @@ public abstract class Command
         }
 
         @Override
+        public void accept( CommandRecordVisitor visitor )
+        {
+            visitor.visitRelationshipGroup( record );
+        }
+
+        @Override
         public String toString()
         {
             return record.toString();
         }
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( NeoCommandHandler handler ) throws IOException
         {
             return handler.visitRelationshipGroupCommand( this );
         }
@@ -234,13 +254,19 @@ public abstract class Command
         }
 
         @Override
+        public void accept( CommandRecordVisitor visitor )
+        {
+            visitor.visitNeoStore( record );
+        }
+
+        @Override
         public String toString()
         {
             return record.toString();
         }
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( NeoCommandHandler handler ) throws IOException
         {
             return handler.visitNeoStoreCommand( this );
         }
@@ -253,9 +279,14 @@ public abstract class Command
 
     public static class PropertyKeyTokenCommand extends TokenCommand<PropertyKeyTokenRecord>
     {
+        @Override
+        public void accept( CommandRecordVisitor visitor )
+        {
+            visitor.visitPropertyKeyToken( record );
+        }
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( NeoCommandHandler handler ) throws IOException
         {
             return handler.visitPropertyKeyTokenCommand( this );
         }
@@ -277,13 +308,19 @@ public abstract class Command
         }
 
         @Override
+        public void accept( CommandRecordVisitor visitor )
+        {
+            visitor.visitProperty( after );
+        }
+
+        @Override
         public String toString()
         {
             return beforeAndAfterToString( before, after );
         }
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( NeoCommandHandler handler ) throws IOException
         {
             return handler.visitPropertyCommand( this );
         }
@@ -336,9 +373,14 @@ public abstract class Command
 
     public static class RelationshipTypeTokenCommand extends TokenCommand<RelationshipTypeTokenRecord>
     {
+        @Override
+        public void accept( CommandRecordVisitor visitor )
+        {
+            visitor.visitRelationshipTypeToken( record );
+        }
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( NeoCommandHandler handler ) throws IOException
         {
             return handler.visitRelationshipTypeTokenCommand( this );
         }
@@ -346,9 +388,14 @@ public abstract class Command
 
     public static class LabelTokenCommand extends TokenCommand<LabelTokenRecord>
     {
+        @Override
+        public void accept( CommandRecordVisitor visitor )
+        {
+            visitor.visitLabelToken( record );
+        }
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( NeoCommandHandler handler ) throws IOException
         {
             return handler.visitLabelTokenCommand( this );
         }
@@ -371,6 +418,12 @@ public abstract class Command
         }
 
         @Override
+        public void accept( CommandRecordVisitor visitor )
+        {
+            visitor.visitSchemaRule( recordsAfter );
+        }
+
+        @Override
         public String toString()
         {
             if ( schemaRule != null )
@@ -381,7 +434,7 @@ public abstract class Command
         }
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( NeoCommandHandler handler ) throws IOException
         {
             return handler.visitSchemaRuleCommand( this );
         }
@@ -424,9 +477,15 @@ public abstract class Command
         }
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( NeoCommandHandler handler ) throws IOException
         {
             return handler.visitNodeCountsCommand( this );
+        }
+
+        @Override
+        public void accept( CommandRecordVisitor visitor )
+        {
+            // no record to visit
         }
 
         public int labelId()
@@ -467,9 +526,15 @@ public abstract class Command
         }
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( NeoCommandHandler handler ) throws IOException
         {
             return handler.visitRelationshipCountsCommand( this );
+        }
+
+        @Override
+        public void accept( CommandRecordVisitor visitor )
+        {
+            // no record to visit
         }
 
         public int startLabelId()

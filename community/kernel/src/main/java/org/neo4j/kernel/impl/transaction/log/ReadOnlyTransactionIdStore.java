@@ -20,14 +20,11 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position;
-import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
+import static org.neo4j.kernel.impl.store.NeoStore.Position;
 
 public class ReadOnlyTransactionIdStore implements TransactionIdStore
 {
@@ -36,16 +33,16 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     private final long logVersion;
     private final long byteOffset;
 
-    public ReadOnlyTransactionIdStore( PageCache pageCache, File storeDir ) throws IOException
+    public ReadOnlyTransactionIdStore( PageCache pageCache, File storeDir )
     {
         long id = 0, checksum = 0, logVersion = 0, byteOffset = 0;
-        if ( NeoStores.isStorePresent( pageCache, storeDir ) )
+        if ( NeoStore.isStorePresent( pageCache, storeDir ) )
         {
-            File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
-            id = getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
-            checksum = getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
-            logVersion = getRecord( pageCache, neoStore, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION );
-            byteOffset = getRecord( pageCache, neoStore, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
+            File neoStore = new File( storeDir, NeoStore.DEFAULT_NAME );
+            id = NeoStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
+            checksum = NeoStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
+            logVersion = NeoStore.getRecord( pageCache, neoStore, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION );
+            byteOffset = NeoStore.getRecord( pageCache, neoStore, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
         }
 
         this.transactionId = id;

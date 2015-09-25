@@ -25,7 +25,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -36,12 +36,12 @@ import org.neo4j.kernel.impl.store.record.SchemaRule;
  */
 public class IntegrityValidator
 {
-    private final NeoStores neoStores;
+    private final NeoStore neoStore;
     private final IndexingService indexes;
 
-    public IntegrityValidator( NeoStores neoStores, IndexingService indexes )
+    public IntegrityValidator( NeoStore neoStore, IndexingService indexes )
     {
-        this.neoStores = neoStores;
+        this.neoStore = neoStore;
         this.indexes = indexes;
     }
 
@@ -57,7 +57,7 @@ public class IntegrityValidator
     public void validateTransactionStartKnowledge( long lastCommittedTxWhenTransactionStarted )
             throws TransactionFailureException
     {
-        long latestConstraintIntroducingTx = neoStores.getMetaDataStore().getLatestConstraintIntroducingTx();
+        long latestConstraintIntroducingTx = neoStore.getLatestConstraintIntroducingTx();
         if ( lastCommittedTxWhenTransactionStarted < latestConstraintIntroducingTx )
         {
             // Constraints have changed since the transaction begun
