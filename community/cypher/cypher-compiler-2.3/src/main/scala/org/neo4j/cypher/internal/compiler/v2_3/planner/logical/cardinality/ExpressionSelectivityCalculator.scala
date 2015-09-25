@@ -43,7 +43,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     // WHERE false
     case False() =>
-      Selectivity(0)
+      Selectivity.ZERO
 
     // SubPredicate(sub, super)
     case partial: PartialPredicate[_] =>
@@ -148,7 +148,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     val factor = java.math.BigDecimal.ONE.divide(prefixLength, 17, RoundingMode.HALF_UP)
       .multiply(java.math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR)).stripTrailingZeros()
     val slack = BigDecimalCombiner.negate(equality).multiply(factor)
-    val result = Selectivity(equality.add(slack).doubleValue())
+    val result = Selectivity.of(equality.add(slack).doubleValue()).get
 
     //we know for sure we are no worse than a propertyExistence check
     val existence = calculateSelectivityForPropertyExistence(identifier,selections, propertyKey)
@@ -163,7 +163,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     val equality = java.math.BigDecimal.valueOf(calculateSelectivityForPropertyEquality(name, None, selections, propertyKeyName).factor)
     val factor = java.math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR)
     val slack = BigDecimalCombiner.negate(equality).multiply(factor)
-    val result = Selectivity(equality.add(slack).doubleValue())
+    val result = Selectivity.of(equality.add(slack).doubleValue()).get
     result
   }
 

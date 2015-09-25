@@ -40,7 +40,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val stats = mock[GraphStatistics]
     when(stats.nodesWithLabelCardinality(None)).thenReturn(1000.0)
-    when(stats.indexSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity(0.1d)))
+    when(stats.indexSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity.of(0.1d).get))
 
     val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
 
@@ -99,8 +99,8 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     when(selections.labelsOnNode(IdName("a"))).thenReturn(Set(label))
 
     val stats = mock[GraphStatistics]
-    when(stats.indexSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity(.01)))
-    when(stats.indexPropertyExistsSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity(1)))
+    when(stats.indexSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity.of(.01).get))
+    when(stats.indexPropertyExistsSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity.ONE))
     val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
 
     val prefixes = Map(StringLiteral("p%")(InputPosition.NONE)          -> 0.24551328138282763,
@@ -111,7 +111,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     prefixes.foreach { entry =>
       calculator(Like(Property(Identifier("a") _, propKey) _, LikePattern(entry._1)) _) should equal(
-        Selectivity(entry._2))
+        Selectivity.of(entry._2).get)
     }
   }
 
@@ -126,8 +126,8 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     when(selections.labelsOnNode(IdName("a"))).thenReturn(Set(label))
 
     val stats = mock[GraphStatistics]
-    when(stats.indexSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity(0.01)))
-    when(stats.indexPropertyExistsSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity(.23)))
+    when(stats.indexSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity.of(0.01).get))
+    when(stats.indexPropertyExistsSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity.of(.23).get))
     val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
 
     val prefixes = Map(StringLiteral("p%")(InputPosition.NONE)          -> 0.23,
@@ -138,7 +138,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     prefixes.foreach { entry =>
       calculator(Like(Property(Identifier("a") _, propKey) _, LikePattern(entry._1)) _) should equal(
-        Selectivity(entry._2))
+        Selectivity.of(entry._2).get)
     }
   }
 }
