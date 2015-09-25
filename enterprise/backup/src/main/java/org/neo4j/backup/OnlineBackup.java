@@ -308,7 +308,7 @@ public class OnlineBackup
     @Deprecated
     public OnlineBackup incremental( String targetDirectory )
     {
-        outcome = new BackupService().doIncrementalBackup( hostNameOrIp, port, new File( targetDirectory ), true,
+        outcome = new BackupService().doIncrementalBackup( hostNameOrIp, port, new File( targetDirectory ),
                 timeoutMillis, defaultConfig() );
         return this;
     }
@@ -330,7 +330,7 @@ public class OnlineBackup
     @Deprecated
     public OnlineBackup incremental( String targetDirectory, boolean verification )
     {
-        outcome = new BackupService().doIncrementalBackup( hostNameOrIp, port, new File( targetDirectory ), verification,
+        outcome = new BackupService().doIncrementalBackup( hostNameOrIp, port, new File( targetDirectory ),
                 timeoutMillis, defaultConfig() );
         return this;
     }
