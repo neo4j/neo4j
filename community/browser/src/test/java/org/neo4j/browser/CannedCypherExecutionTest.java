@@ -19,21 +19,6 @@
  */
 package org.neo4j.browser;
 
-import org.apache.commons.lang3.StringUtils;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Notification;
-import org.neo4j.graphdb.QueryExecutionException;
-import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.impl.util.Charsets;
-import org.neo4j.test.TestGraphDatabaseFactory;
-
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.FileVisitResult;
@@ -48,11 +33,27 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+import org.junit.Test;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Notification;
+import org.neo4j.graphdb.QueryExecutionException;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.impl.util.Charsets;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
 import static java.lang.String.format;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.emptyIterable;
 import static org.jsoup.helper.StringUtil.join;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * The browser code includes a number of canned example cypher statements. It's important that these statements continue
@@ -65,13 +66,11 @@ import static org.junit.Assert.fail;
 public class CannedCypherExecutionTest
 {
     @Test
-    @Ignore
     public void shouldBeAbleToExecuteAllTheCannedCypherQueriesContainedInStaticHtmlFiles() throws Exception
     {
         URL resourceLoc = getClass().getClassLoader().getResource( "browser" );
         assertNotNull( resourceLoc );
 
-        final GraphDatabaseService database = new TestGraphDatabaseFactory().newImpermanentDatabase();
         final AtomicInteger explainCount = new AtomicInteger( 0 );
         final AtomicInteger executionCount = new AtomicInteger( 0 );
 
@@ -80,10 +79,14 @@ public class CannedCypherExecutionTest
             @Override
             public FileVisitResult visitFile( Path file, BasicFileAttributes attributes ) throws IOException
             {
-                if ( file.getFileName().toString().endsWith( ".html" ) )
+                final GraphDatabaseService database = new TestGraphDatabaseFactory().newImpermanentDatabase();
+
+                String fileName = file.getFileName().toString();
+                if ( fileName.endsWith( ".html" ) )
                 {
+                    System.out.println(format( "Checking cypher in file: [%s]", fileName));
                     String content = FileUtils.readTextFile( file.toFile(), Charsets.UTF_8 );
-                    Elements cypherElements = Jsoup.parse( content ).select( "pre.runnable" );
+                    Elements cypherElements = Jsoup.parse( content ).select( "pre.runnable" ).not( ".standalone-example" );
                     for ( Element cypherElement : cypherElements )
                     {
                         String statement = replaceAngularExpressions( cypherElement.text() );
@@ -94,11 +97,11 @@ public class CannedCypherExecutionTest
                             {
                                 try ( Transaction transaction = database.beginTx() )
                                 {
-                                  Result result = database.execute( prependExplain( statement ) );
-                                  String notifications = prettyPrintDescriptions(result.getNotifications());
-                                  if(notifications != "") {
-                                    fail(format("Query [%s] should produce no notifications but returned: [%s]", statement, notifications));
-                                  }
+                                    Iterable<Notification> actual = database.execute(
+                                            prependExplain( statement ) ).getNotifications();
+                                    assertThat( format( "Query [%s] should produce no notifications. [%s]",
+                                                    statement, fileName ),
+                                            actual, is( emptyIterable() ) );
                                     explainCount.incrementAndGet();
                                     transaction.success();
                                 }
@@ -133,16 +136,6 @@ public class CannedCypherExecutionTest
         System.out.printf( "Executed %s cypher statements extracted from HTML files, with no errors.%n",
                 executionCount );
     }
-
-  private String prettyPrintDescriptions(Iterable<org.neo4j.graphdb.Notification> notifications) {
-    List list = new ArrayList<>();
-    for (Notification notification : notifications) {
-      if(!notification.getCode().contains("PropertyNameMissingWarning")) {
-        list.add(notification.getDescription());
-      }
-    }
-    return StringUtils.join(list, ',');
-  }
 
     private static String replaceAngularExpressions( String statement )
     {
