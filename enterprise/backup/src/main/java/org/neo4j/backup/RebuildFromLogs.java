@@ -30,22 +30,23 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.OnlineIndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -64,7 +65,6 @@ import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.lang.String.format;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
@@ -77,54 +77,11 @@ class RebuildFromLogs
     private static final String FULL_CHECK = "full";
     private static final String UP_TO_TX_ID = "tx";
 
-    private static final FileSystemAbstraction FS = new DefaultFileSystemAbstraction();
+    private final FileSystemAbstraction fs;
 
-    private final StoreAccess stores;
-    private final NeoStoreDataSource dataSource;
-    private final TransactionRepresentationStoreApplier storeApplier;
-    private final IndexUpdatesValidator indexUpdatesValidator;
-    private final IndexingService indexingService;
-
-    RebuildFromLogs( GraphDatabaseAPI graphdb )
+    public RebuildFromLogs( FileSystemAbstraction fs )
     {
-        DependencyResolver resolver = graphdb.getDependencyResolver();
-        this.stores = new StoreAccess( graphdb );
-        this.dataSource = resolver.resolveDependency( DataSourceManager.class ).getDataSource();
-        this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class )
-                                    .withLegacyIndexTransactionOrdering( IdOrderingQueue.BYPASS );
-        PropertyLoader propertyLoader = new PropertyLoader( stores.getRawNeoStore() );
-        this.indexingService = resolver.resolveDependency( IndexingService.class );
-        this.indexUpdatesValidator = new OnlineIndexUpdatesValidator( stores.getRawNeoStore(), propertyLoader,
-                indexingService, IndexUpdateMode.BATCHED );
-    }
-
-    void applyTransactionsFrom( File sourceDir, long upToTxId ) throws IOException
-    {
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( sourceDir, FS );
-        int startVersion = 0;
-        ReaderLogVersionBridge versionBridge = new ReaderLogVersionBridge( FS, logFiles );
-        PhysicalLogVersionedStoreChannel startingChannel = openForVersion( logFiles, FS, startVersion );
-        ReadableVersionableLogChannel channel =
-                new ReadAheadLogChannel( startingChannel, versionBridge, DEFAULT_READ_AHEAD_SIZE );
-        try ( IOCursor<CommittedTransactionRepresentation> cursor =
-                      new PhysicalTransactionCursor<>( channel, new VersionAwareLogEntryReader<>() ) )
-        {
-            while ( cursor.next() )
-            {
-                long txId = cursor.get().getCommitEntry().getTxId();
-                TransactionRepresentation transaction = cursor.get().getTransactionRepresentation();
-                try ( LockGroup locks = new LockGroup();
-                      ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate( transaction ) )
-                {
-                    storeApplier.apply( transaction, indexUpdates, locks, txId, EXTERNAL );
-                }
-                if ( upToTxId != BASE_TX_ID && upToTxId == txId )
-                {
-                    return;
-                }
-            }
-        }
-        indexingService.flushAll();
+        this.fs = fs;
     }
 
     public static void main( String[] args ) throws Exception
@@ -174,53 +131,57 @@ class RebuildFromLogs
             }
         }
 
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( new DefaultFileSystemAbstraction() ) )
-        {
-            GraphDatabaseAPI graphdb =
-                    BackupService.startTemporaryDb( target.getAbsolutePath(), pageCache, stringMap() );
-            try
-            {
-                PhysicalLogFiles logFiles = new PhysicalLogFiles( source, FS );
-                long highestVersion = logFiles.getHighestLogVersion();
-                if ( highestVersion < 0 )
-                {
-                    printUsage( "Inconsistent number of log files found in " + source );
-                    return;
-                }
-                long txCount = findLastTransactionId( logFiles, highestVersion );
-                ProgressMonitorFactory progress;
-                if ( txCount < 0 )
-                {
-                    progress = ProgressMonitorFactory.NONE;
-                    System.err.println(
-                            "Unable to report progress, cannot find highest txId, attempting rebuild anyhow." );
-                }
-                else
-                {
-                    progress = ProgressMonitorFactory.textual( System.err );
-                }
-                progress.singlePart( format( "Rebuilding store from %s transactions ", txCount ), txCount );
-                RebuildFromLogs rebuilder = new RebuildFromLogs( graphdb );
-                rebuilder.applyTransactionsFrom( source, txId );
+        new RebuildFromLogs( new DefaultFileSystemAbstraction() ).rebuild( source, target, txId, full );
+    }
 
-                // if we didn't run the full checker for each transaction, run it afterwards
-                if ( !full )
-                {
-                    rebuilder.checkConsistency();
-                }
-            }
-            finally
+    public void rebuild( File source, File target, long txId,  boolean full  ) throws Exception
+    {
+        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
+        {
+            PhysicalLogFiles logFiles = new PhysicalLogFiles( source, fs );
+            long highestVersion = logFiles.getHighestLogVersion();
+            if ( highestVersion < 0 )
             {
-                graphdb.shutdown();
+                printUsage( "Inconsistent number of log files found in " + source );
+                return;
+            }
+            long txCount = findLastTransactionId( logFiles, highestVersion );
+            ProgressMonitorFactory progress;
+            if ( txCount < 0 )
+            {
+                progress = ProgressMonitorFactory.NONE;
+                System.err.println(
+                        "Unable to report progress, cannot find highest txId, attempting rebuild anyhow." );
+            }
+            else
+            {
+                progress = ProgressMonitorFactory.textual( System.err );
+            }
+            progress.singlePart( format( "Rebuilding store from %s transactions ", txCount ), txCount );
+            try ( TransactionApplier applier = new TransactionApplier( fs, target, pageCache ) )
+            {
+                long lastTxId = applier.applyTransactionsFrom( source, txId );
+                // set last tx id in neostore otherwise the db is not usable
+                NeoStore.setRecord( fs, new File( target, NeoStore.DEFAULT_NAME ),
+                        NeoStore.Position.LAST_TRANSACTION_ID, lastTxId );
+            }
+
+            // if we didn't run the full checker for each transaction, run it afterwards
+            if ( !full )
+            {
+                try ( ConsistencyChecker checker = new ConsistencyChecker( target, pageCache ) )
+                {
+                    checker.checkConsistency();
+                }
             }
         }
     }
 
-    private static long findLastTransactionId( PhysicalLogFiles logFiles, long highestVersion )
-            throws IOException
+
+    private long findLastTransactionId( PhysicalLogFiles logFiles, long highestVersion ) throws IOException
     {
         ReadableVersionableLogChannel logChannel = new ReadAheadLogChannel(
-                PhysicalLogFile.openForVersion( logFiles, FS, highestVersion ),
+                PhysicalLogFile.openForVersion( logFiles, fs, highestVersion ),
                 NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
 
         long lastTransactionId = -1;
@@ -236,15 +197,6 @@ class RebuildFromLogs
         return lastTransactionId;
     }
 
-    private void checkConsistency() throws ConsistencyCheckIncompleteException
-    {
-        Config tuningConfiguration = new Config( stringMap(),
-                GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
-        new FullCheck( tuningConfiguration, ProgressMonitorFactory.textual( System.err ) )
-                .execute( new DirectStoreAccess( stores, dataSource.getLabelScanStore(), dataSource.getDependencyResolver().resolveDependency( SchemaIndexProvider.class ) ),
-                        StringLogger.SYSTEM );
-    }
-
     private static void printUsage( String... msgLines )
     {
         for ( String line : msgLines )
@@ -257,5 +209,97 @@ class RebuildFromLogs
         System.err.println( "         <target dir>  is the path for where to create the new graph database" );
         System.err.println( "         -full     --  to run a full check over the entire store for each transaction" );
         System.err.println( "         -tx       --  to rebuild the store up to a given transaction" );
+    }
+
+
+    private static class TransactionApplier implements AutoCloseable
+    {
+        private final GraphDatabaseAPI graphdb;
+        private final TransactionRepresentationStoreApplier storeApplier;
+        private final OnlineIndexUpdatesValidator indexUpdatesValidator;
+        private final NeoStore neoStore;
+        private final IndexingService indexingService;
+        private final FileSystemAbstraction fs;
+
+        TransactionApplier( FileSystemAbstraction fs, File dbDirectory, PageCache pageCache )
+        {
+            this.fs = fs;
+            this.graphdb = BackupService.startTemporaryDb( dbDirectory .getAbsolutePath(), pageCache, stringMap() );
+            DependencyResolver resolver = graphdb.getDependencyResolver();
+            this.neoStore = resolver.resolveDependency( NeoStore.class );
+            this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class )
+                    .withLegacyIndexTransactionOrdering( IdOrderingQueue.BYPASS );
+            this.indexingService = resolver.resolveDependency( IndexingService.class );
+            this.indexUpdatesValidator = new OnlineIndexUpdatesValidator(
+                    neoStore, new PropertyLoader( neoStore ), indexingService, IndexUpdateMode.BATCHED );
+        }
+
+        long applyTransactionsFrom( File sourceDir, long upToTxId ) throws IOException
+        {
+            PhysicalLogFiles logFiles = new PhysicalLogFiles( sourceDir, fs );
+            int startVersion = 0;
+            ReaderLogVersionBridge versionBridge = new ReaderLogVersionBridge( fs, logFiles );
+            PhysicalLogVersionedStoreChannel startingChannel = openForVersion( logFiles, fs, startVersion );
+            ReadableVersionableLogChannel channel =
+                    new ReadAheadLogChannel( startingChannel, versionBridge, DEFAULT_READ_AHEAD_SIZE );
+            long txId = BASE_TX_ID;
+            try ( IOCursor<CommittedTransactionRepresentation> cursor =
+                          new PhysicalTransactionCursor<>( channel, new VersionAwareLogEntryReader<>() ) )
+            {
+                while ( cursor.next() )
+                {
+                    txId = cursor.get().getCommitEntry().getTxId();
+                    TransactionRepresentation transaction = cursor.get().getTransactionRepresentation();
+                    try ( LockGroup locks = new LockGroup();
+                          ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate( transaction ) )
+                    {
+                        storeApplier.apply( transaction, indexUpdates, locks, txId, EXTERNAL );
+                    }
+                    if ( upToTxId != BASE_TX_ID && upToTxId == txId )
+                    {
+                        return txId;
+                    }
+                }
+            }
+            indexingService.flushAll();
+            return txId;
+        }
+
+        @Override
+        public void close()
+        {
+            graphdb.shutdown();
+        }
+    }
+
+    private static class ConsistencyChecker implements AutoCloseable
+    {
+        private final GraphDatabaseAPI graphdb;
+        private final NeoStoreDataSource dataSource;
+        private final Config tuningConfiguration =
+                new Config( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        private SchemaIndexProvider indexes;
+
+        ConsistencyChecker( File dbDirectory, PageCache pageCache )
+        {
+            this.graphdb = BackupService.startTemporaryDb( dbDirectory.getAbsolutePath(), pageCache, stringMap() );
+            DependencyResolver resolver = graphdb.getDependencyResolver();
+            this.dataSource = resolver.resolveDependency( DataSourceManager.class ).getDataSource();
+            this.indexes = resolver.resolveDependency( SchemaIndexProvider.class );
+        }
+
+        private void checkConsistency() throws ConsistencyCheckIncompleteException
+        {
+            LabelScanStore labelScanStore = dataSource.getLabelScanStore();
+            DirectStoreAccess stores = new DirectStoreAccess( new StoreAccess( graphdb ), labelScanStore, indexes );
+            new FullCheck( tuningConfiguration, ProgressMonitorFactory.textual( System.err ) )
+                    .execute( stores, StringLogger.SYSTEM );
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+            graphdb.shutdown();
+        }
     }
 }

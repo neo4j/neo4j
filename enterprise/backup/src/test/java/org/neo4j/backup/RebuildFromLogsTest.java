@@ -35,6 +35,8 @@ import java.util.Set;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -50,7 +52,9 @@ import static org.neo4j.test.TargetDirectory.testDirForTest;
 @RunWith(Parameterized.class)
 public class RebuildFromLogsTest
 {
-    public final @Rule TargetDirectory.TestDirectory dir = testDirForTest( RebuildFromLogsTest.class );
+    @Rule
+    public final TargetDirectory.TestDirectory dir = testDirForTest( RebuildFromLogsTest.class );
+    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Test
     public void shouldRebuildFromLog() throws Exception
@@ -72,15 +76,7 @@ public class RebuildFromLogsTest
 
         // when
         File rebuildPath = new File( dir.graphDbDir(), "rebuild" );
-        GraphDatabaseAPI rebuilt = db( rebuildPath );
-        try
-        {
-            new RebuildFromLogs( rebuilt ).applyTransactionsFrom( prototypePath, BASE_TX_ID );
-        }
-        finally
-        {
-            rebuilt.shutdown();
-        }
+        new RebuildFromLogs( fs ).rebuild( prototypePath, rebuildPath, BASE_TX_ID, false );
 
         // then
         assertEquals( DbRepresentation.of( prototypePath ), DbRepresentation.of( rebuildPath ) );
@@ -122,15 +118,7 @@ public class RebuildFromLogsTest
 
         // when
         File rebuildPath = new File( dir.graphDbDir(), "rebuild" );
-        GraphDatabaseAPI rebuilt = db( rebuildPath );
-        try
-        {
-            new RebuildFromLogs( rebuilt ).applyTransactionsFrom( copy, txId );
-        }
-        finally
-        {
-            rebuilt.shutdown();
-        }
+        new RebuildFromLogs( fs ).rebuild( copy, rebuildPath, txId, false );
 
         // then
         assertEquals( DbRepresentation.of( prototypePath ), DbRepresentation.of( rebuildPath ) );
