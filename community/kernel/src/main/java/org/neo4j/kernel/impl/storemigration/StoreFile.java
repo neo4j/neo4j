@@ -28,7 +28,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.impl.store.AbstractStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
@@ -46,6 +45,7 @@ import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
@@ -146,7 +146,8 @@ public enum StoreFile
     COUNTS_STORE_LEFT(
             CountsTracker.TYPE_DESCRIPTOR,
             StoreFactory.COUNTS_STORE + CountsTracker.LEFT,
-            AbstractStore.ALL_STORES_VERSION
+            Legacy22Store.LEGACY_VERSION,
+            false
     )
             {
                 @Override
@@ -158,7 +159,8 @@ public enum StoreFile
     COUNTS_STORE_RIGHT(
             CountsTracker.TYPE_DESCRIPTOR,
             StoreFactory.COUNTS_STORE + CountsTracker.RIGHT,
-            AbstractStore.ALL_STORES_VERSION
+            Legacy22Store.LEGACY_VERSION,
+            false
     )
             {
                 @Override
@@ -177,12 +179,19 @@ public enum StoreFile
     private final String typeDescriptor;
     private final String storeFileNamePart;
     private final String sinceVersion;
+    private final boolean recordStore;
 
     private StoreFile( String typeDescriptor, String storeFileNamePart, String sinceVersion )
+    {
+        this( typeDescriptor, storeFileNamePart, sinceVersion, true );
+    }
+
+    private StoreFile( String typeDescriptor, String storeFileNamePart, String sinceVersion, boolean recordStore )
     {
         this.typeDescriptor = typeDescriptor;
         this.storeFileNamePart = storeFileNamePart;
         this.sinceVersion = sinceVersion;
+        this.recordStore = recordStore;
     }
 
     public String forVersion( String version )
@@ -208,9 +217,9 @@ public enum StoreFile
         return fileName( StoreFileType.STORE );
     }
 
-    public String idFileName()
+    public boolean isRecordStore()
     {
-        return fileName( StoreFileType.ID );
+        return recordStore;
     }
 
     public static Iterable<StoreFile> legacyStoreFilesForVersion( final String version )

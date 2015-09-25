@@ -157,7 +157,6 @@ public class ConsistencyCheckService
 
         try ( NeoStore neoStore = factory.newNeoStore( false ) )
         {
-            neoStore.makeStoreOk();
             LabelScanStore labelScanStore = null;
             try
             {

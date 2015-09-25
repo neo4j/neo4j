@@ -372,8 +372,6 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     result.toList should equal(List(Map("nodes1" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")),
                                         "nodes2" -> List(nodes("source"), nodes("target")))))
-
-    println(result.executionPlanDescription())
   }
 
   test("shortest path should work with predicates that depend on the path expression") {
@@ -387,7 +385,6 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
                 """.stripMargin
 
     val result = executeWithAllPlanners(query)
-    println(result.executionPlanDescription())
 
     result.toList should equal(List(Map("nodes" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")))))
   }
@@ -403,7 +400,6 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
                 """.stripMargin
 
     val result = executeWithAllPlanners(query)
-    println(result.executionPlanDescription())
 
     result.toList should equal(List(Map("nodes" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")))))
   }

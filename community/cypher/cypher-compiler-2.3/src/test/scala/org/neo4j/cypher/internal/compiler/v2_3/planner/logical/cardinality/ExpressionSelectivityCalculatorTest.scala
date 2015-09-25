@@ -88,7 +88,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     result.factor should equal(0.03)
   }
 
-  test("Should optimize selectivity with respect to prefix length for LIKE predicates") {
+  test("Should optimize selectivity with respect to prefix length for STARTS WITH predicates") {
     implicit val semanticTable = SemanticTable()
     semanticTable.resolvedLabelIds.put("A", LabelId(0))
     semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(0))
@@ -103,15 +103,15 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     when(stats.indexPropertyExistsSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity.ONE))
     val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
 
-    val prefixes = Map(StringLiteral("p%")(InputPosition.NONE)          -> 0.24551328138282763,
-                       StringLiteral("p2%")(InputPosition.NONE)         -> 0.23384596099184043,
-                       StringLiteral("p33%")(InputPosition.NONE)        -> 0.2299568541948447,
-                       StringLiteral("p5555%")(InputPosition.NONE)      -> 0.22684556875724812,
-                       StringLiteral("reallylong%")(InputPosition.NONE) -> 0.22451210467905067)
+    val prefixes = Map("p"          -> 0.23384596099184043,
+                       "p2"         -> 0.2299568541948447,
+                       "p33"        -> 0.22801230079634685,
+                       "p5555"      -> 0.22606774739784896,
+                       "reallylong" -> 0.22429997158103274)
 
-    prefixes.foreach { entry =>
-      calculator(Like(Property(Identifier("a") _, propKey) _, LikePattern(entry._1)) _) should equal(
-        Selectivity.of(entry._2).get)
+    prefixes.foreach { case (prefix, selectivity) =>
+      calculator(StartsWith(Property(Identifier("a") _, propKey) _, StringLiteral(prefix)(InputPosition.NONE)) _) should equal(
+        Selectivity.of(selectivity).get)
     }
   }
 
@@ -127,18 +127,19 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val stats = mock[GraphStatistics]
     when(stats.indexSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity.of(0.01).get))
-    when(stats.indexPropertyExistsSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity.of(.23).get))
+    val existenceSelectivity = .2285
+    when(stats.indexPropertyExistsSelectivity(LabelId(0), PropertyKeyId(0))).thenReturn(Some(Selectivity.of(existenceSelectivity).get))
     val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
 
-    val prefixes = Map(StringLiteral("p%")(InputPosition.NONE)          -> 0.23,
-      StringLiteral("p2%")(InputPosition.NONE)         -> 0.23,
-      StringLiteral("p33%")(InputPosition.NONE)        -> 0.2299568541948447,
-      StringLiteral("p5555%")(InputPosition.NONE)      ->0.22684556875724812,
-      StringLiteral("reallylong%")(InputPosition.NONE) -> 0.22451210467905067)
+    val prefixes = Map("p"          -> existenceSelectivity,
+                       "p2"         -> existenceSelectivity,
+                       "p33"        -> 0.22801230079634685,
+                       "p5555"      -> 0.22606774739784896,
+                       "reallylong" -> 0.22429997158103274)
 
-    prefixes.foreach { entry =>
-      calculator(Like(Property(Identifier("a") _, propKey) _, LikePattern(entry._1)) _) should equal(
-        Selectivity.of(entry._2).get)
+    prefixes.foreach { case (prefix, selectivity) =>
+      calculator(StartsWith(Property(Identifier("a") _, propKey) _, StringLiteral(prefix)(InputPosition.NONE)) _) should equal(
+        Selectivity.of(selectivity).get)
     }
   }
 }

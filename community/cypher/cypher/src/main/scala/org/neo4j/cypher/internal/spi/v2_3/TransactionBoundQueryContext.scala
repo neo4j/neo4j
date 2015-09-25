@@ -152,58 +152,62 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
 
-    case PrefixRange(prefix) =>
+    case PrefixRange(prefix: String) =>
       indexSeekByPrefixRange(index, prefix)
 
     case range: InequalitySeekRange[Any] =>
-      val groupedRanges = range.groupBy { (bound: Bound[Any]) =>
-        bound.endPoint match {
-          case n: Number => classOf[Number]
-          case s: String => classOf[String]
-          case c: Character => classOf[String]
-          case _ => classOf[Any]
-        }
-      }
-
-      val optNumericRange = groupedRanges.get(classOf[Number]).map(_.asInstanceOf[InequalitySeekRange[Number]])
-      val optStringRange = groupedRanges.get(classOf[String]).map(_.mapBounds(_.toString))
-      val anyRange = groupedRanges.get(classOf[Any])
-
-      if (anyRange.nonEmpty) {
-        // If we get back an exclusion test, the range could return values otherwise it is empty
-        anyRange.get.inclusionTest[Any](BY_VALUE).map { test =>
-          throw new IllegalArgumentException("Cannot compare a property against values that are neither strings nor numbers.")
-        }.getOrElse(Iterator.empty)
-      } else {
-        (optNumericRange, optStringRange) match {
-          case (Some(numericRange), None) => indexSeekByNumericalRange(index, numericRange)
-          case (None, Some(stringRange)) => indexSeekByStringRange(index, stringRange)
-
-          case (Some(numericRange), Some(stringRange)) =>
-            // Consider MATCH (n:Person) WHERE n.prop < 1 AND n.prop > "London":
-            // The order of predicate evaluation is unspecified, i.e.
-            // LabelScan fby Filter(n.prop < 1) fby Filter(n.prop > "London") is a valid plan
-            // If the first filter returns no results, the plan returns no results.
-            // If the first filter returns any result, the following filter will fail since
-            // comparing string against numbers throws an exception. Same for the reverse case.
-            //
-            // Below we simulate this behaviour:
-            //
-            if (indexSeekByNumericalRange( index, numericRange ).isEmpty
-                || indexSeekByStringRange(index, stringRange).isEmpty) {
-              Iterator.empty
-            } else {
-              throw throw new IllegalArgumentException(s"Cannot compare a property against both numbers and strings. They are incomparable.")
-            }
-
-          case (None, None) =>
-            // If we get here, the non-empty list of range bounds was partitioned into two empty ones
-            throw new ThisShouldNotHappenError("Stefan", "Failed to partition range bounds")
-        }
-      }
+      indexSeekByPrefixRange(index, range)
 
     case range =>
       throw new InternalException(s"Unsupported index seek by range: $range")
+  }
+
+  private def indexSeekByPrefixRange(index: IndexDescriptor, range: InequalitySeekRange[Any]): scala.Iterator[Node] = {
+    val groupedRanges = range.groupBy { (bound: Bound[Any]) =>
+      bound.endPoint match {
+        case n: Number => classOf[Number]
+        case s: String => classOf[String]
+        case c: Character => classOf[String]
+        case _ => classOf[Any]
+      }
+    }
+
+    val optNumericRange = groupedRanges.get(classOf[Number]).map(_.asInstanceOf[InequalitySeekRange[Number]])
+    val optStringRange = groupedRanges.get(classOf[String]).map(_.mapBounds(_.toString))
+    val anyRange = groupedRanges.get(classOf[Any])
+
+    if (anyRange.nonEmpty) {
+      // If we get back an exclusion test, the range could return values otherwise it is empty
+      anyRange.get.inclusionTest[Any](BY_VALUE).map { test =>
+        throw new IllegalArgumentException("Cannot compare a property against values that are neither strings nor numbers.")
+      }.getOrElse(Iterator.empty)
+    } else {
+      (optNumericRange, optStringRange) match {
+        case (Some(numericRange), None) => indexSeekByNumericalRange(index, numericRange)
+        case (None, Some(stringRange)) => indexSeekByStringRange(index, stringRange)
+
+        case (Some(numericRange), Some(stringRange)) =>
+          // Consider MATCH (n:Person) WHERE n.prop < 1 AND n.prop > "London":
+          // The order of predicate evaluation is unspecified, i.e.
+          // LabelScan fby Filter(n.prop < 1) fby Filter(n.prop > "London") is a valid plan
+          // If the first filter returns no results, the plan returns no results.
+          // If the first filter returns any result, the following filter will fail since
+          // comparing string against numbers throws an exception. Same for the reverse case.
+          //
+          // Below we simulate this behaviour:
+          //
+          if (indexSeekByNumericalRange(index, numericRange).isEmpty
+            || indexSeekByStringRange(index, stringRange).isEmpty) {
+            Iterator.empty
+          } else {
+            throw new IllegalArgumentException(s"Cannot compare a property against both numbers and strings. They are incomparable.")
+          }
+
+        case (None, None) =>
+          // If we get here, the non-empty list of range bounds was partitioned into two empty ones
+          throw new ThisShouldNotHappenError("Stefan", "Failed to partition range bounds")
+      }
+    }
   }
 
   private def indexSeekByPrefixRange(index: IndexDescriptor, prefix: String): scala.Iterator[Node] = {

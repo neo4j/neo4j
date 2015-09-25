@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.PipeMonitor
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v2_3.parser.{MatchText, ParsedLikePattern, WildcardLikePatternOp}
 import org.neo4j.cypher.internal.frontend.v2_3.{ExclusiveBound, InclusiveBound, IndexHintException}
 
 class IndexLookupBuilder extends PlanBuilder {
@@ -38,7 +37,7 @@ class IndexLookupBuilder extends PlanBuilder {
     val hint: SchemaIndex = querylessHint.token
 
     val propertyPredicates: Seq[(QueryToken[Predicate], QueryExpression[Expression])] =
-      findPropertyPredicates(plan, hint) ++ findLikePredicates(plan, hint) ++ findInequalityPredicates(plan, hint)
+      findPropertyPredicates(plan, hint) ++ findStartsWithPredicates(plan, hint) ++ findInequalityPredicates(plan, hint)
     val labelPredicates = findLabelPredicates(plan, hint)
 
     if (propertyPredicates.isEmpty || labelPredicates.isEmpty)
@@ -58,10 +57,6 @@ class IndexLookupBuilder extends PlanBuilder {
 
     plan.copy(query = newQuery)
   }
-
-
-    private def throwE(hint: SchemaIndex, message: String) =
-      new IndexHintException(hint.identifier, hint.label, hint.property, message)
 
 
   private def findLabelPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex) =
@@ -85,15 +80,11 @@ class IndexLookupBuilder extends PlanBuilder {
         if id == hint.identifier && prop.name == hint.property => (predicate, ScanQueryExpression(expr))
     }
 
-  private def findLikePredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex) =
+  private def findStartsWithPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex) =
     plan.query.where.collect {
-      case predicate@QueryToken(LiteralLikePattern(
-        LiteralRegularExpression(Property(Identifier(id), prop), _),
-        ParsedLikePattern(MatchText(prefix) :: (_: WildcardLikePatternOp) :: tl),
-        caseInsensitive)
-      ) if !caseInsensitive && id == hint.identifier && prop.name == hint.property =>
-        val range = PrefixSeekRangeExpression(PrefixRange(prefix))
-        (predicate, RangeQueryExpression(range))
+      case predicate@QueryToken(StartsWith(Property(Identifier(id), prop), rhs))
+       if id == hint.identifier && prop.name == hint.property =>
+        (predicate, RangeQueryExpression(PrefixSeekRangeExpression(PrefixRange(rhs))))
     }
 
   private def findInequalityPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex) =

@@ -83,7 +83,7 @@ object InternalPlanDescription {
     case class UpdateActionName(value: String) extends Argument
     case class LegacyIndex(value: String) extends Argument
     case class Index(label: String, propertyKey: String) extends Argument
-    case class PrefixIndex(label: String, propertyKey: String, prefix: String) extends Argument
+    case class PrefixIndex(label: String, propertyKey: String, prefix: commands.expressions.Expression) extends Argument
     case class InequalityIndex(label: String, propertyKey: String, bounds: Seq[String]) extends Argument
     case class LabelName(label: String) extends Argument
     case class KeyNames(keys: Seq[String]) extends Argument

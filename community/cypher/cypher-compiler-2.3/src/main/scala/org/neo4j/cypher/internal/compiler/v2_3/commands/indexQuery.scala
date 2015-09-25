@@ -51,11 +51,11 @@ object indexQuery extends GraphElementPropertyFunctions {
 
     case RangeQueryExpression(rangeWrapper) =>
       val range = rangeWrapper match {
-        // StringSeekRange => PrefixRange("Petra")
-        case s: PrefixSeekRangeExpression => s.range
+        case s: PrefixSeekRangeExpression =>
+          s.range.map(expression => makeValueNeoSafe(expression(m)(state)))
 
-        // ValueSeekRange(RangeGT(InclusiveBound(n.prop + 12)) => RangeGT(InclusiveBound(15)))
-        case InequalitySeekRangeExpression(range) => range.mapBounds(_(m)(state)).mapBounds(makeValueNeoSafe)
+        case InequalitySeekRangeExpression(innerRange) =>
+          innerRange.mapBounds(expression => makeValueNeoSafe(expression(m)(state)))
       }
       index(range).toIterator
   }

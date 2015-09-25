@@ -32,6 +32,7 @@ object GraphStatistics {
   val DEFAULT_LIMIT_CARDINALITY          = Cardinality(75)
   val DEFAULT_REL_UNIQUENESS_SELECTIVITY = Selectivity.of(1.0 - 1 / 100 /*rel-cardinality*/).get
   val DEFAULT_RANGE_SEEK_FACTOR          = 0.03
+  val DEFAULT_PREFIX_LENGTH              = 6
 }
 
 trait GraphStatistics {

@@ -22,14 +22,13 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.prepare
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier, Literal, Property}
-import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{HasLabel, LiteralLikePattern, LiteralRegularExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{StartsWith, HasLabel, LiteralRegularExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken.Resolved
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType, UnresolvedLabel, UnresolvedProperty}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PlanBuilder
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.{BuilderTest, Unsolved}
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.{CreateUniqueAction, NamedExpectation, UniqueLink}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v2_3.parser.{MatchMany, MatchText, ParsedLikePattern}
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 
 class KeyTokenResolverTest extends BuilderTest {
@@ -97,14 +96,14 @@ class KeyTokenResolverTest extends BuilderTest {
     result.query.patterns should equal(Seq(Unsolved(ShortestPath("p", SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), Seq.empty, SemanticDirection.OUTGOING, false, None, single = false, relIterator = None))))
   }
 
-  test("should resolve property key for LIKE expressions") {
+  test("should resolve property key for STARTS WITH expressions") {
     val q = Query.
       matches(SingleNode("n")).
-      where(LiteralLikePattern(LiteralRegularExpression(Property(Identifier("x"), UnresolvedProperty("APA")), Literal("A.*")), ParsedLikePattern(List(MatchText("A"), MatchMany)))).
+      where(StartsWith(Property(Identifier("x"), UnresolvedProperty("APA")), Literal("A"))).
       returns()
 
     val result = assertAccepts(q)
-    result.query.where should equal(Seq(Unsolved(LiteralLikePattern(LiteralRegularExpression(Property(Identifier("x"), Resolved("APA", 0, TokenType.PropertyKey)), Literal("A.*")), ParsedLikePattern(List(MatchText("A"), MatchMany))))))
+    result.query.where should equal(Seq(Unsolved(StartsWith(Property(Identifier("x"), Resolved("APA", 0, TokenType.PropertyKey)), Literal("A")))))
   }
 
   test("should_resolve_label_keytoken_on_unique_link_pattern") {

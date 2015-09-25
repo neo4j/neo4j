@@ -127,7 +127,7 @@ public class ConfiguringPageCacheFactory
     public void dumpConfiguration()
     {
         int cachePageSize = calculatePageSize( config, swapperFactory );
-        int maxPages = calculateMaxPages( config, cachePageSize );
+        long maxPages = calculateMaxPages( config, cachePageSize );
         long totalPhysicalMemory = totalPhysicalMemory();
         String totalPhysicalMemMb = totalPhysicalMemory == -1? "?" : "" + totalPhysicalMemory / 1024 / 1024;
         long maxVmUsageMb = Runtime.getRuntime().maxMemory() / 1024 / 1024;

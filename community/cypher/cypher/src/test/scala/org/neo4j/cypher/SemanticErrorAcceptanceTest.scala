@@ -328,7 +328,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
       "match (n:Person)-->(m:Person) using index n:Person(name) where n.name = m.name return n",
       "Cannot use index hint in this context. Index hints are only supported for the following "+
         "predicates in WHERE (either directly or as part of a top-level AND): equality comparison, " +
-        "inequality (range) comparison, LIKE pattern matching, IN condition or checking property " +
+        "inequality (range) comparison, STARTS WITH, IN condition or checking property " +
         "existence. The comparison cannot be performed between two property values. Note that the " +
         "label and property comparison must be specified on a non-optional node (line 1, " +
         "column 31 (offset: 30))"
@@ -459,7 +459,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("should reject unicode versions of hyphens") {
     executeAndEnsureError(
       "RETURN 42 — 41",
-      """Invalid input '—': expected whitespace, comment, '.', node labels, '[', "=~", IN, IS, '^', '*', '/', '%', '+', '-', '=', "<>", "!=", '<', '>', "<=", ">=", AND, XOR, OR, AS, ',', ORDER, SKIP, LIMIT, LOAD CSV, START, MATCH, UNWIND, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, RETURN, UNION, ';' or end of input (line 1, column 11 (offset: 10))""")
+      """Invalid input '—': expected whitespace, comment, '.', node labels, '[', "=~", IN, STARTS, ENDS, CONTAINS, IS, '^', '*', '/', '%', '+', '-', '=', "<>", "!=", '<', '>', "<=", ">=", AND, XOR, OR, AS, ',', ORDER, SKIP, LIMIT, LOAD CSV, START, MATCH, UNWIND, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, RETURN, UNION, ';' or end of input (line 1, column 11 (offset: 10))""")
   }
 
   test("fail when parsing larger than 64 bit integers") {
@@ -524,6 +524,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
       "o not defined (line 1, column 33 (offset: 32))")
     executeAndEnsureError("MATCH m, n RETURN m, n, o LIMIT 25",
       "o not defined (line 1, column 25 (offset: 24))")
+
   }
 
   test("not allowed to refer to identifiers in SKIP")(

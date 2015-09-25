@@ -83,6 +83,7 @@ import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
+import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.coreapi.schema.BaseNodeConstraintCreator;
@@ -92,7 +93,6 @@ import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
 import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
-import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.NoOpClient;
@@ -275,10 +275,12 @@ public class BatchInserterImpl implements BatchInserter
         }
         msgLog.info( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
         life.start();
+
         neoStore = sf.newNeoStore( true );
         neoStore.verifyStoreOk();
-        neoStore.makeStoreOk();
+
         List<Token> indexes = getPropertyKeyTokenStore().getTokens( 10000 );
+
         propertyKeyTokens = new BatchTokenHolder( indexes );
         labelTokens = new BatchTokenHolder( neoStore.getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
         List<RelationshipTypeToken> types = getRelationshipTypeStore().getTokens( Integer.MAX_VALUE );

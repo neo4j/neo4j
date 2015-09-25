@@ -41,8 +41,8 @@ import org.neo4j.kernel.impl.store.StoreVersionMismatchHandler;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 
 public class PropertyDeduplicator
 {
@@ -87,11 +87,11 @@ public class PropertyDeduplicator
     }
 
     private PrimitiveLongObjectMap<List<DuplicateCluster>> collectConflictingProperties( final PropertyStore store )
-            throws IOException
     {
         final PrimitiveLongObjectMap<List<DuplicateCluster>> duplicateClusters = Primitive.longObjectMap();
 
-        for ( long headRecordId = 0; headRecordId < store.getHighestPossibleIdInUse(); ++headRecordId )
+        long highId = store.getHighId();
+        for ( long headRecordId = 0; headRecordId < highId; ++headRecordId )
         {
             PropertyRecord record = store.forceGetRecord( headRecordId );
             // Skip property propertyRecordIds that are not in use.
