@@ -233,19 +233,19 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
 
     public final void dump( STORE store, long[] ids ) throws Exception
     {
-        store.makeStoreOk();
         int size = store.getRecordSize();
         StoreChannel fileChannel = store.getFileChannel();
         ByteBuffer buffer = ByteBuffer.allocate( size );
         out.println( "store.getRecordSize() = " + size );
         out.println( "<dump>" );
         long used = 0;
+        long highId = -1;
 
         if ( ids == null )
         {
-            long high = store.getHighestPossibleIdInUse();
+            highId = store.scanForHighId();
 
-            for ( long id = 0; id <= high; id++ )
+            for ( long id = 0; id < highId; id++ )
             {
                 boolean inUse = dumpRecord( store, size, fileChannel, buffer, id );
 
@@ -266,7 +266,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
 
         if ( ids == null )
         {
-            out.printf( "used = %s / highId = %s (%.2f%%)%n", used, store.getHighId(), used * 100.0 / store.getHighId() );
+            out.printf( "used = %s / highId = %s (%.2f%%)%n", used, highId, used * 100.0 / store.getHighId() );
         }
     }
 

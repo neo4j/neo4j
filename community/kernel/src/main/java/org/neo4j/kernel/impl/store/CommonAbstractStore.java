@@ -375,7 +375,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
         try
         {
-            long foundHighId = findHighIdBackwards();
+            long foundHighId = scanForHighId();
             setHighId( foundHighId );
             if ( !fastRebuild )
             {
@@ -566,8 +566,11 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
     /**
      * If store is not ok a call to this method will rebuild the {@link
-     * IdGenerator} used by this store and if successful mark it as
-     * <CODE>ok</CODE>.
+     * IdGenerator} used by this store and if successful mark it as.
+     *
+     * WARNING: this method must NOT be called if recovery is required, but hasn't performed.
+     * To remove all negations from the above statement: Only call this method if store is in need of
+     * recovery and recovery has been performed.
      */
     public void makeStoreOk()
     {
@@ -623,7 +626,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         try
         {
             return idGeneratorFactory.open( fileSystemAbstraction, fileName, grabSize,
-                    getIdType(), findHighIdBackwards() );
+                    getIdType(), scanForHighId() );
         }
         catch ( IOException e )
         {
@@ -632,7 +635,15 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
     }
 
-    protected long findHighIdBackwards() throws IOException
+    /**
+     * Starts from the end of the file and scans backwards to find the highest in use record.
+     * Can be used even if {@link #makeStoreOk()} hasn't been called. Basically this method should be used
+     * over {@link #getHighestPossibleIdInUse()} and {@link #getHighId()} in cases where a store has been opened
+     * but is in a scenario where recovery isn't possible, like some tooling or migration.
+     *
+     * @return the id of the highest in use record + 1, i.e. highId.
+     */
+    public long scanForHighId() throws IOException
     {
         try ( PageCursor cursor = storeFile.io( 0, PF_SHARED_LOCK ) )
         {
