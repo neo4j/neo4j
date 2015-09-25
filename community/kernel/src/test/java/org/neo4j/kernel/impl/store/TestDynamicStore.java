@@ -37,7 +37,9 @@ import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
@@ -55,6 +57,9 @@ public class TestDynamicStore
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
+    private File storeDir;
+    private PageCache pageCache;
+    private IdGeneratorFactory idGeneratorFactory;
     private StoreFactory storeFactory;
     private NeoStores neoStores;
     private Config config;
@@ -62,11 +67,18 @@ public class TestDynamicStore
     @Before
     public void setUp()
     {
-        File storeDir = new File( "dynamicstore" );
+        pageCache = pageCacheRule.getPageCache( fs.get() );
+        storeDir = new File( "dynamicstore" );
         fs.get().mkdir( storeDir );
+        idGeneratorFactory = new DefaultIdGeneratorFactory( fs.get() );
         config = config();
-        storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
+        storeFactory = new StoreFactory(
+                storeDir,
+                config,
+                idGeneratorFactory,
+                pageCache,
+                fs.get(),
+                NullLogProvider.getInstance() );
     }
 
     @After

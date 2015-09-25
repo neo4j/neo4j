@@ -71,6 +71,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class BatchingNeoStores implements AutoCloseable, NeoStoresSupplier
 {
     private final FileSystemAbstraction fileSystem;
+    private final Monitors monitors;
     private final BatchingPropertyKeyTokenRepository propertyKeyRepository;
     private final BatchingLabelTokenRepository labelRepository;
     private final BatchingRelationshipTypeTokenRepository relationshipTypeRepository;
@@ -83,10 +84,12 @@ public class BatchingNeoStores implements AutoCloseable, NeoStoresSupplier
     private final LabelScanStore labelScanStore;
     private final IoTracer ioTracer;
 
-    public BatchingNeoStores( FileSystemAbstraction fileSystem, File storeDir, Configuration config,
-            LogService logService, AdditionalInitialIds initialIds )
+    public BatchingNeoStores( FileSystemAbstraction fileSystem, File storeDir,
+                              Configuration config, LogService logService,
+                              Monitors monitors, AdditionalInitialIds initialIds )
     {
         this.fileSystem = fileSystem;
+        this.monitors = monitors;
         this.logProvider = logService.getInternalLogProvider();
         this.storeDir = storeDir;
         this.neo4jConfig = new Config( stringMap(
@@ -179,8 +182,8 @@ public class BatchingNeoStores implements AutoCloseable, NeoStoresSupplier
         try ( PageCache pageCache = createPageCache( fileSystem, new Config(), NullLogProvider.getInstance(),
                 PageCacheTracer.NULL ) )
         {
-            StoreFactory storeFactory =
-                    new StoreFactory( fileSystem, new File( storeDir ), pageCache, NullLogProvider.getInstance() );
+            StoreFactory storeFactory = new StoreFactory(
+                    fileSystem, new File( storeDir ), pageCache, NullLogProvider.getInstance() );
             try ( NeoStores neoStores = storeFactory.openNeoStores( true ) )
             {
                 neoStores.getMetaDataStore();
@@ -197,8 +200,8 @@ public class BatchingNeoStores implements AutoCloseable, NeoStoresSupplier
     private NeoStores newNeoStores( PageCache pageCache )
     {
         BatchingIdGeneratorFactory idGeneratorFactory = new BatchingIdGeneratorFactory( fileSystem );
-        StoreFactory storeFactory =
-                new StoreFactory( storeDir, neo4jConfig, idGeneratorFactory, pageCache, fileSystem, logProvider );
+        StoreFactory storeFactory = new StoreFactory(
+                storeDir, neo4jConfig, idGeneratorFactory, pageCache, fileSystem, logProvider );
         return storeFactory.openNeoStores( true );
     }
 

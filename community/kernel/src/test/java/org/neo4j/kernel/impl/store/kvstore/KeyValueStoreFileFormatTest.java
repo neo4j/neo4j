@@ -26,7 +26,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,7 +36,6 @@ import java.util.Map;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -85,7 +83,7 @@ public class KeyValueStoreFileFormatTest
     {
         // given
         Format format = new Format( "foo", "bar" );
-        Map<String,byte[]> headers = new HashMap<>();
+        Map<String, byte[]> headers = new HashMap<>();
         headers.put( "foo", new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'f', 'o', 'o'} );
         headers.put( "bar", new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'b', 'a', 'r'} );
 
@@ -120,7 +118,7 @@ public class KeyValueStoreFileFormatTest
     {
         // given
         Format format = new Format( "abc", "xyz" );
-        Map<String,byte[]> headers = new HashMap<>();
+        Map<String, byte[]> headers = new HashMap<>();
         headers.put( "abc", new byte[]{'h', 'e', 'l', 'l', 'o', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,} );
         headers.put( "xyz", new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'w', 'o', 'r', 'l', 'd',} );
 
@@ -159,7 +157,7 @@ public class KeyValueStoreFileFormatTest
     {
         // given
         Format format = new Format( "abc", "xyz" );
-        Map<String,byte[]> headers = new HashMap<>();
+        Map<String, byte[]> headers = new HashMap<>();
         headers.put( "abc", new byte[]{'h', 'e', 'l', 'l', 'o', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,} );
         headers.put( "xyz", new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'w', 'o', 'r', 'l', 'd',} );
         Data data = data(
@@ -183,10 +181,10 @@ public class KeyValueStoreFileFormatTest
     {
         // given
         Format format = new Format( "one", "two" );
-        Map<String,byte[]> headers = new HashMap<>();
+        Map<String, byte[]> headers = new HashMap<>();
         headers.put( "one", new byte[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,} );
         headers.put( "two", new byte[]{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,} );
-        Map<String,String> config = new HashMap<>();
+        Map<String, String> config = new HashMap<>();
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "8M" );
         config.put( GraphDatabaseSettings.mapped_memory_page_size.name(), "256" );
         Data data = data(
@@ -219,11 +217,11 @@ public class KeyValueStoreFileFormatTest
             assertFind( file, 26, 30, false, new Bytes( 'v', 'a', 'l', 5 ), new Bytes( 'v', 'a', 'l', 6 ) );
             assertFind( file, 31, 31, true, new Bytes( 'v', 'a', 'l', 7 ) );
             assertFind( file, 32, 1024, false,
-                    new Bytes( 'v', 'a', 'l', 8 ),
-                    new Bytes( 'v', 'a', 'l', 9 ),
-                    new Bytes( 'v', 'a', 'l', 10 ),
-                    new Bytes( 'v', 'a', 'l', 11 ),
-                    new Bytes( 'v', 'a', 'l', 12 ) );
+                        new Bytes( 'v', 'a', 'l', 8 ),
+                        new Bytes( 'v', 'a', 'l', 9 ),
+                        new Bytes( 'v', 'a', 'l', 10 ),
+                        new Bytes( 'v', 'a', 'l', 11 ),
+                        new Bytes( 'v', 'a', 'l', 12 ) );
             assertFind( file, 1050, 1050, true, new Bytes( 'v', 'a', 'l', 13 ) );
             assertFind( file, 2000, 2000, true, new Bytes( 'v', 'a', 'l', 14 ) );
             assertFind( file, 1500, 8000, false, new Bytes( 'v', 'a', 'l', 14 ) );
@@ -237,8 +235,8 @@ public class KeyValueStoreFileFormatTest
     {
         // given
         Format format = new Format();
-        Map<String,byte[]> metadata = new HashMap<>();
-        Map<String,String> config = new HashMap<>();
+        Map<String, byte[]> metadata = new HashMap<>();
+        Map<String, String> config = new HashMap<>();
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "8M" );
         config.put( GraphDatabaseSettings.mapped_memory_page_size.name(), "128" );
         Data data = data( // two full pages (and nothing more)
@@ -264,7 +262,7 @@ public class KeyValueStoreFileFormatTest
     @Test
     public void shouldTruncateTheFile() throws Exception
     {
-        Map<String,String> config = new HashMap<>();
+        Map<String, String> config = new HashMap<>();
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "8M" );
         config.put( GraphDatabaseSettings.mapped_memory_page_size.name(), "128" );
 
@@ -305,7 +303,6 @@ public class KeyValueStoreFileFormatTest
                 public void close() throws IOException
                 {
                 }
-
                 @Override
                 public boolean visit( WritableBuffer key, WritableBuffer value ) throws IOException
                 {
@@ -366,7 +363,8 @@ public class KeyValueStoreFileFormatTest
     {
         // when
         String[] headerNames = {"abc", "xyz"};
-        Format format = new Format( headerNames );
+        Format expectedFormat = new Format( headerNames );
+        IncorrectTrailerFormat incorrectTrailerFormat = new IncorrectTrailerFormat( headerNames );
 
         Map<String,byte[]> headers = new HashMap<>();
         headers.put( "abc", new byte[]{'h', 'e', 'l', 'l', 'o', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,} );
@@ -377,47 +375,32 @@ public class KeyValueStoreFileFormatTest
                 entry( new byte[]{'z', 'e', 'd'}, new byte[]{'o', 'm', 'e', 'g', 'a'} ) );
 
         // then
-        try ( KeyValueStoreFile originalValidFile = format.create( headers, data ) )
+        try ( KeyValueStoreFile originalValidFile = incorrectTrailerFormat.create( headers, data ) )
         {
             assertEquals( "number of entries", 3, data.index );
             assertEntries( 3, originalValidFile );
         }
 
-        FileSystemAbstraction fileSystem = fs.get();
-        try ( StoreChannel channel = fileSystem.open( storeFile.get(), "rw" ) )
-        {
-            long size = channel.size();
-            ByteBuffer buffer = ByteBuffer.allocate( 16 );
-            for ( int i = 0; i < buffer.capacity(); i++ )
-            {
-                buffer.put( (byte) 0xF0 );
-            }
-            buffer.flip();
-            channel.position( size - buffer.capacity() );
-            channel.write( buffer );
-            channel.force( false );
-        }
-
         try
         {
-            format.open();
+            expectedFormat.open();
             fail( "It should not be possible to open count store file with incorrect trailer." );
         }
-        catch ( IllegalStateException e )
+        catch ( IOException e )
         {
-            assertEquals( "Format header/trailer has changed.", e.getMessage() );
+            assertEquals( "Invalid file trailer. Expected trailer not found.", e.getMessage() );
         }
     }
 
     private static void assertFind( KeyValueStoreFile file, int min, int max, boolean exact, Bytes... expected )
             throws IOException
     {
-        Pair<Boolean,List<Bytes>> result = find( file, min, max );
+        Pair<Boolean, List<Bytes>> result = find( file, min, max );
         assertEquals( "exact match", exact, result.first() );
         assertEquals( String.format( "find(min=%d, max=%d)", min, max ), Arrays.asList( expected ), result.other() );
     }
 
-    private static Pair<Boolean,List<Bytes>> find( KeyValueStoreFile file, final int min, final int max )
+    private static Pair<Boolean, List<Bytes>> find( KeyValueStoreFile file, final int min, final int max )
             throws IOException
     {
         final List<Bytes> values = new ArrayList<>();
@@ -496,7 +479,7 @@ public class KeyValueStoreFileFormatTest
         return result;
     }
 
-    private void assertDeepEquals( Map<String,byte[]> expected, Headers actual )
+    private void assertDeepEquals( Map<String, byte[]> expected, Headers actual )
     {
         try
         {
@@ -552,7 +535,7 @@ public class KeyValueStoreFileFormatTest
                 byte[] expectedKey = new byte[key.size()];
                 byte[] expectedValue = new byte[value.size()];
                 if ( !expected.visit( new BigEndianByteArrayBuffer( expectedKey ),
-                        new BigEndianByteArrayBuffer( expectedValue ) ) )
+                                      new BigEndianByteArrayBuffer( expectedValue ) ) )
                 {
                     return false;
                 }
@@ -575,7 +558,7 @@ public class KeyValueStoreFileFormatTest
 
     class Format extends KeyValueStoreFileFormat
     {
-        private final Map<String,HeaderField<byte[]>> headerFields = new HashMap<>();
+        private final Map<String, HeaderField<byte[]>> headerFields = new HashMap<>();
 
         public Format( String... defaultHeaderFields )
         {
@@ -591,29 +574,29 @@ public class KeyValueStoreFileFormatTest
             }
         }
 
-        void createEmpty( Map<String,byte[]> headers ) throws IOException
+        void createEmpty( Map<String, byte[]> headers ) throws IOException
         {
             createEmptyStore( fs.get(), storeFile.get(), 16, 16, headers( headers ) );
         }
 
-        KeyValueStoreFile create( Map<String,byte[]> headers, DataProvider data )
+        KeyValueStoreFile create( Map<String, byte[]> headers, DataProvider data )
                 throws IOException
         {
             return createStore( fs.get(), pages.getPageCache( fs.get() ), storeFile.get(), 16, 16, headers( headers ),
-                    data );
+                                data );
         }
 
-        KeyValueStoreFile create( Map<String,String> config, Map<String,byte[]> headers, DataProvider data )
+        KeyValueStoreFile create( Map<String, String> config, Map<String, byte[]> headers, DataProvider data )
                 throws IOException
         {
             return createStore( fs.get(), pages.getPageCache( fs.get(), new Config( config ) ), storeFile.get(), 16, 16,
-                    headers( headers ), data );
+                                headers( headers ), data );
         }
 
-        private Headers headers( Map<String,byte[]> headers )
+        private Headers headers( Map<String, byte[]> headers )
         {
             Headers.Builder builder = Headers.headersBuilder();
-            for ( Map.Entry<String,byte[]> entry : headers.entrySet() )
+            for ( Map.Entry<String, byte[]> entry : headers.entrySet() )
             {
                 builder.put( headerFields.get( entry.getKey() ), entry.getValue() );
             }
@@ -632,6 +615,26 @@ public class KeyValueStoreFileFormatTest
             {
                 formatSpecifier.putByte( i, (byte) 0xFF );
             }
+        }
+
+        @Override
+        protected String fileTrailer()
+        {
+            return "That's all folks...";
+        }
+    }
+
+    class IncorrectTrailerFormat extends Format {
+
+        public IncorrectTrailerFormat( String... defaultHeaderFields )
+        {
+            super( defaultHeaderFields );
+        }
+
+        @Override
+        protected String fileTrailer()
+        {
+            return "incorrect trailer";
         }
     }
 
@@ -710,7 +713,7 @@ public class KeyValueStoreFileFormatTest
         }
     }
 
-    static Map<String,byte[]> noHeaders()
+    static Map<String, byte[]> noHeaders()
     {
         return Collections.emptyMap();
     }

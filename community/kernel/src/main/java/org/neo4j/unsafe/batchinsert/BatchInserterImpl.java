@@ -83,7 +83,6 @@ import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
-import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.coreapi.schema.BaseNodeConstraintCreator;
@@ -93,6 +92,7 @@ import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
 import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
+import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.NoOpClient;
@@ -173,7 +173,9 @@ public class BatchInserterImpl implements BatchInserter
     private final IdGeneratorFactory idGeneratorFactory;
     private final SchemaIndexProviderMap schemaIndexProviders;
     private final LabelScanStore labelScanStore;
+    private final StoreLogService logService;
     private final Log msgLog;
+    private final FileSystemAbstraction fileSystem;
     private final SchemaCache schemaCache;
     private final Config config;
     private final BatchInserterImpl.BatchSchemaActions actions;
@@ -242,13 +244,14 @@ public class BatchInserterImpl implements BatchInserter
         this.config = new Config( params, GraphDatabaseSettings.class );
 
         life = new LifeSupport();
+        this.fileSystem = fileSystem;
         this.storeDir = storeDir;
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, PageCacheTracer.NULL, NullLog.getInstance() );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
         life.add( new PageCacheLifecycle( pageCache ) );
 
-        StoreLogService logService = life.add( StoreLogService.inStoreDirectory( fileSystem, this.storeDir ) );
+        logService = life.add( StoreLogService.inStoreDirectory( fileSystem, this.storeDir ) );
         msgLog = logService.getInternalLog( getClass() );
         storeLocker = new StoreLocker( fileSystem );
         storeLocker.checkLock( this.storeDir );
@@ -256,7 +259,12 @@ public class BatchInserterImpl implements BatchInserter
         boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
         this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
 
-        StoreFactory sf = new StoreFactory( this.storeDir, config, idGeneratorFactory, pageCache, fileSystem,
+        StoreFactory sf = new StoreFactory(
+                this.storeDir,
+                config,
+                idGeneratorFactory,
+                pageCache,
+                fileSystem,
                 logService.getInternalLogProvider() );
 
         if ( dump )

@@ -56,15 +56,16 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.LifecycleException;
-import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
 
@@ -105,9 +106,9 @@ import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.BATCHED;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_ALL;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.kernel.impl.store.record.IndexRule.constraintIndexRule;
 import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.test.AwaitAnswer.afterAwaiting;
 
@@ -798,11 +799,12 @@ public class IndexingServiceTest
                 any( IndexSamplingConfig.class ) ) ).thenReturn( populator );
         data.getsProcessedByStoreScanFrom( storeView );
         when( indexProvider.getOnlineAccessor(
-                        anyLong(), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) ) )
-                .thenReturn( accessor );
+                        anyLong(), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) )
+        ).thenReturn( accessor );
         when( indexProvider.snapshotMetaFiles() ).thenReturn( IteratorUtil.<File>emptyIterator() );
-        when( indexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ) ) )
-                .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
+        when( indexProvider.storeMigrationParticipant(
+                any( FileSystemAbstraction.class ), any( PageCache.class ), any( UpgradableDatabase.class ))
+        ).thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
 
         when( nameLookup.labelGetName( anyInt() ) ).thenAnswer( new NameLookupAnswer( "label" ) );
         when( nameLookup.propertyKeyGetName( anyInt() ) ).thenAnswer( new NameLookupAnswer( "property" ) );

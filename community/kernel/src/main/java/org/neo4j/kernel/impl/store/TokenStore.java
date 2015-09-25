@@ -46,6 +46,12 @@ import static org.neo4j.kernel.impl.store.PropertyStore.decodeString;
 
 public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token> extends AbstractRecordStore<RECORD>
 {
+    public static abstract class Configuration
+        extends AbstractStore.Configuration
+    {
+
+    }
+
     public static final int NAME_STORE_BLOCK_SIZE = 30;
 
     private DynamicStringStore nameStore;
@@ -59,9 +65,11 @@ public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token
             PageCache pageCache,
             LogProvider logProvider,
             DynamicStringStore nameStore,
+            StoreVersionMismatchHandler versionMismatchHandler,
             TokenFactory<TOKEN> tokenFactory )
     {
-        super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider);
+        super( fileName, configuration, idType, idGeneratorFactory, pageCache,
+                logProvider, versionMismatchHandler );
         this.nameStore = nameStore;
         this.tokenFactory = tokenFactory;
     }

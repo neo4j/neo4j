@@ -40,9 +40,10 @@ public abstract class AbstractRecordStore<R extends AbstractBaseRecord> extends 
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            LogProvider logProvider )
+            LogProvider logProvider,
+            StoreVersionMismatchHandler versionMismatchHandler )
     {
-        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider );
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, versionMismatchHandler );
     }
 
     @Override

@@ -40,9 +40,9 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.index.util.FolderLayout;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
@@ -141,9 +141,10 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs, PageCache pageCache )
+    public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs, PageCache pageCache,
+                                                                UpgradableDatabase upgradableDatabase )
     {
-        return new SchemaIndexMigrator( fs, pageCache, new StoreFactory() );
+        return new SchemaIndexMigrator( fs, pageCache, upgradableDatabase );
     }
 
     @Override

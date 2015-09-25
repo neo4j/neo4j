@@ -75,17 +75,24 @@ public class ConsistencyCheckService
         this.timestamp = timestamp;
     }
 
-    public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
-            ProgressMonitorFactory progressFactory, LogProvider logProvider, boolean verbose )
-            throws ConsistencyCheckIncompleteException, IOException
+    public Result runFullConsistencyCheck( File storeDir,
+            Config tuningConfiguration,
+            ProgressMonitorFactory progressFactory,
+            LogProvider logProvider,
+            boolean verbose )
+                    throws ConsistencyCheckIncompleteException, IOException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider,
                 new DefaultFileSystemAbstraction(), verbose );
     }
 
-    public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
-            ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem,
-            boolean verbose ) throws ConsistencyCheckIncompleteException, IOException
+    public Result runFullConsistencyCheck( File storeDir,
+                                           Config tuningConfiguration,
+                                           ProgressMonitorFactory progressFactory,
+                                           LogProvider logProvider,
+                                           FileSystemAbstraction fileSystem,
+                                           boolean verbose )
+                                                   throws ConsistencyCheckIncompleteException, IOException
     {
         Log log = logProvider.getLog( getClass() );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
@@ -111,15 +118,22 @@ public class ConsistencyCheckService
     }
 
     public Result runFullConsistencyCheck( final File storeDir, Config tuningConfiguration,
-            ProgressMonitorFactory progressFactory, final LogProvider logProvider,
-            final FileSystemAbstraction fileSystem, final PageCache pageCache, final boolean verbose )
-            throws ConsistencyCheckIncompleteException
+                                           ProgressMonitorFactory progressFactory,
+                                           final LogProvider logProvider,
+                                           final FileSystemAbstraction fileSystem,
+                                           final PageCache pageCache,
+                                           final boolean verbose )
+                                                   throws ConsistencyCheckIncompleteException
     {
         Log log = logProvider.getLog( getClass() );
         Config consistencyCheckerConfig = tuningConfiguration.with(
                 MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
-        StoreFactory factory = new StoreFactory( storeDir, consistencyCheckerConfig,
-                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
+        StoreFactory factory = new StoreFactory(
+                storeDir,
+                consistencyCheckerConfig,
+                new DefaultIdGeneratorFactory( fileSystem ),
+                pageCache, fileSystem, logProvider
+        );
 
         ConsistencySummaryStatistics summary;
         final File reportFile = chooseReportPath( storeDir, tuningConfiguration );
@@ -131,8 +145,7 @@ public class ConsistencyCheckService
                 try
                 {
                     return new PrintWriter( createOrOpenAsOuputStream( fileSystem, reportFile, true ) );
-                }
-                catch ( IOException e )
+                } catch ( IOException e )
                 {
                     throw new RuntimeException( e );
                 }

@@ -140,8 +140,10 @@ public class TransactionRepresentationCommitProcessIT
         fileSystem = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         storeDir = testDirectory.graphDbDir();
-        StoreFactory storeFactory = new StoreFactory( fileSystem, storeDir, pageCache, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory(
+                fileSystem, storeDir, pageCache, NullLogProvider.getInstance() );
         neoStores = storeFactory.openNeoStores( true );
+
     }
 
     @After

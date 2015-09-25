@@ -35,6 +35,7 @@ public class DynamicStringStore extends AbstractDynamicStore
 {
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "StringPropertyStore";
+    public static final String VERSION = buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
 
     public DynamicStringStore(
             File fileName,
@@ -43,9 +44,11 @@ public class DynamicStringStore extends AbstractDynamicStore
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            int blockSize )
+            StoreVersionMismatchHandler versionMismatchHandler,
+            int blockSizeFromConfiguration )
     {
-        super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, blockSize );
+        super( fileName, configuration, idType, idGeneratorFactory, pageCache,
+                logProvider, versionMismatchHandler, blockSizeFromConfiguration );
     }
 
     @Override
@@ -56,7 +59,7 @@ public class DynamicStringStore extends AbstractDynamicStore
     }
 
     @Override
-    protected String getTypeDescriptor()
+    public String getTypeDescriptor()
     {
         return TYPE_DESCRIPTOR;
     }

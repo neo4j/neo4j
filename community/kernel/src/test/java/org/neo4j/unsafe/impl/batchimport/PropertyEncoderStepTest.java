@@ -58,8 +58,8 @@ public class PropertyEncoderStepTest
     {
         File storeDir = new File( "dir" );
         pageCache = pageCacheRule.getPageCache( fsRule.get() );
-        StoreFactory storeFactory =
-                new StoreFactory( fsRule.get(), storeDir, pageCache, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory(
+                fsRule.get(), storeDir, pageCache, NullLogProvider.getInstance() );
         neoStores = storeFactory.openNeoStores( true );
     }
 

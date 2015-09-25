@@ -309,7 +309,12 @@ public class NodeStoreTest
         File storeDir = new File( "dir" );
         fs.mkdirs( storeDir );
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        StoreFactory factory = new StoreFactory( storeDir, new Config(), idGeneratorFactory, pageCache, fs,
+        StoreFactory factory = new StoreFactory(
+                storeDir,
+                new Config(),
+                idGeneratorFactory,
+                pageCache,
+                fs,
                 NullLogProvider.getInstance() );
         neoStores = factory.openNeoStores( true );
         nodeStore = neoStores.getNodeStore();

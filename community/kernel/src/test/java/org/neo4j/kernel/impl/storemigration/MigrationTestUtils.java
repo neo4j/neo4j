@@ -33,19 +33,18 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
+import org.neo4j.kernel.impl.store.StoreVersionTrailerUtil;
 import org.neo4j.test.Unzip;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
 public class MigrationTestUtils
@@ -84,11 +83,10 @@ public class MigrationTestUtils
             throws IOException
     {
         byte[] versionBytes = UTF8.encode( versionString );
-        try( StoreChannel fileChannel = fileSystem.open( storeFile, "rw" ) )
-        {
-            fileChannel.position( fileSystem.getFileSize( storeFile ) - versionBytes.length );
-            fileChannel.write( ByteBuffer.wrap( versionBytes ) );
-        }
+        StoreChannel fileChannel = fileSystem.open( storeFile, "rw" );
+        fileChannel.position( fileSystem.getFileSize( storeFile ) - versionBytes.length );
+        fileChannel.write( ByteBuffer.wrap( versionBytes ) );
+        fileChannel.close();
     }
 
     /**
@@ -98,15 +96,9 @@ public class MigrationTestUtils
             String suffixToDetermineTruncationLength ) throws IOException
     {
         byte[] versionBytes = UTF8.encode( suffixToDetermineTruncationLength );
-        if ( !fileSystem.fileExists( storeFile ) )
-        {
-            return;
-        }
-        try ( StoreChannel fileChannel = fileSystem.open( storeFile, "rw" ) )
-        {
-            long fileSize = fileSystem.getFileSize( storeFile );
-            fileChannel.truncate( Math.max( 0, fileSize - versionBytes.length ) );
-        }
+        StoreChannel fileChannel = fileSystem.open( storeFile, "rw" );
+        fileChannel.truncate( fileSystem.getFileSize( storeFile ) - versionBytes.length );
+        fileChannel.close();
     }
 
     public static void truncateAllFiles( FileSystemAbstraction fileSystem, File workingDirectory,
@@ -194,36 +186,24 @@ public class MigrationTestUtils
         return Unzip.unzip( Legacy19Store.class, "upgradeTest19Db.zip", targetDir );
     }
 
-    public static boolean allLegacyStoreFilesHaveVersion( FileSystemAbstraction fs, File dir, String version )
-            throws IOException
+    public static boolean allStoreFilesHaveVersion( PageCache pageCache, File workingDirectory,
+            String version ) throws IOException
     {
         final Iterable<StoreFile> storeFilesWithGivenVersions =
                 Iterables.filter( ALL_EXCEPT_COUNTS_STORE, StoreFile.legacyStoreFilesForVersion( version ) );
-        LegacyStoreVersionCheck legacyStoreVersionCheck = new LegacyStoreVersionCheck( fs );
         boolean success = true;
         for ( StoreFile storeFile : storeFilesWithGivenVersions )
         {
-            File file = new File( dir, storeFile.storeFileName() );
-            success &=
-                    legacyStoreVersionCheck.hasVersion( file, version, storeFile.isOptional() ).outcome.isSuccessful();
-        }
-        return success;
-    }
-
-    public static boolean allStoreFilesHaveNoTrailer( FileSystemAbstraction fs, File dir ) throws IOException
-    {
-        final Iterable<StoreFile> storeFilesWithGivenVersions =
-                Iterables.filter( ALL_EXCEPT_COUNTS_STORE, StoreFile.legacyStoreFilesForVersion( ALL_STORES_VERSION ) );
-        LegacyStoreVersionCheck legacyStoreVersionCheck = new LegacyStoreVersionCheck( fs );
-
-        boolean success = true;
-        for ( StoreFile storeFile : storeFilesWithGivenVersions )
-        {
-            File file = new File( dir, storeFile.storeFileName() );
-            StoreVersionCheck.Result result =
-                    legacyStoreVersionCheck.hasVersion( file, ALL_STORES_VERSION, storeFile.isOptional() );
-            success &= result.outcome == Outcome.unexpectedUpgradingStoreVersion ||
-                       result.outcome == Outcome.storeVersionNotFound;
+            String foundVersion;
+            try ( PagedFile pagedFile = pageCache
+                    .map( new File( workingDirectory, storeFile.storeFileName() ), pageCache.pageSize() ) )
+            {
+                foundVersion = StoreVersionTrailerUtil.readTrailer( pagedFile, version );
+            }
+            if ( !version.equals( foundVersion ) )
+            {
+                success = false;
+            }
         }
         return success;
     }
@@ -238,12 +218,6 @@ public class MigrationTestUtils
             }
         }
         return false;
-    }
-
-    public static boolean checkNeoStoreHasLatestVersion( StoreVersionCheck check, File workingDirectory )
-    {
-        File neostoreFile = new File( workingDirectory, MetaDataStore.DEFAULT_NAME );
-        return check.hasVersion( neostoreFile, ALL_STORES_VERSION ).outcome.isSuccessful();
     }
 
     public static void verifyFilesHaveSameContent( FileSystemAbstraction fileSystem, File original, File other )

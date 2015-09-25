@@ -210,8 +210,13 @@ public class NodeCommandTest
         File dir = new File( "dir" );
         fs.get().mkdirs( dir );
         @SuppressWarnings("deprecation")
-        StoreFactory storeFactory = new StoreFactory( dir, new Config(), new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory(
+                dir,
+                new Config(),
+                new DefaultIdGeneratorFactory( fs.get() ),
+                pageCacheRule.getPageCache( fs.get() ),
+                fs.get(),
+                NullLogProvider.getInstance() );
         neoStores = storeFactory.openNeoStores( true );
         nodeStore = neoStores.getNodeStore();
     }

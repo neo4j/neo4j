@@ -56,8 +56,7 @@ import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.lifecycle.LifecycleException;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradingStoreVersionNotFoundException;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.server.Bootstrapper;
@@ -74,6 +73,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -284,10 +284,8 @@ public class StoreUpgradeIntegrationTest
             }
             catch ( RuntimeException ex )
             {
-                assertTrue( ex.getCause() instanceof LifecycleException );
-                Throwable realException = ex.getCause().getCause();
-                assertTrue( Exceptions.contains( realException, StoreFile.NODE_STORE.storeFileName(),
-                        StoreUpgrader.UnexpectedUpgradingStoreVersionException.class ) );
+                assertTrue( Exceptions.contains( ex, StoreFile.NODE_STORE.storeFileName(),
+                        UpgradingStoreVersionNotFoundException.class ) );
             }
         }
     }

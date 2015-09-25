@@ -41,8 +41,8 @@ import static org.neo4j.kernel.impl.locking.LockWrapper.writeLock;
  *
  * @param <Key> a base type for the keys stored in this store.
  */
-@Rotation(/*default strategy:*/Rotation.Strategy.LEFT_RIGHT/*(subclasses can override)*/ )
-@State(/*default strategy:*/State.Strategy.CONCURRENT_HASH_MAP/*(subclasses can override)*/ )
+@Rotation(/*default strategy:*/Rotation.Strategy.LEFT_RIGHT/*(subclasses can override)*/)
+@State(/*default strategy:*/State.Strategy.CONCURRENT_HASH_MAP/*(subclasses can override)*/)
 public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
 {
     private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
@@ -55,7 +55,8 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     final int valueSize;
 
     public AbstractKeyValueStore( FileSystemAbstraction fs, PageCache pages, File base, RotationMonitor monitor,
-            RotationTimerFactory timerFactory, int keySize, int valueSize, HeaderField<?>... headerFields )
+                                  RotationTimerFactory timerFactory, int keySize, int valueSize, HeaderField<?>...
+            headerFields )
     {
         this.keySize = keySize;
         this.valueSize = valueSize;
@@ -125,6 +126,8 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     protected abstract Headers initialHeaders( long version );
 
     protected abstract int compareHeaders( Headers lhs, Headers rhs );
+
+    protected abstract String fileTrailer();
 
     protected boolean include( Key key, ReadableBuffer value )
     {
@@ -198,8 +201,8 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
      * not block updates, it just sorts them into updates that apply before rotation and updates that apply after.
      *
      * @param version the smallest version to include in the rotation. Note that the actual rotated version might be a
-     * later version than this version. The actual rotated version is returned by
-     * {@link PreparedRotation#rotate()}.
+     *                later version than this version. The actual rotated version is returned by
+     *                {@link PreparedRotation#rotate()}.
      */
     protected final PreparedRotation prepareRotation( final long version )
     {
@@ -347,6 +350,12 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
         protected void writeFormatSpecifier( WritableBuffer formatSpecifier )
         {
             AbstractKeyValueStore.this.writeFormatSpecifier( formatSpecifier );
+        }
+
+        @Override
+        protected String fileTrailer()
+        {
+            return AbstractKeyValueStore.this.fileTrailer();
         }
 
         @Override

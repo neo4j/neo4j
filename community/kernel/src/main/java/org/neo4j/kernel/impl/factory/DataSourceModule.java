@@ -70,6 +70,8 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
+import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
+import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -109,7 +111,7 @@ public class DataSourceModule
     public final Supplier<StoreId> storeId;
 
     public DataSourceModule( final GraphDatabaseFacadeFactory.Dependencies dependencies,
-            final PlatformModule platformModule, EditionModule editionModule )
+                             final PlatformModule platformModule, EditionModule editionModule )
     {
         final org.neo4j.kernel.impl.util.Dependencies deps = platformModule.dependencies;
         Config config = platformModule.config;
@@ -136,8 +138,7 @@ public class DataSourceModule
         transactionEventHandlers = new TransactionEventHandlers( nodeActions, relationshipActions,
                 threadToTransactionBridge );
 
-        IndexConfigStore indexStore =
-                life.add( deps.satisfyDependency( new IndexConfigStore( storeDir, fileSystem ) ) );
+        IndexConfigStore indexStore = life.add( deps.satisfyDependency( new IndexConfigStore( storeDir, fileSystem ) ) );
 
         diagnosticsManager.prependProvider( config );
 
@@ -175,12 +176,13 @@ public class DataSourceModule
 
         VisibleMigrationProgressMonitor progressMonitor =
                 new VisibleMigrationProgressMonitor( logging.getInternalLog( StoreMigrator.class ) );
+        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
         storeMigrationProcess.addParticipant(
-                new StoreMigrator( progressMonitor, fileSystem, pageCache, config, logging ) );
+                new StoreMigrator( progressMonitor, fileSystem, pageCache, upgradableDatabase, config, logging ) );
 
         Guard guard = config.get( execution_guard_enabled ) ?
-                      deps.satisfyDependency( new Guard( logging.getInternalLog( Guard.class ) ) ) :
-                      null;
+                deps.satisfyDependency( new Guard( logging.getInternalLog( Guard.class ) ) ) :
+                null;
 
         kernelEventHandlers = new KernelEventHandlers( logging.getInternalLog( KernelEventHandlers.class ) );
 
@@ -271,11 +273,10 @@ public class DataSourceModule
         };
     }
 
-    protected RelationshipProxy.RelationshipActions createRelationshipActions(
-            final GraphDatabaseService graphDatabaseService,
-            final ThreadToStatementContextBridge threadToStatementContextBridge,
-            final NodeManager nodeManager,
-            final RelationshipTypeTokenHolder relationshipTypeTokenHolder )
+    protected RelationshipProxy.RelationshipActions createRelationshipActions( final GraphDatabaseService graphDatabaseService,
+                                                                               final ThreadToStatementContextBridge threadToStatementContextBridge,
+                                                                               final NodeManager nodeManager,
+                                                                               final RelationshipTypeTokenHolder relationshipTypeTokenHolder )
     {
         return new RelationshipProxy.RelationshipActions()
         {
@@ -326,8 +327,8 @@ public class DataSourceModule
     }
 
     protected NodeProxy.NodeActions createNodeActions( final GraphDatabaseService graphDatabaseService,
-            final ThreadToStatementContextBridge threadToStatementContextBridge,
-            final NodeManager nodeManager )
+                                                       final ThreadToStatementContextBridge threadToStatementContextBridge,
+                                                       final NodeManager nodeManager )
     {
         return new NodeProxy.NodeActions()
         {

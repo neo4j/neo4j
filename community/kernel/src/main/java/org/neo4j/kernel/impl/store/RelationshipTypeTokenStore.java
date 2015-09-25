@@ -46,15 +46,16 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            DynamicStringStore nameStore )
+            DynamicStringStore nameStore,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            boolean createIfNotExists )
     {
-        super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
-                new RelationshipTypeToken.Factory() );
+        super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache,
+                logProvider, nameStore, versionMismatchHandler, new RelationshipTypeToken.Factory() );
     }
 
     @Override
-    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, RelationshipTypeTokenRecord record )
-            throws FAILURE
+    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, RelationshipTypeTokenRecord record ) throws FAILURE
     {
         processor.processRelationshipTypeToken( this, record );
     }
