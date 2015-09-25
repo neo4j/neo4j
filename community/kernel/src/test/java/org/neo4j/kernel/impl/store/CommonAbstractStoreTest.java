@@ -115,7 +115,7 @@ public class CommonAbstractStoreTest
         }
 
         @Override
-        protected long findHighIdBackwards() throws IOException
+        public long scanForHighId()
         {
             return 42;
         }

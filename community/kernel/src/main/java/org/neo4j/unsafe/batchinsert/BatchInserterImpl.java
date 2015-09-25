@@ -278,7 +278,6 @@ public class BatchInserterImpl implements BatchInserter
         life.start();
         neoStores = sf.openNeoStores( true );
         neoStores.verifyStoreOk();
-        neoStores.makeStoreOk();
 
         nodeStore = neoStores.getNodeStore();
         relationshipStore = neoStores.getRelationshipStore();
