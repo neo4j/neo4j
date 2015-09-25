@@ -41,6 +41,15 @@ import java.security.PrivilegedExceptionAction;
  */
 public final class UnsafeUtil
 {
+    /**
+     * Whether or not to explicitly dirty the allocated memory. This is off by default.
+     * The {@link UnsafeUtil#allocateMemory(long)} method is not guaranteed to allocate zeroed out memory, but might
+     * often do so by pure chance.
+     * Enabling this feature will make sure that the allocated memory is full of random data, such that we can test
+     * and verify that our code does not assume that memory is clean when allocated.
+     */
+    private static final boolean DIRTY_MEMORY = Boolean.getBoolean( UnsafeUtil.class.getName() + ".DIRTY_MEMORY" );
+
     private static final Unsafe unsafe;
     private static final MethodHandle getAndAddInt;
     private static final MethodHandle getAndSetObject;
@@ -372,7 +381,12 @@ public final class UnsafeUtil
      */
     public static long allocateMemory( long sizeInBytes )
     {
-        return unsafe.allocateMemory( sizeInBytes );
+        final long pointer = unsafe.allocateMemory( sizeInBytes );
+        if ( DIRTY_MEMORY )
+        {
+            setMemory( pointer, sizeInBytes, (byte) 0xA5 );
+        }
+        return pointer;
     }
 
     /**

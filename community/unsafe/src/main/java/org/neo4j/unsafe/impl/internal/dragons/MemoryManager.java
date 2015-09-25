@@ -29,6 +29,9 @@ package org.neo4j.unsafe.impl.internal.dragons;
  */
 public final class MemoryManager
 {
+    /**
+     * The amount of memory, in bytes, to grab in each Slab.
+     */
     private static final long GRAB_SIZE = Integer.getInteger(
             MemoryManager.class.getName() + ".GRAB_SIZE", 32 * 1024 * 1024 ); // 32 MiB
 
