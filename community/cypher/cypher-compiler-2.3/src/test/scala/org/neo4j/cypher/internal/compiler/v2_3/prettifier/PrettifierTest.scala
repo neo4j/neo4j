@@ -45,6 +45,18 @@ class PrettifierTest extends CypherFunSuite {
     )
   }
 
+  test("should not break STARTS WITH ") {
+    actual("return 'apartment' starts with 'apa' as x") should equal(
+      expected("RETURN 'apartment' STARTS WITH 'apa' AS x")
+    )
+  }
+
+  test("should not break ENDS WITH ") {
+    actual("return 'apartment' ends with 'apa' as x") should equal(
+      expected("RETURN 'apartment' ENDS WITH 'apa' AS x")
+    )
+  }
+
   test("should not break CONSTRAINT ON") {
     actual("create constraint on (person:Person) assert person.age is unique") should equal(
       expected("CREATE CONSTRAINT ON (person:Person) ASSERT person.age IS UNIQUE")
