@@ -39,14 +39,14 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord, Token>
     public static final int RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
 
     public LabelTokenStore(
-            File fileName,
+            File file,
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
             DynamicStringStore nameStore )
     {
-        super( fileName, config, IdType.LABEL_TOKEN, idGeneratorFactory, pageCache,
+        super( file, config, IdType.LABEL_TOKEN, idGeneratorFactory, pageCache,
                 logProvider, nameStore, new Token.Factory() );
     }
 
