@@ -25,7 +25,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
-import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -41,7 +41,7 @@ public class CurrentDatabase
 
     static
     {
-        fileNamesToTypeDescriptors.put( MetaDataStore.DEFAULT_NAME, MetaDataStore.TYPE_DESCRIPTOR );
+        fileNamesToTypeDescriptors.put( NeoStore.DEFAULT_NAME, NeoStore.TYPE_DESCRIPTOR );
         fileNamesToTypeDescriptors.put( "neostore.nodestore.db", NodeStore.TYPE_DESCRIPTOR );
         fileNamesToTypeDescriptors.put( "neostore.propertystore.db", PropertyStore.TYPE_DESCRIPTOR );
         fileNamesToTypeDescriptors.put( "neostore.propertystore.db.arrays", DynamicArrayStore.TYPE_DESCRIPTOR );

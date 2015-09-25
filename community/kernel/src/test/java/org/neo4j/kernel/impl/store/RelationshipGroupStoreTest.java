@@ -45,7 +45,8 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.PageCacheRule;
@@ -135,20 +136,20 @@ public class RelationshipGroupStoreTest
     {
         int expectedThreshold = customThreshold != null ? customThreshold : defaultThreshold;
         StoreFactory factory = factory( customThreshold );
-        NeoStores neoStores = factory.openNeoStores( true );
-        assertEquals( expectedThreshold, neoStores.getRelationshipGroupStore().getDenseNodeThreshold() );
-        neoStores.close();
+        NeoStore neoStore = factory.newNeoStore( true );
+        assertEquals( expectedThreshold, neoStore.getDenseNodeThreshold() );
+        neoStore.close();
 
         // Next time we open it it should be the same
-        neoStores = factory.openNeoStores( false );
-        assertEquals( expectedThreshold, neoStores.getRelationshipGroupStore().getDenseNodeThreshold() );
-        neoStores.close();
+        neoStore = factory.newNeoStore( false );
+        assertEquals( expectedThreshold, neoStore.getDenseNodeThreshold() );
+        neoStore.close();
 
         // Even if we open with a different config setting it should just ignore it
         factory = factory( 999999 );
-        neoStores = factory.openNeoStores( false );
-        assertEquals( expectedThreshold, neoStores.getRelationshipGroupStore().getDenseNodeThreshold() );
-        neoStores.close();
+        neoStore = factory.newNeoStore( false );
+        assertEquals( expectedThreshold, neoStore.getDenseNodeThreshold() );
+        neoStore.close();
     }
 
     private StoreFactory factory( Integer customThreshold )
@@ -163,13 +164,15 @@ public class RelationshipGroupStoreTest
         {
             customConfig.put( GraphDatabaseSettings.dense_node_threshold.name(), "" + customThreshold );
         }
+        Monitors monitors = new Monitors();
         return new StoreFactory(
                 directory,
                 config( customConfig ),
                 new DefaultIdGeneratorFactory( fs ),
                 pageCache,
                 fs,
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(),
+                monitors );
     }
 
     private Config config( Map<String, String> customConfig )
@@ -222,17 +225,17 @@ public class RelationshipGroupStoreTest
             tx.success();
         }
 
-        NeoStores neoStores = db.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get();
-        NodeStore nodeStore = neoStores.getNodeStore();
+        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
+        NodeStore nodeStore = neoStore.getNodeStore();
         NodeRecord nodeRecord = nodeStore.getRecord( node.getId() );
         long group = nodeRecord.getNextRel();
-        RelationshipGroupStore groupStore = neoStores.getRelationshipGroupStore();
+        RelationshipGroupStore groupStore = neoStore.getRelationshipGroupStore();
         RelationshipGroupRecord groupRecord = groupStore.getRecord( group );
         assertEquals( -1, groupRecord.getNext() );
         assertEquals( -1, groupRecord.getPrev() );
-        assertRelationshipChain( neoStores.getRelationshipStore(), node, groupRecord.getFirstOut(), rel1.getId(), rel4.getId() );
-        assertRelationshipChain( neoStores.getRelationshipStore(), node, groupRecord.getFirstIn(), rel2.getId(), rel5.getId() );
-        assertRelationshipChain( neoStores.getRelationshipStore(), node, groupRecord.getFirstLoop(), rel3.getId(), rel6.getId() );
+        assertRelationshipChain( neoStore.getRelationshipStore(), node, groupRecord.getFirstOut(), rel1.getId(), rel4.getId() );
+        assertRelationshipChain( neoStore.getRelationshipStore(), node, groupRecord.getFirstIn(), rel2.getId(), rel5.getId() );
+        assertRelationshipChain( neoStore.getRelationshipStore(), node, groupRecord.getFirstLoop(), rel3.getId(), rel6.getId() );
     }
 
     @Test
@@ -256,19 +259,19 @@ public class RelationshipGroupStoreTest
             tx.success();
         }
 
-        NeoStores neoStores = db.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get();
-        NodeStore nodeStore = neoStores.getNodeStore();
+        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
+        NodeStore nodeStore = neoStore.getNodeStore();
         NodeRecord nodeRecord = nodeStore.getRecord( node.getId() );
         long group = nodeRecord.getNextRel();
 
-        RelationshipGroupStore groupStore = neoStores.getRelationshipGroupStore();
+        RelationshipGroupStore groupStore = neoStore.getRelationshipGroupStore();
         RelationshipGroupRecord groupRecord = groupStore.getRecord( group );
         assertFalse( groupRecord.getNext() == -1 );
-        assertRelationshipChain( neoStores.getRelationshipStore(), node, groupRecord.getFirstOut(), rel1.getId(), rel2.getId(), rel3.getId() );
+        assertRelationshipChain( neoStore.getRelationshipStore(), node, groupRecord.getFirstOut(), rel1.getId(), rel2.getId(), rel3.getId() );
 
         RelationshipGroupRecord otherGroupRecord = groupStore.getRecord( groupRecord.getNext() );
         assertEquals( -1, otherGroupRecord.getNext() );
-        assertRelationshipChain( neoStores.getRelationshipStore(), node, otherGroupRecord.getFirstOut(), rel4.getId(), rel5.getId(), rel6.getId() );
+        assertRelationshipChain( neoStore.getRelationshipStore(), node, otherGroupRecord.getFirstOut(), rel4.getId(), rel5.getId(), rel6.getId() );
     }
 
     @Test
@@ -289,12 +292,12 @@ public class RelationshipGroupStoreTest
         tx.success();
         tx.close();
 
-        NeoStores neoStores = db.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get();
-        NodeStore nodeStore = neoStores.getNodeStore();
+        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
+        NodeStore nodeStore = neoStore.getNodeStore();
         NodeRecord nodeRecord = nodeStore.getRecord( node.getId() );
         long group = nodeRecord.getNextRel();
 
-        RelationshipGroupStore groupStore = neoStores.getRelationshipGroupStore();
+        RelationshipGroupStore groupStore = neoStore.getRelationshipGroupStore();
         RelationshipGroupRecord groupRecord = groupStore.getRecord( group );
         assertFalse( groupRecord.getNext() == -1 );
         RelationshipGroupRecord otherGroupRecord = groupStore.getRecord( groupRecord.getNext() );
@@ -311,9 +314,9 @@ public class RelationshipGroupStoreTest
         pageCache = pageCacheRule.withInconsistentReads( pageCache, nextReadIsInconsistent );
         StoreFactory factory = factory( null, pageCache );
 
-        try ( NeoStores neoStores = factory.openNeoStores( true ) )
+        try ( NeoStore neoStore = factory.newNeoStore( true ) )
         {
-            RelationshipGroupStore relationshipGroupStore = neoStores.getRelationshipGroupStore();
+            RelationshipGroupStore relationshipGroupStore = neoStore.getRelationshipGroupStore();
             RelationshipGroupRecord record = new RelationshipGroupRecord( 1, 2, 3, 4, 5, 6, true );
             relationshipGroupStore.updateRecord( record );
             nextReadIsInconsistent.set( true );

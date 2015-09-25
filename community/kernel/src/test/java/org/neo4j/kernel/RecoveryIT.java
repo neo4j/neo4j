@@ -34,7 +34,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Format;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.test.TargetDirectory;
 
@@ -66,8 +66,8 @@ public class RecoveryIT
         File restoreDbStoreDir = copyTransactionLogs();
 
         GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir );
-        NeoStores neoStore =
-                ((GraphDatabaseAPI) recoveredDatabase).getDependencyResolver().resolveDependency( NeoStores.class );
+        NeoStore neoStore =
+                ((GraphDatabaseAPI) recoveredDatabase).getDependencyResolver().resolveDependency( NeoStore.class );
         assertEquals( numberOfNodes, neoStore.getNodeStore().getHighId() );
 
         database.shutdown();

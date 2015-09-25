@@ -79,7 +79,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 GraphDatabaseSettings.class );
 
         StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(), new Monitors() );
 
         Locks locks = mock( Locks.class );
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );

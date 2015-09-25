@@ -36,6 +36,8 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.test.TestGraphDatabaseBuilder;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -158,5 +160,10 @@ public abstract class KernelIntegrationTest
     {
         stopDb();
         startDb();
+    }
+
+    protected NeoStore neoStore()
+    {
+        return db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
     }
 }

@@ -22,20 +22,20 @@ package org.neo4j.kernel.impl.transaction.log.rotation;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
 public class StoreFlusher
 {
-    private final NeoStores neoStores;
+    private final TransactionIdStore transactionIdStore;
     private final IndexingService indexingService;
     private final LabelScanStore labelScanStore;
     private final Iterable<IndexImplementation> indexProviders;
 
-    public StoreFlusher( NeoStores neoStores, IndexingService indexingService,
+    public StoreFlusher( TransactionIdStore transactionIdStore, IndexingService indexingService,
             LabelScanStore labelScanStore,
             Iterable<IndexImplementation> indexProviders )
     {
-        this.neoStores = neoStores;
+        this.transactionIdStore = transactionIdStore;
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
         this.indexProviders = indexProviders;
@@ -49,6 +49,6 @@ public class StoreFlusher
         {
             index.force();
         }
-        neoStores.flush();
+        transactionIdStore.flush();
     }
 }

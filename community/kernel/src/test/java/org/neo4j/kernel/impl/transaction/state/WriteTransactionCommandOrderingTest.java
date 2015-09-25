@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.junit.Test;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,9 +27,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.Test;
+
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RecordChanges.RecordChange;
@@ -64,7 +64,7 @@ public class WriteTransactionCommandOrderingTest
     private final RecordingRelationshipStore relationshipStore = new RecordingRelationshipStore( currentRecording );
     private final RecordingNodeStore nodeStore = new RecordingNodeStore( currentRecording );
     private final RecordingPropertyStore propertyStore = new RecordingPropertyStore( currentRecording );
-    private final NeoStores store = mock( NeoStores.class );
+    private final NeoStore store = mock( NeoStore.class );
 
     public WriteTransactionCommandOrderingTest()
     {
@@ -156,7 +156,7 @@ public class WriteTransactionCommandOrderingTest
         PhysicalTransactionRepresentation commands = transactionRepresentationOf( tx );
 
         // Then
-        commands.accept( new CommandHandler.HandlerVisitor( new OrderVerifyingCommandHandler() ) );
+        commands.accept( new NeoCommandHandler.HandlerVisitor( new OrderVerifyingCommandHandler() ) );
     }
 
     private PhysicalTransactionRepresentation transactionRepresentationOf( TransactionRecordState tx )
@@ -225,7 +225,7 @@ public class WriteTransactionCommandOrderingTest
         when( schemaRuleChanges.changes() ).thenReturn(
                 Collections.<RecordProxy<Long,Collection<DynamicRecord>,SchemaRule>>emptyList() );
 
-        return new TransactionRecordState( mock( NeoStores.class ), mock( IntegrityValidator.class ), context );
+        return new TransactionRecordState( mock( NeoStore.class ), mock( IntegrityValidator.class ), context );
 
 //
 //        Command.PropertyCommand updatedProp = new Command.PropertyCommand();
@@ -255,7 +255,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingPropertyStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, NullLogProvider.getInstance(), null, null, null, null );
+            super( null, new Config(), null, null, null, NullLogProvider.getInstance(), null, null, null, null, null );
             this.currentRecording = currentRecording;
         }
 
@@ -266,7 +266,7 @@ public class WriteTransactionCommandOrderingTest
         }
 
         @Override
-        protected void checkStorage( boolean createIfNotExists )
+        protected void checkStorage()
         {
         }
 
@@ -287,7 +287,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingNodeStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, NullLogProvider.getInstance(), null, null );
+            super( null, new Config(), null, null, null, NullLogProvider.getInstance(), null, null, null );
             this.currentRecording = currentRecording;
         }
 
@@ -298,7 +298,7 @@ public class WriteTransactionCommandOrderingTest
         }
 
         @Override
-        protected void checkStorage( boolean createIfNotExists )
+        protected void checkStorage()
         {
         }
 
@@ -327,7 +327,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingRelationshipStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, NullLogProvider.getInstance(), null );
+            super( null, new Config(), null, null, null, NullLogProvider.getInstance(), null, null );
             this.currentRecording = currentRecording;
         }
 
@@ -338,7 +338,7 @@ public class WriteTransactionCommandOrderingTest
         }
 
         @Override
-        protected void checkStorage( boolean createIfNotExists )
+        protected void checkStorage()
         {
         }
 
@@ -353,7 +353,7 @@ public class WriteTransactionCommandOrderingTest
         }
     }
 
-    private static class OrderVerifyingCommandHandler extends CommandHandler.Adapter
+    private static class OrderVerifyingCommandHandler extends NeoCommandHandler.Adapter
     {
         private boolean nodeVisited;
         private boolean relationshipVisited;

@@ -52,9 +52,10 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -126,13 +127,15 @@ public class ConsistencyCheckService
                                                    throws ConsistencyCheckIncompleteException
     {
         Log log = logProvider.getLog( getClass() );
+        Monitors monitors = new Monitors();
         Config consistencyCheckerConfig = tuningConfiguration.with(
                 MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
         StoreFactory factory = new StoreFactory(
                 storeDir,
                 consistencyCheckerConfig,
                 new DefaultIdGeneratorFactory( fileSystem ),
-                pageCache, fileSystem, logProvider
+                pageCache, fileSystem, logProvider,
+                monitors
         );
 
         ConsistencySummaryStatistics summary;
@@ -152,13 +155,13 @@ public class ConsistencyCheckService
             }
         } ) );
 
-        try ( NeoStores neoStores = factory.openNeoStores( false ) )
+        try ( NeoStore neoStore = factory.newNeoStore( false ) )
         {
             LabelScanStore labelScanStore = null;
             try
             {
                 labelScanStore = new LuceneLabelScanStoreBuilder(
-                        storeDir, neoStores, fileSystem, logProvider ).build();
+                        storeDir, neoStore, fileSystem, logProvider ).build();
                 SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
                         fileSystem,
                         DirectoryFactory.PERSISTENT,
@@ -171,12 +174,12 @@ public class ConsistencyCheckService
                 if ( verbose )
                 {
                     statistics = new VerboseStatistics( stats, new DefaultCounts( numberOfThreads ), log );
-                    storeAccess = new AccessStatsKeepingStoreAccess( neoStores, stats );
+                    storeAccess = new AccessStatsKeepingStoreAccess( neoStore, stats );
                 }
                 else
                 {
                     statistics = Statistics.NONE;
-                    storeAccess = new StoreAccess( neoStores );
+                    storeAccess = new StoreAccess( neoStore );
                 }
                 storeAccess.initialize();
                 DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes );

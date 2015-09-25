@@ -41,8 +41,7 @@ import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.NoOpClient;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -347,7 +346,7 @@ public class KernelTransactionImplementationTest
             // WHEN committing it at a later point
             clock.forward( 5, MILLISECONDS );
             // ...and simulating some other transaction being committed
-            when( metaDataStore.getLastCommittedTransactionId() ).thenReturn( 7L );
+            when( neoStore.getLastCommittedTransactionId() ).thenReturn( 7L );
             transaction.success();
         }
 
@@ -357,8 +356,7 @@ public class KernelTransactionImplementationTest
         assertEquals( startingTime+5, commitProcess.transaction.getTimeCommitted() );
     }
 
-    private final NeoStores neoStores = mock( NeoStores.class );
-    private final MetaDataStore metaDataStore = mock( MetaDataStore.class );
+    private final NeoStore neoStore = mock( NeoStore.class );
     private final TransactionHooks hooks = new TransactionHooks();
     private final TransactionRecordState recordState = mock( TransactionRecordState.class );
     private final LegacyIndexTransactionState legacyIndexState = mock( LegacyIndexTransactionState.class );
@@ -374,7 +372,6 @@ public class KernelTransactionImplementationTest
     {
         when( headerInformation.getAdditionalHeader() ).thenReturn( new byte[0] );
         when( headerInformationFactory.create() ).thenReturn( headerInformation );
-        when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
     }
 
     private KernelTransactionImplementation newTransaction()
@@ -383,7 +380,7 @@ public class KernelTransactionImplementationTest
         when(readLayer.acquireStatement()).thenReturn( mock(StoreStatement.class) );
 
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
-                null, null, null, null, null, recordState, null, neoStores, new NoOpClient(),
+                null, null, null, null, null, recordState, null, neoStore, new NoOpClient(),
                 hooks, null, headerInformationFactory, commitProcess, transactionMonitor, readLayer, legacyIndexState,
                 mock( Pool.class ), mock(ConstraintSemantics.class), clock, TransactionTracer.NULL, new ProcedureCache() );
         transaction.initialize( 0 );

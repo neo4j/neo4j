@@ -20,7 +20,6 @@
 package org.neo4j.kernel.ha.management;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import javax.management.NotCompliantMBeanException;
@@ -32,8 +31,8 @@ import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.MetaDataStore.Position;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.management.BranchedStore;
 import org.neo4j.management.BranchedStoreInfo;
 
@@ -118,17 +117,10 @@ public final class BranchedStoreBean extends ManagementBeanProvider
 
         private BranchedStoreInfo parseBranchedStore( File branchDirectory )
         {
-            try
-            {
-                final File neoStoreFile = new File( branchDirectory, MetaDataStore.DEFAULT_NAME );
-                long txId = MetaDataStore.getRecord( pageCache, neoStoreFile, Position.LAST_TRANSACTION_ID );
-                long timestamp = Long.parseLong( branchDirectory.getName() );
-                return new BranchedStoreInfo( branchDirectory.getName(), txId, timestamp );
-            }
-            catch ( IOException e )
-            {
-                throw new IllegalStateException( "Cannot read branched neostore", e );
-            }
+            final File neoStoreFile = new File( branchDirectory, NeoStore.DEFAULT_NAME );
+            long txId = NeoStore.getRecord( pageCache, neoStoreFile, Position.LAST_TRANSACTION_ID );
+            long timestamp = Long.parseLong( branchDirectory.getName() );
+            return new BranchedStoreInfo( branchDirectory.getName(), txId, timestamp );
         }
 
         private PageCache getPageCache( ManagementData management)

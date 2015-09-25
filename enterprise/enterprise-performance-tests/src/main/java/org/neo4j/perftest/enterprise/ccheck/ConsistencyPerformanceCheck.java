@@ -38,9 +38,10 @@ import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.perftest.enterprise.generator.DataGenerator;
@@ -139,22 +140,24 @@ public class ConsistencyPerformanceCheck
 
     private static DirectStoreAccess createScannableStores( File storeDir, Config tuningConfiguration )
     {
+        Monitors monitors = new Monitors();
         StoreFactory factory = new StoreFactory(
                 storeDir,
                 tuningConfiguration,
                 new DefaultIdGeneratorFactory( fileSystem ),
                 pageCache,
                 fileSystem,
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(),
+                monitors );
 
-        NeoStores neoStores = factory.openNeoStores( true );
+        NeoStore neoStore = factory.newNeoStore( true );
 
         SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
                 fileSystem,
                 DirectoryFactory.PERSISTENT,
                 storeDir );
-        return new DirectStoreAccess( new StoreAccess( neoStores ).initialize(),
-                new LuceneLabelScanStoreBuilder( storeDir, neoStores, fileSystem, NullLogProvider.getInstance() ).build(), indexes );
+        return new DirectStoreAccess( new StoreAccess( neoStore ).initialize(),
+                new LuceneLabelScanStoreBuilder( storeDir, neoStore, fileSystem, NullLogProvider.getInstance() ).build(), indexes );
     }
 
     private static Config buildTuningConfiguration( Configuration configuration )

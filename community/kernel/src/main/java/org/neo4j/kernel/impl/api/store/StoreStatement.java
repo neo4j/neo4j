@@ -25,7 +25,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.util.InstanceCache;
  * The cursors call the release methods, so there is no need for manual release, only
  * closing those cursor.
  * <p/>
- * {@link NeoStores} caches one of these per thread, so that they can be reused between statements/transactions.
+ * {@link NeoStore} caches one of these per thread, so that they can be reused between statements/transactions.
  */
 public class StoreStatement
         implements AutoCloseable
@@ -46,18 +46,18 @@ public class StoreStatement
     private InstanceCache<StoreSingleRelationshipCursor> singleRelationshipCursor;
     private InstanceCache<StoreIteratorRelationshipCursor> iteratorRelationshipCursor;
 
-    private NeoStores neoStores;
+    private NeoStore neoStore;
 
-    public StoreStatement( NeoStores neoStores )
+    public StoreStatement( NeoStore neoStore )
     {
-        this.neoStores = neoStores;
+        this.neoStore = neoStore;
 
         singleNodeCursor = new InstanceCache<StoreSingleNodeCursor>()
         {
             @Override
             protected StoreSingleNodeCursor create()
             {
-                return new StoreSingleNodeCursor( new NodeRecord( -1 ), StoreStatement.this.neoStores,
+                return new StoreSingleNodeCursor( new NodeRecord( -1 ), StoreStatement.this.neoStore,
                         StoreStatement.this, this );
             }
         };
@@ -66,7 +66,7 @@ public class StoreStatement
             @Override
             protected StoreIteratorNodeCursor create()
             {
-                return new StoreIteratorNodeCursor( new NodeRecord( -1 ), StoreStatement.this.neoStores,
+                return new StoreIteratorNodeCursor( new NodeRecord( -1 ), StoreStatement.this.neoStore,
                         StoreStatement.this, this );
             }
         };
@@ -76,7 +76,7 @@ public class StoreStatement
             protected StoreSingleRelationshipCursor create()
             {
                 return new StoreSingleRelationshipCursor( new RelationshipRecord( -1 ),
-                        StoreStatement.this.neoStores, StoreStatement.this, this );
+                        StoreStatement.this.neoStore, StoreStatement.this, this );
             }
         };
         iteratorRelationshipCursor = new InstanceCache<StoreIteratorRelationshipCursor>()
@@ -85,7 +85,7 @@ public class StoreStatement
             protected StoreIteratorRelationshipCursor create()
             {
                 return new StoreIteratorRelationshipCursor( new RelationshipRecord( -1 ),
-                        StoreStatement.this.neoStores,
+                        StoreStatement.this.neoStore,
                         StoreStatement.this, this );
             }
         };
@@ -93,36 +93,36 @@ public class StoreStatement
 
     public Cursor<NodeItem> acquireSingleNodeCursor( long nodeId )
     {
-        neoStores.assertOpen();
+        neoStore.assertOpen();
         return singleNodeCursor.get().init( nodeId );
     }
 
     public Cursor<NodeItem> acquireIteratorNodeCursor( PrimitiveLongIterator nodeIdIterator )
     {
-        neoStores.assertOpen();
+        neoStore.assertOpen();
         return iteratorNodeCursor.get().init( nodeIdIterator );
     }
 
     public Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relId )
     {
-        neoStores.assertOpen();
+        neoStore.assertOpen();
         return singleRelationshipCursor.get().init( relId );
     }
 
     public Cursor<RelationshipItem> acquireIteratorRelationshipCursor( PrimitiveLongIterator iterator )
     {
-        neoStores.assertOpen();
+        neoStore.assertOpen();
         return iteratorRelationshipCursor.get().init( iterator );
     }
 
     public Cursor<NodeItem> nodesGetAllCursor()
     {
-        return acquireIteratorNodeCursor( new AllStoreIdIterator( neoStores.getNodeStore() ) );
+        return acquireIteratorNodeCursor( new AllStoreIdIterator( neoStore.getNodeStore() ) );
     }
 
     public Cursor<RelationshipItem> relationshipsGetAllCursor()
     {
-        return acquireIteratorRelationshipCursor( new AllStoreIdIterator( neoStores.getRelationshipStore() ) );
+        return acquireIteratorRelationshipCursor( new AllStoreIdIterator( neoStore.getRelationshipStore() ) );
     }
 
     @Override

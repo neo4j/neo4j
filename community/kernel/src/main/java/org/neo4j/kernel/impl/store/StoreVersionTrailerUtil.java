@@ -36,7 +36,7 @@ public abstract class StoreVersionTrailerUtil
      * @return The offset of the trailer, or -1 if no trailer was found
      * @throws IOException
      */
-    public static long getTrailerPosition( PagedFile pagedFile, String expectedTrailer ) throws IOException
+    public static long getTrailerOffset( PagedFile pagedFile, String expectedTrailer ) throws IOException
     {
         int trailerPositionRelativeToFirstPageTrailerMightBeIn;
         int pageSize = pagedFile.pageSize();

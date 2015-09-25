@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -48,7 +48,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper implements Cursor<NodeItem>, NodeItem
 {
     protected final NodeRecord nodeRecord;
-    protected final NeoStores neoStores;
+    protected final NeoStore neoStore;
     protected StoreStatement storeStatement;
 
     private InstanceCache<StoreLabelCursor> labelCursor;
@@ -58,11 +58,11 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
     private InstanceCache<StorePropertyCursor> allPropertyCursor;
 
     public StoreAbstractNodeCursor( NodeRecord nodeRecord,
-            final NeoStores neoStores,
+            final NeoStore neoStore,
             final StoreStatement storeStatement )
     {
         this.nodeRecord = nodeRecord;
-        this.neoStores = neoStores;
+        this.neoStore = neoStore;
         this.storeStatement = storeStatement;
 
         labelCursor = new InstanceCache<StoreLabelCursor>()
@@ -87,7 +87,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
             protected StoreNodeRelationshipCursor create()
             {
                 return new StoreNodeRelationshipCursor( new RelationshipRecord( -1 ),
-                        neoStores,
+                        neoStore,
                         new RelationshipGroupRecord( -1, -1 ), storeStatement, this );
             }
         };
@@ -96,7 +96,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
             @Override
             protected StoreSinglePropertyCursor create()
             {
-                return new StoreSinglePropertyCursor( neoStores.getPropertyStore(), this );
+                return new StoreSinglePropertyCursor( neoStore.getPropertyStore(), this );
             }
         };
         allPropertyCursor = new InstanceCache<StorePropertyCursor>()
@@ -104,7 +104,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
             @Override
             protected StorePropertyCursor create()
             {
-                return new StorePropertyCursor( neoStores.getPropertyStore(), this );
+                return new StorePropertyCursor( neoStore.getPropertyStore(), this );
             }
         };
 
@@ -125,13 +125,13 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
     @Override
     public Cursor<LabelItem> labels()
     {
-        return labelCursor.get().init( parseLabelsField( nodeRecord ).get( neoStores.getNodeStore() ) );
+        return labelCursor.get().init( parseLabelsField( nodeRecord ).get( neoStore.getNodeStore() ) );
     }
 
     @Override
     public Cursor<LabelItem> label( int labelId )
     {
-        return singleLabelCursor.get().init( parseLabelsField( nodeRecord ).get( neoStores.getNodeStore() ), labelId );
+        return singleLabelCursor.get().init( parseLabelsField( nodeRecord ).get( neoStore.getNodeStore() ), labelId );
     }
 
     @Override
@@ -178,7 +178,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
                         return false;
                     }
 
-                    RelationshipGroupRecord group = neoStores.getRelationshipGroupStore().getRecord( groupId );
+                    RelationshipGroupRecord group = neoStore.getRelationshipGroupStore().getRecord( groupId );
                     try
                     {
                         value.setValue( group.getType() );
@@ -251,7 +251,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
             long count = 0;
             while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                RelationshipGroupRecord group = neoStores.getRelationshipGroupStore().getRecord( groupId );
+                RelationshipGroupRecord group = neoStore.getRelationshipGroupStore().getRecord( groupId );
                 count += nodeDegreeByDirection( group, direction );
                 groupId = group.getNext();
             }
@@ -279,7 +279,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
             long groupId = nodeRecord.getNextRel();
             while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                RelationshipGroupRecord group = neoStores.getRelationshipGroupStore().getRecord( groupId );
+                RelationshipGroupRecord group = neoStore.getRelationshipGroupStore().getRecord( groupId );
                 if ( group.getType() == relType )
                 {
                     return (int) nodeDegreeByDirection( group, direction );
@@ -364,7 +364,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
         {
             return 0;
         }
-        RelationshipRecord record = neoStores.getRelationshipStore().getRecord( relationshipId );
+        RelationshipRecord record = neoStore.getRelationshipStore().getRecord( relationshipId );
         if ( record.getFirstNode() == nodeRecord.getId() )
         {
             return record.getFirstPrevRel();
@@ -478,7 +478,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
         {
             if ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                RelationshipGroupRecord group = neoStores.getRelationshipGroupStore().getRecord( groupId );
+                RelationshipGroupRecord group = neoStore.getRelationshipGroupStore().getRecord( groupId );
                 this.type = group.getType();
                 long loop = countByFirstPrevPointer( group.getFirstLoop() );
                 outgoing = countByFirstPrevPointer( group.getFirstOut() ) + loop;

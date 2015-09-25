@@ -21,34 +21,34 @@ package org.neo4j.kernel.ha.transaction;
 
 import org.neo4j.function.Supplier;
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
 public class OnDiskLastTxIdGetter implements LastTxIdGetter
 {
-    private final Supplier<NeoStores> neoStoresSupplier;
+    private final Supplier<NeoStore> neoStoreSupplier;
 
-    public OnDiskLastTxIdGetter( Supplier<NeoStores> neoStoresSupplier )
+    public OnDiskLastTxIdGetter( Supplier<NeoStore> neoStoreSupplier )
     {
-        this.neoStoresSupplier = neoStoresSupplier;
+        this.neoStoreSupplier = neoStoreSupplier;
     }
 
     @Override
     public long getLastTxId()
     {
-        TransactionIdStore neoStore = getNeoStores().getMetaDataStore();
+        TransactionIdStore neoStore = getNeoStore();
         return neoStore.getLastCommittedTransactionId();
     }
 
-    private NeoStores getNeoStores()
+    private NeoStore getNeoStore()
     {
-        // Note that it is important that we resolve the NeoStores dependency anew every
+        // Note that it is important that we resolve the NeoStore dependency anew every
         // time we want to read the last transaction id.
         // The reason is that a mode switch can stop and restart the database innards,
-        // leaving us with a stale NeoStores, not connected to a working page cache,
+        // leaving us with a stale NeoStore, not connected to a working page cache,
         // if we cache it.
         // We avoid this problem by simply not caching it, and instead looking it up
         // every time.
-        return neoStoresSupplier.get();
+        return neoStoreSupplier.get();
     }
 }

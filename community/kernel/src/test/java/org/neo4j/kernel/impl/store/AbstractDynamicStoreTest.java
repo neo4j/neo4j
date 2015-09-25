@@ -34,6 +34,7 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -43,8 +44,6 @@ import static org.junit.Assert.assertTrue;
 
 public class AbstractDynamicStoreTest
 {
-    private static final int BLOCK_SIZE = 60;
-
     @Rule
     public final EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
     @Rule
@@ -63,7 +62,7 @@ public class AbstractDynamicStoreTest
         try
         {
             ByteBuffer buffer = ByteBuffer.allocate( 4 );
-            buffer.putInt( BLOCK_SIZE );
+            buffer.putInt( 60 );
             buffer.flip();
             channel.write( buffer );
         }
@@ -77,7 +76,8 @@ public class AbstractDynamicStoreTest
     public void shouldRecognizeDesignatedInUseBit() throws Exception
     {
         // GIVEN
-        try ( AbstractDynamicStore store = newTestableDynamicStore() )
+        AbstractDynamicStore store = newTestableDynamicStore();
+        try
         {
             // WHEN
             byte otherBitsInTheInUseByte = 0;
@@ -88,6 +88,10 @@ public class AbstractDynamicStoreTest
                 otherBitsInTheInUseByte <<= 1;
                 otherBitsInTheInUseByte |= 1;
             }
+        }
+        finally
+        {
+            store.close();
         }
     }
 
@@ -100,15 +104,16 @@ public class AbstractDynamicStoreTest
     private AbstractDynamicStore newTestableDynamicStore()
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        AbstractDynamicStore store = new AbstractDynamicStore(
+        return new AbstractDynamicStore(
                 fileName,
                 new Config(),
                 IdType.ARRAY_BLOCK,
                 idGeneratorFactory,
                 pageCache,
+                fs,
                 NullLogProvider.getInstance(),
                 StoreVersionMismatchHandler.ALLOW_OLD_VERSION,
-                BLOCK_SIZE )
+                new Monitors() )
         {
             @Override
             public void accept( Processor processor, DynamicRecord record )
@@ -121,7 +126,5 @@ public class AbstractDynamicStoreTest
                 return "TestDynamicStore";
             }
         };
-        store.initialise( true );
-        return store;
     }
 }

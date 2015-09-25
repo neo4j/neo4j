@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.api.CommandApplierFacade;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -43,10 +43,11 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
@@ -59,8 +60,8 @@ public class ApplyRecoveredTransactionsTest
     public void shouldSetCorrectHighIdWhenApplyingExternalTransactions() throws Exception
     {
         // WHEN recovering a transaction that creates some data
-        long nodeId = neoStores.getNodeStore().nextId();
-        long relationshipId = neoStores.getRelationshipStore().nextId();
+        long nodeId = neoStore.getNodeStore().nextId();
+        long relationshipId = neoStore.getRelationshipStore().nextId();
         int type = 1;
         applyExternalTransaction( 1,
                 nodeCommand( node( nodeId ), inUse( created( node( nodeId ) ) ) ),
@@ -72,8 +73,8 @@ public class ApplyRecoveredTransactionsTest
                 relationshipCommand( relationship( relationshipId ) ) );
 
         // THEN that should be possible and the high ids should be correct, i.e. highest applied + 1
-        assertEquals( nodeId+1, neoStores.getNodeStore().getHighId() );
-        assertEquals( relationshipId+1, neoStores.getRelationshipStore().getHighId() );
+        assertEquals( nodeId+1, neoStore.getNodeStore().getHighId() );
+        assertEquals( relationshipId+1, neoStore.getRelationshipStore().getHighId() );
     }
 
     private RelationshipRecord with( RelationshipRecord relationship, long startNode, long endNode, int type )
@@ -98,10 +99,10 @@ public class ApplyRecoveredTransactionsTest
 
     private void applyExternalTransaction( long transactionId, Command...commands ) throws IOException
     {
-        NeoStoreTransactionApplier applier = new NeoStoreTransactionApplier( neoStores,
+        NeoStoreTransactionApplier applier = new NeoStoreTransactionApplier( neoStore,
                 mock( CacheAccessBackDoor.class ), mock( LockService.class ), new LockGroup(), transactionId );
         CommandApplierFacade applierFacade = new CommandApplierFacade( applier,
-                mock( CommandHandler.class ), mock( CommandHandler.class ), mock( CommandHandler.class ) );
+                mock( NeoCommandHandler.class ), mock( NeoCommandHandler.class ), mock( NeoCommandHandler.class ) );
         new PhysicalTransactionRepresentation( Arrays.asList( commands ) ).accept( applierFacade );
     }
 
@@ -109,7 +110,7 @@ public class ApplyRecoveredTransactionsTest
     public final EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
-    private NeoStores neoStores;
+    private NeoStore neoStore;
 
     @Before
     public void before()
@@ -117,14 +118,14 @@ public class ApplyRecoveredTransactionsTest
         FileSystemAbstraction fs = fsr.get();
         File storeDir = new File( "dir" );
         StoreFactory storeFactory = new StoreFactory( storeDir, new Config(), new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
-        neoStores = storeFactory.openNeoStores( true );
+                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance(), new Monitors() );
+        neoStore = storeFactory.newNeoStore( true );
     }
 
     @After
     public void after()
     {
-        neoStores.close();
+        neoStore.close();
     }
 
     private Command nodeCommand( NodeRecord before, NodeRecord after )

@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.test.TargetDirectory;
@@ -175,7 +175,7 @@ public class HaCountsIT
 
     private CountsTracker counts( HighlyAvailableGraphDatabase db )
     {
-        return db.getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
+        return db.getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
     }
 
     private Statement statement( HighlyAvailableGraphDatabase db )

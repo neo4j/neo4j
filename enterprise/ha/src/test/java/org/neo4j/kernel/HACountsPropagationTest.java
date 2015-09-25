@@ -32,7 +32,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.test.TargetDirectory;
 
@@ -73,7 +73,7 @@ public class HACountsPropagationTest
 
             for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
             {
-                CountsTracker counts = db.getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
+                CountsTracker counts = db.getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
                 assertEquals( 2, counts.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
                 assertEquals( 1, counts.nodeCount( 0 /* A */, newDoubleLongRegister() ).readSecond() );
             }
@@ -110,7 +110,7 @@ public class HACountsPropagationTest
 
             for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
             {
-                CountsTracker counts = db.getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
+                CountsTracker counts = db.getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
                 assertEquals( 1, counts.relationshipCount( -1, -1, -1, newDoubleLongRegister() ).readSecond() );
                 assertEquals( 1, counts.relationshipCount( -1, -1, 0, newDoubleLongRegister() ).readSecond() );
                 assertEquals( 1, counts.relationshipCount( -1, 0, -1, newDoubleLongRegister() ).readSecond() );

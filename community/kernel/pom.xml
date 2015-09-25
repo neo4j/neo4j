@@ -131,8 +131,6 @@ the relevant Commercial Agreement.
         <artifactId>git-commit-id-plugin</artifactId>
         <configuration>
           <dotGitDirectory>${git.directory}</dotGitDirectory>
-          <failOnNoGitDirectory>false</failOnNoGitDirectory>
-          <useNativeGit>true</useNativeGit>
         </configuration>
       </plugin>
       <plugin>

@@ -33,7 +33,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.Token;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.kvstore.Headers;
@@ -42,6 +41,7 @@ import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
@@ -59,19 +59,17 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
 
     public static void dumpCountsStore( FileSystemAbstraction fs, File path, PrintStream out ) throws IOException
     {
-        try ( PageCache pages = createPageCache( fs );
-              Lifespan life = new Lifespan() )
+        try ( PageCache pages = createPageCache( fs ); Lifespan life = new Lifespan() )
         {
             if ( fs.isDirectory( path ) )
             {
-                StoreFactory factory = new StoreFactory( fs, path, pages, NullLogProvider.getInstance() );
-                NeoStores neoStores = life.add( factory.openNeoStores( false ) );
-                neoStores.getCounts().accept( new DumpCountsStore( out, neoStores ) );
+                StoreFactory factory = new StoreFactory( fs, path, pages, NullLogProvider.getInstance(), new Monitors() );
+                life.add( factory.newCountsStore() ).accept( new DumpCountsStore( out, factory ) );
             }
             else
             {
-                CountsTracker tracker = new CountsTracker(
-                        NullLogProvider.getInstance(), fs, pages, new Config(), path );
+                CountsTracker tracker = new CountsTracker( NullLogProvider.getInstance(), fs, pages, new Config(),
+                        path );
                 if ( fs.fileExists( path ) )
                 {
                     tracker.visitFile( path, new DumpCountsStore( out ) );
@@ -90,12 +88,12 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
                 Collections.<Token>emptyList() );
     }
 
-    DumpCountsStore( PrintStream out, NeoStores neoStores )
+    DumpCountsStore( PrintStream out, StoreFactory factory )
     {
         this( out,
-              allTokensFrom( neoStores.getLabelTokenStore() ),
-              allTokensFrom( neoStores.getRelationshipTypeTokenStore() ),
-              allTokensFrom( neoStores.getPropertyKeyTokenStore() ) );
+              allTokensFrom( factory.newLabelTokenStore() ),
+              allTokensFrom( factory.newRelationshipTypeTokenStore() ),
+              allTokensFrom( factory.newPropertyKeyTokenStore() ) );
     }
 
     private final PrintStream out;

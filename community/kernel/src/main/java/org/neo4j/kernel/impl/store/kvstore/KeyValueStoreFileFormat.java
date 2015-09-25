@@ -272,7 +272,7 @@ public abstract class KeyValueStoreFileFormat
             PagedFile file = pages.map( path, pageSize );
             try
             {
-                if ( StoreVersionTrailerUtil.getTrailerPosition( file, fileTrailer() ) == -1 )
+                if ( StoreVersionTrailerUtil.getTrailerOffset( file, fileTrailer() ) == -1 )
                 {
                     throw new IOException( "Invalid file trailer. Expected trailer not found." );
                 }

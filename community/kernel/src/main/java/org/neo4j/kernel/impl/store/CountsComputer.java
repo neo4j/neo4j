@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store;
 
 import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.NodeCountsStage;
@@ -33,11 +32,9 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.sup
 
 public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
 {
-    public static void recomputeCounts( NeoStores stores )
+    public static void recomputeCounts( NeoStore stores )
     {
-        MetaDataStore metaDataStore = stores.getMetaDataStore();
-        CountsTracker counts = stores.getCounts();
-        try ( CountsAccessor.Updater updater = counts.reset( metaDataStore.getLastCommittedTransactionId() ) )
+        try ( CountsAccessor.Updater updater = stores.getCounts().reset( stores.getLastCommittedTransactionId() ) )
         {
             new CountsComputer( stores ).initialize( updater );
         }
@@ -49,9 +46,9 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
     private final int highRelationshipTypeId;
     private final long lastCommittedTransactionId;
 
-    public CountsComputer( NeoStores stores )
+    public CountsComputer( NeoStore stores )
     {
-        this( stores.getMetaDataStore().getLastCommittedTransactionId(),
+        this( stores.getLastCommittedTransactionId(),
               stores.getNodeStore(), stores.getRelationshipStore(),
               (int) stores.getLabelTokenStore().getHighId(),
               (int) stores.getRelationshipTypeTokenStore().getHighId() );

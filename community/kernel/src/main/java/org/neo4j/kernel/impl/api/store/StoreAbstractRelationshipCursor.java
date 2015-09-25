@@ -23,7 +23,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.cursor.EntityItem;
 import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
@@ -38,17 +38,17 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItem.EntityI
 
     protected final RelationshipStore relationshipStore;
     protected StoreStatement storeStatement;
-    protected NeoStores neoStores;
+    protected NeoStore neoStore;
 
     private InstanceCache<StoreSinglePropertyCursor> singlePropertyCursor;
     private InstanceCache<StorePropertyCursor> allPropertyCursor;
 
 
-    public StoreAbstractRelationshipCursor( RelationshipRecord relationshipRecord, final NeoStores neoStores,
+    public StoreAbstractRelationshipCursor( RelationshipRecord relationshipRecord, final NeoStore neoStore,
             StoreStatement storeStatement )
     {
-        this.neoStores = neoStores;
-        this.relationshipStore = neoStores.getRelationshipStore();
+        this.neoStore = neoStore;
+        this.relationshipStore = neoStore.getRelationshipStore();
         this.relationshipRecord = relationshipRecord;
 
         this.storeStatement = storeStatement;
@@ -58,7 +58,7 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItem.EntityI
             @Override
             protected StoreSinglePropertyCursor create()
             {
-                return new StoreSinglePropertyCursor( neoStores.getPropertyStore(), this );
+                return new StoreSinglePropertyCursor( neoStore.getPropertyStore(), this );
             }
         };
         allPropertyCursor = new InstanceCache<StorePropertyCursor>()
@@ -66,7 +66,7 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItem.EntityI
             @Override
             protected StorePropertyCursor create()
             {
-                return new StorePropertyCursor( neoStores.getPropertyStore(), this );
+                return new StorePropertyCursor( neoStore.getPropertyStore(), this );
             }
         };
     }

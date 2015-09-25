@@ -22,77 +22,57 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
-import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
-import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.getRootDirectory;
-import static org.neo4j.kernel.impl.store.StoreVersionMismatchHandler.ALLOW_OLD_VERSION;
 import static org.neo4j.kernel.impl.store.record.SchemaRule.Kind.UNIQUENESS_CONSTRAINT;
 
 public class SchemaIndexMigrator implements StoreMigrationParticipant
 {
     private final PageCache pageCache;
 
-    private final FileSystemAbstraction fileSystem;
-    private final UpgradableDatabase upgradableDatabase;
-    private final StoreFactory storeFactory;
-    private String versionToUpgradeFrom;
-
-    public SchemaIndexMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, UpgradableDatabase upgradableDatabase )
+    public interface SchemaStoreProvider
     {
-        this( fileSystem, pageCache, upgradableDatabase, new StoreFactory()  );
+        SchemaStore provide( File storeDir, PageCache pageCache );
     }
 
+    private final FileSystemAbstraction fileSystem;
+    private final UpgradableDatabase upgradableDatabase;
+    private final SchemaStoreProvider schemaStoreProvider;
+    private String versionToUpgradeFrom;
+
     public SchemaIndexMigrator( FileSystemAbstraction fileSystem, PageCache pageCache,
-            UpgradableDatabase upgradableDatabase, StoreFactory storeFactory )
+            UpgradableDatabase upgradableDatabase, SchemaStoreProvider schemaStoreProvider )
     {
         this.fileSystem = fileSystem;
         this.pageCache = pageCache;
         this.upgradableDatabase = upgradableDatabase;
-        this.storeFactory = storeFactory;
-
-        storeFactory.setConfig( new Config() );
-        storeFactory.setFileSystemAbstraction( fileSystem );
-        storeFactory.setIdGeneratorFactory( new DefaultIdGeneratorFactory( fileSystem ) );
-        storeFactory.setLogProvider( NullLogProvider.getInstance() );
-        storeFactory.setPageCache( pageCache );
-        storeFactory.setVersionMismatchHandler( ALLOW_OLD_VERSION );
+        this.schemaStoreProvider = schemaStoreProvider;
     }
 
     @Override
     public boolean needsMigration( File storeDir ) throws IOException
     {
-        try
+        if ( upgradableDatabase.hasCurrentVersion( pageCache, storeDir ) )
         {
-            if ( upgradableDatabase.hasCurrentVersion( pageCache, storeDir ) )
-            {
-                return false;
-            }
-        }
-        catch ( NoSuchFileException ignore )
-        {
-            return false; // We don't need to migrate if the store does not exist
+            return false;
         }
 
         switch ( versionToUpgradeFrom( storeDir ) )
@@ -116,23 +96,21 @@ public class SchemaIndexMigrator implements StoreMigrationParticipant
         {
         case Legacy20Store.LEGACY_VERSION:
         case Legacy21Store.LEGACY_VERSION:
-            deleteIndexesContainingArrayValues( storeDir, schemaIndexProvider );
+            deleteIndexesContainingArrayValues( storeDir, pageCache, schemaIndexProvider );
             break;
         default:
             throw new IllegalStateException( "Unknown version to upgrade from: " + versionToUpgradeFrom( storeDir ) );
         }
     }
 
-    private void deleteIndexesContainingArrayValues( File storeDir,
+    private void deleteIndexesContainingArrayValues( File storeDir, PageCache pageCache,
                                                      SchemaIndexProvider schemaIndexProvider ) throws IOException
     {
         File indexRoot = getRootDirectory( storeDir, schemaIndexProvider.getProviderDescriptor().getKey() );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
         List<File> indexesToBeDeleted = new ArrayList<>();
-        storeFactory.setStoreDir( storeDir );
-        try ( NeoStores neoStores = storeFactory.openNeoStores( false ) )
+        try ( SchemaStore schema = schemaStoreProvider.provide( storeDir, pageCache ) )
         {
-            SchemaStore schema = neoStores.getSchemaStore();
             Iterator<SchemaRule> rules = schema.loadAllSchemaRules();
             while ( rules.hasNext() )
             {
@@ -180,7 +158,7 @@ public class SchemaIndexMigrator implements StoreMigrationParticipant
      * {@link #moveMigratedFiles(java.io.File, java.io.File) moving migrated files}, which might be done
      * as part of a resumed migration, i.e. run even if
      * {@link org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant#migrate(java.io.File, java.io.File,
-     * SchemaIndexProvider)}
+     * SchemaIndexProvider, org.neo4j.io.pagecache.PageCache)}
      * hasn't been run.
      */
     private String versionToUpgradeFrom( File storeDir )

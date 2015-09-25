@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.transaction;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 
 /**
- * Duplicates the {@link TransactionIdStore} parts of {@link NeoStores}, which is somewhat bad to have to keep
+ * Duplicates the {@link TransactionIdStore} parts of {@link NeoStore}, which is somewhat bad to have to keep
  * in sync.
  */
 public class DeadSimpleTransactionIdStore implements TransactionIdStore

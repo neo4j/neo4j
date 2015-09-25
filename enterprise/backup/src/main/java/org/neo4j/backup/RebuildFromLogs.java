@@ -66,7 +66,6 @@ import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.logging.FormattedLog;
 
 import static java.lang.String.format;
-
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
@@ -96,9 +95,9 @@ class RebuildFromLogs
         this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class )
                                     .withLegacyIndexTransactionOrdering( IdOrderingQueue.BYPASS );
         KernelHealth kernelHealth = resolver.resolveDependency( KernelHealth.class );
-        PropertyLoader propertyLoader = new PropertyLoader( stores.getRawNeoStores() );
+        PropertyLoader propertyLoader = new PropertyLoader( stores.getRawNeoStore() );
         this.indexingService = resolver.resolveDependency( IndexingService.class );
-        this.indexUpdatesValidator = new OnlineIndexUpdatesValidator( stores.getRawNeoStores(), kernelHealth,
+        this.indexUpdatesValidator = new OnlineIndexUpdatesValidator( stores.getRawNeoStore(), kernelHealth,
                 propertyLoader, indexingService, IndexUpdateMode.BATCHED );
     }
 

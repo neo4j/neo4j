@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.store;
 import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -48,12 +48,12 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
     private int groupChainIndex;
 
     public StoreNodeRelationshipCursor( RelationshipRecord relationshipRecord,
-            NeoStores neoStores,
+            NeoStore neoStore,
             RelationshipGroupRecord groupRecord,
             StoreStatement storeStatement,
             Consumer<StoreNodeRelationshipCursor> instanceCache )
     {
-        super( relationshipRecord, neoStores, storeStatement );
+        super( relationshipRecord, neoStore, storeStatement );
 
         this.groupRecordInstance = groupRecord;
         this.instanceCache = instanceCache;
@@ -84,7 +84,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
         {
             try
             {
-                groupRecord = neoStores.getRelationshipGroupStore().getRecord( firstRelId, groupRecordInstance );
+                groupRecord = neoStore.getRelationshipGroupStore().getRecord( firstRelId, groupRecordInstance );
                 relationshipId = nextChainStart();
             }
             catch ( InvalidRecordException e )
@@ -217,7 +217,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
 
                 // Go to the next group
                 groupRecord = groupRecord.getNext() != Record.NO_NEXT_RELATIONSHIP.intValue() ?
-                        neoStores.getRelationshipGroupStore().getRecord( groupRecord.getNext() ) : null;
+                        neoStore.getRelationshipGroupStore().getRecord( groupRecord.getNext() ) : null;
                 groupChainIndex = 0;
             }
         }
