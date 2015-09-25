@@ -126,7 +126,7 @@ Function Start-Neo4jArbiter
       }
 
       $result = 0
-      if ($PSCmdlet.ShouldProcess("$($JavaCMD.java) $($ShellArgs)", 'Start Neo4j Arbiter'))
+      if ($PSCmdlet.ShouldProcess("$($JavaCMD.java) $($JavaCMD.args)", 'Start Neo4j Arbiter'))
       {
         $result = (Start-Process -FilePath $JavaCMD.java -ArgumentList $JavaCMD.args -Wait:$Wait -NoNewWindow:$Wait -PassThru -WorkingDirectory $thisServer.Home)
       }
