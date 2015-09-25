@@ -72,7 +72,6 @@ public class PropertyDeduplicator
             PropertyStore propertyStore = neoStores.getPropertyStore();
             NodeStore nodeStore = neoStores.getNodeStore();
             SchemaStore schemaStore = neoStores.getSchemaStore();
-            neoStores.makeStoreOk();
             PrimitiveLongObjectMap<List<DuplicateCluster>> duplicateClusters = collectConflictingProperties( propertyStore );
             resolveConflicts( duplicateClusters, propertyStore, nodeStore, schemaStore );
         }

@@ -309,12 +309,12 @@ public class NeoStores implements AutoCloseable
 
     private static final StoreType[] STORE_TYPES = StoreType.values();
 
-    private final Predicate<StoreType> INSTANTIATED_RECORD_STORES = new Predicate<StoreType>()
+    private static final Predicate<StoreType> RECORD_STORES = new Predicate<StoreType>()
     {
         @Override
         public boolean test( StoreType type )
         {
-            return type.recordStore && stores[type.ordinal()] != null;
+            return type.recordStore;
         }
     };
 
@@ -580,22 +580,22 @@ public class NeoStores implements AutoCloseable
         return new ReadOnlyCountsTracker( logProvider, fileSystemAbstraction, pageCache, config, fileName );
     }
 
-    private Iterable<CommonAbstractStore> instantiatedRecordStores()
+    private Iterable<CommonAbstractStore> recordStores()
     {
-        Iterator<StoreType> storeTypes = new FilteringIterator<>( iterator( STORE_TYPES ), INSTANTIATED_RECORD_STORES );
+        Iterator<StoreType> storeTypes = new FilteringIterator<>( iterator( STORE_TYPES ), RECORD_STORES );
         return loop( new IteratorWrapper<CommonAbstractStore,StoreType>( storeTypes )
         {
             @Override
             protected CommonAbstractStore underlyingObjectToObject( StoreType type )
             {
-                return (CommonAbstractStore) stores[type.ordinal()];
+                return (CommonAbstractStore) storeGetter.apply( type );
             }
         } );
     }
 
     public void makeStoreOk()
     {
-        for ( CommonAbstractStore store : instantiatedRecordStores() )
+        for ( CommonAbstractStore store : recordStores() )
         {
             store.makeStoreOk();
         }
@@ -603,7 +603,7 @@ public class NeoStores implements AutoCloseable
 
     public void rebuildIdGenerators()
     {
-        for ( CommonAbstractStore store : instantiatedRecordStores() )
+        for ( CommonAbstractStore store : recordStores() )
         {
             store.rebuildIdGenerator();
         }
@@ -628,7 +628,7 @@ public class NeoStores implements AutoCloseable
     public void logVersions( Logger msgLog )
     {
         msgLog.log( "Store versions:" );
-        for ( CommonAbstractStore store : instantiatedRecordStores() )
+        for ( CommonAbstractStore store : recordStores() )
         {
             store.logVersions( msgLog );
         }
@@ -637,7 +637,7 @@ public class NeoStores implements AutoCloseable
     public void logIdUsage( Logger msgLog )
     {
         msgLog.log( "Id usage:" );
-        for ( CommonAbstractStore store : instantiatedRecordStores() )
+        for ( CommonAbstractStore store : recordStores() )
         {
             store.logIdUsage( msgLog );
         }
@@ -655,7 +655,7 @@ public class NeoStores implements AutoCloseable
      */
     public void visitStore( Visitor<CommonAbstractStore,RuntimeException> visitor )
     {
-        for ( CommonAbstractStore store : instantiatedRecordStores() )
+        for ( CommonAbstractStore store : recordStores() )
         {
             store.visitStore( visitor );
         }

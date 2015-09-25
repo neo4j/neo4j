@@ -142,28 +142,27 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
     }
 
     private static <R extends AbstractBaseRecord, S extends CommonAbstractStore & RecordStore<R>> void dump(
-            long[] ids, NeoStores stores, S store ) throws Exception
+            long[] ids, S store ) throws Exception
     {
-        new DumpStore<R,S>( System.out ).dump( stores, store, ids );
+        new DumpStore<R,S>( System.out ).dump( store, ids );
     }
 
     private static void dumpPropertyKeys( NeoStores neoStores, long[] ids ) throws Exception
     {
-        dumpTokens( neoStores, neoStores.getPropertyKeyTokenStore(), ids );
+        dumpTokens( neoStores.getPropertyKeyTokenStore(), ids );
     }
 
     private static void dumpLabels( NeoStores neoStores, long[] ids ) throws Exception
     {
-        dumpTokens( neoStores, neoStores.getLabelTokenStore(), ids );
+        dumpTokens( neoStores.getLabelTokenStore(), ids );
     }
 
     private static void dumpRelationshipTypes( NeoStores neoStores, long[] ids ) throws Exception
     {
-        dumpTokens( neoStores, neoStores.getRelationshipTypeTokenStore(), ids );
+        dumpTokens( neoStores.getRelationshipTypeTokenStore(), ids );
     }
 
-    private static <R extends TokenRecord, T extends Token> void dumpTokens( final NeoStores stores,
-            final TokenStore<R, T> store, long[] ids ) throws Exception
+    private static <R extends TokenRecord, T extends Token> void dumpTokens( final TokenStore<R, T> store, long[] ids ) throws Exception
     {
         try
         {
@@ -179,7 +178,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
                     }
                     return null;
                 }
-            }.dump( stores, store, ids );
+            }.dump( store, ids );
         }
         finally
         {
@@ -189,17 +188,17 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
 
     private static void dumpRelationshipGroups( NeoStores neoStores, long[] ids ) throws Exception
     {
-        dump( ids, neoStores, neoStores.getRelationshipGroupStore() );
+        dump( ids, neoStores.getRelationshipGroupStore() );
     }
 
     private static void dumpRelationshipStore( NeoStores neoStores, long[] ids ) throws Exception
     {
-        dump( ids, neoStores, neoStores.getRelationshipStore() );
+        dump( ids, neoStores.getRelationshipStore() );
     }
 
     private static void dumpPropertyStore( NeoStores neoStores, long[] ids ) throws Exception
     {
-        dump( ids, neoStores, neoStores.getPropertyStore() );
+        dump( ids, neoStores.getPropertyStore() );
     }
 
     private static void dumpSchemaStore( NeoStores neoStores, long ids[] ) throws Exception
@@ -216,7 +215,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
                            ? storage.loadSingleSchemaRule( record.getId() )
                            : null;
                 }
-            }.dump( neoStores, store, ids );
+            }.dump( store, ids );
         }
     }
 
@@ -229,7 +228,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
             {
                 return record.inUse() ? record : "";
             }
-        }.dump( neoStores, neoStores.getNodeStore(), ids );
+        }.dump( neoStores.getNodeStore(), ids );
     }
 
     private final PrintStream out;
@@ -241,9 +240,9 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         this.printer = new HexPrinter( out ).withBytesGroupingFormat( 16, 4, "  " ).withLineNumberDigits( 8 );
     }
 
-    public final void dump( NeoStores stores, STORE store, long[] ids ) throws Exception
+    public final void dump( STORE store, long[] ids ) throws Exception
     {
-        stores.makeStoreOk();
+        store.makeStoreOk();
         int size = store.getRecordSize();
         out.println( "store.getRecordSize() = " + size );
         out.println( "<dump>" );
