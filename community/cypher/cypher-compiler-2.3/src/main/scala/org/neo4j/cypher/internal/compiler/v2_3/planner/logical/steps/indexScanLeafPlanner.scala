@@ -63,9 +63,12 @@ object indexScanLeafPlanner extends LeafPlanner {
 
   private def findNonScannableIdentifiers(predicates: Seq[Expression])(implicit context: LogicalPlanningContext) =
     predicates.flatMap {
-      case predicate@AsDynamicPropertyNonScannable(nonScannableId)
-        if context.semanticTable.isNode(nonScannableId) => Some(nonScannableId)
-      case _ => None
+      case predicate@AsDynamicPropertyNonScannable(nonScannableId) if context.semanticTable.isNode(nonScannableId) =>
+        Some(nonScannableId)
+      case predicate@AsStringRangeNonSeekable(nonScannableId) if context.semanticTable.isNode(nonScannableId) =>
+        Some(nonScannableId)
+      case _ =>
+        None
     }.toSet
 
   private def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext) =

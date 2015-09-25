@@ -60,7 +60,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
         if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
         producePlanFor(seekable.name, seekable.propertyKey, predicate, seekable.args.asQueryExpression)
 
-      // n.prop LIKE "prefix%..."
+      // n.prop STARTS WITH "prefix%..."
       case predicate@AsStringRangeSeekable(seekable) =>
         producePlanFor(seekable.name, seekable.propertyKey, PartialPredicate(seekable.expr, predicate), seekable.asQueryExpression)
 
@@ -82,7 +82,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
       case predicate@AsDynamicPropertyNonSeekable(nonSeekableId)
         if context.semanticTable.isNode(nonSeekableId) => Some(nonSeekableId)
 
-      // n['some' + n.prop] LIKE "prefix%..."
+      // n['some' + n.prop] STARTS WITH "prefix%..."
       case predicate@AsStringRangeNonSeekable(nonSeekableId)
         if context.semanticTable.isNode(nonSeekableId) => Some(nonSeekableId)
 

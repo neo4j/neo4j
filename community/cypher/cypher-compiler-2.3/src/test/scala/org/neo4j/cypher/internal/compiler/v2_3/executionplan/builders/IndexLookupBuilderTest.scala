@@ -27,9 +27,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, HasL
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.frontend.v2_3.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.frontend.v2_3.ast
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{StartsWith, AstConstructionTestSupport}
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
-import org.neo4j.cypher.internal.frontend.v2_3.{ExclusiveBound, InclusiveBound, IndexHintException, ast}
+import org.neo4j.cypher.internal.frontend.v2_3._
 
 class IndexLookupBuilderTest extends BuilderTest {
 
@@ -66,11 +67,11 @@ class IndexLookupBuilderTest extends BuilderTest {
 
       def run() = {
         //GIVEN
-        val like: ast.Like = ast.Like(ast.Property(ident("n"), ast.PropertyKeyName("prop")_)_, ast.LikePattern(ast.StringLiteral("prefix%")_))_
-        val predicate = toCommandPredicate(like)
+        val startsWith: ast.StartsWith = ast.StartsWith(ast.Property(ident("n"), ast.PropertyKeyName("prop")_)_, ast.StringLiteral("prefix")_)_
+        val predicate = toCommandPredicate(startsWith)
 
         // WHAM
-        check("n", "label", "prop", predicate, RangeQueryExpression(PrefixSeekRangeExpression(PrefixRange("prefix"))))
+        check("n", "label", "prop", predicate, RangeQueryExpression(PrefixSeekRangeExpression(PrefixRange(Literal("prefix")))))
       }
     }
 
@@ -88,6 +89,23 @@ class IndexLookupBuilderTest extends BuilderTest {
 
         // WHAM
         check("n", "label", "prop", predicate, RangeQueryExpression(InequalitySeekRangeExpression(RangeLessThan(NonEmptyList(InclusiveBound(Literal("xxx")))))))
+      }
+    }
+
+    inner.run()
+  }
+
+  test("should accept a parameterised range seek query") {
+    object inner extends AstConstructionTestSupport {
+
+      def run() = {
+        //GIVEN
+        val property: ast.Property = ast.Property(ident("n"), ast.PropertyKeyName("prop")_)_
+        val inequality: StartsWith = ast.StartsWith(property, ast.Parameter("paramName")_)_
+        val predicate = toCommandPredicate(inequality)
+
+        // WHAM
+        check("n", "label", "prop", predicate, RangeQueryExpression(PrefixSeekRangeExpression(PrefixRange(ParameterExpression("paramName")))))
       }
     }
 
@@ -235,8 +253,8 @@ class IndexLookupBuilderTest extends BuilderTest {
     //WHEN
     val plan = assertAccepts(q)
 
-    //THEN
-    plan.query.start should equal(Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, Some(queryExpression)))))
+    plan.query.start should equal(
+      Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, Some(queryExpression)))))
     plan.query.where.toSet should equal(Set(Solved(predicate), Solved(labelPredicate)))
   }
 }
