@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planDescription
 
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.UnNamedNameGenerator._
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyTypes
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.UnNamedNameGenerator._
 
 
 object PlanDescriptionArgumentSerializer {
@@ -60,6 +61,15 @@ object PlanDescriptionArgumentSerializer {
         val types = typeNames.mkString(":", "|:", "")
         val relInfo = if (!varLength && typeNames.isEmpty && rel.unnamed) "" else s"[$rel$types$asterisk]"
         s"($from)$left$relInfo$right($to)"
+      case CountNodesExpression(ident, label) =>
+        val node = label.map(l => ":" + l.name).mkString
+        s"count( ($node) )" + (if (ident.startsWith(" ")) "" else s" AS $ident")
+      case CountRelationshipsExpression(ident, startLabel, LazyTypes(typeNames), endLabel, bothDirections) =>
+        val start = startLabel.map(l => ":" + l.name).mkString
+        val end = endLabel.map(l => ":" + l.name).mkString
+        val types = typeNames.mkString(":", "|:", "")
+        val dirArrow = if (bothDirections) "" else ">"
+        s"count( ($start)-[$types]-$dirArrow($end) )" + (if (ident.unnamed) "" else s" AS $ident")
 
       // Do not add a fallthrough here - we rely on exhaustive checking to ensure
       // that we don't forget to add new types of arguments here
