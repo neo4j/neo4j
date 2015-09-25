@@ -57,7 +57,8 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
         this.anyRelationshipType = highRelationshipTypeId;
         this.itemsPerType = anyLabel+1;
         this.itemsPerStartLabel = (anyRelationshipType+1)*itemsPerType;
-        this.counts = cacheFactory.newLongArray( arrayIndex( highLabelId, highRelationshipTypeId, highLabelId )+1, 0 );
+        long length = arrayIndex( highLabelId, highRelationshipTypeId, highLabelId ) + 1;
+        this.counts = cacheFactory.newLongArray( length, 0 );
     }
 
     private long arrayIndex( long startLabel, long relationshipType, long endLabel )

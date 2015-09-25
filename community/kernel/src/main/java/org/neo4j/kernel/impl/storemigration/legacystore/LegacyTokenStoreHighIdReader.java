@@ -19,20 +19,9 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore;
 
-import java.io.Closeable;
 import java.io.File;
-import java.io.IOException;
 
-public interface LegacyStore extends Closeable
+public interface LegacyTokenStoreHighIdReader
 {
-    File getStorageFileName();
-
-    @Override
-    void close() throws IOException;
-
-    LegacyNodeStoreReader getNodeStoreReader();
-
-    LegacyRelationshipStoreReader getRelStoreReader();
-
-    boolean hasTokenStore( String tokenStoreName );
+    long findHighIdBackwards( File storeFile, String storeName );
 }

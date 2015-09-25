@@ -27,6 +27,7 @@ import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -158,7 +159,44 @@ public class StoreUpgradeIntegrationTest
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
-            builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
+            GraphDatabaseService db = builder.newGraphDatabase();
+            try
+            {
+                checkInstance( store, (GraphDatabaseAPI) db );
+
+            }
+            finally
+            {
+                db.shutdown();
+            }
+
+            assertConsistentStore( dir );
+        }
+
+        @Test
+        public void shouldBeAbleToUpgradeAStoreWithoutIdFilesAsBackups() throws Throwable
+        {
+            File dir = store.prepareDirectory( testDir.graphDbDir() );
+
+            // remove id files
+            File[] idFiles = dir.listFiles( new FilenameFilter()
+            {
+                @Override
+                public boolean accept( File dir, String name )
+                {
+
+                    return name.endsWith( ".id" );
+                }
+            } );
+
+            for ( File idFile : idFiles )
+            {
+                assertTrue( idFile.delete() );
+            }
+
+            GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
+            builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
             GraphDatabaseService db = builder.newGraphDatabase();
             try
             {
@@ -218,7 +256,6 @@ public class StoreUpgradeIntegrationTest
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
-            builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             GraphDatabaseService db = builder.newGraphDatabase();
             try
             {
@@ -275,7 +312,6 @@ public class StoreUpgradeIntegrationTest
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
-            builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             try
             {
                 GraphDatabaseService db = builder.newGraphDatabase();

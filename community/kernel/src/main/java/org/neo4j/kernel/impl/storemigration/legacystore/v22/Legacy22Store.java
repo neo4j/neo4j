@@ -84,4 +84,10 @@ public class Legacy22Store implements LegacyStore
         // not needed
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public boolean hasTokenStore( String tokenStoreName )
+    {
+        return true;
+    }
 }

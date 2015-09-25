@@ -25,16 +25,22 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyTokenStoreHighIdReader;
 
 /**
  * Reader for a database in an older store format version.
@@ -44,16 +50,35 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
  *
  * {@link #LEGACY_VERSION} marks which version it's able to read.
  */
-public class Legacy20Store implements LegacyStore
+public class Legacy20Store implements LegacyStore, LegacyTokenStoreHighIdReader
 {
     public static final String LEGACY_VERSION = "v0.A.1";
+
+    // always one for token stores
+    private static final int bytesRequiredToDetermineInUse = 1;
+    // always zero for token stores
+    private static final int lowestHighId = 0;
 
     private final File storageFileName;
     private final Collection<Closeable> allStoreReaders = new ArrayList<>();
     private LegacyNodeStoreReader nodeStoreReader;
     private LegacyRelationshipStoreReader relStoreReader;
-
     private final FileSystemAbstraction fs;
+    private final Predicate<ByteBuffer> isRecordInUse = new Predicate<ByteBuffer>()
+    {
+        @Override
+        public boolean test( ByteBuffer byteBuffer )
+        {
+            byte inUseByte = byteBuffer.get();
+            return inUseByte != Record.IN_USE.byteValue() && inUseByte != Record.NOT_IN_USE.byteValue();
+        }
+    };
+    private final Map<String,Integer> recordSizes = new HashMap<>( 2 );
+    {
+        recordSizes.put( StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME, 9 );
+        recordSizes.put( StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME, 5 );
+        recordSizes.put( StoreFactory.LABEL_TOKEN_STORE_NAME, 5 );
+    }
 
     public Legacy20Store( FileSystemAbstraction fs, File storageFileName ) throws IOException
     {
@@ -121,6 +146,12 @@ public class Legacy20Store implements LegacyStore
         return relStoreReader;
     }
 
+    @Override
+    public boolean hasTokenStore( String tokenStoreName )
+    {
+        return true;
+    }
+
     static void readIntoBuffer( StoreChannel fileChannel, ByteBuffer buffer, int nrOfBytes )
     {
         buffer.clear();
@@ -134,5 +165,36 @@ public class Legacy20Store implements LegacyStore
             throw new RuntimeException( e );
         }
         buffer.flip();
+    }
+
+    @Override
+    public long findHighIdBackwards( File storeFile, String storeName )
+    {
+        int recordSize = recordSizes.get( storeName );
+        try ( StoreChannel fileChannel = fs.open( storeFile, "r" ) )
+        {
+            long fileSize = fileChannel.size();
+            long highId = fileSize / recordSize;
+            ByteBuffer byteBuffer = ByteBuffer.allocate( bytesRequiredToDetermineInUse );
+            for ( long i = highId; i >= 0; i-- )
+            {
+                fileChannel.position( i * recordSize );
+                if ( fileChannel.read( byteBuffer ) > 0 )
+                {
+                    byteBuffer.flip();
+                    boolean isInUse = isRecordInUse.test( byteBuffer );
+                    byteBuffer.clear();
+                    if ( isInUse )
+                    {
+                        return i + 1;
+                    }
+                }
+            }
+            return lowestHighId;
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Unable to rebuild id generator " + storeFile, e );
+        }
     }
 }
