@@ -58,6 +58,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -180,7 +181,7 @@ class BackupService
                     logger.flush();
                 }
             }
-            removeIdFiles( targetDirectory );
+            clearIdFiles( targetDirectory );
             return new BackupOutcome( lastCommittedTx, consistent );
         }
         catch ( IOException e )
@@ -220,7 +221,7 @@ class BackupService
                 targetDb.shutdown();
             }
             bumpMessagesDotLogFile( targetDirectory, backupStartTime );
-            removeIdFiles( targetDirectory );
+            clearIdFiles( targetDirectory );
             return outcome;
         }
         catch ( IOException e )
@@ -407,14 +408,16 @@ class BackupService
         return kernelExtensions;
     }
 
-    private void removeIdFiles( String targetDirectory )
+    private void clearIdFiles( String targetDirectory ) throws IOException
     {
         File dbDirectory = new File( targetDirectory );
         for ( File file : fileSystem.listFiles( dbDirectory ) )
         {
             if ( !fileSystem.isDirectory( file ) && file.getName().endsWith( ".id" ) )
             {
+                long highId = IdGeneratorImpl.readHighId( fileSystem, file );
                 fileSystem.deleteFile( file );
+                IdGeneratorImpl.createGenerator( fileSystem, file, highId );
             }
         }
     }
