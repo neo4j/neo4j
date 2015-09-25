@@ -162,8 +162,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         dumpTokens( neoStores.getRelationshipTypeTokenStore(), ids );
     }
 
-    private static <R extends TokenRecord, T extends Token> void dumpTokens(
-            final TokenStore<R, T> store, long[] ids ) throws Exception
+    private static <R extends TokenRecord, T extends Token> void dumpTokens( final TokenStore<R, T> store, long[] ids ) throws Exception
     {
         try
         {
