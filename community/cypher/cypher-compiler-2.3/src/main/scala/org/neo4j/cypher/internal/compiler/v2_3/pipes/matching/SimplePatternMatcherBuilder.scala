@@ -86,7 +86,10 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph,
   def getMatches(ctx: ExecutionContext, state: QueryState) = {
     val (patternNodes, patternRels) = setAssociations(ctx)
     val validPredicates = predicates.filter(p => p.symbolDependenciesMet(symbolTable))
-    val startPoint = patternNodes.values.find(_.getAssociation != null).get
+    // We sort the patternNodes here to always start at the lexicographically smaller identifier
+    // This is suboptimal and will be superseded by a better planner
+    val values = patternNodes.values.toList.sortBy(pn => pn.toString)
+    val startPoint = values.find(_.getAssociation != null).get
 
     val incomingRels: Set[Relationship] = ctx.collect {
       case (k, r: Relationship) if identifiersInClause.contains(k) => r

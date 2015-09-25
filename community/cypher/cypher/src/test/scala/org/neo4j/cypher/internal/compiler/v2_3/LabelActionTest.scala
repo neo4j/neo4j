@@ -186,4 +186,6 @@ class SnitchingQueryContext extends QueryContext {
 
   def getImportURL(url: URL): Either[String,URL] = ???
   override def createRelationship(start: Long, end: Long, relType: Int) = ???
+
+  override def isLabelSetOnNode(label: Int, node: Long): Boolean = ???
 }

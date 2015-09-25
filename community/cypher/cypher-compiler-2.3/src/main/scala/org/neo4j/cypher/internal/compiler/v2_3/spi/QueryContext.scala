@@ -59,7 +59,7 @@ trait QueryContext extends TokenContext {
 
   def getLabelsForNode(node: Long): Iterator[Int]
 
-  def isLabelSetOnNode(label: Int, node: Long): Boolean = getLabelsForNode(node).contains(label)
+  def isLabelSetOnNode(label: Int, node: Long): Boolean
 
   def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int
 
