@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 public class StoreSingleNodeCursor extends StoreAbstractNodeCursor
 {
     private long nodeId;
-    private final Consumer<StoreSingleNodeCursor> instanceCache;
+    private Consumer<StoreSingleNodeCursor> instanceCache;
 
     public StoreSingleNodeCursor( NodeRecord nodeRecord,
             NeoStores neoStores,
@@ -55,7 +55,7 @@ public class StoreSingleNodeCursor extends StoreAbstractNodeCursor
             try
             {
                 nodeRecord.setId( nodeId );
-                NodeRecord record = nodeStore.loadRecord( nodeId, this.nodeRecord );
+                NodeRecord record = neoStores.getNodeStore().loadRecord( nodeId, this.nodeRecord );
                 return record != null && record.inUse();
             }
             finally

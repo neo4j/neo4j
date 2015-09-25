@@ -91,7 +91,7 @@ public class SchemaIndexMigrator implements StoreMigrationParticipant
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
         List<File> indexesToBeDeleted = new ArrayList<>();
         storeFactory.setStoreDir( storeDir );
-        try ( NeoStores neoStores = storeFactory.openNeoStores( false, false ) )
+        try ( NeoStores neoStores = storeFactory.openNeoStores( false ) )
         {
             SchemaStore schema = neoStores.getSchemaStore();
             Iterator<SchemaRule> rules = schema.loadAllSchemaRules();

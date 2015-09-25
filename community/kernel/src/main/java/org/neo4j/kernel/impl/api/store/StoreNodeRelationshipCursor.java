@@ -84,7 +84,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
         {
             try
             {
-                groupRecord = relationshipGroupStore.getRecord( firstRelId, groupRecordInstance );
+                groupRecord = neoStores.getRelationshipGroupStore().getRecord( firstRelId, groupRecordInstance );
                 relationshipId = nextChainStart();
             }
             catch ( InvalidRecordException e )
@@ -217,7 +217,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
 
                 // Go to the next group
                 groupRecord = groupRecord.getNext() != Record.NO_NEXT_RELATIONSHIP.intValue() ?
-                        relationshipGroupStore.getRecord( groupRecord.getNext() ) : null;
+                        neoStores.getRelationshipGroupStore().getRecord( groupRecord.getNext() ) : null;
                 groupChainIndex = 0;
             }
         }

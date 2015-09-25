@@ -34,9 +34,6 @@ import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -51,9 +48,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper implements Cursor<NodeItem>, NodeItem
 {
     protected final NodeRecord nodeRecord;
-    protected NodeStore nodeStore;
-    protected RelationshipGroupStore relationshipGroupStore;
-    protected RelationshipStore relationshipStore;
+    protected final NeoStores neoStores;
     protected StoreStatement storeStatement;
 
     private InstanceCache<StoreLabelCursor> labelCursor;
@@ -67,9 +62,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
             final StoreStatement storeStatement )
     {
         this.nodeRecord = nodeRecord;
-        this.nodeStore = neoStores.getNodeStore();
-        this.relationshipStore = neoStores.getRelationshipStore();
-        this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
+        this.neoStores = neoStores;
         this.storeStatement = storeStatement;
 
         labelCursor = new InstanceCache<StoreLabelCursor>()
@@ -114,6 +107,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
                 return new StorePropertyCursor( neoStores.getPropertyStore(), this );
             }
         };
+
     }
 
     @Override
@@ -131,13 +125,13 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
     @Override
     public Cursor<LabelItem> labels()
     {
-        return labelCursor.get().init( parseLabelsField( nodeRecord ).get( nodeStore ) );
+        return labelCursor.get().init( parseLabelsField( nodeRecord ).get( neoStores.getNodeStore() ) );
     }
 
     @Override
     public Cursor<LabelItem> label( int labelId )
     {
-        return singleLabelCursor.get().init( parseLabelsField( nodeRecord ).get( nodeStore ), labelId );
+        return singleLabelCursor.get().init( parseLabelsField( nodeRecord ).get( neoStores.getNodeStore() ), labelId );
     }
 
     @Override
@@ -184,7 +178,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
                         return false;
                     }
 
-                    RelationshipGroupRecord group = relationshipGroupStore.getRecord( groupId );
+                    RelationshipGroupRecord group = neoStores.getRelationshipGroupStore().getRecord( groupId );
                     try
                     {
                         value.setValue( group.getType() );
@@ -199,6 +193,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
                 @Override
                 public void close()
                 {
+
                 }
 
                 @Override
@@ -235,6 +230,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
                 @Override
                 public void close()
                 {
+
                 }
 
                 @Override
@@ -255,7 +251,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
             long count = 0;
             while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                RelationshipGroupRecord group = relationshipGroupStore.getRecord( groupId );
+                RelationshipGroupRecord group = neoStores.getRelationshipGroupStore().getRecord( groupId );
                 count += nodeDegreeByDirection( group, direction );
                 groupId = group.getNext();
             }
@@ -283,7 +279,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
             long groupId = nodeRecord.getNextRel();
             while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                RelationshipGroupRecord group = relationshipGroupStore.getRecord( groupId );
+                RelationshipGroupRecord group = neoStores.getRelationshipGroupStore().getRecord( groupId );
                 if ( group.getType() == relType )
                 {
                     return (int) nodeDegreeByDirection( group, direction );
@@ -368,7 +364,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
         {
             return 0;
         }
-        RelationshipRecord record = relationshipStore.getRecord( relationshipId );
+        RelationshipRecord record = neoStores.getRelationshipStore().getRecord( relationshipId );
         if ( record.getFirstNode() == nodeRecord.getId() )
         {
             return record.getFirstPrevRel();
@@ -456,8 +452,11 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
 
                 return true;
             }
-            keys = null;
-            return false;
+            else
+            {
+                keys = null;
+                return false;
+            }
         }
     }
 
@@ -479,7 +478,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
         {
             if ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                RelationshipGroupRecord group = relationshipGroupStore.getRecord( groupId );
+                RelationshipGroupRecord group = neoStores.getRelationshipGroupStore().getRecord( groupId );
                 this.type = group.getType();
                 long loop = countByFirstPrevPointer( group.getFirstLoop() );
                 outgoing = countByFirstPrevPointer( group.getFirstOut() ) + loop;
@@ -488,12 +487,16 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
 
                 return true;
             }
-            return false;
+            else
+            {
+                return false;
+            }
         }
 
         @Override
         public void close()
         {
+
         }
 
         @Override

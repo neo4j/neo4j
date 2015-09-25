@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 public class StoreIteratorNodeCursor extends StoreAbstractNodeCursor
 {
     private PrimitiveLongIterator iterator;
-    private final Consumer<StoreIteratorNodeCursor> instanceCache;
+    private Consumer<StoreIteratorNodeCursor> instanceCache;
 
     public StoreIteratorNodeCursor( NodeRecord nodeRecord,
             NeoStores neoStores,
@@ -54,7 +54,7 @@ public class StoreIteratorNodeCursor extends StoreAbstractNodeCursor
     {
         while ( iterator != null && iterator.hasNext() )
         {
-            NodeRecord record = nodeStore.loadRecord( iterator.next(), nodeRecord );
+            NodeRecord record = neoStores.getNodeStore().loadRecord( iterator.next(), nodeRecord );
             if ( record != null && record.inUse() )
             {
                 return true;
