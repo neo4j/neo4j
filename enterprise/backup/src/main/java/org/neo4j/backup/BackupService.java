@@ -60,6 +60,7 @@ import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -177,7 +178,7 @@ class BackupService
                     log.error( "Consistency check incomplete", e );
                 }
             }
-            removeIdFiles( targetDirectory );
+            clearIdFiles( targetDirectory );
             return new BackupOutcome( lastCommittedTx, consistent );
         }
         catch ( IOException e )
@@ -217,7 +218,7 @@ class BackupService
                 targetDb.shutdown();
             }
             bumpMessagesDotLogFile( targetDirectory, backupStartTime );
-            removeIdFiles( targetDirectory );
+            clearIdFiles( targetDirectory );
             return outcome;
         }
         catch ( IOException e )
@@ -401,13 +402,15 @@ class BackupService
         return kernelExtensions;
     }
 
-    private void removeIdFiles( File targetDirectory )
+    private void clearIdFiles( File targetDirectory ) throws IOException
     {
         for ( File file : fileSystem.listFiles( targetDirectory ) )
         {
             if ( !fileSystem.isDirectory( file ) && file.getName().endsWith( ".id" ) )
             {
+                long highId = IdGeneratorImpl.readHighId( fileSystem, file );
                 fileSystem.deleteFile( file );
+                IdGeneratorImpl.createGenerator( fileSystem, file, highId, true );
             }
         }
     }
