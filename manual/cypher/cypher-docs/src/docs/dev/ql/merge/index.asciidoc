@@ -38,6 +38,8 @@ include::merge-single-node-with-properties.asciidoc[]
 
 include::merge-single-node-specifying-both-label-and-property.asciidoc[]
 
+include::merge-single-node-derived-from-existing-node-property.asciidoc[]
+
 :leveloffset: 2
 
 == Use ON CREATE and ON MATCH ==
