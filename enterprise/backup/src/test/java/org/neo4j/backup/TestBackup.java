@@ -26,10 +26,12 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -38,13 +40,17 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.Settings;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.NeoStore.Position;
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
+import org.neo4j.kernel.impl.storemigration.StoreFile;
+import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.DbRepresentation;
@@ -52,13 +58,15 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.subprocess.SubProcess;
 
-import static java.lang.Integer.parseInt;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static java.lang.Integer.parseInt;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
@@ -423,6 +431,43 @@ public class TestBackup
         }
     }
 
+    @Test
+    public void shouldLeaveIdFilesAfterBackup() throws Exception
+    {
+        GraphDatabaseService db = startGraphDatabase( serverPath, true );
+        try
+        {
+            createInitialDataset( db );
+
+            OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
+            backup.full( backupPath.getPath() );
+            ensureStoresHaveIdFiles( backupPath );
+
+            DbRepresentation representation = addLotsOfData( db );
+            backup.incremental( backupPath.getPath() );
+            assertEquals( representation, DbRepresentation.of( backupPath ) );
+            ensureStoresHaveIdFiles( backupPath );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    private void ensureStoresHaveIdFiles( File path ) throws IOException
+    {
+        for ( StoreFile file : StoreFile.values() )
+        {
+            if ( file.isRecordStore() )
+            {
+                File idFile = new File( path, file.fileName( StoreFileType.ID ) );
+                assertTrue( "Missing id file " + idFile, idFile.exists() );
+                assertTrue( "Id file " + idFile + " had 0 highId",
+                        IdGeneratorImpl.readHighId( new DefaultFileSystemAbstraction(), idFile ) > 0 );
+            }
+        }
+    }
+
     private DbRepresentation addLotsOfData( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
@@ -602,7 +647,7 @@ public class TestBackup
         // 4 transactions: THE transaction, "mykey" property key, "db-index" index, "KNOWS" rel type.
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
+            Node node = db.createNode( DynamicLabel.label( "Me" ) );
             node.setProperty( "myKey", "myValue" );
             Index<Node> nodeIndex = db.index().forNodes( "db-index" );
             nodeIndex.add( node, "myKey", "myValue" );

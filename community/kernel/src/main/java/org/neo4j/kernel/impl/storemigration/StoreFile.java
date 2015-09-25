@@ -144,7 +144,8 @@ public enum StoreFile
     COUNTS_STORE_LEFT(
             CountsTracker.TYPE_DESCRIPTOR,
             StoreFactory.COUNTS_STORE + CountsTracker.LEFT,
-            AbstractStore.ALL_STORES_VERSION
+            AbstractStore.ALL_STORES_VERSION,
+            false
     )
             {
                 @Override
@@ -156,7 +157,8 @@ public enum StoreFile
     COUNTS_STORE_RIGHT(
             CountsTracker.TYPE_DESCRIPTOR,
             StoreFactory.COUNTS_STORE + CountsTracker.RIGHT,
-            AbstractStore.ALL_STORES_VERSION
+            AbstractStore.ALL_STORES_VERSION,
+            false
     )
             {
                 @Override
@@ -175,12 +177,19 @@ public enum StoreFile
     private final String typeDescriptor;
     private final String storeFileNamePart;
     private final String sinceVersion;
+    private final boolean recordStore;
 
     private StoreFile( String typeDescriptor, String storeFileNamePart, String sinceVersion )
+    {
+        this( typeDescriptor, storeFileNamePart, sinceVersion, true );
+    }
+
+    private StoreFile( String typeDescriptor, String storeFileNamePart, String sinceVersion, boolean recordStore )
     {
         this.typeDescriptor = typeDescriptor;
         this.storeFileNamePart = storeFileNamePart;
         this.sinceVersion = sinceVersion;
+        this.recordStore = recordStore;
     }
 
     public String forVersion( String version )
@@ -223,6 +232,11 @@ public enum StoreFile
     public String storeFileNamePart()
     {
         return storeFileNamePart;
+    }
+
+    public boolean isRecordStore()
+    {
+        return recordStore;
     }
 
     public static Iterable<StoreFile> legacyStoreFilesForVersion( final String version )
