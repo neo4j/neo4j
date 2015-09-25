@@ -65,7 +65,8 @@ class MatchingContext(boundIdentifiers: SymbolTable,
 }
 
 trait MatcherBuilder {
-  def name:String
+  def name: String
+  def startPoint: String
   def getMatches(sourceRow: ExecutionContext, state: QueryState): Traversable[ExecutionContext]
 }
 
