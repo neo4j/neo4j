@@ -96,7 +96,7 @@ object AsPropertyScannable {
 
 object AsStringRangeSeekable {
   def unapply(v: Any): Option[PrefixRangeSeekable] = v match {
-    case startsWith@StartsWith(Property(ident: Identifier, propertyKey), lit@StringLiteral(prefix)) if prefix.length > 0 =>
+    case startsWith@StartsWith(Property(ident: Identifier, propertyKey), lit@StringLiteral(prefix)) if prefix.nonEmpty =>
       Some(PrefixRangeSeekable(PrefixRange(lit), startsWith, ident, propertyKey))
     case startsWith@StartsWith(Property(ident: Identifier, propertyKey), rhs) =>
       Some(PrefixRangeSeekable(PrefixRange(rhs), startsWith, ident, propertyKey))

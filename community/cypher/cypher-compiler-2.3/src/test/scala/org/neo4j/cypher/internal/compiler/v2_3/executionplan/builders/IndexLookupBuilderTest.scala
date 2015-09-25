@@ -67,8 +67,8 @@ class IndexLookupBuilderTest extends BuilderTest {
 
       def run() = {
         //GIVEN
-        val like: ast.StartsWith = ast.StartsWith(ast.Property(ident("n"), ast.PropertyKeyName("prop")_)_, ast.StringLiteral("prefix")_)_
-        val predicate = toCommandPredicate(like)
+        val startsWith: ast.StartsWith = ast.StartsWith(ast.Property(ident("n"), ast.PropertyKeyName("prop")_)_, ast.StringLiteral("prefix")_)_
+        val predicate = toCommandPredicate(startsWith)
 
         // WHAM
         check("n", "label", "prop", predicate, RangeQueryExpression(PrefixSeekRangeExpression(PrefixRange(Literal("prefix")))))

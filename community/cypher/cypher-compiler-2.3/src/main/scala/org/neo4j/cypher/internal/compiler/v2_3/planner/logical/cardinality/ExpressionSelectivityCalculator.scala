@@ -59,7 +59,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       calculateSelectivityForPrefixRangeSeekable(seekable.name, selections, seekable.propertyKey, Some(prefix))
 
     // WHERE x.prop STARTS WITH ...
-    case AsStringRangeSeekable(seekable@PrefixRangeSeekable(PrefixRange(prefix), _, _, _)) =>
+    case AsStringRangeSeekable(seekable@PrefixRangeSeekable(_:PrefixRange[_], _, _, _)) =>
       calculateSelectivityForPrefixRangeSeekable(seekable.name, selections, seekable.propertyKey, None)
 
     // WHERE x.prop <, <=, >=, > that could benefit from an index
@@ -160,7 +160,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     //we know for sure we are no worse than a propertyExistence check
     val existence = calculateSelectivityForPropertyExistence(identifier, selections, propertyKey)
-    if (existence > Selectivity.ZERO && existence < result) existence else result
+    if (existence < result) existence else result
   }
 
   private def calculateSelectivityForValueRangeSeekable(seekable: InequalityRangeSeekable,
@@ -171,7 +171,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     val equality = math.BigDecimal.valueOf(calculateSelectivityForPropertyEquality(name, None, selections, propertyKeyName).factor)
     val factor = math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR)
     val slack = BigDecimalCombiner.negate(equality).multiply(factor)
-    val result = Selectivity.of(equality.add(slack).doubleValue()).get
+    val result = Selectivity.of(equality.add(slack).doubleValue()).getOrElse(Selectivity.ONE)
     result
   }
 

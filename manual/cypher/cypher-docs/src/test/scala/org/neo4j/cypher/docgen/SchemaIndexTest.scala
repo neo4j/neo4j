@@ -142,7 +142,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
     )
   }
 
-  @Test def use_index_with_like() {
+  @Test def use_index_with_starts_with() {
     executePreparationQueries {
       val a = (0 to 100).map { i => "CREATE (:Person)" }.toList
       val b = (0 to 300).map { i => s"CREATE (:Person {name: '$i'})" }.toList
