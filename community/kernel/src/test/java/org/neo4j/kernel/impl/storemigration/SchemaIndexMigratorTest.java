@@ -49,7 +49,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.getRootDirectory;
 
 public class SchemaIndexMigratorTest
@@ -138,7 +137,6 @@ public class SchemaIndexMigratorTest
     {
         when( schemaIndexProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "key", "version" ) );
         when( storeFactory.openNeoStores( false ) ).thenReturn( neoStores );
-        when( storeFactory.openNeoStores( false, false ) ).thenReturn( neoStores );
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
         Iterator<SchemaRule> iterator = Arrays.asList( schemaRule( indexRuleId, 42, 21 ) ).iterator();
         when( schemaStore.loadAllSchemaRules() ).thenReturn( iterator );

@@ -24,7 +24,6 @@ import org.neo4j.kernel.api.cursor.EntityItem;
 import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
@@ -36,18 +35,20 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItem.EntityI
         implements Cursor<RelationshipItem>, RelationshipItem
 {
     protected final RelationshipRecord relationshipRecord;
+
     protected final RelationshipStore relationshipStore;
-    protected final RelationshipGroupStore relationshipGroupStore;
     protected StoreStatement storeStatement;
+    protected NeoStores neoStores;
 
     private InstanceCache<StoreSinglePropertyCursor> singlePropertyCursor;
     private InstanceCache<StorePropertyCursor> allPropertyCursor;
 
+
     public StoreAbstractRelationshipCursor( RelationshipRecord relationshipRecord, final NeoStores neoStores,
             StoreStatement storeStatement )
     {
+        this.neoStores = neoStores;
         this.relationshipStore = neoStores.getRelationshipStore();
-        this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.relationshipRecord = relationshipRecord;
 
         this.storeStatement = storeStatement;

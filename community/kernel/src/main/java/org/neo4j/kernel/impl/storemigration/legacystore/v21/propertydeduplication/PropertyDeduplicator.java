@@ -67,7 +67,7 @@ public class PropertyDeduplicator
     {
         final StoreFactory storeFactory =
                 new StoreFactory( fileSystem, workingDir, pageCache, NullLogProvider.getInstance() );
-        try ( NeoStores neoStores = storeFactory.openNeoStores( false, false ) )
+        try ( NeoStores neoStores = storeFactory.openNeoStores( false ) )
         {
             PropertyStore propertyStore = neoStores.getPropertyStore();
             NodeStore nodeStore = neoStores.getNodeStore();

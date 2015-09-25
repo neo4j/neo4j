@@ -75,7 +75,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord>
     // in_use(byte)+next_rel_id(int)+next_prop_id(int)+labels(5)+extra(byte)
     public static final int RECORD_SIZE = 15;
 
-    private final DynamicArrayStore dynamicLabelStore;
+    private DynamicArrayStore dynamicLabelStore;
 
     public NodeStore(
             File fileName,
@@ -416,5 +416,19 @@ public class NodeStore extends AbstractRecordStore<NodeRecord>
         {
             dynamicLabelStore.updateRecord( record );
         }
+    }
+
+    @Override
+    public void makeStoreOk()
+    {
+        dynamicLabelStore.makeStoreOk();
+        super.makeStoreOk();
+    }
+
+    @Override
+    public void visitStore( Visitor<CommonAbstractStore, RuntimeException> visitor )
+    {
+        dynamicLabelStore.visitStore( visitor );
+        visitor.visit( this );
     }
 }
