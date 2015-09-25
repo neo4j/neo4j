@@ -517,6 +517,12 @@ public class AbstractKeyValueStoreTest
         }
 
         @Override
+        protected String fileTrailer()
+        {
+            return "And that's all folks.";
+        }
+
+        @Override
         protected void updateHeaders( Headers.Builder headers, long version )
         {
             headers.put( TX_ID, version );

@@ -87,9 +87,11 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
             LogProvider logProvider,
             DynamicStringStore stringPropertyStore,
             PropertyKeyTokenStore propertyKeyTokenStore,
-            DynamicArrayStore arrayPropertyStore )
+            DynamicArrayStore arrayPropertyStore,
+            StoreVersionMismatchHandler versionMismatchHandler )
     {
-        super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache, logProvider );
+        super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache, logProvider,
+                versionMismatchHandler );
         this.stringPropertyStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayPropertyStore = arrayPropertyStore;

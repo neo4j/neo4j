@@ -100,8 +100,8 @@ public class RsdrMain
     private static StoreFactory openStore( File storeDir, Config config, PageCache pageCache )
     {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( files );
-        NullLogProvider logProvider = NullLogProvider.getInstance();
-        return new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, files, logProvider );
+        return new StoreFactory(
+                storeDir, config, idGeneratorFactory, pageCache, files, NullLogProvider.getInstance() );
     }
 
     private static void interact( NeoStores neoStores ) throws IOException

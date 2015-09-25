@@ -77,8 +77,15 @@ public class TestIdGeneratorRebuilding
         File storeFile = file( "nodes" );
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
-        NodeStore store = new NodeStore( storeFile, config, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore );
+        NodeStore store = new NodeStore(
+                storeFile,
+                config,
+                new DefaultIdGeneratorFactory( fs ),
+                pageCacheRule.getPageCache( fs ),
+                NullLogProvider.getInstance(),
+                labelStore,
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION
+        );
         store.initialise( true );
         store.makeStoreOk();
 
@@ -125,9 +132,15 @@ public class TestIdGeneratorRebuilding
         // Given we have a store ...
         Config config = new Config( MapUtil.stringMap(
                 GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "false" ) );
+        File storeFile = file( "strings" );
 
-        StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory(
+                storeDir,
+                config,
+                new DefaultIdGeneratorFactory( fs ),
+                pageCacheRule.getPageCache( fs ),
+                fs,
+                NullLogProvider.getInstance() );
         NeoStores neoStores = storeFactory.openNeoStores( true );
         DynamicStringStore store = neoStores.getPropertyStore().getStringStore();
 
@@ -181,8 +194,15 @@ public class TestIdGeneratorRebuilding
         File storeFile = file( "nodes" );
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
-        NodeStore store = new NodeStore( storeFile, config, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore );
+        NodeStore store = new NodeStore(
+                storeFile,
+                config,
+                new DefaultIdGeneratorFactory( fs ),
+                pageCacheRule.getPageCache( fs ),
+                NullLogProvider.getInstance(),
+                labelStore,
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION
+        );
         store.initialise( true );
         store.makeStoreOk();
 

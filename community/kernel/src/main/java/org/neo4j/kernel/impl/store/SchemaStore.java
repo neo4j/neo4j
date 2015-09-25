@@ -42,6 +42,7 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
 {
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "SchemaStore";
+    public static final String VERSION = buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
     public static final int BLOCK_SIZE = 56; // + BLOCK_HEADER_SIZE == 64
 
     @SuppressWarnings("deprecation")
@@ -51,9 +52,11 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            LogProvider logProvider )
+            LogProvider logProvider,
+            StoreVersionMismatchHandler versionMismatchHandler )
     {
-        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, BLOCK_SIZE );
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, versionMismatchHandler,
+                BLOCK_SIZE );
     }
 
     @Override

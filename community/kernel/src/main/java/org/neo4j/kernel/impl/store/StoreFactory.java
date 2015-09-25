@@ -64,6 +64,7 @@ public class StoreFactory
     private IdGeneratorFactory idGeneratorFactory;
     private FileSystemAbstraction fileSystemAbstraction;
     private LogProvider logProvider;
+    private StoreVersionMismatchHandler versionMismatchHandler;
     private File neoStoreFileName;
     private PageCache pageCache;
 
@@ -71,20 +72,38 @@ public class StoreFactory
     {
     }
 
-    @SuppressWarnings( "deprecation" )
-    public StoreFactory( FileSystemAbstraction fileSystem, File storeDir, PageCache pageCache, LogProvider logProvider )
+    public StoreFactory( FileSystemAbstraction fs, File storeDir, PageCache pageCache, LogProvider logProvider )
     {
-        this( storeDir, new Config(), new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
+        this( fs, storeDir, pageCache, logProvider, StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
     }
 
-    public StoreFactory( File storeDir, Config config,
-            @SuppressWarnings( "deprecation" ) IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider )
+    @SuppressWarnings( "deprecation" )
+    public StoreFactory( FileSystemAbstraction fileSystem, File storeDir, PageCache pageCache, LogProvider logProvider,
+                         StoreVersionMismatchHandler versionMismatchHandler )
+    {
+        this( storeDir, new Config(),
+                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
+                logProvider, versionMismatchHandler );
+    }
+
+    @SuppressWarnings( "deprecation" )
+    public StoreFactory( File storeDir, Config config, IdGeneratorFactory idGeneratorFactory,
+                         PageCache pageCache, FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider )
+    {
+        this( storeDir, config, idGeneratorFactory, pageCache, fileSystemAbstraction, logProvider,
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
+    }
+
+    @SuppressWarnings( "deprecation" )
+    public StoreFactory( File storeDir, Config config, IdGeneratorFactory idGeneratorFactory,
+                         PageCache pageCache, FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider,
+                         StoreVersionMismatchHandler versionMismatchHandler )
     {
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;
         setLogProvider( logProvider );
+        this.versionMismatchHandler = versionMismatchHandler;
         setStoreDir( storeDir );
         this.pageCache = pageCache;
     }
@@ -107,6 +126,11 @@ public class StoreFactory
     public void setLogProvider( LogProvider logProvider )
     {
         this.logProvider = logProvider;
+    }
+
+    public void setVersionMismatchHandler( StoreVersionMismatchHandler versionMismatchHandler )
+    {
+        this.versionMismatchHandler = versionMismatchHandler;
     }
 
     public void setStoreDir( File storeDir )
@@ -133,8 +157,11 @@ public class StoreFactory
                         "Could not create store directory: " + neoStoreFileName.getParent(), e );
             }
         }
-        return new NeoStores( neoStoreFileName, config, idGeneratorFactory, pageCache, logProvider,
-                fileSystemAbstraction, createIfNotExist );
+        return new NeoStores( neoStoreFileName, config, idGeneratorFactory, pageCache,
+                logProvider,
+                fileSystemAbstraction,
+                versionMismatchHandler,
+                createIfNotExist );
     }
 
     public abstract static class Configuration
@@ -142,4 +169,5 @@ public class StoreFactory
         public static final Setting<Integer> string_block_size = GraphDatabaseSettings.string_block_size;
         public static final Setting<Integer> array_block_size = GraphDatabaseSettings.array_block_size;
     }
+
 }

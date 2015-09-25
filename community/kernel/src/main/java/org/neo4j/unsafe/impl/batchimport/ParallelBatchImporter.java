@@ -30,6 +30,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
@@ -48,6 +49,7 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static java.lang.System.currentTimeMillis;
+
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseExecution;
@@ -71,6 +73,7 @@ public class ParallelBatchImporter implements BatchImporter
     private final LogService logService;
     private final Log log;
     private final ExecutionMonitor executionMonitor;
+    private final Monitors monitors;
     private final AdditionalInitialIds additionalInitialIds;
 
     /**
@@ -88,6 +91,7 @@ public class ParallelBatchImporter implements BatchImporter
         this.log = logService.getInternalLogProvider().getLog( getClass() );
         this.executionMonitor = executionMonitor;
         this.additionalInitialIds = additionalInitialIds;
+        this.monitors = new Monitors();
     }
 
     /**
@@ -115,8 +119,8 @@ public class ParallelBatchImporter implements BatchImporter
         boolean hasBadEntries = false;
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
         CountingStoreUpdateMonitor storeUpdateMonitor = new CountingStoreUpdateMonitor();
-        try ( BatchingNeoStores neoStore =
-                      new BatchingNeoStores( fileSystem, storeDir, config, logService, additionalInitialIds );
+        try ( BatchingNeoStores neoStore = new BatchingNeoStores( fileSystem, storeDir, config,
+              logService, monitors, additionalInitialIds );
               OutputStream badOutput = new BufferedOutputStream( fileSystem.openAsOutputStream( badFile, false ) );
               Collector badCollector = input.badCollector( badOutput );
               CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(

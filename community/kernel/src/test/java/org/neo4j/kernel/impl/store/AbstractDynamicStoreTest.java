@@ -100,8 +100,15 @@ public class AbstractDynamicStoreTest
     private AbstractDynamicStore newTestableDynamicStore()
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        AbstractDynamicStore store = new AbstractDynamicStore( fileName, new Config(), IdType.ARRAY_BLOCK,
-                idGeneratorFactory, pageCache, NullLogProvider.getInstance(), BLOCK_SIZE )
+        AbstractDynamicStore store = new AbstractDynamicStore(
+                fileName,
+                new Config(),
+                IdType.ARRAY_BLOCK,
+                idGeneratorFactory,
+                pageCache,
+                NullLogProvider.getInstance(),
+                StoreVersionMismatchHandler.ALLOW_OLD_VERSION,
+                BLOCK_SIZE )
         {
             @Override
             public void accept( Processor processor, DynamicRecord record )

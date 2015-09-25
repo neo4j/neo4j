@@ -54,9 +54,11 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            LogProvider logProvider )
+            LogProvider logProvider,
+            StoreVersionMismatchHandler versionMismatchHandler )
     {
-        super( fileName, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache, logProvider );
+        super( fileName, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache,
+                logProvider, versionMismatchHandler );
     }
 
     @Override

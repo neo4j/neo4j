@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
+import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.AbstractKeyValueStore;
@@ -49,6 +50,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
 
 import static java.lang.String.format;
+
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
@@ -260,6 +262,12 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
     protected CountsKey readKey( ReadableBuffer key ) throws UnknownKey
     {
         return KeyFormat.readKey( key );
+    }
+
+    @Override
+    protected String fileTrailer()
+    {
+        return CommonAbstractStore.buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
     }
 
     @Override

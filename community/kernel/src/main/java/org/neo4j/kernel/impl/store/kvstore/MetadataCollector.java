@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.kvstore;
 
 import java.util.Arrays;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,7 +33,7 @@ abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEnd
     private final HeaderField<?>[] headerFields;
     private final Map<HeaderField<?>, Integer> headerIndexes = new HashMap<>();
     private final Object[] headerValues;
-    private int header, trailer, data;
+    private int header, data;
     private State state = State.expecting_format_specifier;
     private byte[] catalogue = NO_DATA;
 
@@ -84,38 +85,40 @@ abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEnd
 
     abstract boolean verifyFormatSpecifier( ReadableBuffer value );
 
-    @Override
     byte[] pageCatalogue()
     {
         return catalogue;
     }
 
-    @Override
     int headerEntries()
     {
         return header;
     }
 
-    @Override
-    int trailerEntries()
-    {
-        return trailer;
-    }
-
-    @Override
     int totalEntries()
     {
-        return header + data + trailer;
+        return header + data;
     }
 
     private enum State
-    {
+    {   // <pre>
         expecting_format_specifier
         {
             @Override
             boolean visit( MetadataCollector collector, BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value )
             {
-                return readFormatSpecifier( collector, key, value, expecting_header );
+                if ( !key.allZeroes() )
+                {
+                    throw new IllegalStateException( "Expecting a valid format specifier." );
+                }
+                if ( !collector.verifyFormatSpecifier( value ) )
+                {
+                    collector.state = in_error;
+                    throw new ConcurrentModificationException( "Format header has changed." );
+                }
+                collector.header = 1;
+                collector.state = expecting_header;
+                return true;
             }
         },
         expecting_header
@@ -156,7 +159,7 @@ abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEnd
                 {
                     if ( value.allZeroes() )
                     {
-                        collector.state = expecting_format_specifier_trailer;
+                        collector.state = done;
                         return false;
                     }
                     if ( collector.header > collector.headerFields.length )
@@ -194,8 +197,8 @@ abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEnd
                         throw new IllegalStateException( "Number of data entries does not match. (counted=" +
                                                          collector.data + ", trailer=" + entries + ")" );
                     }
-                    collector.state = expecting_format_specifier_trailer;
-                    return true;
+                    collector.state = done;
+                    return false;
                 }
                 else
                 {
@@ -203,14 +206,6 @@ abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEnd
                     collector.readData( key );
                     return true;
                 }
-            }
-        },
-        expecting_format_specifier_trailer
-        {
-            @Override
-            boolean visit( MetadataCollector collector, BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value )
-            {
-                return readFormatSpecifier( collector, key, value, done );
             }
         },
         done
@@ -232,38 +227,6 @@ abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEnd
 
         abstract boolean visit( MetadataCollector collector,
                                 BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value );
-
-
-        private static boolean readFormatSpecifier( MetadataCollector collector,
-                BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value, State nextState )
-        {
-            if ( !key.allZeroes() )
-            {
-                throw new IllegalStateException( "Expecting a valid format specifier." );
-            }
-            if ( !collector.verifyFormatSpecifier( value ) )
-            {
-                collector.state = in_error;
-                throw new IllegalStateException( "Format header/trailer has changed." );
-            }
-
-            try
-            {
-                if ( nextState == expecting_header )
-                {
-                    collector.header = 1;
-                    return true;
-                }
-                else
-                {
-                    collector.trailer = 1;
-                    return false;
-                }
-            }
-            finally
-            {
-                collector.state = nextState;
-            }
-        }
+        // </pre>
     }
 }

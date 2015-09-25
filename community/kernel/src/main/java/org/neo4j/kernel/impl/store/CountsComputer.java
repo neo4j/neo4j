@@ -58,8 +58,8 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
     }
 
     public CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships,
-            int highLabelId,
-            int highRelationshipTypeId )
+                           int highLabelId,
+                           int highRelationshipTypeId )
     {
         this.lastCommittedTransactionId = lastCommittedTransactionId;
         this.nodes = nodes;
@@ -75,12 +75,12 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
         try
         {
             // Count nodes
-            superviseDynamicExecution(
-                    new NodeCountsStage( Configuration.DEFAULT, cache, nodes, highLabelId, countsUpdater ) );
+            superviseDynamicExecution( new NodeCountsStage( Configuration.DEFAULT, cache, nodes,
+                                                            highLabelId, countsUpdater ) );
             // Count relationships
-            superviseDynamicExecution(
-                    new RelationshipCountsStage( Configuration.DEFAULT, cache, relationships, highLabelId,
-                            highRelationshipTypeId, countsUpdater, AUTO ) );
+            superviseDynamicExecution( new RelationshipCountsStage( Configuration.DEFAULT, cache, relationships,
+                                                                    highLabelId, highRelationshipTypeId,
+                                                                    countsUpdater, AUTO ) );
         }
         finally
         {

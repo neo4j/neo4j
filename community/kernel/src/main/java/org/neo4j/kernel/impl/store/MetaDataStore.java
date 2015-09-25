@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.helpers.UTF8;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -120,9 +121,12 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
 
     MetaDataStore( File fileName, Config conf,
                    IdGeneratorFactory idGeneratorFactory,
-                   PageCache pageCache, LogProvider logProvider )
+                   PageCache pageCache, LogProvider logProvider,
+                   StoreVersionMismatchHandler versionMismatchHandler )
     {
-        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider );
+        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider,
+                versionMismatchHandler );
+
         this.transactionCloseWaitLogger = new CappedOperation<Void>( time( 30, SECONDS ) )
         {
             @Override
@@ -142,6 +146,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
 
         StoreId storeId = new StoreId();
 
+
         storeFile = file;
         setCreationTime( storeId.getCreationTime() );
         setRandomNumber( storeId.getRandomId() );
@@ -155,6 +160,9 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         setStoreVersion( MetaDataStore.versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
         setGraphNextProp( -1 );
         setLatestConstraintIntroducingTx( 0 );
+
+        int trailerPosition = META_DATA_RECORD_COUNT * getRecordSize();
+        StoreVersionTrailerUtil.writeTrailer( file, UTF8.encode( getTypeAndVersionDescriptor() ), trailerPosition );
 
         flush();
         storeFile = null;
@@ -175,34 +183,48 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         }
     }
 
-    public void checkVersion()
+    @Override
+    protected void checkVersion()
     {
-        long record;
         try
         {
-            record = getRecord( pageCache, storageFileName, Position.STORE_VERSION );
+            verifyCorrectTypeDescriptorAndVersion();
+            /*
+             * If the trailing version string check returns normally, either
+             * the store is not ok and needs recovery or everything is fine. The
+             * latter is boring. The first case however is interesting. If we
+             * need recovery we have no idea what the store version is - we erase
+             * that information on startup and write it back out on clean shutdown.
+             * So, if the above passes and the store is not ok, we check the
+             * version field in our store vs the expected one. If it is the same,
+             * we can recover and proceed, otherwise we are allowed to die a horrible death.
+             */
+            if ( !getStoreOk() )
+            {
+                /*
+                 * Could we check that before? Well, yes. But. When we would read in the store version
+                 * field it could very well overshoot and read in the version descriptor if the
+                 * store is cleanly shutdown. If we are here though the store is not ok, so no
+                 * version descriptor so the file is actually smaller than expected so we won't read
+                 * in garbage.
+                 * Yes, this has to be fixed to be prettier.
+                 */
+                String foundVersion = versionLongToString( getRecord( pageCache,
+                        storageFileName, Position.STORE_VERSION ) );
+                if ( !CommonAbstractStore.ALL_STORES_VERSION.equals( foundVersion ) )
+                {
+                    throw new IllegalStateException(
+                            format( "Mismatching store version found (%s while expecting %s). The store cannot be " +
+                                    "automatically upgraded since it isn't cleanly shutdown."
+                                    + " Recover by starting the database using the previous Neo4j version, " +
+                                    "followed by a clean shutdown. Then start with this version again.",
+                                    foundVersion, CommonAbstractStore.ALL_STORES_VERSION ) );
+                }
+            }
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( e );
-        }
-
-        if ( record == -1 )
-        {
-            // if the record cannot be read, let's assume the neo store has not been create yet
-            // we'll check again when the store is gonna set to "store ok"
-            return;
-        }
-
-        String foundVersion = versionLongToString( record );
-        if ( !ALL_STORES_VERSION.equals( foundVersion ) )
-        {
-            throw new IllegalStateException(
-                    format( "Mismatching store version found (%s while expecting %s). The store cannot be " +
-                            "automatically upgraded since it isn't cleanly shutdown."
-                            + " Recover by starting the database using the previous Neo4j version, " +
-                            "followed by a clean shutdown. Then start with this version again.",
-                            foundVersion, ALL_STORES_VERSION ) );
+            throw new UnderlyingStorageException( "Unable to check version " + getStorageFileName(), e );
         }
     }
 
@@ -235,32 +257,47 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         long previousValue = FIELD_NOT_INITIALIZED;
         try ( PagedFile pagedFile = pageCache.map( neoStore, getPageSize( pageCache ) ) )
         {
+            String expectedTrailer = buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
+
+            long trailerOffset = StoreVersionTrailerUtil.getTrailerPosition( pagedFile, expectedTrailer );
             int recordOffset = RECORD_SIZE * position.id;
             try ( PageCursor pageCursor = pagedFile.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
             {
                 if ( pageCursor.next() )
                 {
-                    // We're overwriting a record, get the previous value
-                    long record;
-                    byte inUse;
-                    do
+                    if ( recordOffset < trailerOffset )
                     {
-                        pageCursor.setOffset( recordOffset );
-                        inUse = pageCursor.getByte();
-                        record = pageCursor.getLong();
-
+                        // We're overwriting a record, get the previous value
+                        long record;
+                        byte inUse;
+                        do
+                        {
+                            pageCursor.setOffset( recordOffset );
+                            inUse = pageCursor.getByte();
+                            record = pageCursor.getLong();
+                        }
+                        while ( pageCursor.shouldRetry() );
                         if ( inUse == Record.IN_USE.byteValue() )
                         {
                             previousValue = record;
                         }
-
-                        // Write the value
+                    }
+                    // Write the value
+                    do
+                    {
                         pageCursor.setOffset( recordOffset );
                         pageCursor.putByte( Record.IN_USE.byteValue() );
                         pageCursor.putLong( value );
                     }
                     while ( pageCursor.shouldRetry() );
                 }
+            }
+
+            // Append the trailer if needed
+            int newTrailerOffset = recordOffset + RECORD_SIZE;
+            if ( newTrailerOffset > trailerOffset )
+            {
+                StoreVersionTrailerUtil.writeTrailer( pagedFile, UTF8.encode( expectedTrailer ), newTrailerOffset );
             }
         }
         return previousValue;

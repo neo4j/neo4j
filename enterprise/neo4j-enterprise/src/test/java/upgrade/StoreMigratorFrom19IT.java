@@ -55,7 +55,6 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
@@ -87,7 +86,7 @@ public class StoreMigratorFrom19IT
         File legacyStoreDir = find19FormatHugeStoreDirectory( storeDir.directory() );
 
         // WHEN
-        newStoreUpgrader().migrateIfNeeded( legacyStoreDir, upgradableDatabase, schemaIndexProvider );
+        newStoreUpgrader().migrateIfNeeded( legacyStoreDir, schemaIndexProvider );
 
         // THEN
         assertEquals( 100, monitor.eventSize() );
@@ -121,7 +120,7 @@ public class StoreMigratorFrom19IT
         File legacyStoreDir = find19FormatHugeStoreDirectory( storeDir.directory() );
 
         // When
-        newStoreUpgrader().migrateIfNeeded( legacyStoreDir, upgradableDatabase, schemaIndexProvider );
+        newStoreUpgrader().migrateIfNeeded( legacyStoreDir, schemaIndexProvider );
 
         ClusterManager.ManagedCluster cluster = buildClusterWithMasterDirIn( fs, legacyStoreDir, life );
         cluster.await( allSeesAllAsAvailable() );
@@ -144,7 +143,7 @@ public class StoreMigratorFrom19IT
         // WHEN
         // upgrading that store, the two key tokens for "name" should be merged
 
-        newStoreUpgrader().migrateIfNeeded( storeDir.directory(), upgradableDatabase, schemaIndexProvider );
+        newStoreUpgrader().migrateIfNeeded( storeDir.directory(), schemaIndexProvider );
 
         // THEN
         // verify that the "name" property for both the involved nodes
@@ -245,10 +244,8 @@ public class StoreMigratorFrom19IT
 
     private StoreUpgrader newStoreUpgrader()
     {
-        StoreUpgrader upgrader =
-                new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, NullLogProvider.getInstance() );
-        upgrader.addParticipant(
-                new StoreMigrator( monitor, fs, pageCache, config, NullLogService.getInstance() ) );
+        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, NullLogProvider.getInstance() );
+        upgrader.addParticipant( new StoreMigrator( monitor, fs, pageCache, upgradableDatabase, config, NullLogService.getInstance() ) );
         return upgrader;
     }
 
@@ -265,10 +262,15 @@ public class StoreMigratorFrom19IT
     public void setUp()
     {
         pageCache = pageCacheRule.getPageCache( fs );
-        storeFactory = new StoreFactory( storeDir.directory(), config, new DefaultIdGeneratorFactory( fs ),
-                pageCache, fs, NullLogProvider.getInstance() );
-        upgradableDatabase =
-                new UpgradableDatabase( new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
+
+        storeFactory = new StoreFactory(
+                storeDir.directory(),
+                config,
+                new DefaultIdGeneratorFactory( fs ),
+                pageCache,
+                fs,
+                NullLogProvider.getInstance() );
+        upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
     }
 
     @After

@@ -76,8 +76,9 @@ public class PropertyStoreTest
         DynamicStringStore stringPropertyStore = mock( DynamicStringStore.class );
 
         final PropertyStore store = new PropertyStore( path, config, new JumpingIdGeneratorFactory( 1 ), pageCache,
-                NullLogProvider.getInstance(), stringPropertyStore,
-                mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class )  );
+                NullLogProvider.getInstance(),
+                stringPropertyStore, mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
         store.initialise( true );
 
         try
