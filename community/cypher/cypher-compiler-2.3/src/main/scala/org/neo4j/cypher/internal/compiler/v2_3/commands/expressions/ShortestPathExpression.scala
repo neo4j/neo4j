@@ -56,9 +56,9 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
     val expander: Expander = addPredicates(ctx, makeRelationshipTypeExpander())
     val shortestPathPredicate = createShortestPathPredicate(ctx, predicates)
     val shortestPathStrategy = if (shortestPathPattern.single)
-      new SingleShortestPathStrategy(expander, shortestPathPattern.allowZeroLength, shortestPathPattern.maxDepth.getOrElse(15), shortestPathPredicate)
+      new SingleShortestPathStrategy(expander, shortestPathPattern.allowZeroLength, shortestPathPattern.maxDepth.getOrElse(Int.MaxValue), shortestPathPredicate)
     else
-      new AllShortestPathsStrategy(expander, shortestPathPattern.allowZeroLength, shortestPathPattern.maxDepth.getOrElse(15), shortestPathPredicate)
+      new AllShortestPathsStrategy(expander, shortestPathPattern.allowZeroLength, shortestPathPattern.maxDepth.getOrElse(Int.MaxValue), shortestPathPredicate)
 
     shortestPathStrategy.findResult(start, end)
   }
@@ -77,7 +77,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
   }
 
   private def getEndPoint(m: Map[String, Any], start: SingleNode): Node = m.getOrElse(start.name,
-    throw new SyntaxException(s"To find a shortest path, both ends of the path need to be provided. Couldn't find `${start}`")).asInstanceOf[Node]
+    throw new SyntaxException(s"To find a shortest path, both ends of the path need to be provided. Couldn't find `$start`")).asInstanceOf[Node]
 
   private def anyStartpointsContainNull(m: Map[String, Any]): Boolean =
     m(shortestPathPattern.left.name) == null || m(shortestPathPattern.right.name) == null

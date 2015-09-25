@@ -368,4 +368,10 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     resultMisspelled.notifications should contain(MissingPropertyNameNotification(InputPosition(18, 1, 19), "propp"))
     resultCorrectlySpelled.notifications shouldBe empty
   }
+
+  test("should warn about unbounded shortest path") {
+    val res = innerExecute("EXPLAIN MATCH p = shortestPath((n)-[*]->(m)) RETURN m")
+
+    res.notifications should contain (UnboundedShortestPathNotification(InputPosition(26, 1, 27)))
+  }
 }
