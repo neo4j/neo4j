@@ -32,6 +32,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.RecoveryLegacyIndexApplierLookup;
+import org.neo4j.kernel.impl.api.index.RecoveryIndexingUpdatesValidator;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.command.CommandHandler;
@@ -70,6 +71,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
+
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
@@ -134,8 +136,8 @@ public class RecoveryTest
         try
         {
             RecoveryLabelScanWriterProvider provider = mock( RecoveryLabelScanWriterProvider.class );
-
             RecoveryLegacyIndexApplierLookup lookup = mock( RecoveryLegacyIndexApplierLookup.class );
+            RecoveryIndexingUpdatesValidator validator = mock( RecoveryIndexingUpdatesValidator.class );
 
             StoreFlusher flusher = mock( StoreFlusher.class );
             final LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>(
@@ -143,7 +145,7 @@ public class RecoveryTest
             LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
 
             life.add( new Recovery( new DefaultRecoverySPI( provider, lookup, flusher, null, logFiles, fs,
-                    logVersionRepository, finder )
+                    logVersionRepository, finder, validator )
             {
                 @Override
                 public Visitor<LogVersionedStoreChannel,IOException> getRecoverer()

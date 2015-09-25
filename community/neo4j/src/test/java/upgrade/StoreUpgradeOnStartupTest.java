@@ -39,7 +39,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
+import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
@@ -52,10 +52,10 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
-import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allLegacyStoreFilesHaveVersion;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveNoTrailer;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasLatestVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateAllFiles;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
 
 @RunWith( Parameterized.class )
@@ -65,15 +65,12 @@ public class StoreUpgradeOnStartupTest
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
-    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-    private final String version;
-    private PageCache pageCache;
-    private File workingDirectory;
+    @Parameterized.Parameter(0)
+    public String version;
 
-    public StoreUpgradeOnStartupTest( String version )
-    {
-        this.version = version;
-    }
+    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+    private File workingDirectory;
+    private StoreVersionCheck check;
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> versions()
@@ -89,11 +86,13 @@ public class StoreUpgradeOnStartupTest
     @Before
     public void setup() throws IOException
     {
-        pageCache = pageCacheRule.getPageCache( fileSystem );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         workingDirectory = testDir.directory( "working_" + version );
+        check = new StoreVersionCheck( pageCache );
         File prepareDirectory = testDir.directory( "prepare_" + version );
         prepareSampleLegacyDatabase( version, fileSystem, workingDirectory, prepareDirectory );
-        assertTrue( allStoreFilesHaveVersion( pageCache, workingDirectory, version ) );
+        assertTrue( allLegacyStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
+
     }
 
     @Test
@@ -105,7 +104,8 @@ public class StoreUpgradeOnStartupTest
 
         // then
         assertTrue( "Some store files did not have the correct version",
-                allStoreFilesHaveVersion( pageCache, workingDirectory, ALL_STORES_VERSION ) );
+                checkNeoStoreHasLatestVersion( check, workingDirectory ) );
+        assertTrue( allStoreFilesHaveNoTrailer( fileSystem, workingDirectory ) );
         assertConsistentStore( workingDirectory );
     }
 
@@ -113,31 +113,8 @@ public class StoreUpgradeOnStartupTest
     public void shouldAbortOnNonCleanlyShutdown() throws Throwable
     {
         // given
-        truncateAllFiles( fileSystem, workingDirectory, version );
-        // Now everything has lost the version info
-
-        try
-        {
-            // when
-            GraphDatabaseService database = createGraphDatabaseService();
-            database.shutdown();// shutdown db in case test fails
-            fail( "Should have been unable to start upgrade on old version" );
-        }
-        catch ( RuntimeException e )
-        {
-            // then
-            assertThat( Exceptions.rootCause( e ), Matchers.instanceOf(
-                    StoreUpgrader.UpgradingStoreVersionNotFoundException.class ) );
-        }
-    }
-
-    @Test
-    public void shouldAbortOnCorruptStore() throws IOException
-    {
-        // given
         File file = new File( workingDirectory, "neostore.propertystore.db.index.keys" );
         truncateFile( fileSystem, file, "StringPropertyStore " + version );
-
         try
         {
             // when
@@ -148,7 +125,7 @@ public class StoreUpgradeOnStartupTest
         catch ( RuntimeException e )
         {
             // then
-            assertThat( Exceptions.rootCause( e ), Matchers.instanceOf( UnableToUpgradeException.class ) );
+            assertThat( Exceptions.rootCause( e ), Matchers.instanceOf( StoreUpgrader.UnableToUpgradeException.class ) );
         }
     }
 

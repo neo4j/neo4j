@@ -27,7 +27,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -46,15 +45,9 @@ import static org.neo4j.kernel.impl.store.PropertyStore.decodeString;
 
 public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token> extends AbstractRecordStore<RECORD>
 {
-    public static abstract class Configuration
-        extends AbstractStore.Configuration
-    {
-
-    }
-
     public static final int NAME_STORE_BLOCK_SIZE = 30;
 
-    private DynamicStringStore nameStore;
+    private final DynamicStringStore nameStore;
     private final TokenFactory<TOKEN> tokenFactory;
 
     public TokenStore(
@@ -65,11 +58,9 @@ public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token
             PageCache pageCache,
             LogProvider logProvider,
             DynamicStringStore nameStore,
-            StoreVersionMismatchHandler versionMismatchHandler,
             TokenFactory<TOKEN> tokenFactory )
     {
-        super( fileName, configuration, idType, idGeneratorFactory, pageCache,
-                logProvider, versionMismatchHandler );
+        super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider);
         this.nameStore = nameStore;
         this.tokenFactory = tokenFactory;
     }
@@ -83,20 +74,6 @@ public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token
     public int getRecordHeaderSize()
     {
         return getRecordSize();
-    }
-
-    @Override
-    public void makeStoreOk()
-    {
-        nameStore.makeStoreOk();
-        super.makeStoreOk();
-    }
-
-    @Override
-    public void visitStore( Visitor<CommonAbstractStore, RuntimeException> visitor )
-    {
-        nameStore.visitStore( visitor );
-        visitor.visit( this );
     }
 
     @Override

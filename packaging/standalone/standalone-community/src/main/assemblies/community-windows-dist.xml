@@ -30,14 +30,14 @@
     <!-- filter plain text -->
     <fileSet>
       <directory>src/main/distribution/text/community</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <lineEnding>dos</lineEnding>
       <filtered>true</filtered>
     </fileSet>
     <!-- non-maven jars -->
     <fileSet>
       <directory>src/main/distribution/binary</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <includes>
         <include>system/lib/*.jar</include>
         <include>lib/*.jar</include>
@@ -45,7 +45,7 @@
     </fileSet>
     <fileSet>
       <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <lineEnding>dos</lineEnding>
       <includes>
         <include>**/*.bat</include>
@@ -60,7 +60,7 @@
     <!-- Neo4j Powershell Modules -->
     <fileSet>
       <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <lineEnding>dos</lineEnding>
       <includes>
         <include>**/*.psd1</include>
@@ -72,7 +72,7 @@
     <!-- upgrade text file -->
     <fileSet>
       <directory>target/upgrade</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <fileMode>0644</fileMode>
       <lineEnding>dos</lineEnding>
       <includes>
@@ -98,7 +98,8 @@
         <include>org.neo4j:*</include>
         <include>jline:jline</include>
         <include>org.apache.lucene:lucene-core</include>
-        <include>org.scala-lang:scala-library</include>
+        <include>org.scala-lang:*</include>
+        <include>org.scala-lang.modules:*</include>
         <include>org.parboiled:*</include>
         <include>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</include>
         <include>net.sf.opencsv:opencsv</include>
@@ -119,7 +120,8 @@
         <exclude>org.neo4j.doc:*</exclude>
         <exclude>jline:jline</exclude>
         <exclude>org.apache.lucene:lucene-core</exclude>
-        <exclude>org.scala-lang:scala-library</exclude>
+        <exclude>org.scala-lang:*</exclude>
+        <exclude>org.scala-lang.modules:*</exclude>
         <exclude>org.parboiled:*</exclude>
         <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
         <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>

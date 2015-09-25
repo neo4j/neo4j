@@ -27,6 +27,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.RecoveryLabelScanWriterProvider;
 import org.neo4j.kernel.impl.api.RecoveryLegacyIndexApplierLookup;
+import org.neo4j.kernel.impl.api.index.RecoveryIndexingUpdatesValidator;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
@@ -46,12 +47,14 @@ public class DefaultRecoverySPI implements Recovery.SPI
     private final FileSystemAbstraction fileSystemAbstraction;
     private final LogVersionRepository logVersionRepository;
     private final PositionToRecoverFrom positionToRecoverFrom;
+    private final RecoveryIndexingUpdatesValidator indexUpdatesValidator;
 
     public DefaultRecoverySPI( RecoveryLabelScanWriterProvider labelScanWriters,
             RecoveryLegacyIndexApplierLookup legacyIndexApplierLookup,
             StoreFlusher storeFlusher, Visitor<LogVersionedStoreChannel,IOException> logFileRecoverer,
             PhysicalLogFiles logFiles, FileSystemAbstraction fileSystemAbstraction,
-            LogVersionRepository logVersionRepository, LatestCheckPointFinder checkPointFinder )
+            LogVersionRepository logVersionRepository, LatestCheckPointFinder checkPointFinder,
+            RecoveryIndexingUpdatesValidator indexUpdatesValidator )
     {
         this.labelScanWriters = labelScanWriters;
         this.legacyIndexApplierLookup = legacyIndexApplierLookup;
@@ -60,6 +63,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
         this.logFiles = logFiles;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.logVersionRepository = logVersionRepository;
+        this.indexUpdatesValidator = indexUpdatesValidator;
         this.positionToRecoverFrom = new PositionToRecoverFrom( checkPointFinder );
     }
 
@@ -70,6 +74,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
         {
             labelScanWriters.close();
             legacyIndexApplierLookup.close();
+            indexUpdatesValidator.close();
         }
         catch ( IOException e )
         {

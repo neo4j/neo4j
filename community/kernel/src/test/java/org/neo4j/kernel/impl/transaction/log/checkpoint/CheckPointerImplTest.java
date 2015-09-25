@@ -20,8 +20,13 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -33,11 +38,16 @@ import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -46,7 +56,6 @@ import static org.mockito.Mockito.when;
 
 public class CheckPointerImplTest
 {
-    private static final NullLogProvider NULL_LOG_PROVIDER = NullLogProvider.getInstance();
 
     private final TransactionIdStore txIdStore = mock( TransactionIdStore.class );
     private final CheckPointThreshold threshold = mock( CheckPointThreshold.class );
@@ -56,45 +65,45 @@ public class CheckPointerImplTest
     private final KernelHealth health = mock( KernelHealth.class );
     private final CheckPointTracer tracer = mock( CheckPointTracer.class, RETURNS_MOCKS );
 
+    private final long initialTransactionId = 2l;
+    private final long transactionId = 42l;
+    private final LogPosition logPosition = new LogPosition( 16l, 233l );
+
+
     @Test
     public void shouldNotFlushIfItIsNotNeeded() throws Throwable
     {
         // Given
-        CheckPointerImpl checkPointing = new CheckPointerImpl( txIdStore, threshold, flusher, logPruning, appender, health,
-                NULL_LOG_PROVIDER, tracer );
+        CheckPointerImpl checkPointing = checkPointer();
         when( threshold.isCheckPointingNeeded( anyLong() ) ).thenReturn( false );
 
         checkPointing.start();
 
         // When
-        checkPointing.checkPointIfNeeded();
+        long txId = checkPointing.checkPointIfNeeded();
 
         // Then
+        assertEquals( -1, txId );
         verifyZeroInteractions( flusher );
         verifyZeroInteractions( tracer );
         verifyZeroInteractions( appender );
     }
 
     @Test
-    public void shouldFlushIfItIsTime() throws Throwable
+    public void shouldFlushIfItIsNeeded() throws Throwable
     {
         // Given
-        CheckPointerImpl checkPointing = new CheckPointerImpl( txIdStore, threshold, flusher, logPruning, appender, health,
-                NULL_LOG_PROVIDER, tracer );
+        CheckPointerImpl checkPointing = checkPointer();
         when( threshold.isCheckPointingNeeded( anyLong() ) ).thenReturn( true, false );
-        LogPosition logPosition = new LogPosition( 16l, 233l );
-        long initialTransactionId = 2l;
-        long transactionId = 42l;
-        long[] triggerCommittedTransaction = {transactionId, logPosition.getLogVersion(), logPosition.getByteOffset()};
-        when( txIdStore.getLastClosedTransaction() ).thenReturn( triggerCommittedTransaction );
-        when( txIdStore.getLastClosedTransactionId() ).thenReturn( initialTransactionId, transactionId, transactionId );
+        mockTxIdStore();
 
         checkPointing.start();
 
         // When
-        checkPointing.checkPointIfNeeded();
+        long txId = checkPointing.checkPointIfNeeded();
 
         // Then
+        assertEquals( transactionId, txId );
         verify( flusher, times( 1 ) ).forceEverything();
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
         verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
@@ -105,4 +114,184 @@ public class CheckPointerImplTest
         verify( tracer, times( 1 ) ).beginCheckPoint();
         verifyNoMoreInteractions( flusher, health, appender, threshold, tracer );
     }
+
+    @Test
+    public void shouldForceCheckPointAlways() throws Throwable
+    {
+        // Given
+        CheckPointerImpl checkPointing = checkPointer();
+        when( threshold.isCheckPointingNeeded( anyLong() ) ).thenReturn( false );
+        mockTxIdStore();
+
+        checkPointing.start();
+
+        // When
+        long txId = checkPointing.forceCheckPoint();
+
+        // Then
+        assertEquals( transactionId, txId );
+        verify( flusher, times( 1 ) ).forceEverything();
+        verify( health, times( 2 ) ).assertHealthy( IOException.class );
+        verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
+        verify( threshold, times( 1 ) ).initialize( initialTransactionId );
+        verify( threshold, times( 1 ) ).checkPointHappened( transactionId );
+        verify( threshold, never() ).isCheckPointingNeeded( transactionId );
+        verify( logPruning, times( 1 ) ).pruneLogs( logPosition.getLogVersion() );
+        verifyZeroInteractions( tracer );
+        verifyNoMoreInteractions( flusher, health, appender, threshold, tracer );
+    }
+
+    @Test
+    public void shouldCheckPointAlwaysWhenThereIsNoRunningCheckPoint() throws Throwable
+    {
+        // Given
+        CheckPointerImpl checkPointing = checkPointer();
+        when( threshold.isCheckPointingNeeded( anyLong() ) ).thenReturn( false );
+        mockTxIdStore();
+
+        checkPointing.start();
+
+        // When
+        long txId = checkPointing.tryCheckPoint();
+
+        // Then
+        assertEquals( transactionId, txId );
+        verify( flusher, times( 1 ) ).forceEverything();
+        verify( health, times( 2 ) ).assertHealthy( IOException.class );
+        verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
+        verify( threshold, times( 1 ) ).initialize( initialTransactionId );
+        verify( threshold, times( 1 ) ).checkPointHappened( transactionId );
+        verify( threshold, never() ).isCheckPointingNeeded( transactionId );
+        verify( logPruning, times( 1 ) ).pruneLogs( logPosition.getLogVersion() );
+        verifyZeroInteractions( tracer );
+        verifyNoMoreInteractions( flusher, health, appender, threshold, tracer );
+    }
+
+    @Test
+    public void forceCheckPointShouldWaitTheCurrentCheckPointingToCompleteBeforeRunning() throws Throwable
+    {
+        // Given
+        ReentrantLock reentrantLock = new ReentrantLock();
+        final Lock spyLock = spy( reentrantLock );
+
+        doAnswer( new Answer()
+        {
+            @Override
+            public Object answer( InvocationOnMock invocation ) throws Throwable
+            {
+                verify( appender ).checkPoint( any( LogPosition.class ), any( LogCheckPointEvent.class ) );
+                reset( appender );
+                invocation.callRealMethod();
+                return null;
+            }
+        } ).when( spyLock ).unlock();
+
+        final CheckPointerImpl checkPointing = checkPointer( spyLock );
+        mockTxIdStore();
+
+        final CountDownLatch startSignal = new CountDownLatch( 2 );
+        final CountDownLatch completed = new CountDownLatch( 2 );
+
+        checkPointing.start();
+
+        Thread checkPointerThread = new CheckPointerThread( checkPointing, startSignal, completed );
+
+        Thread forceCheckPointThread = new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    startSignal.countDown();
+                    startSignal.await();
+                    checkPointing.forceCheckPoint();
+
+                    completed.countDown();
+                }
+                catch ( Throwable e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        };
+
+        // when
+        checkPointerThread.start();
+        forceCheckPointThread.start();
+
+        completed.await();
+
+        verify( spyLock, times( 2 ) ).lock();
+        verify( spyLock, times( 2 ) ).unlock();
+    }
+
+    @Test
+    public void tryCheckPointShouldWaitTheCurrentCheckPointingToCompleteNoRunCheckPointButUseTheTxIdOfTheEarlierRun()
+            throws Throwable
+    {
+        // Given
+        Lock lock = mock( Lock.class );
+        final CheckPointerImpl checkPointing = checkPointer( lock );
+        mockTxIdStore();
+
+        checkPointing.forceCheckPoint();
+
+        verify( appender ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
+        reset( appender );
+
+        checkPointing.tryCheckPoint();
+
+        verifyNoMoreInteractions( appender );
+    }
+
+    private CheckPointerImpl checkPointer( Lock lock )
+    {
+        return new CheckPointerImpl( txIdStore, threshold, flusher, logPruning, appender, health,
+                NullLogProvider.getInstance(), tracer, lock );
+    }
+
+    private CheckPointerImpl checkPointer()
+    {
+        return checkPointer( new ReentrantLock() );
+    }
+
+    private void mockTxIdStore()
+    {
+        long[] triggerCommittedTransaction = {transactionId, logPosition.getLogVersion(), logPosition.getByteOffset()};
+        when( txIdStore.getLastClosedTransaction() ).thenReturn( triggerCommittedTransaction );
+        when( txIdStore.getLastClosedTransactionId() ).thenReturn( initialTransactionId, transactionId, transactionId );
+    }
+
+    private static class CheckPointerThread extends Thread
+    {
+        private final CheckPointerImpl checkPointing;
+        private CountDownLatch startSignal;
+        private CountDownLatch completed;
+
+        public CheckPointerThread( CheckPointerImpl checkPointing, CountDownLatch startSignal,
+                CountDownLatch completed )
+        {
+            this.checkPointing = checkPointing;
+            this.startSignal = startSignal;
+            this.completed = completed;
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                startSignal.countDown();
+                startSignal.await();
+                checkPointing.forceCheckPoint();
+                completed.countDown();
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
+    }
+
 }

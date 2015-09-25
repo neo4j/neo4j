@@ -73,46 +73,6 @@ public class WriteTransactionCommandOrderingTest
         when( store.getRelationshipStore() ).thenReturn( relationshipStore );
     }
 
-    private static RelationshipRecord missingRelationship()
-    {
-        return new RelationshipRecord( -1 );
-    }
-
-    private static RelationshipRecord createdRelationship()
-    {
-        RelationshipRecord record = new RelationshipRecord( 2 );
-        record.setInUse( true );
-        record.setCreated();
-        return record;
-    }
-
-    private static RelationshipRecord inUseRelationship()
-    {
-        RelationshipRecord record = new RelationshipRecord( 1 );
-        record.setInUse( true );
-        return record;
-    }
-
-    private static PropertyRecord missingProperty()
-    {
-        return new PropertyRecord( -1 );
-    }
-
-    private static PropertyRecord createdProperty()
-    {
-        PropertyRecord record = new PropertyRecord( 2 );
-        record.setInUse( true );
-        record.setCreated();
-        return record;
-    }
-
-    private static PropertyRecord inUseProperty()
-    {
-        PropertyRecord record = new PropertyRecord( 1 );
-        record.setInUse( true );
-        return record;
-    }
-
     private static NodeRecord missingNode()
     {
         return new NodeRecord( -1, false, -1, -1 );
@@ -226,27 +186,6 @@ public class WriteTransactionCommandOrderingTest
                 Collections.<RecordProxy<Long,Collection<DynamicRecord>,SchemaRule>>emptyList() );
 
         return new TransactionRecordState( mock( NeoStores.class ), mock( IntegrityValidator.class ), context );
-
-//
-//        Command.PropertyCommand updatedProp = new Command.PropertyCommand();
-//        updatedProp.init( inUseProperty(), inUseProperty() );
-//        tx.injectCommand( updatedProp );
-//        Command.PropertyCommand deletedProp = new Command.PropertyCommand();
-//        deletedProp.init( inUseProperty(), missingProperty() );
-//        tx.injectCommand( deletedProp );
-//        Command.PropertyCommand createdProp = new Command.PropertyCommand();
-//        createdProp.init( missingProperty(), createdProperty() );
-//        tx.injectCommand( createdProp );
-//
-//        Command.RelationshipCommand updatedRel = new Command.RelationshipCommand();
-//        updatedRel.init( inUseRelationship() );
-//        tx.injectCommand( updatedRel );
-//        Command.RelationshipCommand deletedRel =new Command.RelationshipCommand();
-//        deletedRel.init( missingRelationship() );
-//        tx.injectCommand( deletedRel );
-//        Command.RelationshipCommand createdRel = new Command.RelationshipCommand();
-//        createdRel.init( createdRelationship() );
-//        tx.injectCommand( createdRel );
     }
 
     private static class RecordingPropertyStore extends PropertyStore
@@ -255,7 +194,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingPropertyStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, NullLogProvider.getInstance(), null, null, null, null );
+            super( null, new Config(), null, null, NullLogProvider.getInstance(), null, null, null );
             this.currentRecording = currentRecording;
         }
 
@@ -271,11 +210,6 @@ public class WriteTransactionCommandOrderingTest
         }
 
         @Override
-        protected void checkVersion()
-        {
-        }
-
-        @Override
         protected void loadStorage()
         {
         }
@@ -287,7 +221,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingNodeStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, NullLogProvider.getInstance(), null, null );
+            super( null, new Config(), null, null, NullLogProvider.getInstance(), null );
             this.currentRecording = currentRecording;
         }
 
@@ -299,11 +233,6 @@ public class WriteTransactionCommandOrderingTest
 
         @Override
         protected void checkStorage( boolean createIfNotExists )
-        {
-        }
-
-        @Override
-        protected void checkVersion()
         {
         }
 
@@ -327,7 +256,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingRelationshipStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, NullLogProvider.getInstance(), null );
+            super( null, new Config(), null, null, NullLogProvider.getInstance() );
             this.currentRecording = currentRecording;
         }
 
@@ -343,11 +272,6 @@ public class WriteTransactionCommandOrderingTest
         }
 
         @Override
-        protected void checkVersion()
-        {
-        }
-
-        @Override
         protected void loadStorage()
         {
         }
@@ -356,11 +280,8 @@ public class WriteTransactionCommandOrderingTest
     private static class OrderVerifyingCommandHandler extends CommandHandler.Adapter
     {
         private boolean nodeVisited;
-        private boolean relationshipVisited;
-        private boolean propertyVisited;
 
         // Commands should appear in this order
-        private boolean created;
         private boolean updated;
         private boolean deleted;
 
@@ -369,18 +290,14 @@ public class WriteTransactionCommandOrderingTest
         {
             if ( !nodeVisited )
             {
-                created = false;
                 updated = false;
                 deleted = false;
             }
             nodeVisited = true;
-            assertFalse( relationshipVisited );
-            assertFalse( propertyVisited );
 
             switch ( command.getMode() )
             {
             case CREATE:
-                created = true;
                 assertFalse( updated );
                 assertFalse( deleted );
                 break;

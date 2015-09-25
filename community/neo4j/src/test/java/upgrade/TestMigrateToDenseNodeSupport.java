@@ -155,15 +155,14 @@ public class TestMigrateToDenseNodeSupport
     public void migrateDbWithDenseNodes() throws Exception
     {
         // migrate
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir.getAbsolutePath() )
-                .setConfig( allow_store_upgrade, "true" ).newGraphDatabase();
-        db.shutdown();
+        new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir )
+                .setConfig( allow_store_upgrade, "true" ).newGraphDatabase().shutdown();
 
         // check consistency
         assertConsistentStore( dir );
 
         // open again to do extra checks
-        db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir.getAbsolutePath() ).newGraphDatabase();
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir ).newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             ResourceIterator<Node> allNodesWithLabel = db.findNodes( referenceNode );

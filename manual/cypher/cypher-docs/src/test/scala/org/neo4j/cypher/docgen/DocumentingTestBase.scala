@@ -284,10 +284,6 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
       case Some(result) => dumpToFileWithResult(dir, writer, title, docQuery, optionalResultExplanation, text, result, consoleData, parameters)
       case  None =>
     }
-
-    if (graphvizExecutedAfter) {
-      dumpGraphViz(dir, graphvizOptions.trim)
-    }
   }
 
   def prepareForTest(title: String, prepare: Option[GraphDatabaseAPI => Unit]) {
@@ -314,6 +310,9 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
         val rewindable = RewindableExecutionResult(engine.execute(s"$s $query", parameters))
         db.inTx(assertions(rewindable))
         val dump = rewindable.dumpToString()
+        if (graphvizExecutedAfter && s == planners.head) {
+          dumpGraphViz(dir, graphvizOptions.trim)
+        }
         reset()
         prepareFunction
         Some(dump)

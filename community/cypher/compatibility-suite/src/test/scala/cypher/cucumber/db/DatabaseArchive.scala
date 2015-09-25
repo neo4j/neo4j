@@ -20,14 +20,15 @@
 package cypher.cucumber.db
 
 import java.io.{File => JFile}
+import java.nio.file.{Path => JPath, Files, Paths}
 
-import org.neo4j.graphdb.factory.GraphDatabaseFactory
+import org.neo4j.graphdb.factory.{GraphDatabaseSettings, GraphDatabaseFactory}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.reflect.io.File
 
-case class ImportQuery(script: String, params: java.util.Map[String, Object])
+case class ImportQuery(script: String, params: java.util.Map[String, Object], fileRoot: JPath)
 
 object AvailableDatabase {
   final val archive = Map("cineast" -> importInto("/cypher/db/cineast/"))
@@ -36,43 +37,33 @@ object AvailableDatabase {
   private final val PARAMS_FILENAME = "params.json"
 
   private def importInto(path: String): ImportQuery = {
-    val qualifiedPath = getClass.getResource(path).getPath
-    val scriptFile = new JFile(qualifiedPath, SCRIPT_FILENAME)
-    val paramsFile = new JFile(qualifiedPath, PARAMS_FILENAME)
-    assert(scriptFile.exists(), scriptFile + " should exist")
-    assert(paramsFile.exists(), paramsFile + " should exist")
+    val basePath = Paths.get(getClass.getResource(path).toURI)
+    val scriptPath = basePath.resolve(SCRIPT_FILENAME)
+    val paramsPath = basePath.resolve(PARAMS_FILENAME)
+    assert(Files.exists(scriptPath), scriptPath + " should exist")
+    assert(Files.exists(paramsPath), paramsPath + " should exist")
 
-    val script = File.apply(scriptFile).slurp()
-
-    val content = File.apply(paramsFile).slurp()
+    val script = File.apply(scriptPath.toFile).slurp()
+    val content = File.apply(paramsPath.toFile).slurp()
     val json = scala.util.parsing.json.JSON.parseFull(content)
     val params = json match {
-      case Some(map: Map[_,_]) => map.asInstanceOf[Map[String,AnyRef]].mapValues{
-        case path:String if relativeFileURI(path) =>
-          val qualified = new JFile(qualifiedPath, path.substring(5))
-          if (qualified.isFile) "file:" + qualified.getPath else path
-        case v => v
-      }.asJava
-      case _ => throw new IllegalStateException(s"Unable to parse json file containing params at $paramsFile")
+      case Some(map: Map[_,_]) => map.asInstanceOf[Map[String,AnyRef]].asJava
+      case _ => throw new IllegalStateException(s"Unable to parse json file containing params at $paramsPath")
     }
 
-    ImportQuery(script, params)
+    ImportQuery(script, params, basePath)
   }
-
-  private def relativeFileURI(str: String):Boolean = if (str.startsWith("file:")) try {
-    val uri = new java.net.URI(str)
-    uri.getScheme == "file" && !uri.getSchemeSpecificPart.startsWith("/")
-  } catch {
-    case e:java.net.URISyntaxException=> false
-  } else false
 }
 
 case class DatabaseFactory(dbDir: JFile) extends ((String) => Unit) {
   override def apply(dbName: String): Unit = {
-    val ImportQuery(script, params) = AvailableDatabase.archive(dbName)
+    val ImportQuery(script, params, fileRoot) = AvailableDatabase.archive(dbName)
     val dbPath = new JFile(dbDir, dbName)
     if (!dbPath.exists()) {
-      val graph = new GraphDatabaseFactory().newEmbeddedDatabase(dbPath)
+      val graph = new GraphDatabaseFactory()
+        .newEmbeddedDatabaseBuilder(dbPath)
+        .setConfig(GraphDatabaseSettings.load_csv_file_url_root, fileRoot.toAbsolutePath.toString)
+        .newGraphDatabase()
       script.split(';').filter(_.trim.nonEmpty) foreach { q =>
         graph.execute(q.trim, params)
       }

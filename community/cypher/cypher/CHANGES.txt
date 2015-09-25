@@ -56,6 +56,7 @@ o Cypher may now use full index scans to solve queries containing has(n.prop) if
 
 2.2.6
 -----
+o Fixes #5336 - Properly handle matching on multiple labels
 o Fixes #5195 - USING INDEX hints breaks some queries
 
 2.2.5

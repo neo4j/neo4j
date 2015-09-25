@@ -276,7 +276,6 @@ public class StartClient
         shutdownIfNecessary( server );
     }
 
-    // visible for testing
     protected GraphDatabaseShellServer getGraphDatabaseShellServer( String dbPath, boolean readOnly, String configFile )
             throws RemoteException
     {

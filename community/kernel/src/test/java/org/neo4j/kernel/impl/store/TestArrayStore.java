@@ -57,25 +57,19 @@ public class TestArrayStore
     @Rule
     public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
-    private File dir;
     private DynamicArrayStore arrayStore;
     private NeoStores neoStores;
 
     @Before
     public void before() throws Exception
     {
-        dir = testDirectory.graphDbDir();
+        File dir = testDirectory.graphDbDir();
         Map<String, String> configParams = MapUtil.stringMap();
         Config config = new Config( configParams );
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreFactory factory = new StoreFactory(
-                dir,
-                config,
-                idGeneratorFactory,
-                pageCache,
-                fs,
+        StoreFactory factory = new StoreFactory( dir, config, idGeneratorFactory, pageCache, fs,
                 NullLogProvider.getInstance() );
         neoStores = factory.openNeoStores( true );
         arrayStore = neoStores.getPropertyStore().getArrayStore();

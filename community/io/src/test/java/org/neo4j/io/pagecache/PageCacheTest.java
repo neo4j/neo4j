@@ -107,7 +107,7 @@ import static org.neo4j.test.ThreadTestUtils.fork;
 
 public abstract class PageCacheTest<T extends PageCache>
 {
-    private static final long SEMI_LONG_TIMEOUT_MILLIS = 40_000;
+    private static final long SEMI_LONG_TIMEOUT_MILLIS = 60_000;
 
     protected static ExecutorService executor;
 
@@ -1694,7 +1694,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @RepeatRule.Repeat( times = 12000 )
+    @RepeatRule.Repeat( times = 1000 )
     @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void mustNotLoseUpdates() throws Exception
     {
@@ -1734,6 +1734,10 @@ public abstract class PageCacheTest<T extends PageCache>
             for ( int i = 0; i < filePages; i++ )
             {
                 assertTrue( "failed to initialise file page " + i, cursor.next() );
+                for ( int j = 0; j < pageSize; j++ )
+                {
+                    cursor.putByte( (byte) 0 );
+                }
             }
         }
         pageCache.flushAndForce();
@@ -1768,6 +1772,7 @@ public abstract class PageCacheTest<T extends PageCache>
                 while ( !shouldStop.get() )
                 {
                     int pageId = rng.nextInt( 0, filePages );
+                    int offset = threadId * 4;
                     boolean updateCounter = rng.nextBoolean();
                     int pf_flags = updateCounter? PF_EXCLUSIVE_LOCK : PF_SHARED_LOCK;
                     try ( PageCursor cursor = pagedFile.io( pageId, pf_flags ) )
@@ -1778,13 +1783,13 @@ public abstract class PageCacheTest<T extends PageCache>
                             assertTrue( cursor.next() );
                             do
                             {
-                                cursor.setOffset( threadId * 4 );
+                                cursor.setOffset( offset );
                                 counter = cursor.getInt();
                             }
                             while ( cursor.shouldRetry() );
                             String lockName = updateCounter ? "PF_EXCLUSIVE_LOCK" : "PF_SHARED_LOCK";
                             assertThat( "inconsistent page read from filePageId = " + pageId + ", with " + lockName +
-                                            " [t:" + Thread.currentThread().getId() + "]",
+                                            ", workerId = " + threadId + " [t:" + Thread.currentThread().getId() + "]",
                                     counter, is( pageCounts[pageId] ) );
                         }
                         catch ( Throwable throwable )
@@ -1796,7 +1801,7 @@ public abstract class PageCacheTest<T extends PageCache>
                         {
                             counter++;
                             pageCounts[pageId]++;
-                            cursor.setOffset( threadId * 4 );
+                            cursor.setOffset( offset );
                             cursor.putInt( counter );
                         }
                     }
@@ -1812,7 +1817,7 @@ public abstract class PageCacheTest<T extends PageCache>
             futures.add( executor.submit( new Worker( i ) ) );
         }
 
-        Thread.sleep( 1 );
+        Thread.sleep( 10 );
         shouldStop.set( true );
 
         for ( Future<Result> future : futures )

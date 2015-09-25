@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
@@ -55,13 +56,12 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
-
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find20FormatStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
+import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
 public class StoreMigratorFrom20IT
 {
@@ -71,10 +71,9 @@ public class StoreMigratorFrom20IT
     public void shouldMigrate() throws IOException, ConsistencyCheckIncompleteException
     {
         // WHEN
-        StoreMigrator storeMigrator = new StoreMigrator(
-                monitor, fs, pageCache, upgradableDatabase, config, NullLogService.getInstance() );
+        StoreMigrator storeMigrator = new StoreMigrator( monitor, fs, pageCache, config, NullLogService.getInstance() );
         upgrader( storeMigrator ).migrateIfNeeded(
-                find20FormatStoreDirectory( storeDir.directory() ), schemaIndexProvider );
+                find20FormatStoreDirectory( storeDir.directory() ), upgradableDatabase, schemaIndexProvider );
 
         // THEN
         assertEquals( 100, monitor.eventSize() );
@@ -106,9 +105,8 @@ public class StoreMigratorFrom20IT
         File legacyStoreDir = find20FormatStoreDirectory( storeDir.directory() );
 
         // When
-        StoreMigrator storeMigrator = new StoreMigrator(
-                monitor, fs, pageCache, upgradableDatabase, config, NullLogService.getInstance() );
-        upgrader( storeMigrator ).migrateIfNeeded( legacyStoreDir, schemaIndexProvider );
+        StoreMigrator storeMigrator = new StoreMigrator( monitor, fs, pageCache, config, NullLogService.getInstance() );
+        upgrader( storeMigrator ).migrateIfNeeded( legacyStoreDir, upgradableDatabase, schemaIndexProvider );
         ClusterManager.ManagedCluster cluster = buildClusterWithMasterDirIn( fs, legacyStoreDir, life );
         cluster.await( allSeesAllAsAvailable() );
         cluster.sync();
@@ -178,15 +176,10 @@ public class StoreMigratorFrom20IT
     public void setUp()
     {
         pageCache = pageCacheRule.getPageCache( fs );
-
-        storeFactory = new StoreFactory(
-                storeDir.directory(),
-                config,
-                new DefaultIdGeneratorFactory( fs ),
-                pageCache,
-                fs,
-                NullLogProvider.getInstance() );
-        upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
+        storeFactory = new StoreFactory( storeDir.directory(), config, new DefaultIdGeneratorFactory( fs ),
+                pageCache, fs, NullLogProvider.getInstance() );
+        upgradableDatabase =
+                new UpgradableDatabase( new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
     }
 
     @After

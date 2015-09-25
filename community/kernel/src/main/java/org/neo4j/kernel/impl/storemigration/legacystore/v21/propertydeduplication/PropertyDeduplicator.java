@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.StoreVersionMismatchHandler;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -66,14 +65,14 @@ public class PropertyDeduplicator
 
     public void deduplicateProperties() throws IOException
     {
-        final StoreFactory storeFactory = new StoreFactory(
-                fileSystem, workingDir, pageCache, NullLogProvider.getInstance(), StoreVersionMismatchHandler.ALLOW_OLD_VERSION );
-
-        try ( NeoStores neoStores = storeFactory.openNeoStores( false ) )
+        final StoreFactory storeFactory =
+                new StoreFactory( fileSystem, workingDir, pageCache, NullLogProvider.getInstance() );
+        try ( NeoStores neoStores = storeFactory.openNeoStores( false, false ) )
         {
             PropertyStore propertyStore = neoStores.getPropertyStore();
             NodeStore nodeStore = neoStores.getNodeStore();
             SchemaStore schemaStore = neoStores.getSchemaStore();
+            neoStores.makeStoreOk();
             PrimitiveLongObjectMap<List<DuplicateCluster>> duplicateClusters = collectConflictingProperties( propertyStore );
             resolveConflicts( duplicateClusters, propertyStore, nodeStore, schemaStore );
         }

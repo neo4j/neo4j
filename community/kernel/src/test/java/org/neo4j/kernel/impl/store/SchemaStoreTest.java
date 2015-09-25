@@ -62,13 +62,8 @@ public class SchemaStoreTest
         fs.get().mkdirs( storeDir );
         config = new Config();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs.get() );
-        storeFactory = new StoreFactory(
-                storeDir,
-                config,
-                idGeneratorFactory,
-                pageCacheRule.getPageCache( fs.get() ),
-                fs.get(),
-                NullLogProvider.getInstance() );
+        storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCacheRule.getPageCache( fs.get() ),
+                fs.get(), NullLogProvider.getInstance() );
         neoStores = storeFactory.openNeoStores( true );
         store = neoStores.getSchemaStore();
     }

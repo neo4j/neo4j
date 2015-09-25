@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
@@ -264,14 +263,23 @@ public class TxPushStrategyConfigIT
                 .monitor( new TransactionTemplate.Monitor.Adapter()
                 {
                     @Override
+                    public void retrying()
+                    {
+                        System.err.println( "Retrying..." );
+                    }
+
+                    @Override
                     public void failure( Throwable ex )
                     {
+                        System.err.println( "Attempt failed with " + ex  );
+
                         // Assume this is because of master switch
                         // Redo the machine id mapping
                         cluster.await( allSeesAllAsAvailable() );
                         mapMachineIds( cluster );
                     }
                 } );
+
         template.execute( new Consumer<Transaction>()
         {
             @Override

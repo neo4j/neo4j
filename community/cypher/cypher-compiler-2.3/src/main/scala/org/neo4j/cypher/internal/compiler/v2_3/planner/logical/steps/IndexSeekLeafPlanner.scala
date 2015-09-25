@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
-import org.neo4j.cypher.internal.frontend.v2_3.notification.IndexSeekUnfulfillableNotification
+import org.neo4j.cypher.internal.frontend.v2_3.notification.IndexLookupUnfulfillableNotification
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 
@@ -70,7 +70,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
     }.flatten
 
     if (resultPlans.isEmpty) {
-      DynamicPropertyNotifier.process(findNonSeekableIdentifiers(predicates), IndexSeekUnfulfillableNotification, qg)
+      DynamicPropertyNotifier.process(findNonSeekableIdentifiers(predicates), IndexLookupUnfulfillableNotification, qg)
     }
 
     resultPlans

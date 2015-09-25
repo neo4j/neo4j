@@ -41,10 +41,10 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
 
   def combiner: SelectivityCombiner = IndependenceCombiner
 
-  def not(number: Double) = Selectivity(number).negate.factor
-  def and(numbers: Double*) = combiner.andTogetherSelectivities(numbers.map(Selectivity.apply)).get.factor
-  def or(numbers: Double*) = combiner.orTogetherSelectivities(numbers.map(Selectivity.apply)).get.factor
-  def orTimes(times: Int, number: Double) = combiner.orTogetherSelectivities(1.to(times).map(_ => Selectivity(number))).get.factor
+  def not(number: Double) = Selectivity.of(number).getOrElse(Selectivity.ONE).negate.factor
+  def and(numbers: Double*) = combiner.andTogetherSelectivities(numbers.map(Selectivity.of(_).getOrElse(Selectivity.ONE))).get.factor
+  def or(numbers: Double*) = combiner.orTogetherSelectivities(numbers.map(Selectivity.of(_).getOrElse(Selectivity.ONE))).get.factor
+  def orTimes(times: Int, number: Double) = combiner.orTogetherSelectivities(1.to(times).map(_ => Selectivity.of(number).get)).get.factor
 
   def degree(above: Double, below: Double) = above / below
 
@@ -152,9 +152,9 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
           (labelName, propertyName) match {
             case (Some(lName), Some(pName)) =>
               val selectivity = knownIndexSelectivity.get((lName, pName))
-              selectivity.map(Selectivity.apply)
+              selectivity.map(Selectivity.of(_).getOrElse(Selectivity.ONE))
 
-            case _ => Some(Selectivity(0))
+            case _ => Some(Selectivity.ZERO)
           }
         }
 
@@ -164,9 +164,9 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
           (labelName, propertyName) match {
             case (Some(lName), Some(pName)) =>
               val selectivity = knownIndexPropertyExistsSelectivity.get((lName, pName))
-              selectivity.map(Selectivity.apply)
+              selectivity.map(s => Selectivity.of(s).get)
 
-            case _ => Some(Selectivity(0))
+            case _ => Some(Selectivity.ZERO)
           }
         }
 

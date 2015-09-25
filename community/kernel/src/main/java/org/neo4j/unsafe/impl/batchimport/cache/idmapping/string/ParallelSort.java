@@ -201,6 +201,14 @@ public class ParallelSort
          * @return {@code true} if {@code right} is greater than or equal to {@code pivot}.
          */
         boolean ge( long right, long pivot );
+
+        /**
+         * @param dataValue the data value in the used dataCache for a given tracker index.
+         * @return actual data value given the data value retrieved from the dataCache at a given index.
+         * This is exposed to be able to introduce an indirection while preparing the tracker indexes
+         * just like the other methods on this interface does.
+         */
+        long dataValue( long dataValue );
     }
 
     public static final Comparator DEFAULT = new Comparator()
@@ -215,6 +223,12 @@ public class ParallelSort
         public boolean ge( long right, long pivot )
         {
             return Utils.unsignedCompare( right, pivot, CompareType.GE );
+        }
+
+        @Override
+        public long dataValue( long dataValue )
+        {
+            return dataValue;
         }
     };
 
@@ -239,7 +253,7 @@ public class ParallelSort
         void incrementProgress( int diff )
         {
             threadLocalProgress += diff;
-            if ( threadLocalProgress == 10_000 /*reasonably big to dwarf passing a memory barrier*/ )
+            if ( threadLocalProgress >= 10_000 /*reasonably big to dwarf passing a memory barrier*/ )
             {   // Update the total progress
                 reportProgress();
             }
@@ -388,7 +402,7 @@ public class ParallelSort
         {
             for ( long i = 0; i <= highestSetIndex; i++ )
             {
-                int rIndex = radixCalculator.radixOf( dataCache.get( i ) );
+                int rIndex = radixCalculator.radixOf( comparator.dataValue( dataCache.get( i ) ) );
                 if ( rIndex > lowRadixRange && rIndex <= highRadixRange )
                 {
                     long trackerIndex = (rangeParams[0] + bucketIndex++);

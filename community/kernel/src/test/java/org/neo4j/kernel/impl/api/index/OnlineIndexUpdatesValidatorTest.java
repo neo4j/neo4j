@@ -30,9 +30,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
@@ -51,7 +49,6 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.state.LazyIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
@@ -61,15 +58,16 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
-import static org.neo4j.kernel.impl.api.TransactionApplicationMode.RECOVERY;
+
+import static java.util.Arrays.asList;
+
+import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
-public class IndexUpdatesValidatorTest
+public class OnlineIndexUpdatesValidatorTest
 {
     private final NeoStores neoStores = mock( NeoStores.class );
 
@@ -95,7 +93,7 @@ public class IndexUpdatesValidatorTest
         TransactionRepresentation tx = new PhysicalTransactionRepresentation( Arrays.<Command>asList( command ) );
 
         // When
-        ValidatedIndexUpdates updates = validator.validate( tx, INTERNAL );
+        ValidatedIndexUpdates updates = validator.validate( tx );
 
         // Then
         assertNotSame( updates, ValidatedIndexUpdates.NONE );
@@ -103,7 +101,7 @@ public class IndexUpdatesValidatorTest
         LazyIndexUpdates expectedUpdates = new LazyIndexUpdates( nodeStore, propertyStore, propertyLoader,
                 emptyPropCommands, groupedById( command ) );
 
-        verify( indexingService ).validate( eq( expectedUpdates ) );
+        verify( indexingService ).validate( eq( expectedUpdates ), eq( ONLINE ) );
     }
 
     @Test
@@ -120,7 +118,7 @@ public class IndexUpdatesValidatorTest
         TransactionRepresentation tx = new PhysicalTransactionRepresentation( Arrays.<Command>asList( command ) );
 
         // When
-        ValidatedIndexUpdates updates = validator.validate( tx, INTERNAL );
+        ValidatedIndexUpdates updates = validator.validate( tx );
 
         // Then
         assertNotSame( updates, ValidatedIndexUpdates.NONE );
@@ -128,7 +126,7 @@ public class IndexUpdatesValidatorTest
         LazyIndexUpdates expectedUpdates = new LazyIndexUpdates( nodeStore, propertyStore, propertyLoader,
                 groupedByNodeId( command ), emptyNodeCommands );
 
-        verify( indexingService ).validate( expectedUpdates );
+        verify( indexingService ).validate( expectedUpdates, ONLINE );
     }
 
     @Test
@@ -144,60 +142,11 @@ public class IndexUpdatesValidatorTest
         TransactionRepresentation tx = new PhysicalTransactionRepresentation( Arrays.<Command>asList( command ) );
 
         // When
-        ValidatedIndexUpdates updates = validator.validate( tx, INTERNAL );
+        ValidatedIndexUpdates updates = validator.validate( tx );
 
         // Then
         assertSame( updates, ValidatedIndexUpdates.NONE );
-        verify( indexingService, never() ).validate( any( LazyIndexUpdates.class ) );
-    }
-
-    @Test
-    @SuppressWarnings( "unchecked" )
-    public void shouldNotUseIndexingServiceToValidateRecoveredUpdates() throws IOException
-    {
-        // Given
-        IndexUpdatesValidator validator = newIndexUpdatesValidatorWithMockedDependencies();
-
-        PropertyRecord before = new PropertyRecord( 11 );
-        PropertyRecord after = new PropertyRecord( 12 );
-        after.setNodeId( 42 );
-        PropertyCommand command = new PropertyCommand().init( before, after );
-
-        TransactionRepresentation tx = new PhysicalTransactionRepresentation( Arrays.<Command>asList( command ) );
-
-        // When
-        ValidatedIndexUpdates updates = validator.validate( tx, RECOVERY );
-
-        // Then
-        assertNotSame( updates, ValidatedIndexUpdates.NONE );
-        verify( indexingService, never() ).validate( any( Iterable.class ) );
-    }
-
-    @Test
-    public void recoveredValidatedUpdatesShouldFlushRecoveredNodeIds() throws Exception
-    {
-        // Given
-        long nodeId1 = 42;
-        long nodeId2 = 4242;
-        long nodeId3 = 424242;
-
-        PrimitiveLongSet expectedRecoveredNodeIds = PrimitiveLongCollections.setOf( nodeId1, nodeId2, nodeId3 );
-
-        IndexUpdatesValidator validator = newIndexUpdatesValidatorWithMockedDependencies();
-
-        TransactionRepresentation tx = new PhysicalTransactionRepresentation( asList(
-                nodeAddRandomLabelsCommand( nodeId1 ),
-                nodeAddRandomLabelsCommand( nodeId2 ),
-                nodeAddRandomLabelsCommand( nodeId3 )
-        ) );
-
-        // When
-        ValidatedIndexUpdates updates = validator.validate( tx, RECOVERY );
-        verifyZeroInteractions( indexingService );
-        updates.flush();
-
-        // Then
-        verify( indexingService ).addRecoveredNodeIds( expectedRecoveredNodeIds );
+        verify( indexingService, never() ).validate( any( LazyIndexUpdates.class ), any( IndexUpdateMode.class ) );
     }
 
     @Test
@@ -214,14 +163,14 @@ public class IndexUpdatesValidatorTest
                 commands.property(), commands.node() );
 
         IndexCapacityExceededException error = new IndexCapacityExceededException( 100, 100 );
-        doThrow( new UnderlyingStorageException( error ) ).when( indexingService ).validate( updates );
+        doThrow( new UnderlyingStorageException( error ) ).when( indexingService ).validate( updates, ONLINE );
 
         IndexUpdatesValidator validator = newIndexUpdatesValidatorWithMockedDependencies();
 
         try
         {
             // When
-            validator.validate( tx, INTERNAL );
+            validator.validate( tx );
             fail( "Should have thrown " + UnderlyingStorageException.class.getSimpleName() );
         }
         catch ( UnderlyingStorageException e )
@@ -251,7 +200,7 @@ public class IndexUpdatesValidatorTest
         ) );
 
         // When
-        ValidatedIndexUpdates validatedUpdates = validator.validate( tx, INTERNAL );
+        ValidatedIndexUpdates validatedUpdates = validator.validate( tx );
 
         // Then
         assertNotSame( ValidatedIndexUpdates.NONE, validatedUpdates );
@@ -260,7 +209,7 @@ public class IndexUpdatesValidatorTest
                 groupedByNodeId( addProperty1ToNode1, addProperty2ToNode1, addProperty1ToNode2 ),
                 groupedById( createNode1, createNode2 ) );
 
-        verify( indexingService ).validate( expectedUpdates );
+        verify( indexingService ).validate( expectedUpdates, ONLINE );
     }
 
     @Test
@@ -276,7 +225,7 @@ public class IndexUpdatesValidatorTest
         );
 
         // When
-        ValidatedIndexUpdates validatedUpdates = validator.validate( tx, INTERNAL );
+        ValidatedIndexUpdates validatedUpdates = validator.validate( tx );
 
         // Then
         assertNotSame( ValidatedIndexUpdates.NONE, validatedUpdates );
@@ -284,14 +233,14 @@ public class IndexUpdatesValidatorTest
         LazyIndexUpdates expectedUpdates = new LazyIndexUpdates( nodeStore, propertyStore, propertyLoader,
                 emptyPropCommands, groupedById( deleteNode1, deleteNode2 ) );
 
-        verify( indexingService ).validate( expectedUpdates );
+        verify( indexingService ).validate( expectedUpdates, ONLINE );
     }
 
     private IndexUpdatesValidator newIndexUpdatesValidatorWithMockedDependencies()
     {
         when( neoStores.getNodeStore() ).thenReturn( nodeStore );
         when( neoStores.getPropertyStore() ).thenReturn( propertyStore );
-        return new IndexUpdatesValidator( neoStores, null, propertyLoader, indexingService );
+        return new OnlineIndexUpdatesValidator( neoStores, null, propertyLoader, indexingService, ONLINE );
     }
 
     private static Command nodeAddRandomLabelsCommand( long nodeId )

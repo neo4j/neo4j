@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -64,8 +63,11 @@ import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexMapReference;
 import org.neo4j.kernel.impl.api.index.IndexProxySetup;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.OnlineIndexUpdatesValidator;
+import org.neo4j.kernel.impl.api.index.RecoveryIndexingUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -106,7 +108,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
-import static java.lang.Integer.parseInt;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -125,6 +126,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import static java.lang.Integer.parseInt;
+
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -780,7 +784,8 @@ public class NeoStoreTransactionTest
         RecoveryCreatingCopyingNeoCommandHandler recoverer = new RecoveryCreatingCopyingNeoCommandHandler();
         toCommit.accept( recoverer );
 
-        commit( recoverer.getAsRecovered(), TransactionApplicationMode.EXTERNAL );
+        commit( new RecoveryIndexingUpdatesValidator( mockIndexing ), recoverer.getAsRecovered(),
+                TransactionApplicationMode.EXTERNAL );
 
         // THEN
         assertEquals( "NodeStore", nodeId + 1, neoStores.getNodeStore().getHighId() );
@@ -913,7 +918,7 @@ public class NeoStoreTransactionTest
 
         // -- and a tx creating a node with that label and property key
         IteratorCollector<NodePropertyUpdate> indexUpdates = new IteratorCollector<>( 0 );
-        doAnswer( indexUpdates ).when( mockIndexing ).validate( any( Iterable.class ) );
+        doAnswer( indexUpdates ).when( mockIndexing ).validate( any( Iterable.class ), any( IndexUpdateMode.class ) );
         tx = newWriteTransaction().first();
         tx.nodeCreate( nodeId );
         tx.addLabelToNode( labelId, nodeId );
@@ -925,18 +930,19 @@ public class NeoStoreTransactionTest
         {
             commitProcess().commit( representation, locks, commitEvent, INTERNAL );
         }
-        verify( mockIndexing, times( 1 ) ).validate( any( Iterable.class ) );
+        verify( mockIndexing, times( 1 ) ).validate( any( Iterable.class ), any( IndexUpdateMode.class ) );
         indexUpdates.assertContent( expectedUpdate );
 
         reset( mockIndexing );
         indexUpdates = new IteratorCollector<>( 0 );
-        doAnswer( indexUpdates ).when( mockIndexing ).validate( any( Iterable.class ) );
+        doAnswer( indexUpdates ).when( mockIndexing ).validate( any( Iterable.class ), any( IndexUpdateMode.class ) );
 
         // WHEN
         // -- later recovering that tx, there should be only one update
-        commit( recoverer.getAsRecovered(), TransactionApplicationMode.RECOVERY );
-        verify( mockIndexing, times( 1 ) ).addRecoveredNodeIds( PrimitiveLongCollections.setOf( nodeId ) );
-        verify( mockIndexing, never() ).validate( any( Iterable.class ) );
+        commit( new RecoveryIndexingUpdatesValidator( mockIndexing ), recoverer.getAsRecovered(),
+                TransactionApplicationMode.RECOVERY );
+        verify( mockIndexing, times( 1 ) ).visited( nodeId );
+        verify( mockIndexing, never() ).validate( any( Iterable.class ), any( IndexUpdateMode.class ) );
     }
 
     @Test
@@ -1425,17 +1431,9 @@ public class NeoStoreTransactionTest
     {
         config = new Config( stringMap(
                 GraphDatabaseSettings.dense_node_threshold.name(), "" + denseNodeThreshold ) );
-
         File storeDir = new File( "dir" );
         fs.mkdir( storeDir );
-
-        storeFactory = new StoreFactory(
-                storeDir,
-                config,
-                idGeneratorFactory,
-                pageCache,
-                fs,
-                NULL_LOG_PROVIDER );
+        storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, NULL_LOG_PROVIDER );
         neoStores = storeFactory.openNeoStores( true );
         neoStores.rebuildCountStoreIfNeeded();
         lockMocks.clear();
@@ -1467,7 +1465,8 @@ public class NeoStoreTransactionTest
 
         cacheAccessBackDoor = mock( CacheAccessBackDoor.class );
         mockIndexing = mock( IndexingService.class );
-        doReturn( ValidatedIndexUpdates.NONE ).when( mockIndexing ).validate( any( Iterable.class ) );
+        doReturn( ValidatedIndexUpdates.NONE ).when( mockIndexing ).validate( any( Iterable.class ),
+                any( IndexUpdateMode.class ) );
     }
 
     private TransactionRepresentationCommitProcess commitProcess() throws IOException
@@ -1476,6 +1475,13 @@ public class NeoStoreTransactionTest
     }
 
     private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing ) throws IOException
+    {
+        return commitProcess( indexing, new OnlineIndexUpdatesValidator( neoStores, null,
+                new PropertyLoader( neoStores ), indexing, IndexUpdateMode.ONLINE ) );
+    }
+
+    private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing,
+            IndexUpdatesValidator indexUpdatesValidator ) throws IOException
     {
         TransactionAppender appenderMock = mock( TransactionAppender.class );
         when( appenderMock.append(
@@ -1493,8 +1499,7 @@ public class NeoStoreTransactionTest
 
         PropertyLoader propertyLoader = new PropertyLoader( neoStores );
 
-        return new TransactionRepresentationCommitProcess( appenderMock, applier,
-                new IndexUpdatesValidator( neoStores, null, propertyLoader, indexing ) );
+        return new TransactionRepresentationCommitProcess( appenderMock, applier, indexUpdatesValidator );
     }
 
     @After
@@ -1532,14 +1537,15 @@ public class NeoStoreTransactionTest
         return Pair.of( result, context );
     }
 
-    private void commit( TransactionRepresentation recoveredTx, TransactionApplicationMode mode ) throws Exception
+    private void commit( IndexUpdatesValidator indexUpdatesValidator, TransactionRepresentation recoveredTx,
+            TransactionApplicationMode mode ) throws Exception
     {
         LabelScanStore labelScanStore = mock( LabelScanStore.class );
         when( labelScanStore.newWriter() ).thenReturn( mock( LabelScanWriter.class ) );
 
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( recoveredTx, locks, CommitEvent.NULL, mode );
+            commitProcess( mockIndexing, indexUpdatesValidator ).commit( recoveredTx, locks, CommitEvent.NULL, mode );
         }
     }
 
@@ -1574,7 +1580,7 @@ public class NeoStoreTransactionTest
         }
 
         @Override
-        public ValidatedIndexUpdates validate( Iterable<NodePropertyUpdate> indexUpdates )
+        public ValidatedIndexUpdates validate( Iterable<NodePropertyUpdate> indexUpdates, IndexUpdateMode updateMode )
         {
             this.updates.addAll( asCollection( indexUpdates ) );
             return ValidatedIndexUpdates.NONE;

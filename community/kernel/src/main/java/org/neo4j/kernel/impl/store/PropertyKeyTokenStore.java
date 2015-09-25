@@ -46,11 +46,10 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord, To
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            DynamicStringStore nameStore,
-            StoreVersionMismatchHandler versionMismatchHandler )
+            DynamicStringStore nameStore )
     {
         super( fileName, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache,
-                logProvider, nameStore, versionMismatchHandler, new Token.Factory() );
+                logProvider, nameStore, new Token.Factory() );
     }
 
     @Override

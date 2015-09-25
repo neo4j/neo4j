@@ -24,15 +24,15 @@ import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 class MetricsTest extends CypherFunSuite {
 
   test("negating a selectivity behaves as expected") {
-    Selectivity(.1).negate should not equal Selectivity.ONE
-    Selectivity(5.6e-17).negate should not equal Selectivity.ONE
-    Selectivity(1e-300).negate should not equal Selectivity.ONE
+    Selectivity.of(.1).get.negate should not equal Selectivity.ONE
+    Selectivity.of(5.6e-17).get.negate should not equal Selectivity.ONE
+    Selectivity.of(1e-300).get.negate should not equal Selectivity.ONE
 
     Selectivity.ZERO.negate should equal(Selectivity.ONE)
-    Selectivity(0).negate should equal(Selectivity.ONE)
+    Selectivity.ZERO.negate should equal(Selectivity.ONE)
 
     Selectivity.ONE.negate should equal(Selectivity.ZERO)
-    Selectivity(1).negate should equal(Selectivity.ZERO)
+    Selectivity.ONE.negate should equal(Selectivity.ZERO)
 
     Selectivity.CLOSEST_TO_ONE.negate should not equal Selectivity.ONE
   }

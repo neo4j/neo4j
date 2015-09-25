@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.neo4j.helpers.UTF8;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -51,11 +50,9 @@ public abstract class AbstractStore extends CommonAbstractStore
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            LogProvider logProvider,
-            StoreVersionMismatchHandler versionMismatchHandler )
+            LogProvider logProvider )
     {
-        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider,
-                versionMismatchHandler );
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider );
     }
 
     /**
@@ -80,12 +77,10 @@ public abstract class AbstractStore extends CommonAbstractStore
     @Override
     protected void initialiseNewStoreFile( PagedFile file ) throws IOException
     {
-        long trailerPosition = 0;
 
         ByteBuffer headerRecord = createHeaderRecord();
         if ( headerRecord != null )
         {
-            trailerPosition = headerRecord.limit();
             try ( PageCursor pageCursor = file.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
             {
                 if ( pageCursor.next() )
@@ -100,8 +95,6 @@ public abstract class AbstractStore extends CommonAbstractStore
             }
 
         }
-
-        StoreVersionTrailerUtil.writeTrailer( file, UTF8.encode( getTypeAndVersionDescriptor() ), trailerPosition );
 
         File idFileName = new File( storageFileName.getPath() + ".id" );
         idGeneratorFactory.create( idFileName, 0, true );

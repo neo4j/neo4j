@@ -24,7 +24,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
-import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -56,7 +55,6 @@ import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.StoreVersionMismatchHandler;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -101,6 +99,7 @@ import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
@@ -110,10 +109,10 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.wit
 
 /**
  * Migrates a neo4j kernel database from one version to the next.
- * <p>
+ * <p/>
  * Since only one store migration is supported at any given version (migration from the previous store version)
  * the migration code is specific for the current upgrade and changes with each store format version.
- * <p>
+ * <p/>
  * Just one out of many potential participants in a {@link StoreUpgrader migration}.
  *
  * @see StoreUpgrader
@@ -127,66 +126,28 @@ public class StoreMigrator implements StoreMigrationParticipant
     // complete upgrades in a reasonable time period.
 
     private final MigrationProgressMonitor progressMonitor;
-    private final UpgradableDatabase upgradableDatabase;
     private final Config config;
     private final LogService logService;
     private final LegacyLogs legacyLogs;
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
-    private String versionToUpgradeFrom;
 
     // TODO progress meter should be an aspect of StoreUpgrader, not specific to this participant.
 
     public StoreMigrator( MigrationProgressMonitor progressMonitor, FileSystemAbstraction fileSystem,
-            PageCache pageCache, UpgradableDatabase upgradableDatabase, Config config, LogService logService )
+            PageCache pageCache, Config config, LogService logService )
     {
         this.progressMonitor = progressMonitor;
         this.fileSystem = fileSystem;
-        this.pageCache=pageCache;
-        this.upgradableDatabase = upgradableDatabase;
+        this.pageCache = pageCache;
         this.config = config;
         this.logService = logService;
         this.legacyLogs = new LegacyLogs( fileSystem );
     }
 
     @Override
-    public boolean needsMigration( File storeDir ) throws IOException
-    {
-        try
-        {
-            boolean sameVersion = upgradableDatabase.hasCurrentVersion( pageCache, storeDir );
-            if ( !sameVersion )
-            {
-                upgradableDatabase.checkUpgradeable( storeDir );
-            }
-            return !sameVersion;
-        }
-        catch ( NoSuchFileException ignore )
-        {
-            return false; // There's no store, so nothing to migrate.
-        }
-    }
-
-    /**
-     * Will detect which version we're upgrading from.
-     * Doing that initialization here is good because we do this check when
-     * {@link #moveMigratedFiles(File, File) moving migrated files}, which might be done
-     * as part of a resumed migration, i.e. run even if
-     * {@link StoreMigrationParticipant#migrate(File, File, SchemaIndexProvider)}
-     * hasn't been run.
-     */
-    private String versionToUpgradeFrom( File storeDir )
-    {
-        if ( versionToUpgradeFrom == null )
-        {
-            versionToUpgradeFrom = upgradableDatabase.checkUpgradeable( storeDir );
-        }
-        return versionToUpgradeFrom;
-    }
-
-    @Override
-    public void migrate( File storeDir, File migrationDir,
-            SchemaIndexProvider schemaIndexProvider ) throws IOException
+    public void migrate( File storeDir, File migrationDir, SchemaIndexProvider schemaIndexProvider,
+            String versionToMigrateFrom ) throws IOException
     {
         progressMonitor.started();
 
@@ -199,31 +160,32 @@ public class StoreMigrator implements StoreMigrationParticipant
         writeLastTxChecksum( migrationDir, lastTxChecksum );
         writeLastTxLogPosition( migrationDir, lastTxLogPosition );
 
-        if ( versionToUpgradeFrom( storeDir ).equals( Legacy22Store.LEGACY_VERSION ) )
+
+        switch ( versionToMigrateFrom )
         {
-            // all good no need to migrate store files
-        }
-        else if ( versionToUpgradeFrom( storeDir ).equals( Legacy21Store.LEGACY_VERSION ) )
-        {
-            // create counters from scratch
-            removeDuplicateEntityProperties( storeDir, migrationDir, pageCache, schemaIndexProvider );
-            rebuildCountsFromScratch( storeDir, migrationDir, lastTxId, pageCache );
-        }
-        else
-        {
+        case Legacy22Store.LEGACY_VERSION:
+            // nothing to do
+            break;
+        case Legacy21Store.LEGACY_VERSION:
+            removeDuplicateEntityProperties(
+                    storeDir, migrationDir, pageCache, schemaIndexProvider, Legacy21Store.LEGACY_VERSION );
+            break;
+        case Legacy20Store.LEGACY_VERSION:
+        case Legacy19Store.LEGACY_VERSION:
             // migrate stores
             migrateWithBatchImporter( storeDir, migrationDir,
-                    lastTxId, lastTxChecksum,
-                    lastTxLogPosition.getLogVersion(), lastTxLogPosition.getByteOffset(), pageCache );
-
+                    lastTxId, lastTxChecksum, lastTxLogPosition.getLogVersion(), lastTxLogPosition.getByteOffset(),
+                    pageCache, versionToMigrateFrom );
             // don't create counters from scratch, since the batch importer just did
+            break;
+        default:
+            throw new IllegalStateException( "Unknown version to upgrade from: " + versionToMigrateFrom );
         }
 
         // DO NOT migrate logs. LegacyLogs is able to migrate logs, but only changes its format, not any
         // contents of it, and since the record format has changed there would be a mismatch between the
         // commands in the log and the contents in the store. If log migration is to be performed there
         // must be a proper translation happening while doing so.
-
 
 
         progressMonitor.finished();
@@ -335,7 +297,7 @@ public class StoreMigrator implements StoreMigrationParticipant
     }
 
     private void removeDuplicateEntityProperties( File storeDir, File migrationDir, PageCache pageCache,
-            SchemaIndexProvider schemaIndexProvider ) throws IOException
+            SchemaIndexProvider schemaIndexProvider, String versionToUpgradeFrom ) throws IOException
     {
         copyStores( storeDir, migrationDir,
                 StoreFactory.PROPERTY_STORE_NAME,
@@ -352,19 +314,19 @@ public class StoreMigrator implements StoreMigrationParticipant
                 StoreFactory.SCHEMA_STORE_NAME
         );
 
-        PropertyDeduplicator deduplicator = new PropertyDeduplicator(
-                fileSystem, migrationDir, pageCache, schemaIndexProvider );
-        deduplicator.deduplicateProperties();
+        // let's remove trailers here on the copied files since the new code doesn't remove them since in 2.3
+        // there are no store trailers
+        StoreFile.removeTrailers( versionToUpgradeFrom, fileSystem, migrationDir, pageCache.pageSize() );
+
+        new PropertyDeduplicator( fileSystem, migrationDir, pageCache, schemaIndexProvider ).deduplicateProperties();
     }
 
-    private void rebuildCountsFromScratch(
-            File storeDir, File migrationDir, long lastTxId, PageCache pageCache ) throws IOException
+    private void rebuildCountsFromScratch( File storeDir, long lastTxId, PageCache pageCache ) throws IOException
     {
-        final File storeFileBase = new File( migrationDir, MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
+        final File storeFileBase = new File( storeDir, MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
 
         final StoreFactory storeFactory =
-                new StoreFactory( fileSystem, storeDir, pageCache, NullLogProvider.getInstance(),
-                        StoreVersionMismatchHandler.ALLOW_OLD_VERSION );
+                new StoreFactory( fileSystem, storeDir, pageCache, NullLogProvider.getInstance() );
         try ( NeoStores neoStores = storeFactory.openNeoStores( false ) )
         {
             NodeStore nodeStore = neoStores.getNodeStore();
@@ -383,12 +345,13 @@ public class StoreMigrator implements StoreMigrationParticipant
     }
 
     private void migrateWithBatchImporter( File storeDir, File migrationDir, long lastTxId, long lastTxChecksum,
-            long lastTxLogVersion, long lastTxLogByteOffset, PageCache pageCache ) throws IOException
+            long lastTxLogVersion, long lastTxLogByteOffset, PageCache pageCache, String versionToUpgradeFrom )
+            throws IOException
     {
         prepareBatchImportMigration( storeDir, migrationDir );
 
         LegacyStore legacyStore;
-        switch ( versionToUpgradeFrom( storeDir ) )
+        switch ( versionToUpgradeFrom )
         {
         case Legacy19Store.LEGACY_VERSION:
             legacyStore = new Legacy19Store( fileSystem, new File( storeDir, MetaDataStore.DEFAULT_NAME ) );
@@ -397,19 +360,18 @@ public class StoreMigrator implements StoreMigrationParticipant
             legacyStore = new Legacy20Store( fileSystem, new File( storeDir, MetaDataStore.DEFAULT_NAME ) );
             break;
         default:
-            throw new IllegalStateException( "Unknown version to upgrade from: " + versionToUpgradeFrom( storeDir ) );
+            throw new IllegalStateException( "Unknown version to upgrade from: " + versionToUpgradeFrom );
         }
 
         Configuration importConfig = new Configuration.Overridden( config );
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem,
                 importConfig, logService, withDynamicProcessorAssignment( migrationBatchImporterMonitor(
                 legacyStore ), importConfig ),
-                readAdditionalIds( storeDir, lastTxId, lastTxChecksum, lastTxLogVersion,
-                lastTxLogByteOffset ) );
+                readAdditionalIds( storeDir, lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset ) );
         InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         InputIterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
-        importer.doImport( Inputs.input(
-                nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(), true, 0 ) );
+        importer.doImport(
+                Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(), true, 0 ) );
 
         // During migration the batch importer only writes node, relationship, relationship group and counts stores.
         // Delete the property store files from the batch import migration so that even if we won't
@@ -446,7 +408,6 @@ public class StoreMigrator implements StoreMigrationParticipant
         StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, storeFiles,
                 true, // OK if it's not there (1.9)
                 false, StoreFileType.values() );
-        StoreFile.ensureStoreVersion( pageCache, migrationDir, storeFiles );
     }
 
     private AdditionalInitialIds readAdditionalIds( File storeDir, final long lastTxId, final long lastTxChecksum,
@@ -532,10 +493,7 @@ public class StoreMigrator implements StoreMigrationParticipant
 
     private StoreFactory storeFactory( PageCache pageCache, File migrationDir )
     {
-        return new StoreFactory(
-                migrationDir,
-                new Config(),
-                new DefaultIdGeneratorFactory( fileSystem ), pageCache,
+        return new StoreFactory( migrationDir, new Config(), new DefaultIdGeneratorFactory( fileSystem ), pageCache,
                 fileSystem, NullLogProvider.getInstance() );
     }
 
@@ -758,66 +716,68 @@ public class StoreMigrator implements StoreMigrationParticipant
     }
 
     @Override
-    public void moveMigratedFiles( File migrationDir, File storeDir ) throws IOException
+    public void moveMigratedFiles( File migrationDir, File storeDir, String versionToUpgradeFrom ) throws IOException
     {
         // The batch importer will create a whole store. so
         // Disregard the new and empty node/relationship".id" files, i.e. reuse the existing id files
 
         Iterable<StoreFile> filesToMove;
         StoreFile[] idFilesToDelete;
-        switch ( versionToUpgradeFrom( storeDir ) )
+        switch ( versionToUpgradeFrom )
         {
-            case Legacy19Store.LEGACY_VERSION:
-                filesToMove = Arrays.asList(
-                        StoreFile.NODE_STORE,
-                        StoreFile.RELATIONSHIP_STORE,
-                        StoreFile.RELATIONSHIP_GROUP_STORE,
-                        StoreFile.LABEL_TOKEN_STORE,
-                        StoreFile.NODE_LABEL_STORE,
-                        StoreFile.LABEL_TOKEN_NAMES_STORE,
-                        StoreFile.PROPERTY_STORE,
-                        StoreFile.PROPERTY_KEY_TOKEN_STORE,
-                        StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
-                        StoreFile.SCHEMA_STORE,
-                        StoreFile.COUNTS_STORE_LEFT,
-                        StoreFile.COUNTS_STORE_RIGHT );
-                idFilesToDelete = allExcept(
-                        StoreFile.RELATIONSHIP_GROUP_STORE
-                );
-                break;
-            case Legacy20Store.LEGACY_VERSION:
-                // Note: We don't overwrite the label stores in 2.0
-                filesToMove = Arrays.asList(
-                        StoreFile.NODE_STORE,
-                        StoreFile.RELATIONSHIP_STORE,
-                        StoreFile.RELATIONSHIP_GROUP_STORE,
-                        StoreFile.COUNTS_STORE_LEFT,
-                        StoreFile.COUNTS_STORE_RIGHT );
-                idFilesToDelete = allExcept(
-                        StoreFile.RELATIONSHIP_GROUP_STORE
-                );
-                break;
-            case Legacy21Store.LEGACY_VERSION:
-                filesToMove = Arrays.asList(
-                        StoreFile.NODE_STORE,
-                        StoreFile.COUNTS_STORE_LEFT,
-                        StoreFile.COUNTS_STORE_RIGHT,
-                        StoreFile.PROPERTY_STORE,
-                        StoreFile.PROPERTY_KEY_TOKEN_STORE,
-                        StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE );
-                idFilesToDelete = new StoreFile[]{};
-                break;
-            case Legacy22Store.LEGACY_VERSION:
-                filesToMove = Collections.emptyList();
-                idFilesToDelete = new StoreFile[]{};
-                break;
-            default:
-                throw new IllegalStateException( "Unknown version to upgrade from: " + versionToUpgradeFrom( storeDir ) );
+        case Legacy19Store.LEGACY_VERSION:
+            filesToMove = Arrays.asList(
+                    StoreFile.NODE_STORE,
+                    StoreFile.RELATIONSHIP_STORE,
+                    StoreFile.RELATIONSHIP_GROUP_STORE,
+                    StoreFile.LABEL_TOKEN_STORE,
+                    StoreFile.NODE_LABEL_STORE,
+                    StoreFile.LABEL_TOKEN_NAMES_STORE,
+                    StoreFile.PROPERTY_STORE,
+                    StoreFile.PROPERTY_KEY_TOKEN_STORE,
+                    StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
+                    StoreFile.SCHEMA_STORE,
+                    StoreFile.COUNTS_STORE_LEFT,
+                    StoreFile.COUNTS_STORE_RIGHT );
+            idFilesToDelete = allExcept(
+                    StoreFile.RELATIONSHIP_GROUP_STORE
+            );
+            break;
+        case Legacy20Store.LEGACY_VERSION:
+            // Note: We don't overwrite the label stores in 2.0
+            filesToMove = Arrays.asList(
+                    StoreFile.NODE_STORE,
+                    StoreFile.RELATIONSHIP_STORE,
+                    StoreFile.RELATIONSHIP_GROUP_STORE,
+                    StoreFile.COUNTS_STORE_LEFT,
+                    StoreFile.COUNTS_STORE_RIGHT );
+            idFilesToDelete = allExcept(
+                    StoreFile.RELATIONSHIP_GROUP_STORE
+            );
+            break;
+        case Legacy21Store.LEGACY_VERSION:
+            filesToMove = Arrays.asList(
+                    StoreFile.NODE_STORE,
+                    StoreFile.COUNTS_STORE_LEFT,
+                    StoreFile.COUNTS_STORE_RIGHT,
+                    StoreFile.PROPERTY_STORE,
+                    StoreFile.PROPERTY_KEY_TOKEN_STORE,
+                    StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE );
+            idFilesToDelete = new StoreFile[]{};
+            break;
+        case Legacy22Store.LEGACY_VERSION:
+            filesToMove = Collections.emptyList();
+            idFilesToDelete = new StoreFile[]{};
+            break;
+        default:
+            throw new IllegalStateException( "Unknown version to upgrade from: " + versionToUpgradeFrom );
         }
 
         StoreFile.fileOperation( DELETE, fileSystem, migrationDir, null,
                 Iterables.<StoreFile,StoreFile>iterable( idFilesToDelete ),
-                true, false, StoreFileType.ID );
+                true, // allow to skip non existent source files
+                false, // not allow to overwrite target files
+                StoreFileType.ID );
 
         // Move the migrated ones into the store directory
         StoreFile.fileOperation( MOVE, fileSystem, migrationDir, storeDir, filesToMove,
@@ -825,9 +785,7 @@ public class StoreMigrator implements StoreMigrationParticipant
                 true, // allow to overwrite target files
                 StoreFileType.values() );
 
-        // ensure the store version is correct
-        ensureStoreVersions( storeDir );
-
+        StoreFile.removeTrailers( versionToUpgradeFrom, fileSystem, storeDir, pageCache.pageSize() );
 
         File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
         long logVersion = MetaDataStore.getRecord( pageCache, neoStore, Position.LOG_VERSION );
@@ -840,14 +798,32 @@ public class StoreMigrator implements StoreMigrationParticipant
         legacyLogs.deleteUnusedLogFiles( storeDir );
 
         // write a check point in the log in order to make recovery work in the newer version
-        new StoreMigratorCheckPointer( storeDir, fileSystem ).checkPoint(
-                logVersion, lastCommittedTx );
+        new StoreMigratorCheckPointer( storeDir, fileSystem ).checkPoint( logVersion, lastCommittedTx );
     }
 
-    private void ensureStoreVersions( File dir ) throws IOException
+    @Override
+    public void rebuildCounts( File storeDir, String versionToMigrateFrom ) throws IOException
     {
-        final Iterable<StoreFile> versionedStores = iterable( allExcept() );
-        StoreFile.ensureStoreVersion( pageCache, dir, versionedStores );
+        switch ( versionToMigrateFrom )
+        {
+        case Legacy19Store.LEGACY_VERSION:
+        case Legacy20Store.LEGACY_VERSION:
+            // nothing to do
+            break;
+        case Legacy21Store.LEGACY_VERSION:
+        case Legacy22Store.LEGACY_VERSION:
+            // create counters from scratch
+            Iterable<StoreFile> countsStoreFiles =
+                    Iterables.iterable( StoreFile.COUNTS_STORE_LEFT, StoreFile.COUNTS_STORE_RIGHT );
+            StoreFile.fileOperation( DELETE, fileSystem, storeDir, storeDir,
+                    countsStoreFiles, true, false, StoreFileType.STORE );
+            File neoStore = new File( storeDir, DEFAULT_NAME );
+            long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
+            rebuildCountsFromScratch( storeDir, lastTxId, pageCache );
+            break;
+        default:
+            throw new IllegalStateException( "Unknown version to upgrade from: " + versionToMigrateFrom );
+        }
     }
 
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( File migrationDir, File storeDir ) throws IOException
@@ -880,17 +856,16 @@ public class StoreMigrator implements StoreMigrationParticipant
                 .getLogVersion() );
         MetaDataStore.setRecord( pageCache, storeDirNeoStore, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET,
                 logPosition.getByteOffset() );
+
+        // Upgrade version in NeoStore
+        MetaDataStore.setRecord( pageCache, storeDirNeoStore, Position.STORE_VERSION,
+                MetaDataStore.versionStringToLong( ALL_STORES_VERSION ) );
     }
 
     @Override
     public void cleanup( File migrationDir ) throws IOException
     {
         fileSystem.deleteRecursively( migrationDir );
-    }
-
-    @Override
-    public void close()
-    { // nothing to do
     }
 
     @Override

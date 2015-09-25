@@ -30,7 +30,6 @@ import java.util.List;
 
 import org.neo4j.cursor.GenericCursor;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -87,10 +86,9 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            StoreVersionMismatchHandler versionMismatchHandler,
             int blockSizeFromConfiguration )
     {
-        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, versionMismatchHandler );
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider );
         this.blockSizeFromConfiguration = blockSizeFromConfiguration;
     }
 
@@ -127,7 +125,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                 while ( pageCursor.shouldRetry() );
             }
         }
-        StoreVersionTrailerUtil.writeTrailer( file, UTF8.encode( getTypeAndVersionDescriptor() ), blockSize );
 
         File idFileName = new File( storageFileName.getPath() + ".id" );
         idGeneratorFactory.create( idFileName, 0, true );
@@ -661,7 +658,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         long blockId;
         int noNextBlock;
 
-        private DynamicRecord record = new DynamicRecord( blockId );
+        private final DynamicRecord record = new DynamicRecord( blockId );
 
         public void init( long startBlockId, PageCursor cursor, boolean readBothHeaderAndData )
         {

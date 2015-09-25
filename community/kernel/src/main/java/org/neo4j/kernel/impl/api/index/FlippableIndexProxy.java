@@ -136,6 +136,20 @@ public class FlippableIndexProxy implements IndexProxy
         }
     }
 
+    @Override
+    public void flush() throws IOException
+    {
+        barge( lock.readLock() ); // see javadoc of this method (above) for rationale on why we use barge(...) here
+        try
+        {
+            delegate.flush();
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+
     /**
      * Acquire the {@code ReadLock} in an <i>unfair</i> way, without waiting for queued up writers.
      * <p/>
