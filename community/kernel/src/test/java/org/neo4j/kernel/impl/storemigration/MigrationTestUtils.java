@@ -36,11 +36,11 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.StoreVersionTrailerUtil;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
-import org.neo4j.kernel.impl.store.StoreVersionTrailerUtil;
 import org.neo4j.test.Unzip;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -106,8 +106,11 @@ public class MigrationTestUtils
     {
         for ( StoreFile storeFile : StoreFile.legacyStoreFilesForVersion( version ) )
         {
-            File file = new File( workingDirectory, storeFile.storeFileName() );
-            truncateFile( fileSystem, file, storeFile.forVersion( version ) );
+            if ( storeFile.isRecordStore() )
+            {
+                File file = new File( workingDirectory, storeFile.storeFileName() );
+                truncateFile( fileSystem, file, storeFile.forVersion( version ) );
+            }
         }
     }
 

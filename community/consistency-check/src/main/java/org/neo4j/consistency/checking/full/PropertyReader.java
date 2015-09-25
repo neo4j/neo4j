@@ -45,8 +45,8 @@ public class PropertyReader implements PropertyLookup
     public PropertyReader( StoreAccess storeAccess )
     {
         this.storeAccess = storeAccess;
-        propertyStore = storeAccess.getRawNeoStores().getPropertyStore();
-        nodeStore = storeAccess.getRawNeoStores().getNodeStore();
+        propertyStore = storeAccess.getRawNeoStore().getPropertyStore();
+        nodeStore = storeAccess.getRawNeoStore().getNodeStore();
     }
 
     public Collection<PropertyRecord> getPropertyRecordChain( NodeRecord nodeRecord )

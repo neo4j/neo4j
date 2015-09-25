@@ -39,6 +39,11 @@ public class StoreVersionCheck
 
     public Result hasVersion( File storeFile, String expectedVersion )
     {
+        return hasVersion( storeFile, expectedVersion, false );
+    }
+
+    public Result hasVersion( File storeFile, String expectedVersion, boolean optional )
+    {
         String storeFilename = storeFile.getName();
         try ( PagedFile file = pageCache.map( storeFile, pageCache.pageSize() ) )
         {
@@ -65,7 +70,9 @@ public class StoreVersionCheck
         }
         catch ( IOException e )
         {
-            return new Result( Outcome.missingStoreFile, null, storeFilename );
+            return optional ?
+                   new Result( Outcome.ok, null, storeFilename ) :
+                   new Result( Outcome.missingStoreFile, null, storeFilename );
         }
 
         return new Result( Outcome.ok, null, storeFilename );

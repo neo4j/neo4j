@@ -66,6 +66,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
@@ -74,7 +75,6 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 
 public abstract class GraphStoreFixture extends PageCacheRule implements TestRule
@@ -82,7 +82,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     private DirectStoreAccess directStoreAccess;
     private Statistics statistics;
     private final boolean keepStatistics;
-    private NeoStores neoStore;
+    private NeoStore neoStore;
 
     public GraphStoreFixture( boolean keepStatistics )
     {
@@ -105,7 +105,8 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         {
             DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
-            neoStore = new StoreFactory( fileSystem, directory, pageCache, NullLogProvider.getInstance() ).openNeoStores( false );
+            neoStore = new StoreFactory( fileSystem, directory, pageCache, NullLogProvider.getInstance(),
+                    new Monitors() ).newNeoStore( false );
             StoreAccess nativeStores;
             if ( keepStatistics )
             {

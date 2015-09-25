@@ -105,7 +105,7 @@ public class UpgradableDatabase
         {
             String expectedVersion = store.forVersion( version );
             File storeFile = new File( storeDirectory, store.storeFileName() );
-            result = storeVersionCheck.hasVersion( storeFile, expectedVersion );
+            result = storeVersionCheck.hasVersion( storeFile, expectedVersion, store.isOptional() );
             if ( !result.outcome.isSuccessful() )
             {
                 break;
