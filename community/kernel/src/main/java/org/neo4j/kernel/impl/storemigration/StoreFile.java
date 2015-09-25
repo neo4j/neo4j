@@ -32,8 +32,8 @@ import org.neo4j.kernel.impl.store.AbstractStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.MetaDataStore.Position;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -50,10 +50,10 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
-import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
-import static org.neo4j.kernel.impl.store.MetaDataStore.setRecord;
-import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
-import static org.neo4j.kernel.impl.store.StoreVersionTrailerUtil.getTrailerPosition;
+import static org.neo4j.kernel.impl.store.NeoStore.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.store.NeoStore.setRecord;
+import static org.neo4j.kernel.impl.store.NeoStore.versionStringToLong;
+import static org.neo4j.kernel.impl.store.StoreVersionTrailerUtil.getTrailerOffset;
 import static org.neo4j.kernel.impl.store.StoreVersionTrailerUtil.writeTrailer;
 
 public enum StoreFile
@@ -169,7 +169,7 @@ public enum StoreFile
             },
 
     NEO_STORE(
-            MetaDataStore.TYPE_DESCRIPTOR,
+            NeoStore.TYPE_DESCRIPTOR,
             "",
             Legacy19Store.LEGACY_VERSION
     );
@@ -200,7 +200,7 @@ public enum StoreFile
 
     public String fileName( StoreFileType type )
     {
-        return type.augment( MetaDataStore.DEFAULT_NAME + storeFileNamePart );
+        return type.augment( NeoStore.DEFAULT_NAME + storeFileNamePart );
     }
 
     public String storeFileName()
@@ -315,7 +315,7 @@ public enum StoreFile
         try ( PagedFile pagedFile = pageCache.map( targetStoreFileName, pageCache.pageSize() ) )
         {
             long trailerOffset =
-                    getTrailerPosition( pagedFile, versionTrailer.split( " " )[0] );
+                    getTrailerOffset( pagedFile, versionTrailer.split( " " )[0] );
             if ( trailerOffset != -1 )
             {
                 writeTrailer( pagedFile, trailer, trailerOffset );
@@ -325,7 +325,7 @@ public enum StoreFile
 
     private static boolean storeExists( PageCache pageCache, File targetStoreFileName )
     {
-        try ( PagedFile ignore = pageCache.map( targetStoreFileName, pageCache.pageSize() ) )
+        try ( PagedFile file = pageCache.map( targetStoreFileName, pageCache.pageSize() ) )
         {
         }
         catch ( IOException e )

@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -33,36 +33,35 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 
 public class TestDynamicStore
 {
-    @Rule
-    public PageCacheRule pageCacheRule = new PageCacheRule();
-    @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    private static final Monitors monitors = new Monitors();
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     private File storeDir;
     private PageCache pageCache;
     private IdGeneratorFactory idGeneratorFactory;
-    private StoreFactory storeFactory;
-    private NeoStores neoStores;
-    private Config config;
 
     @Before
     public void setUp()
@@ -71,42 +70,100 @@ public class TestDynamicStore
         storeDir = new File( "dynamicstore" );
         fs.get().mkdir( storeDir );
         idGeneratorFactory = new DefaultIdGeneratorFactory( fs.get() );
-        config = config();
-        storeFactory = new StoreFactory(
+    }
+
+    private File file( String name )
+    {
+        return new File( storeDir, name);
+    }
+
+    private File dynamicStoreFile()
+    {
+        return file( "testDynamicStore.db" );
+    }
+
+    private File dynamicStoreIdFile()
+    {
+        return file( "testDynamicStore.db.id" );
+    }
+
+    @Test
+    public void testCreateStore()
+    {
+        try
+        {
+            try
+            {
+                createEmptyStore( null, 1 );
+                fail( "Null fileName should throw exception" );
+            }
+            catch ( IllegalArgumentException e )
+            { // good
+            }
+            try
+            {
+                createEmptyStore( dynamicStoreFile(), 0 );
+                fail( "Illegal blocksize should throw exception" );
+            }
+            catch ( IllegalArgumentException e )
+            { // good
+            }
+            createEmptyStore( dynamicStoreFile(), 15 );
+            try
+            {
+                createEmptyStore( dynamicStoreFile(), 15 );
+                fail( "Creating existing store should throw exception" );
+            }
+            catch ( IllegalStateException e )
+            { // good
+            }
+        }
+        finally
+        {
+            deleteBothFiles();
+        }
+    }
+
+    private void createEmptyStore( File fileName, int blockSize )
+    {
+        Config config = config();
+        new StoreFactory(
                 storeDir,
                 config,
                 idGeneratorFactory,
                 pageCache,
                 fs.get(),
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(),
+                monitors ).createDynamicArrayStore( fileName, blockSize );
     }
 
-    @After
-    public void tearDown()
+    private DynamicArrayStore newStore()
     {
-        if ( neoStores != null )
+        Config config = config();
+        return new DynamicArrayStore(
+                dynamicStoreFile(),
+                config,
+                IdType.ARRAY_BLOCK,
+                idGeneratorFactory,
+                pageCache,
+                fs.get(),
+                NullLogProvider.getInstance(),
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
+                new Monitors() );
+    }
+
+    private void deleteBothFiles()
+    {
+        File file = dynamicStoreFile();
+        if ( file.exists() )
         {
-            neoStores.close();
+            assertTrue( file.delete() );
         }
-    }
-
-    @Test( expected = InvalidSettingException.class )
-    public void stringStoreCannotHaveZeroBlockSize()
-    {
-        config.setProperty( StoreFactory.Configuration.string_block_size.name(), "0" );
-        fail( "Illegal blocksize should throw exception" );
-    }
-
-    @Test( expected = InvalidSettingException.class )
-    public void arrayStoreCannotHaveZeroBlockSize() throws Exception
-    {
-        config.setProperty( StoreFactory.Configuration.array_block_size.name(), "0" );
-    }
-
-    private DynamicArrayStore createDynamicArrayStore()
-    {
-        neoStores = storeFactory.openNeoStores( true );
-        return neoStores.getPropertyStore().getArrayStore();
+        file = dynamicStoreIdFile();
+        if ( file.exists() )
+        {
+            assertTrue( file.delete() );
+        }
     }
 
     private Config config()
@@ -117,103 +174,128 @@ public class TestDynamicStore
     @Test
     public void testClose()
     {
-        DynamicArrayStore store = createDynamicArrayStore();
-        Collection<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecordsFromBytes( records, new byte[10] );
-        long blockId = first( records ).getId();
-        for ( DynamicRecord record : records )
-        {
-            store.updateRecord( record );
-        }
-        neoStores.close();
-        neoStores = null;
         try
         {
-            store.getArrayFor( store.getRecords( blockId ) );
-            fail( "Closed store should throw exception" );
+            createEmptyStore( dynamicStoreFile(), 30 );
+            DynamicArrayStore store = newStore();
+            Collection<DynamicRecord> records = new ArrayList<>();
+            store.allocateRecordsFromBytes( records, new byte[10] );
+            long blockId = first( records ).getId();
+            for ( DynamicRecord record : records )
+            {
+                store.updateRecord( record );
+            }
+            store.close();
+            try
+            {
+                store.getArrayFor( store.getRecords( blockId ) );
+                fail( "Closed store should throw exception" );
+            }
+            catch ( RuntimeException e )
+            { // good
+            }
+            try
+            {
+                store.getLightRecords( 0 );
+                fail( "Closed store should throw exception" );
+            }
+            catch ( RuntimeException e )
+            { // good
+            }
         }
-        catch ( RuntimeException e )
-        { // good
-        }
-        try
+        finally
         {
-            store.getLightRecords( 0 );
-            fail( "Closed store should throw exception" );
-        }
-        catch ( RuntimeException e )
-        { // good
+            deleteBothFiles();
         }
     }
 
     @Test
     public void testStoreGetCharsFromString()
     {
-        final String STR = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        DynamicArrayStore store = createDynamicArrayStore();
-        char[] chars = new char[STR.length()];
-        STR.getChars( 0, STR.length(), chars, 0 );
-        Collection<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecords( records, chars, IteratorUtil.<DynamicRecord>emptyIterator() );
-        for ( DynamicRecord record : records )
+        try
         {
-            store.updateRecord( record );
+            final String STR = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            createEmptyStore( dynamicStoreFile(), 30 );
+            DynamicArrayStore store = newStore();
+            char[] chars = new char[STR.length()];
+            STR.getChars( 0, STR.length(), chars, 0 );
+            Collection<DynamicRecord> records = new ArrayList<>();
+            store.allocateRecords( records, chars, IteratorUtil.<DynamicRecord>emptyIterator() );
+            for ( DynamicRecord record : records )
+            {
+                store.updateRecord( record );
+            }
+            // assertEquals( STR, new String( store.getChars( blockId ) ) );
+            store.close();
         }
-        // assertEquals( STR, new String( store.getChars( blockId ) ) );
+        finally
+        {
+            deleteBothFiles();
+        }
     }
 
     @Test
     public void testRandomTest()
     {
         Random random = new Random( System.currentTimeMillis() );
-        DynamicArrayStore store = createDynamicArrayStore();
-        ArrayList<Long> idsTaken = new ArrayList<>();
-        Map<Long, byte[]> byteData = new HashMap<>();
+        createEmptyStore( dynamicStoreFile(), 30 );
+        DynamicArrayStore store = newStore();
+        ArrayList<Long> idsTaken = new ArrayList<Long>();
+        Map<Long, byte[]> byteData = new HashMap<Long, byte[]>();
         float deleteIndex = 0.2f;
         float closeIndex = 0.1f;
         int currentCount = 0;
         int maxCount = 128;
-        Set<Long> set = new HashSet<>();
-        while ( currentCount < maxCount )
+        Set<Long> set = new HashSet<Long>();
+        try
         {
-            float rIndex = random.nextFloat();
-            if ( rIndex < deleteIndex && currentCount > 0 )
+            while ( currentCount < maxCount )
             {
-                long blockId = idsTaken.remove(
-                        random.nextInt( currentCount ) );
-                store.getLightRecords( blockId );
-                byte[] bytes = (byte[]) store.getArrayFor( store.getRecords( blockId ) );
-                validateData( bytes, byteData.remove( blockId ) );
-                Collection<DynamicRecord> records = store
-                        .getLightRecords( blockId );
-                for ( DynamicRecord record : records )
+                float rIndex = random.nextFloat();
+                if ( rIndex < deleteIndex && currentCount > 0 )
                 {
-                    record.setInUse( false );
-                    store.updateRecord( record );
-                    set.remove( record.getId() );
+                    long blockId = idsTaken.remove(
+                            random.nextInt( currentCount ) );
+                    store.getLightRecords( blockId );
+                    byte[] bytes = (byte[]) store.getArrayFor( store.getRecords( blockId ) );
+                    validateData( bytes, byteData.remove( blockId ) );
+                    Collection<DynamicRecord> records = store
+                            .getLightRecords( blockId );
+                    for ( DynamicRecord record : records )
+                    {
+                        record.setInUse( false );
+                        store.updateRecord( record );
+                        set.remove( record.getId() );
+                    }
+                    currentCount--;
                 }
-                currentCount--;
-            }
-            else
-            {
-                byte bytes[] = createRandomBytes( random );
-                Collection<DynamicRecord> records = new ArrayList<>();
-                store.allocateRecords( records, bytes, IteratorUtil.<DynamicRecord>emptyIterator() );
-                for ( DynamicRecord record : records )
+                else
                 {
-                    assert !set.contains( record.getId() );
-                    store.updateRecord( record );
-                    set.add( record.getId() );
+                    byte bytes[] = createRandomBytes( random );
+                    Collection<DynamicRecord> records = new ArrayList<>();
+                    store.allocateRecords( records, bytes, IteratorUtil.<DynamicRecord>emptyIterator() );
+                    for ( DynamicRecord record : records )
+                    {
+                        assert !set.contains( record.getId() );
+                        store.updateRecord( record );
+                        set.add( record.getId() );
+                    }
+                    long blockId = first( records ).getId();
+                    idsTaken.add( blockId );
+                    byteData.put( blockId, bytes );
+                    currentCount++;
                 }
-                long blockId = first( records ).getId();
-                idsTaken.add( blockId );
-                byteData.put( blockId, bytes );
-                currentCount++;
+                if ( rIndex > (1.0f - closeIndex) || rIndex < closeIndex )
+                {
+                    store.close();
+                    store = newStore();
+                }
             }
-            if ( rIndex > (1.0f - closeIndex) || rIndex < closeIndex )
-            {
-                neoStores.close();
-                store = createDynamicArrayStore();
-            }
+        }
+        finally
+        {
+            store.close();
+            deleteBothFiles();
         }
     }
 
@@ -250,35 +332,53 @@ public class TestDynamicStore
     @Test
     public void testAddDeleteSequenceEmptyNumberArray()
     {
-        DynamicArrayStore store = createDynamicArrayStore();
-        byte[] emptyToWrite = createBytes( 0 );
-        long blockId = create( store, emptyToWrite );
-        store.getLightRecords( blockId );
-        byte[] bytes = (byte[]) store.getArrayFor( store.getRecords( blockId ) );
-        assertEquals( 0, bytes.length );
-
-        Collection<DynamicRecord> records = store.getLightRecords( blockId );
-        for ( DynamicRecord record : records )
+        createEmptyStore( dynamicStoreFile(), 30 );
+        DynamicArrayStore store = newStore();
+        try
         {
-            record.setInUse( false );
-            store.updateRecord( record );
+            byte[] emptyToWrite = createBytes( 0 );
+            long blockId = create( store, emptyToWrite );
+            store.getLightRecords( blockId );
+            byte[] bytes = (byte[]) store.getArrayFor( store.getRecords( blockId ) );
+            assertEquals( 0, bytes.length );
+
+            Collection<DynamicRecord> records = store.getLightRecords( blockId );
+            for ( DynamicRecord record : records )
+            {
+                record.setInUse( false );
+                store.updateRecord( record );
+            }
+        }
+        finally
+        {
+            store.close();
+            deleteBothFiles();
         }
     }
 
     @Test
     public void testAddDeleteSequenceEmptyStringArray()
     {
-        DynamicArrayStore store = createDynamicArrayStore();
-        long blockId = create( store, new String[0] );
-        store.getLightRecords( blockId );
-        String[] readBack = (String[]) store.getArrayFor( store.getRecords( blockId ) );
-        assertEquals( 0, readBack.length );
-
-        Collection<DynamicRecord> records = store.getLightRecords( blockId );
-        for ( DynamicRecord record : records )
+        createEmptyStore( dynamicStoreFile(), 30 );
+        DynamicArrayStore store = newStore();
+        try
         {
-            record.setInUse( false );
-            store.updateRecord( record );
+            long blockId = create( store, new String[0] );
+            store.getLightRecords( blockId );
+            String[] readBack = (String[]) store.getArrayFor( store.getRecords( blockId ) );
+            assertEquals( 0, readBack.length );
+
+            Collection<DynamicRecord> records = store.getLightRecords( blockId );
+            for ( DynamicRecord record : records )
+            {
+                record.setInUse( false );
+                store.updateRecord( record );
+            }
+        }
+        finally
+        {
+            store.close();
+            deleteBothFiles();
         }
     }
 }

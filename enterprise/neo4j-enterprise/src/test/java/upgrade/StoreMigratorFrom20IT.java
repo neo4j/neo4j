@@ -40,8 +40,7 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
@@ -49,6 +48,7 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -60,6 +60,7 @@ import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.store.NeoStore.versionLongToString;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find20FormatStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 
@@ -92,9 +93,9 @@ public class StoreMigratorFrom20IT
             database.shutdown();
         }
 
-        try ( NeoStores neoStores = storeFactory.openNeoStores( true ) )
+        try ( NeoStore neoStore = storeFactory.newNeoStore( true ) )
         {
-            verifyNeoStore( neoStores );
+            verifyNeoStore( neoStore );
         }
         assertConsistentStore( storeDir.directory() );
     }
@@ -143,15 +144,13 @@ public class StoreMigratorFrom20IT
         verifier.verifyRelationships( 500 );
     }
 
-    public static void verifyNeoStore( NeoStores neoStores )
+    public static void verifyNeoStore( NeoStore neoStore )
     {
-        MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-        assertEquals( 1317392957120L, metaDataStore.getCreationTime() );
-        assertEquals( -472309512128245482l, metaDataStore.getRandomNumber() );
-        assertEquals( 5l, metaDataStore.getCurrentLogVersion() );
-        assertEquals( ALL_STORES_VERSION, MetaDataStore.versionLongToString(
-                metaDataStore.getStoreVersion() ) );
-        assertEquals( 1042l, metaDataStore.getLastCommittedTransactionId() );
+        assertEquals( 1317392957120L, neoStore.getCreationTime() );
+        assertEquals( -472309512128245482l, neoStore.getRandomNumber() );
+        assertEquals( 5l, neoStore.getCurrentLogVersion() );
+        assertEquals( ALL_STORES_VERSION, versionLongToString( neoStore.getStoreVersion() ) );
+        assertEquals( 1042l, neoStore.getLastCommittedTransactionId() );
     }
 
     private StoreUpgrader upgrader( StoreMigrator storeMigrator )
@@ -185,7 +184,8 @@ public class StoreMigratorFrom20IT
                 new DefaultIdGeneratorFactory( fs ),
                 pageCache,
                 fs,
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(),
+                new Monitors() );
         upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
     }
 

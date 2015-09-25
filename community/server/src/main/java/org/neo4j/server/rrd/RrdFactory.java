@@ -36,7 +36,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
@@ -73,13 +73,12 @@ public class RrdFactory
 
     public org.neo4j.server.database.RrdDbWrapper createRrdDbAndSampler( final Database db, JobScheduler scheduler ) throws IOException
     {
-        NeoStoresSupplier
-                neoStoresSupplier = db.getGraph().getDependencyResolver().resolveDependency( NeoStoresSupplier.class );
+        NeoStoreSupplier neoStoreSupplier = db.getGraph().getDependencyResolver().resolveDependency( NeoStoreSupplier.class );
 
         Sampleable[] primitives = {
-                new NodeIdsInUseSampleable( neoStoresSupplier ),
-                new PropertyCountSampleable( neoStoresSupplier ),
-                new RelationshipCountSampleable( neoStoresSupplier )
+                new NodeIdsInUseSampleable( neoStoreSupplier ),
+                new PropertyCountSampleable( neoStoreSupplier ),
+                new RelationshipCountSampleable( neoStoreSupplier )
         };
 
         Sampleable[] usage = {};

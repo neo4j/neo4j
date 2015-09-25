@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -82,12 +82,12 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         {
             DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
-            StoreAccess nativeStores = new StoreAccess( fileSystem, pageCache, directory ).initialize();
+            StoreAccess nativeStores = new StoreAccess( fileSystem, pageCache, directory );
             directStoreAccess = new DirectStoreAccess(
                     nativeStores,
                     new LuceneLabelScanStoreBuilder(
                             directory,
-                            nativeStores.getRawNeoStores(),
+                            nativeStores.getRawNeoStore(),
                             fileSystem,
                             FormattedLogProvider.toOutputStream( System.out )
                     ).build(),
@@ -356,7 +356,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
                             dependencyResolver.resolveDependency( IndexUpdatesValidator.class ) );
             TransactionIdStore transactionIdStore = database.getDependencyResolver().resolveDependency(
                     TransactionIdStore.class );
-            NodeStore nodes = database.getDependencyResolver().resolveDependency( NeoStores.class ).getNodeStore();
+            NodeStore nodes = database.getDependencyResolver().resolveDependency( NeoStore.class ).getNodeStore();
             commitProcess.commit( transaction.representation( idGenerator(), masterId(), myId(),
                     transactionIdStore.getLastCommittedTransactionId(), nodes ), locks, CommitEvent.NULL,
                     TransactionApplicationMode.EXTERNAL );
@@ -387,7 +387,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         try
         {
             generateInitialData( graphDb );
-            StoreAccess stores = new StoreAccess( graphDb ).initialize();
+            StoreAccess stores = new StoreAccess( graphDb );
             schemaId = stores.getSchemaStore().getHighId();
             nodeId = stores.getNodeStore().getHighId();
             labelId = (int) stores.getLabelTokenStore().getHighId();

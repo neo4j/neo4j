@@ -41,13 +41,13 @@ import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCo
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 
 /**
- * A CommandHandler has to handle all type of commands that a Neo transaction can generate. It provides
+ * A NeoCommandHandler has to handle all type of commands that a Neo transaction can generate. It provides
  * methods for handling each type of Command available through a callback pattern to avoid dynamic dispatching.
  * Implementations need to provide all these methods of course, but it is expected that they will delegate
  * the actual work to implementations that hold related functionality together, using a Facade pattern.
- * For example, it is conceivable that a CommandWriterHandler would use a CommandHandler and a SchemaCommandHandler.
+ * For example, it is conceivable that a CommandWriterHandler would use a NeoCommandHandler and a SchemaCommandHandler.
  * <p>
- * The order in which the methods of a CommandHandler is expected to be called is this:
+ * The order in which the methods of a NeoCommandHandler is expected to be called is this:
  * <ol>
  * <li>zero or more calls to visit??? methods</li>
  * <li>{@link #apply()}</li>
@@ -56,11 +56,11 @@ import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
  * <p>
  * The boolean returned from visit methods is false for continuing traversal, and true for breaking traversal.
  */
-public interface CommandHandler extends AutoCloseable
+public interface NeoCommandHandler extends AutoCloseable
 {
-    CommandHandler EMPTY = new CommandHandler.Adapter();
+    public static final NeoCommandHandler EMPTY = new NeoCommandHandler.Adapter();
 
-    // Store commands
+    // NeoStore commands
     boolean visitNodeCommand( Command.NodeCommand command ) throws IOException;
 
     boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException;
@@ -77,7 +77,7 @@ public interface CommandHandler extends AutoCloseable
 
     boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command ) throws IOException;
 
-    boolean visitNeoStoreCommand( NeoStoreCommand command ) throws IOException;
+    boolean visitNeoStoreCommand( Command.NeoStoreCommand command ) throws IOException;
 
     // Index commands
     boolean visitIndexAddNodeCommand( AddNodeCommand command ) throws IOException;
@@ -108,7 +108,7 @@ public interface CommandHandler extends AutoCloseable
     @Override
     void close();
 
-    class Adapter implements CommandHandler
+    public static class Adapter implements NeoCommandHandler
     {
         @Override
         public boolean visitNodeCommand( NodeCommand command ) throws IOException
@@ -224,11 +224,11 @@ public interface CommandHandler extends AutoCloseable
         }
     }
 
-    public static class Delegator implements CommandHandler
+    public static class Delegator implements NeoCommandHandler
     {
-        private final CommandHandler delegate;
+        private final NeoCommandHandler delegate;
 
-        public Delegator( CommandHandler delegate )
+        public Delegator( NeoCommandHandler delegate )
         {
             this.delegate = delegate;
         }
@@ -350,9 +350,9 @@ public interface CommandHandler extends AutoCloseable
 
     public static class HandlerVisitor implements Visitor<Command,IOException>
     {
-        private final CommandHandler handler;
+        private final NeoCommandHandler handler;
 
-        public HandlerVisitor( CommandHandler handler )
+        public HandlerVisitor( NeoCommandHandler handler )
         {
             this.handler = handler;
         }

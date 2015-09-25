@@ -20,11 +20,11 @@
 package org.neo4j.kernel.impl.transaction.state;
 
 import org.neo4j.function.Supplier;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 
 /**
- * A provider of a {@link NeoStores}. Main reason for this is to be able to look it up in a DependencyResolver.
+ * A provider of a {@link NeoStore}. Main reason for this is to be able to look it up in a DependencyResolver.
  */
-public interface NeoStoresSupplier extends Supplier<NeoStores>
+public interface NeoStoreSupplier extends Supplier<NeoStore>
 {
 }

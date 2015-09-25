@@ -25,6 +25,7 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Predicate;
+import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.kernel.IdType;
@@ -48,6 +49,8 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
     long getHighestPossibleIdInUse();
 
     R getRecord( long id );
+
+    long getNextRecordReference( R record );
 
     Collection<R> getRecords( long id );
 
@@ -117,6 +120,12 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
         public R getRecord( long id )
         {
             return actual.getRecord( id );
+        }
+
+        @Override
+        public long getNextRecordReference( R record )
+        {
+            return actual.getNextRecordReference( record );
         }
 
         @Override
@@ -258,7 +267,7 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
         }
     }
 
-    class Scanner
+    static class Scanner
     {
         @SafeVarargs
         public static <R extends AbstractBaseRecord> Iterable<R> scan( final RecordStore<R> store,
@@ -299,6 +308,19 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
                             return null;
                         }
                     };
+                }
+            };
+        }
+
+        public static <R extends AbstractBaseRecord> Iterable<R> scanById( final RecordStore<R> store,
+                Iterable<Long> ids )
+        {
+            return new IterableWrapper<R,Long>( ids )
+            {
+                @Override
+                protected R underlyingObjectToObject( Long id )
+                {
+                    return store.forceGetRecord( id );
                 }
             };
         }

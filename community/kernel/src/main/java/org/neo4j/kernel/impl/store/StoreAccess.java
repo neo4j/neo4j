@@ -37,13 +37,11 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 /**
- * Not thread safe (since DiffRecordStore is not thread safe), intended for
- * single threaded use.
- *
- * Make sure to call {@link #initialize()} after constructor has been run.
+ * Not thread safe (since DiffRecordStore is not thread safe), intended for single threaded use.
  */
 public class StoreAccess
 {
@@ -65,22 +63,36 @@ public class StoreAccess
     private final CountsAccessor counts;
     // internal state
     private boolean closeable;
-    private final NeoStores neoStores;
+    private final NeoStore neoStore;
 
     public StoreAccess( GraphDatabaseAPI graphdb )
     {
-        this( getNeoStoresFrom( graphdb ) );
+        this( getNeoStoreFrom( graphdb ) );
     }
 
     @SuppressWarnings( "deprecation" )
-    private static NeoStores getNeoStoresFrom( GraphDatabaseAPI graphdb )
+    private static NeoStore getNeoStoreFrom( GraphDatabaseAPI graphdb )
     {
-        return graphdb.getDependencyResolver().resolveDependency( NeoStores.class );
+        return graphdb.getDependencyResolver().resolveDependency( NeoStore.class );
     }
 
-    public StoreAccess( NeoStores store )
+    public StoreAccess( NeoStore store )
     {
-        this.neoStores = store;
+        this.neoStore = store;
+        this.schemaStore = wrapStore( store.getSchemaStore() );
+        this.nodeStore = wrapStore( store.getNodeStore() );
+        this.relStore = wrapStore( store.getRelationshipStore() );
+        this.propStore = wrapStore( store.getPropertyStore() );
+        this.stringStore = wrapStore( store.getPropertyStore().getStringStore() );
+        this.arrayStore = wrapStore( store.getPropertyStore().getArrayStore() );
+        this.relationshipTypeTokenStore = wrapStore( store.getRelationshipTypeTokenStore() );
+        this.labelTokenStore = wrapStore( store.getLabelTokenStore() );
+        this.nodeDynamicLabelStore = wrapStore( wrapNodeDynamicLabelStore( store.getNodeStore().getDynamicLabelStore() ) );
+        this.propertyKeyTokenStore = wrapStore( store.getPropertyStore().getPropertyKeyTokenStore() );
+        this.relationshipTypeNameStore = wrapStore( store.getRelationshipTypeTokenStore().getNameStore() );
+        this.labelNameStore = wrapStore( store.getLabelTokenStore().getNameStore() );
+        this.propertyKeyNameStore = wrapStore( store.getPropertyStore().getPropertyKeyTokenStore().getNameStore() );
+        this.relGroupStore = wrapStore( store.getRelationshipGroupStore() );
         this.counts = store.getCounts();
     }
 
@@ -91,46 +103,20 @@ public class StoreAccess
 
     public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir )
     {
-        this( fileSystem, pageCache, storeDir, new Config() );
+        this( fileSystem, pageCache, storeDir, new Config(), new Monitors() );
     }
 
-    private StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config )
+    private StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config, Monitors monitors )
     {
         this( new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
-                fileSystem, NullLogProvider.getInstance() ).openNeoStores( false ) );
+                fileSystem, NullLogProvider.getInstance(), monitors ).newNeoStore( false ) );
         this.closeable = true;
     }
 
-    /**
-     * This method exists since {@link #wrapStore(RecordStore)} might depend on the existence of a variable
-     * that gets set in a subclass' constructor <strong>after</strong> this constructor of {@link StoreAccess}
-     * has been executed. I.e. a correct creation of a {@link StoreAccess} instance must be the creation of the
-     * object plus a call to {@link #initialize()}.
-     *
-     * @return this
-     */
-    public StoreAccess initialize()
-    {
-        this.schemaStore = wrapStore( neoStores.getSchemaStore() );
-        this.nodeStore = wrapStore( neoStores.getNodeStore() );
-        this.relStore = wrapStore( neoStores.getRelationshipStore() );
-        this.propStore = wrapStore( neoStores.getPropertyStore() );
-        this.stringStore = wrapStore( neoStores.getPropertyStore().getStringStore() );
-        this.arrayStore = wrapStore( neoStores.getPropertyStore().getArrayStore() );
-        this.relationshipTypeTokenStore = wrapStore( neoStores.getRelationshipTypeTokenStore() );
-        this.labelTokenStore = wrapStore( neoStores.getLabelTokenStore() );
-        this.nodeDynamicLabelStore = wrapStore( wrapNodeDynamicLabelStore( neoStores.getNodeStore().getDynamicLabelStore() ) );
-        this.propertyKeyTokenStore = wrapStore( neoStores.getPropertyStore().getPropertyKeyTokenStore() );
-        this.relationshipTypeNameStore = wrapStore( neoStores.getRelationshipTypeTokenStore().getNameStore() );
-        this.labelNameStore = wrapStore( neoStores.getLabelTokenStore().getNameStore() );
-        this.propertyKeyNameStore = wrapStore( neoStores.getPropertyStore().getPropertyKeyTokenStore().getNameStore() );
-        this.relGroupStore = wrapStore( neoStores.getRelationshipGroupStore() );
-        return this;
-    }
 
-    public NeoStores getRawNeoStores()
+    public NeoStore getRawNeoStore()
     {
-        return neoStores;
+        return neoStore;
     }
 
     public RecordStore<DynamicRecord> getSchemaStore()
@@ -255,7 +241,7 @@ public class StoreAccess
         if ( closeable )
         {
             closeable = false;
-            neoStores.close();
+            neoStore.close();
         }
     }
 }

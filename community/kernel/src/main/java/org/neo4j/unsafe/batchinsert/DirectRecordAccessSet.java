@@ -21,14 +21,7 @@ package org.neo4j.unsafe.batchinsert;
 
 import java.util.Collection;
 
-import org.neo4j.kernel.impl.store.LabelTokenStore;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -54,28 +47,16 @@ public class DirectRecordAccessSet implements RecordAccessSet
     private final DirectRecordAccess<Integer, LabelTokenRecord, Void> labelTokenRecords;
 //    private final DirectRecordAccess<Long, Collection<DynamicRecord>, SchemaRule> schemaRecords; // TODO
 
-    public DirectRecordAccessSet( NeoStores neoStores )
+    public DirectRecordAccessSet( NeoStore neoStore )
     {
-        NodeStore nodeStore = neoStores.getNodeStore();
-        PropertyStore propertyStore = neoStores.getPropertyStore();
-        RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        RelationshipGroupStore relationshipGroupStore = neoStores.getRelationshipGroupStore();
-        PropertyKeyTokenStore propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
-        RelationshipTypeTokenStore relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
-        LabelTokenStore labelTokenStore = neoStores.getLabelTokenStore();
-        nodeRecords = new DirectRecordAccess<>( nodeStore, Loaders.nodeLoader( nodeStore ) );
-        propertyRecords = new DirectRecordAccess<>( propertyStore, Loaders.propertyLoader( propertyStore ) );
-        relationshipRecords = new DirectRecordAccess<>(
-                relationshipStore, Loaders.relationshipLoader( relationshipStore ) );
-        relationshipGroupRecords = new DirectRecordAccess<>(
-                relationshipGroupStore, Loaders.relationshipGroupLoader( relationshipGroupStore ) );
-        propertyKeyTokenRecords = new DirectRecordAccess<>(
-                propertyKeyTokenStore, Loaders.propertyKeyTokenLoader( propertyKeyTokenStore ) );
-        relationshipTypeTokenRecords = new DirectRecordAccess<>(
-                relationshipTypeTokenStore, Loaders.relationshipTypeTokenLoader( relationshipTypeTokenStore ) );
-        labelTokenRecords = new DirectRecordAccess<>(
-                labelTokenStore, Loaders.labelTokenLoader( labelTokenStore ) );
-//        schemaRecords = new DirectRecordAccess<>( neoStores.getSchemaStore(), Loaders.schemaRuleLoader( neoStores ) ); // TODO
+        nodeRecords = new DirectRecordAccess<>( neoStore.getNodeStore(), Loaders.nodeLoader( neoStore.getNodeStore() ) );
+        propertyRecords = new DirectRecordAccess<>( neoStore.getPropertyStore(), Loaders.propertyLoader( neoStore.getPropertyStore() ) );
+        relationshipRecords = new DirectRecordAccess<>( neoStore.getRelationshipStore(), Loaders.relationshipLoader( neoStore.getRelationshipStore() ) );
+        relationshipGroupRecords = new DirectRecordAccess<>( neoStore.getRelationshipGroupStore(), Loaders.relationshipGroupLoader( neoStore.getRelationshipGroupStore() ) );
+        propertyKeyTokenRecords = new DirectRecordAccess<>( neoStore.getPropertyKeyTokenStore(), Loaders.propertyKeyTokenLoader( neoStore.getPropertyKeyTokenStore() ) );
+        relationshipTypeTokenRecords = new DirectRecordAccess<>( neoStore.getRelationshipTypeTokenStore(), Loaders.relationshipTypeTokenLoader( neoStore.getRelationshipTypeTokenStore() ) );
+        labelTokenRecords = new DirectRecordAccess<>( neoStore.getLabelTokenStore(), Loaders.labelTokenLoader( neoStore.getLabelTokenStore() ) );
+//        schemaRecords = new DirectRecordAccess<>( neoStore.getSchemaStore(), Loaders.schemaRuleLoader( neoStore ) ); // TODO
     }
 
     @Override

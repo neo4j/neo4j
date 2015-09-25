@@ -33,10 +33,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.hamcrest.Matchers.notNullValue;
@@ -101,17 +101,17 @@ public class IndexLookupTest
         }
 
         DependencyResolver resolver = api.getDependencyResolver();
-        NeoStoresSupplier neoStoresSupplier = resolver.resolveDependency( NeoStoresSupplier.class );
-        NeoStores neoStores = neoStoresSupplier.get();
-        SchemaStore schemaStore = neoStores.getSchemaStore();
+        NeoStoreSupplier neoStoreSupplier = resolver.resolveDependency( NeoStoreSupplier.class );
+        NeoStore neoStore = neoStoreSupplier.get();
+        SchemaStore schemaStore = neoStore.getSchemaStore();
         SchemaIndexProvider schemaIndexProvider = resolver.resolveDependency( SchemaIndexProvider.class );
         indexLookup = new IndexLookup( schemaStore, schemaIndexProvider );
 
-        LabelTokenStore labelTokenStore = neoStores.getLabelTokenStore();
+        LabelTokenStore labelTokenStore = neoStore.getLabelTokenStore();
         notUsedLabelId = findTokenFor( labelTokenStore, notUsedLabel.name() ).id();
         usedLabelId = findTokenFor( labelTokenStore, usedLabel.name() ).id();
 
-        PropertyKeyTokenStore propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
+        PropertyKeyTokenStore propertyKeyTokenStore = neoStore.getPropertyKeyTokenStore();
         notUsedPropertyId = findTokenFor( propertyKeyTokenStore, notUsedIndexPropKey ).id();
         usedPropertyId = findTokenFor( propertyKeyTokenStore, usedIndexPropKey ).id();
     }

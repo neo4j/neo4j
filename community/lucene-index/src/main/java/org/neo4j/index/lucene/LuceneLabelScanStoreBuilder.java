@@ -29,9 +29,9 @@ import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore;
 import org.neo4j.kernel.api.impl.index.NodeRangeDocumentLabelScanStorageStrategy;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
-import org.neo4j.kernel.impl.transaction.state.SimpleNeoStoresSupplier;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
+import org.neo4j.kernel.impl.transaction.state.SimpleNeoStoreSupplier;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
@@ -46,19 +46,19 @@ import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLab
 public class LuceneLabelScanStoreBuilder
 {
     private final File storeDir;
-    private final NeoStoresSupplier neoStoresSupplier;
+    private final NeoStoreSupplier neoStoreSupplier;
     private final FileSystemAbstraction fileSystem;
     private final LogProvider logProvider;
 
     private LuceneLabelScanStore labelScanStore = null;
 
     public LuceneLabelScanStoreBuilder( File storeDir,
-                                        NeoStores neoStores,
+                                        NeoStore neoStore,
                                         FileSystemAbstraction fileSystem,
                                         LogProvider logProvider )
     {
         this.storeDir = storeDir;
-        this.neoStoresSupplier = new SimpleNeoStoresSupplier( neoStores );
+        this.neoStoreSupplier = new SimpleNeoStoreSupplier( neoStore );
         this.fileSystem = fileSystem;
         this.logProvider = logProvider;
     }
@@ -74,7 +74,7 @@ public class LuceneLabelScanStoreBuilder
                     // <db>/schema/label/lucene
                     new File( new File( new File( storeDir, "schema" ), "label" ), "lucene" ),
                     fileSystem, IndexWriterFactories.tracking(),
-                    fullStoreLabelUpdateStream( neoStoresSupplier ),
+                    fullStoreLabelUpdateStream( neoStoreSupplier ),
                     LuceneLabelScanStore.loggerMonitor( logProvider ) );
 
             try

@@ -61,8 +61,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -97,7 +96,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TransactionRepresentationCommitProcessIT
@@ -118,7 +116,8 @@ public class TransactionRepresentationCommitProcessIT
     @Rule
     public LifeRule lifeRule = new LifeRule();
 
-    private NeoStores neoStores;
+    private PageCache pageCache;
+    private NeoStore neoStore;
     private DefaultFileSystemAbstraction fileSystem;
     private File storeDir;
 
@@ -138,18 +137,18 @@ public class TransactionRepresentationCommitProcessIT
     public void setUp()
     {
         fileSystem = fileSystemRule.get();
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        pageCache = pageCacheRule.getPageCache( fileSystem );
         storeDir = testDirectory.graphDbDir();
-        StoreFactory storeFactory = new StoreFactory(
-                fileSystem, storeDir, pageCache, NullLogProvider.getInstance() );
-        neoStores = storeFactory.openNeoStores( true );
+        StoreFactory storeFactory = new StoreFactory( fileSystem, storeDir, pageCache,
+                NullLogProvider.getInstance(), new Monitors() );
+        neoStore = storeFactory.createNeoStore();
 
     }
 
     @After
     public void tearDown()
     {
-        neoStores.close();
+        neoStore.close();
     }
 
     @Test(timeout = 5000)
@@ -166,29 +165,28 @@ public class TransactionRepresentationCommitProcessIT
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 1000, 100_000 );
         IdOrderingQueue legacyIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue( 20 );
 
-        MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-        final PhysicalLogFiles logFiles = new PhysicalLogFiles(
-                storeDir, PhysicalLogFile.DEFAULT_NAME, fileSystem );
+        final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, PhysicalLogFile.DEFAULT_NAME,
+                fileSystem );
         final PhysicalLogFile logFile = new PhysicalLogFile( fileSystem, logFiles,
-                10000, metaDataStore, metaDataStore, new Monitors().newMonitor( PhysicalLogFile.Monitor.class ),
+                10000, neoStore, neoStore, new Monitors().newMonitor( PhysicalLogFile.Monitor.class ),
                 transactionMetadataCache );
 
         KernelHealth kernelHealth = mock( KernelHealth.class );
 
-        final TransactionRepresentationStoreApplier storeApplier = createStoreApplier(
-                indexStore, legacyIndexApplierLookup, legacyIndexTransactionOrdering, kernelHealth );
+        final TransactionRepresentationStoreApplier storeApplier = createStoreApplier( neoStore, indexStore,
+                legacyIndexApplierLookup, legacyIndexTransactionOrdering, kernelHealth );
 
-        final TransactionAppender appender = createTransactionAppender( metaDataStore, transactionMetadataCache,
+        final TransactionAppender appender = createTransactionAppender( neoStore, transactionMetadataCache,
                 legacyIndexTransactionOrdering, logFile, kernelHealth );
 
-        final CheckPointerImpl checkPointer = createCheckPointer( metaDataStore, kernelHealth, appender );
+        final CheckPointerImpl checkPointer = createCheckPointer( neoStore, kernelHealth, appender );
 
         lifeRule.add( logFile );
         lifeRule.add( indexStore );
         lifeRule.add( appender );
         lifeRule.start();
 
-        neoStores.rebuildCountStoreIfNeeded();
+        neoStore.rebuildCountStoreIfNeeded();
 
         // when
         CountDownLatch completionLatch = new CountDownLatch( TOTAL_ACTIVE_THREADS );
@@ -196,7 +194,7 @@ public class TransactionRepresentationCommitProcessIT
         InsaneCheckPointer insaneCheckPointer = new InsaneCheckPointer( checkPointer, completionLatch );
         executorService.submit( insaneCheckPointer );
 
-        List<TransactionalWorker> workers = createTransactionWorkers( 5, appender, storeApplier, completionLatch );
+        List<TransactionalWorker> workers = createTransactionWorkers( 5, neoStore, appender, storeApplier, completionLatch );
         for ( TransactionalWorker worker : workers )
         {
             executorService.submit( worker );
@@ -222,52 +220,48 @@ public class TransactionRepresentationCommitProcessIT
         // verify
         assertTrue( "All legacy index commands should be applied", legacyIndexTransactionOrdering.isEmpty() );
         assertEquals( "NeoStore last closed transaction id should be equal to count store transaction id.",
-                metaDataStore.getLastClosedTransactionId(), neoStores.getCounts().txId());
+                neoStore.getLastClosedTransactionId(), neoStore.getCounts().txId());
     }
 
-    private List<TransactionalWorker> createTransactionWorkers(
-            int numberOfWorkers,
+    private List<TransactionalWorker> createTransactionWorkers( int numberOfWorkers, NeoStore neoStore,
             TransactionAppender appender,
-            TransactionRepresentationStoreApplier storeApplier,
-            CountDownLatch completedLatch )
+            TransactionRepresentationStoreApplier storeApplier, CountDownLatch completedLatch )
     {
         List<TransactionalWorker> workers = new ArrayList<>( numberOfWorkers );
         for ( int i = 0; i < numberOfWorkers; i++ )
         {
-            workers.add( new TransactionalWorker( neoStores, appender, storeApplier, completedLatch ) );
+            workers.add( new TransactionalWorker( neoStore, appender, storeApplier, completedLatch ) );
         }
         return workers;
     }
 
-    private BatchingTransactionAppender createTransactionAppender( MetaDataStore metaDataStore,
+    private BatchingTransactionAppender createTransactionAppender( NeoStore neoStore,
             TransactionMetadataCache transactionMetadataCache, IdOrderingQueue legacyIndexTransactionOrdering,
             PhysicalLogFile logFile, KernelHealth kernelHealth )
     {
         return new BatchingTransactionAppender( logFile, mock( LogRotation.class ),
-                transactionMetadataCache, metaDataStore, legacyIndexTransactionOrdering, kernelHealth );
+                transactionMetadataCache, neoStore, legacyIndexTransactionOrdering, kernelHealth );
     }
 
-    private TransactionRepresentationStoreApplier createStoreApplier(
-            IndexConfigStore indexStore,
-            LegacyIndexApplierLookup legacyIndexApplierLookup,
-            IdOrderingQueue legacyIndexTransactionOrdering,
+    private TransactionRepresentationStoreApplier createStoreApplier( NeoStore neoStore, IndexConfigStore indexStore,
+            LegacyIndexApplierLookup legacyIndexApplierLookup, IdOrderingQueue legacyIndexTransactionOrdering,
             KernelHealth kernelHealth )
     {
         return new TransactionRepresentationStoreApplier( mock( IndexingService.class ),
-                mock( Provider.class ), neoStores, mock( CacheAccessBackDoor.class ), mock( LockService.class ),
+                mock( Provider.class ), neoStore, mock( CacheAccessBackDoor.class ), mock( LockService.class ),
                 legacyIndexApplierLookup, indexStore, kernelHealth, legacyIndexTransactionOrdering );
     }
 
-    private CheckPointerImpl createCheckPointer( MetaDataStore metaDataStore, KernelHealth kernelHealth,
+    private CheckPointerImpl createCheckPointer( NeoStore neoStore, KernelHealth kernelHealth,
             TransactionAppender appender )
     {
         CountCommittedTransactionThreshold committedTransactionThreshold =
                 new CountCommittedTransactionThreshold( 1 );
-        final StoreFlusher storeFlusher = new StoreFlusher( neoStores, mock( IndexingService.class ),
+        final StoreFlusher storeFlusher = new StoreFlusher( neoStore, mock( IndexingService.class ),
                 mock( LabelScanStore.class ), Iterables.<IndexImplementation>empty() );
         LogProvider logProvider = mock( LogProvider.class );
         when( logProvider.getLog( any( Class.class ) ) ).thenReturn( mock( Log.class ) );
-        return new CheckPointerImpl( metaDataStore, committedTransactionThreshold, storeFlusher,
+        return new CheckPointerImpl( neoStore, committedTransactionThreshold, storeFlusher,
                 mock( LogPruning.class ),
                 appender, kernelHealth, logProvider, mock( CheckPointTracer.class ) );
     }
@@ -318,16 +312,16 @@ public class TransactionRepresentationCommitProcessIT
     private static class TransactionalWorker implements Callable<Long>
     {
 
-        private final NeoStores neoStores;
+        private NeoStore neoStore;
         private final TransactionAppender appender;
         private final TransactionRepresentationStoreApplier storeApplier;
         private final CountDownLatch completedLatch;
         private volatile boolean completed = false;
 
-        public TransactionalWorker( NeoStores neoStores, TransactionAppender appender,
+        public TransactionalWorker( NeoStore neoStore, TransactionAppender appender,
                 TransactionRepresentationStoreApplier storeApplier, CountDownLatch completedLatch )
         {
-            this.neoStores = neoStores;
+            this.neoStore = neoStore;
             this.appender = appender;
             this.storeApplier = storeApplier;
             this.completedLatch = completedLatch;
@@ -367,11 +361,11 @@ public class TransactionRepresentationCommitProcessIT
         private PhysicalTransactionRepresentation createPhysicalTransactionRepresentation()
         {
 
-            long nextId = neoStores.getNodeStore().nextId();
+            long nextId = neoStore.getNodeStore().nextId();
             PhysicalTransactionRepresentation transactionRepresentation =
                     new PhysicalTransactionRepresentation( CommandHelper.createListOfCommands( nextId ) );
             transactionRepresentation.setHeader( new byte[0], 0, 0, System.currentTimeMillis(),
-                    neoStores.getMetaDataStore().getLastCommittedTransactionId(), 0, 0 );
+                    neoStore.getLastCommittedTransactionId(), 0, 0 );
             return transactionRepresentation;
         }
 

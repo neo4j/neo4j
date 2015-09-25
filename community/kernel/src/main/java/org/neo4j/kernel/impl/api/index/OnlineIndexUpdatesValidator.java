@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
  * {@link org.neo4j.kernel.impl.transaction.command.Command}s in transaction state.
  * It is done by inferring {@link org.neo4j.kernel.api.index.NodePropertyUpdate}s from commands and asking
  * {@link org.neo4j.kernel.impl.api.index.IndexingService} to check those via
- * {@link org.neo4j.kernel.impl.api.index.IndexingService#validate(Iterable)}.
+ * {@link org.neo4j.kernel.impl.api.index.IndexingService#validate(Iterable, IndexUpdateMode)}.
  */
 public class OnlineIndexUpdatesValidator implements IndexUpdatesValidator
 {
@@ -46,7 +46,7 @@ public class OnlineIndexUpdatesValidator implements IndexUpdatesValidator
     private final IndexUpdateMode updateMode;
     private final KernelHealth kernelHealth;
 
-    public OnlineIndexUpdatesValidator( NeoStores neoStore, KernelHealth kernelHealth, PropertyLoader propertyLoader,
+    public OnlineIndexUpdatesValidator( NeoStore neoStore, KernelHealth kernelHealth, PropertyLoader propertyLoader,
             IndexingService indexing, IndexUpdateMode updateMode )
     {
         this.kernelHealth = kernelHealth;

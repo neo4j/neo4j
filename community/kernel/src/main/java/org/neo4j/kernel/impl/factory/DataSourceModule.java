@@ -165,7 +165,7 @@ public class DataSourceModule
         // Factories for things that needs to be created later
         PageCache pageCache = platformModule.pageCache;
         StoreFactory storeFactory = new StoreFactory( storeDir, config, editionModule.idGeneratorFactory,
-                pageCache, fileSystem, logging.getInternalLogProvider() );
+                pageCache, fileSystem, logging.getInternalLogProvider(), platformModule.monitors );
 
         StartupStatisticsProvider startupStatistics = deps.satisfyDependency( new StartupStatisticsProvider() );
 

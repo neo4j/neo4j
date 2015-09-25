@@ -21,9 +21,8 @@ package org.neo4j.kernel.impl.store;
 
 public class StoreNotFoundException extends StoreFailureException
 {
-    public StoreNotFoundException( String msg, Throwable cause )
+    public StoreNotFoundException( String msg )
     {
-        super( msg, cause );
+        super( msg );
     }
-
 }

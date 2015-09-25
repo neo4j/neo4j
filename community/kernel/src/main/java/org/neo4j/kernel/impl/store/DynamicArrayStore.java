@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import org.neo4j.helpers.Pair;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -33,6 +34,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.System.arraycopy;
 
@@ -54,12 +56,13 @@ public class DynamicArrayStore extends AbstractDynamicStore
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
             StoreVersionMismatchHandler versionMismatchHandler,
-            int blockSizeFromConfiguration )
+            Monitors monitors )
     {
         super( fileName, configuration, idType, idGeneratorFactory, pageCache,
-                logProvider, versionMismatchHandler, blockSizeFromConfiguration );
+                fileSystemAbstraction, logProvider, versionMismatchHandler, monitors );
     }
 
     @Override

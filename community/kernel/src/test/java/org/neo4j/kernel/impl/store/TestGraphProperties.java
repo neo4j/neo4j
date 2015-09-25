@@ -39,6 +39,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.PageCacheRule;
@@ -50,6 +51,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.getPropertyKeys;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
@@ -173,17 +175,19 @@ public class TestGraphProperties
         db.shutdown();
 
         Config config = new Config( Collections.<String, String>emptyMap(), GraphDatabaseSettings.class );
+        Monitors monitors = new Monitors();
         StoreFactory storeFactory = new StoreFactory(
                 storeDir,
                 config,
                 new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
-                NullLogProvider.getInstance() );
-        NeoStores neoStores = storeFactory.openNeoStores( false );
-        long prop = neoStores.getMetaDataStore().getGraphNextProp();
+                NullLogProvider.getInstance(),
+                monitors );
+        NeoStore neoStore = storeFactory.newNeoStore( false );
+        long prop = neoStore.getGraphNextProp();
         assertTrue( prop != 0 );
-        neoStores.close();
+        neoStore.close();
     }
 
     @Test

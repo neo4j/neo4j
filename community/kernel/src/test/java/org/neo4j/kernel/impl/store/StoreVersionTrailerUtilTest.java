@@ -27,12 +27,12 @@ import java.io.File;
 import java.util.HashMap;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -58,29 +58,25 @@ public class StoreVersionTrailerUtilTest
     public void setUpNeoStore() throws Exception
     {
         Config config = new Config( new HashMap<String,String>(), GraphDatabaseSettings.class );
-        EphemeralFileSystemAbstraction fs = this.fs.get();
-        pageCache = pageCacheRule.getPageCache( fs );
-        File storeDir = dir.graphDbDir();
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        NullLogProvider logProvider = NullLogProvider.getInstance();
-        StoreFactory sf = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider );
-        try ( NeoStores neoStores = sf.openNeoStores( true ) )
-        {
-            neoStores.getMetaDataStore();
-        }
-        neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        Monitors monitors = new Monitors();
+        pageCache = pageCacheRule.getPageCache( fs.get() );
+        StoreFactory sf =
+                new StoreFactory( dir.graphDbDir(), config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
+                        fs.get(), NullLogProvider.getInstance(), monitors );
+        sf.createNeoStore().close();
+        neoStoreFile = new File( dir.graphDbDir(), NeoStore.DEFAULT_NAME );
     }
 
     @Test
     public void testGetTrailerOffset() throws Exception
     {
         long trailerOffset;
-        String expectedTrailer = buildTypeDescriptorAndVersion( MetaDataStore.TYPE_DESCRIPTOR );
+        String expectedTrailer = buildTypeDescriptorAndVersion( NeoStore.TYPE_DESCRIPTOR );
         try ( PagedFile pagedFile = pageCache.map( neoStoreFile, pageCache.pageSize() ) )
         {
-            trailerOffset = StoreVersionTrailerUtil.getTrailerPosition( pagedFile, expectedTrailer );
+            trailerOffset = StoreVersionTrailerUtil.getTrailerOffset( pagedFile, expectedTrailer );
         }
-        int expectedOffset = MetaDataStore.Position.values().length * MetaDataStore.RECORD_SIZE;
+        int expectedOffset = NeoStore.Position.values().length * NeoStore.RECORD_SIZE;
         assertEquals( expectedOffset, trailerOffset );
 
     }
@@ -89,7 +85,7 @@ public class StoreVersionTrailerUtilTest
     public void testReadTrailer() throws Exception
     {
         String trailer;
-        String expectedTrailer = buildTypeDescriptorAndVersion( MetaDataStore.TYPE_DESCRIPTOR );
+        String expectedTrailer = buildTypeDescriptorAndVersion( NeoStore.TYPE_DESCRIPTOR );
         try ( PagedFile pagedFile = pageCache.map( neoStoreFile, pageCache.pageSize() ) )
         {
             trailer = StoreVersionTrailerUtil.readTrailer( pagedFile, expectedTrailer );
@@ -100,18 +96,18 @@ public class StoreVersionTrailerUtilTest
     @Test
     public void testWriteTrailer() throws Exception
     {
-        String expectedTrailer = buildTypeDescriptorAndVersion( MetaDataStore.TYPE_DESCRIPTOR );
+        String expectedTrailer = buildTypeDescriptorAndVersion( NeoStore.TYPE_DESCRIPTOR );
         byte[] encocdedTrailer = UTF8.encode( expectedTrailer );
         try ( PagedFile pagedFile = pageCache.map( neoStoreFile, pageCache.pageSize() ) )
         {
             long trailerOffset;
-            trailerOffset = StoreVersionTrailerUtil.getTrailerPosition( pagedFile, expectedTrailer );
+            trailerOffset = StoreVersionTrailerUtil.getTrailerOffset( pagedFile, expectedTrailer );
             StoreVersionTrailerUtil.writeTrailer( pagedFile, new byte[encocdedTrailer.length], trailerOffset );
 
-            assertEquals( -1, StoreVersionTrailerUtil.getTrailerPosition( pagedFile, expectedTrailer ) );
+            assertEquals( -1, StoreVersionTrailerUtil.getTrailerOffset( pagedFile, expectedTrailer ) );
 
             StoreVersionTrailerUtil.writeTrailer( pagedFile, encocdedTrailer, trailerOffset );
-            assertEquals( trailerOffset, StoreVersionTrailerUtil.getTrailerPosition( pagedFile, expectedTrailer ) );
+            assertEquals( trailerOffset, StoreVersionTrailerUtil.getTrailerOffset( pagedFile, expectedTrailer ) );
         }
     }
 }

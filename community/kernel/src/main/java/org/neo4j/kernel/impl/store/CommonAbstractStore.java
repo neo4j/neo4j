@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.StandardOpenOption;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -46,7 +44,7 @@ import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
-import static org.neo4j.kernel.impl.store.StoreVersionTrailerUtil.getTrailerPosition;
+import static org.neo4j.kernel.impl.store.StoreVersionTrailerUtil.getTrailerOffset;
 import static org.neo4j.kernel.impl.store.StoreVersionTrailerUtil.writeTrailer;
 
 /**
@@ -61,7 +59,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     protected final PageCache pageCache;
     protected final File storageFileName;
     protected final IdType idType;
-    protected final IdGeneratorFactory idGeneratorFactory;
+    private final IdGeneratorFactory idGeneratorFactory;
     private final StoreVersionMismatchHandler versionMismatchHandler;
     protected final Log log;
     protected PagedFile storeFile;
@@ -101,13 +99,10 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         this.idType = idType;
         this.log = logProvider.getLog( getClass() );
         this.versionMismatchHandler = versionMismatchHandler;
-    }
 
-    void initialise( boolean createIfNotExists )
-    {
         try
         {
-            checkStorage( createIfNotExists );
+            checkStorage();
             checkVersion(); // Overriden in NeoStore
             loadStorage();
         }
@@ -157,37 +152,17 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      */
     public abstract String getTypeDescriptor();
 
-    protected abstract void initialiseNewStoreFile( PagedFile file ) throws IOException;
-
     /**
      * This method is called by constructors.
-     * @param createIfNotExists If true, creates and initialises the store file if it does not exist already. If false,
-     * this method will instead throw an exception in that situation.
      */
-    protected void checkStorage( boolean createIfNotExists )
+    protected void checkStorage()
     {
-        try ( PagedFile ignore = pageCache.map( storageFileName, pageCache.pageSize() ) )
+        try ( PagedFile file = pageCache.map( storageFileName, pageCache.pageSize() ) )
         {
-        }
-        catch ( NoSuchFileException e )
-        {
-            if ( createIfNotExists )
-            {
-                try ( PagedFile file = pageCache.map( storageFileName, pageCache.pageSize(), StandardOpenOption.CREATE ) )
-                {
-                    initialiseNewStoreFile( file );
-                    return;
-                }
-                catch ( IOException e1 )
-                {
-                    e.addSuppressed( e1 );
-                }
-            }
-            throw new StoreNotFoundException( "Store file not found: " + storageFileName, e );
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( "Unable to open store file: " + storageFileName, e );
+            throw new UnderlyingStorageException( "Unable to open file " + storageFileName, e );
         }
     }
 
@@ -242,16 +217,17 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         try ( PagedFile pagedFile = pageCache
                 .map( getStorageFileName(), pageCache.pageSize() - pageCache.pageSize() % getRecordSize() ) )
         {
-            long trailerPosition = getTrailerPosition( pagedFile, versionTrailer.split( " " )[0] );
-            if ( trailerPosition != -1 && trailerPosition % getRecordSize() == 0 )
+            long trailerOffset =
+                    getTrailerOffset( pagedFile, versionTrailer.split( " " )[0] );
+            if ( trailerOffset != -1 && trailerOffset % getRecordSize() == 0 )
             {
-                writeTrailer( pagedFile, new byte[expectedVersionLength], trailerPosition );
+                writeTrailer( pagedFile, new byte[expectedVersionLength], trailerOffset );
             }
             else
             {
                 setStoreNotOk( new IllegalStateException(
-                        "Misaligned trailer position " + trailerPosition + " for " + this + ", expected version length: " +
-                        expectedVersionLength + " bytes." ) );
+                        "Misaligned file size " + trailerOffset + " for " + this + ", expected version length:" +
+                        expectedVersionLength ) );
             }
         }
     }
@@ -349,7 +325,8 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
         if ( headerRecord <= 0 )
         {
-            throw new InvalidRecordException( "Illegal block size: " + headerRecord + " in " + getStorageFileName() );
+            throw new InvalidRecordException( "Illegal block size: " +
+                    headerRecord + " in " + getStorageFileName() );
         }
         return headerRecord;
     }
@@ -467,6 +444,19 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     protected boolean doFastIdGeneratorRebuild()
     {
         return configuration.get( Configuration.rebuild_idgenerators_fast );
+    }
+
+    /**
+     * This method should close/release all resources that the implementation of
+     * this store has allocated and is called just before the <CODE>close()</CODE>
+     * method returns. Override this method to clean up stuff the constructor.
+     * <p>
+     * This default implementation does nothing.
+     * <p>
+     * Note: This method runs before the store file is unmapped from the page cache.
+     */
+    protected void closeStorage()
+    {
     }
 
     /**
@@ -693,10 +683,15 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * Closes this store. This will cause all buffers and channels to be closed.
      * Requesting an operation from after this method has been invoked is
      * illegal and an exception will be thrown.
+     * <p>
+     * This method will start by invoking the {@link #closeStorage} method
+     * giving the implementing store way to do anything that it needs to do
+     * before the pagedFile is closed.
      */
     @Override
     public void close()
     {
+        closeStorage();
         if ( idGenerator == null || !storeOk )
         {
             try

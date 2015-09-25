@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -66,6 +66,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
@@ -74,7 +75,6 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 
 public abstract class GraphStoreFixture extends PageCacheRule implements TestRule
@@ -82,7 +82,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     private DirectStoreAccess directStoreAccess;
     private Statistics statistics;
     private final boolean keepStatistics;
-    private NeoStores neoStore;
+    private NeoStore neoStore;
 
     public GraphStoreFixture( boolean keepStatistics )
     {
@@ -105,7 +105,9 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         {
             DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
-            neoStore = new StoreFactory( fileSystem, directory, pageCache, NullLogProvider.getInstance() ).openNeoStores( false );
+            StoreFactory storeFactory = new StoreFactory( fileSystem, directory, pageCache,
+                    NullLogProvider.getInstance(), new Monitors() );
+            neoStore = storeFactory.newNeoStore( false );
             StoreAccess nativeStores;
             if ( keepStatistics )
             {
@@ -119,12 +121,11 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
                 statistics = Statistics.NONE;
                 nativeStores = new StoreAccess( neoStore );
             }
-            nativeStores.initialize();
             directStoreAccess = new DirectStoreAccess(
                     nativeStores,
                     new LuceneLabelScanStoreBuilder(
                             directory,
-                            nativeStores.getRawNeoStores(),
+                            nativeStores.getRawNeoStore(),
                             fileSystem,
                             FormattedLogProvider.toOutputStream( System.out )
                     ).build(),
@@ -399,7 +400,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
                             dependencyResolver.resolveDependency( IndexUpdatesValidator.class ) );
             TransactionIdStore transactionIdStore = database.getDependencyResolver().resolveDependency(
                     TransactionIdStore.class );
-            NodeStore nodes = database.getDependencyResolver().resolveDependency( NeoStores.class ).getNodeStore();
+            NodeStore nodes = database.getDependencyResolver().resolveDependency( NeoStore.class ).getNodeStore();
             commitProcess.commit( transaction.representation( idGenerator(), masterId(), myId(),
                     transactionIdStore.getLastCommittedTransactionId(), nodes ), locks, CommitEvent.NULL,
                     TransactionApplicationMode.EXTERNAL );
@@ -430,7 +431,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         try
         {
             generateInitialData( graphDb );
-            StoreAccess stores = new StoreAccess( graphDb ).initialize();
+            StoreAccess stores = new StoreAccess( graphDb );
             schemaId = stores.getSchemaStore().getHighId();
             nodeId = stores.getNodeStore().getHighId();
             labelId = (int) stores.getLabelTokenStore().getHighId();

@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -34,6 +35,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.store.record.SchemaRule.Kind.deserialize;
@@ -52,11 +54,13 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
-            StoreVersionMismatchHandler versionMismatchHandler )
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
-        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, versionMismatchHandler,
-                BLOCK_SIZE );
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, fileSystemAbstraction,
+                logProvider, versionMismatchHandler, monitors );
     }
 
     @Override

@@ -25,28 +25,28 @@ import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
 
-public class CacheInvalidationTransactionApplier extends CommandHandler.Delegator
+public class CacheInvalidationTransactionApplier extends NeoCommandHandler.Delegator
 {
     private final CacheAccessBackDoor cacheAccess;
     private final RelationshipTypeTokenStore relationshipTypeTokenStore;
     private final LabelTokenStore labelTokenStore;
     private final PropertyKeyTokenStore propertyKeyTokenStore;
 
-    public CacheInvalidationTransactionApplier( CommandHandler delegate, NeoStores neoStores,
+    public CacheInvalidationTransactionApplier( NeoCommandHandler delegate, NeoStore neoStore,
                                                 CacheAccessBackDoor cacheAccess )
     {
         super( delegate );
         this.cacheAccess = cacheAccess;
-        this.relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
-        this.labelTokenStore = neoStores.getLabelTokenStore();
-        this.propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
+        this.relationshipTypeTokenStore = neoStore.getRelationshipTypeTokenStore();
+        this.labelTokenStore = neoStore.getLabelTokenStore();
+        this.propertyKeyTokenStore = neoStore.getPropertyKeyTokenStore();
     }
 
     @Override

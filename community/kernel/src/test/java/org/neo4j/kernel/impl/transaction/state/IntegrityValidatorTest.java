@@ -23,8 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
@@ -40,7 +39,7 @@ public class IntegrityValidatorTest
     public void shouldValidateUniquenessIndexes() throws Exception
     {
         // Given
-        NeoStores store = mock( NeoStores.class );
+        NeoStore store = mock( NeoStore.class );
         IndexingService indexes = mock(IndexingService.class);
         IntegrityValidator validator = new IntegrityValidator(store, indexes);
 
@@ -65,7 +64,7 @@ public class IntegrityValidatorTest
     public void deletingNodeWithRelationshipsIsNotAllowed() throws Exception
     {
         // Given
-        NeoStores store = mock( NeoStores.class );
+        NeoStore store = mock( NeoStore.class );
         IndexingService indexes = mock(IndexingService.class);
         IntegrityValidator validator = new IntegrityValidator(store, indexes );
 
@@ -88,11 +87,9 @@ public class IntegrityValidatorTest
     public void transactionsStartedBeforeAConstraintWasCreatedAreDisallowed() throws Exception
     {
         // Given
-        NeoStores store = mock( NeoStores.class );
-        MetaDataStore metaDataStore = mock( MetaDataStore.class );
-        when( store.getMetaDataStore() ).thenReturn( metaDataStore );
-        IndexingService indexes = mock( IndexingService.class );
-        when( metaDataStore.getLatestConstraintIntroducingTx() ).thenReturn( 10l );
+        NeoStore store = mock( NeoStore.class );
+        IndexingService indexes = mock(IndexingService.class);
+        when(store.getLatestConstraintIntroducingTx()).thenReturn( 10l );
         IntegrityValidator validator = new IntegrityValidator( store, indexes );
 
         // When

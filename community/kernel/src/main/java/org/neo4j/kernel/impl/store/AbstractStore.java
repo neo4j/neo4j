@@ -21,12 +21,9 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
-import org.neo4j.helpers.UTF8;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -51,6 +48,7 @@ public abstract class AbstractStore extends CommonAbstractStore
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
             StoreVersionMismatchHandler versionMismatchHandler )
     {
@@ -75,51 +73,5 @@ public abstract class AbstractStore extends CommonAbstractStore
     protected boolean isInUse( byte inUseByte )
     {
         return (inUseByte & 0x1) == Record.IN_USE.intValue();
-    }
-
-    @Override
-    protected void initialiseNewStoreFile( PagedFile file ) throws IOException
-    {
-        long trailerPosition = 0;
-
-        ByteBuffer headerRecord = createHeaderRecord();
-        if ( headerRecord != null )
-        {
-            trailerPosition = headerRecord.limit();
-            try ( PageCursor pageCursor = file.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
-            {
-                if ( pageCursor.next() )
-                {
-                    do
-                    {
-                        pageCursor.setOffset( 0 );
-                        pageCursor.putBytes( headerRecord.array() );
-                    }
-                    while ( pageCursor.shouldRetry() );
-                }
-            }
-
-        }
-
-        StoreVersionTrailerUtil.writeTrailer( file, UTF8.encode( getTypeAndVersionDescriptor() ), trailerPosition );
-
-        File idFileName = new File( storageFileName.getPath() + ".id" );
-        idGeneratorFactory.create( idFileName, 0, true );
-        if ( headerRecord != null )
-        {
-            IdGenerator idGenerator = idGeneratorFactory.open( idFileName, 1, idType, 0 );
-            initialiseNewIdGenerator( idGenerator );
-            idGenerator.close();
-        }
-    }
-
-    protected void initialiseNewIdGenerator( IdGenerator idGenerator )
-    {
-        idGenerator.nextId(); // reserve first for blockSize
-    }
-
-    protected ByteBuffer createHeaderRecord()
-    {
-        return null;
     }
 }

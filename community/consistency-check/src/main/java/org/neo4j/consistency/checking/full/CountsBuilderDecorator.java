@@ -126,8 +126,8 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
     public CountsBuilderDecorator( StoreAccess storeAccess )
     {
         this.storeAccess = storeAccess;
-        this.nodeStore = storeAccess.getRawNeoStores().getNodeStore();
-        this.relationshipStore = storeAccess.getRawNeoStores().getRelationshipStore();
+        this.nodeStore = storeAccess.getRawNeoStore().getNodeStore();
+        this.relationshipStore = storeAccess.getRawNeoStore().getRelationshipStore();
         this.nodeCountBuildCondition = new MultiPassAvoidanceCondition<>( nodeStore.getHighestPossibleIdInUse() );
         this.relationshipCountBuildCondition = new MultiPassAvoidanceCondition<>( relationshipStore.getHighestPossibleIdInUse() );
     }
@@ -244,7 +244,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                                    Predicate<RelationshipRecord> countUpdateCondition,
                                    OwningRecordCheck<RelationshipRecord,RelationshipConsistencyReport> inner )
         {
-            this.nodeStore = storeAccess.getRawNeoStores().getNodeStore();
+            this.nodeStore = storeAccess.getRawNeoStore().getNodeStore();
             this.counts = counts;
             this.countUpdateCondition = countUpdateCondition;
             this.inner = inner;
