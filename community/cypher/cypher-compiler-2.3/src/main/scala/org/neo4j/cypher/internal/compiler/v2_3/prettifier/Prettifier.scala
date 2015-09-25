@@ -129,6 +129,7 @@ class PrettifierParser extends Parser with Base with Strings {
       keyword("USING SCAN") |
       keyword("USING JOIN ON") |
       keyword("OPTIONAL MATCH") |
+      keyword("DETACH DELETE") |
       keyword("START") |
       keyword("MATCH") |
       keyword("WHERE") |
