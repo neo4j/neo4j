@@ -22,9 +22,8 @@ package org.neo4j.kernel.ha;
 import org.junit.Test;
 
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -37,12 +36,10 @@ public class OnDiskLastTxIdGetterTest
     {
         // This is a sign that we have some bad coupling on our hands.
         // We currently have to do this because of our lifecycle and construction ordering.
-        NeoStoresSupplier supplier = mock( NeoStoresSupplier.class );
-        NeoStores neoStores = mock( NeoStores.class );
-        MetaDataStore metaDataStore = mock( MetaDataStore.class );
-        when( supplier.get() ).thenReturn( neoStores );
-        when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
-        when( metaDataStore.getLastCommittedTransactionId() ).thenReturn( 13L );
+        NeoStoreSupplier supplier = mock( NeoStoreSupplier.class );
+        NeoStore neoStore = mock( NeoStore.class );
+        when( supplier.get() ).thenReturn( neoStore );
+        when( neoStore.getLastCommittedTransactionId() ).thenReturn( 13L );
 
         OnDiskLastTxIdGetter getter = new OnDiskLastTxIdGetter( supplier );
         assertEquals( 13L, getter.getLastTxId() );

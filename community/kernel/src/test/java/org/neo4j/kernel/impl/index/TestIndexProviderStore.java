@@ -32,7 +32,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NotCurrentStoreVersionException;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 
@@ -46,6 +46,8 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import static org.neo4j.kernel.impl.store.NeoStore.versionStringToLong;
 
 public class TestIndexProviderStore
 {
@@ -77,20 +79,20 @@ public class TestIndexProviderStore
     @Test
     public void shouldFailUpgradeIfNotAllowed()
     {
-        IndexProviderStore store = new IndexProviderStore( file, fileSystem, MetaDataStore.versionStringToLong( "3.1" ), true );
+        IndexProviderStore store = new IndexProviderStore( file, fileSystem, versionStringToLong( "3.1" ), true );
         store.close();
-        store = new IndexProviderStore( file, fileSystem, MetaDataStore.versionStringToLong( "3.1" ), false );
+        store = new IndexProviderStore( file, fileSystem, versionStringToLong( "3.1" ), false );
         store.close();
         try
         {
-            new IndexProviderStore( file, fileSystem, MetaDataStore.versionStringToLong( "3.5" ), false );
+            new IndexProviderStore( file, fileSystem, versionStringToLong( "3.5" ), false );
             fail( "Shouldn't be able to upgrade there" );
         }
         catch ( UpgradeNotAllowedByConfigurationException e )
         {   // Good
         }
-        store = new IndexProviderStore( file, fileSystem, MetaDataStore.versionStringToLong( "3.5" ), true );
-        assertEquals( "3.5", MetaDataStore.versionLongToString( store.getIndexVersion() ) );
+        store = new IndexProviderStore( file, fileSystem, versionStringToLong( "3.5" ), true );
+        assertEquals( "3.5", NeoStore.versionLongToString( store.getIndexVersion() ) );
         store.close();
     }
 
@@ -101,10 +103,9 @@ public class TestIndexProviderStore
         String olderVersion = "3.1";
         try
         {
-            IndexProviderStore store = new IndexProviderStore( file, fileSystem,
-                    MetaDataStore.versionStringToLong( newerVersion ), true );
+            IndexProviderStore store = new IndexProviderStore( file, fileSystem, versionStringToLong( newerVersion ), true );
             store.close();
-            store = new IndexProviderStore( file, fileSystem, MetaDataStore.versionStringToLong( olderVersion ), false );
+            store = new IndexProviderStore( file, fileSystem, versionStringToLong( olderVersion ), false );
         }
         catch ( NotCurrentStoreVersionException e )
         {
@@ -121,10 +122,9 @@ public class TestIndexProviderStore
         String olderVersion = "3.1";
         try
         {
-            IndexProviderStore store = new IndexProviderStore( file, fileSystem,
-                    MetaDataStore.versionStringToLong( newerVersion ), true );
+            IndexProviderStore store = new IndexProviderStore( file, fileSystem, versionStringToLong( newerVersion ), true );
             store.close();
-            store = new IndexProviderStore( file, fileSystem, MetaDataStore.versionStringToLong( olderVersion ), true );
+            store = new IndexProviderStore( file, fileSystem, versionStringToLong( olderVersion ), true );
         }
         catch ( NotCurrentStoreVersionException e )
         {
@@ -184,7 +184,7 @@ public class TestIndexProviderStore
         fs.deleteFile( file );
 
         // When
-        IndexProviderStore store = new IndexProviderStore( file, fs, MetaDataStore.versionStringToLong( "3.5" ), false );
+        IndexProviderStore store = new IndexProviderStore( file, fs, versionStringToLong( "3.5" ), false );
 
         // Then
         StoreChannel channel = channelUsedToCreateFile[0];
@@ -204,7 +204,7 @@ public class TestIndexProviderStore
         when( fs.getFileSize( file ) ).thenReturn( 42L );
 
         // When
-        new IndexProviderStore( file, fs, MetaDataStore.versionStringToLong( "3.5" ), false );
+        new IndexProviderStore( file, fs, versionStringToLong( "3.5" ), false );
 
         // Then
         // exception is thrown
@@ -217,7 +217,7 @@ public class TestIndexProviderStore
         file.createNewFile();
 
         // When
-        IndexProviderStore store = new IndexProviderStore( file, fileSystem, MetaDataStore.versionStringToLong( "3.5" ), false );
+        IndexProviderStore store = new IndexProviderStore( file, fileSystem, versionStringToLong( "3.5" ), false );
 
         // Then
         assertTrue( fileSystem.getFileSize( file ) > 0 );

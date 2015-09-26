@@ -21,9 +21,8 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -31,6 +30,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
@@ -54,19 +54,13 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            LogProvider logProvider )
+            FileSystemAbstraction fileSystemAbstraction,
+            LogProvider logProvider,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
-        super( fileName, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache, logProvider );
-    }
-
-    @Override
-    protected ByteBuffer createHeaderRecord()
-    {
-        int denseNodeThreshold = configuration.get( GraphDatabaseSettings.dense_node_threshold );
-        ByteBuffer headerRecord = ByteBuffer.allocate( RelationshipGroupStore.RECORD_SIZE ).putInt( denseNodeThreshold );
-        headerRecord.flip();
-        headerRecord.limit( headerRecord.capacity() );
-        return headerRecord;
+        super( fileName, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache,
+                fileSystemAbstraction, logProvider, versionMismatchHandler, monitors );
     }
 
     @Override

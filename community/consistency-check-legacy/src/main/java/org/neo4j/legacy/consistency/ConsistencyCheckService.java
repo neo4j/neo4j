@@ -43,9 +43,10 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.legacy.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.legacy.consistency.checking.full.FullCheck;
 import org.neo4j.legacy.consistency.report.ConsistencySummaryStatistics;
@@ -114,7 +115,7 @@ public class ConsistencyCheckService
                 storeDir,
                 consistencyCheckerConfig,
                 new DefaultIdGeneratorFactory( fileSystem ),
-                pageCache, fileSystem, logProvider
+                pageCache, fileSystem, logProvider, new Monitors()
         );
 
         ConsistencySummaryStatistics summary;
@@ -134,14 +135,14 @@ public class ConsistencyCheckService
             }
         } ) );
 
-        try ( NeoStores neoStores = factory.openNeoStores( false ) )
+        try ( NeoStore neoStores = factory.newNeoStore( false ) )
         {
             StoreAccess store = new StoreAccess( neoStores ).initialize();
             LabelScanStore labelScanStore = null;
             try
             {
                 labelScanStore = new LuceneLabelScanStoreBuilder(
-                        storeDir, store.getRawNeoStores(), fileSystem, logProvider ).build();
+                        storeDir, store.getRawNeoStore(), fileSystem, logProvider ).build();
                 SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
                         fileSystem, DirectoryFactory.PERSISTENT,
                         storeDir );

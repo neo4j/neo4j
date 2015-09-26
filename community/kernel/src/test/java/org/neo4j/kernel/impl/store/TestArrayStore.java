@@ -40,9 +40,11 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.util.Bits;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -57,30 +59,47 @@ public class TestArrayStore
     @Rule
     public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
+    private File dir;
     private DynamicArrayStore arrayStore;
-    private NeoStores neoStores;
 
     @Before
     public void before() throws Exception
     {
-        File dir = testDirectory.graphDbDir();
+        dir = testDirectory.graphDbDir();
         Map<String, String> configParams = MapUtil.stringMap();
         Config config = new Config( configParams );
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
+        Monitors monitors = new Monitors();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreFactory factory = new StoreFactory( dir, config, idGeneratorFactory, pageCache, fs,
-                NullLogProvider.getInstance() );
-        neoStores = factory.openNeoStores( true );
-        arrayStore = neoStores.getPropertyStore().getArrayStore();
+        StoreFactory factory = new StoreFactory(
+                dir,
+                config,
+                idGeneratorFactory,
+                pageCache,
+                fs,
+                NullLogProvider.getInstance(),
+                monitors );
+        File fileName = new File( dir, "arraystore" );
+        factory.createDynamicArrayStore( fileName, 120 );
+        arrayStore = new DynamicArrayStore(
+                fileName,
+                config,
+                IdType.ARRAY_BLOCK,
+                idGeneratorFactory,
+                pageCache,
+                fs,
+                NullLogProvider.getInstance(),
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
+                monitors );
     }
 
     @After
     public void after() throws Exception
     {
-        if ( neoStores != null )
+        if ( arrayStore != null )
         {
-            neoStores.close();
+            arrayStore.close();
         }
     }
 

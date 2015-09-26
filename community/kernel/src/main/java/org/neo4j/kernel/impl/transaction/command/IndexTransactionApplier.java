@@ -50,7 +50,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  * Gather node and property changes, converting them into logical updates to the indexes.
  * {@link #close()} will actually apply to the indexes.
  */
-public class IndexTransactionApplier extends CommandHandler.Adapter
+public class IndexTransactionApplier extends NeoCommandHandler.Adapter
 {
     private final ValidatedIndexUpdates indexUpdates;
     private List<NodeLabelUpdate> labelUpdates;

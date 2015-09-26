@@ -46,8 +46,7 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
@@ -55,8 +54,8 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -74,6 +73,7 @@ import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.store.NeoStore.versionLongToString;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find19FormatHugeStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find19FormatStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
@@ -87,7 +87,7 @@ public class StoreMigratorFrom19IT
         File legacyStoreDir = find19FormatHugeStoreDirectory( storeDir.directory() );
 
         // WHEN
-        newStoreUpgrader().migrateIfNeeded( legacyStoreDir, upgradableDatabase, schemaIndexProvider );
+        newStoreUpgrader().migrateIfNeeded( legacyStoreDir, schemaIndexProvider );
 
         // THEN
         assertEquals( 100, monitor.eventSize() );
@@ -106,9 +106,9 @@ public class StoreMigratorFrom19IT
             database.shutdown();
         }
 
-        try ( NeoStores neoStores = storeFactory.openNeoStores( true ) )
+        try ( NeoStore neoStore = storeFactory.newNeoStore( true ) )
         {
-            verifyNeoStore( neoStores );
+            verifyNeoStore( neoStore );
         }
 
         assertConsistentStore( storeDir.directory() );
@@ -121,7 +121,7 @@ public class StoreMigratorFrom19IT
         File legacyStoreDir = find19FormatHugeStoreDirectory( storeDir.directory() );
 
         // When
-        newStoreUpgrader().migrateIfNeeded( legacyStoreDir, upgradableDatabase, schemaIndexProvider );
+        newStoreUpgrader().migrateIfNeeded( legacyStoreDir, schemaIndexProvider );
 
         ClusterManager.ManagedCluster cluster = buildClusterWithMasterDirIn( fs, legacyStoreDir, life );
         cluster.await( allSeesAllAsAvailable() );
@@ -144,7 +144,7 @@ public class StoreMigratorFrom19IT
         // WHEN
         // upgrading that store, the two key tokens for "name" should be merged
 
-        newStoreUpgrader().migrateIfNeeded( storeDir.directory(), upgradableDatabase, schemaIndexProvider );
+        newStoreUpgrader().migrateIfNeeded( storeDir.directory(), schemaIndexProvider );
 
         // THEN
         // verify that the "name" property for both the involved nodes
@@ -169,9 +169,8 @@ public class StoreMigratorFrom19IT
 
         // THEN
         // verify that there are no duplicate keys in the store
-        try ( NeoStores neoStores = storeFactory.openNeoStores( false ) )
+        try ( PropertyKeyTokenStore tokenStore = storeFactory.newPropertyKeyTokenStore() )
         {
-            PropertyKeyTokenStore tokenStore = neoStores.getPropertyKeyTokenStore();
             List<Token> tokens = tokenStore.getTokens( MAX_VALUE );
             assertNoDuplicates( tokens );
         }
@@ -202,15 +201,13 @@ public class StoreMigratorFrom19IT
         verifier.verifyRelationships( 500 );
     }
 
-    private static void verifyNeoStore( NeoStores neoStores )
+    private static void verifyNeoStore( NeoStore neoStore )
     {
-        MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-        assertEquals( 1409818980890L, metaDataStore.getCreationTime() );
-        assertEquals( 7528833218632030901L, metaDataStore.getRandomNumber() );
-        assertEquals( 1L, metaDataStore.getCurrentLogVersion() );
-        assertEquals( ALL_STORES_VERSION, MetaDataStore.versionLongToString(
-                metaDataStore.getStoreVersion() ) );
-        assertEquals( 8L + 3, metaDataStore.getLastCommittedTransactionId() ); // prior verifications add 3 transactions
+        assertEquals( 1409818980890L, neoStore.getCreationTime() );
+        assertEquals( 7528833218632030901L, neoStore.getRandomNumber() );
+        assertEquals( 1L, neoStore.getCurrentLogVersion() );
+        assertEquals( ALL_STORES_VERSION, versionLongToString( neoStore.getStoreVersion() ) );
+        assertEquals( 8L + 3, neoStore.getLastCommittedTransactionId() ); // prior verifications add 3 transactions
     }
 
     private void assertNoDuplicates( List<Token> tokens )
@@ -245,10 +242,8 @@ public class StoreMigratorFrom19IT
 
     private StoreUpgrader newStoreUpgrader()
     {
-        StoreUpgrader upgrader =
-                new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, NullLogProvider.getInstance() );
-        upgrader.addParticipant(
-                new StoreMigrator( monitor, fs, pageCache, config, NullLogService.getInstance() ) );
+        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, NullLogProvider.getInstance() );
+        upgrader.addParticipant( new StoreMigrator( monitor, fs, pageCache, upgradableDatabase, config, NullLogService.getInstance() ) );
         return upgrader;
     }
 
@@ -265,10 +260,16 @@ public class StoreMigratorFrom19IT
     public void setUp()
     {
         pageCache = pageCacheRule.getPageCache( fs );
-        storeFactory = new StoreFactory( storeDir.directory(), config, new DefaultIdGeneratorFactory( fs ),
-                pageCache, fs, NullLogProvider.getInstance() );
-        upgradableDatabase =
-                new UpgradableDatabase( new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
+
+        storeFactory = new StoreFactory(
+                storeDir.directory(),
+                config,
+                new DefaultIdGeneratorFactory( fs ),
+                pageCache,
+                fs,
+                NullLogProvider.getInstance(),
+                new Monitors() );
+        upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
     }
 
     @After

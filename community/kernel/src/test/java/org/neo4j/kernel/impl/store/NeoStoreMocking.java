@@ -17,29 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.counts;
+package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-import java.io.IOException;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.kvstore.State;
-import org.neo4j.logging.LogProvider;
-
-@State( State.Strategy.READ_ONLY_CONCURRENT_HASH_MAP )
-public class ReadOnlyCountsTracker extends CountsTracker
+public class NeoStoreMocking
 {
-    public ReadOnlyCountsTracker( LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache,
-                                  Config config, File baseFile )
+    public static NeoStore mockNeoStore()
     {
-        super( logProvider, fileSystem, pageCache, config, baseFile );
-    }
-
-    @Override
-    public long rotate( long txId ) throws IOException
-    {
-        return -1;
+        NeoStore mockStore = mock( NeoStore.class );
+        PropertyStore propertyStore = mock( PropertyStore.class );
+        when( mockStore.getPropertyStore() ).thenReturn( propertyStore );
+        DynamicStringStore stringStore = mock( DynamicStringStore.class );
+        when( propertyStore.getStringStore() ).thenReturn( stringStore );
+        DynamicArrayStore arrayStore = mock( DynamicArrayStore.class );
+        when( propertyStore.getArrayStore() ).thenReturn( arrayStore );
+        return mockStore;
     }
 }

@@ -253,7 +253,7 @@ public abstract class GraphDatabaseSettings
     @Description( "The maximum number of open Lucene index searchers." )
     public static Setting<Integer> lucene_searcher_cache_size = setting("lucene_searcher_cache_size",INTEGER, Integer.toString( Integer.MAX_VALUE ), min( 1 ));
 
-    // Store settings
+    // NeoStore settings
     @Description("Make Neo4j keep the logical transaction logs for being able to backup the database. " +
             "Can be used for specifying the threshold to prune logical logs after. For example \"10 days\" will " +
             "prune logical logs that only contains transactions older than 10 days from the current time, " +
@@ -271,7 +271,7 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<Boolean> rebuild_idgenerators_fast = setting("rebuild_idgenerators_fast", BOOLEAN, TRUE );
 
-    // Store memory settings
+    // NeoStore memory settings
     /**
      * @deprecated This configuration has been obsoleted. Neo4j no longer relies on the memory-mapping capabilities of the operating system.
      */

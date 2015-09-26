@@ -245,6 +245,6 @@ public class TestShortStringProperties extends TestShortString
 
     private PropertyStore propertyStore()
     {
-        return graphdb.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NeoStoreDataSource.class).getNeoStores().getPropertyStore();
+        return graphdb.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NeoStoreDataSource.class).getNeoStore().getPropertyStore();
     }
 }

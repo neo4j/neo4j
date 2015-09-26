@@ -66,7 +66,7 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
 
-public class PhysicalLogCommandReaderV2_1 implements CommandReader
+public class PhysicalLogNeoCommandReaderV2_1 implements CommandReader
 {
     private final PhysicalNeoCommandReader reader = new PhysicalNeoCommandReader();
     private ReadableLogChannel channel;
@@ -213,7 +213,7 @@ public class PhysicalLogCommandReaderV2_1 implements CommandReader
         }
     }
 
-    private class PhysicalNeoCommandReader implements CommandHandler
+    private class PhysicalNeoCommandReader implements NeoCommandHandler
     {
         @Override
         public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException

@@ -67,8 +67,7 @@ public abstract class EditionModule
         DiagnosticsManager diagnosticsManager = dependencyResolver.resolveDependency( DiagnosticsManager.class );
         NeoStoreDataSource neoStoreDataSource = dependencyResolver.resolveDependency( NeoStoreDataSource.class );
 
-        diagnosticsManager.prependProvider( new KernelDiagnostics.Versions(
-                editionName, neoStoreDataSource.get().getMetaDataStore().getStoreId() ) );
+        diagnosticsManager.prependProvider( new KernelDiagnostics.Versions( editionName, neoStoreDataSource.get().getStoreId() ) );
         neoStoreDataSource.registerDiagnosticsWith( diagnosticsManager );
         diagnosticsManager.appendProvider( new KernelDiagnostics.StoreFiles( neoStoreDataSource.getStoreDir() ) );
     }

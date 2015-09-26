@@ -26,8 +26,10 @@ import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -35,10 +37,11 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
-public class BatchingNeoStoresTest
+public class BatchingNeoStoreTest
 {
     @Test
     public void shouldNotOpenStoreWithNodesOrRelationshipsInIt() throws Exception
@@ -47,9 +50,10 @@ public class BatchingNeoStoresTest
         someDataInTheDatabase();
 
         // WHEN
-        try
+        try ( PageCache pageCache = pageCacheRule.getPageCache( fsr.get() ) )
         {
-            new BatchingNeoStores( fsr.get(), storeDir, DEFAULT, NullLogService.getInstance(), EMPTY );
+            new BatchingNeoStore( fsr.get(), storeDir, DEFAULT,
+                    NullLogService.getInstance(), new Monitors(), EMPTY );
             fail( "Should fail on existing data" );
         }
         catch ( IllegalStateException e )

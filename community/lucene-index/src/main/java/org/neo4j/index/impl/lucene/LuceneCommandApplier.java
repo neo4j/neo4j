@@ -35,13 +35,13 @@ import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 
 /**
  * Applies changes from {@link IndexCommand commands} onto one ore more indexes from the same
  * {@link IndexImplementation provider}.
  */
-public class LuceneCommandApplier extends CommandHandler.Adapter
+public class LuceneCommandApplier extends NeoCommandHandler.Adapter
 {
     private final LuceneDataSource dataSource;
     private final Map<String,CommitContext> nodeContexts = new HashMap<>();

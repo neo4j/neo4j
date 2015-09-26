@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import java.util.Collection;
 
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -47,22 +47,22 @@ public class RecordChangeSet implements RecordAccessSet
     private final RecordAccess<Integer, RelationshipTypeTokenRecord, Void> relationshipTypeTokenChanges;
     private final IntCounter changeCounter = new IntCounter();
 
-    public RecordChangeSet( NeoStores neoStores )
+    public RecordChangeSet( NeoStore neoStore )
     {
-        this( false, neoStores );
+        this( false, neoStore );
     }
 
-    public RecordChangeSet( boolean beforeStateForAll, NeoStores neoStores )
+    public RecordChangeSet( boolean beforeStateForAll, NeoStore neoStore )
     {
         this(   beforeStateForAll,
-                Loaders.nodeLoader( neoStores.getNodeStore() ),
-                Loaders.propertyLoader( neoStores.getPropertyStore() ),
-                Loaders.relationshipLoader( neoStores.getRelationshipStore() ),
-                Loaders.relationshipGroupLoader( neoStores.getRelationshipGroupStore() ),
-                Loaders.schemaRuleLoader( neoStores.getSchemaStore() ),
-                Loaders.propertyKeyTokenLoader( neoStores.getPropertyKeyTokenStore() ),
-                Loaders.labelTokenLoader( neoStores.getLabelTokenStore() ),
-                Loaders.relationshipTypeTokenLoader( neoStores.getRelationshipTypeTokenStore() ) );
+                Loaders.nodeLoader( neoStore.getNodeStore() ),
+                Loaders.propertyLoader( neoStore.getPropertyStore() ),
+                Loaders.relationshipLoader( neoStore.getRelationshipStore() ),
+                Loaders.relationshipGroupLoader( neoStore.getRelationshipGroupStore() ),
+                Loaders.schemaRuleLoader( neoStore.getSchemaStore() ),
+                Loaders.propertyKeyTokenLoader( neoStore.getPropertyKeyTokenStore() ),
+                Loaders.labelTokenLoader( neoStore.getLabelTokenStore() ),
+                Loaders.relationshipTypeTokenLoader( neoStore.getRelationshipTypeTokenStore() ) );
     }
 
     public RecordChangeSet(

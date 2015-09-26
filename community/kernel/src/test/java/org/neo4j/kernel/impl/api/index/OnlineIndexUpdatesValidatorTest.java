@@ -34,7 +34,7 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.state.LazyIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
@@ -59,9 +60,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -69,7 +67,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
 public class OnlineIndexUpdatesValidatorTest
 {
-    private final NeoStores neoStores = mock( NeoStores.class );
+    private final NeoStore neoStore = mock( NeoStore.class );
 
     private final IndexingService indexingService = mock( IndexingService.class );
     private final NodeStore nodeStore = mock( NodeStore.class );
@@ -238,9 +236,9 @@ public class OnlineIndexUpdatesValidatorTest
 
     private IndexUpdatesValidator newIndexUpdatesValidatorWithMockedDependencies()
     {
-        when( neoStores.getNodeStore() ).thenReturn( nodeStore );
-        when( neoStores.getPropertyStore() ).thenReturn( propertyStore );
-        return new OnlineIndexUpdatesValidator( neoStores, null, propertyLoader, indexingService, ONLINE );
+        when( neoStore.getNodeStore() ).thenReturn( nodeStore );
+        when( neoStore.getPropertyStore() ).thenReturn( propertyStore );
+        return new OnlineIndexUpdatesValidator( neoStore, null, propertyLoader, indexingService, ONLINE );
     }
 
     private static Command nodeAddRandomLabelsCommand( long nodeId )

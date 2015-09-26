@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -47,6 +47,7 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -79,7 +80,7 @@ public class IndexStatisticsIT
         restart();
 
         // then we should have re-sampled the index
-        CountsTracker tracker = neoStores().getCounts();
+        CountsTracker tracker = neoStore().getCounts();
         assertEqualRegisters(
                 "Unexpected updates and size for the index",
                 newDoubleLongRegister( 0, 32 ),
@@ -164,16 +165,16 @@ public class IndexStatisticsIT
 
     private void resetIndexCounts( int labelId, int pkId )
     {
-        try ( CountsAccessor.IndexStatsUpdater updater = neoStores().getCounts().updateIndexCounts() )
+        try ( CountsAccessor.IndexStatsUpdater updater = neoStore().getCounts().updateIndexCounts() )
         {
             updater.replaceIndexSample( labelId, pkId, 0, 0 );
             updater.replaceIndexUpdateAndSize( labelId, pkId, 0, 0 );
         }
     }
 
-    private NeoStores neoStores()
+    private NeoStore neoStore()
     {
-        return ( (GraphDatabaseAPI) db ).getDependencyResolver().resolveDependency( NeoStores.class );
+        return ( (GraphDatabaseAPI) db ).getDependencyResolver().resolveDependency( NeoStore.class );
     }
 
     @Rule

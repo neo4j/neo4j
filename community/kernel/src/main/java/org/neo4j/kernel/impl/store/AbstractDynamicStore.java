@@ -31,15 +31,16 @@ import java.util.List;
 import org.neo4j.cursor.GenericCursor;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
@@ -76,7 +77,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     private static int notInUseSignal = 2;
     private static int illegalSizeSignal = 3;
 
-    private final int blockSizeFromConfiguration;
     private int blockSize;
 
     public AbstractDynamicStore(
@@ -85,11 +85,13 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
-            int blockSizeFromConfiguration )
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
-        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider );
-        this.blockSizeFromConfiguration = blockSizeFromConfiguration;
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider,
+                versionMismatchHandler );
     }
 
     /**
@@ -101,37 +103,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     public static int getRecordSize( int dataSize )
     {
         return dataSize + BLOCK_HEADER_SIZE;
-    }
-
-    @Override
-    protected void initialiseNewStoreFile( PagedFile file ) throws IOException
-    {
-        int blockSize = blockSizeFromConfiguration;
-        if ( blockSize < 1 || blockSize > 0xFFFF )
-        {
-            throw new IllegalArgumentException( "Illegal block size[" + blockSize + "], limit is 65535" );
-        }
-
-        blockSize += BLOCK_HEADER_SIZE;
-
-        try ( PageCursor pageCursor = file.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
-        {
-            if ( pageCursor.next() )
-            {
-                do
-                {
-                    pageCursor.putInt( blockSize );
-                }
-                while ( pageCursor.shouldRetry() );
-            }
-        }
-
-        File idFileName = new File( storageFileName.getPath() + ".id" );
-        idGeneratorFactory.create( idFileName, 0, true );
-        // TODO highestIdInUse = 0 works now, but not when slave can create store files.
-        IdGenerator idGenerator = idGeneratorFactory.open( idFileName, idType.getGrabSize(), idType, 0 );
-        idGenerator.nextId(); // reserve first for blockSize
-        idGenerator.close();
     }
 
     public static void allocateRecordsFromBytes(
@@ -196,10 +167,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         return buffer;
     }
 
-    /**
-     * @return Pair&lt; header-in-first-record , all-other-bytes &gt;
-     */
-    public static Pair<byte[], byte[]> readFullByteArrayFromHeavyRecords(
+    public static Pair<byte[]/*header in the first record*/, byte[]/*all other bytes*/>
+    readFullByteArrayFromHeavyRecords(
             Iterable<DynamicRecord> records, PropertyType propertyType )
     {
         byte[] header = null;
@@ -221,8 +190,9 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         assert header != null : "header should be non-null since records should not be empty";
         int sourceOffset = header.length;
         int offset = 0;
-        for ( byte[] currentArray : byteList )
+        for ( int j = 0; j < byteList.size(); j++ )
         {
+            byte[] currentArray = byteList.get( j );
             System.arraycopy( currentArray, sourceOffset, bArray, offset,
                     currentArray.length - sourceOffset );
             offset += (currentArray.length - sourceOffset);
@@ -625,6 +595,12 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     public Collection<DynamicRecord> getRecords( long startBlockId )
     {
         return getRecords( startBlockId, true );
+    }
+
+    @Override
+    public long getNextRecordReference( DynamicRecord record )
+    {
+        return record.getNextBlock();
     }
 
     @Override

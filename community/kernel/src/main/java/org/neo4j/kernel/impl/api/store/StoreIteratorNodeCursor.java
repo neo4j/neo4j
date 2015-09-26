@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.store;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 /**
@@ -32,14 +32,14 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 public class StoreIteratorNodeCursor extends StoreAbstractNodeCursor
 {
     private PrimitiveLongIterator iterator;
-    private final Consumer<StoreIteratorNodeCursor> instanceCache;
+    private Consumer<StoreIteratorNodeCursor> instanceCache;
 
     public StoreIteratorNodeCursor( NodeRecord nodeRecord,
-            NeoStores neoStores,
+            NeoStore neoStore,
             StoreStatement storeStatement,
             Consumer<StoreIteratorNodeCursor> instanceCache )
     {
-        super( nodeRecord, neoStores, storeStatement );
+        super( nodeRecord, neoStore, storeStatement );
         this.instanceCache = instanceCache;
     }
 
@@ -54,7 +54,7 @@ public class StoreIteratorNodeCursor extends StoreAbstractNodeCursor
     {
         while ( iterator != null && iterator.hasNext() )
         {
-            NodeRecord record = nodeStore.loadRecord( iterator.next(), nodeRecord );
+            NodeRecord record = neoStore.getNodeStore().loadRecord( iterator.next(), nodeRecord );
             if ( record != null && record.inUse() )
             {
                 return true;

@@ -67,15 +67,18 @@ import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.register.Register.DoubleLong;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ha.ClusterRule;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
@@ -518,9 +521,10 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
+        public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache,
+                                                                    UpgradableDatabase upgradableDatabase )
         {
-            return delegate.storeMigrationParticipant( fs, pageCache );
+            return delegate.storeMigrationParticipant( fs, pageCache, upgradableDatabase );
         }
 
         @Override

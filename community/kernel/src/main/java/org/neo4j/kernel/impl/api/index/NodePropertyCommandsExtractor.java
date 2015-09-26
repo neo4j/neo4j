@@ -31,13 +31,13 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 
 import static org.neo4j.collection.primitive.Primitive.longObjectMap;
 import static org.neo4j.collection.primitive.Primitive.longSet;
 
 class NodePropertyCommandsExtractor
-        extends CommandHandler.Adapter implements Visitor<Command,IOException>
+        extends NeoCommandHandler.Adapter implements Visitor<Command,IOException>
 {
     final PrimitiveLongObjectMap<NodeCommand> nodeCommandsById = longObjectMap();
     final PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds = longObjectMap();

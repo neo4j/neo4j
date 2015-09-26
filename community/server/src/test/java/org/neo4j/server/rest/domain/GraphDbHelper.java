@@ -46,7 +46,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
 import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.server.database.Database;
 
 import static org.mockito.Mockito.mock;
@@ -65,13 +65,13 @@ public class GraphDbHelper
 
     public int getNumberOfNodes()
     {
-        return (int) database.getGraph().getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get()
+        return (int) database.getGraph().getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get()
                 .getNodeStore().getNumberOfIdsInUse();
     }
 
     public int getNumberOfRelationships()
     {
-        return (int) database.getGraph().getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get()
+        return (int) database.getGraph().getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get()
                 .getRelationshipStore().getNumberOfIdsInUse();
     }
 

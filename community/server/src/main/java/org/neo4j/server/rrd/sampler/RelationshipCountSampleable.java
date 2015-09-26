@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rrd.sampler;
 
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 
 public class RelationshipCountSampleable extends DatabasePrimitivesSampleableBase
 {
-    public RelationshipCountSampleable( NeoStoresSupplier neoStoresSupplier )
+    public RelationshipCountSampleable( NeoStoreSupplier neoStoreSupplier )
     {
-        super( neoStoresSupplier );
+        super( neoStoreSupplier );
     }
 
     @Override public String getName()
@@ -35,6 +35,6 @@ public class RelationshipCountSampleable extends DatabasePrimitivesSampleableBas
 
     @Override public double getValue()
     {
-        return getNeoStores().getRelationshipStore().getNumberOfIdsInUse();
+        return getNeoStore().getRelationshipStore().getNumberOfIdsInUse();
     }
 }

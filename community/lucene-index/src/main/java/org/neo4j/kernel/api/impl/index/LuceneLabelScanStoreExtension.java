@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.tracking;
 import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
@@ -46,7 +46,7 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
     {
         Config getConfig();
 
-        NeoStoresSupplier getNeoStoreSupplier();
+        NeoStoreSupplier getNeoStoreSupplier();
 
         LogService getLogService();
     }

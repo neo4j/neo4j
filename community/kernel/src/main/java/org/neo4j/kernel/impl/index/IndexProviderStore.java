@@ -30,7 +30,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.NotCurrentStoreVersionException;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 
-import static org.neo4j.kernel.impl.store.MetaDataStore.versionLongToString;
+import static org.neo4j.kernel.impl.store.NeoStore.versionLongToString;
 
 public class IndexProviderStore
 {

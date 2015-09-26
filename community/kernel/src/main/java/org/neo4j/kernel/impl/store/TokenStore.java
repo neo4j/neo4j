@@ -27,6 +27,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -37,6 +39,7 @@ import org.neo4j.kernel.impl.core.TokenFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
@@ -45,9 +48,15 @@ import static org.neo4j.kernel.impl.store.PropertyStore.decodeString;
 
 public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token> extends AbstractRecordStore<RECORD>
 {
+    public static abstract class Configuration
+        extends AbstractStore.Configuration
+    {
+
+    }
+
     public static final int NAME_STORE_BLOCK_SIZE = 30;
 
-    private final DynamicStringStore nameStore;
+    private DynamicStringStore nameStore;
     private final TokenFactory<TOKEN> tokenFactory;
 
     public TokenStore(
@@ -56,11 +65,15 @@ public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
             LogProvider logProvider,
             DynamicStringStore nameStore,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors,
             TokenFactory<TOKEN> tokenFactory )
     {
-        super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider);
+        super( fileName, configuration, idType, idGeneratorFactory, pageCache,
+                fileSystemAbstraction, logProvider, versionMismatchHandler, monitors );
         this.nameStore = nameStore;
         this.tokenFactory = tokenFactory;
     }
@@ -74,6 +87,30 @@ public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token
     public int getRecordHeaderSize()
     {
         return getRecordSize();
+    }
+
+    @Override
+    public void makeStoreOk()
+    {
+        nameStore.makeStoreOk();
+        super.makeStoreOk();
+    }
+
+    @Override
+    public void visitStore( Visitor<CommonAbstractStore, RuntimeException> visitor )
+    {
+        nameStore.visitStore( visitor );
+        visitor.visit( this );
+    }
+
+    @Override
+    protected void closeStorage()
+    {
+        if ( nameStore != null )
+        {
+            nameStore.close();
+            nameStore = null;
+        }
     }
 
     @Override

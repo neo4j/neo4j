@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.PageCacheRule;
@@ -68,10 +69,10 @@ public class IdGeneratorRebuildFailureEmulationTest
     public static final class FailureBeforeRebuild extends IdGeneratorRebuildFailureEmulationTest
     {
         @Override
-        protected void emulateFailureOnRebuildOf( NeoStores neoStores )
+        protected void emulateFailureOnRebuildOf( NeoStore neostore )
         {
             // emulate a failure during rebuild by not issuing this call:
-            // neostores.makeStoreOk();
+            // neostore.makeStoreOk();
         }
     }
 
@@ -81,12 +82,12 @@ public class IdGeneratorRebuildFailureEmulationTest
         File idFile = new File( storeDir, Thread.currentThread().getStackTrace()[2].getMethodName().replace( '_', '.' ) + ".id" );
         // emulate the need for rebuilding id generators by deleting it
         fs.deleteFile( idFile );
-        NeoStores neoStores = null;
+        NeoStore neostore = null;
         try
         {
-            neoStores = factory.openNeoStores( false );
+            neostore = factory.newNeoStore( false );
             // emulate a failure during rebuild:
-            emulateFailureOnRebuildOf( neoStores );
+            emulateFailureOnRebuildOf( neostore );
         }
         catch ( UnderlyingStorageException expected )
         {
@@ -96,16 +97,16 @@ public class IdGeneratorRebuildFailureEmulationTest
         {
             // we want close to not misbehave
             // (and for example truncate the file based on the wrong highId)
-            if ( neoStores != null )
+            if ( neostore != null )
             {
-                neoStores.close();
+                neostore.close();
             }
         }
     }
 
-    void emulateFailureOnRebuildOf( NeoStores neoStores )
+    void emulateFailureOnRebuildOf( NeoStore neostore )
     {
-        fail( "emulateFailureOnRebuildOf(NeoStores) must be overridden" );
+        fail( "emulateFailureOnRebuildOf(NeoStore) must be overridden" );
     }
 
     private FileSystem fs;
@@ -124,9 +125,16 @@ public class IdGeneratorRebuildFailureEmulationTest
         graphdb.shutdown();
         Map<String, String> params = new HashMap<>();
         params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
+        Monitors monitors = new Monitors();
         Config config = new Config( params, GraphDatabaseSettings.class );
-        factory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
+        factory = new StoreFactory(
+                storeDir,
+                config,
+                new DefaultIdGeneratorFactory( fs ),
+                pageCacheRule.getPageCache( fs ),
+                fs,
+                NullLogProvider.getInstance(),
+                monitors );
     }
 
     @After

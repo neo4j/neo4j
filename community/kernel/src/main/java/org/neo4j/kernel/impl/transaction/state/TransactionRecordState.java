@@ -29,8 +29,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -74,22 +73,18 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  */
 public class TransactionRecordState implements RecordState
 {
+    private final NeoStore neoStore;
     private final IntegrityValidator integrityValidator;
     private final NeoStoreTransactionContext context;
-    private final NodeStore nodeStore;
-    private final MetaDataStore metaDataStore;
-    private final SchemaStore schemaStore;
 
-    private RecordChanges<Long,NeoStoreRecord, Void> neoStoreRecord;
+    private RecordChanges<Long, NeoStoreRecord, Void> neoStoreRecord;
     private long lastCommittedTxWhenTransactionStarted;
     private boolean prepared;
 
-    public TransactionRecordState( NeoStores neoStores, IntegrityValidator integrityValidator,
+    public TransactionRecordState( NeoStore neoStore, IntegrityValidator integrityValidator,
                          NeoStoreTransactionContext context )
     {
-        this.nodeStore = neoStores.getNodeStore();
-        this.metaDataStore = neoStores.getMetaDataStore();
-        this.schemaStore = neoStores.getSchemaStore();
+        this.neoStore = neoStore;
         this.integrityValidator = integrityValidator;
         this.context = context;
     }
@@ -201,7 +196,7 @@ public class TransactionRecordState implements RecordState
 
         if ( neoStoreRecord != null )
         {
-            for ( RecordProxy<Long,NeoStoreRecord, Void> change : neoStoreRecord.changes() )
+            for ( RecordProxy<Long, NeoStoreRecord, Void> change : neoStoreRecord.changes() )
             {
                 Command.NeoStoreCommand command = new Command.NeoStoreCommand();
                 command.init( change.forReadingData() );
@@ -245,6 +240,16 @@ public class TransactionRecordState implements RecordState
                 }
             }
         }
+    }
+
+    private NodeStore getNodeStore()
+    {
+        return neoStore.getNodeStore();
+    }
+
+    private SchemaStore getSchemaStore()
+    {
+        return neoStore.getSchemaStore();
     }
 
     /**
@@ -455,12 +460,12 @@ public class TransactionRecordState implements RecordState
 
     private static final CommandSorter COMMAND_SORTER = new CommandSorter();
 
-    private RecordProxy<Long,NeoStoreRecord, Void> getOrLoadNeoStoreRecord()
+    private RecordProxy<Long, NeoStoreRecord, Void> getOrLoadNeoStoreRecord()
     {
         // TODO Move this neo store record thingie into RecordAccessSet
         if ( neoStoreRecord == null )
         {
-            neoStoreRecord = new RecordChanges<>( new RecordChanges.Loader<Long,NeoStoreRecord, Void>()
+            neoStoreRecord = new RecordChanges<>( new RecordChanges.Loader<Long, NeoStoreRecord, Void>()
             {
                 @Override
                 public NeoStoreRecord newUnused( Long key, Void additionalData )
@@ -471,7 +476,7 @@ public class TransactionRecordState implements RecordState
                 @Override
                 public NeoStoreRecord load( Long key, Void additionalData )
                 {
-                    return metaDataStore.asRecord();
+                    return neoStore.asRecord();
                 }
 
                 @Override
@@ -480,7 +485,7 @@ public class TransactionRecordState implements RecordState
                 }
 
                 @Override
-                public NeoStoreRecord clone(NeoStoreRecord neoStoreRecord ) {
+                public NeoStoreRecord clone(NeoStoreRecord neoStoreRecord) {
                     // We do not expect to manage the before state, so this operation will not be called.
                     throw new UnsupportedOperationException("Clone on NeoStoreRecord");
                 }
@@ -524,7 +529,7 @@ public class TransactionRecordState implements RecordState
      */
     public void graphRemoveProperty( int propertyKey )
     {
-        RecordProxy<Long,NeoStoreRecord, Void> recordChange = getOrLoadNeoStoreRecord();
+        RecordProxy<Long, NeoStoreRecord, Void> recordChange = getOrLoadNeoStoreRecord();
         context.removeProperty( recordChange, propertyKey );
     }
 
@@ -551,13 +556,13 @@ public class TransactionRecordState implements RecordState
     public void addLabelToNode( int labelId, long nodeId )
     {
         NodeRecord nodeRecord = context.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
-        parseLabelsField( nodeRecord ).add( labelId, nodeStore, nodeStore.getDynamicLabelStore() );
+        parseLabelsField( nodeRecord ).add( labelId, getNodeStore(), getNodeStore().getDynamicLabelStore() );
     }
 
     public void removeLabelFromNode( int labelId, long nodeId )
     {
         NodeRecord nodeRecord = context.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
-        parseLabelsField( nodeRecord ).remove( labelId, nodeStore );
+        parseLabelsField( nodeRecord ).remove( labelId, getNodeStore() );
     }
 
     public void setConstraintIndexOwner( IndexRule indexRule, long constraintId )
@@ -569,7 +574,7 @@ public class TransactionRecordState implements RecordState
         indexRule = indexRule.withOwningConstraint( constraintId );
 
         records.clear();
-        records.addAll( schemaStore.allocateFrom( indexRule ) );
+        records.addAll( getSchemaStore().allocateFrom( indexRule ) );
     }
 
     public interface PropertyReceiver
