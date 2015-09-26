@@ -125,6 +125,12 @@ class PrettifierTest extends CypherFunSuite {
     )
   }
 
+  test("should not break after DETACH in DETACH DELETE") {
+    actual("MATCH (n) DETACH DELETE (n)") should equal(
+      expected("MATCH (n)%nDETACH DELETE (n)")
+    )
+  }
+
   test("should prettify and break USING PERIODIC COMMIT LOAD CSV") {
     actual("using periodic commit match () MATCH (n) LOAD CSV FROM \"f\" AS line return (n)") should equal(
       expected("USING PERIODIC COMMIT%nMATCH ()%nMATCH (n)%nLOAD CSV FROM \"f\" AS line%nRETURN (n)")
