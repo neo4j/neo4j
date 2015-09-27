@@ -129,11 +129,12 @@ public abstract class GraphDatabaseFacadeFactory
         graphDatabaseFacade.init( platform, edition, dataSource );
 
         Throwable error = null;
+        Logger msgLog = platform.logging.getInternalLog( getClass() ).infoLogger();
         try
         {
             // Done after create to avoid a redundant
             // "database is now unavailable"
-            enableAvailabilityLogging( platform.availabilityGuard, platform.logging.getInternalLog( getClass() ).infoLogger() );
+            enableAvailabilityLogging( platform.availabilityGuard, msgLog );
 
             platform.life.start();
         }
@@ -159,6 +160,7 @@ public abstract class GraphDatabaseFacadeFactory
 
         if ( error != null )
         {
+            msgLog.log( "Failed to start database", error );
             throw Exceptions.launderedException( error );
         }
 
