@@ -2,6 +2,8 @@
 -----
 o Stacktraces are printed for any unexpected exception, even if --stacktrace isn't supplied.
   --stacktrace can still be used to print stack trace for known exceptions.
+o Adds --ignore-empty-strings for ignoring empty quoted strings, instead of those values
+  ending up as properties with empty string values
 
 2.2.5
 -----

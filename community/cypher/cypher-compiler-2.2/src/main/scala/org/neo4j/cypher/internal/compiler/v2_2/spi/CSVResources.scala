@@ -41,6 +41,8 @@ object CSVResources {
     override def bufferSize(): Int = DEFAULT_BUFFER_SIZE
 
     override def multilineFields(): Boolean = true
+
+    override def emptyQuotedStringsAsNull(): Boolean = false
   }
 }
 
