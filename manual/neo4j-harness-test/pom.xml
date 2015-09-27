@@ -25,6 +25,7 @@
     <docs-plugin.skip>true</docs-plugin.skip>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
     <neo4j.version>${project.version}</neo4j.version>
+    <attach-java-test-sources-phase>package</attach-java-test-sources-phase>
   </properties>
 
   <scm>
