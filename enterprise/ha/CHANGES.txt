@@ -2,6 +2,12 @@
 ---------
 o Given ongoing transactions a bit of time (10 seconds default) to complete before making a required role switch
 
+2.2.6
+-----
+o Slaves pulls updates much faster and are very unlikely to every fall behind master.
+  Transaction application on slaves now apply up to 50x faster, comparatively usually
+  at least a couple of times faster than master
+
 2.2.5
 -----
 o Properly release local slave locks after master locks, resolving an issue
