@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -91,6 +92,7 @@ public class InternalAbstractGraphDatabaseTest
             @Override
             protected void create()
             {
+                msgLog = mock( StringLogger.class );
                 availabilityGuard = mock( AvailabilityGuard.class );
             }
 
