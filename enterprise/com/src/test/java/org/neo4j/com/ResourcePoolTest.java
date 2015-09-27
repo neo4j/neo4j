@@ -19,9 +19,7 @@
  */
 package org.neo4j.com;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -31,8 +29,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Test;
 import org.neo4j.helpers.FakeClock;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class ResourcePoolTest
 {
@@ -369,7 +370,8 @@ public class ResourcePoolTest
         private final CountDownLatch released = new CountDownLatch( 1 );
         private final CountDownLatch onAcquire;
         private final ResourcePool pool;
-        private final AtomicBoolean release = new AtomicBoolean(  );
+        private final AtomicBoolean release = new AtomicBoolean();
+        private volatile Thread runner;
 
         private ResourceHolder( ResourcePool pool, CountDownLatch onAcquire )
         {
@@ -380,6 +382,7 @@ public class ResourcePoolTest
         @Override
         public void run()
         {
+            runner = Thread.currentThread();
             try
             {
                 pool.acquire();
@@ -411,6 +414,17 @@ public class ResourcePoolTest
             try
             {
                 released.await();
+
+                Thread runner;
+                do
+                {
+                    // Wait to observe thread running this ResourceHolder.
+                    // If we don't, then the thread can continue running for a little while after releasing, which can
+                    // result in racy changes to the StatefulMonitor.
+                    runner = this.runner;
+                }
+                while ( runner == null );
+                runner.join();
             }
             catch ( InterruptedException e )
             {
