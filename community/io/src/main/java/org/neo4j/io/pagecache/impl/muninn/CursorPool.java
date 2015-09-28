@@ -23,6 +23,8 @@ final class CursorPool
 {
     private static boolean disableCursorPooling = Boolean.getBoolean(
             "org.neo4j.io.pagecache.impl.muninn.CursorPool.disableCursorPooling" );
+    private static boolean disableClaimedCheck = Boolean.getBoolean(
+            "org.neo4j.io.pagecache.impl.muninn.CursorPool.disableClaimedCheck" );
 
     private final ThreadLocal<MuninnReadPageCursor> readCursorCache = new MuninnReadPageCursorThreadLocal();
     private final ThreadLocal<MuninnWritePageCursor> writeCursorCache = new MuninnWritePageCursorThreadLocal();
@@ -36,7 +38,7 @@ final class CursorPool
 
         MuninnReadPageCursor cursor = readCursorCache.get();
 
-        assert unclaimed( cursor, writeCursorCache );
+        assertUnclaimed( cursor, writeCursorCache );
 
         cursor.markAsClaimed();
         return cursor;
@@ -51,20 +53,19 @@ final class CursorPool
 
         MuninnWritePageCursor cursor = writeCursorCache.get();
 
-        assert unclaimed( cursor, readCursorCache );
+        assertUnclaimed( cursor, readCursorCache );
 
         cursor.markAsClaimed();
         return cursor;
     }
 
-    private static boolean unclaimed( MuninnPageCursor first, ThreadLocal<? extends MuninnPageCursor> second )
+    private static void assertUnclaimed( MuninnPageCursor first, ThreadLocal<? extends MuninnPageCursor> second )
     {
-        // This has been pulled out into a static method and guarded behind
-        // `assert`s to reduce the overhead put upon the inlining budget
-        // by something that should never happen.
-        first.assertUnclaimed();
-        second.get().assertUnclaimed();
-        return true;
+        if ( !disableClaimedCheck )
+        {
+            first.assertUnclaimed();
+            second.get().assertUnclaimed();
+        }
     }
 
     private static class MuninnReadPageCursorThreadLocal extends ThreadLocal<MuninnReadPageCursor>

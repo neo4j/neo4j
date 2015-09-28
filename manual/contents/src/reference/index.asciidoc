@@ -27,11 +27,9 @@ include::{importdir}/neo4j-graph-algo-docs-jar/dev/index.asciidoc[]
 
 include::{importdir}/neo4j-server-docs-jar/dev/rest-api/index.asciidoc[]
 
-ifdef::feature-bolt[]
 :leveloffset: 1
 
-include::{importdir}/neo4j-bolt-v1-docs-docs-jar/dev/index.asciidoc[]
-endif::feature-bolt[]
+include::{importdir}/neo4j-bolt-docs-jar/dev/index.asciidoc[]
 
 :leveloffset: 1
 

@@ -34,7 +34,8 @@ public final class BiConsumers
     };
 
     /**
-     * @param <T> The type to be consumed
+     * @param <T> The type of the first thing to consume
+     * @param <U> The type of the second thing to consume
      * @return a {@link BiConsumers} that does nothing.
      */
     @SuppressWarnings( "unchecked" )

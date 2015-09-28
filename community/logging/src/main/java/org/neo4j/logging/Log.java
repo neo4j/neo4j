@@ -139,7 +139,7 @@ public interface Log
      * Shorthand for {@code errorLogger().log( format, arguments )}
      *
      * @param format    A string format for writing a message
-     * @param arguments Arguments to substitute into the message according to the {@param format}
+     * @param arguments Arguments to substitute into the message according to the {@code format}
      */
     void error( String format, Object... arguments );
 

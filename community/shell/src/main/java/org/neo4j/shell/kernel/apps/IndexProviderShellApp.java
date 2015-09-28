@@ -141,12 +141,12 @@ public class IndexProviderShellApp extends TransactionProvidingApp
             {
                 commandsToRun.addAll( Arrays.asList( commandToRun.split( Pattern.quote( "&&" ) ) ) );
             }
-            
+
             if ( getIndex( getIndexName( parser ), getEntityType( parser ), out ) == null )
             {
                 return Continuation.INPUT_COMPLETE;
             }
-            
+
             IndexHits<PropertyContainer> result = query ? query( parser, out ) : get( parser, out );
             try
             {
@@ -189,12 +189,12 @@ public class IndexProviderShellApp extends TransactionProvidingApp
         {
             deleteIndex( parser, out );
         }
-        
+
         if ( indexes )
         {
             listIndexes( out );
         }
-        
+
         return Continuation.INPUT_COMPLETE;
     }
 
@@ -202,7 +202,7 @@ public class IndexProviderShellApp extends TransactionProvidingApp
     {
         return parser.argument( 0, "Index name not supplied" );
     }
-    
+
     private void listIndexes( Output out ) throws RemoteException
     {
         out.println( "Node indexes:" );
@@ -232,7 +232,7 @@ public class IndexProviderShellApp extends TransactionProvidingApp
         String indexName = getIndexName( parser );
         String key = parser.argument( 1, "Key not supplied" );
         String value = parser.arguments().size() > 2 ? parser.arguments().get( 2 ) : null;
-        
+
         Class<? extends PropertyContainer> entityType = getEntityType( parser );
         Index<? extends PropertyContainer> index = getIndex( indexName, entityType, out );
         if ( index == null )
@@ -259,7 +259,7 @@ public class IndexProviderShellApp extends TransactionProvidingApp
             out.println( entityType.getClass().getSimpleName() + " index '" + indexName + "' already exists" );
             return;
         }
-        
+
         Map config;
         try
         {
@@ -269,7 +269,7 @@ public class IndexProviderShellApp extends TransactionProvidingApp
         {
             throw ShellException.wrapCause( e );
         }
-        
+
         if ( entityType.equals( Node.class ) )
         {
             Index<Node> index = config != null ? getServer().getDb().index().forNodes( indexName, config ) :
@@ -298,7 +298,7 @@ public class IndexProviderShellApp extends TransactionProvidingApp
         }
         return (Index<T>) (type.equals( Node.class ) ? index.forNodes( indexName ) : index.forRelationships( indexName ));
     }
-    
+
     private void displayConfig( AppCommandParser parser, Output out )
             throws RemoteException, ShellException
     {
@@ -389,7 +389,15 @@ public class IndexProviderShellApp extends TransactionProvidingApp
         {
             value = parser.argumentWithDefault( 2, null );
         }
-        Index theIndex = getIndex( index, current.isNode() ? Node.class : Relationship.class, out );
+        Index theIndex;
+        if ( current.isNode() )
+        {
+            theIndex = getIndex( index, Node.class, out );
+        }
+        else
+        {
+            theIndex = getIndex( index, Relationship.class, out );
+        }
         if ( theIndex != null )
         {
             if ( key != null && value != null )

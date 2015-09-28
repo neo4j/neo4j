@@ -1,4 +1,11 @@
-= Neo4j: Graphs for Everyone =
+= Neo4j 3.0.0 Alpha =
+
+[WARNING]
+=====================================================================
+This is a branch tracking bleeding edge development of Neo4j 3.0.0, which is under heavy development for the forseeable future and not for production use.
+
+If you are interested in trying it out to give early feedback, have a look at http://alpha.neohq.net/[Alpha Downloads] for nightly builds and documentation. Use these artifacts at your own risk, they come with no official support and may change without warning.
+=====================================================================
 
 http://neo4j.com[Neo4j] is the world's leading Graph Database. It is a high performance graph store with all the features expected of a mature and robust database, like a friendly query language and ACID transactions. The programmer works with a flexible network structure of nodes and relationships rather than static tables -- yet enjoys all the benefits of enterprise-quality database. For many applications, Neo4j offers orders of magnitude performance benefits compared to relational DBs.
 
@@ -19,7 +26,7 @@ NOTE: This GitHub repository contains mixed GPL and AGPL code. Our Community edi
 
 == Dependencies ==
 
-Neo4j is built using http://maven.apache.org/[Apache Maven] version 3.0.x and a recent version of http://www.oracle.com/technetwork/java/javase/downloads/index.html[Java 7]. Bash and Make is also required. Note that maven needs more memory than the standard configuration, this can be achieved with `export MAVEN_OPTS="-Xmx512m -XX:MaxPermSize=128m"`.
+Neo4j is built using http://maven.apache.org/[Apache Maven] version 3.0.x and a recent version of http://www.oracle.com/technetwork/java/javase/downloads/index.html[Java 8]. Bash and Make is also required. Note that maven needs more memory than the standard configuration, this can be achieved with `export MAVEN_OPTS="-Xmx512m"`.
 
 The Neo4j Browser module is built using http://nodejs.org[Node.js]. For skipping that part of the build, see below. Building the manual requires Python, graphviz and make.
 
@@ -37,7 +44,7 @@ If you don't plan to build the browser (for example by using -DskipBrowser), the
 
 === With apt-get on Ubuntu ===
 
-  sudo apt-get install graphviz maven nodejs-legacy npm make openjdk-7-jdk devscripts debhelper rpm
+  sudo apt-get install graphviz maven nodejs-legacy npm make openjdk-8-jdk devscripts debhelper rpm
 
 == Building Neo4j ==
 
@@ -51,7 +58,7 @@ If you don't plan to build the browser (for example by using -DskipBrowser), the
 * When building on Windows, use `-Dlicensing.skip` to avoid problems related to line endings.
 * The license header check can be skipped by appending the following to the command line: `-Dlicense.skip=true`.
 * If you are running into problems building on Windows you can try building Neo4j in a Ubuntu virtual machine.
-* You may need to increase the memory available to Maven: `export MAVEN_OPTS="-Xmx512m -XX:MaxPermSize=256m"`.
+* You may need to increase the memory available to Maven: `export MAVEN_OPTS="-Xmx512m"`.
 
 == Running Neo4j ==
 

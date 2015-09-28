@@ -35,6 +35,7 @@ public final class ThrowingConsumers
 
     /**
      * @param <T> The type to be consumed
+     * @param <E> The exception that the consumer might throw
      * @return a {@link ThrowingConsumer} that does nothing.
      */
     @SuppressWarnings( "unchecked" )
