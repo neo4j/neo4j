@@ -72,6 +72,7 @@
       <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-cypher-refcard</artifactId>
       <version>${neo4j.version}</version>
+      <classifier>docs</classifier>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -149,6 +150,7 @@
               <classifier>docs</classifier>
               <includeClassifiers>docs</includeClassifiers>
               <excludeTransitive>true</excludeTransitive>
+              <excludeArtifactIds>neo4j-cypher-refcard</excludeArtifactIds>
               <useSubDirectoryPerArtifact>false</useSubDirectoryPerArtifact>
               <stripVersion>true</stripVersion>
               <excludes>META-INF,META-INF/**</excludes>
@@ -181,6 +183,7 @@
             </goals>
             <configuration>
               <includeArtifactIds>neo4j-cypher-refcard</includeArtifactIds>
+              <includeClassifiers>docs</includeClassifiers>
               <excludeTransitive>true</excludeTransitive>
               <useSubDirectoryPerArtifact>false</useSubDirectoryPerArtifact>
               <stripVersion>true</stripVersion>
@@ -436,7 +439,7 @@
                   <fileset dir="${docs.javadocs}"/>
                 </copy>
                 <copy todir="${project.build.directory}/docbkx/webhelp/cypher-refcard" overwrite="true">
-                  <fileset dir="${docs.refcard}"/>
+                  <fileset dir="${docs.refcard}/neo4j-cypher-refcard-${neo4j.version}"/>
                 </copy>
                 <!-- source code used by the manual.
                 <copy todir="${project.build.directory}/docbkx/webhelp/code" overwrite="true">
