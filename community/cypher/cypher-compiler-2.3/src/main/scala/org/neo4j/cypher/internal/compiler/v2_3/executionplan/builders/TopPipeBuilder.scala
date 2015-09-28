@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{PipeMonitor, TopPipe}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{Top1Pipe, TopNPipe, PipeMonitor, TopPipe}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{PlanBuilder, ExecutionPlanInProgress}
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Add
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Literal, Add}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.Slice
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
@@ -46,7 +46,10 @@ class TopPipeBuilder extends PlanBuilder with SortingPreparations {
       case _                          => throw new ThisShouldNotHappenError("Andres", "This builder should not be called for this query")
     }
 
-    val resultPipe = new TopPipe(newPlan.pipe, sortItems.toList, limitExpression)()
+    val resultPipe = limitExpression match {
+      case Literal(1) =>  new Top1Pipe(newPlan.pipe, sortItems.toList)()
+      case e =>  new TopNPipe(newPlan.pipe, sortItems.toList, e)()
+    }
 
     val solvedSort = q.sort.map(_.solve)
 
