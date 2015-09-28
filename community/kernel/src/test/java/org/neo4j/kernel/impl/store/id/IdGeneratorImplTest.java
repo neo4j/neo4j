@@ -24,6 +24,9 @@ import org.junit.Test;
 
 import java.io.File;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.store.InvalidIdGeneratorException;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.test.EphemeralFileSystemRule;
 
@@ -31,6 +34,10 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
+
+import static org.neo4j.test.ProcessUtil.executeSubProcess;
 
 public class IdGeneratorImplTest
 {
@@ -99,5 +106,38 @@ public class IdGeneratorImplTest
 
         // Then
         assertThat( idGenerator.getHighId(), equalTo( 42L ) );
+    }
+
+    @Test
+    public void shouldForceStickyMark() throws Exception
+    {
+        // GIVEN
+        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        File dir = new File( "target/test-data/" + getClass().getName() );
+        fs.mkdirs( dir );
+        File file = new File( dir, "ids" );
+        fs.deleteFile( file );
+        IdGeneratorImpl.createGenerator( fs, file, 0, false );
+
+        // WHEN opening the id generator, where the jvm crashes right after
+        executeSubProcess( getClass(), 1, MINUTES, file.getAbsolutePath() );
+
+        // THEN
+        try
+        {
+            IdGeneratorImpl.readHighId( fs, file );
+            fail( "Should have thrown, saying something with sticky generator" );
+        }
+        catch ( InvalidIdGeneratorException e )
+        {
+            // THEN Good
+        }
+    }
+
+    public static void main( String[] args )
+    {
+        // Leave it opened
+        new IdGeneratorImpl( new DefaultFileSystemAbstraction(), new File( args[0] ), 100, 100, false, 42 );
+        System.exit( 0 );
     }
 }

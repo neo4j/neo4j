@@ -63,6 +63,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     private IdGenerator idGenerator;
     private boolean storeOk = true;
     private Throwable causeOfStoreNotOk;
+    private boolean makeStoreOkCalled;
 
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>
@@ -427,7 +428,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      */
     public void freeId( long id )
     {
-        if ( idGenerator != null )
+        if ( idGenerator != null && makeStoreOkCalled )
         {
             idGenerator.freeId( id );
         }
@@ -483,6 +484,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             storeOk = true;
             causeOfStoreNotOk = null;
         }
+        makeStoreOkCalled = true;
     }
 
     /**
