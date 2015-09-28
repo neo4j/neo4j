@@ -13,7 +13,7 @@
   <name>Neo4j - Cypher Reference Card</name>
   <description>Reference Card for the Neo4j Cypher Query Language.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
-  <packaging>jar</packaging>
+  <packaging>pom</packaging>
 
   <properties>
     <neo4j.version>${project.version}</neo4j.version>
@@ -151,10 +151,20 @@
             <id>attach-test-jar</id>
             <phase>none</phase>
           </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
           <execution>
-            <id>default-jar</id>
+            <id>default-jar-substitute</id>
+            <phase>package</phase>
+            <goals><goal>single</goal></goals>
             <configuration>
-              <classesDirectory>${project.build.directory}/html5/</classesDirectory>
+              <attach>true</attach>
+              <descriptors>
+                <descriptor>assemblies/jar.xml</descriptor>
+              </descriptors>
             </configuration>
           </execution>
         </executions>
