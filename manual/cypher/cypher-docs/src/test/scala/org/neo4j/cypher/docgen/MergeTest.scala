@@ -41,11 +41,11 @@ class MergeTest extends DocumentingTestBase with QueryStatisticsTestSupport with
     "Charlie:Person FATHER Martin:Person")
 
   override val properties = Map(
-    "Charlie" -> Map("name" -> "Charlie Sheen"),
-    "Oliver" -> Map("name" -> "Oliver Stone"),
-    "Michael" -> Map("name" -> "Michael Douglas"),
-    "Rob" -> Map("name" -> "Rob Reiner"),
-    "Martin" -> Map("name" -> "Martin Sheen"),
+    "Charlie" -> Map("name" -> "Charlie Sheen", "bornIn" -> "New York"),
+    "Oliver" -> Map("name" -> "Oliver Stone", "bornIn" -> "New York"),
+    "Michael" -> Map("name" -> "Michael Douglas", "bornIn" -> "New Jersey"),
+    "Rob" -> Map("name" -> "Rob Reiner", "bornIn" -> "New York"),
+    "Martin" -> Map("name" -> "Martin Sheen", "bornIn" -> "Ohio"),
     "WallStreet" -> Map("title" -> "Wall Street"),
     "TheAmericanPresident" -> Map("title" -> "The American President")
   )
@@ -82,6 +82,23 @@ class MergeTest extends DocumentingTestBase with QueryStatisticsTestSupport with
       queryText = "merge (michael:Person {name:'Michael Douglas'})\nreturn michael",
       optionalResultExplanation = "Michael Douglas will be matched and returned.",
       assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 0)
+    )
+  }
+
+  @Test def merge_single_node_derived_from_existing_node_property() {
+    testQuery(
+      title = "Merge single node derived from existing node property",
+      text = """For some property p in each bound node in a set of nodes, a single new node is created for
+      "each unique value of p.""",
+      queryText = "match (person:Person)\nmerge (city:City {name: person.bornIn})\nreturn city",
+      optionalResultExplanation = """Three nodes labeled +City+ are created, each of which contains a ‘name’ property
+                               with the value of "New York", "Ohio", and "New Jersey", respectively. Note that even
+                               though the +MATCH+ clause results in three bound nodes having the value "New York" for
+                               the 'bornIn' property, only a single "New York" node (i.e. a +City+ node with a name
+                               of "New York") is created. As the "New York" node is not matched for the first bound
+                               node, it is created. However, for the second and third bound nodes, the newly-created
+                               "New York" node is matched and bound.""",
+      assertions = (p) => assertStats(p, nodesCreated = 3, propertiesSet = 3, labelsAdded = 3)
     )
   }
 
