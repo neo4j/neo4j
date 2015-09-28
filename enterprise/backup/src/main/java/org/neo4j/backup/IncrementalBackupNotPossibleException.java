@@ -26,8 +26,4 @@ public class IncrementalBackupNotPossibleException extends RuntimeException
         super( msg, cause );
     }
 
-    public IncrementalBackupNotPossibleException( Throwable cause )
-    {
-        super( cause );
-    }
 }

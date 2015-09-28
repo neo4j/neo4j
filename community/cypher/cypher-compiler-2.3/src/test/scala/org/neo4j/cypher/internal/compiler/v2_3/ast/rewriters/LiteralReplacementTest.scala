@@ -19,12 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_3.parser
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
 class LiteralReplacementTest extends CypherFunSuite  {
 
-  import parser.ParserFixture.parser
+  import org.neo4j.cypher.internal.compiler.v2_3.parser.ParserFixture.parser
+
+  test("should extract starts with patterns") {
+    assertRewrite("RETURN x STARTS WITH 'Pattern' as X", "RETURN x STARTS WITH {`  AUTOSTRING0`} as X", Map("  AUTOSTRING0" -> "Pattern"))
+  }
 
   test("should not extract literal dynamic property lookups") {
     assertDoesNotRewrite("MATCH n RETURN n[\"name\"]")

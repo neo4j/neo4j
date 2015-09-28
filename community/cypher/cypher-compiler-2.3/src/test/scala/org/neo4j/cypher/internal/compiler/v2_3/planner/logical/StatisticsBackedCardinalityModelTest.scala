@@ -89,7 +89,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
 
   test("aggregations should never increase cardinality") {
     givenPattern("MATCH (a:Person)-[:REL]->() WITH a, count(*) as c MATCH (a)-[:REL]->()").
-      withGraphNodes(1).
+      withGraphNodes(allNodes).
       withLabel('Person -> .1).
       withRelationshipCardinality('Person -> 'REL -> 'Person -> .5).
       shouldHavePlannerQueryCardinality(produceCardinalityModel)(2.5)

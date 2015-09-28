@@ -4,6 +4,10 @@ o User has ability to configure jettys max header sizes with added configuration
     - org.neo4j.server.webserver.max.request.header
     - org.neo4j.server.webserver.max.response.header
 
+2.2.6
+-----
+o ClientError and TransientError make REST API transactions rollback
+
 2.2.3
 -----
 o Improve force shutdown when stopping an unresponsive Neo4j server

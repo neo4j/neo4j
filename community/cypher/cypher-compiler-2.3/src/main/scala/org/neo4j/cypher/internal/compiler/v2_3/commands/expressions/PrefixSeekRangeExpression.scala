@@ -25,8 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionContext, PrefixRange}
 import org.neo4j.cypher.internal.frontend.v2_3.InternalException
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
-case class PrefixSeekRangeExpression(range: PrefixRange)
-  extends Expression {
+case class PrefixSeekRangeExpression(range: PrefixRange[Expression]) extends Expression {
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = throw new
       InternalException("This should never be called")

@@ -99,6 +99,6 @@ public class RecoveryVisitor implements CloseableVisitor<RecoverableTransaction,
      */
     private ValidatedIndexUpdates prepareIndexUpdates( TransactionRepresentation txRepresentation ) throws IOException
     {
-        return indexUpdatesValidator.validate( txRepresentation, RECOVERY );
+        return indexUpdatesValidator.validate( txRepresentation );
     }
 }

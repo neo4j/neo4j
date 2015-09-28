@@ -6,6 +6,7 @@ For Release Notes, see http://neo4j.com/release-notes/neo4j-#{project.version}/
 Cypher:
 o Generates a warning when a plan using LOAD CSV uses MATCH or MERGE on a large label without an index
 o Generates a warning when a plan using LOAD CSV also contains an EagerPipe
+o Introduce STARTS WITH, ENDS WITH and CONTAINS
 
 2.3-M03
 -------
@@ -130,6 +131,11 @@ o Added ability to skip duplicate nodes, i.e. multiple nodes with the same ID in
   Maximum total number of bad entries (nodes and relationships) during an import is still controlled
   using --bad-tolerance=<max bad entries>. Skipping of bad relationships/nodes can be enabled/disabled
   individually with --skip-duplicate-nodes and --skip-bad-relationships.
+
+2.2.6
+-----
+Server:
+o Fixes #5258 - ClientError and TransientError make REST API transactions rollback
 
 2.2.5
 -----

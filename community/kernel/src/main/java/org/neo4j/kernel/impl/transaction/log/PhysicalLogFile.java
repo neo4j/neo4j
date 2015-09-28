@@ -115,8 +115,14 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     @Override
     public void shutdown() throws Throwable
     {
-        writer.close();
-        channel.close();
+        if ( writer != null )
+        {
+            writer.close();
+        }
+        if ( channel != null )
+        {
+            channel.close();
+        }
     }
 
     @Override

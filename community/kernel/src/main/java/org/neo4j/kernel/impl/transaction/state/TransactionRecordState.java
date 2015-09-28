@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -73,9 +74,11 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  */
 public class TransactionRecordState implements RecordState
 {
-    private final NeoStores neoStores;
     private final IntegrityValidator integrityValidator;
     private final NeoStoreTransactionContext context;
+    private final NodeStore nodeStore;
+    private final MetaDataStore metaDataStore;
+    private final SchemaStore schemaStore;
 
     private RecordChanges<Long,NeoStoreRecord, Void> neoStoreRecord;
     private long lastCommittedTxWhenTransactionStarted;
@@ -84,7 +87,9 @@ public class TransactionRecordState implements RecordState
     public TransactionRecordState( NeoStores neoStores, IntegrityValidator integrityValidator,
                          NeoStoreTransactionContext context )
     {
-        this.neoStores = neoStores;
+        this.nodeStore = neoStores.getNodeStore();
+        this.metaDataStore = neoStores.getMetaDataStore();
+        this.schemaStore = neoStores.getSchemaStore();
         this.integrityValidator = integrityValidator;
         this.context = context;
     }
@@ -240,16 +245,6 @@ public class TransactionRecordState implements RecordState
                 }
             }
         }
-    }
-
-    private NodeStore getNodeStore()
-    {
-        return neoStores.getNodeStore();
-    }
-
-    private SchemaStore getSchemaStore()
-    {
-        return neoStores.getSchemaStore();
     }
 
     /**
@@ -476,7 +471,7 @@ public class TransactionRecordState implements RecordState
                 @Override
                 public NeoStoreRecord load( Long key, Void additionalData )
                 {
-                    return neoStores.getMetaDataStore().asRecord();
+                    return metaDataStore.asRecord();
                 }
 
                 @Override
@@ -556,13 +551,13 @@ public class TransactionRecordState implements RecordState
     public void addLabelToNode( int labelId, long nodeId )
     {
         NodeRecord nodeRecord = context.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
-        parseLabelsField( nodeRecord ).add( labelId, getNodeStore(), getNodeStore().getDynamicLabelStore() );
+        parseLabelsField( nodeRecord ).add( labelId, nodeStore, nodeStore.getDynamicLabelStore() );
     }
 
     public void removeLabelFromNode( int labelId, long nodeId )
     {
         NodeRecord nodeRecord = context.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
-        parseLabelsField( nodeRecord ).remove( labelId, getNodeStore() );
+        parseLabelsField( nodeRecord ).remove( labelId, nodeStore );
     }
 
     public void setConstraintIndexOwner( IndexRule indexRule, long constraintId )
@@ -574,7 +569,7 @@ public class TransactionRecordState implements RecordState
         indexRule = indexRule.withOwningConstraint( constraintId );
 
         records.clear();
-        records.addAll( getSchemaStore().allocateFrom( indexRule ) );
+        records.addAll( schemaStore.allocateFrom( indexRule ) );
     }
 
     public interface PropertyReceiver

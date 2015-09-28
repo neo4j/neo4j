@@ -31,16 +31,17 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.EphemeralFileSystemRule;
 
-import static junit.framework.TestCase.fail;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import static org.neo4j.unsafe.impl.batchimport.input.BadCollectorTest.InputRelationshipBuilder.inputRelationship;
 
 public class BadCollectorTest
 {
     public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    
+
     @Test
     public void shouldCollectBadRelationshipsEvenIfThresholdNeverReached() throws IOException
     {
@@ -185,6 +186,22 @@ public class BadCollectorTest
         }
     }
 
+    @Test
+    public void shouldProvideNodeIdsSorted() throws Exception
+    {
+        // GIVEN
+        BadCollector badCollector = new BadCollector( badOutputFile(), 10, BadCollector.DUPLICATE_NODES );
+        badCollector.collectDuplicateNode( "a", 10, "group", "source1", "source2" );
+        badCollector.collectDuplicateNode( "b", 8, "group", "source1", "source2" );
+        badCollector.collectDuplicateNode( "c", 12, "group", "source1", "source2" );
+
+        // WHEN
+        long[] nodeIds = PrimitiveLongCollections.asArray( badCollector.leftOverDuplicateNodesIds() );
+
+        // THEN
+        assertArrayEquals( new long[] {8, 10, 12}, nodeIds );
+    }
+
     private OutputStream badOutputFile() throws IOException
     {
         File badDataPath = new File( "/tmp/foo2" ).getAbsoluteFile();
@@ -195,15 +212,15 @@ public class BadCollectorTest
 
     static class InputRelationshipBuilder
     {
-        private String sourceDescription = "foo";
-        private int lineNumber = 1;
-        private int position = 1;
-        private Object[] properties = new Object[]{};
-        private long firstPropertyId = -1l;
-        private Object startNode = null;
-        private Object endNode = null;
-        private String friend = "FRIEND";
-        private int typeId = 1;
+        private final String sourceDescription = "foo";
+        private final int lineNumber = 1;
+        private final int position = 1;
+        private final Object[] properties = new Object[]{};
+        private final long firstPropertyId = -1l;
+        private final Object startNode = null;
+        private final Object endNode = null;
+        private final String friend = "FRIEND";
+        private final int typeId = 1;
 
         public static InputRelationshipBuilder inputRelationship()
         {

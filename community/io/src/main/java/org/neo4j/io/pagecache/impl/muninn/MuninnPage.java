@@ -415,7 +415,6 @@ final class MuninnPage extends StampedLock implements Page
         if ( pointer == 0 )
         {
             pointer = memoryManager.allocateAligned( size() );
-            UnsafeUtil.setMemory( pointer, size(), MuninnPageCache.ZERO_BYTE );
         }
     }
 

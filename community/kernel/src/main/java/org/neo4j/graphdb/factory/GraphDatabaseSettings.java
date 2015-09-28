@@ -19,13 +19,13 @@
  */
 package org.neo4j.graphdb.factory;
 
+import org.apache.commons.lang3.SystemUtils;
+
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
 import java.util.List;
-
-import org.apache.commons.lang3.SystemUtils;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
@@ -42,10 +42,10 @@ import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
 import static org.neo4j.helpers.Settings.DEFAULT;
 import static org.neo4j.helpers.Settings.DOUBLE;
-import static org.neo4j.helpers.Settings.LONG;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Settings.LONG;
 import static org.neo4j.helpers.Settings.NO_DEFAULT;
 import static org.neo4j.helpers.Settings.PATH;
 import static org.neo4j.helpers.Settings.STRING;
@@ -68,8 +68,8 @@ public abstract class GraphDatabaseSettings
     private static final ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
 
     @Title("Read only database")
-    @Description("Only allow read operations from this Neo4j instance. "
-            + "This mode still requires write access to the directory for lock purposes.")
+    @Description("Only allow read operations from this Neo4j instance. " +
+                 "This mode still requires write access to the directory for lock purposes.")
     public static final Setting<Boolean> read_only = setting( "read_only", BOOLEAN, FALSE );
 
     @Deprecated

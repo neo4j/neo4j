@@ -54,6 +54,9 @@ angular.module('neo4jApp.controllers')
       $scope.toggleMessenger = () ->
         UsageDataCollectionService.toggleMessenger()
 
+      $scope.showMessenger = () ->
+        UsageDataCollectionService.showMessenger()
+        
       $scope.suggestionPlaceholder = 'I want to X, tried Y, suggest Z'
 
       $scope.newMessage = (suggestion) ->

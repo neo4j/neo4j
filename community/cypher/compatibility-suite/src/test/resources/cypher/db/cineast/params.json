@@ -1,9 +1,9 @@
 {
-  "user_csv" : "file:User.csv",
-  "person_csv" : "file:Person.csv",
-  "movie_csv" : "file:Movie.csv",
-  "acts_in_csv" : "file:ACTS_IN.csv",
-  "directed_csv" : "file:DIRECTED.csv",
-  "friend_csv" : "file:FRIEND.csv",
-  "rated_csv" : "file:RATED.csv"
+  "user_csv" : "file:///User.csv",
+  "person_csv" : "file:///Person.csv",
+  "movie_csv" : "file:///Movie.csv",
+  "acts_in_csv" : "file:///ACTS_IN.csv",
+  "directed_csv" : "file:///DIRECTED.csv",
+  "friend_csv" : "file:///FRIEND.csv",
+  "rated_csv" : "file:///RATED.csv"
 }

@@ -33,8 +33,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   val property: Expression = Property(ident("n"), PropertyKeyName("prop") _)_
 
   val existsPredicate: Expression = FunctionInvocation(FunctionName(functions.Exists.name) _, property)_
-  val likePredicate: Expression = Like(property, LikePattern(StringLiteral("%")_), caseInsensitive = false)_
-  val iLikePredicate: Expression = Like(property, LikePattern(StringLiteral("%")_), caseInsensitive = true)_
+  val startsWithPredicate: Expression = StartsWith(property, StringLiteral("")_)_
   val ltPredicate: Expression = LessThan(property, SignedDecimalIntegerLiteral("12")_)_
   val neqPredicate: Expression = NotEquals(property, SignedDecimalIntegerLiteral("12")_)_
   val eqPredicate: Expression = Equals(property, SignedDecimalIntegerLiteral("12")_)_
@@ -66,7 +65,6 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         case Seq(NodeIndexScan(`idName`, _, _, _)) =>  ()
       }
     }
-
   }
 
   test("unique index scan when there is an unique index on the property") {
@@ -129,10 +127,10 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     }
   }
 
-  test("plans index scans for: n.prop LIKE <pattern>") {
+  test("plans index scans for: n.prop STARTS WITH <pattern>") {
     new given {
       new given {
-        qg = queryGraph(likePredicate, hasLabels)
+        qg = queryGraph(startsWithPredicate, hasLabels)
         indexOn("Awesome", "prop")
       }.withLogicalPlanningContext { (cfg, ctx) =>
         // when
@@ -143,28 +141,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
             plan.solved should beLike {
               case PlannerQuery(scanQG, _, _) =>
-                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, likePredicate)))
-            }
-        }
-      }
-    }
-  }
-
-  test("plans index scans for: n.prop ILIKE <pattern>") {
-    new given {
-      new given {
-        qg = queryGraph(iLikePredicate, hasLabels)
-        indexOn("Awesome", "prop")
-      }.withLogicalPlanningContext { (cfg, ctx) =>
-        // when
-        val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
-
-        // then
-        resultPlans should beLike {
-          case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
-            plan.solved should beLike {
-              case PlannerQuery(scanQG, _, _) =>
-                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, likePredicate)))
+                scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, startsWithPredicate)))
             }
         }
       }

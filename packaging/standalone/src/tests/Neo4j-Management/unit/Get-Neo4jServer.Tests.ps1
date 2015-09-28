@@ -5,7 +5,7 @@ $common = Join-Path (Split-Path -Parent $here) 'Common.ps1'
 
 Import-Module "$src\Neo4j-Management.psm1"
 
-InModuleScope Neo4j-Management {
+InModuleScope Neo4j-Management {  
   Describe "Get-Neo4jServer" {
 
     Context "Missing Neo4j installation" {
@@ -35,130 +35,86 @@ InModuleScope Neo4j-Management {
     }
 
     Context "Invalid Neo4j Server detection" {
-      Mock Get-Neo4jHome { return  }
-      Mock Confirm-Neo4jHome { return $true }
-      Mock Confirm-Neo4jServerObject { return $false }
-      Mock Get-ChildItem { return } 
-      
-      It "throws an error if no default home" {
-         { Get-Neo4jServer -Neo4jHome 'TestDrive:\SomePath' -ErrorAction Stop } | Should Throw       
+      global:New-MockNeo4jInstall -RootDir 'TestDrive:\neo4j' -IncludeFiles:$false
+
+      It "throws an error if the home is not complete" {
+         { Get-Neo4jServer -Neo4jHome 'TestDrive:\neo4j' -ErrorAction Stop } | Should Throw       
       }
-      It "does not attempt to get the default home" {
-        Assert-MockCalled Get-Neo4jHome -Times 0
-      }
-      It "attempts to validate the home" {
-        Assert-MockCalled Confirm-Neo4jHome -Times 1
-      }    
-      It "attempts to validate the server details" {
-        Assert-MockCalled Confirm-Neo4jServerObject -Times 1
-      }    
     }
     
     Context "Pipes and aliases" {
+      global:New-MockNeo4jInstall -RootDir 'TestDrive:\neo4j'
       It "processes piped paths" {
-        Mock Get-Neo4jHome { return }
-        Mock Confirm-Neo4jHome { return $true }
-        Mock Confirm-Neo4jServerObject { return $true }
-        Mock Get-ChildItem { return }
-  
-        $neoServer = ( 'TestDrive:\SomePath' | Get-Neo4jServer )
+        $neoServer = ( 'TestDrive:\neo4j' | Get-Neo4jServer )
 
         ($neoServer -ne $null) | Should Be $true
       }
   
       It "uses the Home alias" {
-        Mock Get-Neo4jHome { return }
-        Mock Confirm-Neo4jHome { return $true }
-        Mock Confirm-Neo4jServerObject { return $true }
-        Mock Get-ChildItem { return }
-  
-        $neoServer = ( Get-Neo4jServer -Home 'TestDrive:\SomePath' )
+        $neoServer = ( Get-Neo4jServer -Home 'TestDrive:\neo4j' )
         
         ($neoServer -ne $null) | Should Be $true
       }
     }
     
     Context "Valid Enterprise Neo4j installation" {
-      Mock Get-Neo4jHome { return }
-      Mock Confirm-Neo4jHome { return $true }
-      Mock Confirm-Neo4jServerObject { return $true }
-      Mock Get-ChildItem { return (@{ 'Name' = 'neo4j-server-enterprise-99.99.jar'},@{ 'Name' = 'neo4j-server-99.99.jar'}) }
-      
-      $neoServer = Get-Neo4jServer -Neo4jHome 'TestDrive:\SomePath' -ErrorAction Stop
-  
-      It "does not attempt to get the default home" {
-        Assert-MockCalled Get-Neo4jHome -Times 0
-      }
-      It "attempts to validate the home" {
-        Assert-MockCalled Confirm-Neo4jHome -Times 1
-      }    
-      It "attempts to validate the server details" {
-        Assert-MockCalled Confirm-Neo4jServerObject -Times 1
-      }    
+      global:New-MockNeo4jInstall -RootDir 'TestDrive:\neo4j-ent' -ServerType 'Enterprise' -ServerVersion '99.99'
+
+      $neoServer = Get-Neo4jServer -Neo4jHome 'TestDrive:\neo4j-ent' -ErrorAction Stop
+
       It "detects an enterprise edition" {
          $neoServer.ServerType | Should Be "Enterprise"      
       }
       It "detects correct version" {
          $neoServer.ServerVersion | Should Be "99.99"      
       }
-      It "detects correct home path" {
-         $neoServer.Home | Should Be 'TestDrive:\SomePath'
-      }
     }
 
     Context "Valid Advanced Neo4j installation" {
-      Mock Get-Neo4jHome { return }
-      Mock Confirm-Neo4jHome { return $true }
-      Mock Confirm-Neo4jServerObject { return $true }
-      Mock Get-ChildItem { return (@{ 'Name' = 'neo4j-server-advanced-99.99.jar'},@{ 'Name' = 'neo4j-server-99.99.jar'}) }
-      
-      $neoServer = Get-Neo4jServer -Neo4jHome 'TestDrive:\SomePath' -ErrorAction Stop
+      global:New-MockNeo4jInstall -RootDir 'TestDrive:\neo4j-adv' -ServerType 'Advanced' -ServerVersion '99.99'
+     
+      $neoServer = Get-Neo4jServer -Neo4jHome 'TestDrive:\neo4j-adv' -ErrorAction Stop
   
-      It "does not attempt to get the default home" {
-        Assert-MockCalled Get-Neo4jHome -Times 0
-      }
-      It "attempts to validate the home" {
-        Assert-MockCalled Confirm-Neo4jHome -Times 1
-      }    
-      It "attempts to validate the server details" {
-        Assert-MockCalled Confirm-Neo4jServerObject -Times 1
-      }    
       It "detects an advanced edition" {
          $neoServer.ServerType | Should Be "Advanced"      
       }
       It "detects correct version" {
          $neoServer.ServerVersion | Should Be "99.99"      
       }
-      It "detects correct home path" {
-         $neoServer.Home | Should Be 'TestDrive:\SomePath'
-      }
     }
 
     Context "Valid Community Neo4j installation" {
-      Mock Get-Neo4jHome { return }
-      Mock Confirm-Neo4jHome { return $true }
-      Mock Confirm-Neo4jServerObject { return $true }
-      Mock Get-ChildItem { return @{ 'Name' = 'neo4j-server-99.99.jar'} }
-      
-      $neoServer = Get-Neo4jServer -Neo4jHome 'TestDrive:\SomePath' -ErrorAction Stop
+      global:New-MockNeo4jInstall -RootDir 'TestDrive:\neo4j-com' -ServerType 'Community' -ServerVersion '99.99'
+
+      $neoServer = Get-Neo4jServer -Neo4jHome 'TestDrive:\neo4j-com' -ErrorAction Stop
   
-      It "does not attempt to get the default home" {
-        Assert-MockCalled Get-Neo4jHome -Times 0
-      }
-      It "attempts to validate the home" {
-        Assert-MockCalled Confirm-Neo4jHome -Times 1
-      }    
-      It "attempts to validate the server details" {
-        Assert-MockCalled Confirm-Neo4jServerObject -Times 1
-      }    
       It "detects a community edition" {
          $neoServer.ServerType | Should Be "Community"      
       }
       It "detects correct version" {
          $neoServer.ServerVersion | Should Be "99.99"      
       }
-      It "detects correct home path" {
-         $neoServer.Home | Should Be 'TestDrive:\SomePath'
+    }
+
+    Context "Valid Community Neo4j installation with relative paths" {
+      global:New-MockNeo4jInstall -RootDir 'TestDrive:\neo4j' -ServerType 'Community' -ServerVersion '99.99'
+
+      # Get the absolute path
+      $Neo4jDir = (Get-Item 'TestDrive:\neo4j').FullName.TrimEnd('\')
+
+      It "detects correct home path using double dot" {
+         $neoServer = Get-Neo4jServer -Neo4jHome 'TestDrive:\neo4j\system\..' -ErrorAction Stop
+         $neoServer.Home | Should Be $Neo4jDir      
+      }
+
+      It "detects correct home path using single dot" {
+         $neoServer = Get-Neo4jServer -Neo4jHome 'TestDrive:\neo4j\.' -ErrorAction Stop
+         $neoServer.Home | Should Be $Neo4jDir      
+      }
+
+      It "detects correct home path ignoring trailing slash" {
+         $neoServer = Get-Neo4jServer -Neo4jHome 'TestDrive:\neo4j\' -ErrorAction Stop
+         $neoServer.Home | Should Be $Neo4jDir      
       }
     }
   }

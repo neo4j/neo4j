@@ -59,6 +59,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -307,9 +308,9 @@ public class EncodingIdMapperTest
         verify( monitor ).numberOfCollisions( 2 );
         assertEquals( 0L, mapper.get( "10", GLOBAL ) );
         assertEquals( 1L, mapper.get( "9", GLOBAL ) );
-        // 3 times since SORT+DETECT+RESOLVE
-        verify( progress, times( 4 ) ).started( anyString() );
-        verify( progress, times( 4 ) ).done();
+        // 7 times since SPLIT+SORT+DETECT+RESOLVE+SPLIT+SORT,DEDUPLICATE
+        verify( progress, times( 7 ) ).started( anyString() );
+        verify( progress, times( 7 ) ).done();
     }
 
     @Test
@@ -547,6 +548,38 @@ public class EncodingIdMapperTest
         {
             assertEquals( ((Long)id).longValue(), mapper.get( id, GLOBAL ) );
         }
+    }
+
+    @Test
+    public void shouldHandleLargeAmountsOfDuplicateNodeIds() throws Exception
+    {
+        // GIVEN
+        IdMapper mapper = mapper( new LongEncoder(), Radix.LONG, NO_MONITOR );
+        long nodeId = 0;
+        int high = 10;
+        // a list of input ids
+        List<Object> ids = new ArrayList<>();
+        for ( int run = 0; run < 2; run++ )
+        {
+            for ( long i = 0; i < high/2; i++ )
+            {
+                ids.add( (high-(i+1) ) );
+                ids.add( i );
+            }
+        }
+        // fed to the IdMapper
+        for ( Object inputId : ids )
+        {
+            mapper.put( inputId, nodeId++, GLOBAL );
+        }
+
+        // WHEN
+        Collector collector = mock( Collector.class );
+        mapper.prepare( SimpleInputIteratorWrapper.wrap( "source", ids ), collector, NONE );
+
+        // THEN
+        verify( collector, times( high ) ).collectDuplicateNode(
+                any( Object.class ), anyLong(), anyString(), anyString(), anyString() );
     }
 
     private List<Object> ids( Object... ids )

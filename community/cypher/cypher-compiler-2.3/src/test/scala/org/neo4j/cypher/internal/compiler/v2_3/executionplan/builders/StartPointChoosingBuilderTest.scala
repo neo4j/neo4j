@@ -271,11 +271,11 @@ class StartPointChoosingBuilderTest extends BuilderTest {
       def run() = {
         // Given
         val labelPredicate = HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label))
-        val like: ast.Like = ast.Like(ast.Property(ident("n"), ast.PropertyKeyName(property)_)_, ast.LikePattern(ast.StringLiteral("prefix%")_))_
-        val likePredicate = toCommandPredicate(like)
+        val startsWith: ast.StartsWith = ast.StartsWith(ast.Property(ident("n"), ast.PropertyKeyName(property)_)_, ast.StringLiteral("prefix")_)_
+        val startsWithPredicate = toCommandPredicate(startsWith)
 
         val query = newQuery(
-          where = Seq(labelPredicate, likePredicate),
+          where = Seq(labelPredicate, startsWithPredicate),
           patterns = Seq(SingleNode(identifier))
         )
 

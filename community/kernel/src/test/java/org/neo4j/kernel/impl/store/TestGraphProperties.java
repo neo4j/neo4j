@@ -57,7 +57,8 @@ import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 public class TestGraphProperties
 {
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private TestGraphDatabaseFactory factory;
 
     @Before
@@ -173,13 +174,8 @@ public class TestGraphProperties
         db.shutdown();
 
         Config config = new Config( Collections.<String, String>emptyMap(), GraphDatabaseSettings.class );
-        StoreFactory storeFactory = new StoreFactory(
-                storeDir,
-                config,
-                new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ),
-                fs.get(),
-                NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
         NeoStores neoStores = storeFactory.openNeoStores( false );
         long prop = neoStores.getMetaDataStore().getGraphNextProp();
         assertTrue( prop != 0 );

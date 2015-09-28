@@ -450,31 +450,31 @@ public class ImportTool
      */
     private static RuntimeException andPrintError( String typeOfError, Exception e, boolean stackTrace )
     {
+        // List of common errors that can be explained to the user
         if ( DuplicateInputIdException.class.equals( e.getClass() ) )
         {
-            System.err.println( "Duplicate input ids that would otherwise clash can be put into separate id space, " +
-                    "read more about how to use id spaces in the manual:" +
-                    manualReference( ManualPage.IMPORT_TOOL_FORMAT, Anchor.ID_SPACES ) );
+            printErrorMessage( "Duplicate input ids that would otherwise clash can be put into separate id space, " +
+                               "read more about how to use id spaces in the manual:" +
+                               manualReference( ManualPage.IMPORT_TOOL_FORMAT, Anchor.ID_SPACES ), e, stackTrace );
         }
         else if ( MissingRelationshipDataException.class.equals( e.getClass() ) )
         {
-            System.err.println( String.format( "Relationship missing mandatory field '%s', " +
-                                               "read more about relationship format in the manual: %s",
-                    ((MissingRelationshipDataException) e).getFieldType(),
-                    manualReference( ManualPage.IMPORT_TOOL_FORMAT, Anchor.RELATIONSHIP) ) );
+            printErrorMessage( "Relationship missing mandatory field '" +
+                               ((MissingRelationshipDataException) e).getFieldType() + "', read more about " +
+                               "relationship format in the manual: " +
+                               manualReference( ManualPage.IMPORT_TOOL_FORMAT, Anchor.RELATIONSHIP ), e, stackTrace );
         }
         else if ( IllegalMultilineFieldException.class.equals( e.getClass() ) )
         {
-            System.err.println( String.format("Detected field which spanned multiple lines for an import where " +
-                                   "%s=false. If you know that your input data include " +
-                                   "fields containing new-line characters then import with this option set to true.",
-                    Options.MULTILINE_FIELDS.argument() ) );
+            printErrorMessage( "Detected field which spanned multiple lines for an import where " +
+                               Options.MULTILINE_FIELDS.argument() + "=false. If you know that your input data " +
+                               "include fields containing new-line characters then import with this option set to " +
+                               "true.", e, stackTrace );
         }
-
-        System.err.println( typeOfError + ": " + e.getMessage() );
-        if ( stackTrace )
+        // Fallback to printing generic error and stack trace
+        else
         {
-            e.printStackTrace( System.err );
+            printErrorMessage( typeOfError + ": " + e.getMessage(), e, true );
         }
         System.err.println();
 
@@ -490,6 +490,15 @@ public class ImportTool
             }
         } );
         return launderedException( e ); // throw in order to have process exit with !0
+    }
+
+    private static void printErrorMessage( String string, Exception e, boolean stackTrace )
+    {
+        System.err.println( string );
+        if ( stackTrace )
+        {
+            e.printStackTrace( System.err );
+        }
     }
 
     private static Iterable<DataFactory<InputRelationship>>
@@ -525,9 +534,10 @@ public class ImportTool
     {
         out.println( "Neo4j Import Tool" );
         for ( String line : Args.splitLongLine( "neo4j-import is used to create a new Neo4j database "
-                + "from data in CSV files. "
-                + "See the chapter \"Import Tool\" in the Neo4j Manual for details on the CSV file format "
-                + "- a special kind of header is required.", 80 ) )
+                                                + "from data in CSV files. "
+                                                +
+                                                "See the chapter \"Import Tool\" in the Neo4j Manual for details on the CSV file format "
+                                                + "- a special kind of header is required.", 80 ) )
         {
             out.println( "\t" + line );
         }

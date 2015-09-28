@@ -5,6 +5,11 @@ o Added ability to skip duplicate nodes, i.e. multiple nodes with the same ID in
   using --bad-tolerance=<max bad entries>. Skipping of bad relationships/nodes can be enabled/disabled
   individually with --skip-duplicate-nodes and --skip-bad-relationships.
 
+2.2.6
+-----
+o Stacktraces are printed for any unexpected exception, even if --stacktrace isn't supplied.
+  --stacktrace can still be used to print stack trace for known exceptions.
+
 2.2.5
 -----
 o No longer ignores --multiline-field option

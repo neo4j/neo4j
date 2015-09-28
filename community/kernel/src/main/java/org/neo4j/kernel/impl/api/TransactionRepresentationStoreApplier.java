@@ -49,7 +49,7 @@ import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 public class TransactionRepresentationStoreApplier
 {
     private final NeoStores neoStores;
-    private final IndexingService indexingService;
+    protected final IndexingService indexingService;
     private final CacheAccessBackDoor cacheAccess;
     private final LockService lockService;
     private final Provider<LabelScanWriter> labelScanWriters;

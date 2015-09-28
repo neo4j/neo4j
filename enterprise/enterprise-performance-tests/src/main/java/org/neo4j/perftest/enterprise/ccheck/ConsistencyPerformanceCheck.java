@@ -139,16 +139,9 @@ public class ConsistencyPerformanceCheck
 
     private static DirectStoreAccess createScannableStores( File storeDir, Config tuningConfiguration )
     {
-        StoreFactory factory = new StoreFactory(
-                storeDir,
-                tuningConfiguration,
-                new DefaultIdGeneratorFactory( fileSystem ),
-                pageCache,
-                fileSystem,
-                NullLogProvider.getInstance() );
-
+        StoreFactory factory = new StoreFactory( storeDir, tuningConfiguration,
+                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, NullLogProvider.getInstance() );
         NeoStores neoStores = factory.openNeoStores( true );
-
         SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
                 fileSystem,
                 DirectoryFactory.PERSISTENT,
@@ -162,7 +155,6 @@ public class ConsistencyPerformanceCheck
         Map<String, String> passedOnConfiguration = passOn( configuration,
                 param( GraphDatabaseSettings.pagecache_memory, pagecache_memory ),
                 param( GraphDatabaseSettings.mapped_memory_page_size, mapped_memory_page_size ) );
-
         return new Config( passedOnConfiguration, GraphDatabaseSettings.class );
     }
 }

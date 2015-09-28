@@ -74,15 +74,10 @@ public enum NotificationCode
         Status.Statement.DeprecationWarning,
         "Using 'length' on anything that is not a path is deprecated, please use 'size' instead"
     ),
-    INDEX_SEEK_FOR_DYNAMIC_PROPERTY(
+    INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY(
         SeverityLevel.WARNING,
         Status.Statement.DynamicPropertyWarning,
-        "Using a dynamic property makes it impossible to use an index seek for this query"
-    ),
-    INDEX_SCAN_FOR_DYNAMIC_PROPERTY(
-        SeverityLevel.WARNING,
-        Status.Statement.DynamicPropertyWarning,
-        "Using a dynamic property makes it impossible to use an index scan for this query"
+        "Using a dynamic property makes it impossible to use an index lookup for this query"
     ),
     BARE_NODE_SYNTAX_DEPRECATED(
         SeverityLevel.WARNING,
@@ -120,6 +115,12 @@ public enum NotificationCode
             Status.Statement.PropertyNameMissingWarning,
             "One of the property names in your query is not available in the database, make sure you didn't " +
             "misspell it or that the label is available when you run this statement in your application"
+    ),
+    UNBOUNDED_SHORTEST_PATH(
+            SeverityLevel.WARNING,
+            Status.Statement.UnboundedPatternWarning,
+            "Using shortest path with an unbounded pattern will likely result in long execution times. " +
+            "It is recommended to use an upper limit to the number of node hops in your pattern."
     )
     ;
 

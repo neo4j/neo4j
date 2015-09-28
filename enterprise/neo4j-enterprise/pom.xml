@@ -56,6 +56,11 @@
       <artifactId>neo4j-ha</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-metrics</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
     <!-- For the tests specified by this package -->
     <dependency>

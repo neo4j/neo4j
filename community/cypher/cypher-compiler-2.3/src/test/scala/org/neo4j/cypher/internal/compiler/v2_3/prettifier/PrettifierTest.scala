@@ -45,6 +45,18 @@ class PrettifierTest extends CypherFunSuite {
     )
   }
 
+  test("should not break STARTS WITH ") {
+    actual("return 'apartment' starts with 'apa' as x") should equal(
+      expected("RETURN 'apartment' STARTS WITH 'apa' AS x")
+    )
+  }
+
+  test("should not break ENDS WITH ") {
+    actual("return 'apartment' ends with 'apa' as x") should equal(
+      expected("RETURN 'apartment' ENDS WITH 'apa' AS x")
+    )
+  }
+
   test("should not break CONSTRAINT ON") {
     actual("create constraint on (person:Person) assert person.age is unique") should equal(
       expected("CREATE CONSTRAINT ON (person:Person) ASSERT person.age IS UNIQUE")
@@ -110,6 +122,12 @@ class PrettifierTest extends CypherFunSuite {
   test("should prettify and break LOAD CSV") {
     actual("MATCH (n) LOAD CSV FROM \"f\" AS line return (n)") should equal(
       expected("MATCH (n)%nLOAD CSV FROM \"f\" AS line%nRETURN (n)")
+    )
+  }
+
+  test("should not break after DETACH in DETACH DELETE") {
+    actual("MATCH (n) DETACH DELETE (n)") should equal(
+      expected("MATCH (n)%nDETACH DELETE (n)")
     )
   }
 

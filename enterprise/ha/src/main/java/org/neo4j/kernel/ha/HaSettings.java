@@ -69,7 +69,8 @@ public class HaSettings
             options( BranchedDataPolicy.class ), "keep_all" );
 
     @Description( "Enable public access to the HA status endpoints." )
-    public static final Setting<Boolean> ha_status_auth_enabled = setting( "dbms.security.ha_status_auth_enabled", BOOLEAN, Settings.TRUE );
+    public static final Setting<Boolean> ha_status_auth_enabled =
+            setting( "dbms.security.ha_status_auth_enabled", BOOLEAN, Settings.TRUE );
 
     @Description( "Max size of the data chunks that flows between master and slaves in HA. Bigger size may increase " +
             "throughput, but may also be more sensitive to variations in bandwidth, whereas lower size increases tolerance" +
@@ -86,6 +87,10 @@ public class HaSettings
     @Description( "Push strategy of a transaction to a slave during commit." )
     public static final Setting<TxPushStrategy> tx_push_strategy = setting( "ha.tx_push_strategy", options(
             TxPushStrategy.class ), "fixed" );
+
+    @Description( "Size of batches of transactions applied on slaves when pulling from master" )
+    public static final Setting<Integer> pull_apply_batch_size = setting( "ha.pull_apply_batch_size",
+            INTEGER, "100" );
 
     public enum TxPushStrategy
     {

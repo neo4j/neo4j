@@ -46,7 +46,7 @@ class StartPointBuilderTest extends BuilderTest {
   }
 
   test("plans index seek by prefix") {
-    val range = PrefixSeekRangeExpression(PrefixRange("prefix"))
+    val range = PrefixSeekRangeExpression(PrefixRange(Literal("prefix")))
     val labelName = "Label"
     val propertyName = "prop"
     val q = PartiallySolvedQuery().
@@ -57,7 +57,7 @@ class StartPointBuilderTest extends BuilderTest {
   }
 
   test("plans unique index seek by prefix") {
-    val range = PrefixSeekRangeExpression(PrefixRange("prefix"))
+    val range = PrefixSeekRangeExpression(PrefixRange(Literal("prefix")))
     val labelName = "Label"
     val propertyName = "prop"
     val q = PartiallySolvedQuery().

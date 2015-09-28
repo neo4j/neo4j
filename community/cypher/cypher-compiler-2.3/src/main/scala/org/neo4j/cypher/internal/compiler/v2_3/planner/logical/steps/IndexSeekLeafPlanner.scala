@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
-import org.neo4j.cypher.internal.frontend.v2_3.notification.IndexSeekUnfulfillableNotification
+import org.neo4j.cypher.internal.frontend.v2_3.notification.IndexLookupUnfulfillableNotification
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 
@@ -60,7 +60,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
         if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
         producePlanFor(seekable.name, seekable.propertyKey, predicate, seekable.args.asQueryExpression)
 
-      // n.prop LIKE "prefix%..."
+      // n.prop STARTS WITH "prefix%..."
       case predicate@AsStringRangeSeekable(seekable) =>
         producePlanFor(seekable.name, seekable.propertyKey, PartialPredicate(seekable.expr, predicate), seekable.asQueryExpression)
 
@@ -70,7 +70,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
     }.flatten
 
     if (resultPlans.isEmpty) {
-      DynamicPropertyNotifier.process(findNonSeekableIdentifiers(predicates), IndexSeekUnfulfillableNotification, qg)
+      DynamicPropertyNotifier.process(findNonSeekableIdentifiers(predicates), IndexLookupUnfulfillableNotification, qg)
     }
 
     resultPlans
@@ -82,7 +82,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
       case predicate@AsDynamicPropertyNonSeekable(nonSeekableId)
         if context.semanticTable.isNode(nonSeekableId) => Some(nonSeekableId)
 
-      // n['some' + n.prop] LIKE "prefix%..."
+      // n['some' + n.prop] STARTS WITH "prefix%..."
       case predicate@AsStringRangeNonSeekable(nonSeekableId)
         if context.semanticTable.isNode(nonSeekableId) => Some(nonSeekableId)
 

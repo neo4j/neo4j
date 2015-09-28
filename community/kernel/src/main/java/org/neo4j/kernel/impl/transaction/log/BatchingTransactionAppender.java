@@ -204,6 +204,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         private final long transactionChecksum;
         private final LogPosition logPosition;
         private final TransactionIdStore transactionIdStore;
+        private boolean markedAsCommitted;
 
         TransactionCommitment( boolean hasLegacyIndexChanges, long transactionId, long transactionChecksum,
                 LogPosition logPosition, TransactionIdStore transactionIdStore )
@@ -218,6 +219,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         @Override
         public void publishAsCommitted()
         {
+            markedAsCommitted = true;
             transactionIdStore.transactionCommitted( transactionId, transactionChecksum );
         }
 
@@ -232,6 +234,12 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         public long transactionId()
         {
             return transactionId;
+        }
+
+        @Override
+        public boolean markedAsCommitted()
+        {
+            return markedAsCommitted;
         }
     }
 

@@ -56,20 +56,18 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
-import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.LifecycleException;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.equalTo;
@@ -93,6 +91,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+
+import static java.util.Arrays.asList;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.setOf;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
@@ -101,12 +102,12 @@ import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
-import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.RECOVERY;
+import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.BATCHED;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_ALL;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.kernel.impl.store.record.IndexRule.constraintIndexRule;
 import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.test.AwaitAnswer.afterAwaiting;
 
@@ -138,7 +139,7 @@ public class IndexingServiceTest
 
         // when
         indexingService.createIndex( indexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
-        IndexProxy proxy = indexingService.getIndexProxy( (long) 0 );
+        IndexProxy proxy = indexingService.getIndexProxy( 0 );
 
         verify( populator, timeout( 1000 ) ).close( true );
 
@@ -190,7 +191,7 @@ public class IndexingServiceTest
 
         // when
         indexingService.createIndex( indexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
-        IndexProxy proxy = indexingService.getIndexProxy( (long) 0 );
+        IndexProxy proxy = indexingService.getIndexProxy( 0 );
         assertEquals( InternalIndexState.POPULATING, proxy.getState() );
 
         NodePropertyUpdate value2 = add( 2, "value2" );
@@ -237,7 +238,7 @@ public class IndexingServiceTest
 
         // when
         indexingService.createIndex( constraintIndexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR, null ) );
-        IndexProxy proxy = indexingService.getIndexProxy( (long) 0 );
+        IndexProxy proxy = indexingService.getIndexProxy( 0 );
 
         verify( populator, timeout( 1000 ) ).close( true );
 
@@ -266,7 +267,7 @@ public class IndexingServiceTest
 
         // when
         indexingService.createIndex( constraintIndexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR, null ) );
-        IndexProxy proxy = indexingService.getIndexProxy( (long) 0 );
+        IndexProxy proxy = indexingService.getIndexProxy( 0 );
 
         indexingService.activateIndex( 0 );
 
@@ -498,7 +499,7 @@ public class IndexingServiceTest
     public void recordingOfRecoveredNodesShouldThrowIfServiceIsStarted() throws Exception
     {
         // Given
-        PrimitiveLongSet recoveredNodeIds = setOf( 1 );
+        long recoveredNodeId = 1;
 
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
         life.start();
@@ -506,7 +507,7 @@ public class IndexingServiceTest
         try
         {
             // When
-            indexingService.addRecoveredNodeIds( recoveredNodeIds );
+            indexingService.visited( recoveredNodeId );
             fail( "Should have thrown " + IllegalStateException.class.getSimpleName() );
         }
         catch ( IllegalStateException e )
@@ -525,7 +526,7 @@ public class IndexingServiceTest
         try
         {
             // When
-            indexingService.validate( asSet( add( 1, "foo" ) ) );
+            indexingService.validate( asSet( add( 1, "foo" ) ), IndexUpdateMode.ONLINE );
             fail( "Should have thrown " + IllegalStateException.class.getSimpleName() );
         }
         catch ( IllegalStateException e )
@@ -546,7 +547,7 @@ public class IndexingServiceTest
         try
         {
             // When
-            indexingService.validate( asSet( add( 1, "foo" ) ) );
+            indexingService.validate( asSet( add( 1, "foo" ) ), IndexUpdateMode.ONLINE );
             fail( "Should have thrown " + IllegalStateException.class.getSimpleName() );
         }
         catch ( IllegalStateException e )
@@ -568,7 +569,8 @@ public class IndexingServiceTest
         verify( populator, timeout( 1000 ) ).close( true );
 
         // When
-        try ( ValidatedIndexUpdates updates = indexing.validate( asList( add( 1, "foo" ), add( 2, "bar" ) ) ) )
+        try ( ValidatedIndexUpdates updates = indexing.validate( asList( add( 1, "foo" ), add( 2, "bar" ) ),
+                IndexUpdateMode.ONLINE ) )
         {
             updates.flush();
         }
@@ -598,7 +600,8 @@ public class IndexingServiceTest
         verify( populator, timeout( 1000 ) ).close( true );
 
         // When
-        try ( ValidatedIndexUpdates updates = indexing.validate( asList( add( 1, "1" ), add( 2, "2" ) ) ) )
+        try ( ValidatedIndexUpdates updates = indexing.validate( asList( add( 1, "1" ), add( 2, "2" ) ),
+                IndexUpdateMode.ONLINE ) )
         {
             verifyZeroInteractions( reservation );
             updates.flush();
@@ -644,7 +647,7 @@ public class IndexingServiceTest
         // When
         try ( ValidatedIndexUpdates updates = indexing.validate( asList(
                 NodePropertyUpdate.add( 1, propertyKeyId, "foo", new long[]{labelId1} ),
-                NodePropertyUpdate.add( 2, propertyKeyId, "bar", new long[]{labelId2} ) ) ) )
+                NodePropertyUpdate.add( 2, propertyKeyId, "bar", new long[]{labelId2} ) ), IndexUpdateMode.ONLINE ) )
         {
             updates.flush();
         }
@@ -696,7 +699,7 @@ public class IndexingServiceTest
         when( storeView.nodeAsUpdates( nodeId2 ) ).thenReturn( asSet( nodeUpdate2 ) );
 
         // When
-        indexing.addRecoveredNodeIds( nodeIds );
+        nodeIds.visitKeys( indexing );
         life.start();
 
         // Then
@@ -732,7 +735,7 @@ public class IndexingServiceTest
         IndexRule otherIndex = indexRule( otherIndexId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
         indexing.createIndex( otherIndex );
         indexing.dropIndex( otherIndex );
-        indexing.addRecoveredNodeIds( setOf( nodeId ) );
+        indexing.visited( nodeId );
         // and WHEN finally creating our index again (at a later point in recovery)
         indexing.createIndex( index );
         reset( accessor );
@@ -741,7 +744,7 @@ public class IndexingServiceTest
 
         // THEN our index should still have been recovered properly
         // apparently we create updaters two times during recovery, get over it
-        verify( accessor, times( 2 ) ).newUpdater( RECOVERY );
+        verify( accessor, times( 2 ) ).newUpdater( BATCHED );
     }
 
     private Answer<Void> waitForLatch( final CountDownLatch latch )
@@ -795,12 +798,11 @@ public class IndexingServiceTest
                 any( IndexSamplingConfig.class ) ) ).thenReturn( populator );
         data.getsProcessedByStoreScanFrom( storeView );
         when( indexProvider.getOnlineAccessor(
-                        anyLong(), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) )
-        ).thenReturn( accessor );
+                        anyLong(), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) ) )
+                .thenReturn( accessor );
         when( indexProvider.snapshotMetaFiles() ).thenReturn( IteratorUtil.<File>emptyIterator() );
-        when( indexProvider.storeMigrationParticipant(
-                any( FileSystemAbstraction.class ), any( PageCache.class ), any( UpgradableDatabase.class ))
-        ).thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
+        when( indexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ) ) )
+                .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
 
         when( nameLookup.labelGetName( anyInt() ) ).thenAnswer( new NameLookupAnswer( "label" ) );
         when( nameLookup.propertyKeyGetName( anyInt() ) ).thenAnswer( new NameLookupAnswer( "property" ) );
@@ -899,10 +901,10 @@ public class IndexingServiceTest
 
     private static class TrackingIndexAccessor implements IndexAccessor
     {
-        private IndexUpdater updater = mock( IndexUpdater.class );
+        private final IndexUpdater updater = mock( IndexUpdater.class );
 
         @Override
-        public void drop() throws IOException
+        public void drop()
         {
             throw new UnsupportedOperationException( "Not required" );
         }
@@ -914,12 +916,17 @@ public class IndexingServiceTest
         }
 
         @Override
-        public void force() throws IOException
+        public void force()
         {
         }
 
         @Override
-        public void close() throws IOException
+        public void flush()
+        {
+        }
+
+        @Override
+        public void close()
         {
         }
 
@@ -936,7 +943,7 @@ public class IndexingServiceTest
         }
 
         @Override
-        public ResourceIterator<File> snapshotFiles() throws IOException
+        public ResourceIterator<File> snapshotFiles()
         {
             throw new UnsupportedOperationException( "Not required" );
         }

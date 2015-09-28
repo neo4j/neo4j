@@ -29,7 +29,8 @@ package org.neo4j.unsafe.impl.internal.dragons;
  */
 public final class MemoryManager
 {
-    private static final long GRAB_SIZE = 32 * 1024 * 1024; // 32 MiB
+    private static final long GRAB_SIZE = Integer.getInteger(
+            MemoryManager.class.getName() + ".GRAB_SIZE", 32 * 1024 * 1024 ); // 32 MiB
 
     /**
      * The amount of memory that this memory manager can still allocate.

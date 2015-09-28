@@ -73,7 +73,6 @@ import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState.PropertyReceiver;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.NeoStoreDataSourceRule;
@@ -113,20 +112,15 @@ public class NeoStoreTest
         storeDir = dir.graphDbDir();
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
         pageCache = pageCacheRule.getPageCache( fs.get() );
-        StoreFactory sf = new StoreFactory(
-                storeDir,
-                config,
-                new DefaultIdGeneratorFactory( fs.get() ),
-                pageCache,
-                fs.get(),
-                NullLogProvider.getInstance() );
+        StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
+                fs.get(), NullLogProvider.getInstance() );
         sf.openNeoStores( true ).close();
     }
 
     private static class MyPropertyKeyToken extends Token
     {
-        private static Map<String, Token> stringToIndex = new HashMap<>();
-        private static Map<Integer, Token> intToIndex = new HashMap<>();
+        private static Map<String,Token> stringToIndex = new HashMap<>();
+        private static Map<Integer,Token> intToIndex = new HashMap<>();
 
         protected MyPropertyKeyToken( String key, int keyId )
         {
@@ -161,7 +155,7 @@ public class NeoStoreTest
         return index;
     }
 
-    private void initializeStores( File storeDir, Map<String, String> additionalConfig ) throws IOException
+    private void initializeStores( File storeDir, Map<String,String> additionalConfig ) throws IOException
     {
         ds = dsRule.getDataSource( storeDir, fs.get(), pageCache, additionalConfig );
         ds.init();
@@ -184,7 +178,7 @@ public class NeoStoreTest
     {
         txCount++;
         tx = ds.getKernel().newTransaction();
-        transaction = (( KernelTransactionImplementation)tx).getTransactionRecordState();
+        transaction = ((KernelTransactionImplementation) tx).getTransactionRecordState();
     }
 
     private void commitTx() throws TransactionFailureException
@@ -196,7 +190,7 @@ public class NeoStoreTest
     @After
     public void tearDownNeoStores()
     {
-        for ( String file : new String[] {
+        for ( String file : new String[]{
                 "neo",
                 "neo.nodestore.db",
                 "neo.nodestore.db.labels",
@@ -370,7 +364,7 @@ public class NeoStoreTest
             final int relType1, final int relType2 ) throws IOException, EntityNotFoundException
     {
         assertTrue( nodeExists( node ) );
-        ArrayMap<Integer, Pair<DefinedProperty,Long>> props = new ArrayMap<>();
+        ArrayMap<Integer,Pair<DefinedProperty,Long>> props = new ArrayMap<>();
         PropertyReceiver receiver = newPropertyReceiver( props );
         propertyLoader.nodeLoadProperties( node, receiver );
         int count = 0;
@@ -412,7 +406,7 @@ public class NeoStoreTest
 
         try ( Cursor<NodeItem> nodeCursor = ((KernelStatement) tx.acquireStatement()).getStoreStatement()
                 .acquireSingleNodeCursor(
-                node ) )
+                        node ) )
         {
             nodeCursor.next();
 
@@ -443,7 +437,7 @@ public class NeoStoreTest
         assertEquals( 2, count );
     }
 
-    private PropertyReceiver newPropertyReceiver( final ArrayMap<Integer, Pair<DefinedProperty, Long>> props )
+    private PropertyReceiver newPropertyReceiver( final ArrayMap<Integer,Pair<DefinedProperty,Long>> props )
     {
         return new PropertyReceiver()
         {
@@ -458,10 +452,10 @@ public class NeoStoreTest
     private void validateNodeRel2( final long node, DefinedProperty prop1,
             DefinedProperty prop2, DefinedProperty prop3,
             long rel1, long rel2, final int relType1, final int relType2 )
-                    throws IOException, EntityNotFoundException, RuntimeException
+            throws IOException, EntityNotFoundException, RuntimeException
     {
         assertTrue( nodeExists( node ) );
-        ArrayMap<Integer, Pair<DefinedProperty,Long>> props = new ArrayMap<>();
+        ArrayMap<Integer,Pair<DefinedProperty,Long>> props = new ArrayMap<>();
         propertyLoader.nodeLoadProperties( node, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -500,8 +494,9 @@ public class NeoStoreTest
         assertEquals( 3, count );
         count = 0;
 
-        try ( Cursor<NodeItem> nodeCursor = ((KernelStatement) tx.acquireStatement()).getStoreStatement().acquireSingleNodeCursor(
-                node ) )
+        try ( Cursor<NodeItem> nodeCursor = ((KernelStatement) tx.acquireStatement()).getStoreStatement()
+                .acquireSingleNodeCursor(
+                        node ) )
         {
             nodeCursor.next();
 
@@ -534,7 +529,7 @@ public class NeoStoreTest
 
     private boolean nodeExists( long nodeId )
     {
-        try (StoreStatement statement = storeLayer.acquireStatement())
+        try ( StoreStatement statement = storeLayer.acquireStatement() )
         {
             try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( nodeId ) )
             {
@@ -547,7 +542,7 @@ public class NeoStoreTest
             DefinedProperty prop2, DefinedProperty prop3, long firstNode, long secondNode,
             int relType ) throws IOException
     {
-        ArrayMap<Integer, Pair<DefinedProperty,Long>> props = new ArrayMap<>();
+        ArrayMap<Integer,Pair<DefinedProperty,Long>> props = new ArrayMap<>();
         propertyLoader.relLoadProperties( rel, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -613,7 +608,7 @@ public class NeoStoreTest
             DefinedProperty prop2, DefinedProperty prop3,
             long firstNode, long secondNode, int relType ) throws IOException
     {
-        ArrayMap<Integer, Pair<DefinedProperty,Long>> props = new ArrayMap<>();
+        ArrayMap<Integer,Pair<DefinedProperty,Long>> props = new ArrayMap<>();
         propertyLoader.relLoadProperties( rel, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -685,9 +680,9 @@ public class NeoStoreTest
 
     private void deleteRel1( long rel, DefinedProperty prop1, DefinedProperty prop2,
             DefinedProperty prop3, long firstNode, long secondNode, int relType )
-                    throws IOException, EntityNotFoundException
+            throws IOException, EntityNotFoundException
     {
-        ArrayMap<Integer, Pair<DefinedProperty,Long>> props = new ArrayMap<>();
+        ArrayMap<Integer,Pair<DefinedProperty,Long>> props = new ArrayMap<>();
         propertyLoader.relLoadProperties( rel, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -725,7 +720,7 @@ public class NeoStoreTest
         CountingPropertyReceiver propertyCounter = new CountingPropertyReceiver();
         propertyLoader.relLoadProperties( rel, propertyCounter );
         assertEquals( 3, propertyCounter.count );
-        assertRelationshipData( rel, firstNode, secondNode, relType );;
+        assertRelationshipData( rel, firstNode, secondNode, relType );
         transaction.relDelete( rel );
 
         assertHasRelationships( firstNode );
@@ -746,9 +741,9 @@ public class NeoStoreTest
 
     private void deleteRel2( long rel, DefinedProperty prop1, DefinedProperty prop2,
             DefinedProperty prop3, long firstNode, long secondNode, int relType )
-                    throws IOException, EntityNotFoundException
+            throws IOException, EntityNotFoundException
     {
-        ArrayMap<Integer, Pair<DefinedProperty,Long>> props = new ArrayMap<>();
+        ArrayMap<Integer,Pair<DefinedProperty,Long>> props = new ArrayMap<>();
         propertyLoader.relLoadProperties( rel, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -800,7 +795,7 @@ public class NeoStoreTest
         try ( Cursor<NodeItem> nodeCursor = ((KernelStatement) tx.acquireStatement()).getStoreStatement()
                 .acquireSingleNodeCursor(
 
-                node ) )
+                        node ) )
         {
             nodeCursor.next();
             PrimitiveLongIterator rels = nodeCursor.get().getRelationships( Direction.BOTH );
@@ -812,7 +807,7 @@ public class NeoStoreTest
             DefinedProperty prop2, DefinedProperty prop3 )
             throws IOException, EntityNotFoundException
     {
-        ArrayMap<Integer, Pair<DefinedProperty,Long>> props = new ArrayMap<>();
+        ArrayMap<Integer,Pair<DefinedProperty,Long>> props = new ArrayMap<>();
         propertyLoader.nodeLoadProperties( node, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -858,7 +853,7 @@ public class NeoStoreTest
             DefinedProperty prop2, DefinedProperty prop3 )
             throws IOException, EntityNotFoundException
     {
-        ArrayMap<Integer, Pair<DefinedProperty,Long>> props = new ArrayMap<>();
+        ArrayMap<Integer,Pair<DefinedProperty,Long>> props = new ArrayMap<>();
         propertyLoader.nodeLoadProperties( node, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -904,7 +899,7 @@ public class NeoStoreTest
 
     private void testGetRels( long relIds[] )
     {
-        try (StoreStatement statement = storeLayer.acquireStatement())
+        try ( StoreStatement statement = storeLayer.acquireStatement() )
         {
             for ( long relId : relIds )
             {
@@ -943,7 +938,7 @@ public class NeoStoreTest
         {
             try ( Cursor<NodeItem> nodeCursor = ((KernelStatement) tx.acquireStatement()).getStoreStatement()
                     .acquireSingleNodeCursor(
-                    nodeIds[i] ) )
+                            nodeIds[i] ) )
             {
                 nodeCursor.next();
                 PrimitiveLongIterator relationships = nodeCursor.get().getRelationships( Direction.BOTH );
@@ -989,7 +984,7 @@ public class NeoStoreTest
         {
             try ( Cursor<NodeItem> nodeCursor = ((KernelStatement) tx.acquireStatement()).getStoreStatement()
                     .acquireSingleNodeCursor(
-                    nodeIds[i] ) )
+                            nodeIds[i] ) )
             {
                 nodeCursor.next();
                 PrimitiveLongIterator relationships = nodeCursor.get().getRelationships( Direction.BOTH );
@@ -1089,22 +1084,16 @@ public class NeoStoreTest
     public void setVersion() throws Exception
     {
         FileSystemAbstraction fileSystem = fs.get();
-        File storeDir = new File("target/test-data/set-version").getAbsoluteFile();
+        File storeDir = new File( "target/test-data/set-version" ).getAbsoluteFile();
         new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();
         assertEquals( 0, MetaDataStore.setRecord( pageCache, new File( storeDir,
                 MetaDataStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, (long) 10 ) );
         assertEquals( 10, MetaDataStore.setRecord( pageCache, new File( storeDir,
                 MetaDataStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, (long) 12 ) );
 
-        Monitors monitors = new Monitors();
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
-        StoreFactory sf = new StoreFactory(
-                storeDir,
-                config,
-                new DefaultIdGeneratorFactory( fileSystem ),
-                pageCache,
-                fileSystem,
-                NullLogProvider.getInstance() );
+        StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
+                fileSystem, NullLogProvider.getInstance() );
 
         NeoStores neoStores = sf.openNeoStores( false );
         assertEquals( 12, neoStores.getMetaDataStore().getCurrentLogVersion() );
@@ -1116,8 +1105,7 @@ public class NeoStoreTest
     {
         FileSystemAbstraction fileSystem = fs.get();
         File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
-        StoreFactory factory =
-                new StoreFactory( fileSystem, neoStoreDir, pageCache, NullLogProvider.getInstance() );
+        StoreFactory factory = new StoreFactory( fileSystem, neoStoreDir, pageCache, NullLogProvider.getInstance() );
 
         try ( NeoStores neoStores = factory.openNeoStores( true ) )
         {
@@ -1156,13 +1144,8 @@ public class NeoStoreTest
     {
         // given
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
-        StoreFactory sf = new StoreFactory(
-                dir.directory(),
-                config,
-                new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ),
-                fs.get(),
-                NullLogProvider.getInstance() );
+        StoreFactory sf = new StoreFactory( dir.directory(), config, new DefaultIdGeneratorFactory( fs.get() ),
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
 
         // when
         NeoStores neoStores = sf.openNeoStores( true );
@@ -1190,8 +1173,8 @@ public class NeoStoreTest
     @Test
     public void shouldInitializeTheTxIdToOne()
     {
-        StoreFactory factory = new StoreFactory(
-                fs.get(), new File( "graph.db/neostore" ), pageCache, NullLogProvider.getInstance() );
+        StoreFactory factory =
+                new StoreFactory( fs.get(), new File( "graph.db/neostore" ), pageCache, NullLogProvider.getInstance() );
 
         try ( NeoStores neoStores = factory.openNeoStores( true ) )
         {
@@ -1210,8 +1193,7 @@ public class NeoStoreTest
     {
         FileSystemAbstraction fileSystem = fs.get();
         File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
-        StoreFactory factory =
-                new StoreFactory( fileSystem, neoStoreDir, pageCache, NullLogProvider.getInstance() );
+        StoreFactory factory = new StoreFactory( fileSystem, neoStoreDir, pageCache, NullLogProvider.getInstance() );
 
         try ( NeoStores neoStores = factory.openNeoStores( true ) )
         {
@@ -1232,9 +1214,7 @@ public class NeoStoreTest
     {
         FileSystemAbstraction fileSystem = fs.get();
         File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
-        StoreFactory factory = new StoreFactory(
-                fileSystem, neoStoreDir, pageCache, NullLogProvider.getInstance() );
-        String typeDescriptor;
+        StoreFactory factory = new StoreFactory( fileSystem, neoStoreDir, pageCache, NullLogProvider.getInstance() );
 
         try ( NeoStores neoStores = factory.openNeoStores( true ) )
         {
@@ -1246,17 +1226,9 @@ public class NeoStoreTest
             metaDataStore.setStoreVersion( (long) 7 );
             metaDataStore.setGraphNextProp( (long) 8 );
             metaDataStore.setLatestConstraintIntroducingTx( (long) 9 );
-            typeDescriptor = metaDataStore.getTypeDescriptor();
         }
 
         File file = new File( neoStoreDir, MetaDataStore.DEFAULT_NAME );
-        try ( StoreChannel channel = fileSystem.open( file, "rw" ) )
-        {
-            byte[] trailer = UTF8.encode( CommonAbstractStore.buildTypeDescriptorAndVersion( typeDescriptor ) );
-            channel.truncate( channel.size() - 2 * MetaDataStore.RECORD_SIZE );
-            channel.position( channel.size() - trailer.length );
-            channel.write( ByteBuffer.wrap( trailer ) );
-        }
 
         assertNotEquals( 10, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_ID ) );
         assertNotEquals( 11, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM ) );

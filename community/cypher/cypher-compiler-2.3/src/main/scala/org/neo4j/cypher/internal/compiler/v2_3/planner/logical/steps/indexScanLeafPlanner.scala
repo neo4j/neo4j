@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LeafPlanner, LogicalPlanningContext}
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
-import org.neo4j.cypher.internal.frontend.v2_3.notification.IndexScanUnfulfillableNotification
+import org.neo4j.cypher.internal.frontend.v2_3.notification.IndexLookupUnfulfillableNotification
 
 object indexScanLeafPlanner extends LeafPlanner {
   override def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
@@ -55,7 +55,7 @@ object indexScanLeafPlanner extends LeafPlanner {
     }.flatten
 
     if (resultPlans.isEmpty) {
-      DynamicPropertyNotifier.process(findNonScannableIdentifiers(predicates), IndexScanUnfulfillableNotification, qg)
+      DynamicPropertyNotifier.process(findNonScannableIdentifiers(predicates), IndexLookupUnfulfillableNotification, qg)
     }
 
     resultPlans
@@ -63,9 +63,12 @@ object indexScanLeafPlanner extends LeafPlanner {
 
   private def findNonScannableIdentifiers(predicates: Seq[Expression])(implicit context: LogicalPlanningContext) =
     predicates.flatMap {
-      case predicate@AsDynamicPropertyNonScannable(nonScannableId)
-        if context.semanticTable.isNode(nonScannableId) => Some(nonScannableId)
-      case _ => None
+      case predicate@AsDynamicPropertyNonScannable(nonScannableId) if context.semanticTable.isNode(nonScannableId) =>
+        Some(nonScannableId)
+      case predicate@AsStringRangeNonSeekable(nonScannableId) if context.semanticTable.isNode(nonScannableId) =>
+        Some(nonScannableId)
+      case _ =>
+        None
     }.toSet
 
   private def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext) =

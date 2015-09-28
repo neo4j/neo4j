@@ -172,7 +172,8 @@ public interface Status
         IndexMissingWarning( ClientNotification, "Adding a schema index may speed up this query." ),
         LabelMissingWarning( ClientNotification, "The provided label is not in the database." ),
         RelTypeMissingWarning( ClientNotification, "The provided relationship type is not in the database." ),
-        PropertyNameMissingWarning( ClientNotification, "The provided property name is not in the database" );
+        PropertyNameMissingWarning( ClientNotification, "The provided property name is not in the database" ),
+        UnboundedPatternWarning( ClientNotification, "The provided pattern is unbounded, consider adding an upper limit to the number of node hops."  );
 
         private final Code code;
 
@@ -415,7 +416,7 @@ public interface Status
     enum Classification
     {
         /** The Client sent a bad request - changing the request might yield a successful outcome. */
-        ClientError( TransactionEffect.NONE, PublishingPolicy.PUBLISHABLE,
+        ClientError( TransactionEffect.ROLLBACK, PublishingPolicy.PUBLISHABLE,
                 "The Client sent a bad request - changing the request might yield a successful outcome."),
         /** There are notifications about the request sent by the client.*/
         ClientNotification( TransactionEffect.NONE, PublishingPolicy.PUBLISHABLE,

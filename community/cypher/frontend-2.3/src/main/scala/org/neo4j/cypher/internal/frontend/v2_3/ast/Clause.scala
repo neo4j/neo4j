@@ -118,7 +118,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
           """|Cannot use index hint in this context.
             | Index hints are only supported for the following predicates in WHERE
             | (either directly or as part of a top-level AND):
-            | equality comparison, inequality (range) comparison, LIKE pattern matching,
+            | equality comparison, inequality (range) comparison, STARTS WITH,
             | IN condition or checking property existence.
             | The comparison cannot be performed between two property values.
             | Note that the label and property comparison must be specified on a
@@ -150,7 +150,11 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
           (acc, _) => acc :+ name
         case IsNotNull(Property(Identifier(id), PropertyKeyName(name))) if id == identifier =>
           (acc, _) => acc :+ name
-        case Like(Property(Identifier(id), PropertyKeyName(name)), _, _) if id == identifier =>
+        case StartsWith(Property(Identifier(id), PropertyKeyName(name)), _) if id == identifier =>
+          (acc, _) => acc :+ name
+        case EndsWith(Property(Identifier(id), PropertyKeyName(name)), _) if id == identifier =>
+          (acc, _) => acc :+ name
+        case Contains(Property(Identifier(id), PropertyKeyName(name)), _) if id == identifier =>
           (acc, _) => acc :+ name
         case expr: InequalityExpression => expr.lhs match {
             case Property(Identifier(id), PropertyKeyName(name)) if id == identifier =>

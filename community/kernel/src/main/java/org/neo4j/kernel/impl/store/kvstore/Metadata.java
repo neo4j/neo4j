@@ -23,6 +23,8 @@ abstract class Metadata
 {
     abstract int headerEntries();
 
+    abstract int trailerEntries();
+
     abstract int totalEntries();
 
     abstract byte[] pageCatalogue();

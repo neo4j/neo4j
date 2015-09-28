@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.io.IOException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -45,10 +47,21 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final KernelHealth kernelHealth;
     private final Log msgLog;
     private final CheckPointTracer tracer;
+    private final Lock lock;
+
+    private long lastCheckPointedTx;
 
     public CheckPointerImpl( TransactionIdStore transactionIdStore, CheckPointThreshold threshold,
             StoreFlusher storeFlusher, LogPruning logPruning, TransactionAppender appender, KernelHealth kernelHealth,
             LogProvider logProvider, CheckPointTracer tracer )
+    {
+        this( transactionIdStore, threshold, storeFlusher, logPruning, appender, kernelHealth, logProvider, tracer,
+                new ReentrantLock() );
+    }
+
+    public CheckPointerImpl( TransactionIdStore transactionIdStore, CheckPointThreshold threshold,
+            StoreFlusher storeFlusher, LogPruning logPruning, TransactionAppender appender, KernelHealth kernelHealth,
+            LogProvider logProvider, CheckPointTracer tracer, Lock lock )
     {
         this.appender = appender;
         this.transactionIdStore = transactionIdStore;
@@ -58,6 +71,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         this.kernelHealth = kernelHealth;
         this.msgLog = logProvider.getLog( CheckPointerImpl.class );
         this.tracer = tracer;
+        this.lock = lock;
     }
 
     @Override
@@ -67,24 +81,69 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     }
 
     @Override
-    public void forceCheckPoint() throws IOException
+    public long forceCheckPoint() throws IOException
     {
-        doCheckPoint( LogCheckPointEvent.NULL );
+        lock.lock();
+        try
+        {
+            return doCheckPoint( LogCheckPointEvent.NULL );
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     @Override
-    public void checkPointIfNeeded() throws IOException
+    public long tryCheckPoint() throws IOException
     {
-        if ( threshold.isCheckPointingNeeded( transactionIdStore.getLastClosedTransactionId() ) )
+        if ( lock.tryLock() )
         {
-            try ( LogCheckPointEvent event = tracer.beginCheckPoint() )
+            try
             {
-                doCheckPoint( event );
+                return doCheckPoint( LogCheckPointEvent.NULL );
+            }
+            finally
+            {
+                lock.unlock();
+            }
+        }
+        else
+        {
+            lock.lock();
+            try
+            {
+                return lastCheckPointedTx;
+            }
+            finally
+            {
+                lock.unlock();
             }
         }
     }
 
-    private void doCheckPoint( LogCheckPointEvent logCheckPointEvent ) throws IOException
+    @Override
+    public long checkPointIfNeeded() throws IOException
+    {
+        lock.lock();
+        try
+        {
+            if ( threshold.isCheckPointingNeeded( transactionIdStore.getLastClosedTransactionId() ) )
+            {
+                try ( LogCheckPointEvent event = tracer.beginCheckPoint() )
+                {
+                    return doCheckPoint( event );
+                }
+            }
+            return -1;
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    private long doCheckPoint( LogCheckPointEvent logCheckPointEvent ) throws IOException
     {
         long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
         long lastClosedTransactionId = lastClosedTransaction[0];
@@ -120,5 +179,8 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
          * since it might be an earlier version than the current log version.
          */
         logPruning.pruneLogs( logPosition.getLogVersion() );
+
+        lastCheckPointedTx = lastClosedTransactionId;
+        return lastClosedTransactionId;
     }
 }

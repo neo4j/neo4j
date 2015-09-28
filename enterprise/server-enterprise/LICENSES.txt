@@ -12,6 +12,8 @@ Apache Software License, Version 2.0
   Commons Logging
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
+  Ganglia Integration for Metrics
+  Graphite Integration for Metrics
   Jackson
   JAX-RS provider for JSON content type
   Jetty :: Http Utility
@@ -23,6 +25,7 @@ Apache Software License, Version 2.0
   Jetty :: Webapp Application Support
   Jetty :: XML utilities
   Lucene Core
+  Metrics Core
   Netty/All-in-One
   opencsv
   parboiled-core
@@ -1306,6 +1309,7 @@ GNU Lesser General Public License, Version 2.1
   Logback Access Module
   Logback Classic Module
   Logback Core Module
+  Remote Tea Runtime
 ------------------------------------------------------------------------------
 
                    GNU LESSER GENERAL PUBLIC LICENSE
@@ -1814,6 +1818,7 @@ That's all there is to it!
 
 ------------------------------------------------------------------------------
 MIT License
+  gmetric4j
   SLF4J API Module
 ------------------------------------------------------------------------------
 

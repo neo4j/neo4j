@@ -86,8 +86,9 @@ angular.module('neo4jApp.services')
                   })
 
         connectUser: ->
-          @data.name = Settings.userName
-          Intercom.user(@data.uuid, @data)
+          userData = if Settings.shouldReportUdc then @data else {}
+          userData.name = Settings.userName
+          Intercom.user(@data.uuid, userData)
 
         pingLater: (event) =>
           timer = $timeout(
@@ -98,6 +99,8 @@ angular.module('neo4jApp.services')
           )
 
         shouldPing: (event) =>
+          # TODO: return true only when debugging. maybe use an env var?
+          # return true
           if not (Settings.shouldReportUdc?)
             @pingLater(event)
             return false
@@ -126,6 +129,10 @@ angular.module('neo4jApp.services')
         toggleMessenger: ->
           @connectUser()
           Intercom.toggle()
+
+        showMessenger: ->
+          @connectUser()
+          Intercom.showMessenger()
 
         newMessage: (message) ->
           @connectUser()

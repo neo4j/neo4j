@@ -60,12 +60,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
                 @Override
                 public StoreFactory apply( File file )
                 {
-                    return new StoreFactory(
-                            file.getParentFile(),
-                            new Config(),
-                            idGeneratorFactory,
-                            pageCache,
-                            fs,
+                    return new StoreFactory( file.getParentFile(), new Config(), idGeneratorFactory, pageCache, fs,
                             logProvider() );
                 }
             };
@@ -167,7 +162,8 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         dumpTokens( neoStores.getRelationshipTypeTokenStore(), ids );
     }
 
-    private static <R extends TokenRecord, T extends Token> void dumpTokens( final TokenStore<R, T> store, long[] ids ) throws Exception
+    private static <R extends TokenRecord, T extends Token> void dumpTokens(
+            final TokenStore<R, T> store, long[] ids ) throws Exception
     {
         try
         {
@@ -247,17 +243,18 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
 
     public final void dump( STORE store, long[] ids ) throws Exception
     {
-        store.makeStoreOk();
         int size = store.getRecordSize();
         out.println( "store.getRecordSize() = " + size );
         out.println( "<dump>" );
         long used = 0;
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        long highId = -1;
+
         if ( ids == null )
         {
-            long high = store.getHighestPossibleIdInUse();
+            highId = store.getHighId();
 
-            for ( long id = 0; id <= high; id++ )
+            for ( long id = 0; id < highId; id++ )
             {
                 boolean inUse = dumpRecord( store, size, id );
 
@@ -278,8 +275,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
 
         if ( ids == null )
         {
-            out.printf( "used = %s / highId = %s (%.2f%%)%n", used, store.getHighId(),
-                    used * 100.0 / store.getHighId() );
+            out.printf( "used = %s / highId = %s (%.2f%%)%n", used, highId, used * 100.0 / highId );
         }
     }
 

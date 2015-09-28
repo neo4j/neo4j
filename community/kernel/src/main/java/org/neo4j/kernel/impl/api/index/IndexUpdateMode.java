@@ -22,5 +22,5 @@ package org.neo4j.kernel.impl.api.index;
 public enum IndexUpdateMode
 {
     ONLINE,
-    RECOVERY
+    BATCHED
 }

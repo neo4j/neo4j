@@ -58,7 +58,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     result should (use("NodeIndexSeekByRange") and be(empty))
   }
 
-  ignore("should be case sensitive for Like with indexes") { // Replace with a test using startsWith
+  test("should be case sensitive for STARTS WITH with indexes") {
     val london = createLabeledNode(Map("name" -> "London"), "Location")
     createLabeledNode(Map("name" -> "london"), "Location")
     graph.inTx {
@@ -72,64 +72,29 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     graph.createIndex("Location", "name")
 
-    val query = "MATCH (l:Location) WHERE l.name LIKE 'Lon%' RETURN l"
+    val query = "MATCH (l:Location) WHERE l.name STARTS WITH 'Lon' RETURN l"
 
     val result = executeWithAllPlanners(query)
 
     result should (use(IndexSeekByRange.name) and evaluateTo(List(Map("l" -> london))))
   }
 
-  ignore("should perform prefix search in an update query") {// Replace with a test using startsWith
+  test("should perform prefix search in an update query") {
     createLabeledNode(Map("name" -> "London"), "Location")
     createLabeledNode(Map("name" -> "london"), "Location")
     graph.createIndex("Location", "name")
 
-    val query = "MATCH (l:Location) WHERE l.name LIKE 'Lon%' CREATE (L:Location {name: toUpper(l.name)}) RETURN L.name AS NAME"
+    val query =
+      """MATCH (l:Location) WHERE l.name STARTS WITH 'Lon'
+        |CREATE (L:Location {name: toUpper(l.name)})
+        |RETURN L.name AS NAME""".stripMargin
 
     val result = executeWithRulePlanner(query)
 
-    result should (use("SchemaIndex", "PrefixSeekRange") and evaluateTo(List(Map("NAME" -> "LONDON"))))
+    result should (use("SchemaIndex") and evaluateTo(List(Map("NAME" -> "LONDON"))))
   }
 
-  ignore("should perform prefix search for _ in an update query") {// Replace with a test using startsWith
-    createLabeledNode(Map("name" -> "Loony"), "Location")
-    createLabeledNode(Map("name" -> "loony"), "Location")
-    graph.createIndex("Location", "name")
-
-    val query = "MATCH (l:Location) WHERE l.name LIKE 'Loon_' CREATE (L:Location {name: toUpper(l.name)}) RETURN L.name AS NAME"
-
-    val result = executeWithRulePlanner(query)
-
-    result should (use("SchemaIndex", "PrefixSeekRange") and evaluateTo(List(Map("NAME" -> "LOONY"))))
-  }
-
-  ignore("should perform prefix search for _ in an update query with complex prefix") {// Replace with a test using startsWith
-    createLabeledNode(Map("name" -> "Loonyboom"), "Location")
-    createLabeledNode(Map("name" -> "loonyboom"), "Location")
-    createLabeledNode(Map("name" -> "boom"), "Location")
-    graph.createIndex("Location", "name")
-
-    val query = "MATCH (l:Location) WHERE l.name LIKE 'Loon_boom' CREATE (L:Location {name: toUpper(l.name)}) RETURN L.name AS NAME"
-
-    val result = executeWithRulePlanner(query)
-
-    result should (use("SchemaIndex", "PrefixSeekRange") and evaluateTo(List(Map("NAME" -> "LOONYBOOM"))))
-  }
-
-  ignore("should perform complex prefix search in an update query)") {// Replace with a test using startsWith
-    val london = createLabeledNode(Map("name" -> "London"), "Location")
-    createLabeledNode(Map("name" -> "Londinium"), "Location")
-    createLabeledNode(Map("name" -> "london"), "Location")
-    graph.createIndex("Location", "name")
-
-    val query = "MATCH (l:Location) WHERE l.name LIKE 'Lon%don' CREATE (L:Location {name: toUpper(l.name)}) RETURN L.name AS NAME"
-
-    val result = executeWithRulePlanner(query)
-
-    result should (use("SchemaIndex", "PrefixSeekRange", "Filter") and evaluateTo(List(Map("NAME" -> "LONDON"))))
-  }
-
-  ignore("should only match on the actual prefix") {// Replace with a test using startsWith
+  test("should only match on the actual prefix") {
     val london = createLabeledNode(Map("name" -> "London"), "Location")
     graph.inTx {
       createLabeledNode(Map("name" -> "Johannesburg"), "Location")
@@ -147,14 +112,14 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     }
     graph.createIndex("Location", "name")
 
-    val query = "MATCH (l:Location) WHERE l.name LIKE 'Lon%' RETURN l"
+    val query = "MATCH (l:Location) WHERE l.name STARTS WITH 'Lon' RETURN l"
 
     val result = executeWithAllPlanners(query)
 
     result should (use(IndexSeekByRange.name) and evaluateTo(List(Map("l" -> london))))
   }
 
-  ignore("should plan the leaf with the longest prefix if multiple LIKE patterns") {// Replace with a test using startsWith
+  test("should plan the leaf with the longest prefix if multiple STARTS WITH patterns") {
 
     graph.inTx {
       (1 to 100).foreach { _ =>
@@ -171,13 +136,19 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     graph.createIndex("Address", "prop")
 
-    val result = executeWithAllPlanners("MATCH (a:Address) WHERE a.prop LIKE 'w%' AND a.prop LIKE 'www%' RETURN a")
+    // Add an uninteresting predicate using a parameter to stop autoparameterization from happening
+    val result = executeWithAllPlanners(
+      """MATCH (a:Address)
+        |WHERE 43 = {apa}
+        |  AND a.prop STARTS WITH 'w'
+        |  AND a.prop STARTS WITH 'www'
+        |RETURN a""".stripMargin, "apa" -> 43)
 
     result should (use(IndexSeekByRange.name) and evaluateTo(List(Map("a" -> a1), Map("a" -> a2))))
-    result.executionPlanDescription().toString should include("prop LIKE www%")
+    result.executionPlanDescription().toString should include("prop STARTS WITH Literal(www)")
   }
 
-  ignore("should plan an IndexRangeSeek for a % string prefix search when index exists") {// Replace with a test using startsWith
+  test("should plan an IndexRangeSeek for a STARTS WITH predicate search when index exists") {
     graph.inTx {
       (1 to 100).foreach { _ =>
         createLabeledNode("Address")
@@ -193,55 +164,12 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     graph.createIndex("Address", "prop")
 
-    val result = executeWithAllPlanners("MATCH (a:Address) WHERE a.prop LIKE 'www%' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a:Address) WHERE a.prop STARTS WITH 'www' RETURN a")
 
     result should (use(IndexSeekByRange.name) and evaluateTo(List(Map("a" -> a1), Map("a" -> a2))))
   }
 
-  ignore("should plan an IndexRangeSeek for a _ string prefix search when index exists") {// Replace with a test using startsWith
-
-    graph.inTx {
-      (1 to 100).foreach { _ =>
-        createLabeledNode("Address")
-      }
-      (1 to 300).map { i =>
-        createLabeledNode(Map("prop" -> i.toString), "Address")
-      }
-    }
-
-    val a1 = createLabeledNode(Map("prop" -> "www123"), "Address")
-    val a2 = createLabeledNode(Map("prop" -> "www"), "Address")
-    val a3 = createLabeledNode(Map("prop" -> "ww"), "Address")
-
-    graph.createIndex("Address", "prop")
-
-    val result = executeWithAllPlanners("MATCH (a:Address) WHERE a.prop LIKE 'ww_' RETURN a")
-
-    result should (use("Filter", IndexSeekByRange.name) and evaluateTo(List(Map("a" -> a2))))
-  }
-
-  ignore("should plan an IndexRangeSeek for a string search that starts with a prefix when index exists") {// Replace with a test using startsWith
-
-    graph.inTx {
-      (1 to 100).foreach { _ =>
-        createLabeledNode("Address")
-      }
-      (1 to 300).map { i =>
-        createLabeledNode(Map("prop" -> i.toString), "Address")
-      }
-    }
-    val a1 = createLabeledNode(Map("prop" -> "www123"), "Address")
-    val a2 = createLabeledNode(Map("prop" -> "www"), "Address")
-    val a3 = createLabeledNode(Map("prop" -> "ww"), "Address")
-
-    graph.createIndex("Address", "prop")
-
-    val result = executeWithAllPlanners("MATCH (a:Address) WHERE a.prop LIKE 'ww%w%' RETURN a")
-
-    result should (use(IndexSeekByRange.name, "Filter") and evaluateTo(List(Map("a" -> a1), Map("a" -> a2))))
-  }
-
-  ignore("should plan a UniqueIndexSeek when constraint exists") {// Replace with a test using startsWith
+  test("should plan a UniqueIndexSeek when constraint exists") {
 
     graph.inTx {
       (1 to 100).foreach { _ =>
@@ -258,7 +186,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     graph.createConstraint("Address", "prop")
 
-    val result = executeWithAllPlanners("MATCH (a:Address) WHERE a.prop LIKE 'www%' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a:Address) WHERE a.prop STARTS WITH 'www' RETURN a")
 
     result should (use(UniqueIndexSeekByRange.name) and evaluateTo(List(Map("a" -> a1), Map("a" -> a2))))
   }

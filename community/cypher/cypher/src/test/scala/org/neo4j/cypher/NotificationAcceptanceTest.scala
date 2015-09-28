@@ -152,7 +152,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] = 'value' RETURN n")
 
-    result.notifications should equal(Set(IndexSeekUnfulfillableNotification(Set("Person")), IndexScanUnfulfillableNotification(Set("Person"))))
+    result.notifications should equal(Set(IndexLookupUnfulfillableNotification(Set("Person"))))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with explicit label check") {
@@ -160,7 +160,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n) WHERE n['key-' + n.name] = 'value' AND (n:Person) RETURN n")
 
-    result.notifications should equal(Set(IndexSeekUnfulfillableNotification(Set("Person")), IndexScanUnfulfillableNotification(Set("Person"))))
+    result.notifications should equal(Set(IndexLookupUnfulfillableNotification(Set("Person"))))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with a single label and negative predicate") {
@@ -176,7 +176,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] > 10 RETURN n")
 
-    result.notifications should equal(Set(IndexSeekUnfulfillableNotification(Set("Person")), IndexScanUnfulfillableNotification(Set("Person"))))
+    result.notifications should equal(Set(IndexLookupUnfulfillableNotification(Set("Person"))))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with range seek (reverse)") {
@@ -184,7 +184,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE 10 > n['key-' + n.name] RETURN n")
 
-    result.notifications should equal(Set(IndexSeekUnfulfillableNotification(Set("Person"))))
+    result.notifications should equal(Set(IndexLookupUnfulfillableNotification(Set("Person"))))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with a single label and property existence check with exists") {
@@ -192,7 +192,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE exists(n['na' + 'me']) RETURN n")
 
-    result.notifications should equal(Set(IndexScanUnfulfillableNotification(Set("Person"))))
+    result.notifications should equal(Set(IndexLookupUnfulfillableNotification(Set("Person"))))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with a single label and property existence check with has") {
@@ -200,23 +200,15 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE has(n['na' + 'me']) RETURN n")
 
-    result.notifications should equal(Set(IndexScanUnfulfillableNotification(Set("Person"))))
+    result.notifications should equal(Set(IndexLookupUnfulfillableNotification(Set("Person"))))
   }
 
-  ignore("warn for unfulfillable index seek when using dynamic property lookup with a single label and like") {
+  test("warn for unfulfillable index seek when using dynamic property lookup with a single label and starts with") {
     graph.createIndex("Person", "name")
 
-    val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] LIKE 'Foo%' RETURN n")
+    val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] STARTS WITH 'Foo' RETURN n")
 
-    result.notifications should equal(Set(IndexSeekUnfulfillableNotification(Set("Person")), IndexScanUnfulfillableNotification(Set("Person"))))
-  }
-
-  ignore("warn for unfulfillable index seek when using dynamic property lookup with a single label and like - suffix") {
-    graph.createIndex("Person", "name")
-
-    val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] LIKE '%Foo' RETURN n")
-
-    result.notifications should equal(Set(IndexScanUnfulfillableNotification(Set("Person"))))
+    result.notifications should equal(Set(IndexLookupUnfulfillableNotification(Set("Person"))))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with a single label and regex") {
@@ -224,7 +216,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] =~ 'Foo*' RETURN n")
 
-    result.notifications should equal(Set(IndexScanUnfulfillableNotification(Set("Person"))))
+    result.notifications should equal(Set(IndexLookupUnfulfillableNotification(Set("Person"))))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with a single label and IN") {
@@ -232,7 +224,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] IN ['Foo', 'Bar'] RETURN n")
 
-    result.notifications should equal(Set(IndexSeekUnfulfillableNotification(Set("Person"))))
+    result.notifications should equal(Set(IndexLookupUnfulfillableNotification(Set("Person"))))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with multiple labels") {
@@ -240,7 +232,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n:Person:Foo) WHERE n['key-' + n.name] = 'value' RETURN n")
 
-    result.notifications should (contain(IndexSeekUnfulfillableNotification(Set("Person"))) and contain(IndexScanUnfulfillableNotification(Set("Person"))))
+    result.notifications should contain(IndexLookupUnfulfillableNotification(Set("Person")))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with multiple indexed labels") {
@@ -249,7 +241,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n:Person:Jedi) WHERE n['key-' + n.name] = 'value' RETURN n")
 
-    result.notifications should equal(Set(IndexSeekUnfulfillableNotification(Set("Person", "Jedi")), IndexScanUnfulfillableNotification(Set("Person", "Jedi"))))
+    result.notifications should equal(Set(IndexLookupUnfulfillableNotification(Set("Person", "Jedi"))))
   }
 
   test("should not warn when using dynamic property lookup with no labels") {
@@ -265,7 +257,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n.name = 'Tobias' AND n['key-' + n.name] = 'value' RETURN n")
 
-    result.notifications should equal(Set(IndexSeekUnfulfillableNotification(Set("Person")), IndexScanUnfulfillableNotification(Set("Person"))))
+    result.notifications should equal(Set(IndexLookupUnfulfillableNotification(Set("Person"))))
   }
 
   test("should not warn when using dynamic property lookup with a label having no index") {
@@ -367,5 +359,11 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     resultMisspelled.notifications should contain(MissingPropertyNameNotification(InputPosition(18, 1, 19), "propp"))
     resultCorrectlySpelled.notifications shouldBe empty
+  }
+
+  test("should warn about unbounded shortest path") {
+    val res = innerExecute("EXPLAIN MATCH p = shortestPath((n)-[*]->(m)) RETURN m")
+
+    res.notifications should contain (UnboundedShortestPathNotification(InputPosition(26, 1, 27)))
   }
 }

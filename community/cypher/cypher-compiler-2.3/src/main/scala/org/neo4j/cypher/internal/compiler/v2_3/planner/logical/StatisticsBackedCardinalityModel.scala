@@ -50,7 +50,7 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
 
     // Distinct
     case projection: AggregatingQueryProjection if projection.aggregationExpressions.isEmpty =>
-      in * Selectivity(0.95)
+      in * Selectivity.of(0.95).get
 
     // Aggregates
     case _: AggregatingQueryProjection =>

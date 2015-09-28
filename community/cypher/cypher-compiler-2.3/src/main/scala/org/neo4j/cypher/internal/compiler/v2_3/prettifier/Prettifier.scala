@@ -103,7 +103,10 @@ class PrettifierParser extends Parser with Base with Strings {
         keyword("ASC") |
         keyword("DESC") |
         keyword("SCAN") |
-        keyword("FROM")
+        keyword("FROM") |
+        keyword("STARTS WITH") |
+        keyword("ENDS WITH") |
+        keyword("CONTAINS")
     ) ~> NonBreakingKeywords
   }
 
@@ -126,6 +129,7 @@ class PrettifierParser extends Parser with Base with Strings {
       keyword("USING SCAN") |
       keyword("USING JOIN ON") |
       keyword("OPTIONAL MATCH") |
+      keyword("DETACH DELETE") |
       keyword("START") |
       keyword("MATCH") |
       keyword("WHERE") |

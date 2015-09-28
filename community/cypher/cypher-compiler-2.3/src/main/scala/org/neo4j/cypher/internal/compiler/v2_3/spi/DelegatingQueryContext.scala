@@ -144,6 +144,7 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
                                         relTypes: Seq[String]): Iterator[Path] =
     manyDbHits(inner.variableLengthPathExpand(node, realNode, minHops, maxHops, direction, relTypes))
 
+  override def isLabelSetOnNode(label: Int, node: Long): Boolean = getLabelsForNode(node).contains(label)
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

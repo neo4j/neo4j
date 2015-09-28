@@ -49,14 +49,13 @@ public class TransactionTemplate
 {
     public interface Monitor
     {
-        public void failure( Throwable ex );
+        void failure( Throwable ex );
 
-        public void failed( Throwable ex );
+        void failed( Throwable ex );
 
-        public void retrying();
+        void retrying();
 
-        public class Adapter
-                implements Monitor
+        class Adapter implements Monitor
         {
             @Override
             public void failure( Throwable ex )

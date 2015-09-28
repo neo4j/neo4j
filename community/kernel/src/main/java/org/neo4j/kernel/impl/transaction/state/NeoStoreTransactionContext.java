@@ -25,6 +25,7 @@ import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -52,12 +53,13 @@ public class NeoStoreTransactionContext
         this.neoStores = neoStores;
 
         recordChangeSet = new RecordChangeSet( neoStores );
-        RelationshipGroupGetter relGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore() );
+        RelationshipGroupStore relationshipGroupStore = neoStores.getRelationshipGroupStore();
+        RelationshipGroupGetter relGroupGetter = new RelationshipGroupGetter( relationshipGroupStore );
         PropertyTraverser propertyTraverser = new PropertyTraverser();
         propertyCreator = new PropertyCreator( neoStores.getPropertyStore(), propertyTraverser );
         propertyDeleter = new PropertyDeleter( neoStores.getPropertyStore(), propertyTraverser );
         relationshipCreator = new RelationshipCreator(
-                locks, relGroupGetter, neoStores.getRelationshipGroupStore().getDenseNodeThreshold() );
+                locks, relGroupGetter, relationshipGroupStore.getDenseNodeThreshold() );
         relationshipDeleter = new RelationshipDeleter( locks, relGroupGetter, propertyDeleter );
     }
 

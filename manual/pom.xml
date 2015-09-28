@@ -21,6 +21,7 @@
     <module>refcard</module>
     <module>cypher</module>
     <module>manual</module>
+    <module>neo4j-harness-test</module>
   </modules>
 
   <scm>

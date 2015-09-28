@@ -59,6 +59,7 @@ import org.neo4j.unsafe.batchinsert.BatchInserters;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
@@ -344,17 +345,11 @@ public class UpgradeStoreIT
         Config config = new Config();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        DynamicStringStore stringStore = new DynamicStringStore(
-                new File( fileName.getPath() + ".names" ),
-                config,
-                IdType.RELATIONSHIP_TYPE_TOKEN_NAME,
-                new DefaultIdGeneratorFactory( fs ),
-                pageCache,
-                NullLogProvider.getInstance(),
-                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
-                TokenStore.NAME_STORE_BLOCK_SIZE );
-        RelationshipTypeTokenStore store = new RelationshipTypeTokenStoreWithOneOlderVersion(
-                fileName, stringStore, fs, pageCache );
+        DynamicStringStore stringStore = new DynamicStringStore( new File( fileName.getPath() + ".names" ), config,
+                IdType.RELATIONSHIP_TYPE_TOKEN_NAME, new DefaultIdGeneratorFactory( fs ), pageCache,
+                NullLogProvider.getInstance(), TokenStore.NAME_STORE_BLOCK_SIZE );
+        RelationshipTypeTokenStore store =
+                new RelationshipTypeTokenStoreWithOneOlderVersion( fileName, stringStore, fs, pageCache );
         for ( int i = 0; i < numberOfTypes; i++ )
         {
             String name = "type" + i;
@@ -381,14 +376,8 @@ public class UpgradeStoreIT
                 FileSystemAbstraction fs,
                 PageCache pageCache )
         {
-            super( fileName,
-                    config,
-                    new NoLimitIdGeneratorFactory( fs ),
-                    pageCache,
-                    NullLogProvider.getInstance(),
-                    stringStore,
-                    StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
-                    true );
+            super( fileName, config, new NoLimitIdGeneratorFactory( fs ), pageCache, NullLogProvider.getInstance(),
+                    stringStore );
         }
 
         @Override
