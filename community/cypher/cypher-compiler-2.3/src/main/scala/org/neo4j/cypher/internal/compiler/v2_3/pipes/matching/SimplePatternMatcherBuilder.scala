@@ -36,17 +36,16 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph,
                                   identifiersInClause: Set[String]) extends MatcherBuilder {
   def createPatternNodes: immutable.Map[String, SimplePatternNode] = {
     pattern.patternNodes.map {
-      case (key, pn) => {
+      case (key, pn) =>
         key -> {
           new SimplePatternNode(pn.key)
         }
-      }
     }
   }
 
   def createPatternRels(patternNodes:immutable.Map[String, SimplePatternNode]):immutable.Map[String, SimplePatternRelationship]  = pattern.patternRels.map {
-    case (key, pr) => {
-      val start: SimplePatternNode = patternNodes(pr.startNode.key)
+    case (key, pr) =>
+      val start = patternNodes(pr.startNode.key)
       val end = patternNodes(pr.endNode.key)
 
       val patternRel = if (pr.relTypes.isEmpty)
@@ -60,7 +59,6 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph,
       patternRel.setLabel(pr.key)
 
       key -> patternRel
-    }
   }
 
   def setAssociations(sourceRow: Map[String, Any]): (immutable.Map[String, SimplePatternNode], immutable.Map[String, SimplePatternRelationship]) = {
@@ -128,6 +126,8 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph,
   }
 
   def name = "SimplePatternMatcher"
+
+  override def startPoint: String = pattern.patternNodes.values.head.key
 }
 
 object SimplePatternMatcherBuilder {

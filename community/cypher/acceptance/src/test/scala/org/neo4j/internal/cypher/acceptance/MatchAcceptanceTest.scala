@@ -997,7 +997,7 @@ return b
     result.executionPlanDescription.toString should include("IndexSeek")
   }
 
-  ignore("should be able to use index hints with LIKE predicates") { // Rewrite using startsWith
+  test("should be able to use index hints with STARTS WITH predicates") {
     // given
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
     val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
@@ -1007,7 +1007,7 @@ return b
     graph.createIndex("Person", "name")
 
     // when
-    val result = executeWithAllPlanners("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name LIKE 'Jac%' RETURN n")
+    val result = executeWithAllPlanners("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name STARTS WITH 'Jac' RETURN n")
 
     // then
     result.toList should equal (List(Map("n" -> jake)))
@@ -2211,6 +2211,21 @@ return b
 
     //then
     result.toList should equal(List(Map("n" -> start, "m" -> end)))
+  }
+
+  test("should be able to do varlength matches of sizes larger that 15 hops") {
+    //given
+    //({prop: "bar"})-[:R]->({prop: "bar"})…-[:R]->({prop: "foo"})
+    val start = createNode(Map("prop" -> "start"))
+    val end = createNode(Map("prop" -> "end"))
+    val nodes = start +: (for (i <- 1 to 15) yield createNode(Map("prop" -> "bar"))) :+ end
+    nodes.sliding(2).foreach {
+      case Seq(node1, node2) => relate(node1, node2, "R")
+    }
+
+    val result = executeWithAllPlanners("MATCH (n {prop: 'start'})-[:R*]->(m {prop: 'end'}) RETURN m")
+
+    result.toList should equal(List(Map("m" -> end)))
   }
 
   /**

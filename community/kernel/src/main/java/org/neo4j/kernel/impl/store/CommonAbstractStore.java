@@ -291,7 +291,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
         try
         {
-            long foundHighId = findHighIdBackwards();
+            long foundHighId = scanForHighId();
             setHighId( foundHighId );
             if ( !fastRebuild )
             {
@@ -405,7 +405,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     {
         if ( !storeOk )
         {
-            throw launderedException( causeOfStoreNotOk );
+            throw new UnderlyingStorageException( "Store is not OK", causeOfStoreNotOk );
         }
     }
 
@@ -436,12 +436,14 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
     /**
      * Return the highest id in use.
+     * If this store is not OK yet, the high id is calculated from the highest in use record on the store,
+     * using {@link #scanForHighId()}.
      *
-     * @return The highest id in use.
+     * @return The high id, highest id in use + 1
      */
     public long getHighId()
     {
-        return idGenerator != null ? idGenerator.getHighId() : -1;
+        return idGenerator != null ? idGenerator.getHighId() : scanForHighId();
     }
 
     /**
@@ -467,8 +469,11 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
     /**
      * If store is not ok a call to this method will rebuild the {@link
-     * IdGenerator} used by this store and if successful mark it as
-     * <CODE>ok</CODE>.
+     * IdGenerator} used by this store and if successful mark it as.
+     *
+     * WARNING: this method must NOT be called if recovery is required, but hasn't performed.
+     * To remove all negations from the above statement: Only call this method if store is in need of
+     * recovery and recovery has been performed.
      */
     public final void makeStoreOk()
     {
@@ -518,18 +523,18 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      */
     protected IdGenerator openIdGenerator( File fileName, int grabSize )
     {
-        try
-        {
-            return idGeneratorFactory.open( fileName, grabSize, getIdType(), findHighIdBackwards() );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException(
-                    "Unable to find high id by scanning backwards " + getStorageFileName(), e );
-        }
+        return idGeneratorFactory.open( fileName, grabSize, getIdType(), scanForHighId() );
     }
 
-    protected long findHighIdBackwards() throws IOException
+    /**
+     * Starts from the end of the file and scans backwards to find the highest in use record.
+     * Can be used even if {@link #makeStoreOk()} hasn't been called. Basically this method should be used
+     * over {@link #getHighestPossibleIdInUse()} and {@link #getHighId()} in cases where a store has been opened
+     * but is in a scenario where recovery isn't possible, like some tooling or migration.
+     *
+     * @return the id of the highest in use record + 1, i.e. highId.
+     */
+    protected long scanForHighId()
     {
         try ( PageCursor cursor = storeFile.io( 0, PF_SHARED_LOCK ) )
         {
@@ -557,6 +562,11 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             }
 
             return getNumberOfReservedLowIds();
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException(
+                    "Unable to find high id by scanning backwards " + getStorageFileName(), e );
         }
     }
 
@@ -644,7 +654,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         else
         {   // If we ask for this before we've recovered we can only make a best-effort guess
             // about the highest possible id in use.
-            return calculateHighestIdInUseByLookingAtFileSize();
+            return scanForHighId() - 1;
         }
     }
 
@@ -656,24 +666,6 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     public void setHighestPossibleIdInUse( long highId )
     {
         setHighId( highId + 1 );
-    }
-
-    private long calculateHighestIdInUseByLookingAtFileSize()
-    {
-        int recordAlignedPageSize = pageCache.pageSize() - pageCache.pageSize() % getRecordSize();
-        try ( PagedFile pagedFile = pageCache.map( getStorageFileName(), recordAlignedPageSize ) )
-        {
-            long id = getRecordsPerPage() * (pagedFile.getLastPageId() + 1);
-            if ( id == 0 )
-            {
-                return -1;
-            }
-            return id;
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
     }
 
     /** @return The total number of ids in use. */

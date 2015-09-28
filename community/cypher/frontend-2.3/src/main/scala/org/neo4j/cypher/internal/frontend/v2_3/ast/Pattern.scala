@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.frontend.v2_3.ast
 
 import org.neo4j.cypher.internal.frontend.v2_3._
+import org.neo4j.cypher.internal.frontend.v2_3.notification.UnboundedShortestPathNotification
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
 object Pattern {
@@ -140,7 +141,7 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
     checkContext(ctx) chain
     checkContainsSingle chain
     checkKnownEnds chain
-    checkMinimalLength chain
+    checkLength chain
     checkRelIdentifiersUnknown chain
     element.semanticCheck(ctx)
 
@@ -174,14 +175,18 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
       None
   }
 
-  private def checkMinimalLength: SemanticCheck = element match {
+  private def checkLength: SemanticCheck = (state: SemanticState) => element match {
     case RelationshipChain(_, rel, _) =>
       rel.length match {
-        case Some(Some(Range(Some(min), _))) if (min.value < 0 || min.value > 1) =>
-          Some(SemanticError(s"$name(...) does not support a minimal length different from 0 or 1", position, element.position))
-        case _ => None
+        case Some(Some(Range(Some(min), _))) if min.value < 0 || min.value > 1 =>
+          SemanticCheckResult(state, Seq(SemanticError(s"$name(...) does not support a minimal length different from 0 or 1", position, element.position)))
+
+        case Some(None) =>
+          val newState = state.addNotification(UnboundedShortestPathNotification(element.position))
+          SemanticCheckResult(newState, Seq.empty)
+        case _ => SemanticCheckResult(state, Seq.empty)
       }
-    case _ => None
+    case _ => SemanticCheckResult(state, Seq.empty)
   }
 
   private def checkRelIdentifiersUnknown: SemanticCheck = state => {

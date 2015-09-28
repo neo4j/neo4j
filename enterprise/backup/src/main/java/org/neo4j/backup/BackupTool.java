@@ -228,9 +228,8 @@ public class BackupTool
             String host = hostnamePort.getHost();
             int port = hostnamePort.getPort();
 
-            BackupOutcome outcome =
-                    backupService.doIncrementalBackupOrFallbackToFull( host, port, to,
-                            checkConsistency, config, timeout, forensics );
+            BackupOutcome outcome = backupService.doIncrementalBackupOrFallbackToFull( host, port, to, checkConsistency,
+                    config, timeout, forensics );
             systemOut.println( "Done" );
             return outcome;
         }

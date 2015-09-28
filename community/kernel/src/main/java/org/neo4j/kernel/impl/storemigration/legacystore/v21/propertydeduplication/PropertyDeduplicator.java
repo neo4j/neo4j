@@ -72,18 +72,17 @@ public class PropertyDeduplicator
             PropertyStore propertyStore = neoStores.getPropertyStore();
             NodeStore nodeStore = neoStores.getNodeStore();
             SchemaStore schemaStore = neoStores.getSchemaStore();
-            neoStores.makeStoreOk();
             PrimitiveLongObjectMap<List<DuplicateCluster>> duplicateClusters = collectConflictingProperties( propertyStore );
             resolveConflicts( duplicateClusters, propertyStore, nodeStore, schemaStore );
         }
     }
 
     private PrimitiveLongObjectMap<List<DuplicateCluster>> collectConflictingProperties( final PropertyStore store )
-            throws IOException
     {
         final PrimitiveLongObjectMap<List<DuplicateCluster>> duplicateClusters = Primitive.longObjectMap();
 
-        for ( long headRecordId = 0; headRecordId < store.getHighestPossibleIdInUse(); ++headRecordId )
+        long highId = store.getHighId();
+        for ( long headRecordId = 0; headRecordId < highId; ++headRecordId )
         {
             PropertyRecord record = store.forceGetRecord( headRecordId );
             // Skip property propertyRecordIds that are not in use.

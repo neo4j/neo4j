@@ -105,7 +105,7 @@ case class In(lhs: Expression, rhs: Expression)(val position: InputPosition) ext
 }
 
 // Partial predicates are predicates that are covered by a larger predicate which is going to be solved later during planning
-// (and then will replace this predicate).  This is needed for LIKE such that things work out regarding verifyBestPlan
+// (and then will replace this predicate).
 // (i.e. final query graph matches up with original query)
 sealed trait PartialPredicate[+P <: Expression] extends Expression {
   def coveredPredicate: P
@@ -126,21 +126,19 @@ object PartialPredicate {
   }
 }
 
-final case class LikePattern(expr: Expression) extends ASTNode {
-  def position = expr.position
-}
-
-case class Like(lhs: Expression, pattern: LikePattern, caseInsensitive: Boolean = false)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
-  def rhs = pattern.expr
-
+case class StartsWith(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 }
 
-case class NotLike(lhs: Expression, pattern: LikePattern, caseInsensitive: Boolean = false)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
-  def rhs = pattern.expr
+case class EndsWith(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
+  val signatures = Vector(
+    Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
+  )
+}
 
+case class Contains(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )

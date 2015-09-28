@@ -73,12 +73,17 @@ Function Get-Neo4jServer
       Write-Error "Could not detect the Neo4j Home directory"
       return
     }
+       
     if (-not (Confirm-Neo4jHome -Neo4jHome $Neo4jHome))
     {
       Write-Error "$Neo4jHome is not a Neo4j Home directory"
       return
     }
-    
+
+    # Convert the path specified into an absolute path
+    $Neo4jDir = Get-Item $Neo4jHome
+    $Neo4jHome = $Neo4jDir.FullName.TrimEnd('\')
+
     # Get the information about the server
     $serverProperties = @{
       'Home' = $Neo4jHome;
@@ -97,7 +102,7 @@ Function Get-Neo4jServer
       if ($matches -ne $null) { $matches.Clear() }
       if ($_.Name -match '^neo4j-server-([\d.\-MRC]+)\.jar$') { $serverProperties.ServerVersion = $matches[1] }
     }
-    
+
     $serverObject = New-Object -TypeName PSCustomObject -Property $serverProperties
     if (-not (Confirm-Neo4jServerObject -Neo4jServer $serverObject))
     {

@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => commande
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.frontend.v2_3.ast.functions._
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
-import org.neo4j.cypher.internal.frontend.v2_3.parser.{LikePatternParser, ParsedLikePattern, convertLikePatternToRegex}
 import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, SemanticDirection, ast}
 import org.neo4j.graphdb.Direction
 
@@ -245,8 +244,9 @@ object ExpressionConverters {
     case e: ast.NotEquals => predicates.Not(predicates.Equals(toCommandExpression(e.lhs), toCommandExpression(e.rhs)))
     case e: ast.RegexMatch => regexMatch(e)
     case e: ast.In => in(e)
-    case e: ast.Like => like(e)
-    case e: ast.NotLike => predicates.Not(toCommandPredicate(ast.Like(e.lhs, e.pattern, e.caseInsensitive)(e.position)))
+    case e: ast.StartsWith => predicates.StartsWith(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
+    case e: ast.EndsWith => predicates.EndsWith(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
+    case e: ast.Contains => predicates.Contains(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
     case e: ast.IsNull => predicates.IsNull(toCommandExpression(e.lhs))
     case e: ast.IsNotNull => predicates.Not(predicates.IsNull(toCommandExpression(e.lhs)))
     case e: ast.InequalityExpression => inequalityExpression(e)
@@ -281,7 +281,7 @@ object ExpressionConverters {
     case e: ast.PathExpression => toCommandProjectedPath(e)
     case e: NestedPipeExpression => commandexpressions.NestedPipeExpression(e.pipe, toCommandProjectedPath(e.path))
     case e: ast.GetDegree => getDegree(e)
-    case e: PrefixSeekRangeWrapper => commandexpressions.PrefixSeekRangeExpression(e.range)
+    case e: PrefixSeekRangeWrapper => commandexpressions.PrefixSeekRangeExpression(e.range.map(toCommandExpression))
     case e: InequalitySeekRangeWrapper => InequalitySeekRangeExpression(e.range.mapBounds(toCommandExpression))
     case e: ast.AndedPropertyInequalities => predicates.AndedPropertyComparablePredicates(identifier(e.identifier), toCommandProperty(e.property), e.inequalities.map(inequalityExpression))
     case _ =>
@@ -330,28 +330,6 @@ object ExpressionConverters {
       predicates.LiteralRegularExpression(toCommandExpression(e.lhs), literal)
     case command =>
       predicates.RegularExpression(toCommandExpression(e.lhs), command)
-  }
-
-  private def like(e: ast.Like) = {
-    def stringToRegex(s: String): String =
-      patternToRegex(LikePatternParser(s))
-
-    def patternToRegex(likePattern: ParsedLikePattern): String =
-      convertLikePatternToRegex(likePattern, e.caseInsensitive)
-
-    toCommandExpression(e.rhs) match {
-      case nullLiteral@commandexpressions.Literal(null) =>
-        nullLiteral
-
-      case commandexpressions.Literal(v) =>
-        val pattern = LikePatternParser(v.asInstanceOf[String])
-        val literal = commandexpressions.Literal(patternToRegex(pattern))
-        val regularExpression = predicates.LiteralRegularExpression(toCommandExpression(e.lhs), literal)
-        predicates.LiteralLikePattern(regularExpression, pattern, e.caseInsensitive)
-
-      case command =>
-        predicates.RegularExpression(toCommandExpression(e.lhs), command)(stringToRegex)
-    }
   }
 
   private def in(e: ast.In) = {

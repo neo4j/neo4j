@@ -524,7 +524,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     output.append('\n')
     writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".result", output.toString()))
 
-    if (generateConsole && parameters == null) {
+    if (generateConsole && (parameters == null || parameters.isEmpty)) {
       output.clear()
       writer.println(".Try this query live")
       output.append("[console]\n")

@@ -33,6 +33,7 @@ import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoErrors;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.hasErrors;
 import static org.neo4j.test.server.HTTP.POST;
@@ -43,8 +44,8 @@ public class TransientErrorIT extends AbstractRestFunctionalTestBase
     @Rule
     public final OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
 
-    @Test
-    public void deadlockShouldRollbackTransaction() throws JsonParseException
+    @Test( timeout = 60000 )
+    public void deadlockShouldRollbackTransaction() throws Exception
     {
         // Given
         HTTP.Response initial = POST( txCommitUri(), quotedJson(
@@ -79,16 +80,32 @@ public class TransientErrorIT extends AbstractRestFunctionalTestBase
         HTTP.Response secondInTx2 = POST( txUri( tx2 ), quotedJson(
                 "{'statements': [{'statement': 'MATCH (n {prop : 1}) SET n.prop = 6'}]}" ) );
 
-        future.cancel( true );
+        HTTP.Response secondInTx1 = future.get();
 
         // Then
-
-        // request fails because of the deadlock
+        assertThat( secondInTx1.status(), is( 200 ) );
         assertThat( secondInTx2.status(), is( 200 ) );
-        assertThat( secondInTx2, hasErrors( Status.Transaction.DeadlockDetected ) );
+
+        // either tx1 or tx2 should fail because of the deadlock
+        HTTP.Response failed;
+        if ( containsError( secondInTx1 ) )
+        {
+            failed = secondInTx1;
+        }
+        else if ( containsError( secondInTx2 ) )
+        {
+            failed = secondInTx2;
+        }
+        else
+        {
+            failed = null;
+            fail( "Either tx1 or tx2 is expected to fail" );
+        }
+
+        assertThat( failed, hasErrors( Status.Transaction.DeadlockDetected ) );
 
         // transaction was rolled back on the previous step and we can't commit it
-        HTTP.Response commit = POST( firstInTx2.stringFromContent( "commit" ) );
+        HTTP.Response commit = POST( failed.stringFromContent( "commit" ) );
         assertThat( commit.status(), is( 404 ) );
     }
 
@@ -109,12 +126,17 @@ public class TransientErrorIT extends AbstractRestFunctionalTestBase
 
         // Then
 
-        // request fails because of the deadlock
+        // request fails because specified CSV resource is invalid
         assertThat( second.status(), is( 200 ) );
         assertThat( second, hasErrors( Status.Statement.ExternalResourceFailure ) );
 
         // transaction was rolled back on the previous step and we can't commit it
         HTTP.Response commit = POST( second.stringFromContent( "commit" ) );
         assertThat( commit.status(), is( 404 ) );
+    }
+
+    private static boolean containsError( HTTP.Response response ) throws JsonParseException
+    {
+        return response.get( "errors" ).iterator().hasNext();
     }
 }

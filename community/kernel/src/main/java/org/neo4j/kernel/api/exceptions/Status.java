@@ -172,7 +172,8 @@ public interface Status
         IndexMissingWarning( ClientNotification, "Adding a schema index may speed up this query." ),
         LabelMissingWarning( ClientNotification, "The provided label is not in the database." ),
         RelTypeMissingWarning( ClientNotification, "The provided relationship type is not in the database." ),
-        PropertyNameMissingWarning( ClientNotification, "The provided property name is not in the database" );
+        PropertyNameMissingWarning( ClientNotification, "The provided property name is not in the database" ),
+        UnboundedPatternWarning( ClientNotification, "The provided pattern is unbounded, consider adding an upper limit to the number of node hops."  );
 
         private final Code code;
 

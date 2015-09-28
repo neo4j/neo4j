@@ -23,7 +23,7 @@ An expression in Cypher can be:
 * A predicate expression is an expression that returns true or false: `a.prop = "Hello"`, `length(p) > 10`,
 `has(a.name)`.
 * A regular expression: `a.name =~ "Tob.*"`
-* A case-(in)sensitive string pattern matching expression: `a.surname LIKE "%son"`
+* A case-sensitive string matching expression: `a.surname STARTS WITH "Sven"`, `a.surname ENDS WITH "son"` or `a.surname CONTAINS "son"`
 * A +CASE+ expression.
 
 == Note on string literals ==
@@ -40,8 +40,6 @@ String literals can contain these escape sequences.
 |`\'`|Single quote
 |`\"`|Double quote
 |`\\`|Backslash
-|`\_`|Underscore (for use with LIKE)
-|`\%`|Percentage sign (for use with LIKE)
 |`\uxxxx`|Unicode UTF-16 code point (4 hex digits must follow the `\u`)
 |`\Uxxxxxxxx`|Unicode UTF-32 code point (8 hex digits must follow the `\U`)
 |===================

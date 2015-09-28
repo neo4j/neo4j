@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.MergePattern
+
 class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
   test("normal query is marked as such") {
     createNode()
@@ -42,5 +44,15 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
     result.executionPlanDescription().toString should include("Estimated Rows")
     result.executionPlanDescription().asJava.toString should include("Estimated Rows")
+  }
+
+  test("should report which node the merge starts from") {
+    val query = "EXPLAIN MERGE (first)-[:PIZZA]->(second)"
+
+    val result = execute(query)
+    val plan = result.executionPlanDescription()
+    result.close()
+
+    plan.toString should include(MergePattern("second").toString)
   }
 }

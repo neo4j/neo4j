@@ -1,3 +1,8 @@
+2.2.6
+-----
+o TransactionCommittingResponseUnpacker takes even more advantage of batching when applying transactions to avoid
+  overhead that occurs after each normal transaction
+
 2.2.0-M03
 ---------
 o Fix an issue where negative file sizes would be printed after store copy
