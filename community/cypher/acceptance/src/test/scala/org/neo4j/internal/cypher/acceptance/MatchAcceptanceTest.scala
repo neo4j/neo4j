@@ -2213,6 +2213,21 @@ return b
     result.toList should equal(List(Map("n" -> start, "m" -> end)))
   }
 
+  test("should be able to do varlength matches of sizes larger that 15 hops") {
+    //given
+    //({prop: "bar"})-[:R]->({prop: "bar"})…-[:R]->({prop: "foo"})
+    val start = createNode(Map("prop" -> "start"))
+    val end = createNode(Map("prop" -> "end"))
+    val nodes = start +: (for (i <- 1 to 15) yield createNode(Map("prop" -> "bar"))) :+ end
+    nodes.sliding(2).foreach {
+      case Seq(node1, node2) => relate(node1, node2, "R")
+    }
+
+    val result = executeWithAllPlanners("MATCH (n {prop: 'start'})-[:R*]->(m {prop: 'end'}) RETURN m")
+
+    result.toList should equal(List(Map("m" -> end)))
+  }
+
   /**
    * Append identifier to keys and transform value arrays to lists
    */

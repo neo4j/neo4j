@@ -432,6 +432,22 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result.toList should equal(List(Map("nodes" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")))))
   }
 
+
+  test("should be able to do find shortest paths longer than 15 hops") {
+    //given
+    //({prop: "bar"})-[:R]->({prop: "bar"})…-[:R]->({prop: "foo"})
+    val start = createNode(Map("prop" -> "start"))
+    val end = createNode(Map("prop" -> "end"))
+    val nodes = start +: (for (i <- 1 to 15) yield createNode(Map("prop" -> "bar"))) :+ end
+    nodes.sliding(2).foreach {
+      case Seq(node1, node2) => relate(node1, node2, "R")
+    }
+
+    val result = executeWithAllPlanners("MATCH p = shortestPath((n {prop: 'start'})-[:R*]->(m {prop: 'end'})) RETURN length(p) AS l")
+
+    result.toList should equal(List(Map("l" -> 16)))
+  }
+
   def shortestPathModel(): Map[String, Node] = {
     val nodes = Map[String, Node](
       "source" -> createLabeledNode(Map("name" -> "x"), "X"),

@@ -115,6 +115,12 @@ public enum NotificationCode
             Status.Statement.PropertyNameMissingWarning,
             "One of the property names in your query is not available in the database, make sure you didn't " +
             "misspell it or that the label is available when you run this statement in your application"
+    ),
+    UNBOUNDED_SHORTEST_PATH(
+            SeverityLevel.WARNING,
+            Status.Statement.UnboundedPatternWarning,
+            "Using shortest path with an unbounded pattern will likely result in long execution times. " +
+            "It is recommended to use an upper limit to the number of node hops in your pattern."
     )
     ;
 

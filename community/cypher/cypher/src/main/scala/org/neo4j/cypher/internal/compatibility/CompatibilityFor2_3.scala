@@ -320,6 +320,8 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
       NotificationCode.MISSING_REL_TYPE.notification(pos.asInputPosition, NotificationDetail.Factory.relationshipType(relType))
     case MissingPropertyNameNotification(pos, name) =>
       NotificationCode.MISSING_PROPERTY_NAME.notification(pos.asInputPosition, NotificationDetail.Factory.propertyName(name))
+    case UnboundedShortestPathNotification(pos) =>
+      NotificationCode.UNBOUNDED_SHORTEST_PATH.notification(pos.asInputPosition)
   }
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = exceptionHandlerFor2_3.runSafely {
