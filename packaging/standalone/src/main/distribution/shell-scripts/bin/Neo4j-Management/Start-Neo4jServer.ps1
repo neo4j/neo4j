@@ -116,7 +116,7 @@ Function Start-Neo4jServer
       }
 
       $result = 0
-      if ($PSCmdlet.ShouldProcess("$($JavaCMD.java) $($ShellArgs)", 'Start Neo4j'))
+      if ($PSCmdlet.ShouldProcess("$($JavaCMD.java) $($JavaCMD.args)", 'Start Neo4j'))
       {
         $result = (Start-Process -FilePath $JavaCMD.java -ArgumentList $JavaCMD.args -Wait:$Wait -NoNewWindow:$Wait -PassThru -WorkingDirectory $thisServer.Home)
       }
