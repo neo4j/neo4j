@@ -44,6 +44,12 @@ angular.module('neo4jApp')
         data: data
       ]
 
+    mapError = (r) ->
+      if not r.errors
+        returnObject = error("Error: #{r.raw.response.data.status} - #{r.raw.response.data.statusText}", 'Request error')
+        r.errors = returnObject.errors
+      r
+
     FrameProvider.interpreters.push
       type: 'clear'
       matches: "#{cmdchar}clear"
@@ -363,7 +369,7 @@ angular.module('neo4jApp')
                 )
               ,
               (r) ->
-                q.reject(r)
+                q.reject(mapError r)
             )
 
           #Periodic commits cannot be sent to an open transaction.
@@ -377,7 +383,7 @@ angular.module('neo4jApp')
                 commit_fn()
               ,
               (r) ->
-                q.reject(r)
+                q.reject(mapError r)
             )
 
           q.promise.transaction = current_transaction

@@ -114,7 +114,7 @@ angular.module('neo4jApp.services')
             result = {errors:[{code: 'Error', message: result}]} if typeof result is "string"
 
             #This happens for auth errors. We need to grab the Neo4j error code and message.
-            result = result.data if result.status in [401, 429, 422, 404] and result.data.errors
+            result = result.data if result.status in [401, 403, 429, 422, 404] and result.data.errors
 
             #This happens for HTTP status error codes
             result = {errors:[{code: "HTTP Status: #{result.status}", message: "HTTP Status: #{result.status} - #{result.statusText}"}]} if result.status
