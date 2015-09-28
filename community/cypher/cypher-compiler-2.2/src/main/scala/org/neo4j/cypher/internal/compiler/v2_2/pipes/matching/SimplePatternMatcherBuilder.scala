@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_2.pipes.matching
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import commands.Predicate
-import pipes.QueryState
-import symbols._
-import org.neo4j.graphdb.{Relationship, Node, DynamicRelationshipType}
-import org.neo4j.graphmatching.{PatternMatcher => SimplePatternMatcher, PatternNode => SimplePatternNode,
-PatternRelationship => SimplePatternRelationship, PatternMatch}
-import collection.{immutable, Map}
-import collection.JavaConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.commands.Predicate
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.graphdb.{DynamicRelationshipType, Node, Relationship}
+import org.neo4j.graphmatching.{PatternMatch, PatternMatcher => SimplePatternMatcher, PatternNode => SimplePatternNode, PatternRelationship => SimplePatternRelationship}
+
+import scala.collection.JavaConverters._
+import scala.collection.{Map, immutable}
 
 class SimplePatternMatcherBuilder(pattern: PatternGraph,
                                   predicates: Seq[Predicate],
@@ -35,16 +35,15 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph,
                                   identifiersInClause: Set[String]) extends MatcherBuilder {
   def createPatternNodes: immutable.Map[String, SimplePatternNode] = {
     pattern.patternNodes.map {
-      case (key, pn) => {
+      case (key, pn) =>
         key -> {
           new SimplePatternNode(pn.key)
         }
-      }
     }
   }
 
   def createPatternRels(patternNodes:immutable.Map[String, SimplePatternNode]):immutable.Map[String, SimplePatternRelationship]  = pattern.patternRels.map {
-    case (key, pr) => {
+    case (key, pr) =>
       val start = patternNodes(pr.startNode.key)
       val end = patternNodes(pr.endNode.key)
 
@@ -59,7 +58,6 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph,
       patternRel.setLabel(pr.key)
 
       key -> patternRel
-    }
   }
 
   def setAssociations(sourceRow: Map[String, Any]): (immutable.Map[String, SimplePatternNode], immutable.Map[String, SimplePatternRelationship]) = {
@@ -124,6 +122,8 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph,
   }
 
   def name = "SimplePatternMatcher"
+
+  override def startPoint: String = pattern.patternNodes.values.head.key
 }
 
 object SimplePatternMatcherBuilder {

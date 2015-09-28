@@ -109,5 +109,7 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
   }
 
   def name = "PatternMatcher"
+
+  override def startPoint: String = ""
 }
 
