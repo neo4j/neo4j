@@ -485,6 +485,7 @@ public class IdGeneratorImpl implements IdGenerator
         buffer.put( STICKY_GENERATOR ).limit( 1 ).flip();
         fileChannel.position( 0 );
         fileChannel.write( buffer );
+        fileChannel.force( false );
     }
 
     private ByteBuffer readHeader() throws IOException
