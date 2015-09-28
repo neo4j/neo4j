@@ -24,7 +24,9 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.PropertySupport
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{Pipe, QueryState}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{MatchPipe, Pipe, QueryState}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.MergePattern
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, InvalidSemanticsException}
@@ -141,6 +143,15 @@ case class MergePatternAction(patterns: Seq[Pattern],
   }
 
   override def updateSymbols(symbol: SymbolTable): SymbolTable = symbol.add(identifiers.toMap)
+
+  override def arguments: Seq[Argument] = {
+    val startPoint: Option[String] = maybeMatchPipe.map {
+      case m: MatchPipe => m.mergeStartPoint
+      case _ => ""
+    }
+    Seq(MergePattern(startPoint.getOrElse("")))
+  }
+
 }
 
 object MergePatternAction {

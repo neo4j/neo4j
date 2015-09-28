@@ -81,6 +81,7 @@ object InternalPlanDescription {
     case class Expression(value: ast.Expression) extends Argument
     case class LegacyExpression(value: commands.expressions.Expression) extends Argument
     case class UpdateActionName(value: String) extends Argument
+    case class MergePattern(startPoint: String) extends Argument
     case class LegacyIndex(value: String) extends Argument
     case class Index(label: String, propertyKey: String) extends Argument
     case class PrefixIndex(label: String, propertyKey: String, prefix: commands.expressions.Expression) extends Argument
