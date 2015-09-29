@@ -61,11 +61,13 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         return true;
     }
 
+    @Override
     protected void lockPage( MuninnPage page )
     {
         lockStamp = page.writeLock();
     }
 
+    @Override
     protected void unlockPage( MuninnPage page )
     {
         page.unlockWrite( lockStamp );
