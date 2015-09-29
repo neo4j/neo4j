@@ -19,7 +19,7 @@
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
     <neo4j.version>${project.version}</neo4j.version>
     <docs-plugin.skip>false</docs-plugin.skip>
-    <attach-docs-phase>prepare-package</attach-docs-phase>
+    <attach-docs-phase>package</attach-docs-phase>
     <remote-csv-upload>http://neo4j.com/docs/${project.version}/cypher-refcard/csv</remote-csv-upload>
   </properties>
 
