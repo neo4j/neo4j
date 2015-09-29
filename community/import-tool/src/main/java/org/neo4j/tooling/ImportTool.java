@@ -124,11 +124,15 @@ public class ImportTool
         MULTILINE_FIELDS( "multiline-fields", org.neo4j.csv.reader.Configuration.DEFAULT.multilineFields(),
                 "<true/false>",
                 "Whether or not fields from input source can span multiple lines, i.e. contain newline characters." ),
+
         INPUT_ENCODING( "input-encoding", null,
                 "<character set>",
                 "Character set that input data is encoded in. Provided value must be one out of the available "
                         + "character sets in the JVM, as provided by Charset#availableCharsets(). "
                         + "If no input encoding is provided, the default character set of the JVM will be used." ),
+        IGNORE_EMPTY_STRINGS( "ignore-empty-strings", org.neo4j.csv.reader.Configuration.DEFAULT.emptyQuotedStringsAsNull(),
+                "<true/false>",
+                "Whether or not empty string fields, i.e. \"\" from input source are ignored, i.e. treated as null." ),
         ID_TYPE( "id-type", IdType.STRING,
                 "<id-type>",
                 "One out of " + Arrays.toString( IdType.values() )
@@ -589,7 +593,8 @@ public class ImportTool
                 args.interpretOption( Options.ARRAY_DELIMITER.key(), Converters.<Character>optional(), DELIMITER_CONVERTER );
         final Character specificQuote =
                 args.interpretOption( Options.QUOTE.key(), Converters.<Character>optional(), Converters.toCharacter() );
-        final boolean multiLineFields = args.getBoolean( Options.MULTILINE_FIELDS.key(), false );
+        final Boolean multiLineFields = args.getBoolean( Options.MULTILINE_FIELDS.key(), null );
+        final Boolean emptyStringsAsNull = args.getBoolean( Options.IGNORE_EMPTY_STRINGS.key(), null );
         return new Configuration.Default()
         {
             @Override
@@ -619,7 +624,17 @@ public class ImportTool
             @Override
             public boolean multilineFields()
             {
-                return multiLineFields;
+                return multiLineFields != null
+                        ? multiLineFields.booleanValue()
+                        : defaultConfiguration.multilineFields();
+            }
+
+            @Override
+            public boolean emptyQuotedStringsAsNull()
+            {
+                return emptyStringsAsNull != null
+                        ? emptyStringsAsNull.booleanValue()
+                        : defaultConfiguration.emptyQuotedStringsAsNull();
             }
 
             @Override

@@ -128,8 +128,24 @@ o Added ability to skip duplicate nodes, i.e. multiple nodes with the same ID in
 
 2.2.6
 -----
+IO:
+o File lock deletion is retried on failure, fixing an issue with file lock
+  release on Windows
+
 Server:
 o Fixes #5258 - ClientError and TransientError make REST API transactions rollback
+o Query log now supports rotation through the `dbms.querylog.rotation.threshold`
+  option
+
+CSV:
+o Ability to treat empty quoted strings as null
+
+Import Tool:
+o Adds --ignore-empty-strings for ignoring empty quoted strings, instead of those values
+  ending up as properties with empty string values
+
+Shell:
+o Local database instance will be shutdown after command execution
 
 2.2.5
 -----

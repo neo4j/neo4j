@@ -4,6 +4,12 @@ o Given ongoing transactions a bit of time (10 seconds default) to complete befo
 
 2.2.6
 -----
+o Fixes race in setting up slave mode state, which resulted in "client is stopped" messages
+o Revisits the way update pulling is handled during master to slave switches, fixing an issue
+  where a newly switched slave would fail to pull updates
+o Resolves an issue with instance availability message ordering, which could lead to failed
+  state switches and instance unavailability
+o Message logging about failure to push to slaves is now capped, no longer filling up the log
 o Slaves pulls updates much faster and are very unlikely to every fall behind master.
   Transaction application on slaves now apply up to 50x faster, comparatively usually
   at least a couple of times faster than master

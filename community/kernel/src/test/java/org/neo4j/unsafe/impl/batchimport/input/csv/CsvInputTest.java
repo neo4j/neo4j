@@ -749,6 +749,34 @@ public class CsvInputTest
         }
     }
 
+    @Test
+    public void shouldTreatEmptyQuotedStringsAsNullIfConfiguredTo() throws Exception
+    {
+        // GIVEN
+        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.<InputNode>data(
+                ":ID,one,two,three\n" +
+                "1,\"\",,value" ) );
+        Configuration config = new Configuration.Overriden( COMMAS )
+        {
+            @Override
+            public boolean emptyQuotedStringsAsNull()
+            {
+                return true;
+            }
+        };
+        Input input = new CsvInput( data, defaultFormatNodeFileHeader(),
+                null, null, IdType.INTEGER, config, badCollector( 0 ) );
+
+        // WHEN
+        try ( InputIterator<InputNode> nodes = input.nodes().iterator() )
+        {
+            InputNode node = nodes.next();
+            // THEN
+            assertNode( node, 1L, properties( "three", "value" ), labels() );
+            assertFalse( nodes.hasNext() );
+        }
+    }
+
     private Configuration customConfig( final char delimiter, final char arrayDelimiter, final char quote )
     {
         return new Configuration.Default()

@@ -136,8 +136,40 @@ o Added ability to skip duplicate nodes, i.e. multiple nodes with the same ID in
 
 2.2.6
 -----
+IO:
+o File lock deletion is retried on failure, fixing an issue with file lock
+  release on Windows
+
 Server:
 o Fixes #5258 - ClientError and TransientError make REST API transactions rollback
+o Query log now supports rotation through the `dbms.querylog.rotation.threshold`
+  option
+
+CSV:
+o Ability to treat empty quoted strings as null
+
+Import Tool:
+o Adds --ignore-empty-strings for ignoring empty quoted strings, instead of those values
+  ending up as properties with empty string values
+
+Shell:
+o Local database instance will be shutdown after command execution
+
+HA:
+o Fixes race in setting up slave mode state, which resulted in "client is stopped" messages
+o Revisits the way update pulling is handled during master to slave switches, fixing an issue
+  where a newly switched slave would fail to pull updates
+o Resolves an issue with instance availability message ordering, which could lead to failed
+  state switches and instance unavailability
+o Message logging about failure to push to slaves is now capped, no longer filling up the log
+o Slaves pulls updates much faster and are very unlikely to every fall behind master.
+  Transaction application on slaves now apply up to 50x faster, comparatively usually
+  at least a couple of times faster than master
+
+Cluster:
+o Elections where the only viable candidate has just been demoted will now elect that candidate.
+  This solves an issue where in clusters with all but one instances configured slave only, master
+  failure and rejoin would still leave the cluster without master.
 
 2.2.5
 -----

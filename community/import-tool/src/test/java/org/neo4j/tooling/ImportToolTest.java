@@ -744,6 +744,30 @@ public class ImportToolTest
         }
     }
 
+    @Test
+    public void shouldIgnoreEmptyQuotedStringsIfConfiguredTo() throws Exception
+    {
+        // GIVEN
+        File data = data(
+                ":ID,one,two,three",
+                "1,\"\",,value" );
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--nodes", data.getAbsolutePath(),
+                "--ignore-empty-strings", "true" );
+
+        // THEN
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = single( GlobalGraphOperations.at( db ).getAllNodes() );
+            assertEquals( "three", single( node.getPropertyKeys() ) );
+            tx.success();
+        }
+    }
+
     private File data( String... lines ) throws Exception
     {
         File file = file( fileName( "data.csv" ) );
