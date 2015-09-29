@@ -22,37 +22,38 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v2_3.{Comparer, ExecutionContext}
 
-trait SortDescription {
+import scala.math.Ordering
+
+sealed trait SortDescription {
   def id: String
+  def compareAny(a: Any, b: Any)(implicit qtx: QueryState): Int
 }
 
-case class Ascending(id:String) extends SortDescription
-case class Descending(id:String) extends SortDescription
+case class Ascending(id:String) extends SortDescription with Comparer {
+  override def compareAny(a: Any, b: Any)(implicit qtx: QueryState) = compare(a, b)
+}
+
+case class Descending(id:String) extends SortDescription with Comparer {
+  override def compareAny(a: Any, b: Any)(implicit qtx: QueryState) = compare(b, a)
+}
 
 case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
                    (val estimatedCardinality: Option[Double] = None)(implicit monitor: PipeMonitor)
-  extends PipeWithSource(source, monitor) with Comparer with RonjaPipe with NoEffectsPipe {
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
-    input.toList.
-      sortWith((a, b) => compareBy(a, b, orderBy)(state)).iterator
+  extends PipeWithSource(source, monitor) with RonjaPipe with NoEffectsPipe {
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+    val array = input.toArray
+    java.util.Arrays.sort(array, ordering(orderBy)(state))
+    array.toIterator
+  }
 
   def planDescriptionWithoutCardinality = source.planDescription.andThen(this.id, "Sort", identifiers, KeyNames(orderBy.map(_.id)))
 
   def symbols = source.symbols
 
-  private def compareBy(a: ExecutionContext, b: ExecutionContext, order: Seq[SortDescription])(implicit qtx: QueryState): Boolean = order match {
-    case Nil => false
-    case sort :: tail =>
-      val column = sort.id
-      val aVal = a(column)
-      val bVal = b(column)
+  private def ordering(order: Seq[SortDescription])
+                      (implicit qtx: QueryState): Ordering[ExecutionContext] = if (order.isEmpty) emptyOrdering
+                      else new InnerOrdering(order)
 
-      Math.signum(compare(aVal, bVal)) match {
-        case 1 => sort.isInstanceOf[Descending]
-        case -1 => sort.isInstanceOf[Ascending]
-        case 0 => compareBy(a, b, tail)
-      }
-  }
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
@@ -60,4 +61,29 @@ case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
   }
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+}
+
+private object emptyOrdering extends scala.Ordering[ExecutionContext] {
+  override def compare(x: ExecutionContext, y: ExecutionContext): Int = -1
+}
+
+private class InnerOrdering(order: Seq[SortDescription])(implicit qtx: QueryState) extends scala.Ordering[ExecutionContext] {
+  assert(order.nonEmpty)
+  private var cmp = -1
+
+  override def compare(a: ExecutionContext, b: ExecutionContext): Int = {
+    val iterator: Iterator[SortDescription] = order.iterator
+    //we know iterator contains at least one value
+    do nextCmp(iterator, a, b)
+    while (iterator.hasNext && cmp == 0)
+    cmp
+  }
+
+  private def nextCmp(it: Iterator[SortDescription], a: ExecutionContext, b: ExecutionContext) = {
+    val sort = it.next()
+    val column = sort.id
+    val aVal = a(column)
+    val bVal = b(column)
+    cmp = sort.compareAny(aVal, bVal)
+  }
 }
