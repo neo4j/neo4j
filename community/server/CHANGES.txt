@@ -1,6 +1,8 @@
 2.2.6
 -----
-o ClientError and TransientError make REST API transactions rollback
+o Fixes #5258 - ClientError and TransientError make REST API transactions rollback
+o Query log now supports rotation through the `dbms.querylog.rotation.threshold`
+  option
 
 2.2.3
 -----

@@ -1,3 +1,9 @@
+2.2.6
+-----
+o Elections where the only viable candidate has just been demoted will now elect that candidate.
+  This solves an issue where in clusters with all but one instances configured slave only, master
+  failure and rejoin would still leave the cluster without master.
+
 2.2.2
 -----
 o Network exceptions that gets logged are now throttled, i.e. logged every N seconds at most,

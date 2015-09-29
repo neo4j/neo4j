@@ -1,3 +1,8 @@
+2.2.6
+-----
+o File lock deletion is retried on failure, fixing an issue with file lock
+  release on Windows
+
 2.2.1
 -----
 o Page cache read performance improvements
