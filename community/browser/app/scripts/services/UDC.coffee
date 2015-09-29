@@ -48,6 +48,13 @@ angular.module('neo4jApp.services')
         save: ->
           localStorageService.set(storageKey, JSON.stringify(@data))
 
+        loadUDC: ->
+          Intercom.load()
+          Intercom.reload()
+          
+        unloadUDC: ->
+          Intercom.unload()
+
         set: (key, value) ->
           @data[key] = value
           @save()

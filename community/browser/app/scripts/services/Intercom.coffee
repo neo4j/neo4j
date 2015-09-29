@@ -33,13 +33,47 @@ angular.module('neo4jApp.services')
           @_Intercom = $window.Intercom
           @booted = false
 
+        load: ->
+          return if @_Intercom
+          do ->
+            ic = $window.Intercom
+            l = ->
+              s = d.createElement('script')
+              s.type = 'text/javascript'
+              s.async = true
+              s.src = 'https://widget.intercom.io/widget/lq70afwx'
+              x = d.getElementsByTagName('script')[0]
+              x.parentNode.insertBefore s, x
+              return
+            if typeof ic == 'function'
+              ic 'reattach_activator'
+            else
+              d = document
+              i = ->
+                i.c arguments
+                return
+              i.q = []
+              i.c = (args) ->
+                i.q.push args
+                return
+              $window.Intercom = i
+              l()
+
+        unload: ->
+          @_Intercom = no
+
+        reload: ->
+          @_Intercom = $window.Intercom
+          @booted = false
+          
         do: (command, params...) ->
-          # console.log("do", command, params)
+          return unless @_Intercom
           that = @
           args = arguments
           $timeout(-> $window.Intercom.apply(that, args))
 
         user: (userID, userData) ->
+          return unless @_Intercom
           intercomSettings = {
             app_id: 'lq70afwx'
             user_id: userID
