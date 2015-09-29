@@ -1,7 +1,14 @@
+2.3.0-RC1
+-----
+o New drawer for :config settings
+o :play remote guides
+o Handle 403 responses from server
+o Add config to control outgoing connections
+  (feature only active in Enterprise Edition)
+
 2.3.0-M03
 -----
 o Display cypher warnings in editor gutter
-o New drawer for :config settings
 o In database drawer: display only labels and rel types in use
 o Fetch labels / rel types / propertykeys at interval
 o On EXPLAIN and PROFILE frames, show cypher warnings view if warnings exists
