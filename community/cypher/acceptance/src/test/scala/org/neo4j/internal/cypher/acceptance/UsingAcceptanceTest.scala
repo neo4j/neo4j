@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.KeyNames
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.NodeHashJoin
-import org.neo4j.cypher.internal.compiler.v2_3.{GreedyPlannerName, IDPPlannerName}
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.KeyNames
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.compiler.v3_0.{GreedyPlannerName, IDPPlannerName}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, HintException, IndexHintException, NewPlannerTestSupport, SyntaxException}
 import org.scalatest.matchers.{MatchResult, Matcher}
 

@@ -20,13 +20,11 @@
 package org.neo4j.desktop.config.osx;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.Scanner;
 
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription;
 import org.neo4j.desktop.config.Environment;
 import org.neo4j.desktop.config.unix.UnixInstallation;
 

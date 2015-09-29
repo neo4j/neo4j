@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import java.nio.file.{Files, Path}
 import java.util
 
-import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.EnterpriseGraphDatabase
 import org.neo4j.graphdb.factory.{GraphDatabaseFactoryState, GraphDatabaseSettings}
 import org.neo4j.io.fs.FileUtils

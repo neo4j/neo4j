@@ -22,9 +22,9 @@ package org.neo4j.internal.cypher.acceptance
 import java.io.PrintWriter
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.helpers.TxCounts
-import org.neo4j.cypher.internal.frontend.v2_3.helpers.StringHelper.RichString
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper.RichString
 import org.neo4j.graphdb.Node
 
 class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite

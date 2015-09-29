@@ -23,8 +23,8 @@ import java.io.{File, PrintWriter}
 import java.net.{URLConnection, URLStreamHandler, URLStreamHandlerFactory, URL}
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CreateTempFileTestSupport
-import org.neo4j.cypher.internal.frontend.v2_3.helpers.StringHelper.RichString
+import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper.RichString
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.security.URLAccessRule
 import org.neo4j.kernel.GraphDatabaseAPI

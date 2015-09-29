@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_3.CostBasedPlannerName
-import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_0.CostBasedPlannerName
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -29,21 +29,6 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.test.TestGraphDatabaseFactory
 
 class ExecutionEngineIT extends CypherFunSuite {
-
-  test("by default when using cypher 2.2 some queries should default to COST") {
-    //given
-    val db = new TestGraphDatabaseFactory()
-      .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.2").newGraphDatabase()
-
-    //when
-    val plan1 = db.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
-    val plan2 = db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
-
-    //then
-    plan1.getArguments.get("planner") should equal("COST")
-    plan2.getArguments.get("planner") should equal("COST")
-  }
 
   test("by default when using cypher 2.3 some queries should default to COST") {
     //given
@@ -62,18 +47,21 @@ class ExecutionEngineIT extends CypherFunSuite {
     plan2.getArguments.get("planner-impl") should equal(CostBasedPlannerName.default.name)
   }
 
-  test("should be able to set RULE as default when using cypher 2.2") {
+  test("by default when using cypher 3.0 some queries should default to COST") {
     //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_planner, "RULE")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.2").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.0").newGraphDatabase()
 
     //when
-    val plan = db.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
+    val plan1 = db.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
+    val plan2 = db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
 
     //then
-    plan.getArguments.get("planner") should equal("RULE")
+    plan1.getArguments.get("planner") should equal("COST")
+    plan1.getArguments.get("planner-impl") should equal(CostBasedPlannerName.default.name)
+    plan2.getArguments.get("planner") should equal("COST")
+    plan2.getArguments.get("planner-impl") should equal(CostBasedPlannerName.default.name)
   }
 
   test("should be able to set RULE as default when using cypher 2.3") {
@@ -91,20 +79,20 @@ class ExecutionEngineIT extends CypherFunSuite {
     plan.getArguments.get("planner-impl") should equal("RULE")
   }
 
-  test("should be able to force COST as default when using cypher 2.2") {
+  test("should be able to set RULE as default when using cypher 3.0") {
     //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.2").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_planner, "RULE")
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.0").newGraphDatabase()
 
     //when
-    val plan = db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
+    val plan = db.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
 
     //then
-    plan.getArguments.get("planner") should equal("COST")
+    plan.getArguments.get("planner") should equal("RULE")
+    plan.getArguments.get("planner-impl") should equal("RULE")
   }
-
 
   test("should be able to force COST as default when using cypher 2.3") {
     //given
@@ -112,6 +100,21 @@ class ExecutionEngineIT extends CypherFunSuite {
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
+
+    //when
+    val plan = db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
+
+    //then
+    plan.getArguments.get("planner") should equal("COST")
+    plan.getArguments.get("planner-impl") should equal("IDP")
+  }
+
+  test("should be able to force COST as default when using cypher 3.0") {
+    //given
+    val db = new TestGraphDatabaseFactory()
+      .newImpermanentDatabaseBuilder()
+      .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.0").newGraphDatabase()
 
     //when
     val plan = db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")

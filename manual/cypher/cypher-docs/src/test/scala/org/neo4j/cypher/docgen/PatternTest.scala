@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 
 
 class PatternTest extends ArticleTest {

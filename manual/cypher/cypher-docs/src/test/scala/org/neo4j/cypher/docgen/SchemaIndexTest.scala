@@ -25,10 +25,10 @@ import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.junit.Test
 import org.neo4j.cypher.QueryStatisticsTestSupport
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.IndexSeekByRange
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.Planner
-import org.neo4j.cypher.internal.compiler.v2_3.{DPPlannerName, IDPPlannerName, GreedyPlannerName, RulePlannerName}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.IndexSeekByRange
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.Planner
+import org.neo4j.cypher.internal.compiler.v3_0.{DPPlannerName, IDPPlannerName, GreedyPlannerName, RulePlannerName}
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.impl.api.index.IndexingService

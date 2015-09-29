@@ -24,10 +24,11 @@ import java.util
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.compiler.v2_3
+import org.neo4j.cypher.internal.compiler.{v3_0, v2_3}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlan => ExecutionPlan_v2_3, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
+import org.neo4j.cypher.internal.compiler.v2_3.spi.{PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerFactory, DPPlannerName, ExplainMode => ExplainModev2_3, GreedyPlannerName, IDPPlannerName, InfoLogger, Monitors, NormalMode => NormalModev2_3, PlannerName, ProfileMode => ProfileModev2_3, _}
 import org.neo4j.cypher.internal.frontend.v2_3.notification.{InternalNotification, LegacyPlannerNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
@@ -124,7 +125,6 @@ object exceptionHandlerFor2_3 extends MapToPublicExceptions[CypherException] {
   }
 }
 
-
 case class WrappedMonitors2_3(kernelMonitors: KernelMonitors) extends Monitors {
   def addMonitorListener[T](monitor: T, tags: String*) {
     kernelMonitors.addMonitorListener(monitor, tags: _*)
@@ -137,7 +137,7 @@ case class WrappedMonitors2_3(kernelMonitors: KernelMonitors) extends Monitors {
 }
 
 trait CompatibilityFor2_3 {
-  import org.neo4j.cypher.internal.compatibility.helpers._
+  import org.neo4j.cypher.internal.compatibility.helpersv2_3._
 
   val graph: GraphDatabaseService
   val queryCacheSize: Int
@@ -156,16 +156,18 @@ trait CompatibilityFor2_3 {
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer) = {
-    val preparedQueryForV_2_3 = Try(compiler.prepareQuery(preParsedQuery.statement, preParsedQuery.rawStatement, preParsedQuery.notificationLogger, Some(preParsedQuery.offset), tracer))
+    import org.neo4j.cypher.internal.helpers.wrappersFor2_3._
+
+    val preparedQueryForV_2_3 = Try(compiler.prepareQuery(preParsedQuery.statement, preParsedQuery.rawStatement, as2_3(preParsedQuery.notificationLogger), Some(as2_3(preParsedQuery.offset)), tracer))
     new ParsedQuery {
       def isPeriodicCommit = preparedQueryForV_2_3.map(_.isPeriodicCommit).getOrElse(false)
 
-      def plan(statement: Statement, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = exceptionHandlerFor2_3.runSafely {
-        val planContext = new TransactionBoundPlanContext(statement, graph)
-        val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_2_3.get, planContext, tracer)
+      def plan(statement: Statement, tracer: v3_0.CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = exceptionHandlerFor2_3.runSafely {
+        val planContext: PlanContext = new TransactionBoundPlanContext(statement, graph)
+        val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_2_3.get, planContext, as2_3(tracer))
 
         // Log notifications/warnings from planning
-        planImpl.notifications.foreach(preParsedQuery.notificationLogger += _)
+        planImpl.notifications.map(as3_0).foreach(preParsedQuery.notificationLogger += _)
 
         (new ExecutionPlanWrapper(planImpl), extractedParameters)
       }
@@ -176,7 +178,7 @@ trait CompatibilityFor2_3 {
 
   class ExecutionPlanWrapper(inner: ExecutionPlan_v2_3) extends ExecutionPlan {
 
-    private def queryContext(graph: GraphDatabaseAPI, txInfo: TransactionInfo) = {
+    private def queryContext(graph: GraphDatabaseAPI, txInfo: TransactionInfo): QueryContext = {
       val ctx = new TransactionBoundQueryContext(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)
       new ExceptionTranslatingQueryContextFor2_3(ctx)
     }
@@ -204,7 +206,8 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
                                        (implicit monitor: QueryExecutionMonitor, session: QuerySession)
   extends ExtendedExecutionResult {
 
-  import org.neo4j.cypher.internal.compatibility.helpers._
+  import org.neo4j.cypher.internal.compatibility.helpersv2_3._
+
   def planDescriptionRequested = exceptionHandlerFor2_3.runSafely {inner.planDescriptionRequested}
 
   private def endQueryExecution() = {
@@ -237,7 +240,7 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
 
   def columnAs[T](column: String) = exceptionHandlerFor2_3.runSafely{inner.columnAs[T](column)}
 
-  def columns = exceptionHandlerFor2_3.runSafely{inner.columns}
+  def columns = exceptionHandlerFor2_3.runSafely{inner.columns.toList}
 
   def javaColumns = exceptionHandlerFor2_3.runSafely{inner.javaColumns}
 

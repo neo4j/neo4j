@@ -20,8 +20,8 @@
 package org.neo4j.cypher.docgen
 
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_0.prettifier.Prettifier
 import org.neo4j.graphdb.index.Index
 import org.junit.Test
 import scala.collection.JavaConverters._

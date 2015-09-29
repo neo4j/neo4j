@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.CypherCompiler.{CLOCK, DEFAULT_QUERY_PLAN_TTL, DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD}
-import org.neo4j.cypher.internal.compatibility.WrappedMonitors2_3
-import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v2_3.{GreedyPlannerName, CypherCompilerFactory, InfoLogger, _}
-import org.neo4j.cypher.internal.spi.v2_3.GeneratedQueryStructure
+import org.neo4j.cypher.internal.compatibility.{WrappedMonitors3_0, WrappedMonitors2_3}
+import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v3_0.{GreedyPlannerName, CypherCompilerFactory, InfoLogger, _}
+import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
 
 class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
 
@@ -179,7 +179,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
       ),
       clock = CLOCK,
       structure = GeneratedQueryStructure,
-      monitors = new WrappedMonitors2_3(kernelMonitors),
+      monitors = new WrappedMonitors3_0(kernelMonitors),
       logger = DEV_NULL,
       rewriterSequencer = RewriterStepSequencer.newPlain,
       plannerName = Some(GreedyPlannerName),

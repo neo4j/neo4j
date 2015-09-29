@@ -20,15 +20,14 @@
 package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v2_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 class CypherPreParserTest extends CypherFunSuite with TableDrivenPropertyChecks {
 
   val queries = Table(
     ("query", "expected"),
-    ("CYPHER 1.9 MATCH", PreParsedStatement("MATCH", Seq(ConfigurationOptions(Some(VersionOption("1.9")), Seq.empty)), (1, 12, 11))),
     ("CYPHER 2.0 THAT", PreParsedStatement("THAT", Seq(ConfigurationOptions(Some(VersionOption("2.0")), Seq.empty)), (1, 12, 11))),
     ("CYPHER 2.1 YO", PreParsedStatement("YO", Seq(ConfigurationOptions(Some(VersionOption("2.1")), Seq.empty)), (1, 12, 11))),
     ("CYPHER 2.2 HO", PreParsedStatement("HO", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty)), (1, 12, 11))),

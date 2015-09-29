@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
-import org.neo4j.cypher.internal.frontend.v2_3.ArithmeticException;
-import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException;
+import org.neo4j.cypher.internal.frontend.v3_0.ArithmeticException;
+import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;

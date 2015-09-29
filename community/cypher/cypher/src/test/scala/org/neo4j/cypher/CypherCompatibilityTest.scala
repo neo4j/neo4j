@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import java.util
-import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.test.ImpermanentGraphDatabase
 
@@ -28,81 +28,60 @@ import scala.collection.JavaConverters._
 
 class CypherCompatibilityTest extends CypherFunSuite {
 
-  val QUERY_2_X_ONLY = "MATCH (n:Label) RETURN n"
-  val QUERY_1_9_ONLY = "START n=node(*) RETURN n.prop?"
-  val QUERY_FOR_BOTH = "START n=node(*) RETURN n"
-
-  test("should_accept_1_9_queries_with_db_config") {
-    runWithConfig("cypher_parser_version" -> "1.9") {
-      engine =>
-        val result = engine.execute(QUERY_1_9_ONLY)
-        result.toList // Does not throw
-    }
-  }
-
-  test("should_accept_1_9_queries_using_query_prologue") {
-    runWithConfig() {
-      engine =>
-        val result = engine.execute(s"CYPHER 1.9 $QUERY_1_9_ONLY")
-        result.toList // Does not throw
-    }
-  }
+  val QUERY = "MATCH (n:Label) RETURN n"
 
   test("should_be_able_to_switch_between_versions") {
     runWithConfig() {
       engine =>
-        engine.execute(s"CYPHER 1.9 $QUERY_FOR_BOTH").toList shouldBe empty
-        engine.execute(s"CYPHER 2.2 $QUERY_FOR_BOTH").toList shouldBe empty
-        engine.execute(s"CYPHER 2.3 $QUERY_FOR_BOTH").toList shouldBe empty
+        engine.execute(s"CYPHER 2.3 $QUERY").toList shouldBe empty
+        engine.execute(s"CYPHER 3.0 $QUERY").toList shouldBe empty
     }
   }
 
   test("should_be_able_to_switch_between_versions2") {
     runWithConfig() {
       engine =>
-        engine.execute(s"CYPHER 2.3 $QUERY_FOR_BOTH").toList shouldBe empty
-        engine.execute(s"CYPHER 2.2 $QUERY_FOR_BOTH").toList shouldBe empty
-        engine.execute(s"CYPHER 1.9 $QUERY_FOR_BOTH") shouldBe empty
+        engine.execute(s"CYPHER 3.0 $QUERY").toList shouldBe empty
+        engine.execute(s"CYPHER 2.3 $QUERY").toList shouldBe empty
     }
   }
 
   test("should_be_able_to_override_config") {
-    runWithConfig("cypher_parser_version" -> "2.2") {
+    runWithConfig("cypher_parser_version" -> "2.3") {
       engine =>
-        engine.execute(s"CYPHER 1.9 $QUERY_1_9_ONLY").toList shouldBe empty
+        engine.execute(s"CYPHER 3.0 $QUERY").toList shouldBe empty
     }
   }
 
   test("should_be_able_to_override_config2") {
-    runWithConfig("cypher_parser_version" -> "1.9") {
+    runWithConfig("cypher_parser_version" -> "2.3") {
       engine =>
-        engine.execute(s"CYPHER 2.2 $QUERY_2_X_ONLY").toList shouldBe empty
+        engine.execute(s"CYPHER 3.0 $QUERY").toList shouldBe empty
     }
   }
 
   test("should_use_default_version_by_default") {
     runWithConfig() {
       engine =>
-        engine.execute(QUERY_2_X_ONLY).toList shouldBe empty
+        engine.execute(QUERY).toList shouldBe empty
     }
   }
 
   test("should handle profile") {
     runWithConfig() {
       (engine: ExecutionEngine) =>
-        assertProfiled(engine, "CYPHER 1.9 PROFILE START n=node(*) RETURN n")
-        assertProfiled(engine, "CYPHER 2.2 PROFILE MATCH n RETURN n")
         assertProfiled(engine, "CYPHER 2.3 runtime=interpreted PROFILE MATCH n RETURN n")
         assertProfiled(engine, "CYPHER 2.3 runtime=compiled PROFILE MATCH n RETURN n")
+        assertProfiled(engine, "CYPHER 3.0 runtime=interpreted PROFILE MATCH n RETURN n")
+        assertProfiled(engine, "CYPHER 3.0 runtime=compiled PROFILE MATCH n RETURN n")
     }
   }
 
-  test("should allow the use of explain only in the supported compilers") {
+  test("should allow the use of explain in the supported compilers") {
     runWithConfig() {
       engine =>
-        intercept[InvalidArgumentException](engine.execute("CYPHER 1.9 EXPLAIN MATCH n RETURN n"))
-        assertExplained(engine, "CYPHER 2.2 EXPLAIN MATCH n RETURN n")
         assertExplained(engine, "CYPHER 2.3 EXPLAIN MATCH n RETURN n")
+        assertExplained(engine, "CYPHER 3.0 EXPLAIN MATCH n RETURN n")
     }
   }
 
@@ -264,11 +243,13 @@ class CypherCompatibilityTest extends CypherFunSuite {
     }
   }
 
-  test("should not support old 2.0 and 2.1 compilers") {
+  test("should not support old 1.9 - 2.2 compilers") {
     runWithConfig() {
       engine =>
+        intercept[SyntaxException](engine.execute("CYPHER 1.9 MATCH n RETURN n"))
         intercept[SyntaxException](engine.execute("CYPHER 2.0 MATCH n RETURN n"))
         intercept[SyntaxException](engine.execute("CYPHER 2.1 MATCH n RETURN n"))
+        intercept[SyntaxException](engine.execute("CYPHER 2.2 MATCH n RETURN n"))
     }
   }
 

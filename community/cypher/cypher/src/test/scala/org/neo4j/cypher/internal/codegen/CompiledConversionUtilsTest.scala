@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.codegen
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.frontend.v2_3.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 
 class CompiledConversionUtilsTest extends CypherFunSuite {

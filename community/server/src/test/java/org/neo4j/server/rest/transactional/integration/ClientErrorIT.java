@@ -68,7 +68,7 @@ public class ClientErrorIT extends AbstractRestFunctionalTestBase
                 },
                 new Object[]{
                         "CYPHER 1.9 EXPLAIN MATCH n RETURN n",
-                        Status.Statement.InvalidArguments
+                        Status.Statement.InvalidSyntax
                 },
                 new Object[]{
                         "RETURN 10 / 0",

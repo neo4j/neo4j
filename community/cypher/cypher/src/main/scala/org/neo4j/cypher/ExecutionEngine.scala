@@ -22,9 +22,9 @@ package org.neo4j.cypher
 import java.lang.Boolean.FALSE
 import java.util.{Map => JavaMap}
 
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.using
-import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
-import org.neo4j.cypher.internal.compiler.v2_3.{LRUCache => LRUCachev2_3, _}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.using
+import org.neo4j.cypher.internal.compiler.v3_0.prettifier.Prettifier
+import org.neo4j.cypher.internal.compiler.v3_0.{LRUCache => LRUCachev2_3, _}
 import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
 import org.neo4j.cypher.internal.tracing.{TimingCompilationTracer, CompilationTracer}
 import org.neo4j.cypher.internal.{CypherCompiler, _}
@@ -226,7 +226,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
       graph, GraphDatabaseSettings.cypher_hints_error,
       GraphDatabaseSettings.cypher_hints_error.getDefaultValue.toBoolean
     )
-    if ((version != CypherVersion.v2_2 && version != CypherVersion.v2_3) && (planner == CypherPlanner.greedy || planner == CypherPlanner.idp || planner == CypherPlanner.dp)) {
+    if (((version != CypherVersion.v2_3) || (version != CypherVersion.v3_0)) && (planner == CypherPlanner.greedy || planner == CypherPlanner.idp || planner == CypherPlanner.dp)) {
       val message = s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
         s"with ${GraphDatabaseSettings.cypher_planner.name} = ${planner.name}"
       log.error(message)

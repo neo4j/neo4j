@@ -20,7 +20,7 @@
 package cypher.cucumber.classifier
 
 import com.novus.salat.annotations._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.QueryTag
+import org.neo4j.cypher.internal.compiler.v3_0.ast.QueryTag
 
 import scala.annotation.meta.getter
 
