@@ -2,18 +2,18 @@
 = Where
 
 [abstract]
-`WHERE` adds constraints to the patterns in an `(OPTIONAL)` `MATCH` clause or filters the results of a `WITH` clause.
+`WHERE` adds constraints to the patterns in a `MATCH` or `OPTIONAL MATCH` clause or filters the results of a `WITH` clause.
 
 `WHERE` is not a clause in it's own right -- rather, it's part of `MATCH`, `OPTIONAL MATCH`, `START` and `WITH`.
 
 In the case of `WITH` and `START`, `WHERE` simply filters the results.
 
 For `MATCH` and `OPTIONAL MATCH` on the other hand, `WHERE` adds constraints to the patterns described.
-It should not be seen as a filter after the matching is finished.
+_It should not be seen as a filter after the matching is finished._
 
-[NOTE]
-In the case of multiple (++OPTIONAL++) +MATCH+ clauses, the predicate in +WHERE+ is always a part of the patterns in the directly preceding +MATCH+.
-Both results and performance may be impacted if the +WHERE+ is put inside the wrong +MATCH+ clause.
+[IMPORTANT]
+In the case of multiple `MATCH` / `OPTIONAL MATCH` clauses, the predicate in `WHERE` is always a part of the patterns in the directly preceding `MATCH` / `OPTIONAL MATCH`.
+Both results and performance may be impacted if the `WHERE` is put inside the wrong `MATCH` clause.
 
 .Graph
 include::includes/cypher-where-graph.asciidoc[]
@@ -34,6 +34,26 @@ include::property-exists.asciidoc[]
 
 :leveloffset: 2
 
+[[query-where-string]]
+== String matching ==
+
+The start and end of strings can be matched using `STARTS WITH` and `ENDS WITH`.
+To match regardless of location in a string, use `CONTAINS`.
+The matching is _case-sensitive_.
+
+:leveloffset: 3
+
+include::match-the-start-of-a-string.asciidoc[]
+
+include::match-the-end-of-a-string.asciidoc[]
+
+include::match-anywhere-in-a-string.asciidoc[]
+
+include::string-matching-negation.asciidoc[]
+
+:leveloffset: 2
+
+[[query-where-regex]]
 == Regular expressions ==
 
 Cypher supports filtering using regular expressions.
@@ -49,17 +69,6 @@ include::escaping-in-regular-expressions.asciidoc[]
 
 include::case-insensitive-regular-expressions.asciidoc[]
 
-
-
-:leveloffset: 2
-
-== String pattern matching using STARTS WITH ==
-
-:leveloffset: 3
-
-include::case-sensitive-pattern-matching.asciidoc[]
-
-include::pattern-matching-negation.asciidoc[]
 
 
 :leveloffset: 2
