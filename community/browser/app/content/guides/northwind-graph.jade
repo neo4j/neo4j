@@ -69,8 +69,7 @@ article.guide
       .col-sm-3
         h3 Product Catalog Graph
         p The products, categories and suppliers are related through foreign key references.
-          | Let's promote those to data relationships to realize the graph, then try some
-          | queries using patterns.
+          | Let's promote those to data relationships to realize the graph.
         p
           img.img-responsive(src='images/northwind/product-graph.png')
         hr
@@ -97,6 +96,20 @@ article.guide
             WHERE p.supplierID = s.supplierID
             CREATE (s)-[:SUPPLIES]-&gt;(p)
           include ../../views/partials/inefficient-cypher-query
+    slide.row-fluid
+      .col-sm-3
+        h3 Querying Product Catalog Graph
+        p Lets try some queries using patterns.
+        p
+          img.img-responsive(src='images/northwind/product-graph.png')
+        hr
+        p
+          small :help
+          | &nbsp;
+          a(help-topic='cypher') cypher
+          | &nbsp;
+          a(help-topic='match') MATCH
+      .col-sm-9
         h4 Query using patterns
         figure
           pre.pre-scrollable.code.runnable.
