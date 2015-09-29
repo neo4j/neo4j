@@ -66,8 +66,8 @@ public class ConfiguringPageCacheFactory
                     factory.setFileSystemAbstraction( fs );
                     if ( factory instanceof ConfigurablePageSwapperFactory )
                     {
-                        ConfigurablePageSwapperFactory cfactory = (ConfigurablePageSwapperFactory) factory;
-                        cfactory.configure( config );
+                        ConfigurablePageSwapperFactory configurableFactory = (ConfigurablePageSwapperFactory) factory;
+                        configurableFactory.configure( config );
                     }
                     return factory;
                 }
@@ -126,12 +126,13 @@ public class ConfiguringPageCacheFactory
 
     public void dumpConfiguration()
     {
+        int MiB = 1024 * 1024;
         int cachePageSize = calculatePageSize( config, swapperFactory );
         long maxPages = calculateMaxPages( config, cachePageSize );
         long totalPhysicalMemory = totalPhysicalMemory();
-        String totalPhysicalMemMb = totalPhysicalMemory == -1? "?" : "" + totalPhysicalMemory / 1024 / 1024;
-        long maxVmUsageMb = Runtime.getRuntime().maxMemory() / 1024 / 1024;
-        long pageCacheMb = (maxPages * cachePageSize) / 1024 / 1024;
+        String totalPhysicalMemMb = totalPhysicalMemory == -1? "?" : "" + totalPhysicalMemory / MiB;
+        long maxVmUsageMb = Runtime.getRuntime().maxMemory() / MiB;
+        long pageCacheMb = (maxPages * cachePageSize) / MiB;
         String msg = "Physical mem: " + totalPhysicalMemMb + " MiB," +
                      " Heap size: " + maxVmUsageMb + " MiB," +
                      " Page cache size: " + pageCacheMb + " MiB.";
