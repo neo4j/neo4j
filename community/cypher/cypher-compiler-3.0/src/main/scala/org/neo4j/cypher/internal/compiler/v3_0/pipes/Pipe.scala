@@ -86,6 +86,8 @@ trait Pipe extends Effectful {
    */
   def exists(pred: Pipe => Boolean): Boolean
 
+  def isLeaf = false
+
   def identifiers: immutable.Set[String] = symbols.identifiers.keySet.toSet
 
   // Used by profiling to identify where to report dbhits and rows
@@ -133,7 +135,9 @@ abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pi
 
   override val sources: Seq[Pipe] = Seq(source)
 
-  override def effects = sources.foldLeft(localEffects)(_ | _.effects)
+  override def effects = sources.foldLeft(localEffects)(_ ++ _.effects)
 
   def exists(pred: Pipe => Boolean) = pred(this) || source.exists(pred)
+
+  override def isLeaf = source.sources.isEmpty
 }

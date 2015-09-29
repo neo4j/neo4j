@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <updateDescriptor baseUrl="">
-  <entry targetMediaFileId="444" updatableVersionMin="" updatableVersionMax="" fileName="neo4-community-@NEO4J_VERSION@-macos.dmg" newVersion="@NEO4J_VERSION@" newMediaFileId="444" fileSize="112324474" bundledJre="macosx-amd64-1.7.0_80_unpacked" archive="true">
+  <entry targetMediaFileId="25" updatableVersionMin="" updatableVersionMax="" fileName="neo4-community_windows-x64_@NEO4J_VERSION@.exe" newVersion="@NEO4J_VERSION@" newMediaFileId="25" fileSize="87716352" bundledJre="windows-amd64-1.7.0_80" archive="false">
+    <comment language="en" />
+  </entry>
+  <entry targetMediaFileId="26" updatableVersionMin="" updatableVersionMax="" fileName="neo4-community_windows_@NEO4J_VERSION@.exe" newVersion="@NEO4J_VERSION@" newMediaFileId="26" fileSize="85989376" bundledJre="windows-x86-1.7.0_80" archive="false">
+    <comment language="en" />
+  </entry>
+  <entry targetMediaFileId="444" updatableVersionMin="" updatableVersionMax="" fileName="neo4-community_macos_@NEO4J_VERSION@.dmg" newVersion="@NEO4J_VERSION@" newMediaFileId="444" fileSize="112324131" bundledJre="macosx-amd64-1.7.0_80_unpacked" archive="true">
     <comment language="en" />
   </entry>
 </updateDescriptor>

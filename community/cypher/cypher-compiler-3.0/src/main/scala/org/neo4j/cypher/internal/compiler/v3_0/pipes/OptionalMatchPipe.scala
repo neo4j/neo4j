@@ -44,8 +44,8 @@ case class OptionalMatchPipe(source: Pipe,
   def planDescription: InternalPlanDescription =
     PlanDescriptionImpl(this.id, "OptionalMatch", TwoChildren(source.planDescription, matchPipe.planDescription), Seq.empty, identifiers)
 
-  val identifiersBeforeMatch = matchPipe.symbols.identifiers.map(_._1).toSet
-  val identifiersAfterMatch = source.symbols.identifiers.map(_._1).toSet
+  val identifiersBeforeMatch = matchPipe.symbols.identifiers.keySet
+  val identifiersAfterMatch = source.symbols.identifiers.keySet
   val introducedIdentifiers = identifiersBeforeMatch -- identifiersAfterMatch
   val nulls: Map[String, Any] = introducedIdentifiers.map(_ -> null).toMap
 
@@ -53,7 +53,7 @@ case class OptionalMatchPipe(source: Pipe,
     Iterator(in.newWith(nulls))
   }
 
-  override def localEffects = matchPipe.localEffects
+  override def localEffects = matchPipe.effects.leafEffectsAsOptional
 
   private def doMatch(state: QueryState)(ctx: ExecutionContext) = matchPipe.createResults(state)
 

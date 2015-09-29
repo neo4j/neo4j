@@ -34,8 +34,7 @@ case class KeysFunction(expr: Expression) extends NullInNullOutExpression(expr) 
     case IsMap(map) => map(state.query).keys.toList
 
     case x =>
-      throw new CypherTypeException(s"""Expected ${expr} to be a node, relationship,or a literal map,
-           |but it was ${x.getClass.getSimpleName}""".stripMargin)
+      throw new CypherTypeException(s"Expected $expr to be a node, a relationship, or a literal map, but it was ${x.getClass.getSimpleName}")
   }
 
   def rewrite(f: (Expression) => Expression) = f(KeysFunction(expr.rewrite(f)))
@@ -48,14 +47,5 @@ case class KeysFunction(expr: Expression) extends NullInNullOutExpression(expr) 
     case node: Node => expr.evaluateType(CTNode, symbols)
     case rel: Relationship => expr.evaluateType(CTRelationship, symbols)
     case _ => CTCollection(CTString)
-  }
-
-  override def localEffects(symbols: SymbolTable) = expr match {
-    case i: Identifier => symbols.identifiers(i.entityName) match {
-      case _: NodeType => Effects(ReadsAnyNodeProperty)
-      case _: RelationshipType => Effects(ReadsAnyRelationshipProperty)
-      case _ => Effects()
-    }
-    case _ => Effects()
   }
 }

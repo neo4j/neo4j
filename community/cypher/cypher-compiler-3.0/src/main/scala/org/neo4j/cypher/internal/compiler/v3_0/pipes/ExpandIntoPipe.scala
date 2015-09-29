@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 import java.util.concurrent.ThreadLocalRandom
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ReadsAllNodes, Effects, ReadsRelationships}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, ReadsAllNodes, ReadsAllRelationships}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
-import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, InternalException}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
+import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection}
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.helpers.collection.PrefetchingIterator
 
@@ -163,7 +163,7 @@ case class ExpandIntoPipe(source: Pipe,
 
   val symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 
-  override def localEffects = Effects(ReadsAllNodes, ReadsRelationships)
+  override def localEffects = Effects(ReadsAllNodes, ReadsAllRelationships)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

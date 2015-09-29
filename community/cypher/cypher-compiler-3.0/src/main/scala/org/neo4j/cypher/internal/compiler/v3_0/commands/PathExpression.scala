@@ -21,8 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.commands
 
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{True, Predicate}
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.AllReadEffects
+import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.PatternGraphBuilder
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.UnNamedNameGenerator.isNamed
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
@@ -59,9 +58,6 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate:Predicate=True())
       matchingContext.getMatches(ctx, state).map(getPath)
     }
   }
-
-
-  override def localEffects(symbols: SymbolTable) = AllReadEffects
 
   override def children = pathPattern :+ predicate
 

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.profiler
 
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{NestedPipeExpression, ProjectedPath}
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{WritesAnyNode, Effects, WritesNodes}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, InternalPlanDescription}
@@ -207,7 +207,7 @@ case class ProfilerTestPipe(source: Pipe, name: String, rows: Int, dbAccess: Int
     (0 until rows).map(x => ExecutionContext.empty).toIterator
   }
 
-  def localEffects: Effects = Effects(WritesAnyNode)
+  def localEffects: Effects = Effects()
 
   def symbols: SymbolTable = SymbolTable()
 

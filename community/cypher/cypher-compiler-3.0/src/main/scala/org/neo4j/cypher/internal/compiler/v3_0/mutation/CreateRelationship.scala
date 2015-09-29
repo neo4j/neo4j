@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.mutation
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Identifier}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, WritesRelationships}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{CreatesRelationship, Effects}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
@@ -65,7 +65,7 @@ case class CreateRelationship(key: String,
 extends UpdateAction
   with GraphElementPropertyFunctions {
 
-  def localEffects(symbols: SymbolTable) = props.values.foldLeft(Effects(WritesRelationships))(_ | _.effects(symbols))
+  def localEffects(symbols: SymbolTable) = props.values.foldLeft(Effects(CreatesRelationship(typ)))(_ ++ _.effects(symbols))
 
   override def children =
     props.values.toSeq ++ Seq(from.node, to.node) ++

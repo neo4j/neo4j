@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, ReadsRelationships}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, ReadsAllRelationships}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.graphdb.Relationship
-import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 
 case class RelationshipTypeFunction(relationship: Expression) extends NullInNullOutExpression(relationship) {
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) =
@@ -41,5 +41,5 @@ case class RelationshipTypeFunction(relationship: Expression) extends NullInNull
 
   def symbolTableDependencies = relationship.symbolTableDependencies
 
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsRelationships)
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsAllRelationships)
 }

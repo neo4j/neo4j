@@ -166,8 +166,6 @@ case class PropertyExists(identifier: Expression, propertyKey: KeyToken) extends
   def arguments = Seq(identifier)
 
   def symbolTableDependencies = identifier.symbolTableDependencies
-
-  override def localEffects(symbols: SymbolTable) = Effects.propertyRead(identifier, symbols)(propertyKey.name)
 }
 
 trait StringOperator {

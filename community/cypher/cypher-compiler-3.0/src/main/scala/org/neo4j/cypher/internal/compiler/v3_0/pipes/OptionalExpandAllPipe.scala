@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.Predicate
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ReadsAllNodes, Effects, ReadsRelationships}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, ReadsAllNodes, ReadsAllRelationships}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.ExpandExpression
-import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, InternalException}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
+import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection}
 import org.neo4j.graphdb.Node
 
 case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: SemanticDirection,
@@ -80,7 +80,7 @@ case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String
     copy(source = head)(estimatedCardinality)
   }
 
-  override def localEffects = predicate.effects(symbols) | Effects(ReadsAllNodes, ReadsRelationships)
+  override def localEffects = predicate.effects(symbols) ++ Effects(ReadsAllNodes, ReadsAllRelationships)
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

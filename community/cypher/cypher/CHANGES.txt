@@ -3,6 +3,8 @@
 o Generates a warning when a plan using LOAD CSV uses MATCH or MERGE on a large label without an index
 o Generates a warning when a plan using LOAD CSV also contains an EagerPipe
 o Introduce STARTS WITH, ENDS WITH and CONTAINS
+o ShortestPath no longer has a max limit of 15 steps
+o Generates a warning when using shortestPath without supplying an upper limit
 
 2.3-M03
 -------

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{PathExtractor, Pattern, ShortestPath, SingleNode, _}
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, ReadsAllNodes, ReadsRelationships}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, ReadsAllNodes, ReadsAllRelationships}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.SyntaxException
@@ -157,7 +157,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
     (predicate.symbolTableDependencies intersect pathIdentifiers).isEmpty
   }
 
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsAllNodes, ReadsRelationships)
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsAllNodes, ReadsAllRelationships)
 }
 
 trait ShortestPathStrategy {

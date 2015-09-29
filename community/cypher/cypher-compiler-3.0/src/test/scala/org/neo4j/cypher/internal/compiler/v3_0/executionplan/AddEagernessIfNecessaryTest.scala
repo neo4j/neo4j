@@ -44,8 +44,8 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
     .doesNotIntroduceEagerness()
   }
 
-  test("WRITES -> NONE need no eagerness") {
-    testThatGoingFrom(Effects(WritesAnyNode))
+  test("CREATES -> NONE need no eagerness") {
+    testThatGoingFrom(Effects(CreatesAnyNode))
     .to(Effects())
     .doesNotIntroduceEagerness()
   }
@@ -62,100 +62,82 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
     .doesIntroduceEagerness()
   }
 
-  test("WRITES -> READS needs no eagerness") {
-    testThatGoingFrom(AllWriteEffects)
-    .to(AllReadEffects)
-    .doesNotIntroduceEagerness()
-  }
-
   test("READS -> READS needs no eagerness") {
     testThatGoingFrom(AllReadEffects)
     .to(AllReadEffects)
     .doesNotIntroduceEagerness()
   }
 
-  test("READS NODES -> WRITES RELS does not need eagerness") {
+  test("READS NODES -> CREATES RELS does not need eagerness") {
     testThatGoingFrom(Effects(ReadsAllNodes))
-    .to(Effects(WritesRelationships))
+    .to(Effects(CreatesRelationship("Foo")))
     .doesNotIntroduceEagerness()
-  }
-
-  test("READS ALL -> WRITES RELS needs eagerness") {
-    testThatGoingFrom(AllReadEffects)
-    .to(Effects(WritesRelationships))
-    .doesIntroduceEagerness()
   }
 
   test("READS RELS -> WRITES NODES needs not eagerness") {
-    testThatGoingFrom(Effects(ReadsRelationships))
-    .to(Effects(WritesAnyNode))
+    testThatGoingFrom(Effects(ReadsAllRelationships))
+    .to(Effects(CreatesAnyNode))
     .doesNotIntroduceEagerness()
-  }
-
-  test("READS PROP -> WRITES PROP needs eagerness"){
-    testThatGoingFrom(Effects(ReadsGivenNodeProperty("foo")))
-      .to(Effects(WritesGivenNodeProperty("foo")))
-      .doesIntroduceEagerness()
-  }
-
-  test("WRITES PROP -> READS PROP does not need eagerness") {
-    testThatGoingFrom(Effects(WritesGivenNodeProperty("foo")))
-      .to(Effects(ReadsGivenNodeProperty("foo")))
-      .doesNotIntroduceEagerness()
-  }
-
-  test("READS ALL PROPS -> WRITES PROP needs eagerness") {
-    testThatGoingFrom(Effects(ReadsAnyNodeProperty))
-      .to(Effects(WritesGivenNodeProperty("bar")))
-      .doesIntroduceEagerness()
-  }
-
-  test("WRITES ALL PROPS -> READS PROP does not need eagerness") {
-    testThatGoingFrom(Effects(WritesAnyNodeProperty))
-      .to(Effects(ReadsGivenNodeProperty("foo")))
-      .doesNotIntroduceEagerness()
-  }
-
-  test("READS ALL PROPS -> WRITES ALL PROPS needs eagerness") {
-    testThatGoingFrom(Effects(ReadsAnyNodeProperty))
-      .to(Effects(WritesAnyNodeProperty))
-      .doesIntroduceEagerness()
-  }
-
-  test("WRITES ALL PROPS -> READS ALL PROPS does not need eagerness") {
-    testThatGoingFrom(Effects(WritesAnyNodeProperty))
-      .to(Effects(ReadsAnyNodeProperty))
-      .doesNotIntroduceEagerness()
   }
 
   test("READS LABEL -> WRITES LABEL needs eagerness") {
     testThatGoingFrom(Effects(ReadsNodesWithLabels("foo")))
-      .to(Effects(WritesNodesWithLabels("foo")))
+      .to(Effects(SetLabel("foo")))
       .doesIntroduceEagerness()
   }
 
-  test("WRITES LABEL -> READS LABEL does not need eagerness") {
-    testThatGoingFrom(Effects(WritesNodesWithLabels("foo")))
+  test("READS LABEL in a leaf -> WRITES LABEL does not need eagerness") {
+    testThatGoingFrom(Effects(ReadsNodesWithLabels("foo")).asLeafEffects)
+      .to(Effects(SetLabel("foo")))
+      .doesNotIntroduceEagerness()
+  }
+
+  test("WRITES LABEL in leaf -> READS LABEL does not need eagerness") {
+    testThatGoingFrom(Effects(CreatesNodesWithLabels("foo")).asLeafEffects)
       .to(Effects(ReadsNodesWithLabels("foo")))
       .doesNotIntroduceEagerness()
   }
 
-  test("READS ALL NODES -> WRITES LABEL does not need eagerness") {
-    testThatGoingFrom(Effects(ReadsAllNodes))
-      .to(Effects(WritesNodesWithLabels("foo")))
+  test("WRITES LABEL in non-leaf -> READS LABEL needs eagerness") {
+    testThatGoingFrom(Effects(CreatesNodesWithLabels("foo")))
+      .to(Effects(ReadsNodesWithLabels("foo")))
+      .doesIntroduceEagerness()
+  }
+
+  test("READS ALL NODES in leaf -> WRITES LABEL does not need eagerness") {
+    testThatGoingFrom(Effects(ReadsAllNodes).asLeafEffects)
+      .to(Effects(CreatesNodesWithLabels("foo")))
       .doesNotIntroduceEagerness()
+  }
+
+  test("READS ALL NODES in leaf -> WRITES LABEL needs eagerness") {
+    testThatGoingFrom(Effects(ReadsAllNodes))
+      .to(Effects(CreatesNodesWithLabels("foo")))
+      .doesIntroduceEagerness()
+  }
+
+  test("ReadsLabel in leaf with matching label should not introduce eagerness") {
+    testThatGoingFrom(Effects(ReadsNodesWithLabels("Folder")).asLeafEffects)
+      .to(Effects(CreatesNodesWithLabels("Folder")))
+      .doesNotIntroduceEagerness()
+  }
+
+  test("ReadsLabel in leaf with matching label should introduce eagerness") {
+    testThatGoingFrom(Effects(ReadsNodesWithLabels("Folder")))
+      .to(Effects(CreatesNodesWithLabels("Folder")))
+      .doesIntroduceEagerness()
   }
 
   test("WRITES ANY NODE -> READS LABEL does not need eagerness") {
-    testThatGoingFrom(Effects(WritesAnyNode))
+    testThatGoingFrom(Effects(CreatesAnyNode))
       .to(Effects(ReadsNodesWithLabels("foo")))
       .doesNotIntroduceEagerness()
   }
 
-  test("NONE -> READS RELS -> WRITE NODES -> NONE needs not eagerness") {
+  test("NONE -> READS RELS -> WRITE NODES -> NONE needs no eagerness") {
     val a = FakePipeWithSources("a", List.empty, Effects())
-    val b = FakePipeWithSources("b", List(a), Effects(ReadsRelationships))
-    val c = FakePipeWithSources("c", List(b), Effects(WritesAnyNode))
+    val b = FakePipeWithSources("b", List(a), Effects(ReadsAllRelationships))
+    val c = FakePipeWithSources("c", List(b), Effects(CreatesAnyNode))
     val d = FakePipeWithSources("d", List(c), Effects())
 
     val result = addEagernessIfNecessary.apply(d)
@@ -163,20 +145,14 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
     result should equal(d)
   }
 
-  test("ReadsLabel with matching label should introduce eagerness") {
-    testThatGoingFrom(Effects(ReadsNodesWithLabels("Folder"), WritesRelationships, WritesAnyNode))
-      .to(Effects(WritesNodesWithLabels("Folder"), WritesAnyNode, WritesRelationships))
-      .doesIntroduceEagerness()
-  }
-
-  test("NONE -> READS ALL -> WRITE NODES -> NONE needs eagerness") {
+  test("NONE -> READS ALL -> WRITE NODES -> NONE does not need eagerness") {
     val a = FakePipeWithSources("a", List.empty, Effects())
     val b = FakePipeWithSources("b", List(a), AllReadEffects)
-    val c = FakePipeWithSources("c", List(b), Effects(WritesAnyNode))
+    val c = FakePipeWithSources("c", List(b), Effects(CreatesAnyNode))
     val d = FakePipeWithSources("d", List(c), Effects())
 
     val eagerB = EagerPipe(b)
-    val eagerC = FakePipeWithSources("c", List(eagerB), Effects(WritesAnyNode))
+    val eagerC = FakePipeWithSources("c", List(eagerB), Effects(CreatesAnyNode))
     val eagerD = FakePipeWithSources("d", List(eagerC), Effects())
 
     val result = addEagernessIfNecessary.apply(d)
@@ -184,15 +160,20 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
     result should equal(eagerD)
   }
 
-  test("mixed bag of pipes that need eager with pipes that do not") {
-    val leaf1 = FakePipeWithSources("l1", List.empty, Effects(ReadsAllNodes))
-    val leaf2 = FakePipeWithSources("l2", List.empty, Effects(ReadsRelationships))
-    val parent = FakePipeWithSources("parent", List(leaf1, leaf2), Effects(WritesAnyNode))
+  test("NONE -> READS ALL -> READS ALL -> WRITE NODES -> NONE needs eagerness") {
+    val a = FakePipeWithSources("a", List.empty, Effects())
+    val b = FakePipeWithSources("b", List(a), AllReadEffects)
+    val c = FakePipeWithSources("c", List(b), AllReadEffects)
+    val d = FakePipeWithSources("d", List(c), Effects(CreatesAnyNode))
+    val e = FakePipeWithSources("e", List(d), Effects())
 
-    val expected = FakePipeWithSources("parent", List(EagerPipe(leaf1), leaf2), Effects(WritesAnyNode))
+    val eagerC = EagerPipe(c)
+    val eagerD = FakePipeWithSources("d", List(eagerC), Effects(CreatesAnyNode))
+    val eagerE = FakePipeWithSources("e", List(eagerD), Effects())
 
-    val result = addEagernessIfNecessary.apply(parent)
-    result should equal(expected)
+    val result = addEagernessIfNecessary.apply(e)
+
+    result should equal(eagerE)
   }
 
   test("pipe with no source is returned as is") {
@@ -205,49 +186,54 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
 
   test("Reading and writing nodes with different labels does not introduce eagerness") {
     testThatGoingFrom(Effects(ReadsNodesWithLabels("a", "b", "c")))
-      .to(Effects(WritesNodesWithLabels("d", "e", "f")))
+      .to(Effects(CreatesNodesWithLabels("d", "e", "f")))
       .doesNotIntroduceEagerness()
   }
 
-  test("Reading any node and writing to nodes with specific labels does not introduce eagerness") {
+  test("Reading any node from leaf and writing to nodes with specific labels does not introduce eagerness") {
+    testThatGoingFrom(Effects(ReadsAllNodes).asLeafEffects)
+      .to(Effects(CreatesNodesWithLabels("d", "e", "f")))
+      .doesNotIntroduceEagerness()
+  }
+  test("Reading any node from non-leaf and writing to nodes with specific labels does not introduce eagerness") {
     testThatGoingFrom(Effects(ReadsAllNodes))
-      .to(Effects(WritesNodesWithLabels("d", "e", "f")))
-      .doesNotIntroduceEagerness()
+      .to(Effects(CreatesNodesWithLabels("d", "e", "f")))
+      .doesIntroduceEagerness()
   }
 
-  test("Reading node with specific label and writing to any nodes does introduce eagerness") {
+  test("Reading node with specific label and writing to any nodes does not introduce eagerness") {
     testThatGoingFrom(Effects(ReadsNodesWithLabels("a", "b")))
-      .to(Effects(WritesAnyNode))
-      .doesIntroduceEagerness()
+      .to(Effects(CreatesAnyNode))
+      .doesNotIntroduceEagerness()
   }
 
   test("Reading and writing nodes to nodes with overlapping labels does introduce eagerness") {
     testThatGoingFrom(Effects(ReadsNodesWithLabels("a", "b", "c")))
-      .to(Effects(WritesNodesWithLabels("d", "b", "f")))
+      .to(Effects(CreatesNodesWithLabels("d", "b", "f")))
       .doesIntroduceEagerness()
   }
 
   test("Writing nodes with one set of labels + read and write  with different labels does not introduce eagerness") {
-    testThatGoingFrom(Effects(WritesNodesWithLabels("a", "b", "c")))
-      .to(Effects(WritesNodesWithLabels("d", "e", "f")) | Effects(ReadsNodesWithLabels("f")))
+    testThatGoingFrom(Effects(CreatesNodesWithLabels("a", "b", "c")))
+      .to(Effects(CreatesNodesWithLabels("d", "e", "f"), ReadsNodesWithLabels("f")))
       .doesNotIntroduceEagerness()
   }
 
   test("Writing nodes with one set of labels + write and read same label does introduce eagerness") {
-    testThatGoingFrom(Effects(WritesNodesWithLabels("a", "b", "c")))
-      .to(Effects(WritesNodesWithLabels("d", "e", "f")) | Effects(ReadsNodesWithLabels("b")))
+    testThatGoingFrom(Effects(CreatesNodesWithLabels("a", "b", "c")))
+      .to(Effects(CreatesNodesWithLabels("d", "e", "f"), ReadsNodesWithLabels("b")))
       .doesIntroduceEagerness()
   }
 
-  test("Writing to any nodes  + write and read some label does introduce eagerness") {
-    testThatGoingFrom(Effects(WritesAnyNode))
-      .to(Effects(WritesNodesWithLabels("d", "e", "f")) | Effects(ReadsNodesWithLabels("b")))
-      .doesIntroduceEagerness()
+  test("Writing to any nodes  + write and read some label does not introduce eagerness") {
+    testThatGoingFrom(Effects(CreatesAnyNode))
+      .to(Effects(CreatesNodesWithLabels("d", "e", "f"), ReadsNodesWithLabels("b")))
+      .doesNotIntroduceEagerness()
   }
 
   test("Writing to nodes with some labels + write and read to any labeled node") {
-    testThatGoingFrom(Effects(WritesNodesWithLabels("a")))
-      .to(Effects(WritesNodesWithLabels("d", "e", "f")) | Effects(ReadsAllNodes))
+    testThatGoingFrom(Effects(CreatesNodesWithLabels("a")))
+      .to(Effects(CreatesNodesWithLabels("d", "e", "f"), ReadsAllNodes))
       .doesIntroduceEagerness()
   }
 
@@ -255,7 +241,7 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
   case class FakePipeWithSources(name:String, sources: List[Pipe], override val localEffects: Effects = AllEffects) extends Pipe {
     def monitor: PipeMonitor = mock[PipeMonitor]
 
-    override def effects: Effects = sources.foldLeft(localEffects)(_ | _.effects)
+    override def effects: Effects = sources.foldLeft(localEffects)(_ ++ _.effects)
 
     def planDescription: InternalPlanDescription = ???
 

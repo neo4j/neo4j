@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.Predicate
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ReadsAllNodes, Effects, ReadsRelationships}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, ReadsAllNodes, ReadsAllRelationships}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CastSupport, CollectionSupport}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.LegacyExpression
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
@@ -74,7 +74,7 @@ case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, pre
     copy(source = head)(estimatedCardinality)
   }
 
-  override def localEffects = Effects(ReadsAllNodes, ReadsRelationships)
+  override def localEffects = Effects(ReadsAllNodes, ReadsAllRelationships)
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

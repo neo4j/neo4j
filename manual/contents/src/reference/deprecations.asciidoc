@@ -21,3 +21,7 @@ For more information, see <<powershell>>.
 `STR()` function::
 The `STR()` function is deprecated from Neo4j version 2.3 and onwards.
 It may be removed in a future major release.
+
+`HAS()` function::
+The `HAS()` function is deprecated from Neo4j version 2.3 and onwards. Please use `EXISTS()` instead. It will be
+removed in a future major release.

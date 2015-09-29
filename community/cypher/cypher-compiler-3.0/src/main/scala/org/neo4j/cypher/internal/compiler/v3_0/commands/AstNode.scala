@@ -32,7 +32,7 @@ trait EffectfulAstNode[T] extends AstNode[T] {
     var completeEffects = localEffects(symbols)
     visitChildren {
       case (expr: EffectfulAstNode[_]) =>
-        completeEffects = completeEffects | expr.localEffects(symbols)
+        completeEffects = completeEffects ++ expr.localEffects(symbols)
     }
     completeEffects
   }

@@ -24,7 +24,7 @@ import java.util.concurrent._
 import org.junit.Assert._
 import org.mockito.Mockito._
 import org.neo4j.cypher.GraphDatabaseTestSupport
-import org.neo4j.cypher.internal.compatibility.WrappedMonitors3_0
+import org.neo4j.cypher.internal.compatibility.{WrappedMonitors2_3, WrappedMonitors3_0}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Identifier, Literal}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.HasLabel
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.TokenType.{Label, PropertyKey}
@@ -151,7 +151,7 @@ class RuleExecutablePlanBuilderTest
     Seq(pipe.getClass) ++ pipe.sources.headOption.toSeq.flatMap(toSeq)
   }
 
-  test("should wrap a lazy pipe in an eager pipe if the query contains updates") {
+  test("should not wrap a lazy pipe in an eager pipe if the query contains updates, if the lazy pipe is a 'left-side' leaf") {
     graph.inTx {
       // MATCH n CREATE ()
       val q = Query
@@ -169,7 +169,36 @@ class RuleExecutablePlanBuilderTest
       toSeq(pipe) should equal (Seq(
         classOf[EmptyResultPipe],
         classOf[ExecuteUpdateCommandsPipe],
+        classOf[NodeStartPipe],
+        classOf[SingleRowPipe]
+      ))
+    }
+  }
+
+  test("should wrap a lazy pipe in an eager pipe if the query contains updates, if the lazy pipe is a not a 'left-side' leaf") {
+    graph.inTx {
+      // MATCH n CREATE ()
+      val q = Query
+        .matches(SingleNode("n"))
+        .tail(Query
+          .matches(SingleNode("n2"))
+          .tail(Query
+            .updates(CreateNode("  UNNAMED3456", Map.empty, Seq.empty))
+            .returns()
+          )
+          .returns()
+        )
+        .returns(AllIdentifiers())
+      val parsedQ = new FakePreparedQuery(q)
+
+      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), RewriterStepSequencer.newValidating)
+      val pipe = pipeBuilder.producePlan(parsedQ, planContext).right.toOption.get.pipe
+
+      toSeq(pipe) should equal (Seq(
+        classOf[EmptyResultPipe],
+        classOf[ExecuteUpdateCommandsPipe],
         classOf[EagerPipe],
+        classOf[NodeStartPipe],
         classOf[NodeStartPipe],
         classOf[SingleRowPipe]
       ))

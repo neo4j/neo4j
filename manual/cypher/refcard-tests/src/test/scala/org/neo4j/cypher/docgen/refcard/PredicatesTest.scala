@@ -84,7 +84,7 @@ Use comparison operators.
 MATCH n
 WHERE
 
-has(n.property)
+exists(n.property)
 
 RETURN n###
 
@@ -136,7 +136,7 @@ Check if something is `NULL`.
 MATCH n
 WHERE
 
-NOT has(n.property) OR n.property = {value}
+NOT exists(n.property) OR n.property = {value}
 
 RETURN n###
 
@@ -176,7 +176,7 @@ String pattern matching.
 
 ###assertion=returns-one parameters=regex
 MATCH n
-WHERE HAS(n.property) AND
+WHERE EXISTS(n.property) AND
 
 n.property =~ "Tob.*"
 
@@ -206,7 +206,7 @@ Exclude matches to `(n)-[:KNOWS]->(m)` from the result.
 
 ###assertion=returns-one parameters=names
 MATCH n
-WHERE has(n.property) AND
+WHERE exists(n.property) AND
 
 n.property IN [{value1}, {value2}]
 

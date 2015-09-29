@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ReadsAllNodes, WritesAnyNode, WritesNodesWithLabels, ReadsNodesWithLabels, Effects}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.PropertySupport
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{EntityProducer, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.Argument
@@ -171,8 +171,8 @@ case class MergeNodeAction(identifier: String,
       ++ onMatch.flatMap(_.symbolTableDependencies)).toSet - identifier
 
   def localEffects(symbols: SymbolTable) =
-    if (labels.isEmpty) Effects(WritesAnyNode, ReadsAllNodes)
-    else Effects(ReadsNodesWithLabels(labels.map(_.name).toSet), WritesNodesWithLabels(labels.map(_.name).toSet))
+    if (labels.isEmpty) Effects(CreatesAnyNode, ReadsAllNodes)
+    else Effects(ReadsNodesWithLabels(labels.map(_.name).toSet), CreatesNodesWithLabels(labels.map(_.name).toSet))
 
   override def updateSymbols(symbol: SymbolTable): SymbolTable = symbol.add(identifiers.toMap)
 }

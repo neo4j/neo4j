@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.pipes.matching
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.Pattern
+import org.neo4j.cypher.internal.compiler.v3_0.commands.{Pattern, RelatedTo}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, ReadsRelationshipsWithTypes}
 import org.neo4j.cypher.internal.frontend.v3_0.PatternException
 
 case class PatternGraph(patternNodes: Map[String, PatternNode],
@@ -32,6 +33,14 @@ case class PatternGraph(patternNodes: Map[String, PatternNode],
   def identifiers: Seq[String] = patternGraph.keys.toSeq
 
   def isEmpty: Boolean = patternNodes.isEmpty && patternRels.isEmpty
+
+  def effects: Effects = {
+    val effects = patternsContained.map {
+      case pattern: RelatedTo => Effects(ReadsRelationshipsWithTypes(pattern.relTypes:_*))
+      case _ => Effects()
+    }
+    effects.foldLeft(Effects())(_ ++ _) //++ Effects(ReadsRelationshipBoundNodes)
+  }
 
   val (patternGraph, containsLoops) = validatePattern(patternNodes, patternRels)
 
