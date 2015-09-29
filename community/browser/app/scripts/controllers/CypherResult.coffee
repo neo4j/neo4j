@@ -32,9 +32,9 @@ angular.module('neo4jApp.controllers')
       # - Table only
       $scope.availableModes = []
       if not resp.errors
-        $scope.availableModes.push('graph') if resp.table.nodes.length
-        $scope.availableModes.push('table') if resp.table.size?
-        $scope.availableModes.push('plan') if resp.table._response.plan
+        $scope.availableModes.push('graph') if resp.table?.nodes.length
+        $scope.availableModes.push('table') if resp.table?.size?
+        $scope.availableModes.push('plan') if resp.table?._response.plan
       $scope.availableModes.push('raw') if resp.raw
       $scope.availableModes.push('errors') if resp.errors
       $scope.availableModes.push('messages') if resp.raw?.response.data.notifications
