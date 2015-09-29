@@ -1,12 +1,19 @@
 2.3.0-M03
 ---------
 o Fixes bad assumption about all messages containing instance ID
-o No longer resolves hostnames into IPs. This should help in data center installations where a hostname might resolve into different IPs depending on which center the server is running in
+o No longer resolves hostnames into IPs. This should help in data center installations where a hostname might resolve
+  into different IPs depending on which center the server is running in
+
+2.2.6
+-----
+o Elections where the only viable candidate has just been demoted will now elect that candidate.
+  This solves an issue where in clusters with all but one instances configured slave only, master
+  failure and rejoin would still leave the cluster without master.
 
 2.2.2
 -----
 o Network exceptions that gets logged are now throttled, i.e. logged every N seconds at most,
-  instead of for every occurence. This to remove fix an issue where a tight loop could fill up a log very fast.
+  instead of for every occurrence. This to remove fix an issue where a tight loop could fill up a log very fast.
 
 2.1.5
 -----

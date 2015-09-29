@@ -83,13 +83,18 @@ public class Extractors
     private final Extractor<float[]> floatArray;
     private final Extractor<double[]> doubleArray;
 
+    public Extractors( char arrayDelimiter )
+    {
+        this( arrayDelimiter, Configuration.DEFAULT.emptyQuotedStringsAsNull() );
+    }
+
     /**
      * Why do we have a public constructor here and why isn't this class an enum?
      * It's because the array extractors can be configured with an array delimiter,
      * something that would be impossible otherwise. There's an equivalent {@link #valueOf(String)}
      * method to keep the feel of an enum.
      */
-    public Extractors( char arrayDelimiter )
+    public Extractors( char arrayDelimiter, boolean emptyStringsAsNull )
     {
         try
         {
@@ -105,7 +110,7 @@ public class Extractors
                 }
             }
 
-            add( string = new StringExtractor() );
+            add( string = new StringExtractor( emptyStringsAsNull ) );
             add( long_ = new LongExtractor() );
             add( int_ = new IntExtractor() );
             add( char_ = new CharExtractor() );
@@ -276,10 +281,12 @@ public class Extractors
     private static class StringExtractor extends AbstractSingleValueExtractor<String>
     {
         private String value;
+        private final boolean emptyStringsAsNull;
 
-        StringExtractor()
+        StringExtractor( boolean emptyStringsAsNull )
         {
             super( String.class.getSimpleName() );
+            this.emptyStringsAsNull = emptyStringsAsNull;
         }
 
         @Override
@@ -291,7 +298,7 @@ public class Extractors
         @Override
         protected boolean nullValue( int length, boolean skippedChars )
         {
-            return length == 0 && !skippedChars;
+            return length == 0 && (!skippedChars || emptyStringsAsNull);
         }
 
         @Override

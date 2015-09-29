@@ -1,6 +1,10 @@
 2.3-M02
-----
+-------
 o Print warnings and/or errors (as configured) from Cypher
+
+2.2.6
+-----
+o Local database instance will be shutdown after command execution
 
 2.0.2
 -----
