@@ -38,6 +38,8 @@ abstract class Trail {
 
   def end: String
 
+  def typ: Seq[String]
+
   def isEndPoint: Boolean
 
   def size: Int

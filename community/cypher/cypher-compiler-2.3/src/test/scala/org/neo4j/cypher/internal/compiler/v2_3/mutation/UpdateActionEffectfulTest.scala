@@ -37,14 +37,14 @@ class UpdateActionEffectfulTest extends CypherFunSuite {
     val inner = PropertySetAction(Property(Identifier("a"), PropertyKey("x")), Literal(1))
     val given = MergeNodeAction("a", Map.empty, Seq.empty, Seq.empty, Seq(inner), Seq.empty, None)
 
-    given.effects(SymbolTable(Map("a" -> symbols.CTNode))) should equal(Effects(ReadsAllNodes, WritesAnyNode, WritesGivenNodeProperty("x")))
+    given.effects(SymbolTable(Map("a" -> symbols.CTNode))) should equal(Effects(ReadsAllNodes, CreatesAnyNode, SetGivenNodeProperty("x")))
   }
 
   test("correctly computes MergeNodeAction's effects for relationship property write") {
     val inner = PropertySetAction(Property(Identifier("a"), PropertyKey("x")), Literal(1))
     val given = MergeNodeAction("b", Map.empty, Seq.empty, Seq.empty, Seq(inner), Seq.empty, None)
 
-    given.effects(SymbolTable(Map("a" -> symbols.CTRelationship))) should equal(Effects(ReadsAllNodes, WritesAnyNode, WritesGivenRelationshipProperty("x")))
+    given.effects(SymbolTable(Map("a" -> symbols.CTRelationship))) should equal(Effects(ReadsAllNodes, CreatesAnyNode, WritesGivenRelationshipProperty("x")))
   }
 
   test("correctly computes MergeNodeAction's effects when inside Foreach") {
@@ -52,7 +52,7 @@ class UpdateActionEffectfulTest extends CypherFunSuite {
     val merge = MergeNodeAction("a", Map.empty, Seq.empty, Seq.empty, Seq(inner), Seq.empty, None)
     val given = ForeachAction(Literal(Seq.empty), "k", Seq(merge))
 
-    given.effects(SymbolTable(Map("a" -> symbols.CTNode))) should equal(Effects(ReadsAllNodes, WritesAnyNode, WritesGivenNodeProperty("x")))
+    given.effects(SymbolTable(Map("a" -> symbols.CTNode))) should equal(Effects(ReadsAllNodes, CreatesAnyNode, SetGivenNodeProperty("x")))
   }
 
   test("correctly computes CreateNode's effects when inside Foreach") {
@@ -60,7 +60,7 @@ class UpdateActionEffectfulTest extends CypherFunSuite {
     val create = CreateNode("a", Map.empty, Seq.empty)
     val given = ForeachAction(Literal(Seq.empty), "k", Seq(create, propertySet))
 
-    given.effects(SymbolTable(Map("a" -> symbols.CTNode))) should equal(Effects(WritesAnyNode, WritesGivenNodeProperty("x")))
+    given.effects(SymbolTable(Map("a" -> symbols.CTNode))) should equal(Effects(CreatesAnyNode, SetGivenNodeProperty("x")))
   }
 
   test("MATCH (a) SET a:Foo RETURN a") {
@@ -70,7 +70,7 @@ class UpdateActionEffectfulTest extends CypherFunSuite {
       case query: Query =>
         query.tail.get.updatedCommands match {
           case Seq(setAction) =>
-            setAction.effects(SymbolTable(Map("a" -> symbols.CTNode))) should equal(Effects(WritesNodesWithLabels("Foo")))
+            setAction.effects(SymbolTable(Map("a" -> symbols.CTNode))) should equal(Effects(SetLabel("Foo")))
         }
     }
   }

@@ -833,7 +833,6 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       implicit val x = ctx
 
       val plan = queryGraphSolver.plan(cfg.qg)
-      println(plan)
       plan should equal(
         Expand(
           ProjectEndpoints(

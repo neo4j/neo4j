@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{WritesNodesWithLabels, Effect, Effects}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{SetLabel, Effect, Effects}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{CastSupport, CollectionSupport}
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.{SetAction}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
@@ -38,7 +38,7 @@ case object LabelRemoveOp extends LabelOp
 case class LabelAction(entity: Expression, labelOp: LabelOp, labels: Seq[KeyToken])
   extends SetAction with CollectionSupport {
 
-  def localEffects(ignored: SymbolTable) = Effects(labels.map(l => WritesNodesWithLabels(l.name)).toSet[Effect])
+  def localEffects(ignored: SymbolTable) = Effects(labels.map(l => SetLabel(l.name)).toSet[Effect])
 
   def children = labels.flatMap(_.children) :+ entity
 
