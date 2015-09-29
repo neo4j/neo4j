@@ -117,6 +117,8 @@
           <groupId>org.neo4j.doc</groupId>
           <artifactId>neo4j-cypher-refcard</artifactId>
           <version>${project.version}</version>
+          <classifier>docs</classifier>
+          <type>pom</type>
           <scope>provided</scope>
         </dependency>
         <dependency>
