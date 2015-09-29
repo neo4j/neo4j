@@ -39,6 +39,11 @@ public interface Configuration
      */
     boolean multilineFields();
 
+    /**
+     * @return {@code true} for treating empty strings, i.e. {@code ""} as null, instead of an empty string.
+     */
+    boolean emptyQuotedStringsAsNull();
+
     static int KB = 1024, MB = KB * KB;
 
     class Default implements Configuration
@@ -57,6 +62,12 @@ public interface Configuration
 
         @Override
         public boolean multilineFields()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean emptyQuotedStringsAsNull()
         {
             return false;
         }
@@ -89,6 +100,12 @@ public interface Configuration
         public boolean multilineFields()
         {
             return defaults.multilineFields();
+        }
+
+        @Override
+        public boolean emptyQuotedStringsAsNull()
+        {
+            return defaults.emptyQuotedStringsAsNull();
         }
     }
 }
