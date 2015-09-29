@@ -35,6 +35,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
+import org.neo4j.cluster.protocol.cluster.ClusterState;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.timeout.Timeouts;
@@ -47,6 +48,9 @@ import static org.neo4j.helpers.Predicates.not;
 import static org.neo4j.helpers.Uris.parameter;
 import static org.neo4j.helpers.collection.Iterables.toList;
 
+/**
+ * Context for {@link ClusterState} state machine.
+ */
 class ClusterContextImpl
         extends AbstractContextImpl
         implements ClusterContext

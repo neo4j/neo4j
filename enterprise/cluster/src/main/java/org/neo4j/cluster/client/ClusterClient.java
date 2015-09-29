@@ -44,6 +44,16 @@ import org.neo4j.cluster.statemachine.StateMachine;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
+/**
+ * These are used as clients for a Neo4j cluster. From here you can perform cluster management operations, like joining
+ * and leaving clusters, as well as adding listeners for cluster events such as elections and heartbeart failures.
+ * <p/>
+ * Instances of this class mainly acts as a facade for the internal distributed state machines, represented by the
+ * individual
+ * interfaces implemented here. See the respective interfaces it implements for details on operations.
+ * <p/>
+ * To create one you should use the {@link ClusterClientModule}.
+ */
 public class ClusterClient
         implements ClusterMonitor, Cluster, AtomicBroadcast, Snapshot, Election, BindingNotifier
 {
