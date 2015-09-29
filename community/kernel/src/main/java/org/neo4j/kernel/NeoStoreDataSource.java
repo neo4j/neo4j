@@ -128,6 +128,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategy;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
@@ -146,6 +147,7 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsManager;
@@ -232,7 +234,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         NeoStoreFileListing fileListing();
     }
 
-    private enum Diagnostics implements DiagnosticsExtractor<NeoStoreDataSource>
+    enum Diagnostics implements DiagnosticsExtractor<NeoStoreDataSource>
     {
         NEO_STORE_VERSIONS( "Store versions:" )
                 {
@@ -248,6 +250,43 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                     void dump( NeoStoreDataSource source, StringLogger.LineLogger log )
                     {
                         source.neoStoreModule.neoStore().logIdUsage( log );
+                    }
+                },
+        NEO_STORE_RECORDS( "Neostore records:" )
+                {
+                    @Override
+                    void dump( NeoStoreDataSource source, LineLogger log )
+                    {
+                        source.neoStoreModule.neoStore().logRecords( log );
+                    }
+                },
+        TRANSACTION_RANGE( "Transaction log:" )
+                {
+                    @Override
+                    void dump( NeoStoreDataSource source, LineLogger log )
+                    {
+                        PhysicalLogFiles logFiles =
+                                source.getDependencyResolver().resolveDependency( PhysicalLogFiles.class );
+                        try
+                        {
+                            for ( long logVersion = logFiles.getLowestLogVersion();
+                                    logFiles.versionExists( logVersion ); logVersion++ )
+                            {
+                                if ( logFiles.hasAnyTransaction( logVersion ) )
+                                {
+                                    LogHeader header = logFiles.extractHeader( logVersion );
+                                    long firstTransactionIdInThisLog = header.lastCommittedTxId + 1;
+                                    log.logLine( "Oldest transaction " + firstTransactionIdInThisLog +
+                                            " found in log with version " + logVersion );
+                                    return;
+                                }
+                            }
+                            log.logLine( "No transactions found in any log" );
+                        }
+                        catch ( IOException e )
+                        {   // It's fine, we just tried to be nice and log this. Failing is OK
+                            log.logLine( "Error trying to figure out oldest transaction in log" );
+                        }
                     }
                 };
 
