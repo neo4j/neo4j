@@ -265,7 +265,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         assertThat( buf.getLong(), is( y ) );
     }
 
-    @Test( timeout = 10000 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void mustUnblockPageFaultersWhenEvictionGetsException() throws Exception
     {
         writeInitialDataTo( file( "a" ) );
