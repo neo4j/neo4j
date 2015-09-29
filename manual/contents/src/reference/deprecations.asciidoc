@@ -23,5 +23,9 @@ The `STR()` function is deprecated from Neo4j version 2.3 and onwards.
 It may be removed in a future major release.
 
 `HAS()` function::
-The `HAS()` function is deprecated from Neo4j version 2.3 and onwards. Please use `EXISTS()` instead. It will be
-removed in a future major release.
+The `HAS()` function is deprecated from Neo4j version 2.3 and onwards. Please use `EXISTS()` instead.
+It will be removed in a future major release.
+
+Bare node patterns::
+The usage of node identifiers without enclosing them in parentheses, such as in `MATCH n-->m RETURN n.prop`, is deprecated from Neo4j version 2.3 and onwards.
+Please use `MATCH (n)-->(m) RETURN n.prop` instead.
