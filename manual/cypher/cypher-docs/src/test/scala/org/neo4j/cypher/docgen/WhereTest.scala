@@ -127,9 +127,15 @@ class WhereTest extends DocumentingTestBase {
   @Test def has_property() {
     testQuery(
       title = "Property exists",
-      text = "To only include nodes/relationships that have a property, use the `HAS()` function and just write out the identifier and the property you expect it to have.",
-      queryText = """match (n) where has(n.belt) return n""",
-      optionalResultExplanation = """"+Andres+" will be returned because he is the only one with a `belt` property.""",
+      text = "Use the `EXISTS()` function to only include nodes or relationships in which a property exists.",
+      queryText = """match (n) where exists(n.belt) return n""",
+      optionalResultExplanation =
+        """"+Andres+" will be returned because he is the only one with a `belt` property.
+          |
+          |[IMPORTANT]
+          |The `HAS()` function has been superseded by `EXISTS()` and will be removed in a future release.
+          |
+        """.stripMargin,
       assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
   }
 
