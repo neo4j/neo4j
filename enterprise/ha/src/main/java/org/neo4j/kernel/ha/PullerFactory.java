@@ -78,7 +78,7 @@ public class PullerFactory
     public TransactionObligationFulfiller createObligationFulfiller( UpdatePuller updatePuller )
     {
         return new UpdatePullingTransactionObligationFulfiller( updatePuller, memberStateMachine, serverId,
-                dependencyResolver.provideDependency( TransactionIdStore.class ) );
+                dependencyResolver.provideDependency( TransactionIdStore.class ), logging );
     }
 
     public UpdatePullerScheduler createUpdatePullerScheduler( UpdatePuller updatePuller )

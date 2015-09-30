@@ -301,10 +301,12 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
         try
         {
             RequestContext context = requestContextFactory.newRequestContext();
+            logger.debug( "Pulling updates with " + context  );
             try ( Response<Void> ignored = master.pullUpdates( context ) )
             {
                 // Updates would be applied as part of response processing
             }
+            logger.debug( "Pulling updates with " + context + " done!"  );
         }
         catch ( InvalidEpochException e )
         {

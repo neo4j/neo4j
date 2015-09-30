@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -53,7 +54,8 @@ public class SlaveTransactionCommitProcessTest
 
         when(master.commit( any( RequestContext.class), any( TransactionRepresentation.class) )).thenReturn( response );
 
-        SlaveTransactionCommitProcess process = new SlaveTransactionCommitProcess( master, reqFactory );
+        SlaveTransactionCommitProcess process =
+                    new SlaveTransactionCommitProcess( master, reqFactory, NullLogProvider.getInstance() );
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation(
                 Collections.<Command>emptyList() );
         tx.setHeader(new byte[]{}, 1, 1, 1, 1, 1, 1337);
