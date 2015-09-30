@@ -73,7 +73,7 @@ public class ResponsePacker
     public <T> Response<T> packTransactionObligationResponse( RequestContext context, T response )
     {
         return packTransactionObligationResponse( context, response,
-                transactionIdStore.getLastCommittedTransactionId() );
+                transactionIdStore.getHighestCommittedTransactionId() );
     }
 
     public <T> Response<T> packTransactionObligationResponse( RequestContext context, T response,

@@ -74,6 +74,8 @@ public interface TransactionIdStore
      */
     long[] getLastCommittedTransaction();
 
+    long getHighestCommittedTransactionId();
+
     /**
      * Returns transaction information about transaction where the last upgrade was performed, i.e.
      * transaction id as well as checksum.

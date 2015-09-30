@@ -42,6 +42,7 @@ import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.kernel.impl.util.CappedOperation.time;
@@ -640,6 +641,13 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     {
         checkInitialized( lastCommittingTxField.get() );
         return lastCommittedTx.get();
+    }
+
+    @Override
+    public long getHighestCommittedTransactionId()
+    {
+        checkInitialized( lastCommittingTxField.get() );
+        return lastCommittedTx.getHighestOfferedNumber();
     }
 
     @Override
