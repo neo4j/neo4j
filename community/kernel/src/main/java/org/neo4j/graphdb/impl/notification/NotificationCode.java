@@ -197,5 +197,13 @@ public enum NotificationCode
         {
             return severity;
         }
+
+        @Override
+        public String toString() {
+            return "Notification{" +
+                    "position=" + position +
+                    ", detailedDescription='" + detailedDescription + '\'' +
+                    '}';
+        }
     }
 }
