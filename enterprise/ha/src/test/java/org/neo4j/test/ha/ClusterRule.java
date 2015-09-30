@@ -59,6 +59,7 @@ public class ClusterRule extends ExternalResource
     private HighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
     private List<Predicate<ManagedCluster>> availabilityChecks = asList( allSeesAllAsAvailable() );
     private final TargetDirectory.TestDirectory testDirectory;
+    private File seedDir;
 
     public ClusterRule( Class<?> testClass )
     {
@@ -100,10 +101,21 @@ public class ClusterRule extends ExternalResource
         return this;
     }
 
+    public ClusterRule withSeedDir( File seedDir )
+    {
+        this.seedDir = seedDir;
+        return this;
+    }
+
     public ClusterManager.ManagedCluster startCluster() throws Exception
     {
-        clusterManager = new Builder( storeDirectory )
-                .withCommonConfig( config ).withProvider( provider ).withDbFactory( factory ).build();
+        Builder builder = new Builder( storeDirectory ).withCommonConfig( config )
+                .withProvider( provider ).withDbFactory( factory );
+        if ( seedDir != null )
+        {
+            builder.withSeedDir( seedDir );
+        }
+        clusterManager = builder.build();
         try
         {
             clusterManager.start();
