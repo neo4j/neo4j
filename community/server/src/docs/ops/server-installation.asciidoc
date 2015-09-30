@@ -17,7 +17,7 @@ For information on High Availability, please refer to <<ha>>.
 
 == Prerequisites ==
 
-With the exception of our Windows Installer, you'll need a Java Virtual Machine installed on your computer.
+With the exception of our Windows and Mac Installers, you'll need a Java Virtual Machine installed on your computer.
 We recommend that you install http://openjdk.java.net/[OpenJDK 8 (preferred) or 7] or http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Java 8 (preferred) or 7].
 
 [[server-permissions]]
