@@ -31,6 +31,8 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
@@ -45,6 +47,7 @@ public class UpdatePullingTransactionObligationFulfillerTest
     private final UpdatePuller updatePuller = mock( UpdatePuller.class );
     private final HighAvailabilityMemberStateMachine machine = mock( HighAvailabilityMemberStateMachine.class );
     private final InstanceId serverId = new InstanceId( 42 );
+    private final LogProvider logProvider = NullLogProvider.getInstance();
 
     @Before
     public void setup() throws Throwable
@@ -68,7 +71,7 @@ public class UpdatePullingTransactionObligationFulfillerTest
         // Given
         UpdatePullingTransactionObligationFulfiller fulfiller =
                 new UpdatePullingTransactionObligationFulfiller( updatePuller, machine, serverId,
-                        Suppliers.singleton( mock( TransactionIdStore.class ) ) );
+                        Suppliers.singleton( mock( TransactionIdStore.class ) ), logProvider );
 
         // When
         fulfiller.fulfill( 1 );
@@ -112,7 +115,7 @@ public class UpdatePullingTransactionObligationFulfillerTest
         } ).when( machine ).removeHighAvailabilityMemberListener( any( HighAvailabilityMemberListener.class ) );
 
         UpdatePullingTransactionObligationFulfiller fulfiller =
-                new UpdatePullingTransactionObligationFulfiller( updatePuller, machine, serverId, supplier );
+                new UpdatePullingTransactionObligationFulfiller( updatePuller, machine, serverId, supplier, logProvider );
 
         // When
         fulfiller.start();

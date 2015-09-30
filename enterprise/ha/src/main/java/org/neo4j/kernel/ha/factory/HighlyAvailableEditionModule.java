@@ -580,7 +580,7 @@ public class HighlyAvailableEditionModule
         };
     }
 
-    protected CommitProcessFactory createCommitProcessFactory( Dependencies dependencies, LogService logging,
+    protected CommitProcessFactory createCommitProcessFactory( Dependencies dependencies, final LogService logging,
                                                                Monitors monitors, Config config, final LifeSupport paxosLife,
                                                                ClusterClient clusterClient, ClusterMembers members,
                                                                JobScheduler jobScheduler, final Master master,
@@ -590,8 +590,9 @@ public class HighlyAvailableEditionModule
         final DelegateInvocationHandler<TransactionCommitProcess> commitProcessDelegate =
                 new DelegateInvocationHandler<>( TransactionCommitProcess.class );
 
+        final LogProvider logProvider = logging.getInternalLogProvider();
         DefaultSlaveFactory slaveFactory = dependencies.satisfyDependency(
-                new DefaultSlaveFactory( logging.getInternalLogProvider(), monitors,
+                new DefaultSlaveFactory( logProvider, monitors,
                         config.get( HaSettings.com_chunk_size ).intValue() ) );
 
         Slaves slaves = dependencies.satisfyDependency(
@@ -619,7 +620,7 @@ public class HighlyAvailableEditionModule
                     TransactionCommitProcess inner = new TransactionRepresentationCommitProcess( appender, storeApplier,
                             indexUpdatesValidator );
                     paxosLife.add( new CommitProcessSwitcher( pusher, master, commitProcessDelegate, requestContextFactory,
-                            highAvailabilityModeSwitcher, txValidator, inner ) );
+                            highAvailabilityModeSwitcher, txValidator, inner, logProvider ) );
 
                     return (TransactionCommitProcess)
                             newProxyInstance( TransactionCommitProcess.class.getClassLoader(),

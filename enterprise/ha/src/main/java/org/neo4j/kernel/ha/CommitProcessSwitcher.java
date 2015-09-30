@@ -26,6 +26,7 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
+import org.neo4j.logging.LogProvider;
 
 public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommitProcess>
 {
@@ -38,11 +39,11 @@ public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommi
                                   RequestContextFactory requestContextFactory,
                                   ModeSwitcherNotifier modeSwitcherNotifier,
                                   NeoStoreInjectedTransactionValidator validator,
-                                  TransactionCommitProcess innerCommitProcess )
+                                  TransactionCommitProcess innerCommitProcess, LogProvider logProvider )
     {
         super( modeSwitcherNotifier, delegate );
         this.masterImpl = new MasterTransactionCommitProcess( innerCommitProcess, pusher, validator );
-        this.slaveImpl = new SlaveTransactionCommitProcess( master, requestContextFactory );
+        this.slaveImpl = new SlaveTransactionCommitProcess( master, requestContextFactory, logProvider );
     }
 
     @Override

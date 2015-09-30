@@ -28,6 +28,8 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Fulfills transaction obligations by poking {@link UpdatePuller} and awaiting it to commit and apply
@@ -40,17 +42,19 @@ public class UpdatePullingTransactionObligationFulfiller extends LifecycleAdapte
     private final RoleListener listener;
     private final HighAvailabilityMemberStateMachine memberStateMachine;
     private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
+    private final Log logger;
 
     private volatile TransactionIdStore transactionIdStore;
 
     public UpdatePullingTransactionObligationFulfiller( UpdatePuller updatePuller,
             HighAvailabilityMemberStateMachine memberStateMachine, InstanceId serverId,
-            Supplier<TransactionIdStore> transactionIdStoreSupplier )
+            Supplier<TransactionIdStore> transactionIdStoreSupplier, LogProvider logProvider )
     {
         this.updatePuller = updatePuller;
         this.memberStateMachine = memberStateMachine;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.listener = new RoleListener( serverId );
+        this.logger = logProvider.getLog( getClass() );
     }
 
     /**
@@ -60,6 +64,7 @@ public class UpdatePullingTransactionObligationFulfiller extends LifecycleAdapte
     @Override
     public void fulfill( final long toTxId ) throws InterruptedException
     {
+        logger.debug( "Start obligation fulfill on txId=" + toTxId );
         updatePuller.pullUpdates( new Condition()
         {
             @Override
@@ -70,8 +75,13 @@ public class UpdatePullingTransactionObligationFulfiller extends LifecycleAdapte
                  * right after leaving this method we might read records off of disk, and they had better
                  * be up to date, otherwise we read stale data.
                  */
-                return transactionIdStore != null &&
-                       transactionIdStore.getLastClosedTransactionId() >= toTxId;
+                boolean condition = transactionIdStore != null &&
+                            transactionIdStore.getLastClosedTransactionId() >= toTxId;
+                if (condition)
+                {
+                    logger.debug( "Start obligation fulfill for txId=" + toTxId + " done, actual is txId=" + transactionIdStore.getLastClosedTransactionId() );
+                }
+                return condition;
             }
         }, true /*We strictly need the update puller to be and remain active while we wait*/ );
     }
