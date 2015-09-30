@@ -8,7 +8,6 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.neo4j</groupId>
   <artifactId>neo4j-cypher-frontend-3.0</artifactId>
   <packaging>jar</packaging>
   <version>3.0.0-SNAPSHOT</version>
