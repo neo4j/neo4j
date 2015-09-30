@@ -22,15 +22,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 describe 'Service: motdService', () ->
   motdService = {}
+  $rootScope = {}
   mockJSON = '[{"a":"neo4jmotd","d":"General, not important","n":"","u":"http:\\/\\/notimportant","t":"","dt":"2014-11-04T00:00:57Z"},{"a":"neo4jmotd","d":"Important, targeted ad 2.1.X","n":"","u":"http:\\/\\/2.1.X","t":["version=2\\\\.1\\\\.\\\\d","level=debug","!important","foo=bar","attempt=5","plain_tag","combo=!bang"],"dt":"2014-10-14T14:20:38Z"},{"a":"neo4jmotd","d":"Important, targeted 2.2","n":"","u":"http:\\/\\/2.2","t":["version=2\\\\.2\\\\.\\\\d","level=debug","!important","foo=bar","attempt=5","plain_tag","combo=!bang"],"dt":"2014-10-14T14:20:38Z"}]'
   mockData = JSON.parse mockJSON
   beforeEach ->
     module 'neo4jApp.services'
 
   beforeEach ->
-    inject((_motdService_) ->
+    inject((_motdService_, _$rootScope_) ->
+      $rootScope = _$rootScope_
       motdService = _motdService_
-
+      $rootScope.neo4j = {config: {allow_outgoing_browser_connections: yes}}
     )
 
   describe ' - Get correct message depending on version', ->

@@ -193,6 +193,17 @@ dbms.browser.remote_content_hostname_whitelist="http://guides.neo4j.com,https://
 dbms.browser.remote_content_hostname_whitelist="*"
 ----
 
+=== Outgoing connections for Browser ===
+
+The Browser can load services and data from remote locations and with this configuration this can be restricted.
+
+In the _conf/neo4j-server.properties_ file:
+
+[source,properties]
+----
+dbms.security.allow_outgoing_browser_connections=true
+----
+
 === Disabling console types in Webadmin ===
 
 You may, for security reasons, want to disable the the Neo4j Shell in Webadmin.

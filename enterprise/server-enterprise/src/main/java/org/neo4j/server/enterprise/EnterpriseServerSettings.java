@@ -44,4 +44,7 @@ public interface EnterpriseServerSettings
 
     @Description( "Whitelist of hosts for the Neo4j Browser to be allowed to fetch content from." )
     Setting<String> browser_remoteContentHostnameWhitelist = setting( "dbms.browser.remote_content_hostname_whitelist", STRING, "http://guides.neo4j.com,https://guides.neo4j.com,http://localhost,https://localhost" );
+
+    @Description( "Configure the policy for outgoing Neo4j Browser connections." )
+    Setting<Boolean> browser_allowOutgoingBrowserConnections = setting( "dbms.security.allow_outgoing_browser_connections", BOOLEAN, TRUE );
 }

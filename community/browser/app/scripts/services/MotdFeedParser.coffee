@@ -26,7 +26,7 @@ class MotdFeedParser
 
   explodeTags: (tags) ->
     out = {}
-    return out unless tags.length
+    return out unless tags
     for pair in tags
       parts = pair.split('=')
       out[parts[0]] = parts[1]

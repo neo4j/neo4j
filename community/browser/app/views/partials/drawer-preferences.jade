@@ -2,18 +2,17 @@
   h4 Configuration
 
   form(ng-controller="SettingsCtrl")
-    h5 Messaging
-    .form-group
-      label(for="userName") Name
-        input.form-control.input#userName(type='text', ng-model="settings.userName", ng-change="save()")
-    .checkbox
-      label(for="shouldReportUdc")
-        input#shouldReportUdc(type="checkbox", ng-model="settings.shouldReportUdc", ng-change="save()")
-        span &nbsp; Share non-sensitive data?
-    .checkbox
-      label(for="acceptsReplies")
-    button.btn.btn-default.btn-sm(ng-click="showMessenger()") 
-      span.glyphicon.glyphicon-envelope &nbsp;Messenger
+    div(ng-show="neo4j.config.allow_outgoing_browser_connections")
+      h5 Messaging
+      .form-group
+        label(for="userName") Name
+          input.form-control.input#userName(type='text', ng-model="settings.userName", ng-change="save()")
+      .checkbox
+        label(for="shouldReportUdc")
+          input#shouldReportUdc(type="checkbox", ng-model="settings.shouldReportUdc", ng-change="save()")
+          span &nbsp; Share non-sensitive data?
+      button.btn.btn-default.btn-sm(ng-click="showMessenger()") 
+        span.glyphicon.glyphicon-envelope &nbsp;Messenger
 
     h5 User Interface
     .form-group
