@@ -17,15 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cluster.protocol.omega;
+package org.neo4j.cluster.protocol;
+
+import org.hamcrest.Description;
+import org.mockito.ArgumentMatcher;
 
 import java.io.Serializable;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
-
-import org.hamcrest.Description;
-import org.mockito.ArgumentMatcher;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageType;

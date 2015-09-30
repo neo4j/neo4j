@@ -31,7 +31,7 @@ import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.com.message.TrackingMessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstance.State;
-import org.neo4j.cluster.protocol.omega.MessageArgumentMatcher;
+import org.neo4j.cluster.protocol.MessageArgumentMatcher;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.NullLog;
 
