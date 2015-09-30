@@ -25,10 +25,12 @@ import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Response;
@@ -38,13 +40,11 @@ import org.neo4j.function.Function;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.CancellationRequest;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
@@ -83,7 +83,9 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -95,6 +97,44 @@ public class SwitchToSlaveTest
     private final PullerFactory pullerFactory = mock( PullerFactory.class );
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final MasterClient masterClient = mock( MasterClient.class );
+    private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
+
+    @Test
+    public void shouldRestartServicesIfCopyStoreFails() throws Throwable
+    {
+        when( updatePuller.tryPullUpdates() ).thenReturn( true );
+
+        PageCache pageCacheMock = mock( PageCache.class );
+        PagedFile pagedFileMock = mock( PagedFile.class );
+        when( pagedFileMock.getLastPageId() ).thenReturn( 1l );
+        when( pageCacheMock.map( any( File.class ), anyInt() ) ).thenThrow( new IOException() )
+                .thenThrow( new IOException() ).thenReturn( pagedFileMock );
+
+        StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
+        doThrow( new RuntimeException() ).doNothing().when( storeCopyClient )
+                .copyStore( any( StoreCopyClient.StoreCopyRequester.class ), any( CancellationRequest.class ) );
+
+        SwitchToSlave switchToSlave = newSwitchToSlaveSpy( pageCacheMock, storeCopyClient );
+
+        URI localhost = getLocalhostUri();
+        try
+        {
+            switchToSlave.switchToSlave( mock( LifeSupport.class ), localhost, localhost,
+                    mock( CancellationRequest.class ) );
+            fail( "Should have thrown an Exception" );
+        }
+        catch ( RuntimeException e )
+        {
+            verify( requestContextFactory, never() ).start();
+            // Store should have been deleted due to failure in copy
+            verify( switchToSlave ).cleanStoreDir();
+
+            // Try again, should succeed
+            switchToSlave.switchToSlave( mock( LifeSupport.class ), localhost, localhost,
+                    mock( CancellationRequest.class ) );
+            verify( requestContextFactory ).start();
+        }
+    }
 
     @Test
     @SuppressWarnings( "unchecked" )
@@ -214,8 +254,19 @@ public class SwitchToSlaveTest
         return new URI( "cluster://127.0.0.1?serverId=1" );
     }
 
-    @SuppressWarnings( "unchecked" )
     private SwitchToSlave newSwitchToSlaveSpy() throws IOException
+    {
+        PageCache pageCacheMock = mock( PageCache.class );
+        PagedFile pagedFileMock = mock( PagedFile.class );
+        when( pagedFileMock.getLastPageId() ).thenReturn( 1l );
+        when( pageCacheMock.map( any( File.class ), anyInt() ) ).thenReturn( pagedFileMock );
+
+        return newSwitchToSlaveSpy( pageCacheMock, mock( StoreCopyClient.class) );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private SwitchToSlave newSwitchToSlaveSpy( PageCache pageCacheMock, StoreCopyClient storeCopyClient )
+            throws IOException
     {
         ClusterMembers clusterMembers = mock( ClusterMembers.class );
         ClusterMember master = mock( ClusterMember.class );
@@ -227,6 +278,7 @@ public class SwitchToSlaveTest
 
         DependencyResolver resolver = mock( DependencyResolver.class );
         when( resolver.resolveDependency( any( Class.class ) ) ).thenReturn( mock( Lifecycle.class ) );
+        when( resolver.resolveDependency( RequestContextFactory.class ) ).thenReturn( requestContextFactory );
         when( resolver.resolveDependency( ClusterMembers.class ) ).thenReturn( clusterMembers );
         when( resolver.resolveDependency( TransactionObligationFulfiller.class ) )
                 .thenReturn( mock( TransactionObligationFulfiller.class ) );
@@ -242,30 +294,24 @@ public class SwitchToSlaveTest
         when( masterClient.handshake( anyLong(), any( StoreId.class ) ) ).thenReturn( response );
         when( masterClient.getProtocolVersion() ).thenReturn( MasterClient214.PROTOCOL_VERSION );
 
-        PageCache pageCacheMock = mock( PageCache.class );
-        PagedFile pagedFileMock = mock( PagedFile.class );
-        when( pagedFileMock.getLastPageId() ).thenReturn( 1l );
-        when( pageCacheMock.map( any( File.class ), anyInt() ) ).thenReturn( pagedFileMock );
-
         TransactionIdStore transactionIdStoreMock = mock( TransactionIdStore.class );
         // note that the checksum (the second member of the array) is the same as the one in the handshake mock above
-        when( transactionIdStoreMock.getLastCommittedTransaction() ).thenReturn( new long[] {42, 42} );
+        when( transactionIdStoreMock.getLastCommittedTransaction() ).thenReturn( new long[]{42, 42} );
 
         MasterClientResolver masterClientResolver = mock( MasterClientResolver.class );
         when( masterClientResolver.instantiate( anyString(), anyInt(), any( Monitors.class ), any( StoreId.class ),
                 any( LifeSupport.class ) ) ).thenReturn( masterClient );
 
         return spy( new SwitchToSlave( new File( "" ), NullLogService.getInstance(),
-                mock( FileSystemAbstraction.class ),
                 clusterMembers,
                 configMock(), resolver,
                 mock( HaIdGeneratorFactory.class ),
                 mock( DelegateInvocationHandler.class ),
-                mock( ClusterMemberAvailability.class ), mock( RequestContextFactory.class ),
-                pullerFactory,
-                Iterables.<KernelExtensionFactory<?>>empty(), masterClientResolver,
+                mock( ClusterMemberAvailability.class ),
+                requestContextFactory,
+                pullerFactory, masterClientResolver,
                 mock( SwitchToSlave.Monitor.class ),
-                new StoreCopyClient.Monitor.Adapter(),
+                storeCopyClient,
                 Suppliers.singleton( dataSource ),
                 Suppliers.singleton( transactionIdStoreMock ),
                 new Function<Slave,SlaveServer>()
@@ -273,7 +319,11 @@ public class SwitchToSlaveTest
                     @Override
                     public SlaveServer apply( Slave slave ) throws RuntimeException
                     {
-                        return mock( SlaveServer.class );
+                        SlaveServer server = mock( SlaveServer.class );
+                        InetSocketAddress inetSocketAddress = InetSocketAddress.createUnresolved( "localhost", 42 );
+
+                        when( server.getSocketAddress() ).thenReturn( inetSocketAddress );
+                        return server;
                     }
                 }, updatePuller, pageCacheMock, mock( Monitors.class ), transactionCounters ) );
     }
@@ -285,6 +335,7 @@ public class SwitchToSlaveTest
         when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( 42l );
         when( config.get( HaSettings.com_chunk_size ) ).thenReturn( 42l );
         when( config.get( HaSettings.state_switch_timeout ) ).thenReturn( 42l );
+        when( config.get( ClusterSettings.server_id ) ).thenReturn( new InstanceId( 42 ) );
         return config;
     }
 
