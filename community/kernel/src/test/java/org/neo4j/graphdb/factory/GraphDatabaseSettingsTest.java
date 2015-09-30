@@ -49,7 +49,7 @@ public class GraphDatabaseSettingsTest
     {
         Setting<Long> setting = GraphDatabaseSettings.pagecache_memory;
         String name = setting.name();
-        assertThat( new Config( stringMap( name, "16384" ) ).get( setting ), is( 16 * KiB ) );
+        assertThat( new Config( stringMap( name, "245760" ) ).get( setting ), is( 30 * 8 * KiB ) );
         assertThat( new Config( stringMap( name, "2244g" ) ).get( setting ), is( 2244 * GiB ) );
     }
 
