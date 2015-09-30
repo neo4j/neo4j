@@ -360,6 +360,7 @@ public class StoreCopyClient
     {
         if ( cancellationRequest.cancellationRequested() )
         {
+            log.info( "Store copying was cancelled. Cleaning up temp-directories." );
             cleanDirectory( tempStore );
         }
     }

@@ -497,6 +497,7 @@ public class SwitchToSlave
 
         if ( cancellationRequest.cancellationRequested() )
         {
+            msgLog.info( "Switch to slave cancelled, unable to start HA-communication" );
             return null;
         }
 
@@ -600,6 +601,7 @@ public class SwitchToSlave
 
     private void startServicesAgain() throws Throwable
     {
+        msgLog.debug( "Starting services again" );
         for ( Class<? extends Lifecycle> serviceClass : SERVICES_TO_RESTART_FOR_STORE_COPY )
         {
             resolver.resolveDependency( serviceClass ).start();
@@ -608,6 +610,7 @@ public class SwitchToSlave
 
     void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy ) throws Throwable
     {
+        msgLog.debug( "Stopping services to handle branched store" );
         for ( int i = SERVICES_TO_RESTART_FOR_STORE_COPY.length - 1; i >= 0; i-- )
         {
             Class<? extends Lifecycle> serviceClass = SERVICES_TO_RESTART_FOR_STORE_COPY[i];
