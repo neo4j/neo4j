@@ -1,5 +1,4 @@
-Importing CSV files with Cypher
-===============================
+= Importing CSV files with Cypher
 
 //file:movies.csv
 //file:roles.csv

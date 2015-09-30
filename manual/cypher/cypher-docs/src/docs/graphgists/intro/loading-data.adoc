@@ -11,12 +11,13 @@ Naturally in most cases you wouldn't want to write or generate huge statements t
 
 That process not only includes creating completely new data but also integrating with existing structures and updating your graph.
 
+[[cypher-intro-load-parameters]]
 == Parameters
 
 In general we recommend passing in varying literal values from the outside as named parameters.
 This allows Cypher to reuse existing execution plans for the statements.
 
-Of course you can also pass in parameters for data to be imported. 
+Of course you can also pass in parameters for data to be imported.
 Those can be scalar values, maps, lists or even lists of maps.
 
 In your Cypher statement you can then iterate over those values (e.g. with `UNWIND`) to create your graph structures.
@@ -42,6 +43,7 @@ FOREACH (role IN movie.cast |
 )
 ----
 
+[[cypher-intro-importing-csv]]
 == Importing CSV
 
 Cypher provides an elegant built-in way to import tabular CSV data into graph structures.
@@ -59,7 +61,7 @@ include::../../graphgists/intro/movies.csv[]
 
 [source,cypher]
 ----
-LOAD CSV WITH HEADERS FROM "movies.csv" AS line 
+LOAD CSV WITH HEADERS FROM "movies.csv" AS line
 CREATE (m:Movie {id:line.id,title:line.title, released:toInt(line.year)});
 ----
 
@@ -71,7 +73,7 @@ include::../../graphgists/intro/persons.csv[]
 
 [source,cypher]
 ----
-LOAD CSV WITH HEADERS FROM "persons.csv" AS line 
+LOAD CSV WITH HEADERS FROM "persons.csv" AS line
 MERGE (a:Person {id:line.id}) ON CREATE SET a.name=line.name;
 ----
 
@@ -83,7 +85,7 @@ include::../../graphgists/intro/roles.csv[]
 
 [source,cypher]
 ----
-LOAD CSV WITH HEADERS FROM "roles.csv" AS line 
+LOAD CSV WITH HEADERS FROM "roles.csv" AS line
 MATCH (m:Movie {id:line.movieId})
 MATCH (a:Person {id:line.personId})
 CREATE (a)-[:ACTED_IN {roles:[line.role]}]->(m);
