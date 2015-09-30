@@ -36,7 +36,7 @@ object TransactionBoundGraphStatistics {
     def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
       try {
         val indexDescriptor = new IndexDescriptor( label, property )
-        val labeledNodes = statement.readOperations().countsForNode( label ).toDouble
+        val labeledNodes = statement.readOperations().countsForNodeWithoutTxState( label ).toDouble
 
         // Probability of any node with the given label, to have a property with a given value
         val indexEntrySelectivity = statement.readOperations( ).indexUniqueValuesSelectivity( indexDescriptor )
@@ -52,7 +52,7 @@ object TransactionBoundGraphStatistics {
     def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
       try {
         val indexDescriptor = new IndexDescriptor( label, property )
-        val labeledNodes = statement.readOperations().countsForNode( label ).toDouble
+        val labeledNodes = statement.readOperations().countsForNodeWithoutTxState( label ).toDouble
 
         // Probability of any node with the given label, to have a given property
         val indexSize = statement.readOperations( ).indexSize( indexDescriptor )
@@ -65,10 +65,10 @@ object TransactionBoundGraphStatistics {
       }
 
     def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
-      statement.readOperations().countsForNode(labelId)
+      Cardinality(statement.readOperations().countsForNodeWithoutTxState(labelId))
 
     def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
-      statement.readOperations().countsForRelationship(fromLabel, relTypeId, toLabel)
+      Cardinality(statement.readOperations().countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
   }
 }
 

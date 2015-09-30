@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.NameId
-
+import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 case class NodeCountFromCountStorePipe(ident: String, label: Option[LazyLabel])(val estimatedCardinality: Option[Double] = None)
                                                            (implicit pipeMonitor: PipeMonitor) extends Pipe with RonjaPipe {
