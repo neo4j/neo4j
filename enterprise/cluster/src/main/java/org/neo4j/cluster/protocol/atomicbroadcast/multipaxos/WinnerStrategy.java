@@ -21,6 +21,9 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
 import java.util.Collection;
 
+/**
+ * Strategy to be used to select a winner in a cluster coordinator election.
+ */
 public interface WinnerStrategy
 {
     org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> votes );

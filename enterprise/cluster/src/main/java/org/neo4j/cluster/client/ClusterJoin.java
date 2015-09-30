@@ -44,7 +44,9 @@ import org.neo4j.logging.Log;
 /**
  * This service starts quite late, and is available for the instance to join as a member in the cluster.
  * <p>
- * It can either use manual listing of hosts, or auto discovery protocols.
+ * On start it will try to join the cluster specified by the initial hosts. After start finishes it will have
+ * either joined an existing cluster or created a new one. On stop it will leave the cluster, but will fail
+ * and continue the stop after one minute.
  */
 public class ClusterJoin
         extends LifecycleAdapter

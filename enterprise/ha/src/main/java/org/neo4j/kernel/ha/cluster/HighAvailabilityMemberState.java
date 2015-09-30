@@ -26,6 +26,13 @@ import org.neo4j.cluster.InstanceId;
 /**
  * This represents the different states that a cluster member
  * can have internally.
+ *
+ * Since transitioning to master or slave can take significant time those states are explicitly modeled.
+ *
+ * Most common transitions:
+ * PENDING -> TO_MASTER -> MASTER
+ * PENDING -> TO_SLAVE -> SLAVE
+ * MASTER/SLAVE -> PENDING
  */
 public enum HighAvailabilityMemberState
 {

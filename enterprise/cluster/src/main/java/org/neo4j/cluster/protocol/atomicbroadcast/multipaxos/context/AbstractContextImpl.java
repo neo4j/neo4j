@@ -37,6 +37,10 @@ import org.neo4j.logging.LogProvider;
 import static org.neo4j.helpers.collection.Iterables.limit;
 import static org.neo4j.helpers.collection.Iterables.toList;
 
+/**
+ * This serves as a base class for contexts of distributed state machines, and holds
+ * various generally useful information, and provides access to logging.
+ */
 class AbstractContextImpl
         implements TimeoutsContext, LogService, ConfigurationContext
 {

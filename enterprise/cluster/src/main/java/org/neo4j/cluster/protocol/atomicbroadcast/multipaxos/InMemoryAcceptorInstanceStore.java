@@ -56,6 +56,8 @@ public class InMemoryAcceptorInstanceStore
         {
             instance = new AcceptorInstance();
             instances.put( instanceId, instance );
+
+            // Make sure we only keep a maximum number of instances, to not run out of memory
             if (!currentInstances.offer( instanceId ))
             {
                 instances.remove( currentInstances.poll() );

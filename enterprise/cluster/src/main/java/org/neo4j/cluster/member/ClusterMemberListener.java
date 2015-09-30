@@ -25,7 +25,7 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.kernel.impl.store.StoreId;
 
 /**
- * A HighAvailabilityListener is listening for events from elections and availability state.
+ * A ClusterMemberListener is listening for events from elections and availability state.
  * <p>
  * These are invoked by translating atomic broadcast messages to methods on this interface.
  */
@@ -57,8 +57,18 @@ public interface ClusterMemberListener
      */
     void memberIsUnavailable( String role, InstanceId unavailableId );
 
+    /**
+     * Called when a member is considered failed, by quorum.
+     *
+     * @param instanceId of the failed server
+     */
     void memberIsFailed( InstanceId instanceId );
 
+    /**
+     * Called when a member is considered alive again, by quorum.
+     *
+     * @param instanceId of the now alive server
+     */
     void memberIsAlive( InstanceId instanceId );
 
     public abstract class Adapter
