@@ -28,11 +28,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 
-import static java.lang.Thread.sleep;
-import static java.lang.Thread.yield;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import static java.lang.Thread.sleep;
+import static java.lang.Thread.yield;
 
 public class ArrayQueueOutOfOrderSequenceTest
 {
@@ -168,6 +170,42 @@ public class ArrayQueueOutOfOrderSequenceTest
         // THEN
         long lastNumber = numberSource.get();
         assertGet( sequence, lastNumber, new long[]{lastNumber + 2} );
+    }
+
+    @Test
+    public void shouldKeepHighestOfferedNumber() throws Exception
+    {
+        // GIVEN
+        OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 0, 5, new long[1] );
+        assertTrue( offer( sequence, 1, new long[]{0} ) );
+        assertEquals( 1, sequence.getHighestOfferedNumber() );
+        assertFalse( offer( sequence, 3, new long[]{0} ) );
+        assertEquals( 3, sequence.getHighestOfferedNumber() );
+        assertFalse( offer( sequence, 4, new long[]{0} ) );
+        assertEquals( 4, sequence.getHighestOfferedNumber() );
+        assertTrue( offer( sequence, 2, new long[]{0} ) );
+        assertEquals( 4, sequence.getHighestOfferedNumber() );
+        assertFalse( offer( sequence, 6, new long[]{0} ) );
+        assertEquals( 6, sequence.getHighestOfferedNumber() );
+        assertTrue( offer( sequence, 5, new long[]{0} ) );
+        assertEquals( 6, sequence.getHighestOfferedNumber() );
+        // leave out 7
+        assertFalse( offer( sequence, 8, new long[]{0} ) );
+        assertFalse( offer( sequence, 9, new long[]{0} ) );
+        assertFalse( offer( sequence, 10, new long[]{0} ) );
+        assertFalse( offer( sequence, 11, new long[]{0} ) );
+        // putting 12 should need extending the backing queue array
+        assertFalse( offer( sequence, 12, new long[]{0} ) );
+        assertFalse( offer( sequence, 13, new long[]{0} ) );
+        assertFalse( offer( sequence, 14, new long[]{0} ) );
+        assertEquals( 14, sequence.getHighestOfferedNumber() );
+
+        // WHEN finally offering nr 7
+        assertTrue( offer( sequence, 7, new long[]{0} ) );
+        assertEquals( 14, sequence.getHighestOfferedNumber() );
+
+        // THEN the number should jump to 14
+        assertGet( sequence, 14, new long[]{0} );
     }
 
     private boolean offer( OutOfOrderSequence sequence, long number, long[] meta )
