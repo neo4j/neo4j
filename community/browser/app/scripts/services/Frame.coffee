@@ -119,8 +119,12 @@ angular.module('neo4jApp.services')
             #This happens for HTTP status error codes
             result = {errors:[{code: "HTTP Status: #{result.status}", message: "HTTP Status: #{result.status} - #{result.statusText}"}]} if result.status
 
+            #This happens on remote requests when no 'Access-Control-Allow-Origin' is present.
+            if result.is_remote and result.status is 0
+              result = {errors: [{code: 0, message: "No 'Access-Control-Allow-Origin' header is present on the requested resource and can therefore not be played."}]}
+
             errors = result.errors[0]
-            @errorText = errors.code
+            @errorText = "#{errors.code}"
             @detailedErrorText = errors.message
 
           resetError: =>

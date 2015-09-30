@@ -109,3 +109,18 @@ class neo.helpers
         "'": '&#39;'
         "/": '&#x2F;'
       String(string).replace(/[&<>"'\/]/g, (s) -> entityMap[s])
+
+    @cleanHTML = (string) ->
+      @stripNGAttributes @stripScripts string
+
+    @stripScripts = (string = '') ->
+      string = string.replace(/(\s+(on[^\s=]+)[^\s=]*\s*=\s*("[^"]*"|'[^']*'|[\w\-.:]+\s*))/ig, '')
+      string.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*(<\/script>)?/gi, '')
+
+    @stripNGAttributes = (string = '') ->
+      string.replace(/(\s+(ng|data|x)[^\s=]*\s*=\s*("[^"]*"|'[^']*'|[\w\-.:]+\s*))/ig, '')
+
+    @hostIsAllowed = (hostname, whitelist, is_enterprise) ->
+      return true if is_enterprise and (not whitelist or whitelist is '*')
+      whitelisted_hosts = if is_enterprise then whitelist.split(",") else ['http://guides.neo4j.com', 'https://guides.neo4j.com', 'http://localhost', 'https://localhost']
+      hostname in whitelisted_hosts
