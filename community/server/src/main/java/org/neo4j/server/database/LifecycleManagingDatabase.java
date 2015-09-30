@@ -21,11 +21,10 @@ package org.neo4j.server.database;
 
 import java.io.File;
 
-import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.Log;
 import org.neo4j.server.web.ServerInternalSettings;
 
@@ -35,6 +34,9 @@ import org.neo4j.server.web.ServerInternalSettings;
  */
 public class LifecycleManagingDatabase implements Database
 {
+    static final String CYPHER_WARMUP_QUERY =
+            "MATCH (a:` Arbitrary label name that really doesn't matter `) RETURN a LIMIT 0";
+
     public interface GraphFactory
     {
         GraphDatabaseAPI newGraphDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies );
@@ -91,8 +93,8 @@ public class LifecycleManagingDatabase implements Database
     public void start() throws Throwable
     {
         this.graph = dbFactory.newGraphDatabase( config, dependencies );
-        // in order to speed up testing, they should not run the prelod, but in production it pays to do it.
-        if ( !testing() )
+        // in order to speed up testing, they should not run the preload, but in production it pays to do it.
+        if ( !isInTestMode() )
         {
             preLoadCypherCompiler();
         }
@@ -127,20 +129,24 @@ public class LifecycleManagingDatabase implements Database
     private void preLoadCypherCompiler()
     {
         // Execute a single Cypher query to pre-load the compiler to make the first user-query snappy
-        //noinspection EmptyTryBlock
-        try ( Result ignored = this.graph.execute(
-                "MATCH (a:` Arbitrary label name that really doesn't matter `) RETURN a LIMIT 0" ) )
+        try
         {
-            // empty by design
+            //noinspection EmptyTryBlock
+            try ( Result ignore = this.graph.execute( CYPHER_WARMUP_QUERY ) )
+            {
+                // empty by design
+            }
         }
-        catch ( QueryExecutionException e )
+        catch ( Exception ignore )
         {
-            // Might not be a real problem, let's ignore it.
+            // This is only an attempt at warming up the database.
+            // It's not a critical failure.
         }
     }
 
-    private static boolean testing()
+    protected boolean isInTestMode()
     {
+        // The assumption here is that assertions are only enabled during testing.
         boolean testing = false;
         assert testing = true : "yes, this should be an assignment!";
         return testing;
