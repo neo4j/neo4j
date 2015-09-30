@@ -19,13 +19,13 @@
  */
 package org.neo4j.ha;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
-
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -48,14 +48,14 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.ha.ClusterRule;
 
-import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
@@ -65,7 +65,8 @@ import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
 public class TransactionConstraintsIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule(getClass()).config(HaSettings.pull_interval, "0");
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+            .withSharedSetting( HaSettings.pull_interval, "0" );
 
     protected ClusterManager.ManagedCluster cluster;
 

@@ -51,9 +51,9 @@ public class ClusterTransactionTest
     public void givenClusterWhenShutdownMasterThenCannotStartTransactionOnSlave() throws Throwable
     {
         final ClusterManager.ManagedCluster cluster =
-                clusterRule.provider( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ) )
-                        .config( HaSettings.ha_server, ":6001-6005" )
-                        .config( HaSettings.tx_push_factor, "2" ).startCluster();
+                clusterRule.withProvider( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ) )
+                        .withSharedSetting( HaSettings.ha_server, ":6001-6005" )
+                        .withSharedSetting( HaSettings.tx_push_factor, "2" ).startCluster();
 
         cluster.await( ClusterManager.allSeesAllAsAvailable() );
 

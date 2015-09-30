@@ -19,19 +19,17 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.After;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
+import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertNotNull;
 
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
 /**
@@ -56,20 +54,9 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
  */
 public class DeletionTest
 {
-    private ClusterManager clusterManager;
-
-    @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
-
-    @After
-    public void after() throws Throwable
-    {
-        if ( clusterManager != null )
-        {
-            clusterManager.stop();
-            clusterManager = null;
-        }
-    }
+    @ClassRule
+    public static ClusterRule clusterRule = new ClusterRule( DeletionTest.class )
+            .withProvider( clusterOfSize( 2 ) );
 
     /**
      * The problem would manifest even if the transaction was performed on the Master, it would then occur when the
@@ -80,12 +67,8 @@ public class DeletionTest
     public void shouldDeleteRecords() throws Throwable
     {
         // given
-        clusterManager =
-                new ClusterManager( clusterOfSize( 2 ), testDirectory.directory( "deleteRecords" ), stringMap() );
-        clusterManager.start();
-        ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+        ManagedCluster cluster = clusterRule.startCluster();
 
-        cluster.await( ClusterManager.allSeesAllAsAvailable() );
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
 

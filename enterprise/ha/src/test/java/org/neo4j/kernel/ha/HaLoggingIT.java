@@ -31,8 +31,6 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.test.ha.ClusterRule;
 
-import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsJoined;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterWithAdditionalClients;
@@ -50,8 +48,8 @@ public class HaLoggingIT
     public void setup() throws Exception
     {
         cluster = clusterRule
-                  .provider( clusterWithAdditionalClients( 2, 1 ) )
-                  .availabilityChecks( asList( masterAvailable(), masterSeesMembers( 3 ), allSeesAllAsJoined() ) )
+                  .withProvider( clusterWithAdditionalClients( 2, 1 ) )
+                  .availabilityChecks( masterAvailable(), masterSeesMembers( 3 ), allSeesAllAsJoined() )
                   .startCluster();
     }
 

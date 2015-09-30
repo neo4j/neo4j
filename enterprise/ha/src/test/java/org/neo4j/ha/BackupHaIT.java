@@ -19,93 +19,52 @@
  */
 package org.neo4j.ha;
 
-import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.backup.OnlineBackupSettings;
-import org.neo4j.cluster.InstanceId;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.function.IntFunction;
 import org.neo4j.helpers.Settings;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.SuppressOutput;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.ClusterRule;
 
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertNotEquals;
 
 import static org.neo4j.backup.BackupEmbeddedIT.createSomeData;
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
-import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 
 public class BackupHaIT
 {
-    @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    @ClassRule
+    public static ClusterRule clusterRule = new ClusterRule( BackupHaIT.class )
+            .withSharedSetting( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
+            .withInstanceSetting( OnlineBackupSettings.online_backup_server, new IntFunction<String>()
+            {
+                @Override
+                public String apply( int serverId )
+                {
+                    return (":" + (4444 + serverId));
+                }
+            } );
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
-    private File path;
-    private File backupPath;
+    private static File backupPath;
 
-    private DbRepresentation representation;
-    private ClusterManager clusterManager;
-    private ManagedCluster cluster;
-
-    @Before
-    public void setup() throws Throwable
+    @BeforeClass
+    public static void setup() throws Exception
     {
-        path = testDirectory.directory( "db" );
-        backupPath = testDirectory.directory( "backup-db" );
-        FileUtils.deleteDirectory( path );
-        FileUtils.deleteDirectory( backupPath );
-
-        startCluster();
-
-        // Really doesn't matter which instance
-        representation = createSomeData( cluster.getMaster() );
-    }
-
-    private void startCluster() throws Throwable
-    {
-        clusterManager = new ClusterManager( ClusterManager.fromXml( getClass().getResource( "/threeinstances.xml" )
-                .toURI() ),
-                path, MapUtil.stringMap( OnlineBackupSettings.online_backup_enabled.name(),
-                Settings.TRUE ) )
-        {
-            @Override
-            protected void config( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
-            {
-                builder.setConfig( OnlineBackupSettings.online_backup_server, (":"+(4444 + serverId.toIntegerIndex()) ));
-            }
-        };
-        clusterManager.start();
-        cluster = clusterManager.getDefaultCluster();
-        cluster.await( allSeesAllAsAvailable() );
-    }
-
-    @After
-    public void stopCluster() throws Throwable
-    {
-        clusterManager.stop();
-        clusterManager.shutdown();
-    }
-
-    @Test
-    public void makeSureBackupCanBePerformedFromClusterWithDefaultName() throws Throwable
-    {
-        testBackupFromCluster( null );
+        backupPath = clusterRule.cleanDirectory( "backup-db" );
+        createSomeData( clusterRule.startCluster().getMaster() );
     }
 
     @Test
@@ -116,84 +75,51 @@ public class BackupHaIT
     }
 
     @Test
-    public void makeSureBackupCanBeRestored() throws Throwable
+    public void makeSureBackupCanBePerformed() throws Throwable
     {
         // Run backup
+        ManagedCluster cluster = clusterRule.startCluster();
+        DbRepresentation beforeChange = DbRepresentation.of( cluster.getMaster() );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupArguments( "localhost:4445",
                 backupPath.getPath(), null ) ) );
 
         // Add some new data
-        DbRepresentation changedData = createSomeData( cluster.getMaster() );
+        DbRepresentation afterChange = createSomeData( cluster.getMaster() );
+        cluster.sync();
 
-        stopCluster();
-
-        cleanData();
-
-        copyBackup();
-
-        startCluster();
-
-        // Verify that old data is back
-        assertThat( changedData.equals( DbRepresentation.of( cluster.getMaster() ) ), equalTo(false) );
+        // Verify that backed up database can be started and compare representation
+        DbRepresentation backupRepresentation = DbRepresentation.of( backupPath );
+        assertEquals( beforeChange, backupRepresentation );
+        assertNotEquals( backupRepresentation, afterChange );
     }
 
     @Test
     public void makeSureBackupCanBePerformedFromAnyInstance() throws Throwable
     {
+        ManagedCluster cluster = clusterRule.startCluster();
         Integer[] backupPorts = {4445, 4446, 4447};
 
         for ( Integer port : backupPorts )
         {
             // Run backup
+            DbRepresentation beforeChange = DbRepresentation.of( cluster.getMaster() );
             assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupArguments( "localhost:" + port,
                     backupPath.getPath(), null ) ) );
 
             // Add some new data
-            DbRepresentation changedData = createSomeData( cluster.getMaster() );
-
-            stopCluster();
-
-            cleanData();
-
-            copyBackup();
-
-            startCluster();
+            DbRepresentation afterChange = createSomeData( cluster.getMaster() );
+            cluster.sync();
 
             // Verify that old data is back
-            assertThat( changedData.equals( DbRepresentation.of( cluster.getMaster() ) ), equalTo(false) );
+            DbRepresentation backupRepresentation = DbRepresentation.of( backupPath );
+            assertEquals( beforeChange, backupRepresentation );
+            assertNotEquals( backupRepresentation, afterChange );
         }
-    }
-
-
-    private void copyBackup() throws IOException
-    {
-        FileUtils.copyDirectory( backupPath, new File( path, "neo4j.ha/server1" ) );
-        FileUtils.copyDirectory( backupPath, new File( path, "neo4j.ha/server2") );
-        FileUtils.copyDirectory( backupPath, new File( path, "neo4j.ha/server3" ) );
-    }
-
-    private void cleanData() throws IOException
-    {
-        FileUtils.cleanDirectory( new File( path, "neo4j.ha/server1" ) );
-        FileUtils.cleanDirectory( new File( path, "neo4j.ha/server2"));
-        FileUtils.cleanDirectory( new File( path, "neo4j.ha/server3" ) );
-    }
-
-    private void testBackupFromCluster( String askForCluster ) throws Throwable
-    {
-        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
-                backupArguments( "localhost:4445", backupPath.getPath(), askForCluster ) ) );
-        assertEquals( representation, DbRepresentation.of( backupPath ) );
-        ManagedCluster cluster = clusterManager.getCluster( askForCluster == null ? "neo4j.ha" : askForCluster );
-        DbRepresentation newRepresentation = createSomeData( cluster.getAnySlave() );
-        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
-                backupArguments( "localhost:4445", backupPath.getPath(), askForCluster ) ) );
-        assertEquals( newRepresentation, DbRepresentation.of( backupPath ) );
     }
 
     private String[] backupArguments( String from, String to, String clusterName )
     {
-        List<String> args = new ArrayList<String>();
+        List<String> args = new ArrayList<>();
         args.add( "-from" );
         args.add( from );
         args.add( "-to" );

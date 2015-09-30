@@ -19,12 +19,12 @@
  */
 package org.neo4j.ha;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.Transaction;
@@ -36,7 +36,6 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
@@ -52,7 +51,7 @@ public class HAClusterStartupIT
     @Before
     public void instantiateClusterManager()
     {
-        clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.directory(), stringMap() );
+        clusterManager = new ClusterManager.Builder( dir.directory() ).build();
     }
 
     @Before
@@ -220,9 +219,8 @@ public class HAClusterStartupIT
 
         File newDir = new File( dir.directory(), "new" );
         FileUtils.deleteRecursively( newDir );
-        ClusterManager newClusterManager = new ClusterManager(
-                new ClusterManager.Builder( newDir ).withProvider( clusterOfSize( 3 ) ).withSeedDir( seedDir )
-        );
+        ClusterManager newClusterManager = new ClusterManager.Builder( newDir )
+                .withProvider( clusterOfSize( 3 ) ).withSeedDir( seedDir ).build();
 
         newClusterManager.start();
 

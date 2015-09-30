@@ -72,10 +72,12 @@ import org.neo4j.register.Register.DoubleLong;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ha.ClusterRule;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
@@ -129,7 +131,7 @@ public class SchemaIndexHaIT
     {
         // GIVEN a cluster of 3
         ControlledGraphDatabaseFactory dbFactory = new ControlledGraphDatabaseFactory();
-        ManagedCluster cluster = clusterRule.factory( dbFactory ).startCluster(  );
+        ManagedCluster cluster = clusterRule.withDbFactory( dbFactory ).startCluster();
         HighlyAvailableGraphDatabase firstMaster = cluster.getMaster();
 
         // where the master gets some data created as well as an index
@@ -181,7 +183,7 @@ public class SchemaIndexHaIT
         // GIVEN
         ControlledGraphDatabaseFactory dbFactory = new ControlledGraphDatabaseFactory( IS_MASTER );
 
-        ManagedCluster cluster = clusterRule.factory( dbFactory ).startCluster( );
+        ManagedCluster cluster = clusterRule.withDbFactory( dbFactory ).startCluster( );
 
         try
         {
@@ -245,7 +247,7 @@ public class SchemaIndexHaIT
         // GIVEN
         ControlledGraphDatabaseFactory dbFactory = new ControlledGraphDatabaseFactory();
 
-        ManagedCluster cluster = clusterRule.factory( dbFactory ).startCluster(  );
+        ManagedCluster cluster = clusterRule.withDbFactory( dbFactory ).startCluster();
         cluster.await( allSeesAllAsAvailable(), 120 );
 
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();

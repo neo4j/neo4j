@@ -51,9 +51,11 @@ import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static java.lang.String.format;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import static java.lang.String.format;
+
 import static org.neo4j.helpers.SillyUtils.nonNull;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -97,7 +99,8 @@ public class TestBranchedData
     {
         // GIVEN
         File dir = directory.directory();
-        ClusterManager clusterManager = life.add( new ClusterManager( clusterOfSize( 2 ), dir, stringMap() ) );
+        ClusterManager clusterManager = life.add( new ClusterManager.Builder( dir )
+                .withProvider( clusterOfSize( 2 ) ).build() );
         ManagedCluster cluster = clusterManager.getDefaultCluster();
         cluster.await( allSeesAllAsAvailable() );
         createNode( cluster.getMaster(), "A" );
@@ -130,10 +133,11 @@ public class TestBranchedData
         // thor is whoever is the master to begin with
         // odin is whoever is picked as _the_ slave given thor as initial master
         File dir = directory.directory();
-        ClusterManager clusterManager = life.add( new ClusterManager( clusterOfSize( 3 ), dir, stringMap(
+        ClusterManager clusterManager = life.add( new ClusterManager.Builder( dir )
+                .withSharedConfig( stringMap(
                 // Effectively disable automatic transaction propagation within the cluster
                 HaSettings.tx_push_factor.name(), "0",
-                HaSettings.pull_interval.name(), "0" ) ) );
+                HaSettings.pull_interval.name(), "0" ) ).build() );
         ManagedCluster cluster = clusterManager.getDefaultCluster();
         cluster.await( allSeesAllAsAvailable() );
         HighlyAvailableGraphDatabase thor = cluster.getMaster();

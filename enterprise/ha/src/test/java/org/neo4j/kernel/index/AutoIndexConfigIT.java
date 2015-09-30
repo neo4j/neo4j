@@ -19,54 +19,25 @@
  */
 package org.neo4j.kernel.index;
 
-import org.junit.After;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.index.AutoIndexer;
-import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
+import org.neo4j.test.ha.ClusterRule;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 
 public class AutoIndexConfigIT
 {
-    @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
-    private ClusterManager.ManagedCluster cluster;
-    private ClusterManager clusterManager;
-
-    public void startCluster( int size ) throws Throwable
-    {
-        clusterManager = new ClusterManager( clusterOfSize( size ), testDirectory.directory( "dbs" ), stringMap() )
-        {
-            @Override
-            protected void config( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
-            {
-                builder.setConfig( "jmx.port", "" + (9912+serverId.toIntegerIndex()) );
-                builder.setConfig( HaSettings.ha_server, ":" + (1136+serverId.toIntegerIndex()) );
-            }
-        };
-        clusterManager.start();
-        cluster = clusterManager.getDefaultCluster();
-    }
-
-    @After
-    public void stopCluster() throws Throwable
-    {
-        clusterManager.stop();
-    }
+    @ClassRule
+    public static ClusterRule clusterRule = new ClusterRule( AutoIndexConfigIT.class );
 
     @Test
     public void programmaticConfigShouldSurviveMasterSwitches() throws Throwable
@@ -74,7 +45,7 @@ public class AutoIndexConfigIT
         String propertyToIndex = "programmatic-property";
 
         // Given
-        startCluster( 3 );
+        ManagedCluster cluster = clusterRule.startCluster();
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
 
         AutoIndexer<Node> originalAutoIndex = slave.index().getNodeAutoIndexer();
@@ -88,8 +59,7 @@ public class AutoIndexConfigIT
         // Then
         AutoIndexer<Node> newAutoIndex = slave.index().getNodeAutoIndexer();
 
-        assertThat(newAutoIndex.isEnabled(), is(true));
+        assertThat( newAutoIndex.isEnabled(), is( true ) );
         assertThat( newAutoIndex.getAutoIndexedProperties(), hasItem( propertyToIndex ) );
     }
-
 }
