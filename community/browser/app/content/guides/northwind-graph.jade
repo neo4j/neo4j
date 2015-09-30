@@ -69,8 +69,7 @@ article.guide
       .col-sm-3
         h3 Product Catalog Graph
         p The products, categories and suppliers are related through foreign key references.
-          | Let's promote those to data relationships to realize the graph, then try some
-          | queries using patterns.
+          | Let's promote those to data relationships to realize the graph.
         p
           img.img-responsive(src='images/northwind/product-graph.png')
         hr
@@ -84,19 +83,33 @@ article.guide
         h4 Create data relationships
         figure
           pre.pre-scrollable.code.runnable.
-            MATCH (p:Product)
-            MATCH (c:Category)
+            MATCH (p:Product),(c:Category)
             WHERE p.categoryID = c.categoryID
             CREATE (p)-[:PART_OF]-&gt;(c)
+          include ../../views/partials/inefficient-cypher-query
           figcaption Calculate join, materialize relationship. (See&nbsp;
             a(href="http://neo4j.com/developer/guide-importing-data-and-etl")&nbsp; importing guide
             |  for more details)
         figure
           pre.pre-scrollable.code.runnable.
-            MATCH (p:Product)
-            Match (s:Supplier)
+            MATCH (p:Product),(s:Supplier)
             WHERE p.supplierID = s.supplierID
             CREATE (s)-[:SUPPLIES]-&gt;(p)
+          include ../../views/partials/inefficient-cypher-query
+    slide.row-fluid
+      .col-sm-3
+        h3 Querying Product Catalog Graph
+        p Lets try some queries using patterns.
+        p
+          img.img-responsive(src='images/northwind/product-graph.png')
+        hr
+        p
+          small :help
+          | &nbsp;
+          a(help-topic='cypher') cypher
+          | &nbsp;
+          a(help-topic='match') MATCH
+      .col-sm-9
         h4 Query using patterns
         figure
           pre.pre-scrollable.code.runnable.
@@ -142,10 +155,10 @@ article.guide
         h4 Create data relationships
         figure
           pre.pre-scrollable.code.runnable.
-            MATCH (c:Customer)
-            MATCH (o:Order)
+            MATCH (c:Customer),(o:Order)
             WHERE c.customerID = o.customerID
             CREATE (c)-[:PURCHASED]-&gt;(o)
+          include ../../views/partials/inefficient-cypher-query
     slide.row-fluid
       .col-sm-3
         h3 Customer Order Graph
@@ -168,12 +181,12 @@ article.guide
         figure
           pre.pre-scrollable.code.runnable.
             LOAD CSV WITH HEADERS FROM "http://data.neo4j.com/northwind/order-details.csv" AS row
-            MATCH (p:Product)
-            MATCH (o:Order)
+            MATCH (p:Product), (o:Order)
             WHERE p.productID = row.productID AND o.orderID = row.orderID
             CREATE (o)-[details:ORDERS]-&gt;(p)
             SET details = row,
               details.quantity = toInt(row.quantity)
+          include ../../views/partials/inefficient-cypher-query
         h4 Query using patterns
         figure
           pre.pre-scrollable.code.runnable.

@@ -45,7 +45,7 @@ svg
   width: 100%
   overflow: hidden
 
-[play-topic], [help-topic], [server-topic], a[target]
+[play-topic], [help-topic], [server-topic], a[target], .warn
   &:before
     font-family: FontAwesome
     padding-right: 4px
@@ -58,13 +58,9 @@ svg
   &:before
     content: "\f144"
 
-[help-topic]
+[help-topic], .warn
   &:before
     content: "\f05a"
-
-a[target]:not(.no-out-symbol)
-  &:before
-    content: "\f14c"
 
 table.data
   width: 100%
