@@ -1202,7 +1202,7 @@ public class TestApps extends AbstractShellTest
             {
                 try
                 {
-                    Thread.sleep(100);
+                    Thread.sleep(1);
                     server.terminate( clientId );
                 }
                 catch ( Exception e )

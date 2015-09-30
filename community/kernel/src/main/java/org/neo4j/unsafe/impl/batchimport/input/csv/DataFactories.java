@@ -133,7 +133,7 @@ public class DataFactories
      * from the top of the data file.
      *
      * This header factory can be used even when the header exists in a separate file, if that file
-     * is the first in the list of files supplied to {@link #data(File...)}.
+     * is the first in the list of files supplied to {@link #data}.
      */
     public static Header.Factory defaultFormatNodeFileHeader()
     {
@@ -155,7 +155,7 @@ public class DataFactories
      * from the top of the data file.
      *
      * This header factory can be used even when the header exists in a separate file, if that file
-     * is the first in the list of files supplied to {@link #data(File...)}.
+     * is the first in the list of files supplied to {@link #data}.
      */
     public static Header.Factory defaultFormatRelationshipFileHeader()
     {
