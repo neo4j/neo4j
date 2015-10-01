@@ -32,6 +32,8 @@ import java.util.Properties;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.test.SuppressOutput;
+import org.neo4j.test.SystemExitRule;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -56,6 +58,26 @@ import static org.mockito.Mockito.when;
 
 public class BackupToolTest
 {
+
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Rule
+    public SystemExitRule systemExitRule = SystemExitRule.none();
+
+    @Test
+    public void shouldToolFailureExceptionCauseExitCode()
+    {
+        systemExitRule.expectExit( 1 );
+        BackupTool.exitFailure( "tool failed" );
+    }
+
+    @Test
+    public void shouldBackupToolMainCauseExitCode()
+    {
+        systemExitRule.expectExit( 1 );
+        BackupTool.main( new String[]{} );
+    }
+
     @Test
     public void shouldUseIncrementalOrFallbackToFull() throws Exception
     {

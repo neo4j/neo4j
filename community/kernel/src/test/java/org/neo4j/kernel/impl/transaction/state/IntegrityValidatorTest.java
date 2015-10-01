@@ -30,9 +30,10 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
-import static org.powermock.api.mockito.PowerMockito.mock;
+
 
 public class IntegrityValidatorTest
 {
