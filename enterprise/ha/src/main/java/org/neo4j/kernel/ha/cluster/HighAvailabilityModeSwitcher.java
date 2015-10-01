@@ -53,7 +53,7 @@ import static org.neo4j.helpers.NamedThreadFactory.named;
 import static org.neo4j.helpers.Uris.parameter;
 
 /**
- * Performs the internal switches from pending to slave/master, by listening for
+ * Performs the internal switches in various services from pending to slave/master, by listening for
  * {@link HighAvailabilityMemberChangeEvent}s. When finished it will invoke
  * {@link ClusterMemberAvailability#memberIsAvailable(String, URI, StoreId)} to announce it's new status to the
  * cluster.

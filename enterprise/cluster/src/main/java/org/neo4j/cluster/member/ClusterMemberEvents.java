@@ -20,8 +20,8 @@
 package org.neo4j.cluster.member;
 
 /**
- * Register listeners here to get callbacks when cluster members
- * are able to play various roles, such as "master" and "slave".
+ * Register listeners here to get callbacks when important cluster events happen, such as elections,
+ * availability/unavailability of a member as a particular role, and member failure/recovery.
  */
 public interface ClusterMemberEvents
 {

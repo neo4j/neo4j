@@ -32,7 +32,7 @@ import java.util.Set;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageType;
-import org.neo4j.cluster.protocol.omega.MessageArgumentMatcher;
+import org.neo4j.cluster.protocol.MessageArgumentMatcher;
 import org.neo4j.cluster.statemachine.State;
 
 import static org.hamcrest.MatcherAssert.assertThat;

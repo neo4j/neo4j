@@ -37,7 +37,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.MultiPaxosC
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionRole;
-import org.neo4j.cluster.protocol.omega.MessageArgumentMatcher;
+import org.neo4j.cluster.protocol.MessageArgumentMatcher;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.logging.LogService;
