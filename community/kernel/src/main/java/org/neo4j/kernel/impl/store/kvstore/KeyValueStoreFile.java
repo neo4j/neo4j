@@ -127,7 +127,7 @@ public class KeyValueStoreFile implements Closeable
 
     public int entryCount()
     {
-        return totalEntries - headerEntries - trailerEntries;
+        return totalEntries - headerEntries;
     }
 
     @Override
@@ -141,7 +141,6 @@ public class KeyValueStoreFile implements Closeable
     private final int valueSize;
     private final Headers headers;
     private final int headerEntries;
-    private final int trailerEntries;
     /** Includes header, data and trailer entries. */
     private final int totalEntries;
     /**
@@ -157,7 +156,6 @@ public class KeyValueStoreFile implements Closeable
         this.keySize = keySize;
         this.valueSize = valueSize;
         this.headerEntries = metadata.headerEntries();
-        this.trailerEntries = metadata.trailerEntries();
         this.totalEntries = metadata.totalEntries();
         this.headers = metadata.headers();
         this.pageCatalogue = metadata.pageCatalogue();

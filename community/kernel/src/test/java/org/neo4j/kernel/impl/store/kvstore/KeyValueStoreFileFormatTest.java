@@ -26,7 +26,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,7 +36,6 @@ import java.util.Map;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -358,54 +356,6 @@ public class KeyValueStoreFileFormatTest
             }
 
             assertEquals( -1, stream.read() );
-        }
-    }
-
-    @Test
-    public void shouldFailToReadFailWithIncorrectTrailer() throws IOException
-    {
-        // when
-        String[] headerNames = {"abc", "xyz"};
-        Format format = new Format( headerNames );
-
-        Map<String,byte[]> headers = new HashMap<>();
-        headers.put( "abc", new byte[]{'h', 'e', 'l', 'l', 'o', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,} );
-        headers.put( "xyz", new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'w', 'o', 'r', 'l', 'd',} );
-        Data data = data(
-                entry( new byte[]{'o', 'n', 'e'}, new byte[]{'a', 'l', 'p', 'h', 'a'} ),
-                entry( new byte[]{'t', 'w', 'o'}, new byte[]{'b', 'e', 't', 'a'} ),
-                entry( new byte[]{'z', 'e', 'd'}, new byte[]{'o', 'm', 'e', 'g', 'a'} ) );
-
-        // then
-        try ( KeyValueStoreFile originalValidFile = format.create( headers, data ) )
-        {
-            assertEquals( "number of entries", 3, data.index );
-            assertEntries( 3, originalValidFile );
-        }
-
-        FileSystemAbstraction fileSystem = fs.get();
-        try ( StoreChannel channel = fileSystem.open( storeFile.get(), "rw" ) )
-        {
-            long size = channel.size();
-            ByteBuffer buffer = ByteBuffer.allocate( 16 );
-            for ( int i = 0; i < buffer.capacity(); i++ )
-            {
-                buffer.put( (byte) 0xF0 );
-            }
-            buffer.flip();
-            channel.position( size - buffer.capacity() );
-            channel.write( buffer );
-            channel.force( false );
-        }
-
-        try
-        {
-            format.open();
-            fail( "It should not be possible to open count store file with incorrect trailer." );
-        }
-        catch ( IllegalStateException e )
-        {
-            assertEquals( "Format header/trailer has changed.", e.getMessage() );
         }
     }
 

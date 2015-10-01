@@ -32,7 +32,7 @@ abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEnd
     private final HeaderField<?>[] headerFields;
     private final Map<HeaderField<?>, Integer> headerIndexes = new HashMap<>();
     private final Object[] headerValues;
-    private int header, trailer, data;
+    private int header, data;
     private State state = State.expecting_format_specifier;
     private byte[] catalogue = NO_DATA;
 
@@ -97,15 +97,9 @@ abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEnd
     }
 
     @Override
-    int trailerEntries()
-    {
-        return trailer;
-    }
-
-    @Override
     int totalEntries()
     {
-        return header + data + trailer;
+        return header + data;
     }
 
     private enum State
@@ -115,7 +109,7 @@ abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEnd
             @Override
             boolean visit( MetadataCollector collector, BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value )
             {
-                return readFormatSpecifier( collector, key, value, expecting_header );
+                return readFormatSpecifier( collector, key, value );
             }
         },
         expecting_header
@@ -156,7 +150,7 @@ abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEnd
                 {
                     if ( value.allZeroes() )
                     {
-                        collector.state = expecting_format_specifier_trailer;
+                        collector.state = done;
                         return false;
                     }
                     if ( collector.header > collector.headerFields.length )
@@ -194,8 +188,8 @@ abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEnd
                         throw new IllegalStateException( "Number of data entries does not match. (counted=" +
                                                          collector.data + ", trailer=" + entries + ")" );
                     }
-                    collector.state = expecting_format_specifier_trailer;
-                    return true;
+                    collector.state = done;
+                    return false;
                 }
                 else
                 {
@@ -203,14 +197,6 @@ abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEnd
                     collector.readData( key );
                     return true;
                 }
-            }
-        },
-        expecting_format_specifier_trailer
-        {
-            @Override
-            boolean visit( MetadataCollector collector, BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value )
-            {
-                return readFormatSpecifier( collector, key, value, done );
             }
         },
         done
@@ -231,11 +217,10 @@ abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEnd
         };
 
         abstract boolean visit( MetadataCollector collector,
-                                BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value );
-
+                BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value );
 
         private static boolean readFormatSpecifier( MetadataCollector collector,
-                BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value, State nextState )
+                BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value )
         {
             if ( !key.allZeroes() )
             {
@@ -249,20 +234,12 @@ abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEnd
 
             try
             {
-                if ( nextState == expecting_header )
-                {
-                    collector.header = 1;
-                    return true;
-                }
-                else
-                {
-                    collector.trailer = 1;
-                    return false;
-                }
+                collector.header = 1;
+                return true;
             }
             finally
             {
-                collector.state = nextState;
+                collector.state = expecting_header;
             }
         }
     }
