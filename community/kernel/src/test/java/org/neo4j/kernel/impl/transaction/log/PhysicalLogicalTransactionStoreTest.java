@@ -28,6 +28,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.helpers.collection.CloseableVisitor;
@@ -52,6 +53,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -128,6 +130,7 @@ public class PhysicalLogicalTransactionStoreTest
 
         life = new LifeSupport();
         final AtomicInteger recoveredTransactions = new AtomicInteger();
+        final AtomicBoolean recoveryRequiredCalled = new AtomicBoolean();
         final LogFileRecoverer recoverer = new LogFileRecoverer(
                 new VersionAwareLogEntryReader<ReadableVersionableLogChannel>(),
                 new CloseableVisitor<CommittedTransactionRepresentation, IOException>()
@@ -153,7 +156,6 @@ public class PhysicalLogicalTransactionStoreTest
                     }
                 } );
         logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, transactionIdStore, mock( LogVersionRepository.class ), monitor, positionCache ) );
-
 
         PhysicalLogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFile,
                 LogRotation.NO_ROTATION, positionCache,
@@ -183,6 +185,12 @@ public class PhysicalLogicalTransactionStoreTest
             {
                 return PhysicalLogFile.openForVersion( logFiles, fs,recoveryVersion );
             }
+
+            @Override
+            public void recoveryRequired()
+            {
+                recoveryRequiredCalled.set( true );
+            }
         }, mock(Recovery.Monitor.class)));
 
         // WHEN
@@ -197,6 +205,7 @@ public class PhysicalLogicalTransactionStoreTest
 
         // THEN
         assertEquals( 1, recoveredTransactions.get() );
+        assertTrue( recoveryRequiredCalled.get() );
     }
 
     @Test

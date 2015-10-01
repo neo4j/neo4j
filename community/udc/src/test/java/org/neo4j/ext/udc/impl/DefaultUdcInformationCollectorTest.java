@@ -19,12 +19,12 @@
  */
 package org.neo4j.ext.udc.impl;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.Test;
 
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.graphdb.DependencyResolver;

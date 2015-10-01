@@ -44,9 +44,14 @@ public class Recovery extends LifecycleAdapter
     public interface SPI
     {
         void forceEverything();
+
         long getCurrentLogVersion();
+
         Visitor<LogVersionedStoreChannel, IOException> getRecoverer();
+
         LogVersionedStoreChannel getLogFile( long recoveryVersion ) throws IOException;
+
+        void recoveryRequired();
     }
 
     private final SPI spi;
@@ -68,6 +73,7 @@ public class Recovery extends LifecycleAdapter
         {
             if ( LogRecoveryCheck.recoveryRequired( toRecover ) )
             {   // There's already data in here, which means recovery will need to be performed.
+                spi.recoveryRequired();
                 monitor.recoveryRequired( toRecover.getVersion() );
                 spi.getRecoverer().visit( toRecover );
                 recoveredLog = true;
