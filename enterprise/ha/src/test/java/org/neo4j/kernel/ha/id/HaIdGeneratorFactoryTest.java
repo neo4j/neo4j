@@ -162,7 +162,7 @@ public class HaIdGeneratorFactoryTest
     public void before()
     {
         master = mock( Master.class );
-        masterDelegate = new DelegateInvocationHandler<>( Master.class );
+        masterDelegate = new DelegateInvocationHandler<>( Master.class, NullLogProvider.getInstance() );
         fs = new EphemeralFileSystemAbstraction();
         fac  = new HaIdGeneratorFactory( masterDelegate, NullLogProvider.getInstance(),
                 mock( RequestContextFactory.class ), fs );
