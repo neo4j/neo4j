@@ -43,7 +43,7 @@ object Expression {
       option.fold(SemanticCheckResult.success) { _.expectType(possibleTypes) }
   }
 
-  implicit class SemanticCheckableExpressionTraversable[A <: Expression](traversable: TraversableOnce[A]) extends SemanticChecking {
+  implicit class SemanticCheckableExpressionTraversable[A <: SemanticCheckableWithContext](traversable: TraversableOnce[A]) extends SemanticChecking {
     def semanticCheck(ctx: SemanticContext): SemanticCheck =
       traversable.foldSemanticCheck { _.semanticCheck(ctx) }
   }
@@ -72,11 +72,14 @@ object Expression {
   }
 }
 
-abstract class Expression extends ASTNode with ASTExpression with SemanticChecking {
+trait SemanticCheckableWithContext {
+  def semanticCheck(ctx: SemanticContext): SemanticCheck
+}
+
+
+abstract class Expression extends ASTNode with ASTExpression with SemanticChecking with SemanticCheckableWithContext {
 
   import Expression.TreeAcc
-
-  def semanticCheck(ctx: SemanticContext): SemanticCheck
 
   def types: TypeGenerator = s => s.expressionType(this).actual
 

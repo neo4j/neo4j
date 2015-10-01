@@ -269,7 +269,7 @@ object ExpressionConverters {
     case e: ast.ShortestPathExpression => commandexpressions.ShortestPathExpression(e.pattern.asLegacyPatterns(None).head)
     case e: ast.HasLabels => hasLabels(e)
     case e: ast.Collection => commandexpressions.Collection(toCommandExpression(e.expressions): _*)
-    case e: ast.MapExpression => mapExpression(e)
+    case e: ast.MapExpression => commandexpressions.LiteralMap(mapItems(e.items))
     case e: ast.CollectionSlice => commandexpressions.CollectionSliceExpression(toCommandExpression(e.collection), toCommandExpression(e.from), toCommandExpression(e.to))
     case e: ast.ContainerIndex => commandexpressions.ContainerIndex(toCommandExpression(e.expr), toCommandExpression(e.idx))
     case e: ast.FilterExpression => commandexpressions.FilterFunction(toCommandExpression(e.expression), e.identifier.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
@@ -286,6 +286,7 @@ object ExpressionConverters {
     case e: PrefixSeekRangeWrapper => commandexpressions.PrefixSeekRangeExpression(e.range.map(toCommandExpression))
     case e: InequalitySeekRangeWrapper => InequalitySeekRangeExpression(e.range.mapBounds(toCommandExpression))
     case e: ast.AndedPropertyInequalities => predicates.AndedPropertyComparablePredicates(identifier(e.identifier), toCommandProperty(e.property), e.inequalities.map(inequalityExpression))
+    case e: ast.MapProjection => mapProjection(e)
     case _ =>
       throw new InternalException(s"Unknown expression type during transformation (${expression.getClass})")
   }
@@ -354,11 +355,20 @@ object ExpressionConverters {
     predicates.And(_, _)
   }
 
-  private def mapExpression(e: ast.MapExpression): commandexpressions.LiteralMap = {
-    val literalMap: Map[String, CommandExpression] = e.items.map {
+  def mapItems(items: Seq[(PropertyKeyName, Expression)]): Map[String, CommandExpression] =
+    items.map {
       case (id, ex) => id.name -> toCommandExpression(ex)
     }.toMap
-    commandexpressions.LiteralMap(literalMap)
+
+  private def mapProjection(e: ast.MapProjection): commandexpressions.MapProjection = {
+    var includeAllProps = false
+    val items = e.items.flatMap {
+      case LiteralEntry(k, v) => Some(k -> v)
+      case _: AllPropertiesSelector => includeAllProps = true; None
+      case _ => throw new InternalException("Expected to have rewritten this before producing runtime objects")
+    }
+
+    commandexpressions.MapProjection(e.name.name, includeAllProps, mapItems(items))
   }
 
   private def listComprehension(e: ast.ListComprehension): CommandExpression = {

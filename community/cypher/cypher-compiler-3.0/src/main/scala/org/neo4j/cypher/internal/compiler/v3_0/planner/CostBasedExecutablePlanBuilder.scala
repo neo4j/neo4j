@@ -116,7 +116,7 @@ object CostBasedExecutablePlanBuilder {
     )
 
 //    val namespacedSemanticTable = namespacer.tableRewriter(semanticTable)
-    val state = semanticChecker.check(namespacedStatement.toString, namespacedStatement, mkException = (msg, pos) => throw new InternalException(s"Unexpected error during late semantic checking: $msg"))
+    val state = semanticChecker.check(namespacedStatement.toString, namespacedStatement, mkException = (msg, pos) => throw new InternalException(s"Unexpected error during late semantic checking: $msg at $pos"))
     val table = semanticTable.copy(types = state.typeTable, recordedScopes = state.recordedScopes)
 
     val predicateSplitter = PredicateSplitter(table, namespacedStatement)
