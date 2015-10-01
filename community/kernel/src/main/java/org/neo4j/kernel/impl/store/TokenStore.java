@@ -51,7 +51,7 @@ public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token
     private final TokenFactory<TOKEN> tokenFactory;
 
     public TokenStore(
-            File fileName,
+            File file,
             Config configuration,
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
@@ -60,7 +60,7 @@ public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token
             DynamicStringStore nameStore,
             TokenFactory<TOKEN> tokenFactory )
     {
-        super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider);
+        super( file, configuration, idType, idGeneratorFactory, pageCache, logProvider);
         this.nameStore = nameStore;
         this.tokenFactory = tokenFactory;
     }
@@ -160,13 +160,11 @@ public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token
             if ( cursor.next() )
             {
                 RECORD record = newRecord( (int) id );
-                byte inUseByte;
                 do
                 {
-                    inUseByte = getRecord( (int) id, record, cursor );
-                } while ( cursor.shouldRetry() );
-
-                checkInUseByteValidity( id, inUseByte );
+                    getRecord( (int) id, record, cursor );
+                }
+                while ( cursor.shouldRetry() );
 
                 record.setIsLight( true );
                 return record;
