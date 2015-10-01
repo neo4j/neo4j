@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.neo4j.graphdb.TransientFailureException;
-
 import org.junit.Test;
+
+import org.neo4j.graphdb.TransientFailureException;
+import org.neo4j.logging.NullLogProvider;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -31,9 +33,9 @@ public class DelegateInvocationHandlerTest
     public void shouldNotBeAbleToUseValueBeforeHardened() throws Exception
     {
         // GIVEN
-        DelegateInvocationHandler<Value> handler = new DelegateInvocationHandler<Value>( Value.class );
+        DelegateInvocationHandler<Value> handler = newDelegateInvocationHandler();
         Value value = handler.cement();
-        
+
         // WHEN
         try
         {
@@ -44,35 +46,35 @@ public class DelegateInvocationHandlerTest
         {   // THEN
         }
     }
-    
+
     @Test
     public void shouldBeAbleToUseCementedValueOnceDelegateSet() throws Exception
     {
         // GIVEN
-        DelegateInvocationHandler<Value> handler = new DelegateInvocationHandler<Value>( Value.class );
+        DelegateInvocationHandler<Value> handler = newDelegateInvocationHandler();
         Value cementedValue = handler.cement();
-        
+
         // WHEN setting the delegate (implies hardening it)
         handler.setDelegate( value( 10 ) );
-        
+
         // THEN
         assertEquals( 10, cementedValue.get() );
     }
-    
+
     @Test
     public void shouldBeAbleToUseCementedValueOnceHardened() throws Exception
     {
         // GIVEN
-        DelegateInvocationHandler<Value> handler = new DelegateInvocationHandler<Value>( Value.class );
+        DelegateInvocationHandler<Value> handler = newDelegateInvocationHandler();
         Value cementedValue = handler.cement();
-        
+
         // WHEN setting the delegate (implies hardening it)
         handler.setDelegate( value( 10 ) );
-        
+
         // THEN
         assertEquals( 10, cementedValue.get() );
     }
-    
+
     @Test
     public void setDelegateShouldBeAbleToOverridePreviousHarden() throws Exception
     {
@@ -84,16 +86,16 @@ public class DelegateInvocationHandlerTest
          * was done, that thread would set the master delegate to the actual one, but all components would
          * have already gotten a concrete reference to the master such that the latter setDelegate call would
          * not affect them. */
-        
+
         // GIVEN
-        DelegateInvocationHandler<Value> handler = new DelegateInvocationHandler<Value>( Value.class );
+        DelegateInvocationHandler<Value> handler = newDelegateInvocationHandler();
         handler.setDelegate( value( 10 ) );
         Value cementedValue = handler.cement();
         handler.harden();
-        
+
         // WHEN setting the delegate (implies hardening it)
         handler.setDelegate( value( 20 ) );
-        
+
         // THEN
         assertEquals( 20, cementedValue.get() );
     }
@@ -108,6 +110,11 @@ public class DelegateInvocationHandlerTest
                 return i;
             }
         };
+    }
+
+    private static DelegateInvocationHandler<Value> newDelegateInvocationHandler()
+    {
+        return new DelegateInvocationHandler<>( Value.class, NullLogProvider.getInstance() );
     }
 
     private interface Value
