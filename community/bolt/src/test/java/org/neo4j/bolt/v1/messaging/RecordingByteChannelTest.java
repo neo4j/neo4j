@@ -17,39 +17,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.messaging.msgprocess;
+package org.neo4j.bolt.v1.messaging;
 
-import java.util.HashMap;
-import java.util.Map;
+import org.junit.Test;
 
-import org.neo4j.logging.Log;
-import org.neo4j.bolt.v1.runtime.StatementMetadata;
+import java.nio.ByteBuffer;
 
-public class RunCallback extends MessageProcessingCallback<StatementMetadata>
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+
+public class RecordingByteChannelTest
 {
-    private final Map<String,Object> successMetadata = new HashMap<>();
 
-    public RunCallback( Log log )
+    @Test
+    public void shouldBeAbleToWriteToThenReadFromChannel() throws Throwable
     {
-        super( log );
+        // Given
+        RecordingByteChannel channel = new RecordingByteChannel();
+
+        // When
+        byte[] data = new byte[]{1, 2, 3, 4, 5};
+        channel.write( ByteBuffer.wrap( data ) );
+        ByteBuffer buffer = ByteBuffer.allocate( 10 );
+        int bytesRead = channel.read( buffer );
+
+        // Then
+        assertThat( bytesRead, equalTo( 5 ) );
+        assertThat( buffer.array(), equalTo( new byte[]{1, 2, 3, 4, 5, 0, 0, 0, 0, 0} ) );
+
     }
 
-    @Override
-    public void result( StatementMetadata result, Void none ) throws Exception
-    {
-        successMetadata.put( "fields", result.fieldNames() );
-    }
 
-    @Override
-    protected Map<String,Object> successMetadata()
-    {
-        return successMetadata;
-    }
-
-    @Override
-    protected void clearState()
-    {
-        super.clearState();
-        successMetadata.clear();
-    }
 }

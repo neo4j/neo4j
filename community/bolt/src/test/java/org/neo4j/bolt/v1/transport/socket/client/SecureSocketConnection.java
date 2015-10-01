@@ -17,39 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.messaging.msgprocess;
+package org.neo4j.bolt.v1.transport.socket.client;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.net.Socket;
+import java.security.SecureRandom;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 
-import org.neo4j.logging.Log;
-import org.neo4j.bolt.v1.runtime.StatementMetadata;
-
-public class RunCallback extends MessageProcessingCallback<StatementMetadata>
+public class SecureSocketConnection extends SocketConnection
 {
-    private final Map<String,Object> successMetadata = new HashMap<>();
-
-    public RunCallback( Log log )
+    public SecureSocketConnection()
     {
-        super( log );
+        super( createSecureSocket() );
     }
 
-    @Override
-    public void result( StatementMetadata result, Void none ) throws Exception
+    private static Socket createSecureSocket()
     {
-        successMetadata.put( "fields", result.fieldNames() );
-    }
+        try
+        {
+            SSLContext context = SSLContext.getInstance( "SSL" );
+            context.init( new KeyManager[0], new TrustManager[]{new NaiveTrustManager()}, new SecureRandom() );
 
-    @Override
-    protected Map<String,Object> successMetadata()
-    {
-        return successMetadata;
-    }
-
-    @Override
-    protected void clearState()
-    {
-        super.clearState();
-        successMetadata.clear();
+            return context.getSocketFactory().createSocket();
+        }
+        catch( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

@@ -60,4 +60,11 @@ public class RecordStreamCallback extends MessageProcessingCallback<RecordStream
     {
         return successMetadata;
     }
+
+    @Override
+    protected void clearState()
+    {
+        super.clearState();
+        successMetadata.clear();
+    }
 }

@@ -121,7 +121,7 @@ public class MessageProcessingCallback<T> extends Session.Callback.Adapter<T,Voi
         return Collections.emptyMap();
     }
 
-    private void clearState()
+    protected void clearState()
     {
         error = null;
         ignored = false;

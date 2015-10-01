@@ -17,39 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.messaging.msgprocess;
+package org.neo4j.bolt.v1.transport.socket.client;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.io.IOException;
 
-import org.neo4j.logging.Log;
-import org.neo4j.bolt.v1.runtime.StatementMetadata;
+import org.neo4j.helpers.HostnamePort;
 
-public class RunCallback extends MessageProcessingCallback<StatementMetadata>
+public interface Connection extends AutoCloseable
 {
-    private final Map<String,Object> successMetadata = new HashMap<>();
+    Connection connect( HostnamePort address ) throws Exception;
 
-    public RunCallback( Log log )
-    {
-        super( log );
-    }
+    Connection send( byte[] rawBytes ) throws Exception;
 
-    @Override
-    public void result( StatementMetadata result, Void none ) throws Exception
-    {
-        successMetadata.put( "fields", result.fieldNames() );
-    }
+    byte[] recv( int length ) throws Exception;
 
-    @Override
-    protected Map<String,Object> successMetadata()
-    {
-        return successMetadata;
-    }
+    void discard( int length ) throws IOException;
 
-    @Override
-    protected void clearState()
-    {
-        super.clearState();
-        successMetadata.clear();
-    }
+    void disconnect() throws Exception;
 }

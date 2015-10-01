@@ -17,39 +17,45 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.messaging.msgprocess;
+package org.neo4j.bolt.v1.messaging.util;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 
-import org.neo4j.logging.Log;
-import org.neo4j.bolt.v1.runtime.StatementMetadata;
-
-public class RunCallback extends MessageProcessingCallback<StatementMetadata>
+public class ArrayByteChannel implements ReadableByteChannel
 {
-    private final Map<String,Object> successMetadata = new HashMap<>();
+    private final ByteBuffer data;
 
-    public RunCallback( Log log )
+    public ArrayByteChannel( byte[] bytes )
     {
-        super( log );
+        this.data = ByteBuffer.wrap( bytes );
     }
 
     @Override
-    public void result( StatementMetadata result, Void none ) throws Exception
+    public int read( ByteBuffer dst ) throws IOException
     {
-        successMetadata.put( "fields", result.fieldNames() );
+        if ( data.position() == data.limit() )
+        {
+            return -1;
+        }
+        int originalPosition = data.position();
+        int originalLimit = data.limit();
+        data.limit( Math.min( data.limit(), dst.limit() - dst.position() + data.position() ) );
+        dst.put( data );
+        data.limit( originalLimit );
+        return data.position() - originalPosition;
     }
 
     @Override
-    protected Map<String,Object> successMetadata()
+    public boolean isOpen()
     {
-        return successMetadata;
+        return data.position() < data.limit();
     }
 
     @Override
-    protected void clearState()
+    public void close() throws IOException
     {
-        super.clearState();
-        successMetadata.clear();
+
     }
 }
