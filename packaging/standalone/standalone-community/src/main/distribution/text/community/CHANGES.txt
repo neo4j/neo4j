@@ -15,6 +15,9 @@ o New drawer for :config settings
 o :play remote guides
 o Handle 403 responses from server
 
+Packaging:
+o Neo4j console does not fork a subprocess on Linux, enabling easier process management
+
 2.3.0-M03
 ---------
 

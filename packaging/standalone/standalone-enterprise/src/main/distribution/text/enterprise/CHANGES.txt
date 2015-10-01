@@ -16,6 +16,9 @@ o :play remote guides
 o Handle 403 responses from server
 o Add config to control outgoing connections
 
+Packaging:
+o Neo4j console does not fork a subprocess on Linux, enabling easier process management
+
 2.3.0-M03
 ---------
 
