@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -39,6 +40,7 @@ import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.Logger;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -495,16 +497,24 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
 
     private void refreshFields()
     {
-        scanAllFields( PF_SHARED_LOCK );
+        scanAllFields( PF_SHARED_LOCK, new Visitor<PageCursor,IOException>()
+        {
+            @Override
+            public boolean visit( PageCursor element ) throws IOException
+            {
+                readAllFields( element );
+                return false;
+            }
+        } );
     }
 
-    private void scanAllFields( int pf_flags )
+    private void scanAllFields( int pf_flags, Visitor<PageCursor,IOException> visitor )
     {
         try ( PageCursor cursor = storeFile.io( 0, pf_flags ) )
         {
             if ( cursor.next() )
             {
-                readAllFields( cursor );
+                visitor.visit( cursor );
             }
         }
         catch ( IOException e )
@@ -718,5 +728,22 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
             transactionCloseWaitLogger.event( null );
         }
         return onPar;
+    }
+
+    public void logRecords( final Logger msgLog )
+    {
+        scanAllFields( PF_SHARED_LOCK, new Visitor<PageCursor,IOException>()
+        {
+            @Override
+            public boolean visit( PageCursor element ) throws IOException
+            {
+                for ( Position position : Position.values() )
+                {
+                    long value = getRecordValue( element, position );
+                    msgLog.log( position.name() + " (" + position.description() + "): " + value );
+                }
+                return false;
+            }
+        } );
     }
 }
