@@ -543,7 +543,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
   def withModel(label1: String = "User",
                 label2: String = "User",
                 type1: String = "KNOWS",
-                expectedLogicalPlan: String = "CountStoreNodeAggregation",
+                expectedLogicalPlan: String = "NodeCountFromCountStore",
                 query: String, f: InternalExecutionResult => Unit): Unit = {
     executeWithRulePlanner(
       s"""
@@ -560,7 +560,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
   def withRelationshipsModel(label1: String = "User",
                              label2: String = "User",
                              type1: String = "KNOWS",
-                             expectedLogicalPlan: String = "CountStoreRelationshipAggregation",
+                             expectedLogicalPlan: String = "RelationshipCountFromCountStore",
                              query: String, f: InternalExecutionResult => Unit): Unit = {
     withModel(label1, label2, type1, expectedLogicalPlan, query, f)
   }
@@ -571,7 +571,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
                 type1: String = "KNOWS",
                 type2: String = "KNOWS",
                 type3: String = "KNOWS",
-                expectedLogicalPlan: String = "CountStoreNodeAggregation",
+                expectedLogicalPlan: String = "NodeCountFromCountStore",
                 query: String, f: InternalExecutionResult => Unit): Unit = {
     executeWithRulePlanner(
       s"""
@@ -604,7 +604,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
                         type1: String = "KNOWS",
                         type2: String = "KNOWS",
                         type3: String = "KNOWS",
-                        expectedLogicalPlan: String = "CountStoreRelationshipAggregation",
+                        expectedLogicalPlan: String = "RelationshipCountFromCountStore",
                         query: String, f: InternalExecutionResult => Unit): Unit = {
     withModelAndTransaction(label1, label2, label3, type1, type2, type3, expectedLogicalPlan, query, f)
   }
