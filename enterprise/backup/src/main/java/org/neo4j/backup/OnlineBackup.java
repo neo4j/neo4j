@@ -19,13 +19,13 @@
  */
 package org.neo4j.backup;
 
+import java.io.File;
+
 import org.neo4j.backup.BackupService.BackupOutcome;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-
-import java.io.File;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -103,8 +103,8 @@ public class OnlineBackup
      */
     public OnlineBackup backup( File targetDirectory )
     {
-        outcome = new BackupService().doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory, true,
-                defaultConfig(), timeoutMillis, forensics );
+        outcome = new BackupService().doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory,
+                getConsistencyCheck( true ), defaultConfig(), timeoutMillis, forensics );
         return this;
     }
 
@@ -139,7 +139,7 @@ public class OnlineBackup
     public OnlineBackup backup( File targetDirectory, boolean verification )
     {
         outcome = new BackupService().doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory,
-                verification, defaultConfig(), timeoutMillis, forensics );
+                getConsistencyCheck( verification ), defaultConfig(), timeoutMillis, forensics );
         return this;
     }
 
@@ -171,8 +171,8 @@ public class OnlineBackup
      */
     public OnlineBackup backup( File targetDirectory, Config tuningConfiguration )
     {
-        outcome = new BackupService().doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory, true,
-                tuningConfiguration, timeoutMillis, forensics );
+        outcome = new BackupService().doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory,
+                getConsistencyCheck( true ), tuningConfiguration, timeoutMillis, forensics );
         return this;
     }
 
@@ -210,7 +210,7 @@ public class OnlineBackup
                                 boolean verification )
     {
         outcome = new BackupService().doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory,
-                verification, tuningConfiguration, timeoutMillis, forensics );
+                getConsistencyCheck( verification ), tuningConfiguration, timeoutMillis, forensics );
         return this;
     }
 
@@ -243,8 +243,8 @@ public class OnlineBackup
     @Deprecated
     public OnlineBackup full( String targetDirectory )
     {
-        outcome = new BackupService().doFullBackup( hostNameOrIp, port, new File( targetDirectory ), true, defaultConfig(),
-                timeoutMillis, forensics );
+        outcome = new BackupService().doFullBackup( hostNameOrIp, port, new File( targetDirectory ),
+                getConsistencyCheck( true ), defaultConfig(), timeoutMillis, forensics );
         return this;
     }
 
@@ -264,8 +264,8 @@ public class OnlineBackup
     @Deprecated
     public OnlineBackup full( String targetDirectory, boolean verification )
     {
-        outcome = new BackupService().doFullBackup( hostNameOrIp, port, new File( targetDirectory ), verification,
-                defaultConfig(), timeoutMillis, forensics );
+        outcome = new BackupService().doFullBackup( hostNameOrIp, port, new File( targetDirectory ),
+                getConsistencyCheck( verification ), defaultConfig(), timeoutMillis, forensics );
         return this;
     }
 
@@ -287,8 +287,8 @@ public class OnlineBackup
     @Deprecated
     public OnlineBackup full( String targetDirectory, boolean verification, Config tuningConfiguration )
     {
-        outcome = new BackupService().doFullBackup( hostNameOrIp, port, new File( targetDirectory ), verification,
-                tuningConfiguration, timeoutMillis, forensics );
+        outcome = new BackupService().doFullBackup( hostNameOrIp, port, new File( targetDirectory ),
+                getConsistencyCheck( verification ), tuningConfiguration, timeoutMillis, forensics );
         return this;
     }
 
@@ -397,5 +397,10 @@ public class OnlineBackup
     {
         this.forensics = forensics;
         return this;
+    }
+
+    private static ConsistencyCheck getConsistencyCheck( boolean verification )
+    {
+        return verification ? ConsistencyCheck.DEFAULT : ConsistencyCheck.NONE;
     }
 }

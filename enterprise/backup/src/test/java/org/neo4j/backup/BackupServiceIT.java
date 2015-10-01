@@ -53,9 +53,9 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
+import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
@@ -86,6 +86,7 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -95,9 +96,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.backup.BackupServiceStressTestingBuilder.untilTimeExpired;
 
 public class BackupServiceIT
@@ -164,7 +162,7 @@ public class BackupServiceIT
         try
         {
             // when
-            backupService().doFullBackup( "", 0, backupDir.getAbsoluteFile(), true, new Config(),
+            backupService().doFullBackup( "", 0, backupDir.getAbsoluteFile(), ConsistencyCheck.DEFAULT, new Config(),
                     BackupClient.BIG_READ_TIMEOUT, false );
         }
         catch ( RuntimeException ex )
@@ -184,8 +182,8 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = backupService();
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), false, dbRule.getConfigCopy(),
-                BackupClient.BIG_READ_TIMEOUT, false );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.NONE,
+                dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
         // then
@@ -340,7 +338,8 @@ public class BackupServiceIT
         // when
         BackupService backupService = backupService();
         BackupService.BackupOutcome outcome = backupService.doFullBackup( BACKUP_HOST, backupPort,
-                backupDir.getAbsoluteFile(), true, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+                backupDir.getAbsoluteFile(), ConsistencyCheck.DEFAULT, dbRule.getConfigCopy(),
+                BackupClient.BIG_READ_TIMEOUT, false );
 
         db.shutdown();
 
@@ -361,8 +360,8 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = backupService();
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), false, dbRule.getConfigCopy(),
-                BackupClient.BIG_READ_TIMEOUT, false );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
+                ConsistencyCheck.NONE, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
         // then
@@ -381,8 +380,8 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = backupService();
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), false, dbRule.getConfigCopy(),
-                BackupClient.BIG_READ_TIMEOUT, false );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
+                ConsistencyCheck.NONE, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
         // then
@@ -407,8 +406,8 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = backupService();
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), false, dbRule.getConfigCopy(),
-                BackupClient.BIG_READ_TIMEOUT, false );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
+                ConsistencyCheck.NONE, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
         // then
@@ -426,8 +425,8 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = backupService();
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), false, defaultConfig,
-                BackupClient.BIG_READ_TIMEOUT, false );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
+                ConsistencyCheck.NONE, defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
         // then
@@ -451,7 +450,7 @@ public class BackupServiceIT
 
         // A full backup
         backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
-                false, defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
+                ConsistencyCheck.NONE, defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
 
         // And the log the backup uses is rotated out
         createAndIndexNode( db, 2 );
@@ -492,7 +491,7 @@ public class BackupServiceIT
 
         // A full backup
         backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
-                false, defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
+                ConsistencyCheck.NONE, defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
 
         // And the log the backup uses is rotated out
         createAndIndexNode( db, 2 );
@@ -504,7 +503,7 @@ public class BackupServiceIT
 
         // when
         backupService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), false, defaultConfig,
+                BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.NONE, defaultConfig,
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         // Then
@@ -532,7 +531,7 @@ public class BackupServiceIT
 
         // A full backup
         backupService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), false, defaultConfig,
+                BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.NONE, defaultConfig,
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         // And the log the backup uses is rotated out
@@ -544,7 +543,7 @@ public class BackupServiceIT
 
         // when
         backupService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), false, defaultConfig,
+                BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.NONE, defaultConfig,
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         // Then
@@ -590,7 +589,7 @@ public class BackupServiceIT
 
         // when
         backupService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), false, defaultConfig,
+                BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.NONE, defaultConfig,
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         // then
@@ -644,7 +643,8 @@ public class BackupServiceIT
         } );
 
         BackupService.BackupOutcome backupOutcome = backupService.doFullBackup( BACKUP_HOST, backupPort,
-                backupDir.getAbsoluteFile(), true, withOnlineBackupEnabled, BackupClient.BIG_READ_TIMEOUT, false );
+                backupDir.getAbsoluteFile(), ConsistencyCheck.DEFAULT, withOnlineBackupEnabled,
+                BackupClient.BIG_READ_TIMEOUT, false );
 
         backup.stop();
         executor.shutdown();
@@ -669,7 +669,7 @@ public class BackupServiceIT
         GraphDatabaseAPI db1 = dbRule.getGraphDatabaseAPI();
         createAndIndexNode( db1, 1 );
 
-        backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), false,
+        backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.NONE,
                 defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
 
         // When
@@ -689,7 +689,8 @@ public class BackupServiceIT
         try
         {
             backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort,
-                    backupDir.getAbsoluteFile(), false, defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
+                    backupDir.getAbsoluteFile(), ConsistencyCheck.NONE, defaultConfig,
+                    BackupClient.BIG_READ_TIMEOUT, false );
 
             fail( "Should have thrown exception about mismatching store ids" );
         }
@@ -812,7 +813,7 @@ public class BackupServiceIT
     {
         BackupService backupService = backupService();
         backupService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort,
-                backupDir, false, new Config(), BackupClient.BIG_READ_TIMEOUT, false );
+                backupDir, ConsistencyCheck.NONE, new Config(), BackupClient.BIG_READ_TIMEOUT, false );
     }
 
     private Node findNodeByLabel( GraphDatabaseAPI graphDatabase, Label label )

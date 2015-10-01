@@ -37,8 +37,6 @@ import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
-import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -126,7 +124,7 @@ class BackupService
     }
 
     BackupOutcome doFullBackup( final String sourceHostNameOrIp, final int sourcePort, File targetDirectory,
-            boolean checkConsistency, Config tuningConfiguration, final long timeout, final boolean forensics )
+            ConsistencyCheck consistencyCheck, Config tuningConfiguration, final long timeout, final boolean forensics )
     {
         if ( directoryContainsDb( targetDirectory ) )
         {
@@ -134,7 +132,6 @@ class BackupService
         }
         long timestamp = System.currentTimeMillis();
         long lastCommittedTx = -1;
-        boolean consistent = !checkConsistency; // default to true if we're not checking consistency
         try ( PageCache pageCache = createPageCache( fileSystem ) )
         {
             StoreCopyClient storeCopier = new StoreCopyClient( targetDirectory, tuningConfiguration, loadKernelExtensions(),
@@ -164,18 +161,16 @@ class BackupService
             }, CancellationRequest.NEVER_CANCELLED );
 
             bumpMessagesDotLogFile( targetDirectory, timestamp );
-            if ( checkConsistency )
+            boolean consistent = false;
+            try
             {
-                try
-                {
-                    consistent = new ConsistencyCheckService().runFullConsistencyCheck(
-                            targetDirectory, tuningConfiguration, ProgressMonitorFactory.textual( System.err ),
-                            logProvider, fileSystem, pageCache, false ).isSuccessful();
-                }
-                catch ( ConsistencyCheckIncompleteException e )
-                {
-                    log.error( "Consistency check incomplete", e );
-                }
+                consistent = consistencyCheck.runFull( targetDirectory, tuningConfiguration,
+                        ProgressMonitorFactory.textual( System.err ),
+                        logProvider, fileSystem, pageCache, false );
+            }
+            catch ( ConsistencyCheck.ConsistencyCheckFailedException e )
+            {
+                log.error( "Consistency check incomplete", e );
             }
             clearIdFiles( targetDirectory );
             return new BackupOutcome( lastCommittedTx, consistent );
@@ -229,11 +224,11 @@ class BackupService
     }
 
     BackupOutcome doIncrementalBackupOrFallbackToFull( String sourceHostNameOrIp, int sourcePort,
-            File targetDirectory, boolean verification, Config config, long timeout, boolean forensics )
+            File targetDirectory, ConsistencyCheck consistencyCheck, Config config, long timeout, boolean forensics )
     {
         if ( !directoryContainsDb( targetDirectory ) )
         {
-            return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, verification, config, timeout,
+            return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, consistencyCheck, config, timeout,
                     forensics );
         }
         try
@@ -247,7 +242,7 @@ class BackupService
                 log.warn( "Attempt to do incremental backup failed.", e );
                 log.info( "Existing backup is too far out of date, a new full backup will be performed." );
                 FileUtils.deleteRecursively( targetDirectory );
-                return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, verification,
+                return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, consistencyCheck,
                         config, timeout, forensics );
             }
             catch ( Exception fullBackupFailure )

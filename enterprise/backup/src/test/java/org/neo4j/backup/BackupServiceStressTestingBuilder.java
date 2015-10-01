@@ -224,7 +224,7 @@ public class BackupServiceStressTestingBuilder
                             cleanup( backupDir );
                             BackupService.BackupOutcome backupOutcome =
                                     backupService.doFullBackup( backupHostname, backupPort,
-                                            backupDir.getAbsoluteFile(), true, new Config(),
+                                            backupDir.getAbsoluteFile(), ConsistencyCheck.DEFAULT, new Config(),
                                             BackupClient.BIG_READ_TIMEOUT,
                                             false );
 
