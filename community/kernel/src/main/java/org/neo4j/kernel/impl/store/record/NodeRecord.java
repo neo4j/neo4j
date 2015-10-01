@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.neo4j.function.Predicate;
-
 import static java.util.Collections.emptyList;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
@@ -108,7 +106,12 @@ public class NodeRecord extends PrimitiveRecord
 
     public Iterable<DynamicRecord> getUsedDynamicLabelRecords()
     {
-        return filter( RECORDS_IN_USE, dynamicLabelRecords );
+        return filter( inUseFilter(), dynamicLabelRecords );
+    }
+
+    public Iterable<DynamicRecord> getUnusedDynamicLabelRecords()
+    {
+        return filter( notInUseFilter(), dynamicLabelRecords );
     }
 
     public boolean isDense()
@@ -162,13 +165,4 @@ public class NodeRecord extends PrimitiveRecord
         }
         return clone;
     }
-
-    private static final Predicate<DynamicRecord> RECORDS_IN_USE = new Predicate<DynamicRecord>()
-    {
-        @Override
-        public boolean test( DynamicRecord item )
-        {
-            return item.inUse();
-        }
-    };
 }
