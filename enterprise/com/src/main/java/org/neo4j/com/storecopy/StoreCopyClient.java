@@ -164,7 +164,7 @@ public class StoreCopyClient
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
     private final Monitor monitor;
-    private boolean forensics;
+    private final boolean forensics;
 
     public StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
             LogProvider logProvider, FileSystemAbstraction fs,
@@ -360,6 +360,7 @@ public class StoreCopyClient
     {
         if ( cancellationRequest.cancellationRequested() )
         {
+            log.info( "Store copying was cancelled. Cleaning up temp-directories." );
             cleanDirectory( tempStore );
         }
     }
