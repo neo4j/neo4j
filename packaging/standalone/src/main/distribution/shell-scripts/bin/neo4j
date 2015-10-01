@@ -270,7 +270,7 @@ console() {
 
     echo "Using additional JVM arguments: " $JAVA_OPTS
 
-    "$JAVACMD" -cp "${CLASSPATH}" $JAVA_OPTS \
+    exec "$JAVACMD" -cp "${CLASSPATH}" $JAVA_OPTS \
         -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
         -Dfile.encoding=UTF-8 \
         org.neo4j.server.Bootstrapper

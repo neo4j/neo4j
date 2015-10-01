@@ -64,6 +64,9 @@ o Elections where the only viable candidate has just been demoted will now elect
   This solves an issue where in clusters with all but one instances configured slave only, master
   failure and rejoin would still leave the cluster without master.
 
+Packaging:
+o Neo4j console does not fork a subprocess on Linux, enabling easier process management
+
 2.2.5
 -----
 Csv:

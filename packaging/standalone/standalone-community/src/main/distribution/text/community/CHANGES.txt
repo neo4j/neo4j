@@ -42,6 +42,9 @@ o Adds --ignore-empty-strings for ignoring empty quoted strings, instead of thos
 Shell:
 o Local database instance will be shutdown after command execution
 
+Packaging:
+o Neo4j console does not fork a subprocess on Linux, enabling easier process management
+
 2.2.5
 -----
 Csv:
