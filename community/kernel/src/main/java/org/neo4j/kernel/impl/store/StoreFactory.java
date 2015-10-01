@@ -168,7 +168,7 @@ public class StoreFactory
                 newSchemaStore(),
                 newRelationshipGroupStore(),
                 newCountsStore(),
-                versionMismatchHandler, monitors );
+                versionMismatchHandler );
     }
 
     public boolean storeExists()

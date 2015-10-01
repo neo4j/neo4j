@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha.com;
 import org.neo4j.com.RequestContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -61,10 +62,10 @@ public class RequestContextFactory extends LifecycleAdapter
 
     public RequestContext newRequestContext( long epoch, int machineId, int eventIdentifier )
     {
-        long[] lastTx = txIdStore.getLastCommittedTransaction();
+        TransactionId lastTx = txIdStore.getLastCommittedTransaction();
         // TODO beware, there's a race between getting tx id and checksum, and changes to last tx
         // it must be fixed
-        return new RequestContext( epoch, machineId, eventIdentifier, lastTx[0], lastTx[1] );
+        return new RequestContext( epoch, machineId, eventIdentifier, lastTx.transactionId(), lastTx.checksum() );
     }
 
     public RequestContext newRequestContext( int eventIdentifier )
