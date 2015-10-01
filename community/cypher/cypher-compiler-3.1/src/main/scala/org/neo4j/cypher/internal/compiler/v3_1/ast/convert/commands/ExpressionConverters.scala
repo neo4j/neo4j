@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands
 
 import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.PatternConverters._
+import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.DesugaredMapProjection
 import org.neo4j.cypher.internal.compiler.v3_1.ast.{InequalitySeekRangeWrapper, NestedPipeExpression, PrefixSeekRangeWrapper}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.ProjectedPath._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Expression => CommandExpression, InequalitySeekRangeExpression, ProjectedPath}
@@ -268,7 +269,7 @@ object ExpressionConverters {
     case e: ast.ShortestPathExpression => commandexpressions.ShortestPathExpression(e.pattern.asLegacyPatterns(None).head)
     case e: ast.HasLabels => hasLabels(e)
     case e: ast.Collection => commandexpressions.Collection(toCommandExpression(e.expressions): _*)
-    case e: ast.MapExpression => mapExpression(e)
+    case e: ast.MapExpression => commandexpressions.LiteralMap(mapItems(e.items))
     case e: ast.CollectionSlice => commandexpressions.CollectionSliceExpression(toCommandExpression(e.list), toCommandExpression(e.from), toCommandExpression(e.to))
     case e: ast.ContainerIndex => commandexpressions.ContainerIndex(toCommandExpression(e.expr), toCommandExpression(e.idx))
     case e: ast.FilterExpression => commandexpressions.FilterFunction(toCommandExpression(e.expression), e.variable.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
@@ -285,11 +286,13 @@ object ExpressionConverters {
     case e: PrefixSeekRangeWrapper => commandexpressions.PrefixSeekRangeExpression(e.range.map(toCommandExpression))
     case e: InequalitySeekRangeWrapper => InequalitySeekRangeExpression(e.range.mapBounds(toCommandExpression))
     case e: ast.AndedPropertyInequalities => predicates.AndedPropertyComparablePredicates(variable(e.variable), toCommandProperty(e.property), e.inequalities.map(inequalityExpression))
+    case e: DesugaredMapProjection => commandexpressions.DesugaredMapProjection(e.name.name, e.includeAllProps, mapProjectionItems(e.items))
+    case e: ast.MapProjection => throw new InternalException("should have been rewritten away")
     case _ =>
       throw new InternalException(s"Unknown expression type during transformation (${expression.getClass})")
   }
 
-  def toCommandPredicate(e: ast.Expression): Predicate = e match {
+  def toCommandPredicate(in: ast.Expression): Predicate = in match {
     case e: ast.PatternExpression => predicates.NonEmpty(toCommandExpression(e))
     case e: ast.FilterExpression => predicates.NonEmpty(toCommandExpression(e))
     case e: ast.ExtractExpression => predicates.NonEmpty(toCommandExpression(e))
@@ -353,12 +356,15 @@ object ExpressionConverters {
     predicates.And(_, _)
   }
 
-  private def mapExpression(e: ast.MapExpression): commandexpressions.LiteralMap = {
-    val literalMap: Map[String, CommandExpression] = e.items.map {
+  def mapItems(items: Seq[(PropertyKeyName, Expression)]): Map[String, CommandExpression] =
+    items.map {
       case (id, ex) => id.name -> toCommandExpression(ex)
     }.toMap
-    commandexpressions.LiteralMap(literalMap)
-  }
+
+  def mapProjectionItems(items: Seq[LiteralEntry]): Map[String, CommandExpression] =
+    items.map {
+      case LiteralEntry(id, ex) => id.name -> toCommandExpression(ex)
+    }.toMap
 
   private def listComprehension(e: ast.ListComprehension): CommandExpression = {
     val filter = e.innerPredicate match {

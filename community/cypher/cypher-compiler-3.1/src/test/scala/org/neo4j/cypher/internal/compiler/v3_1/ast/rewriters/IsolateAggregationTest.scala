@@ -53,7 +53,7 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
   test("MATCH (n)-->() RETURN (n)-->({k: count(*)}) AS result") {
     assertRewrite(
       "MATCH (n)-->() RETURN (n)-->({k: count(*)}) AS result",
-      "MATCH (n)-->() WITH n, count(*) AS `  AGGREGATION33` RETURN (n)-->({k:`  AGGREGATION33`}) AS result")
+      "MATCH (n)-->() WITH n as `  AGGREGATION23`, count(*) AS `  AGGREGATION33` RETURN (`  AGGREGATION23`)-->({k:`  AGGREGATION33`}) AS result")
   }
 
   test("MATCH (n) RETURN n.prop AS prop, n.foo + count(*) AS count") {
@@ -65,7 +65,7 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
   test("MATCH (n) RETURN n AS n, count(n) + 3 AS count") {
     assertRewrite(
       "MATCH (n) RETURN n AS n, count(n) + 3 AS count",
-      "MATCH (n) WITH n AS n, count(n) as `  AGGREGATION25`  RETURN n AS n, `  AGGREGATION25` + 3 AS count")
+      "MATCH (n) WITH n AS `  AGGREGATION17`, count(n) as `  AGGREGATION25`  RETURN `  AGGREGATION17` AS n, `  AGGREGATION25` + 3 AS count")
   }
 
   test("UNWIND [1,2,3] AS a RETURN reduce(y=0, x IN collect(a) | x) AS z") {
@@ -135,7 +135,7 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
   test("should not introduce multiple return items for the same expression") {
     assertRewrite(
       "WITH 1 AS x, 2 AS y RETURN sum(x)*y AS a, sum(x)*y AS b",
-      "WITH 1 AS x, 2 AS y WITH sum(x) as `  AGGREGATION27`, y as y RETURN `  AGGREGATION27`*y AS a, `  AGGREGATION27`*y AS b")
+      "WITH 1 AS x, 2 AS y WITH sum(x) as `  AGGREGATION27`, y as `  AGGREGATION34` RETURN `  AGGREGATION27`* `  AGGREGATION34` AS a, `  AGGREGATION27`*`  AGGREGATION34` AS b")
   }
 
   test("MATCH (a), (b) RETURN coalesce(a.prop, b.prop), b.prop, { x: count(b) }") {
