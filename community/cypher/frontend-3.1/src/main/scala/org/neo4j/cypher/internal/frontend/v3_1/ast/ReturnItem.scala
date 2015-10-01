@@ -69,6 +69,7 @@ sealed trait ReturnItem extends ASTNode with ASTPhrase with SemanticCheckable {
 case class UnaliasedReturnItem(expression: Expression, inputText: String)(val position: InputPosition) extends ReturnItem {
   val alias = expression match {
     case i: Variable => Some(i.bumpId)
+    case x: MapProjection => Some(x.name.bumpId)
     case _ => None
   }
   val name = alias.map(_.name) getOrElse { inputText.trim }
@@ -77,7 +78,7 @@ case class UnaliasedReturnItem(expression: Expression, inputText: String)(val po
     throw new InternalException("Should have been aliased before this step")
 }
 
-//TODO variableshould not be a Variable
+//TODO variable should not be a Variable. A Variable is an expression, and the return item alias isn't
 case class AliasedReturnItem(expression: Expression, variable: Variable)(val position: InputPosition) extends ReturnItem {
   val alias = Some(variable)
   val name = variable.name
