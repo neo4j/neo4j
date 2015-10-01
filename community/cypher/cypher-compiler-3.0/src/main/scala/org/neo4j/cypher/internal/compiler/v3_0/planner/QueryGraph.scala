@@ -63,6 +63,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
   }
 
   def addShortestPaths(shortestPaths: ShortestPathPattern*): QueryGraph = shortestPaths.foldLeft(this)((qg, p) => qg.addShortestPath(p))
+  def addArgumentId(newId: IdName): QueryGraph = copy(argumentIds = argumentIds + newId)
   def addArgumentIds(newIds: Seq[IdName]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
   def addSelections(selections: Selections): QueryGraph =
     copy(selections = Selections(selections.predicates ++ this.selections.predicates))

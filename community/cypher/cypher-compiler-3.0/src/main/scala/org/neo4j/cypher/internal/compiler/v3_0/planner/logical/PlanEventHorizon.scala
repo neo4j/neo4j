@@ -32,7 +32,7 @@ case class PlanEventHorizon(config: QueryPlannerConfiguration = QueryPlannerConf
   extends LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] {
 
   override def apply(query: PlannerQuery, plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    val selectedPlan = config.applySelections(plan, query.graph)
+    val selectedPlan = config.applySelections(plan, query.queryGraph)
     val projectedPlan = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
         val aggregationPlan = plan match {

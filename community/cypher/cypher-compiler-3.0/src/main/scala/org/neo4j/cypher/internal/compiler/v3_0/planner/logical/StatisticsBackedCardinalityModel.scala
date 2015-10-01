@@ -30,7 +30,7 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
 
   def apply(query: PlannerQuery, input0: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
     val output = query.fold(input0) {
-      case (input, PlannerQuery(graph, horizon, _)) =>
+      case (input, PlannerQuery(graph, _, horizon, _)) =>
         val QueryGraphSolverInput(newLabels, graphCardinality, lazyness) = calculateCardinalityForQueryGraph(graph, input, semanticTable)
 
         val horizonCardinality = calculateCardinalityForQueryHorizon(graphCardinality, horizon)

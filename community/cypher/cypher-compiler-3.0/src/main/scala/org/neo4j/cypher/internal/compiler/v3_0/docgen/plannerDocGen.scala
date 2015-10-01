@@ -157,7 +157,7 @@ case object plannerDocGen extends CustomDocGen[Any] {
     }
 
     private def queryDoc(query: PlannerQuery): RecipeAppender[Any] = {
-      val graphDoc = pretty(query.graph)
+      val graphDoc = pretty(query.queryGraph)
 
       // This is a hack:
       // tail should move into QueryHorizon in PlannerQuery. This way pprinting horizons can figure out if it's

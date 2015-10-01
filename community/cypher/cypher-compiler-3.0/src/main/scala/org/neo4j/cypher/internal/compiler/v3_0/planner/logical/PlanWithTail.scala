@@ -36,7 +36,7 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
       case Some(query) =>
         val lhs = pred
         val lhsContext = context.recurse(lhs)
-        val rhs = planPart(query, lhsContext, Some(context.logicalPlanProducer.planQueryArgumentRow(query.graph)))
+        val rhs = planPart(query, lhsContext, Some(context.logicalPlanProducer.planQueryArgumentRow(query.queryGraph)))
         val applyPlan = context.logicalPlanProducer.planTailApply(lhs, rhs)
 
         val applyContext = lhsContext.recurse(applyPlan)

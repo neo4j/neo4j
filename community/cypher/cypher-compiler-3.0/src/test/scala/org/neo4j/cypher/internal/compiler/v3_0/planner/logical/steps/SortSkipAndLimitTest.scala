@@ -138,7 +138,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )
 
     val qg = QueryGraph(patternNodes = Set(IdName("n")))
-    val query = PlannerQuery(qg, projection)
+    val query = PlannerQuery(queryGraph = qg, horizon = projection)
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext

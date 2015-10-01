@@ -23,19 +23,21 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionCo
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.OtherConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.StatementConverters
+import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.PatternConverters
 import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v3_0.commands.EntityProducerFactory
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{AggregationExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{True, _}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, PipeInfo, PlanFingerprint, ReadsAllNodes}
+import org.neo4j.cypher.internal.compiler.v3_0.mutation.CreateNode
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyTypes, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{Limit, Skip, Union, _}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, Monitors, PlannerName, ast => compilerAst}
+import org.neo4j.cypher.internal.compiler.v3_0.{ast => compilerAst, commands, ExecutionContext, Monitors, PlannerName}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, SemanticTable, ast, bottomUp}
@@ -50,11 +52,18 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
   val entityProducerFactory = new EntityProducerFactory
   val resolver = new KeyTokenResolver
 
+  private def isUpdating(pipe: RonjaPipe) = {
+    import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
+    pipe.treeFold(false) {
+      case pipe: RonjaPipe if pipe.updating => (_, _) => true
+      case _ => (acc, children) => children(acc)
+    }
+  }
+
   def build(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeInfo = {
     implicit val table: SemanticTable = context.semanticTable
-    val updating = false
 
-    def buildPipe(plan: LogicalPlan): Pipe with RonjaPipe = {
+    def buildPipe(plan: LogicalPlan, updating: Boolean = false): Pipe with RonjaPipe = {
       implicit val monitor = monitors.newMonitor[PipeMonitor]()
 
       val result = plan match {
@@ -69,6 +78,9 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
 
         case sr @ SingleRow() =>
           SingleRowPipe()
+
+        case EmptyResult(inner) =>
+          EmptyResultPipe(buildPipe(inner))
 
         case sr @ Argument(ids) =>
           ArgumentPipe(new SymbolTable(sr.typeInfo))()
@@ -230,6 +242,10 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         case TriadicSelection(positivePredicate, left, sourceId, seenId, targetId, right) =>
           TriadicSelectionPipe(positivePredicate, buildPipe(left), sourceId.name, seenId.name, targetId.name, buildPipe(right))()
 
+        case CreateNodes(patterns) =>
+          val f = patterns.flatMap(_.asLegacyCreates)
+          CreateNodesPipe(f)()
+
         case x =>
           throw new CantHandleQueryException(x.toString)
       }
@@ -273,6 +289,6 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         None
     }
 
-    PipeInfo(topLevelPipe, updating, None, fingerprint, context.plannerName)
+    PipeInfo(topLevelPipe, isUpdating(topLevelPipe), None, fingerprint, context.plannerName)
   }
 }

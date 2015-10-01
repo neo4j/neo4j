@@ -31,18 +31,20 @@ QueryGraphs and EventHorizons
 case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Option[LogicalPlan]) => LogicalPlan = planPart,
                            planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon(),
                            expressionRewriterFactory: (LogicalPlanningContext => Rewriter) = ExpressionRewriterFactory,
-                           planWithTail: LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] = PlanWithTail()) extends LogicalPlanningFunction1[PlannerQuery, LogicalPlan] {
+                           planWithTail: LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] = PlanWithTail(),
+                           planUpdates: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanUpdates) extends LogicalPlanningFunction1[PlannerQuery, LogicalPlan] {
 
   override def apply(in: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val partPlan = countStorePlanner(in).getOrElse(planPart(in, context, None))
 
-    val projectedPlan = planEventHorizon(in, partPlan)
+    val planWithUpdates = planUpdates(in, partPlan)(context)
+    val projectedPlan = planEventHorizon(in, planWithUpdates)
     val projectedContext = context.recurse(projectedPlan)
     val expressionRewriter = expressionRewriterFactory(projectedContext)
     val completePlan = projectedPlan.endoRewrite(expressionRewriter)
 
-    val finalPlan = planWithTail(completePlan, in.tail)(projectedContext)
-    verifyBestPlan(finalPlan, in)
+    val finalReadPlan = planWithTail(completePlan, in.tail)(projectedContext)
+    verifyBestPlan(finalReadPlan, in)
   }
 }
 

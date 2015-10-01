@@ -104,7 +104,7 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PropertyChecks
     val semanticPlan = new given {
       cardinality = mapCardinality {
         // expand - cheap
-        case PlannerQuery(queryGraph, _, _) if queryGraph.patternRelationships.size == 1 => 100.0
+        case PlannerQuery(queryGraph, _,  _, _) if queryGraph.patternRelationships.size == 1 => 100.0
         // everything else - expensive
         case _ => Double.MaxValue
       }

@@ -33,11 +33,11 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val result= (new given {
       cardinality = mapCardinality {
         // node label scan
-        case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 => 100.0
+        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 => 100.0
         // all node scan
-        case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
+        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
         // expand
-        case PlannerQuery(queryGraph, _, _) if queryGraph.patternRelationships.size == 1 => 100.0
+        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternRelationships.size == 1 => 100.0
         case _                             => Double.MaxValue
       }
 
@@ -64,11 +64,11 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     (new given {
       cardinality = mapCardinality {
         // node index seek
-        case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.nonEmpty => 1000.0
+        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.nonEmpty => 1000.0
         // expand from a
-        case PlannerQuery(queryGraph, _, _) if queryGraph.patternRelationships.size == 1 && queryGraph.patternNodeLabels(IdName("a")).nonEmpty => 100.0
+        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternRelationships.size == 1 && queryGraph.patternNodeLabels(IdName("a")).nonEmpty => 100.0
         // expand from b
-        case PlannerQuery(queryGraph, _, _) if queryGraph.patternRelationships.size == 1 && queryGraph.patternNodeLabels(IdName("b")).nonEmpty => 200.0
+        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternRelationships.size == 1 && queryGraph.patternNodeLabels(IdName("b")).nonEmpty => 200.0
         case _                                  => 10.0
       }
 
@@ -98,9 +98,9 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val result = (new given {
       cardinality = mapCardinality {
         // node label scan
-        case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 => 100.0
+        case PlannerQuery(queryGraph, _,  _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 => 100.0
         // all node scan
-        case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
+        case PlannerQuery(queryGraph, _,  _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
         case _ => Double.MaxValue
       }
     } planFor cypherQuery).plan

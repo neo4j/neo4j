@@ -30,7 +30,8 @@ import scala.collection.GenTraversableOnce
 
 case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean, returns: Seq[IdName])
 
-case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
+case class PlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
+                        updateGraph: UpdateGraph = UpdateGraph.empty,
                         horizon: QueryHorizon = QueryProjection.empty,
                         tail: Option[PlannerQuery] = None)
   extends PageDocFormatting {
@@ -42,7 +43,7 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
   def preferredStrictness: Option[StrictnessMode] =
     horizon.preferredStrictness orElse tail.flatMap(_.preferredStrictness)
 
-  def lastQueryGraph: QueryGraph = tail.map(_.lastQueryGraph).getOrElse(graph)
+  def lastQueryGraph: QueryGraph = tail.map(_.lastQueryGraph).getOrElse(queryGraph)
   def lastQueryHorizon: QueryHorizon = tail.map(_.lastQueryHorizon).getOrElse(horizon)
 
   def withTail(newTail: PlannerQuery): PlannerQuery = tail match {
@@ -50,25 +51,30 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
     case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
   }
 
-  def withoutHints(hintsToIgnore: GenTraversableOnce[Hint]) = copy(graph = graph.withoutHints(hintsToIgnore))
+
+  def withoutHints(hintsToIgnore: GenTraversableOnce[Hint]) = copy(graph = queryGraph.withoutHints(hintsToIgnore))
 
   def withHorizon(horizon: QueryHorizon): PlannerQuery = copy(horizon = horizon)
 
-  def withGraph(graph: QueryGraph): PlannerQuery = copy(graph = graph)
+  def withQueryGraph(graph: QueryGraph): PlannerQuery = copy(graph = graph)
+
+  def withUpdateGraph(updateGraph: UpdateGraph) = copy(updateGraph = updateGraph)
 
   def isCoveredByHints(other: PlannerQuery) = allHints.forall(other.allHints.contains)
 
   def allHints: Set[Hint] = tail match {
-    case Some(tailPlannerQuery) => graph.allHints ++ tailPlannerQuery.allHints
-    case None => graph.allHints
+    case Some(tailPlannerQuery) => queryGraph.allHints ++ tailPlannerQuery.allHints
+    case None => queryGraph.allHints
   }
 
   def numHints: Int = tail match {
-    case Some(tailPlannerQuery) => graph.numHints + tailPlannerQuery.numHints
-    case None => graph.numHints
+    case Some(tailPlannerQuery) => queryGraph.numHints + tailPlannerQuery.numHints
+    case None => queryGraph.numHints
   }
 
-  def updateGraph(f: QueryGraph => QueryGraph): PlannerQuery = withGraph(f(graph))
+  def updateQueryGraph(f: QueryGraph => QueryGraph): PlannerQuery = withQueryGraph(f(queryGraph))
+
+  def updateUpdateGraph(f: UpdateGraph => UpdateGraph): PlannerQuery = withUpdateGraph(f(updateGraph))
 
   def updateHorizon(f: QueryHorizon => QueryHorizon): PlannerQuery = withHorizon(f(horizon))
 
@@ -95,7 +101,8 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
       case (a: RegularQueryProjection, b: RegularQueryProjection) =>
         PlannerQuery(
           horizon = a ++ b,
-          graph = graph ++ other.graph,
+          queryGraph = queryGraph ++ other.queryGraph,
+          updateGraph = updateGraph ++ other.updateGraph,
           tail = either(tail, other.tail)
         )
 
@@ -111,9 +118,10 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
   }
 
   // This is here to stop usage of copy from the outside
-  private def copy(graph: QueryGraph = graph,
+  private def copy(graph: QueryGraph = queryGraph,
+                   updateGraph: UpdateGraph = updateGraph,
                    horizon: QueryHorizon = horizon,
-                   tail: Option[PlannerQuery] = tail) = PlannerQuery(graph, horizon, tail)
+                   tail: Option[PlannerQuery] = tail) = PlannerQuery(graph, updateGraph, horizon, tail)
 
   def foldMap(f: (PlannerQuery, PlannerQuery) => PlannerQuery): PlannerQuery = tail match {
     case None => this
@@ -157,7 +165,7 @@ trait CardinalityEstimation {
 
 object CardinalityEstimation {
   def lift(plannerQuery: PlannerQuery, cardinality: Cardinality) =
-    new PlannerQuery(plannerQuery.graph, plannerQuery.horizon, plannerQuery.tail) with CardinalityEstimation {
+    new PlannerQuery(plannerQuery.queryGraph, plannerQuery.updateGraph, plannerQuery.horizon, plannerQuery.tail) with CardinalityEstimation {
       val estimatedCardinality = cardinality
     }
 }

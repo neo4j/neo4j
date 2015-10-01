@@ -113,7 +113,7 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
 
   private def applicable(outerPlan: LogicalPlan, qg: QueryGraph, expression: Expression) = {
     val symbolsAvailable = qg.argumentIds.subsetOf(outerPlan.availableSymbols)
-    val isSolved = outerPlan.solved.exists(_.graph.selections.contains(expression))
+    val isSolved = outerPlan.solved.exists(_.queryGraph.selections.contains(expression))
     symbolsAvailable && !isSolved
   }
 

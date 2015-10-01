@@ -77,7 +77,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     // given
     val plannerQuery = mock[PlannerQuery with CardinalityEstimation]
     when(plannerQuery.preferredStrictness).thenReturn(Some(LazyMode))
-    when(plannerQuery.graph).thenReturn(QueryGraph.empty)
+    when(plannerQuery.queryGraph).thenReturn(QueryGraph.empty)
     when(plannerQuery.lastQueryGraph).thenReturn(QueryGraph.empty)
     when(plannerQuery.horizon).thenReturn(RegularQueryProjection())
     when(plannerQuery.lastQueryHorizon).thenReturn(RegularQueryProjection())

@@ -65,9 +65,9 @@ case object planPart extends ((PlannerQuery, LogicalPlanningContext, Option[Logi
 
   def apply(query: PlannerQuery, context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
     val ctx = query.preferredStrictness match {
-      case Some(mode) if !context.input.strictness.exists(mode == _) => context.withStrictness(mode)
+      case Some(mode) if !context.input.strictness.contains(mode) => context.withStrictness(mode)
       case _ => context
     }
-    ctx.strategy.plan(query.graph)(ctx, leafPlan)
+    ctx.strategy.plan(query.queryGraph)(ctx, leafPlan)
   }
 }

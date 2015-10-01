@@ -76,7 +76,7 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
   private def selectionOp(id: String, predicates: Expression*) = {
     val selections = Selections.from(predicates: _*)
     val lhsLeaf = newMockedLogicalPlan("a")
-    val solved: PlannerQuery = PlannerQuery.empty.withGraph(QueryGraph(selections = selections))
+    val solved: PlannerQuery = PlannerQuery.empty.withQueryGraph(QueryGraph(selections = selections))
     Selection(Seq(aHasLabel), lhsLeaf)(CardinalityEstimation.lift(solved, Cardinality(0)))
   }
 }

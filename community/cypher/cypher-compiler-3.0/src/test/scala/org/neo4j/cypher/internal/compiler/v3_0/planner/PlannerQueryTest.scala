@@ -30,9 +30,9 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     val qg2 = QueryGraph.empty
     val qg3 = QueryGraph.empty
 
-    val pq3 = PlannerQuery(graph = qg3, tail = None)
-    val pq2 = PlannerQuery(graph = qg2, tail = Some(pq3))
-    val pq1 = PlannerQuery(graph = qg1, tail = Some(pq2))
+    val pq3 = PlannerQuery(queryGraph = qg3, tail = None)
+    val pq2 = PlannerQuery(queryGraph = qg2, tail = Some(pq3))
+    val pq1 = PlannerQuery(queryGraph = qg1, tail = Some(pq2))
 
     var seenOnPos1 = List.empty[PlannerQuery]
     var seenOnPos2 = List.empty[PlannerQuery]
@@ -51,7 +51,7 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("foldMap on single plannerQuery returns that PQ") {
 
-    val input = PlannerQuery(graph = QueryGraph.empty, tail = None)
+    val input = PlannerQuery(queryGraph = QueryGraph.empty, tail = None)
 
     val result = input.foldMap {
       case (pq1: PlannerQuery, pq2: PlannerQuery) =>
@@ -63,19 +63,19 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("foldMap plannerQuery with tail should change when reverseMapped") {
 
-    val tail = PlannerQuery(graph = QueryGraph.empty)
+    val tail = PlannerQuery(queryGraph = QueryGraph.empty)
     val firstQueryGraph = QueryGraph.empty
     val secondQueryGraph = QueryGraph(patternNodes = Set(IdName("a")))
-    val input = PlannerQuery(graph = firstQueryGraph, tail = Some(tail))
+    val input = PlannerQuery(queryGraph = firstQueryGraph, tail = Some(tail))
 
     val result = input.foldMap {
       case (pq1: PlannerQuery, pq2: PlannerQuery) =>
-        pq2.withGraph(secondQueryGraph)
+        pq2.withQueryGraph(secondQueryGraph)
     }
 
     result should not equal input
-    result.graph should equal(firstQueryGraph)
-    result.tail.get.graph should equal(secondQueryGraph)
+    result.queryGraph should equal(firstQueryGraph)
+    result.tail.get.queryGraph should equal(secondQueryGraph)
   }
 
   test("should compute lazyness preference correctly for a single planner query") {

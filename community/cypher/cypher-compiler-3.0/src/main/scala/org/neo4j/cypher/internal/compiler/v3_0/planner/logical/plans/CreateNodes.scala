@@ -17,19 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.EstimatedRows
+package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
-// Marks a pipe being used by Ronja
-trait RonjaPipe extends Pipe {
-  def updating: Boolean = false
-  def planDescriptionWithoutCardinality:InternalPlanDescription
-  override def planDescription: InternalPlanDescription = estimatedCardinality.foldLeft(planDescriptionWithoutCardinality){
-    case (planDescription, cardinality) => planDescription.addArgument(EstimatedRows(cardinality))
-  }
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.NodePattern
 
-  def estimatedCardinality: Option[Double]
-  def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe
+case class CreateNodes(nodePatterns: Seq[NodePattern])
+                           (val solved: PlannerQuery with CardinalityEstimation)
+  extends LogicalLeafPlan with LogicalPlanWithoutExpressions {
+
+  override def availableSymbols: Set[IdName] = argumentIds
+
+  override def argumentIds: Set[IdName] = Set.empty
 }

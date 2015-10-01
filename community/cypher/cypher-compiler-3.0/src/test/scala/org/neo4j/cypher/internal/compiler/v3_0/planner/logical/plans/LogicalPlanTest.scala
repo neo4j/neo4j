@@ -33,7 +33,7 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
   test("updating the planner query works well, thank you very much") {
     val initialPlan = TestPlan()(solved)
 
-    val updatedPlannerQuery = CardinalityEstimation.lift(PlannerQuery.empty.updateGraph(_.addPatternNodes(IdName("a"))), 0.0)
+    val updatedPlannerQuery = CardinalityEstimation.lift(PlannerQuery.empty.updateQueryGraph(_.addPatternNodes(IdName("a"))), 0.0)
 
     val newPlan = initialPlan.updateSolved(updatedPlannerQuery)
 
@@ -68,7 +68,7 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
 
   test("calling updateSolved on argument should work") {
     val argument = Argument(Set(IdName("a")))(solved)()
-    val updatedPlannerQuery = CardinalityEstimation.lift(PlannerQuery.empty.updateGraph(_.addPatternNodes(IdName("a"))), 0.0)
+    val updatedPlannerQuery = CardinalityEstimation.lift(PlannerQuery.empty.updateQueryGraph(_.addPatternNodes(IdName("a"))), 0.0)
     val newPlan = argument.updateSolved(updatedPlannerQuery)
     newPlan.solved should equal(updatedPlannerQuery)
   }

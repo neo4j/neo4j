@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{Selections, PlannerQuery, QueryGraph, QueryHorizon}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{UpdateGraph, Selections, PlannerQuery, QueryGraph, QueryHorizon}
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList._
 
 case class PlannerQueryBuilder(private val q: PlannerQuery, returns: Seq[IdName] = Seq.empty)
@@ -29,8 +29,11 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, returns: Seq[IdName]
 
   def withReturns(returns: Seq[IdName]): PlannerQueryBuilder = copy(returns = returns)
 
-  def updateGraph(f: QueryGraph => QueryGraph): PlannerQueryBuilder =
-    copy(q = q.updateTailOrSelf(_.updateGraph(f)))
+  def updateQueryGraph(f: QueryGraph => QueryGraph): PlannerQueryBuilder =
+    copy(q = q.updateTailOrSelf(_.updateQueryGraph(f)))
+
+  def updateUpdateGraph(f: UpdateGraph => UpdateGraph): PlannerQueryBuilder =
+    copy(q = q.updateTailOrSelf(_.updateUpdateGraph(f)))
 
   def withHorizon(horizon: QueryHorizon): PlannerQueryBuilder =
     copy(q = q.updateTailOrSelf(_.withHorizon(horizon)))
@@ -47,31 +50,31 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, returns: Seq[IdName]
     while (current.tail.nonEmpty) {
       current = current.tail.get
     }
-    current.graph
+    current.queryGraph
   }
 
   def build(): PlannerQuery = {
 
     def fixArgumentIdsOnOptionalMatch(plannerQuery: PlannerQuery): PlannerQuery = {
-      val optionalMatches = plannerQuery.graph.optionalMatches
-      val (_, newOptionalMatches) = optionalMatches.foldMap(plannerQuery.graph.coveredIds) { case (args, qg) =>
+      val optionalMatches = plannerQuery.queryGraph.optionalMatches
+      val (_, newOptionalMatches) = optionalMatches.foldMap(plannerQuery.queryGraph.coveredIds) { case (args, qg) =>
         (args ++ qg.allCoveredIds, qg.withArgumentIds(args intersect qg.allCoveredIds))
       }
       plannerQuery
-        .updateGraph(_.withOptionalMatches(newOptionalMatches))
+        .updateQueryGraph(_.withOptionalMatches(newOptionalMatches))
         .updateTail(fixArgumentIdsOnOptionalMatch)
     }
 
     val fixedArgumentIds = q.foldMap {
       case (head, tail) =>
-        val symbols = head.horizon.exposedSymbols(head.graph)
-        val newTailGraph = tail.graph.withArgumentIds(symbols)
-        tail.withGraph(newTailGraph)
+        val symbols = head.horizon.exposedSymbols(head.queryGraph)
+        val newTailGraph = tail.queryGraph.withArgumentIds(symbols)
+        tail.withQueryGraph(newTailGraph)
     }
 
     def groupInequalities(plannerQuery: PlannerQuery): PlannerQuery = {
       plannerQuery
-        .updateGraph(_.mapSelections {
+        .updateQueryGraph(_.mapSelections {
           case Selections(predicates) =>
             val optPredicates = predicates.toNonEmptyListOption
             val newPredicates = optPredicates.map { predicates =>

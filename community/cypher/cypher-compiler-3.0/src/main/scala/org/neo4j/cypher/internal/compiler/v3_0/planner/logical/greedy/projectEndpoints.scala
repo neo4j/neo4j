@@ -45,7 +45,7 @@ object projectEndpoints extends CandidateGenerator[GreedyPlanTable] {
 
   private def canProjectPatternRelationshipEndpoints(plan: LogicalPlan, patternRel: PatternRelationship) = {
     val inScope = plan.availableSymbols(patternRel.name)
-    val solved = plan.solved.graph.patternRelationships(patternRel)
+    val solved = plan.solved.queryGraph.patternRelationships(patternRel)
     inScope && !solved
   }
 

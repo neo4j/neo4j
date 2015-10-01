@@ -34,8 +34,9 @@ object projection {
       case IdName(id) => id -> ast.Identifier(id)(null)
     }
     val projections: Set[(String, Expression)] = projectionsMap.toSeq.toSet
-
-    if (projections.subsetOf(projectAllCoveredIds) || projections == projectAllCoveredIds)
+    if (projections.isEmpty)
+      context.logicalPlanProducer.planEmptyProjection(plan)
+    else if (projections.subsetOf(projectAllCoveredIds) || projections == projectAllCoveredIds)
       context.logicalPlanProducer.planStarProjection(plan, projectionsMap)
     else
       context.logicalPlanProducer.planRegularProjection(plan, projectionsMap)

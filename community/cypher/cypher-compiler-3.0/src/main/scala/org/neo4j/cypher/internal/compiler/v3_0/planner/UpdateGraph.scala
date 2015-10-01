@@ -17,19 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0.pipes
+package org.neo4j.cypher.internal.compiler.v3_0.planner
 
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.EstimatedRows
+import org.neo4j.cypher.internal.frontend.v3_0.ast.NodePattern
 
-// Marks a pipe being used by Ronja
-trait RonjaPipe extends Pipe {
-  def updating: Boolean = false
-  def planDescriptionWithoutCardinality:InternalPlanDescription
-  override def planDescription: InternalPlanDescription = estimatedCardinality.foldLeft(planDescriptionWithoutCardinality){
-    case (planDescription, cardinality) => planDescription.addArgument(EstimatedRows(cardinality))
-  }
+case class UpdateGraph(nodePatterns: Seq[NodePattern] = Seq.empty) {
 
-  def estimatedCardinality: Option[Double]
-  def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe
+  def ++(other: UpdateGraph) = copy(nodePatterns = nodePatterns ++ other.nodePatterns)
+}
+
+object UpdateGraph {
+  val empty = UpdateGraph()
 }
