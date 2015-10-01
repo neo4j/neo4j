@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.AggregationNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.fixedPoint
-import org.neo4j.cypher.internal.frontend.v3_0.{bottomUp, Rewriter, topDown}
+import org.neo4j.cypher.internal.frontend.v3_0.{InvalidArgumentException, bottomUp, Rewriter, topDown}
 
 /**
  * This rewriter makes sure that aggregations are on their own in RETURN/WITH clauses, so
@@ -56,14 +56,16 @@ case object isolateAggregation extends Rewriter {
               case e if hasAggregateButIsNotAggregate(e) =>
                 e match {
                   case ReduceExpression(_, init, coll) => Seq(init, coll)
-                  case FilterExpression(_, expr)       => Some(expr)
-                  case ExtractExpression(_, expr)      => Some(expr)
-                  case ListComprehension(_, expr)      => Some(expr)
-                  case _                               => e.arguments
+                  case FilterExpression(_, expr)       => Seq(expr)
+                  case ExtractExpression(_, expr)      => Seq(expr)
+                  case ListComprehension(_, expr)      => Seq(expr)
+                  case _: MapProjection | _: DesugaredMapProjection =>
+                    throw new InvalidArgumentException("Cannot combine map projection with collections yet!")
+                  case _ => e.arguments
                 }
 
               case e =>
-                Some(e)
+                Seq(e)
 
             }
           }(originalExpressions).filter {

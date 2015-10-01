@@ -19,4 +19,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0
 
-case class SemanticError(msg: String, position: InputPosition, references: InputPosition*)
+case class SemanticError(msg: String, position: InputPosition, references: InputPosition*) {
+
+  if(position != null && position.offset == 78)
+
+  println("a")
+}

@@ -165,7 +165,11 @@ object SemanticState {
     def isEmpty: Boolean = scope.isEmpty
 
     def localSymbol(name: String): Option[Symbol] = scope.symbol(name)
-    def symbol(name: String): Option[Symbol] = localSymbol(name) orElse location.up.flatMap(_.symbol(name))
+    def symbol(name: String): Option[Symbol] = {
+      val a: Option[Symbol] = localSymbol(name)
+      val b: Option[Symbol] = location.up.flatMap(_.symbol(name))
+      a orElse b
+    }
 
     def symbolNames: Set[String] = scope.symbolNames
 
