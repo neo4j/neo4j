@@ -36,6 +36,7 @@ import static org.neo4j.kernel.impl.store.LabelIdArray.stripNodeId;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRecordOfLabels;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.firstDynamicLabelRecordId;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsBody;
+import static org.neo4j.kernel.impl.store.NodeStore.getDynamicLabelsArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.PropertyType.ARRAY;
 
 public class DynamicNodeLabels implements NodeLabels
@@ -202,6 +203,6 @@ public class DynamicNodeLabels implements NodeLabels
             return format( "Dynamic(id:%d)", firstDynamicLabelRecordId( node.getLabelField() ) );
         }
         return format( "Dynamic(id:%d,[%s])", firstDynamicLabelRecordId( node.getLabelField() ),
-                Arrays.toString( NodeStore.getDynamicLabelsArrayFromHeavyRecords( node.getDynamicLabelRecords() ) ) );
+                Arrays.toString( getDynamicLabelsArrayFromHeavyRecords( node.getUsedDynamicLabelRecords() ) ) );
     }
 }

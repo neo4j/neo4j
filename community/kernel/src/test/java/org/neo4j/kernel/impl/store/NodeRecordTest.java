@@ -19,23 +19,31 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.Test;
+
+import java.util.Collection;
+import java.util.Collections;
+
+import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
-import org.junit.Test;
-
-import static java.util.Arrays.asList;
-
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import static java.util.Arrays.asList;
 
 import static org.neo4j.helpers.collection.Iterables.toList;
+import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
+import static org.neo4j.kernel.impl.store.NodeStore.allocateRecordsForDynamicLabels;
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 
 public class NodeRecordTest
 {
-
     @Test
     public void cloneShouldProduceExactCopy() throws Exception
     {
@@ -52,12 +60,12 @@ public class NodeRecordTest
         NodeRecord clone = node.clone();
 
         // Then
-        assertEquals(node.inUse(), clone.inUse());
-        assertEquals(node.getLabelField(), clone.getLabelField());
-        assertEquals(node.getNextProp(), clone.getNextProp());
-        assertEquals(node.getNextRel(), clone.getNextRel());
+        assertEquals( node.inUse(), clone.inUse() );
+        assertEquals( node.getLabelField(), clone.getLabelField() );
+        assertEquals( node.getNextProp(), clone.getNextProp() );
+        assertEquals( node.getNextRel(), clone.getNextRel() );
 
-        assertThat( clone.getDynamicLabelRecords(), equalTo(node.getDynamicLabelRecords()) );
+        assertThat( clone.getDynamicLabelRecords(), equalTo( node.getDynamicLabelRecords() ) );
     }
 
     @Test
@@ -78,7 +86,48 @@ public class NodeRecordTest
         Iterable<DynamicRecord> usedRecords = node.getUsedDynamicLabelRecords();
 
         // Then
-        assertThat(toList(usedRecords), equalTo(asList( dynamic1, dynamic2 )));
+        assertThat( toList( usedRecords ), equalTo( asList( dynamic1, dynamic2 ) ) );
     }
 
+    @Test
+    public void shouldToStringBothUsedAndUnusedDynamicLabelRecords() throws Exception
+    {
+        // GIVEN
+        DynamicBlockSize blockSize = mock( DynamicBlockSize.class );
+        when( blockSize.getBlockSize() ).thenReturn( 30 );
+        IdSequence ids = mock( IdSequence.class );
+        when( ids.nextId() ).thenReturn( 1L, 2L );
+        DynamicRecordAllocator allocator = new ExistingThenNewRecordAllocator( blockSize, ids );
+        NodeRecord node = newUsedNodeRecord( 0 );
+        long labelId = 10_123;
+        // A dynamic label record
+        Collection<DynamicRecord> existing = allocateRecordsForDynamicLabels( node.getId(),
+                new long[] {labelId}, Collections.<DynamicRecord>emptyIterator(), allocator );
+        // and a deleted one as well (simulating some deleted labels)
+        DynamicRecord unused = newDeletedDynamicRecord( ids.nextId() );
+        unused.setInUse( false );
+        existing.add( unused );
+        node.setLabelField( dynamicPointer( existing ), existing );
+
+        // WHEN
+        String toString = node.toString();
+
+        // THEN
+        assertThat( toString, containsString( String.valueOf( labelId ) ) );
+        assertThat( toString, containsString( unused.toString() ) );
+    }
+
+    private DynamicRecord newDeletedDynamicRecord( long id )
+    {
+        DynamicRecord record = new DynamicRecord( id );
+        record.setInUse( false );
+        return record;
+    }
+
+    private NodeRecord newUsedNodeRecord( long id )
+    {
+        NodeRecord node = new NodeRecord( id );
+        node.setInUse( true );
+        return node;
+    }
 }

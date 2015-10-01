@@ -20,12 +20,13 @@
 package org.neo4j.kernel.impl.store.record;
 
 import org.neo4j.helpers.CloneableInPublic;
+import org.neo4j.helpers.Predicate;
 
 public abstract class AbstractBaseRecord implements CloneableInPublic
 {
     private boolean inUse = false;
     private boolean created = false;
-    
+
     public abstract long getLongId();
 
     public final boolean inUse()
@@ -47,7 +48,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
     {
         return created;
     }
-    
+
     @Override
     public int hashCode()
     {
@@ -72,10 +73,48 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
             return false;
         return true;
     }
-    
+
     @Override
     public AbstractBaseRecord clone()
     {
         throw new UnsupportedOperationException();
+    }
+
+    @SuppressWarnings( "rawtypes" )
+    private static final Predicate IN_USE_FILTER = new Predicate<AbstractBaseRecord>()
+    {
+        @Override
+        public boolean accept( AbstractBaseRecord item )
+        {
+            return item.inUse();
+        }
+    };
+
+    @SuppressWarnings( "rawtypes" )
+    private static final Predicate NOT_IN_USE_FILTER = new Predicate<AbstractBaseRecord>()
+    {
+        @Override
+        public boolean accept( AbstractBaseRecord item )
+        {
+            return !item.inUse();
+        }
+    };
+
+    /**
+     * @return {@link Predicate filter} which only records that are {@link #inUse() in use} passes.
+     */
+    @SuppressWarnings( "unchecked" )
+    public static <RECORD extends AbstractBaseRecord> Predicate<RECORD> inUseFilter()
+    {
+        return IN_USE_FILTER;
+    }
+
+    /**
+     * @return {@link Predicate filter} which only records that are {@link #inUse() NOT in use} passes.
+     */
+    @SuppressWarnings( "unchecked" )
+    public static <RECORD extends AbstractBaseRecord> Predicate<RECORD> notInUseFilter()
+    {
+        return NOT_IN_USE_FILTER;
     }
 }
