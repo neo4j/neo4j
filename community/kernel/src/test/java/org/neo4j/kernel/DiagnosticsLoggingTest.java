@@ -24,13 +24,10 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.LogMarker;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.containsString;
@@ -40,141 +37,40 @@ public class DiagnosticsLoggingTest
 {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
+    private final FakeLogger logger = new FakeLogger();
 
     @Test
-    public void shouldSeeHelloWorld()
+    public void shouldSeeExpectedDiagnostics()
     {
-        FakeLogger logger = new FakeLogger();
-        String storeDir = folder.getRoot().getAbsolutePath();
-        GraphDatabaseService db =
-                new TestGraphDatabaseFactory().setLogging( logger ).newEmbeddedDatabase( storeDir );
-
-        String messages = logger.getMessages();
-        assertThat( messages, containsString( "Network information" ) );
-        assertThat( messages, containsString( "Disk space on partition" ) );
-        assertThat( messages, containsString( "Local timezone" ) );
-        db.shutdown();
-    }
-
-    @Test
-    public void shouldSeePageCacheConfigurationWithDumpConfigurationEnabled()
-    {
-        FakeLogger logger = new FakeLogger();
-        GraphDatabaseService db = new TestGraphDatabaseFactory().
-                setLogging( logger ).
-                newEmbeddedDatabaseBuilder( folder.getRoot().getAbsolutePath() ).
+        // GIVEN
+        GraphDatabaseService db = build().
                 setConfig( GraphDatabaseSettings.dump_configuration, Settings.TRUE ).
                 setConfig( GraphDatabaseSettings.pagecache_memory, "4M" ).
                 newGraphDatabase();
 
+        // WHEN
         String messages = logger.getMessages();
+
+        // THEN we should have logged
+        // environment diagnostics
+        assertThat( messages, containsString( "Network information" ) );
+        assertThat( messages, containsString( "Disk space on partition" ) );
+        assertThat( messages, containsString( "Local timezone" ) );
+        // page cache info
         assertThat( messages, containsString( "Page cache size: 4 MiB" ) );
+        // neostore records
+        for ( NeoStore.Position position : NeoStore.Position.values() )
+        {
+            assertThat( messages, containsString( position.name() ) );
+        }
+        // transaction log info
+        assertThat( messages, containsString( "Transaction log" ) );
         db.shutdown();
     }
 
-    private class FakeLogger extends StringLogger implements Logging
+    private GraphDatabaseBuilder build()
     {
-        private final StringBuilder messages = new StringBuilder();
-
-        public String getMessages()
-        {
-            return messages.toString();
-        }
-
-        private void appendLine( String mess )
-        {
-            messages.append( mess ).append( "\n" );
-        }
-
-        @Override
-        protected void doDebug( String msg, Throwable cause, boolean flush, LogMarker logMarker )
-        {
-            appendLine( msg );
-        }
-
-        @Override
-        public void info( String msg, Throwable cause, boolean flush, LogMarker logMarker )
-        {
-            appendLine( msg );
-        }
-
-        @Override
-        public void warn( String msg, Throwable cause, boolean flush, LogMarker logMarker )
-        {
-            appendLine( msg );
-        }
-
-        @Override
-        public void error( String msg, Throwable cause, boolean flush, LogMarker logMarker )
-        {
-            appendLine( msg );
-        }
-
-        @Override
-        public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
-        {
-            appendLine( msg );
-            source.visit( new LineLogger()
-            {
-                @Override
-                public void logLine( String line )
-                {
-                    appendLine( line );
-                }
-            } );
-        }
-
-        @Override
-        public void addRotationListener( Runnable listener )
-        {
-        }
-
-        @Override
-        public void flush()
-        {
-        }
-
-        @Override
-        public void close()
-        {
-        }
-
-        @Override
-        protected void logLine( String line )
-        {
-            appendLine( line );
-        }
-
-        @Override
-        public StringLogger getMessagesLog( Class loggingClass )
-        {
-            return this;
-        }
-
-        @Override
-        public ConsoleLogger getConsoleLog( Class loggingClass )
-        {
-            return new ConsoleLogger( StringLogger.SYSTEM );
-        }
-
-        @Override
-        public void init() throws Throwable
-        {
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-        }
-
-        @Override
-        public void stop() throws Throwable
-        {
-        }
-
-        @Override
-        public void shutdown() throws Throwable
-        {
-        }
+        String storeDir = folder.getRoot().getAbsolutePath();
+        return new TestGraphDatabaseFactory( logger ).newEmbeddedDatabaseBuilder( storeDir );
     }
 }

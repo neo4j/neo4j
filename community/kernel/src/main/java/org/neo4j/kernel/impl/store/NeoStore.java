@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.String.format;
@@ -608,16 +609,24 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     private void refreshFields()
     {
-        scanAllFields( PF_SHARED_LOCK );
+        scanAllFields( PF_SHARED_LOCK, new Visitor<PageCursor,IOException>()
+        {
+            @Override
+            public boolean visit( PageCursor element ) throws IOException
+            {
+                readAllFields( element );
+                return false;
+            }
+        } );
     }
 
-    private void scanAllFields( int pf_flags )
+    private void scanAllFields( int pf_flags, Visitor<PageCursor,IOException> visitor )
     {
         try ( PageCursor cursor = storeFile.io( 0, pf_flags ) )
         {
             if ( cursor.next() )
             {
-                readAllFields( cursor );
+                visitor.visit( cursor );
             }
         }
         catch ( IOException e )
@@ -993,5 +1002,22 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     {
         // TODO: move this to LifeCycle
         counts.start();
+    }
+
+    public void logRecords( final LineLogger log )
+    {
+        scanAllFields( PF_SHARED_LOCK, new Visitor<PageCursor,IOException>()
+        {
+            @Override
+            public boolean visit( PageCursor element ) throws IOException
+            {
+                for ( Position position : Position.values() )
+                {
+                    long value = getRecordValue( element, position );
+                    log.logLine( position.name() + " (" + position.description() + "): " + value );
+                }
+                return false;
+            }
+        } );
     }
 }
