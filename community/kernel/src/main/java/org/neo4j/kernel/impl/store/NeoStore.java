@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -48,11 +49,9 @@ import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
-import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.kernel.impl.util.CappedOperation.time;
@@ -141,12 +140,11 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     private volatile long latestConstraintIntroducingTxField = FIELD_NOT_INITIALIZED;
     private volatile long upgradeTxIdField = FIELD_NOT_INITIALIZED;
     private volatile long upgradeTimeField = FIELD_NOT_INITIALIZED;
-    private volatile long lastTransactionChecksum = FIELD_NOT_INITIALIZED;
     private volatile long upgradeTxChecksumField = FIELD_NOT_INITIALIZED;
+    private AtomicReference<HighestCommittedTransaction> highestCommittedTransaction = new AtomicReference<>();
 
     // This is not a field in the store, but something keeping track of which of the committed
     // transactions have been closed. Useful in rotation and shutdown.
-    private final OutOfOrderSequence lastCommittedTx = new ArrayQueueOutOfOrderSequence( -1, 200 );
     private final OutOfOrderSequence lastClosedTx = new ArrayQueueOutOfOrderSequence( -1, 200 );
 
     private final int relGrabSize;
@@ -157,7 +155,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
                      RelationshipTypeTokenStore relTypeStore, LabelTokenStore labelTokenStore, PropertyStore propStore,
                      RelationshipStore relStore, NodeStore nodeStore, SchemaStore schemaStore,
                      RelationshipGroupStore relGroupStore, CountsTracker counts,
-                     StoreVersionMismatchHandler versionMismatchHandler, Monitors monitors )
+                     StoreVersionMismatchHandler versionMismatchHandler )
     {
         super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 stringLogger, versionMismatchHandler );
@@ -170,6 +168,8 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         this.relGroupStore = relGroupStore;
         this.counts = counts;
         this.relGrabSize = conf.get( Configuration.relationship_grab_size );
+        this.highestCommittedTransaction.set(
+                new HighestCommittedTransaction( FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED ) );
         this.transactionCloseWaitLogger = new CappedOperation<Void>( time( 30, SECONDS ) )
         {
             @Override
@@ -177,7 +177,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             {
                 stringLogger.info( format(
                         "Waiting for all transactions to close...%n committed:  %s%n  committing: %s%n  closed:     %s",
-                        lastCommittedTx, lastCommittingTxField, lastClosedTx ) );
+                        highestCommittedTransaction.get(), lastCommittingTxField, lastClosedTx ) );
             }
         };
         counts.setInitializer( new DataInitializer<CountsAccessor.Updater>()
@@ -578,9 +578,9 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             storeVersionField = getRecordValue( cursor, Position.STORE_VERSION );
             graphNextPropField = getRecordValue( cursor, Position.FIRST_GRAPH_PROPERTY );
             latestConstraintIntroducingTxField = getRecordValue( cursor, Position.LAST_CONSTRAINT_TRANSACTION );
-            lastTransactionChecksum = getRecordValue( cursor, Position.LAST_TRANSACTION_CHECKSUM );
+            highestCommittedTransaction.set( new HighestCommittedTransaction( lastCommittedTxId,
+                    getRecordValue( cursor, Position.LAST_TRANSACTION_CHECKSUM )) );
             lastClosedTx.set( lastCommittedTxId, 0 );
-            lastCommittedTx.set( lastCommittedTxId, lastTransactionChecksum );
             upgradeTxChecksumField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_CHECKSUM );
         } while ( cursor.shouldRetry() );
     }
@@ -900,12 +900,32 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     @Override
     public void transactionCommitted( long transactionId, long checksum )
     {
-        if ( lastCommittedTx.offer( transactionId, checksum ) )
+        checkInitialized( lastCommittingTxField.get() );
+        HighestCommittedTransaction current = highestCommittedTransaction.get();
+        if ( current.transactionId() < transactionId )
         {
-            long[] transactionData = lastCommittedTx.get();
-            setRecord( Position.LAST_TRANSACTION_ID, transactionData[0] );
-            setRecord( Position.LAST_TRANSACTION_CHECKSUM, transactionData[1] );
-            lastTransactionChecksum = checksum;
+            HighestCommittedTransaction update = new HighestCommittedTransaction( transactionId, checksum );
+            while ( !highestCommittedTransaction.compareAndSet( current, update ) )
+            {
+                current = highestCommittedTransaction.get();
+                // let's check if our update is still needed
+                if ( current.transactionId() >= transactionId )
+                {
+                    return;
+                }
+            }
+
+            /*
+             * We need to synchronize here in order to guarantee that the two field are written consistently
+             * together. Note that having the exclusive lock on tha page is not enough for 2 reasons:
+             * 1. the records might be in different pages
+             * 2. some other thread might kick in while we have been written only one record
+             */
+            synchronized ( this )
+            {
+                setRecord( Position.LAST_TRANSACTION_ID, update.transactionId() );
+                setRecord( Position.LAST_TRANSACTION_CHECKSUM, update.checksum() );
+            }
         }
     }
 
@@ -913,14 +933,15 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     public long getLastCommittedTransactionId()
     {
         checkInitialized( lastCommittingTxField.get() );
-        return lastCommittedTx.getHighestGapFreeNumber();
+        return highestCommittedTransaction.get().transactionId();
     }
 
     @Override
     public long[] getLastCommittedTransaction()
     {
         checkInitialized( lastCommittingTxField.get() );
-        return lastCommittedTx.get();
+        HighestCommittedTransaction current = this.highestCommittedTransaction.get();
+        return new long[]{ current.transactionId(), current.checksum() };
     }
 
     @Override
@@ -946,6 +967,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         }
     }
 
+    // only for initialization
     @Override
     public void setLastCommittedAndClosedTransactionId( long transactionId, long checksum )
     {
@@ -954,8 +976,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         checkInitialized( lastCommittingTxField.get() );
         lastCommittingTxField.set( transactionId );
         lastClosedTx.set( transactionId, 0 );
-        lastCommittedTx.set( transactionId, checksum );
-        lastTransactionChecksum = checksum;
+        highestCommittedTransaction.set( new HighestCommittedTransaction( transactionId, checksum ) );
     }
 
     @Override
@@ -1019,5 +1040,36 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
                 return false;
             }
         } );
+    }
+
+    private static class HighestCommittedTransaction
+    {
+        private volatile long transactionId;
+        private volatile long checksum;
+
+        public HighestCommittedTransaction( long transactionId, long checksum )
+        {
+            this.transactionId = transactionId;
+            this.checksum = checksum;
+        }
+
+        public long transactionId()
+        {
+            return transactionId;
+        }
+
+        public long checksum()
+        {
+            return checksum;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "HighestCommittedTransaction{" +
+                   "transactionId=" + transactionId +
+                   ", checksum=" + checksum +
+                   '}';
+        }
     }
 }
