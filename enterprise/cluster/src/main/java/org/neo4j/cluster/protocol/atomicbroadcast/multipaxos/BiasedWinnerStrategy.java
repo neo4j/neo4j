@@ -27,6 +27,10 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.ElectionContextImpl;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 
+/**
+ * If a server is promoted or demoted, then use this {@link WinnerStrategy} during election so that that decision is
+ * adhered to, if possible.
+ */
 public class BiasedWinnerStrategy implements WinnerStrategy
 {
     private ClusterContext electionContext;
@@ -69,6 +73,7 @@ public class BiasedWinnerStrategy implements WinnerStrategy
         }
 
         // None were chosen - try again, without considering promotions or demotions
+        // This most commonly happens if current master is demoted but all other instances are slave-only
         for ( Vote vote : eligibleVotes )
         {
             return vote.getSuggestedNode();

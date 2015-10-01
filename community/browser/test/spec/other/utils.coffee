@@ -51,3 +51,76 @@ describe 'Utils: firstWord', () ->
           still extractable
           """
     expect(Utils.firstWord text).toBe 'alone'
+
+  it 'should strip element "onX" attributes', ->
+    text = '<a href="" onclick="alert(1) " onLoad="alert(2)">x</a>'
+    expect(Utils.stripScripts text).toBe '<a href="">x</a>'
+
+  it 'should strip script tags', ->
+    text = 'hello<script>alert(1)</script>'
+    expect(Utils.stripScripts text).toBe 'hello'
+
+    text = 'hello<script src="xxx">'
+    expect(Utils.stripScripts text).toBe 'hello'
+
+    text = 'hello<script src="xxx" />'
+    expect(Utils.stripScripts text).toBe 'hello'
+
+    text = 'hello<script type="text/html">alert(1)</script>xxx<script> alert(3)</script  >'
+    expect(Utils.stripScripts text).toBe 'helloxxx'
+
+  it 'should strip ng attributes', ->
+    text = '<p ng-show="false">x</p>'
+    expect(Utils.stripNGAttributes text).toBe '<p>x</p>'
+
+    text = '<p ng_show="false " style="color:red">x</p>'
+    expect(Utils.stripNGAttributes text).toBe '<p style="color:red">x</p>'
+
+    text = '<p data-ng-show="false">x</p>'
+    expect(Utils.stripNGAttributes text).toBe '<p>x</p>'
+
+    text = '<p data-ng_show="false">x</p>'
+    expect(Utils.stripNGAttributes text).toBe '<p>x</p>'
+
+    text = '<p data_ng_show="false">x</p>'
+    expect(Utils.stripNGAttributes text).toBe '<p>x</p>'
+
+    text = '<p ng:show="false">x</p>'
+    expect(Utils.stripNGAttributes text).toBe '<p>x</p>'
+
+    text = '<p data-ng:show="false">x</p>'
+    expect(Utils.stripNGAttributes text).toBe '<p>x</p>'
+
+    text = '<p data:ng:show="false">x</p>'
+    expect(Utils.stripNGAttributes text).toBe '<p>x</p>'
+
+    text = '<p x-ng-show="false">x</p>'
+    expect(Utils.stripNGAttributes text).toBe '<p>x</p>'
+
+    text = '<p x-ng_show="false">x</p>'
+    expect(Utils.stripNGAttributes text).toBe '<p>x</p>'
+
+    text = '<p x_ng_show="false">x</p>'
+    expect(Utils.stripNGAttributes text).toBe '<p>x</p>'
+
+    text = '<p x-ng:show="false">x</p>'
+    expect(Utils.stripNGAttributes text).toBe '<p>x</p>'
+
+  it 'should strip both script tags, onX anf ng-x attributes', ->
+    text = 'hello<script>alert(1)</script> <p onclick="alert(1)" ng-show=\'false\'>xxx</p>'
+    expect(Utils.cleanHTML text).toBe 'hello <p>xxx</p>'
+
+  it 'should respect whitelist for enterprise edition', ->
+    host = 'http://first.com'
+    whitelist = 'http://second.com,http://third.com'
+    expect(Utils.hostIsAllowed host, '*', yes).toBe yes
+    expect(Utils.hostIsAllowed host, host, yes).toBe yes
+    expect(Utils.hostIsAllowed host, whitelist, yes).toBe no
+
+  it 'should ignore whitelist for non enterprise editions', ->
+    host = 'http://first.com'
+    whitelist = 'http://second.com,http://third.com'
+    expect(Utils.hostIsAllowed host, '*', no).toBe no
+    expect(Utils.hostIsAllowed host, host, no).toBe no
+    expect(Utils.hostIsAllowed host, whitelist, no).toBe no
+    expect(Utils.hostIsAllowed 'http://guides.neo4j.com', whitelist, no).toBe yes

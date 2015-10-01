@@ -78,6 +78,12 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
+    public long getHighestCommittedTransactionId()
+    {
+        return committedTransactionId.getHighestOfferedNumber();
+    }
+
+    @Override
     public long[] getUpgradeTransaction()
     {
         return new long[] {previouslyCommittedTxId, initialTransactionChecksum};

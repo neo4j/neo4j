@@ -84,25 +84,25 @@ angular.module('neo4jApp.services')
       promiseResult = (promise) ->
         q = $q.defer()
 
-        promise.success(
-          (result, status, headers, config) =>
-            raw = {request: config, response: {headers: headers(), data: result}}
-            raw.request.status = status
-            if not result
+        promise.then(
+          (r) =>
+            raw = {request: r.config, response: {headers: r.headers(), data: r.data}}
+            raw.request.status = r.status
+            if not r
               q.reject({raw: raw})
-            else if result.errors && result.errors.length > 0
-              q.reject({errors: result.errors, raw: raw})
+            else if r.data.errors && r.data.errors.length > 0
+              q.reject({errors: r.data.errors, raw: raw})
             else
               results = []
-              partResult = new CypherResult(result.results[0] || {})
+              partResult = new CypherResult(r.data.results[0] || {})
               partResult.raw = raw
               results.push partResult
               q.resolve(results[0])
-        ).error(
-          (r, status, headers, config) ->
-            raw = {request: config, response: {headers: headers(), data: r}}
-            raw.request.status = status
-            q.reject({errors: r.errors, raw: raw})
+        ,
+        (r) ->
+          raw = {request: r.config, response: {headers: r.headers(), data: r.data}}
+          raw.request.status = r.status
+          q.reject({errors: r.errors, raw: raw})
         )
         q.promise
 
@@ -132,7 +132,6 @@ angular.module('neo4jApp.services')
         #       if the id hasn't been assigned yet, but the request is still running.
         begin: (query) ->
           statements = if query then [{statement:query}] else []
-          q = $q.defer()
           rr = Server.transaction(
             path: ""
             statements: statements
@@ -140,8 +139,7 @@ angular.module('neo4jApp.services')
             (r) =>
               @id = parseId(r.commit)
               @delegate?.transactionStarted.call(@delegate, @id, @)
-              q.resolve(r)
-            (r) => q.reject(r)
+              r
           )
           parsed_result = promiseResult rr
           @_requestDone parsed_result

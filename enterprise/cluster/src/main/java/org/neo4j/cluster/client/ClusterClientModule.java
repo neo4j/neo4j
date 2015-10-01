@@ -68,6 +68,13 @@ import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
 
+/**
+ * This is a builder for {@link ClusterClient} instances.
+ * <p/>
+ * While a {@link Dependencies} instance is passed into the constructor there are no services other than those
+ * explicitly passed in that are required, and instead it is only used to register any created services for others to
+ * use.
+ */
 public class ClusterClientModule
 {
     public static final Setting<Long> clusterJoinTimeout = Settings.setting( "ha.cluster_join_timeout",

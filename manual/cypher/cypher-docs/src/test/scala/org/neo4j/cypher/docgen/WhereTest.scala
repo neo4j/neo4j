@@ -106,21 +106,39 @@ class WhereTest extends DocumentingTestBase {
       assertions = (p) => assertEquals(List(Map("n" -> node("Andres"))), p.toList))
   }
 
-  @Test def string_pattern_matching_case_sensitive() {
+  @Test def string_matching_starts_with() {
     testQuery(
-      title = "Case-sensitive pattern matching",
-      text = """The `STARTS WITH` operator can be used to perform case-sensitive matching on strings.""".stripMargin,
+      title = "Match the start of a string",
+      text = """The `STARTS WITH` operator is used to perform case-sensitive matching on the start of strings.""".stripMargin,
       queryText = """match (n) where n.name STARTS WITH 'Pet' return n""",
       optionalResultExplanation = """"+Peter+" will be returned because his name starts with `Pet`.""",
       assertions = (p) => assertEquals(List(node("Peter")), p.columnAs[Node]("n").toList))
   }
 
+  @Test def string_matching_ends_with() {
+    testQuery(
+      title = "Match the end of a string",
+      text = """The `ENDS WITH` operator is used to perform case-sensitive matching on the end of strings.""".stripMargin,
+      queryText = """match (n) where n.name ENDS WITH 'ter' return n""",
+      optionalResultExplanation = """"+Peter+" will be returned because his name ends with `ter`.""",
+      assertions = (p) => assertEquals(List(node("Peter")), p.columnAs[Node]("n").toList))
+  }
+
   @Test def string_pattern_matching_negation() {
     testQuery(
-      title = "Pattern matching negation",
+      title = "String matching negation",
       text = "Use the `NOT` keyword to exclude all matches on given string from your result:",
       queryText = """match (n) where NOT n.name ENDS WITH 's' return n""",
       optionalResultExplanation = """"+Peter+" will be returned because his name does not end with `s`.""",
+      assertions = (p) => assertEquals(List(node("Peter")), p.columnAs[Node]("n").toList))
+  }
+
+  @Test def string_matching_contains() {
+    testQuery(
+      title = "Match anywhere in a string",
+      text = """The `CONTAINS` operator is used to perform case-sensitive matching regardless of location in strings.""".stripMargin,
+      queryText = """match (n) where n.name CONTAINS 'ete' return n""",
+      optionalResultExplanation = """"+Peter+" will be returned because his name contains `ete`.""",
       assertions = (p) => assertEquals(List(node("Peter")), p.columnAs[Node]("n").toList))
   }
 

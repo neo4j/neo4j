@@ -121,6 +121,8 @@ angular.module('neo4jApp.services')
             return if err
             if res.raw.response.data.notifications?.length
               for item in res.raw.response.data.notifications
+                if not item.position
+                  item.position = {line:1}
                 do(item) ->
                   cm.setGutterMarker(item.position.line-1, "cypher-hints", (()->
                       r = document.createElement("div")

@@ -27,6 +27,9 @@ import org.jboss.netty.logging.InternalLoggerFactory;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+/**
+ * Adapter which send Netty logging messages to our internal log.
+ */
 public class NettyLoggerFactory
     extends InternalLoggerFactory
 {

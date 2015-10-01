@@ -21,19 +21,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 'use strict';
 
 angular.module('neo4jApp.directives')
-.directive('cypherHint', [ ->
-    restrict: 'A'
-    link: (scope, element, attrs) ->
-      unbind = scope.$watch attrs.cypherHint, (val) ->
-        return unless val
-        if not val.position
-          val.position = {line: 1, column: 1, offset: 0}
-        inputArr = attrs.cypherInput.replace(/^\s*(EXPLAIN|PROFILE)\s*/, '').split("\n")
-        if val.position.line is 1 and val.position.column is 1 and val.position.offset is 0
-          outputArr = inputArr
-        else
-          outputArr = [inputArr[val.position.line-1]]
-          outputArr.push (' ' for i in [0...(val.position.column)]).join('')+"^"
-        element.text(outputArr.join("\n"))
+  .directive('playSrc', ['$compile', '$rootScope', 'Utils', ($compile, $rootScope, Utils) ->
+    (scope, element, attrs) ->
+      unbind = scope.$watch 'frame.response', (response) ->
+        return unless response
+        if response.is_remote
+          response.contents = Utils.cleanHTML response.contents
+        element.html(response.contents)
+        $compile(element.contents())(scope)
         unbind()
   ])

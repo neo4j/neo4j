@@ -17,7 +17,7 @@ For information on High Availability, please refer to <<ha>>.
 
 == Prerequisites ==
 
-With the exception of our Windows Installer, you'll need a Java Virtual Machine installed on your computer.
+With the exception of our Windows and Mac Installers, you'll need a Java Virtual Machine installed on your computer.
 We recommend that you install http://openjdk.java.net/[OpenJDK 8 (preferred) or 7] or http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Java 8 (preferred) or 7].
 
 [[server-permissions]]
@@ -50,8 +50,9 @@ The installer will prompt to be granted Administrator privileges.
 Newer versions of Windows come with a SmartScreen feature that may prevent the installer from running -- you can make it run anyway by clicking "More info" on the "Windows protected your PC" screen.
 
 [TIP]
-If you install Neo4j using the windows installer and you already have an existing Neo4j installed it will ask if you want to upgrade.
-This should proceed without issue although some users have reported a `JRE is damaged` exception.
+If you install Neo4j using the windows installer and you already have an existing instance of Neo4j the installer will select a new install directory by default.
+If you specify the same directory it will ask if you want to upgrade.
+This should proceed without issue although some users have reported a `JRE is damaged` error.
 If you see this error simply install Neo4j into a different location.
 
 [[windows-console]]
@@ -104,6 +105,15 @@ See for instance the Linux Standard Base specification on http://refspecs.linuxf
 
 [[osx-install]]
 == Mac OSX ==
+
+=== Mac OSX Installer ===
+
+1. Download the _.dmg_ installer that you want from http://neo4j.com/download/.
+2. Click the downloaded installer file.
+3. Drag the Neo4j icon into the Applications folder.
+
+[TIP]
+If you install Neo4j using the Mac installer and already have an existing instance of Neo4j the installer will ensure that both the old and new versions can co-exist on your system.
 
 === Running Neo4j from the Terminal ===
 

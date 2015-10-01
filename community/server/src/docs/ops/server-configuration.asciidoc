@@ -178,6 +178,31 @@ This line is already present and needs uncommenting.
 Note also that logging is not directed to console.
 You will find the logging statements in _data/log/ne4j-gc.log_ or whatever directory you set the option to.
 
+=== Whitelist for remote guides in Browser ===
+
+The Browser can `:play` guides from remote locations. You can specify a whitelist of hosts from where the Browser will be allowed to fetch content from.
+
+In the _conf/neo4j-server.properties_ file:
+
+[source,properties]
+----
+# To allow default hosts
+dbms.browser.remote_content_hostname_whitelist="http://guides.neo4j.com,https://guides.neo4j.com,http://localhost,https://localhost"
+
+# To allow all hosts (enterprise edition only)
+dbms.browser.remote_content_hostname_whitelist="*"
+----
+
+=== Outgoing connections for Browser ===
+
+The Browser can load services and data from remote locations and with this configuration this can be restricted.
+
+In the _conf/neo4j-server.properties_ file:
+
+[source,properties]
+----
+dbms.security.allow_outgoing_browser_connections=true
+----
 
 === Disabling console types in Webadmin ===
 

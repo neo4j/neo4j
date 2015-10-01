@@ -22,10 +22,16 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstance;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorState;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.kernel.impl.logging.LogService;
 
+/**
+ * Context for the {@link AcceptorState} distributed state machine.
+ * <p/>
+ * This holds the store for Paxos instances, as seen from the acceptor role point of view in Paxos.
+ */
 class AcceptorContextImpl
         extends AbstractContextImpl
         implements AcceptorContext

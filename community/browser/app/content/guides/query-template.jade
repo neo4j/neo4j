@@ -55,10 +55,10 @@ article.guide(ng-controller="AdLibDataController")
               |  with a property called &quot;{{propertyKeyA}}&quot;
               |  that has value &quot;{{propertyValueA}}&quot;. (Or create Node B)
               figure
-                pre.code.runnable.
+                pre.code.runnable.standalone-example.
                   CREATE (n:{{nodeLabelA | tickitize}} { {{propertyKeyA | tickitize}}: '{{propertyValueA}}' }) RETURN n
               figure
-                pre.code.runnable.
+                pre.code.runnable.standalone-example.
                   CREATE (n:{{nodeLabelB | tickitize}} { {{propertyKeyB | tickitize}}: '{{propertyValueB}}' }) RETURN n
           tr
             th Relate
@@ -68,16 +68,15 @@ article.guide(ng-controller="AdLibDataController")
               |  create a &quot;{{relationshipType}}&quot;
               |  relationship to a &quot;{{nodeLabelB}}&quot; with &quot;{{propertyKeyB}}&quot; value &quot;{{propertyValueB}}&quot;.
               figure
-                pre.code.runnable.
-                  MATCH (a:{{nodeLabelA | tickitize}} { {{propertyKeyA | tickitize}}: '{{propertyValueA}}' })
-                  MATCH (b:{{nodeLabelB | tickitize}} { {{propertyKeyB | tickitize}}: '{{propertyValueB}}' })
+                pre.code.runnable.standalone-example.
+                  MATCH (a:{{nodeLabelA | tickitize}} { {{propertyKeyA | tickitize}}: '{{propertyValueA}}' }), (b:{{nodeLabelB | tickitize}} { {{propertyKeyB | tickitize}}: '{{propertyValueB}}' })
                   CREATE (a)-[:{{relationshipType | tickitize}}]-&gt;(b)
           tr
             th Merge node
             td Find or create a &quot;{{nodeLabelA}}&quot; node
               |  with &quot;{{propertyKeyA}}&quot; of &quot;{{propertyValueA}}&quot;.
               figure
-                pre.code.runnable.
+                pre.code.runnable.standalone-example.
                   MERGE (n:{{nodeLabelA | tickitize}} { {{propertyKeyA | tickitize}}: '{{propertyValueA}}' }) RETURN n
           tr
             th Merge relationship
@@ -85,9 +84,8 @@ article.guide(ng-controller="AdLibDataController")
               |  through a &quot;{{relationshipType}}&quot; relationship
               |  to a &quot;{{nodeLabelB}}&quot; node with &quot;{{propertyKeyB}}&quot; of &quot;{{propertyValueB}}&quot;.
               figure
-                pre.code.runnable.
-                  MATCH (a:{{nodeLabelA | tickitize}} { {{propertyKeyA | tickitize}}: '{{propertyValueA}}' })
-                  MATCH (b:{{nodeLabelB | tickitize}} { {{propertyKeyB | tickitize}}: '{{propertyValueB}}' })
+                pre.code.runnable.standalone-example.
+                  MATCH (a:{{nodeLabelA | tickitize}} { {{propertyKeyA | tickitize}}: '{{propertyValueA}}' }), (b:{{nodeLabelB | tickitize}} { {{propertyKeyB | tickitize}}: '{{propertyValueB}}' })
                   MERGE (a)-[:{{relationshipType}}]-&gt;(b)
     slide.row-fluid
       .col-sm-4
@@ -144,7 +142,7 @@ article.guide(ng-controller="AdLibDataController")
               |  with a property called &quot;{{propertyKeyA}}&quot;
               |  that has value &quot;{{propertyValueA}}&quot;.
               figure
-                pre.code.runnable.
+                pre.code.runnable.standalone-example.
                   MATCH (n:{{nodeLabelA | tickitize}} { {{propertyKeyA | tickitize}}: '{{propertyValueA}}' }) RETURN n
           tr
             th Find related neighbors
@@ -153,7 +151,7 @@ article.guide(ng-controller="AdLibDataController")
               |  of &quot;{{propertyValueA}}&quot;
               |  find neighbors related by &quot;{{relationshipType}}&quot;.
               figure
-                pre.code.runnable.
+                pre.code.runnable.standalone-example.
                   MATCH (n:{{nodeLabelA| tickitize}} { {{propertyKeyA | tickitize}}: '{{propertyValueA}}' })-[:{{relationshipType | tickitize}}]-(neighbors) RETURN n,neighbors
           tr
             th Variable length paths
@@ -162,7 +160,7 @@ article.guide(ng-controller="AdLibDataController")
               |  of &quot;{{propertyValueA}}&quot;
               |  follow &quot;{{relationshipType}}&quot; relationships up to {{relationshipDepth}} hops away.
               figure
-                pre.code.runnable.
+                pre.code.runnable.standalone-example.
                   MATCH (n:{{nodeLabelA}} { {{propertyKeyA | tickitize}}: '{{propertyValueA}}' })-[:{{relationshipType | tickitize}}*1..{{relationshipDepth}}]-(neighbors) RETURN n, collect(DISTINCT neighbors)
           tr
             th Shortest path
@@ -172,7 +170,7 @@ article.guide(ng-controller="AdLibDataController")
               |  find the shortest &quot;{{relationshipType}}&quot; path to
               | a &quot;{{nodeLabelB}}&quot; node with &quot;{{propertyKeyB}}&quot; of &quot;{{propertyValueB}}&quot;
               figure
-                pre.code.runnable.
+                pre.code.runnable.standalone-example.
                   MATCH p=shortestPath(
                     (a:{{nodeLabelA | tickitize}} { {{propertyKeyA | tickitize}}: '{{propertyValueA}}' })-[:{{relationshipType | tickitize}}]-(b:{{nodeLabelB | tickitize}} { {{propertyKeyB | tickitize}}: '{{propertyValueB}}'})
                   )

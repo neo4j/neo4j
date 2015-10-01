@@ -44,6 +44,12 @@ angular.module('neo4jApp')
         data: data
       ]
 
+    mapError = (r) ->
+      if not r.errors
+        returnObject = error("Error: #{r.raw.response.data.status} - #{r.raw.response.data.statusText}", 'Request error')
+        r.errors = returnObject.errors
+      r
+
     FrameProvider.interpreters.push
       type: 'clear'
       matches: "#{cmdchar}clear"
@@ -116,17 +122,29 @@ angular.module('neo4jApp')
       type: 'play'
       templateUrl: 'views/frame-guide.html'
       matches: "#{cmdchar}play"
-      exec: ['$http', ($http) ->
+      exec: ['$http', '$rootScope', 'Utils', ($http, $rootScope, Utils) ->
         step_number = 1
         (input, q) ->
-          topic = topicalize(input[('play'.length+1)..]) or 'start'
-          url = "content/guides/#{topic}.html"
+          clean_url = input[('play'.length+1)..].trim()
+          is_remote = no
+          if /^https?:\/\//i.test(clean_url)
+            is_remote = yes
+            url = input[('play'.length+2)..]
+            host = url.match(/^(https?:\/\/[^\/]+)/)[1]
+            host_ok = Utils.hostIsAllowed host, $rootScope.kernel['dbms.browser.remote_content_hostname_whitelist'], $rootScope.neo4j.enterpriseEdition
+          else
+            topic = topicalize(clean_url) or 'start'
+            url = "content/guides/#{topic}.html"
+          if is_remote and not host_ok
+            q.reject({page: url, contents: '', is_remote: is_remote, errors: [{code: "0", message: "Requested host is not whitelisted in dbms.browser.remote_content_hostname_whitelist."}]})  
+            return q.promise
           $http.get(url)
           .then(
-            ->
-              q.resolve(page: url)
+            (res) ->
+              q.resolve({contents:res.data, page: url, is_remote: is_remote})
           ,
             (r)->
+              r.is_remote = is_remote
               q.reject(r)
           )
           q.promise
@@ -363,7 +381,7 @@ angular.module('neo4jApp')
                 )
               ,
               (r) ->
-                q.reject(r)
+                q.reject(mapError r)
             )
 
           #Periodic commits cannot be sent to an open transaction.
@@ -377,7 +395,7 @@ angular.module('neo4jApp')
                 commit_fn()
               ,
               (r) ->
-                q.reject(r)
+                q.reject(mapError r)
             )
 
           q.promise.transaction = current_transaction

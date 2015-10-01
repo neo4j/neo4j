@@ -24,9 +24,9 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.NeoStores;
 
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 
 public class ReadOnlyTransactionIdStore implements TransactionIdStore
@@ -76,6 +76,12 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     public long[] getLastCommittedTransaction()
     {
         return new long[] {transactionId, transactionChecksum};
+    }
+
+    @Override
+    public long getHighestCommittedTransactionId()
+    {
+        return transactionId;
     }
 
     @Override
