@@ -136,6 +136,32 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     )
   }
 
+  @Test def nodeCountFromCountStore() {
+    profileQuery(
+      title = "Node Count From Count Store",
+      text =
+        """Use the count store to answer questions about node counts.
+          | This is much faster than eager aggregation which achieves the same result by actually counting.
+          | However the count store only saves a limited range of combinations, so eager aggregation will still be used for more complex queries.
+          | For example, we can get counts for all nodes, and nodes with a label, but not nodes with more than one label.""".stripMargin,
+      queryText = """MATCH (p:Person) RETURN count(p) AS people""",
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeCountFromCountStore"))
+    )
+  }
+
+  @Test def relationshipCountFromCountStore() {
+    profileQuery(
+      title = "Relationship Count From Count Store",
+      text =
+        """Use the count store to answer questions about relationship counts.
+          | This is much faster than eager aggregation which achieves the same result by actually counting.
+          | However the count store only saves a limited range of combinations, so eager aggregation will still be used for more complex queries.
+          | For example, we can get counts for all relationships, relationships with a type, relationships with a label on one end, but not relationships with labels on both end nodes.""".stripMargin,
+      queryText = """MATCH (p:Person)-[r:WORKS_IN]->() RETURN count(r) AS jobs""",
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("RelationshipCountFromCountStore"))
+    )
+  }
+
   @Test def eager() {
     profileQuery(
       title = "Eager",

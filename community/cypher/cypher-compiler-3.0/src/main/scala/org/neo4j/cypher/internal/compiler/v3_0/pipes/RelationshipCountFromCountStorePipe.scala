@@ -62,7 +62,7 @@ case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
   def planDescriptionWithoutCardinality = PlanDescriptionImpl(
-    this.id, "CountStoreRelationshipAggregation", NoChildren,
+    this.id, "RelationshipCountFromCountStore", NoChildren,
     Seq(CountRelationshipsExpression(ident, startLabel, typeNames, endLabel, bothDirections)), identifiers)
 
   def symbols = new SymbolTable(Map(ident -> CTInteger))

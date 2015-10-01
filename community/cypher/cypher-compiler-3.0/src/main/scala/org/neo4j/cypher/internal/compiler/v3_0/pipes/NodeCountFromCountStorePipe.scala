@@ -46,7 +46,7 @@ case class NodeCountFromCountStorePipe(ident: String, label: Option[LazyLabel])(
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
   def planDescriptionWithoutCardinality = PlanDescriptionImpl(
-    this.id, "CountStoreNodeAggregation", NoChildren, Seq(CountNodesExpression(ident, label)), identifiers)
+    this.id, "NodeCountFromCountStore", NoChildren, Seq(CountNodesExpression(ident, label)), identifiers)
 
   def symbols = new SymbolTable(Map(ident -> CTInteger))
 

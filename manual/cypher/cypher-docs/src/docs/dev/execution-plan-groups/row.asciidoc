@@ -9,6 +9,8 @@ These operators take rows produced by another operator and transform them to a d
 include::../ql/query-plan/eager.asciidoc[]
 include::../ql/query-plan/distinct.asciidoc[]
 include::../ql/query-plan/eager-aggregation.asciidoc[]
+include::../ql/query-plan/node-count-from-count-store.asciidoc[]
+include::../ql/query-plan/relationship-count-from-count-store.asciidoc[]
 include::../ql/query-plan/filter.asciidoc[]
 include::../ql/query-plan/limit.asciidoc[]
 include::../ql/query-plan/projection.asciidoc[]
