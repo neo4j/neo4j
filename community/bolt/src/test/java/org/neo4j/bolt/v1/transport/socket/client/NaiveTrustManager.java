@@ -17,39 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.messaging.msgprocess;
+package org.neo4j.bolt.v1.transport.socket.client;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.X509TrustManager;
 
-import org.neo4j.logging.Log;
-import org.neo4j.bolt.v1.runtime.StatementMetadata;
-
-public class RunCallback extends MessageProcessingCallback<StatementMetadata>
+/** Trust self-signed certificates */
+public class NaiveTrustManager implements X509TrustManager
 {
-    private final Map<String,Object> successMetadata = new HashMap<>();
-
-    public RunCallback( Log log )
+    @Override
+    public void checkClientTrusted( X509Certificate[] x509Certificates, String s ) throws CertificateException
     {
-        super( log );
+
     }
 
     @Override
-    public void result( StatementMetadata result, Void none ) throws Exception
+    public void checkServerTrusted( X509Certificate[] x509Certificates, String s ) throws CertificateException
     {
-        successMetadata.put( "fields", result.fieldNames() );
+
     }
 
     @Override
-    protected Map<String,Object> successMetadata()
+    public X509Certificate[] getAcceptedIssuers()
     {
-        return successMetadata;
-    }
-
-    @Override
-    protected void clearState()
-    {
-        super.clearState();
-        successMetadata.clear();
+        return null;
     }
 }
