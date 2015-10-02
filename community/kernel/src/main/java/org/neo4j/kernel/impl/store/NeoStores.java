@@ -667,6 +667,20 @@ public class NeoStores implements AutoCloseable
         getCounts().start();
     }
 
+
+    public void deleteIdGenerators()
+    {
+        visitStore( new Visitor<CommonAbstractStore, RuntimeException>()
+        {
+            @Override
+            public boolean visit( CommonAbstractStore store ) throws RuntimeException
+            {
+                store.deleteIdGenerator();
+                return false;
+            }
+        } );
+    }
+
     public void assertOpen()
     {
         if ( stores[StoreType.NODE.ordinal()] == null )

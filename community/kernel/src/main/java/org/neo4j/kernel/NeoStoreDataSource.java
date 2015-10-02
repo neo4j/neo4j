@@ -997,8 +997,8 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         final LatestCheckPointFinder checkPointFinder =
                 new LatestCheckPointFinder( logFiles, fileSystemAbstraction, logEntryReader );
         Recovery.SPI spi = new DefaultRecoverySPI( labelScanWriters, recoveryLegacyIndexApplierLookup,
-                storeFlusher, logFileRecoverer, logFiles, fileSystemAbstraction, metaDataStore, checkPointFinder,
-                indexUpdatesValidator );
+                storeFlusher, neoStores, logFileRecoverer, logFiles, fileSystemAbstraction, metaDataStore,
+                checkPointFinder, indexUpdatesValidator );
         Recovery recovery = new Recovery( spi, recoveryMonitor );
 
         life.add( recovery );

@@ -36,6 +36,8 @@ import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -52,7 +54,7 @@ public class HaIdGeneratorFactoryTest
         IdAllocation firstResult = new IdAllocation( new IdRange( new long[]{}, 42, 123 ), 123, 0 );
         Response<IdAllocation> response = response( firstResult );
         when( master.allocateIds( any( RequestContext.class ), any( IdType.class ) ) ).thenReturn( response );
-        
+
         // WHEN
         IdGenerator gen = switchToSlave();
 
@@ -72,7 +74,7 @@ public class HaIdGeneratorFactoryTest
         IdAllocation secondResult = new IdAllocation( new IdRange( new long[]{}, 1042, 223 ), 1042 + 223, 0 );
         Response<IdAllocation> response = response( firstResult, secondResult );
         when( master.allocateIds( any( RequestContext.class ), any( IdType.class ) ) ).thenReturn( response );
-        
+
         // WHEN
         IdGenerator gen = switchToSlave();
 
@@ -152,12 +154,47 @@ public class HaIdGeneratorFactoryTest
         // THEN
         assertEquals ( highIdFromUpdatedRecord, gen.getHighId() );
     }
-    
+
+    @Test
+    public void shouldDeleteIdGeneratorsAsPartOfSwitchingToSlave() throws Exception
+    {
+        // GIVEN we're in master mode. We do that to allow HaIdGeneratorFactory to open id generators at all
+        fac.switchToMaster();
+        File idFile = new File( "my.id" );
+        // ... opening an id generator as master
+        fac.create( idFile, 10, true );
+        IdGenerator idGenerator = fac.open( idFile, 10, IdType.NODE, 10 );
+        assertTrue( fs.fileExists( idFile ) );
+        idGenerator.close();
+
+        // WHEN switching to slave
+        fac.switchToSlave();
+
+        // THEN the .id file underneath should be deleted
+        assertFalse( "Id file should've been deleted by now", fs.fileExists( idFile ) );
+    }
+
+    @Test
+    public void shouldDeleteIdGeneratorsAsPartOfOpenAfterSwitchingToSlave() throws Exception
+    {
+        // GIVEN we're in master mode. We do that to allow HaIdGeneratorFactory to open id generators at all
+        fac.switchToSlave();
+        File idFile = new File( "my.id" );
+        // ... opening an id generator as master
+        fac.create( idFile, 10, true );
+
+        // WHEN
+        IdGenerator idGenerator = fac.open( idFile, 10, IdType.NODE, 10 );
+
+        // THEN
+        assertFalse( "Id file should've been deleted by now", fs.fileExists( idFile ) );
+    }
+
     private Master master;
     private DelegateInvocationHandler<Master> masterDelegate;
     private EphemeralFileSystemAbstraction fs;
     private HaIdGeneratorFactory fac;
-    
+
     @Before
     public void before()
     {
@@ -167,7 +204,7 @@ public class HaIdGeneratorFactoryTest
         fac  = new HaIdGeneratorFactory( masterDelegate, NullLogProvider.getInstance(),
                 mock( RequestContextFactory.class ), fs );
     }
-    
+
     @SuppressWarnings( "unchecked" )
     private Response<IdAllocation> response( IdAllocation firstValue, IdAllocation... additionalValues )
     {

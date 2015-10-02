@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.helpers.collection.CloseableVisitor;
 import org.neo4j.helpers.collection.Visitor;
@@ -54,6 +55,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -134,6 +136,7 @@ public class PhysicalLogicalTransactionStoreTest
         }
 
         life = new LifeSupport();
+        final AtomicBoolean recoveryRequiredCalled = new AtomicBoolean();
         FakeRecoveryVisitor visitor = new FakeRecoveryVisitor( additionalHeader, masterId,
                 authorId, timeStarted, timeCommitted, latestCommittedTxWhenStarted );
         final LogFileRecoverer recoverer = new LogFileRecoverer( new VersionAwareLogEntryReader<>(), visitor );
@@ -201,6 +204,12 @@ public class PhysicalLogicalTransactionStoreTest
             {
                 return LogPosition.start( 0 );
             }
+
+            @Override
+            public void recoveryRequired()
+            {
+                recoveryRequiredCalled.set( true );
+            }
         }, mock(Recovery.Monitor.class)));
 
         // WHEN
@@ -215,6 +224,7 @@ public class PhysicalLogicalTransactionStoreTest
 
         // THEN
         assertEquals( 1, visitor.getVisitedTransactions() );
+        assertTrue( recoveryRequiredCalled.get() );
     }
 
     @Test

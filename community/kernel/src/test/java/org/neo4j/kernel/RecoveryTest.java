@@ -28,11 +28,14 @@ import java.io.IOException;
 
 import org.neo4j.function.Consumer;
 import org.neo4j.helpers.Pair;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.RecoveryLegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.api.index.RecoveryIndexingUpdatesValidator;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.command.CommandHandler;
@@ -55,7 +58,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
@@ -68,12 +70,16 @@ import org.neo4j.test.TargetDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.any;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 
 public class RecoveryTest
@@ -133,6 +139,7 @@ public class RecoveryTest
 
         LifeSupport life = new LifeSupport();
         Recovery.Monitor monitor = mock( Recovery.Monitor.class );
+        final AtomicBoolean recoveryRequiredCalled = new AtomicBoolean();
         try
         {
             RecoveryLabelScanWriterProvider provider = mock( RecoveryLabelScanWriterProvider.class );
@@ -144,8 +151,8 @@ public class RecoveryTest
                     LogEntryVersion.CURRENT.byteCode() );
             LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
 
-            life.add( new Recovery( new DefaultRecoverySPI( provider, lookup, flusher, null, logFiles, fs,
-                    logVersionRepository, finder, validator )
+            life.add( new Recovery( new DefaultRecoverySPI( provider, lookup, flusher, mock( NeoStores.class ), null,
+                    logFiles, fs, logVersionRepository, finder, validator )
             {
                 @Override
                 public Visitor<LogVersionedStoreChannel,IOException> getRecoverer()
@@ -172,6 +179,11 @@ public class RecoveryTest
                     };
                 }
 
+                @Override
+                public void recoveryRequired()
+                {
+                    recoveryRequiredCalled.set( true );
+                }
             }, monitor ) );
 
             life.add( new PhysicalLogFile( fs, logFiles, 50, transactionIdStore, logVersionRepository,
@@ -183,6 +195,77 @@ public class RecoveryTest
             order.verify( monitor, times( 1 ) ).recoveryRequired( any( LogPosition.class ) );
             order.verify( monitor, times( 1 ) ).logRecovered( any( LogPosition.class ) );
             order.verify( monitor, times( 1 ) ).recoveryCompleted();
+            assertTrue( recoveryRequiredCalled.get() );
+        }
+        finally
+        {
+            life.shutdown();
+        }
+    }
+
+    @Test
+    public void shouldSeeThatACleanDatabaseShouldNotRequireRecovery() throws Exception
+    {
+        final PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), "log", fs );
+        File file = logFiles.getLogFileForVersion( logVersion );
+
+        writeSomeData( file, new Visitor<Pair<LogEntryWriter, Consumer<LogPositionMarker>>,IOException>()
+        {
+            @Override
+            public boolean visit( Pair<LogEntryWriter,Consumer<LogPositionMarker>> pair ) throws IOException
+            {
+                LogEntryWriter writer = pair.first();
+                Consumer<LogPositionMarker> consumer = pair.other();
+                LogPositionMarker marker = new LogPositionMarker();
+
+                // last committed tx
+                consumer.accept( marker );
+                writer.writeStartEntry( 0, 1, 2l, 3l, new byte[0] );
+                writer.writeCommitEntry( 4l, 5l );
+
+                // check point
+                consumer.accept( marker );
+                writer.writeCheckPointEntry( marker.newPosition() );
+
+                return true;
+            }
+        } );
+
+        LifeSupport life = new LifeSupport();
+        Recovery.Monitor monitor = mock( Recovery.Monitor.class );
+        try
+        {
+            RecoveryLabelScanWriterProvider provider = mock( RecoveryLabelScanWriterProvider.class );
+            RecoveryLegacyIndexApplierLookup lookup = mock( RecoveryLegacyIndexApplierLookup.class );
+            RecoveryIndexingUpdatesValidator validator = mock( RecoveryIndexingUpdatesValidator.class );
+
+            StoreFlusher flusher = mock( StoreFlusher.class );
+            final LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>(
+                    LogEntryVersion.CURRENT.byteCode() );
+            LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
+
+            life.add( new Recovery( new DefaultRecoverySPI( provider, lookup, flusher, mock( NeoStores.class ), null,
+                    logFiles, fs, logVersionRepository, finder, validator )
+            {
+                @Override
+                public Visitor<LogVersionedStoreChannel, IOException> getRecoverer()
+                {
+                    throw new AssertionError( "Recovery should not be required" );
+                }
+
+                @Override
+                public void recoveryRequired()
+                {
+                    fail( "Recovery should not be required" );
+                }
+            }, monitor ));
+
+            life.add( new PhysicalLogFile( fs, logFiles, 50, transactionIdStore, logVersionRepository, mock( PhysicalLogFile.Monitor.class),
+                    new TransactionMetadataCache( 10, 100 )) );
+
+            life.start();
+
+            verifyZeroInteractions( monitor );
         }
         finally
         {
@@ -197,7 +280,7 @@ public class RecoveryTest
                        new PhysicalLogVersionedStoreChannel( fs.open( file, "rw" ), logVersion, CURRENT_LOG_VERSION );
               final PhysicalWritableLogChannel writableLogChannel = new PhysicalWritableLogChannel( versionedStoreChannel ) )
         {
-            LogHeaderWriter.writeLogHeader( writableLogChannel, logVersion, 2l );
+            writeLogHeader( writableLogChannel, logVersion, 2l );
 
             Consumer<LogPositionMarker> consumer = new Consumer<LogPositionMarker>()
             {
