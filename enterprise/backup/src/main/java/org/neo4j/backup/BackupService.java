@@ -134,9 +134,8 @@ class BackupService
         long lastCommittedTx = -1;
         try ( PageCache pageCache = createPageCache( fileSystem ) )
         {
-            StoreCopyClient storeCopier = new StoreCopyClient( targetDirectory, tuningConfiguration, loadKernelExtensions(),
-                    logProvider,
-                    new DefaultFileSystemAbstraction(), pageCache,
+            StoreCopyClient storeCopier = new StoreCopyClient( targetDirectory, tuningConfiguration,
+                    loadKernelExtensions(), logProvider, new DefaultFileSystemAbstraction(), pageCache,
                     monitors.newMonitor( StoreCopyClient.Monitor.class, getClass() ), forensics );
             storeCopier.copyStore( new StoreCopyClient.StoreCopyRequester()
             {
@@ -146,9 +145,8 @@ class BackupService
                 public Response<?> copyStore( StoreWriter writer )
                 {
                     client = new BackupClient( sourceHostNameOrIp, sourcePort, NullLogProvider.getInstance(),
-                            StoreId.DEFAULT, timeout, ResponseUnpacker.NO_OP_RESPONSE_UNPACKER,
-                            monitors.newMonitor( ByteCounterMonitor.class ),
-                            monitors.newMonitor( RequestMonitor.class ) );
+                            StoreId.DEFAULT, timeout, ResponseUnpacker.NO_OP_RESPONSE_UNPACKER, monitors.newMonitor(
+                            ByteCounterMonitor.class ), monitors.newMonitor( RequestMonitor.class ) );
                     client.start();
                     return client.fullBackup( writer, forensics );
                 }
@@ -180,8 +178,8 @@ class BackupService
         }
     }
 
-    BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, File targetDirectory,
-            long timeout, Config config ) throws IncrementalBackupNotPossibleException
+    BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, File targetDirectory, long timeout,
+            Config config ) throws IncrementalBackupNotPossibleException
     {
         if ( !directoryContainsDb( targetDirectory ) )
         {
@@ -215,15 +213,15 @@ class BackupService
 
     private Map<String,String> getTemporaryDbConfig()
     {
-        Map<String, String> tempDbConfig = new HashMap<>();
+        Map<String,String> tempDbConfig = new HashMap<>();
         tempDbConfig.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
         // In case someone deleted the logical log from a full backup
         tempDbConfig.put( GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
         return tempDbConfig;
     }
 
-    BackupOutcome doIncrementalBackupOrFallbackToFull( String sourceHostNameOrIp, int sourcePort,
-            File targetDirectory, ConsistencyCheck consistencyCheck, Config config, long timeout, boolean forensics )
+    BackupOutcome doIncrementalBackupOrFallbackToFull( String sourceHostNameOrIp, int sourcePort, File targetDirectory,
+            ConsistencyCheck consistencyCheck, Config config, long timeout, boolean forensics )
     {
         if ( !directoryContainsDb( targetDirectory ) )
         {
@@ -241,27 +239,27 @@ class BackupService
                 log.warn( "Attempt to do incremental backup failed.", e );
                 log.info( "Existing backup is too far out of date, a new full backup will be performed." );
                 FileUtils.deleteRecursively( targetDirectory );
-                return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, consistencyCheck,
-                        config, timeout, forensics );
+                return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, consistencyCheck, config, timeout,
+                        forensics );
             }
             catch ( Exception fullBackupFailure )
             {
-                throw new RuntimeException( "Failed to perform incremental backup, fell back to full backup, "
-                        + "but that failed as well: '" + fullBackupFailure.getMessage() + "'.", fullBackupFailure );
+                throw new RuntimeException( "Failed to perform incremental backup, fell back to full backup, " +
+                        "but that failed as well: '" + fullBackupFailure.getMessage() + "'.", fullBackupFailure );
             }
         }
     }
 
-    BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb, long timeout )
-            throws IncrementalBackupNotPossibleException
+    BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb,
+            long timeout ) throws IncrementalBackupNotPossibleException
     {
         return incrementalWithContext( sourceHostNameOrIp, sourcePort, targetDb, timeout, slaveContextOf( targetDb ) );
     }
 
     private RequestContext slaveContextOf( GraphDatabaseAPI graphDb )
     {
-        TransactionIdStore transactionIdStore =
-                graphDb.getDependencyResolver().resolveDependency( TransactionIdStore.class );
+        TransactionIdStore transactionIdStore = graphDb.getDependencyResolver().resolveDependency(
+                TransactionIdStore.class );
         return anonymous( transactionIdStore.getLastCommittedTransactionId() );
     }
 
@@ -273,8 +271,8 @@ class BackupService
     static GraphDatabaseAPI startTemporaryDb( File targetDirectory, PageCache pageCache, Map<String,String> config )
     {
         GraphDatabaseFactory factory = ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
-        return (GraphDatabaseAPI) factory.newEmbeddedDatabaseBuilder( targetDirectory )
-                                         .setConfig( config ).newGraphDatabase();
+        return (GraphDatabaseAPI) factory.newEmbeddedDatabaseBuilder( targetDirectory ).setConfig( config )
+                .newGraphDatabase();
     }
 
     /**
@@ -284,11 +282,11 @@ class BackupService
      * spanning up to the latest of the master
      *
      * @param targetDb The database that contains a previous full copy
-     * @param context  The context, containing transaction id to start streaming transaction from
+     * @param context The context, containing transaction id to start streaming transaction from
      * @return A backup context, ready to perform
      */
     private BackupOutcome incrementalWithContext( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb,
-                                                  long timeout, RequestContext context ) throws IncrementalBackupNotPossibleException
+            long timeout, RequestContext context ) throws IncrementalBackupNotPossibleException
     {
         DependencyResolver resolver = targetDb.getDependencyResolver();
 
@@ -298,9 +296,8 @@ class BackupService
 
         Monitors monitors = resolver.resolveDependency( Monitors.class );
         LogProvider logProvider = resolver.resolveDependency( LogService.class ).getInternalLogProvider();
-        BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort,
-                logProvider, targetDb.storeId(), timeout, unpacker,
-                monitors.newMonitor( ByteCounterMonitor.class, BackupClient.class ),
+        BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, logProvider, targetDb.storeId(),
+                timeout, unpacker, monitors.newMonitor( ByteCounterMonitor.class, BackupClient.class ),
                 monitors.newMonitor( RequestMonitor.class, BackupClient.class ) );
 
         boolean consistent = false;

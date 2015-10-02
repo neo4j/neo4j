@@ -131,7 +131,7 @@ public class BackupServiceStressTestingBuilder
         if ( directory.list().length > 0 )
         {
             throw new IllegalArgumentException( "Given directory is not empty: '" + path + "' " +
-                                                Arrays.toString( directory.list() ) );
+                    Arrays.toString( directory.list() ) );
         }
     }
 
@@ -164,10 +164,9 @@ public class BackupServiceStressTestingBuilder
         @Override
         public Integer call() throws Exception
         {
-            final GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory()
-                    .newEmbeddedDatabaseBuilder( storeDir.getAbsolutePath() )
-                    .setConfig( OnlineBackupSettings.online_backup_server, backupHostname + ":" + backupPort )
-                    .setConfig( GraphDatabaseSettings.keep_logical_logs, "true" )
+            final GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
+                    storeDir.getAbsolutePath() ).setConfig( OnlineBackupSettings.online_backup_server,
+                    backupHostname + ":" + backupPort ).setConfig( GraphDatabaseSettings.keep_logical_logs, "true" )
                     .newGraphDatabase();
 
             try
@@ -186,8 +185,8 @@ public class BackupServiceStressTestingBuilder
                 try
                 {
                     backup = (OnlineBackupKernelExtension) new OnlineBackupExtensionFactory().newKernelExtension(
-                            DependenciesProxy.dependencies( dependencies, OnlineBackupExtensionFactory.Dependencies
-                                    .class ) );
+                            DependenciesProxy.dependencies( dependencies,
+                                    OnlineBackupExtensionFactory.Dependencies.class ) );
 
                     backup.init();
                     backup.start();
@@ -213,8 +212,8 @@ public class BackupServiceStressTestingBuilder
                 final AtomicInteger inconsistentDbs = new AtomicInteger( 0 );
                 executor.execute( new Runnable()
                 {
-                    private final BackupService backupService = new BackupService(
-                            fileSystem, NullLogProvider.getInstance(), new Monitors() );
+                    private final BackupService backupService = new BackupService( fileSystem,
+                            NullLogProvider.getInstance(), new Monitors() );
 
                     @Override
                     public void run()
@@ -222,11 +221,9 @@ public class BackupServiceStressTestingBuilder
                         while ( keepGoing.get() && until.getAsBoolean() )
                         {
                             cleanup( backupDir );
-                            BackupService.BackupOutcome backupOutcome =
-                                    backupService.doFullBackup( backupHostname, backupPort,
-                                            backupDir.getAbsoluteFile(), ConsistencyCheck.DEFAULT, new Config(),
-                                            BackupClient.BIG_READ_TIMEOUT,
-                                            false );
+                            BackupService.BackupOutcome backupOutcome = backupService.doFullBackup( backupHostname,
+                                    backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.DEFAULT, new Config(),
+                                    BackupClient.BIG_READ_TIMEOUT, false );
 
                             if ( !backupOutcome.isConsistent() )
                             {

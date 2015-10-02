@@ -48,8 +48,8 @@ enum ConsistencyCheck
                         FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose )
                         throws ConsistencyCheckFailedException
                 {
-                    return EXPERIMENTAL.runFull( storeDir, tuningConfiguration,
-                            progressFactory, logProvider, fileSystem, pageCache, verbose );
+                    return EXPERIMENTAL.runFull( storeDir, tuningConfiguration, progressFactory, logProvider,
+                            fileSystem, pageCache, verbose );
                 }
             },
     EXPERIMENTAL
@@ -62,9 +62,9 @@ enum ConsistencyCheck
                 {
                     try
                     {
-                        return new org.neo4j.consistency.ConsistencyCheckService().runFullConsistencyCheck(
-                                storeDir, tuningConfiguration, progressFactory,
-                                logProvider, fileSystem, pageCache, verbose ).isSuccessful();
+                        return new org.neo4j.consistency.ConsistencyCheckService().runFullConsistencyCheck( storeDir,
+                                tuningConfiguration, progressFactory, logProvider, fileSystem, pageCache, verbose )
+                                .isSuccessful();
                     }
                     catch ( org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException e )
                     {
@@ -83,8 +83,8 @@ enum ConsistencyCheck
                     try
                     {
                         return new org.neo4j.legacy.consistency.ConsistencyCheckService().runFullConsistencyCheck(
-                                storeDir, tuningConfiguration, progressFactory,
-                                logProvider, fileSystem, pageCache ).isSuccessful();
+                                storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem, pageCache )
+                                .isSuccessful();
                     }
                     catch ( org.neo4j.legacy.consistency.checking.full.ConsistencyCheckIncompleteException e )
                     {
@@ -93,9 +93,8 @@ enum ConsistencyCheck
                 }
             };
 
-    public abstract boolean runFull( File storeDir, Config tuningConfiguration,
-            ProgressMonitorFactory progressFactory, LogProvider logProvider,
-            FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose )
+    public abstract boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory,
+            LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose )
             throws ConsistencyCheckFailedException;
 
     public static ConsistencyCheck fromString( String name )
