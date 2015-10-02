@@ -1,12 +1,12 @@
-2.3-RC01
---------
+2.3.0-RC1
+---------
 o Generates a warning when a plan using LOAD CSV uses MATCH or MERGE on a large label without an index
 o Generates a warning when a plan using LOAD CSV also contains an EagerPipe
 o Introduce STARTS WITH, ENDS WITH and CONTAINS
 o ShortestPath no longer has a max limit of 15 steps
 o Generates a warning when using shortestPath without supplying an upper limit
 
-2.3-M03
+2.3.0-M03
 -------
 o SKIP/LIMIT now allows arbitrary expressions that does not depend on identifiers
 o Allow arbitrary expressions for URL in LOAD CSV
@@ -33,7 +33,7 @@ o ShortestPath should now return paths that fulfil any predicates enforced upon 
 o The str() function is now deprecated
 o Cypher queries will no longer be logged in messages.log
 
-2.3-M02
+2.3.0-M02
 -------
 o Removed support for Cypher version 2.0 and 2.1, as announced
 o Produces error or warning if a query cannot be solved using the specified planner
@@ -43,7 +43,7 @@ o Cypher now supports two new operators for string pattern matching: LIKE and IL
 o It is now possible to escape '_' and '%' in string literals using backslash (for use with LIKE)
 o Specifying a default Cypher planner in the settings now only applies to the default language version / parser
 
-2.3-M01
+2.3.0-M01
 -------
 o Added new warning mechanism. The first supported warning is generated for queries that contain a potentially
   unintended cartesian product
