@@ -22,19 +22,25 @@ package org.neo4j.kernel.ha.cluster;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.mockito.verification.VerificationMode;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.StoreCopyClient;
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.function.Function;
 import org.neo4j.function.Suppliers;
@@ -44,6 +50,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
@@ -63,18 +70,20 @@ import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
-import static java.util.Arrays.asList;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -87,17 +96,48 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
 
 public class SwitchToSlaveTest
 {
-    private final UpdatePuller updatePuller = mockWithLifecycle( SlaveUpdatePuller.class );
+    private final UpdatePuller updatePuller = mock( SlaveUpdatePuller.class );
     private final PullerFactory pullerFactory = mock( PullerFactory.class );
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final MasterClient masterClient = mock( MasterClient.class );
     private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
+
+    private final StoreLockerLifecycleAdapter storeLockerLifecycleAdapter = mock( StoreLockerLifecycleAdapter.class );
+    private final OnlineBackupKernelExtension onlineBackupKernelExtension = mock( OnlineBackupKernelExtension.class );
+    private final DataSourceManager dataSourceManager = mock( DataSourceManager.class );
+    private final TransactionCommittingResponseUnpacker transactionCommittingResponseUnpacker = mock(
+            TransactionCommittingResponseUnpacker.class );
+    private final IndexConfigStore indexConfigStore = mock( IndexConfigStore.class );
+
+    private final List<? extends Lifecycle> servicesUsedBySwitchToSlave = Arrays.asList(
+            storeLockerLifecycleAdapter,
+            dataSourceManager,
+            transactionCommittingResponseUnpacker,
+            indexConfigStore,
+            onlineBackupKernelExtension );
+
+    @Test
+    public void shouldNotRestartRequestContextFactory() throws Throwable
+    {
+        // Given
+        SwitchToSlave switchToSlave = newSwitchToSlaveSpy();
+        when( updatePuller.tryPullUpdates() ).thenReturn( true );
+
+        // When
+        URI masterUri = switchToSlave.switchToSlave( mock( LifeSupport.class ), getLocalhostUri(), getLocalhostUri(),
+                CancellationRequest.NEVER_CANCELLED );
+
+        // Then
+        assertNotNull( "Switch to slave failed, master URI is null", masterUri );
+        verify( requestContextFactory, never() ).start();
+        verify( requestContextFactory, never() ).stop();
+    }
 
     @Test
     public void shouldRestartServicesIfCopyStoreFails() throws Throwable
@@ -106,7 +146,7 @@ public class SwitchToSlaveTest
 
         PageCache pageCacheMock = mock( PageCache.class );
         PagedFile pagedFileMock = mock( PagedFile.class );
-        when( pagedFileMock.getLastPageId() ).thenReturn( 1l );
+        when( pagedFileMock.getLastPageId() ).thenReturn( 1L );
         when( pageCacheMock.map( any( File.class ), anyInt() ) ).thenThrow( new IOException() )
                 .thenThrow( new IOException() ).thenReturn( pagedFileMock );
 
@@ -125,14 +165,14 @@ public class SwitchToSlaveTest
         }
         catch ( RuntimeException e )
         {
-            verify( requestContextFactory, never() ).start();
+            verifyServicesStarted( never() );
             // Store should have been deleted due to failure in copy
             verify( switchToSlave ).cleanStoreDir();
 
             // Try again, should succeed
             switchToSlave.switchToSlave( mock( LifeSupport.class ), localhost, localhost,
                     mock( CancellationRequest.class ) );
-            verify( requestContextFactory ).start();
+            verifyServicesStarted( times( 1 ) );
         }
     }
 
@@ -157,7 +197,8 @@ public class SwitchToSlaveTest
         // When
         try
         {
-            switchToSlave.checkDataConsistency( masterClient, transactionIdStore, storeId, new URI("cluster://localhost?serverId=1"), false );
+            switchToSlave.checkDataConsistency( masterClient, transactionIdStore, storeId,
+                    new URI( "cluster://localhost?serverId=1" ), false );
             fail( "Should have thrown " + MismatchingStoreIdException.class.getSimpleName() + " exception" );
         }
         catch ( MismatchingStoreIdException e )
@@ -261,33 +302,20 @@ public class SwitchToSlaveTest
         when( pagedFileMock.getLastPageId() ).thenReturn( 1l );
         when( pageCacheMock.map( any( File.class ), anyInt() ) ).thenReturn( pagedFileMock );
 
-        return newSwitchToSlaveSpy( pageCacheMock, mock( StoreCopyClient.class) );
+        return newSwitchToSlaveSpy( pageCacheMock, mock( StoreCopyClient.class ) );
     }
 
     @SuppressWarnings( "unchecked" )
     private SwitchToSlave newSwitchToSlaveSpy( PageCache pageCacheMock, StoreCopyClient storeCopyClient )
             throws IOException
     {
-        ClusterMembers clusterMembers = mock( ClusterMembers.class );
-        ClusterMember master = mock( ClusterMember.class );
-        when( master.getStoreId() ).thenReturn( new StoreId( 42, 42, 42, 42 ) );
-        when( master.getHARole() ).thenReturn( HighAvailabilityModeSwitcher.MASTER );
-        when( master.hasRole( eq( HighAvailabilityModeSwitcher.MASTER ) ) ).thenReturn( true );
-        when( master.getInstanceId() ).thenReturn( new InstanceId( 1 ) );
-        when( clusterMembers.getMembers() ).thenReturn( asList( master ) );
-
-        DependencyResolver resolver = mock( DependencyResolver.class );
-        when( resolver.resolveDependency( any( Class.class ) ) ).thenReturn( mock( Lifecycle.class ) );
-        when( resolver.resolveDependency( RequestContextFactory.class ) ).thenReturn( requestContextFactory );
-        when( resolver.resolveDependency( ClusterMembers.class ) ).thenReturn( clusterMembers );
-        when( resolver.resolveDependency( TransactionObligationFulfiller.class ) )
-                .thenReturn( mock( TransactionObligationFulfiller.class ) );
+        ClusterMembers clusterMembers = clusterMembersMock();
 
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
         when( dataSource.getStoreId() ).thenReturn( new StoreId( 42, 42, 42, 42 ) );
 
         TransactionCounters transactionCounters = mock( TransactionCounters.class );
-        when( transactionCounters.getNumberOfActiveTransactions() ).thenReturn( 0l );
+        when( transactionCounters.getNumberOfActiveTransactions() ).thenReturn( 0L );
 
         Response<HandshakeResult> response = mock( Response.class );
         when( response.response() ).thenReturn( new HandshakeResult( 42, 2 ) );
@@ -304,7 +332,8 @@ public class SwitchToSlaveTest
 
         return spy( new SwitchToSlave( new File( "" ), NullLogService.getInstance(),
                 clusterMembers,
-                configMock(), resolver,
+                configMock(),
+                dependencyResolverMock( clusterMembers ),
                 mock( HaIdGeneratorFactory.class ),
                 mock( DelegateInvocationHandler.class ),
                 mock( ClusterMemberAvailability.class ),
@@ -314,33 +343,76 @@ public class SwitchToSlaveTest
                 storeCopyClient,
                 Suppliers.singleton( dataSource ),
                 Suppliers.singleton( transactionIdStoreMock ),
-                new Function<Slave,SlaveServer>()
-                {
-                    @Override
-                    public SlaveServer apply( Slave slave ) throws RuntimeException
-                    {
-                        SlaveServer server = mock( SlaveServer.class );
-                        InetSocketAddress inetSocketAddress = InetSocketAddress.createUnresolved( "localhost", 42 );
-
-                        when( server.getSocketAddress() ).thenReturn( inetSocketAddress );
-                        return server;
-                    }
-                }, updatePuller, pageCacheMock, mock( Monitors.class ), transactionCounters ) );
+                slaveServerFactory(),
+                updatePuller,
+                pageCacheMock,
+                mock( Monitors.class ),
+                transactionCounters ) );
     }
 
-    private Config configMock()
+    private static ClusterMembers clusterMembersMock()
+    {
+        ClusterMembers clusterMembers = mock( ClusterMembers.class );
+        ClusterMember master = mock( ClusterMember.class );
+        when( master.getStoreId() ).thenReturn( new StoreId( 42, 42, 42, 42 ) );
+        when( master.getHARole() ).thenReturn( HighAvailabilityModeSwitcher.MASTER );
+        when( master.hasRole( eq( HighAvailabilityModeSwitcher.MASTER ) ) ).thenReturn( true );
+        when( master.getInstanceId() ).thenReturn( new InstanceId( 1 ) );
+        when( clusterMembers.getMembers() ).thenReturn( Collections.singletonList( master ) );
+        return clusterMembers;
+    }
+
+    private DependencyResolver dependencyResolverMock( ClusterMembers clusterMembers )
+    {
+        DependencyResolver resolver = mock( DependencyResolver.class );
+
+        when( resolver.resolveDependency( ClusterMembers.class ) ).thenReturn( clusterMembers );
+        when( resolver.resolveDependency( TransactionObligationFulfiller.class ) )
+                .thenReturn( mock( TransactionObligationFulfiller.class ) );
+
+        when( resolver.resolveDependency( StoreLockerLifecycleAdapter.class ) )
+                .thenReturn( storeLockerLifecycleAdapter );
+        when( resolver.resolveDependency( OnlineBackupKernelExtension.class ) )
+                .thenReturn( onlineBackupKernelExtension );
+        when( resolver.resolveDependency( TransactionCommittingResponseUnpacker.class ) )
+                .thenReturn( transactionCommittingResponseUnpacker );
+        when( resolver.resolveDependency( IndexConfigStore.class ) ).thenReturn( indexConfigStore );
+        when( resolver.resolveDependency( DataSourceManager.class ) ).thenReturn( dataSourceManager );
+
+        return resolver;
+    }
+
+    private static Config configMock()
     {
         Config config = mock( Config.class );
         when( config.get( HaSettings.branched_data_policy ) ).thenReturn( mock( BranchedDataPolicy.class ) );
-        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( 42l );
-        when( config.get( HaSettings.com_chunk_size ) ).thenReturn( 42l );
-        when( config.get( HaSettings.state_switch_timeout ) ).thenReturn( 42l );
+        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( 42L );
+        when( config.get( HaSettings.com_chunk_size ) ).thenReturn( 42L );
+        when( config.get( HaSettings.state_switch_timeout ) ).thenReturn( 42L );
         when( config.get( ClusterSettings.server_id ) ).thenReturn( new InstanceId( 42 ) );
         return config;
     }
 
-    private <T> T mockWithLifecycle( Class<T> clazz )
+    private static Function<Slave,SlaveServer> slaveServerFactory()
     {
-        return mock( clazz, withSettings().extraInterfaces( Lifecycle.class ) );
+        return new Function<Slave,SlaveServer>()
+        {
+            @Override
+            public SlaveServer apply( Slave slave ) throws RuntimeException
+            {
+                SlaveServer server = mock( SlaveServer.class );
+                InetSocketAddress inetSocketAddress = InetSocketAddress.createUnresolved( "localhost", 42 );
+                when( server.getSocketAddress() ).thenReturn( inetSocketAddress );
+                return server;
+            }
+        };
+    }
+
+    private void verifyServicesStarted( VerificationMode mode ) throws Throwable
+    {
+        for ( Lifecycle service : servicesUsedBySwitchToSlave )
+        {
+            verify( service, mode ).start();
+        }
     }
 }

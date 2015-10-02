@@ -32,11 +32,12 @@ public class RequestContextFactory extends LifecycleAdapter
     private TransactionIdStore txIdStore;
 
     public static final int DEFAULT_EVENT_IDENTIFIER = -1;
+    public static final int INITIAL_EPOCH_VALUE = -1;
 
-    public RequestContextFactory( int serverId, Supplier<TransactionIdStore> txIdStoreSupplier)
+    public RequestContextFactory( int serverId, Supplier<TransactionIdStore> txIdStoreSupplier )
     {
         this.txIdStoreSupplier = txIdStoreSupplier;
-        this.epoch = -1;
+        this.epoch = INITIAL_EPOCH_VALUE;
         this.serverId = serverId;
     }
 
@@ -57,17 +58,12 @@ public class RequestContextFactory extends LifecycleAdapter
         this.epoch = epoch;
     }
 
-    public RequestContext newRequestContext( long epoch, int machineId, int eventIdentifier )
-    {
-        long[] lastTx = txIdStore.getLastCommittedTransaction();
-        // TODO beware, there's a race between getting tx id and checksum, and changes to last tx
-        // it must be fixed
-        return new RequestContext( epoch, machineId, eventIdentifier, lastTx[0], lastTx[1] );
-    }
-
     public RequestContext newRequestContext( int eventIdentifier )
     {
-        return newRequestContext( epoch, serverId, eventIdentifier );
+        long[] lastTxInfo = txIdStore.getLastCommittedTransaction();
+        long lastTxId = lastTxInfo[0];
+        long lastTxChecksum = lastTxInfo[1];
+        return new RequestContext( epoch, serverId, eventIdentifier, lastTxId, lastTxChecksum );
     }
 
     public RequestContext newRequestContext()

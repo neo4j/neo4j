@@ -105,7 +105,6 @@ public class SwitchToSlave
     private static final Class<? extends Lifecycle>[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[]{
             StoreLockerLifecycleAdapter.class,
             DataSourceManager.class,
-            RequestContextFactory.class,
             TransactionCommittingResponseUnpacker.class,
             IndexConfigStore.class,
             OnlineBackupKernelExtension.class,
@@ -262,12 +261,7 @@ public class SwitchToSlave
 
         monitor.switchToSlaveStarted();
 
-        // Wait for current transactions to stop first
-        long deadline = SYSTEM_CLOCK.currentTimeMillis() + config.get( HaSettings.state_switch_timeout );
-        while ( transactionCounters.getNumberOfActiveTransactions() > 0 && SYSTEM_CLOCK.currentTimeMillis() < deadline )
-        {
-            parkNanos( MILLISECONDS.toNanos( 10 ) );
-        }
+        waitForOngoingTransactionsToTerminate();
 
         try
         {
@@ -332,6 +326,17 @@ public class SwitchToSlave
         }
 
         return slaveUri;
+    }
+
+    private void waitForOngoingTransactionsToTerminate()
+    {
+        userLog.info( "Waiting for ongoing transactions to terminate" );
+
+        long deadline = SYSTEM_CLOCK.currentTimeMillis() + config.get( HaSettings.state_switch_timeout );
+        while ( transactionCounters.getNumberOfActiveTransactions() > 0 && SYSTEM_CLOCK.currentTimeMillis() < deadline )
+        {
+            parkNanos( MILLISECONDS.toNanos( 10 ) );
+        }
     }
 
     private void copyStoreFromMasterIfNeeded( URI masterUri, CancellationRequest cancellationRequest ) throws Throwable
@@ -483,7 +488,7 @@ public class SwitchToSlave
 
     private URI startHaCommunication( LifeSupport haCommunicationLife, NeoStoreDataSource neoDataSource,
             URI me, URI masterUri, StoreId storeId, CancellationRequest cancellationRequest )
-            throws IllegalArgumentException, InterruptedException
+            throws InterruptedException
     {
         MasterClient master = newMasterClient( masterUri, neoDataSource.getStoreId(), haCommunicationLife );
 
@@ -523,11 +528,15 @@ public class SwitchToSlave
         return slaveHaURI;
     }
 
-    private boolean catchUpWithMaster( UpdatePuller updatePuller ) throws IllegalArgumentException, InterruptedException
+    private boolean catchUpWithMaster( UpdatePuller updatePuller ) throws InterruptedException
     {
         monitor.catchupStarted();
-        RequestContext catchUpRequestContext = requestContextFactory.newRequestContext();
-        userLog.info( "Catching up with master. I'm at %s", catchUpRequestContext );
+
+        long[] lastCommittedTxInfo = transactionIdStoreSupplier.get().getLastCommittedTransaction();
+        long lastCommittedTxId = lastCommittedTxInfo[0];
+        long lastCommittedTxChecksum = lastCommittedTxInfo[0];
+        userLog.info( "Catching up with master. I'm at transaction %s with checksum %s",
+                lastCommittedTxId, lastCommittedTxChecksum );
 
         if ( !updatePuller.tryPullUpdates() )
         {
