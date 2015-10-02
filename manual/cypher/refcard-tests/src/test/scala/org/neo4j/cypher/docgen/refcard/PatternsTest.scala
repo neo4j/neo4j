@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionRe
 class PatternsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A:Person:Swedish KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val title = "Patterns"
-  val css = "general c2-2 c3-2 c6-4"
+  val css = "general c2-2 c3-2 c6-2"
   override val linkId = "introduction-pattern"
 
   override def assert(name: String, result: InternalExecutionResult) {

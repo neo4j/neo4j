@@ -93,7 +93,7 @@ include::{sources}/import.asciidoc[]
 | String             | `+`
 | Collection         | `+`, `IN`, `[x]`, `[x .. y]`
 | Regular Expression | `=~`
-| String pattern matching | `LIKE`, `ILIKE`
+| String matching    | `STARTS WITH`, `ENDS WITH`, `CONTAINS`
 |===
 
 ++++
@@ -156,7 +156,7 @@ include::{sources}/create-unique.asciidoc[]
 
 
 ++++
-<div class="col cardperformance c2-2 c3-3 c5-3 c6-6"><div class="blk">
+<div class="col cardperformance c2-2 c3-3 c5-4 c6-6"><div class="blk">
 ++++
 
 [options="header", cols="a"]
