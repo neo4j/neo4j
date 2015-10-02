@@ -11,7 +11,7 @@
         li
           a(exportable ng-click='exportText(frame.response)') Download TXT
     li.dropdown(dropdown="", ng-show='frame.type == "cypher"')
-      a.button.fa.fa-download.dropdown-toggle(dropdown-toggle="")
+      a.button.fa.fa-download.dropdown-toggle(dropdown-toggle="", tooltip-placement='bottom', tooltip="Export to file")
       ul.dropdown-menu
         li
           a(exportable ng-click='exportGraphSVG()', ng-show='isActive("graph")') Export SVG
@@ -25,8 +25,8 @@
     li
       a.button.fa.fa-expand(ng-click="toggleFullscreen(true)", tooltip-placement='bottom', tooltip='Fullscreen', ng-show='frame.fullscreenable')
     li
-      a.button.fa.fa-times-circle(ng-click='frames.close(frame)', tooltip-placement='bottom', tooltip='Close')
+      a.button.fa.fa-times-circle(ng-click='frames.close(frame)', tooltip-placement='bottom', tooltip='Cancel and close')
   .status
     span.prompt.code(ng-if='frame.type == "cypher"') $
     span.code.mono(click-to-code='frame.input') {{frame.input | uncomment}}
-  a.close-fullscreen.fa.fa-compress(ng-click="toggleFullscreen(false)")
+  a.close-fullscreen.fa.fa-compress(ng-click="toggleFullscreen(false)", tooltip='Close Fullscreen', tooltip-placement='bottom')
