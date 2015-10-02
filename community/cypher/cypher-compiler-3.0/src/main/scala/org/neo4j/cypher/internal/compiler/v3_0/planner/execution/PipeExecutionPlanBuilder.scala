@@ -76,6 +76,12 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         case AllNodesScan(IdName(id), _) =>
           AllNodesScanPipe(id)()
 
+        case NodeCountFromCountStore(IdName(id), label, _) =>
+          NodeCountFromCountStorePipe(id, label)()
+
+        case RelationshipCountFromCountStore(IdName(id), startLabel, typeNames, endLabel, bothDirections, _) =>
+          RelationshipCountFromCountStorePipe(id, startLabel, typeNames, endLabel, bothDirections)()
+
         case NodeByLabelScan(IdName(id), label, _) =>
           NodeByLabelScanPipe(id, label)()
 

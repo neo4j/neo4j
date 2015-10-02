@@ -101,7 +101,6 @@ public class NodeCountsTest
     }
 
     @Test
-    @Ignore("TODO: reenable this test when we can etract proper counts form TxState")
     public void shouldIncludeNumberOfNodesAddedInTransaction() throws Exception
     {
         // given
@@ -127,7 +126,6 @@ public class NodeCountsTest
     }
 
     @Test
-    @Ignore("TODO: reenable this test when we can etract proper counts form TxState")
     public void shouldIncludeNumberOfNodesDeletedInTransaction() throws Exception
     {
         // given
@@ -170,24 +168,24 @@ public class NodeCountsTest
                     graphDb.createNode();
                     graphDb.createNode();
                     barrier.reached();
-                    long during = countsForNode();
+                    long whatThisThreadSees = countsForNode();
                     tx.success();
-                    return during;
+                    return whatThisThreadSees;
                 }
             }
         }, graphDb );
         barrier.await();
 
         // when
-        long nodes = numberOfNodes();
+        long during = numberOfNodes();
         barrier.release();
-        long during = done.get();
+        long whatOtherThreadSees = done.get();
         long after = numberOfNodes();
 
         // then
         assertEquals( 0, before );
-        assertEquals( 0, nodes );
-        assertEquals( before, during );
+        assertEquals( 0, during );
+        assertEquals( after, whatOtherThreadSees );
         assertEquals( 2, after );
     }
 

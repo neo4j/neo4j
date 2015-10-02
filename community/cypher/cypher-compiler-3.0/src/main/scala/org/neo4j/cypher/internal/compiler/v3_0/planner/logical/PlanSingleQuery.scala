@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.verifyBestPlan
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.{countStorePlanner, verifyBestPlan}
 import org.neo4j.cypher.internal.frontend.v3_0.Rewriter
 
 /*
@@ -34,7 +34,7 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
                            planWithTail: LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] = PlanWithTail()) extends LogicalPlanningFunction1[PlannerQuery, LogicalPlan] {
 
   override def apply(in: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    val partPlan = planPart(in, context, None)
+    val partPlan = countStorePlanner(in).getOrElse(planPart(in, context, None))
 
     val projectedPlan = planEventHorizon(in, partPlan)
     val projectedContext = context.recurse(projectedPlan)
@@ -45,3 +45,4 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
     verifyBestPlan(finalPlan, in)
   }
 }
+

@@ -1274,10 +1274,24 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
+    public long countsForNodeWithoutTxState( int labelId )
+    {
+        statement.assertOpen();
+        return counting().countsForNodeWithoutTxState( statement, labelId );
+    }
+
+    @Override
     public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
     {
         statement.assertOpen();
         return counting().countsForRelationship( statement, startLabelId, typeId, endLabelId );
+    }
+
+    @Override
+    public long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId )
+    {
+        statement.assertOpen();
+        return counting().countsForRelationshipWithoutTxState( statement, startLabelId, typeId, endLabelId );
     }
 
     // </Counts>

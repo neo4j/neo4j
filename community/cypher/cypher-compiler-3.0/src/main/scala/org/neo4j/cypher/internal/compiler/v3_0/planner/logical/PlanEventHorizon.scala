@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.{projection, sortSkipAndLimit, aggregation}
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{RelationshipCountFromCountStore, NodeCountFromCountStore, LogicalPlan}
 
 /*
 Planning event horizons means planning the WITH clauses between query patterns. Some of these clauses are inlined
@@ -35,7 +35,11 @@ case class PlanEventHorizon(config: QueryPlannerConfiguration = QueryPlannerConf
     val selectedPlan = config.applySelections(plan, query.graph)
     val projectedPlan = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
-        val aggregationPlan = aggregation(selectedPlan, aggregatingProjection)
+        val aggregationPlan = plan match {
+          case n: NodeCountFromCountStore => projection(selectedPlan, aggregatingProjection.projections)
+          case r: RelationshipCountFromCountStore => projection(selectedPlan, aggregatingProjection.projections)
+          case _ => aggregation(plan, aggregatingProjection)
+        }
         sortSkipAndLimit(aggregationPlan, query)
 
       case queryProjection: RegularQueryProjection =>

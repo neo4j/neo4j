@@ -24,7 +24,7 @@ import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.using
 import org.neo4j.cypher.internal.compiler.v3_0.prettifier.Prettifier
-import org.neo4j.cypher.internal.compiler.v3_0.{LRUCache => LRUCachev2_3, _}
+import org.neo4j.cypher.internal.compiler.v3_0.{LRUCache => LRUCachev3_0, _}
 import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
 import org.neo4j.cypher.internal.tracing.{TimingCompilationTracer, CompilationTracer}
 import org.neo4j.cypher.internal.{CypherCompiler, _}
@@ -73,8 +73,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
 
   private val cacheAccessor = new MonitoringCacheAccessor[String, (ExecutionPlan, Map[String, Any])](cacheMonitor)
 
-  private val preParsedQueries = new LRUCachev2_3[String, PreParsedQuery](getPlanCacheSize)
-  private val parsedQueries = new LRUCachev2_3[String, ParsedQuery](getPlanCacheSize)
+  private val preParsedQueries = new LRUCachev3_0[String, PreParsedQuery](getPlanCacheSize)
+  private val parsedQueries = new LRUCachev3_0[String, ParsedQuery](getPlanCacheSize)
 
   @throws(classOf[SyntaxException])
   def profile(query: String): ExtendedExecutionResult = profile(query, Map[String, Any](), QueryEngineProvider.embeddedSession)
@@ -155,9 +155,9 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
 
         val (plan: ExecutionPlan, extractedParameters) = try {
           // fetch plan cache
-          val cache: LRUCachev2_3[String, (ExecutionPlan, Map[String, Any])] = getOrCreateFromSchemaState(kernelStatement, {
+          val cache: LRUCachev3_0[String, (ExecutionPlan, Map[String, Any])] = getOrCreateFromSchemaState(kernelStatement, {
             cacheMonitor.cacheFlushDetected(kernelStatement)
-            new LRUCachev2_3[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
+            new LRUCachev3_0[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
           })
 
           Iterator.continually {

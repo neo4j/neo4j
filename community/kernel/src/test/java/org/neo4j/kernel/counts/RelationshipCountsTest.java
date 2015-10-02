@@ -83,12 +83,11 @@ public class RelationshipCountsTest
 
         // then
         assertEquals( 0, before );
-        assertEquals( 0, during );
+        assertEquals( 3, during );
         assertEquals( 3, after );
     }
 
     @Test
-    @Ignore("TODO: re-enable this test when we can extract proper counts form TxState")
     public void shouldAccountForDeletedRelationships() throws Exception
     {
         // given
@@ -131,32 +130,31 @@ public class RelationshipCountsTest
             @Override
             public Long apply( GraphDatabaseService graphDb )
             {
-                long during;
                 try ( Transaction tx = graphDb.beginTx() )
                 {
                     Node node = graphDb.createNode();
                     node.createRelationshipTo( graphDb.createNode(), withName( "KNOWS" ) );
                     node.createRelationshipTo( graphDb.createNode(), withName( "KNOWS" ) );
-                    during = countsForRelationship( null, null, null );
+                    long whatThisThreadSees = countsForRelationship( null, null, null );
                     barrier.reached();
                     tx.success();
+                    return whatThisThreadSees;
                 }
-                return during;
             }
         }, graphDb );
         barrier.await();
 
         // when
-        long concurrently = numberOfRelationships();
+        long during = numberOfRelationships();
         barrier.release();
-        long during = tx.get();
+        long whatOtherThreadSees = tx.get();
         long after = numberOfRelationships();
 
         // then
         assertEquals( 0, before );
-        assertEquals( 0, concurrently );
+        assertEquals( 0, during );
         assertEquals( 2, after );
-        assertEquals( before, during );
+        assertEquals( after, whatOtherThreadSees );
     }
 
     @Test
@@ -180,30 +178,29 @@ public class RelationshipCountsTest
             @Override
             public Long apply( GraphDatabaseService graphDb )
             {
-                long during;
                 try ( Transaction tx = graphDb.beginTx() )
                 {
                     rel.delete();
-                    during = countsForRelationship( null, null, null );
+                    long whatThisThreadSees = countsForRelationship( null, null, null );
                     barrier.reached();
                     tx.success();
+                    return whatThisThreadSees;
                 }
-                return during;
             }
         }, graphDb );
         barrier.await();
 
         // when
-        long concurrently = numberOfRelationships();
+        long during = numberOfRelationships();
         barrier.release();
-        long during = tx.get();
+        long whatOtherThreadSees = tx.get();
         long after = numberOfRelationships();
 
         // then
         assertEquals( 3, before );
-        assertEquals( 3, concurrently );
+        assertEquals( 3, during );
         assertEquals( 2, after );
-        assertEquals( before, during );
+        assertEquals( after, whatOtherThreadSees );
     }
 
     @Test
