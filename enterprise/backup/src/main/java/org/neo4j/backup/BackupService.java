@@ -165,10 +165,9 @@ class BackupService
             try
             {
                 consistent = consistencyCheck.runFull( targetDirectory, tuningConfiguration,
-                        ProgressMonitorFactory.textual( System.err ),
-                        logProvider, fileSystem, pageCache, false );
+                        ProgressMonitorFactory.textual( System.err ), logProvider, fileSystem, pageCache, false );
             }
-            catch ( ConsistencyCheck.ConsistencyCheckFailedException e )
+            catch ( ConsistencyCheckFailedException e )
             {
                 log.error( "Consistency check incomplete", e );
             }

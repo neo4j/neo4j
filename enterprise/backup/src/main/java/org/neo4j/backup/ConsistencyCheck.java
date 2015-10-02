@@ -28,7 +28,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 
-public enum ConsistencyCheck
+enum ConsistencyCheck
 {
     NONE
             {
@@ -108,14 +108,6 @@ public enum ConsistencyCheck
             }
         }
         throw new IllegalArgumentException( "Unknown consistency check name: " + name +
-                                            ". Supported values: " + Arrays.toString( values() ) );
-    }
-
-    public static class ConsistencyCheckFailedException extends Exception
-    {
-        public ConsistencyCheckFailedException( Throwable cause )
-        {
-            super( cause );
-        }
+                ". Supported values: " + Arrays.toString( values() ) );
     }
 }
