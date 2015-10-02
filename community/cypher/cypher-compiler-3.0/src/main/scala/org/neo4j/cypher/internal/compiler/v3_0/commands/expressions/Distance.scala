@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
+package org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v2_3.symbols._
-
+import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 case class Distance(p1: Expression, p2: Expression) extends Expression {
 

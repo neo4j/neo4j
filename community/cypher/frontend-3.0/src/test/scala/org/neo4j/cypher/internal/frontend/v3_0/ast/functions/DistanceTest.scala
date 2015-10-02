@@ -17,32 +17,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.frontend.v2_3.ast.functions
+package org.neo4j.cypher.internal.frontend.v3_0.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
-class PointTest extends FunctionTestBase("point")  {
+class DistanceTest extends FunctionTestBase("distance")  {
 
   test("should accept correct types") {
-    testValidTypes(CTMap)(CTGeometry)
+    val t1 = CTGeometry
+    testValidTypes(t1, CTGeometry)(CTFloat)
   }
 
   test("should fail type check for incompatible arguments") {
-    // TODO: Fix error message which seems to assume that Node and Relationships are acceptable maps
-    testInvalidApplication(CTCollection(CTAny))(
-      "Type mismatch: expected Map, Node or Relationship but was Collection<Any>"
+    testInvalidApplication(CTCollection(CTAny), CTCollection(CTAny))(
+      "Type mismatch: expected Geometry but was Collection<Any>"
     )
-    testInvalidApplication(CTString)(
-      "Type mismatch: expected Map, Node or Relationship but was String"
+    testInvalidApplication(CTString, CTString)(
+      "Type mismatch: expected Geometry but was String"
     )
   }
 
   test("should fail if wrong number of arguments") {
     testInvalidApplication()(
-      "Insufficient parameters for function 'point'"
+      "Insufficient parameters for function 'distance'"
     )
-    testInvalidApplication(CTMap, CTMap)(
-      "Too many parameters for function 'point'"
+    testInvalidApplication(CTMap)(
+      "Insufficient parameters for function 'distance'"
+    )
+    testInvalidApplication(CTGeometry, CTGeometry, CTGeometry)(
+      "Too many parameters for function 'distance'"
     )
   }
 }

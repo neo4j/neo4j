@@ -17,15 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.frontend.v2_3.ast.functions
+package org.neo4j.cypher.internal.frontend.v3_0.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v2_3.ast.{Function, SimpleTypedFunction}
-import org.neo4j.cypher.internal.frontend.v2_3.symbols._
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Function, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
-case object Point extends Function with SimpleTypedFunction {
-  def name = "point"
+case object Distance extends Function with SimpleTypedFunction {
+  def name = "distance"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTMap), outputType = CTGeometry)
+    Signature(argumentTypes = Vector(CTGeometry, CTGeometry), outputType = CTFloat)
   )
 }
