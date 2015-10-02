@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -29,12 +34,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.function.primitive.FunctionFromPrimitiveLongLongToPrimitiveLong;
 import org.neo4j.graphdb.Node;
@@ -64,7 +63,6 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.transaction.state.RelationshipChainLoader;
@@ -85,7 +83,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
@@ -103,11 +100,6 @@ public class TestNeoStore
             getClass() );
     @Rule public NeoStoreDataSourceRule dsRule = new NeoStoreDataSourceRule();
     private PageCache pageCache;
-
-    private File file( String name )
-    {
-        return new File( path, name);
-    }
 
     @Before
     public void setUpNeoStore() throws Exception
@@ -179,7 +171,6 @@ public class TestNeoStore
         propertyLoader = new PropertyLoader( neoStore );
     }
 
-    private byte txCount = (byte) 0;
     private KernelTransaction tx;
     private TransactionRecordState transaction;
     private StoreReadLayer storeLayer;
@@ -188,7 +179,6 @@ public class TestNeoStore
 
     private void startTx() throws TransactionFailureException
     {
-        txCount++;
         tx = ds.getKernel().newTransaction();
         transaction = (( KernelTransactionImplementation)tx).getTransactionRecordState();
     }
@@ -197,38 +187,6 @@ public class TestNeoStore
     {
         tx.success();
         tx.close();
-    }
-
-    @After
-    public void tearDownNeoStore()
-    {
-        for ( String file : new String[] {
-                "neo",
-                "neo.nodestore.db",
-                "neo.nodestore.db.labels",
-                "neo.propertystore.db",
-                "neo.propertystore.db.index",
-                "neo.propertystore.db.index.keys",
-                "neo.propertystore.db.strings",
-                "neo.propertystore.db.arrays",
-                "neo.relationshipstore.db",
-                "neo.relationshiptypestore.db",
-                "neo.relationshiptypestore.db.names",
-                "neo.schemastore.db",
-        } )
-        {
-            fs.get().deleteFile( file( file ) );
-            fs.get().deleteFile( file( file + ".id" ) );
-        }
-
-        File file = new File( "." );
-        for ( File nioFile : fs.get().listFiles( file ) )
-        {
-            if ( nioFile.getName().startsWith( PhysicalLogFile.DEFAULT_NAME ) )
-            {
-                fs.get().deleteFile( nioFile );
-            }
-        }
     }
 
     private int index( String key )
@@ -1251,5 +1209,61 @@ public class TestNeoStore
         assertArrayEquals( new long[] {10, 11}, neoStore.getUpgradeTransaction() );
         assertEquals( 12, neoStore.getUpgradeTime() );
         neoStore.close();
+    }
+
+    @Test
+    public void shouldSetHighestTransactionIdWhenNeeded() throws Throwable
+    {
+        // GIVEN
+        FileSystemAbstraction fileSystem = fs.get();
+        File storeDir = new File( "/graph.db/" );
+        fileSystem.mkdirs( storeDir );
+        File neoStoreFile = new File( storeDir, "neostore" );
+        StoreFactory factory =
+                new StoreFactory( fileSystem, storeDir, pageCache, StringLogger.DEV_NULL, new Monitors() );
+
+        factory.createNeoStore().close();
+
+        NeoStore.setRecord( fileSystem, neoStoreFile, Position.LAST_TRANSACTION_ID, 40 );
+        NeoStore.setRecord( fileSystem, neoStoreFile, Position.LAST_TRANSACTION_CHECKSUM, 4444 );
+
+        // WHEN
+        try( NeoStore neoStore = factory.newNeoStore( false ) )
+        {
+            neoStore.transactionCommitted( 42, 6666 );
+            neoStore.flush();
+        }
+
+        // THEN
+        assertEquals( 42, NeoStore.getRecord( fileSystem, neoStoreFile, Position.LAST_TRANSACTION_ID ) );
+        assertEquals( 6666, NeoStore.getRecord( fileSystem, neoStoreFile, Position.LAST_TRANSACTION_CHECKSUM ) );
+    }
+
+    @Test
+    public void shouldNotSetHighestTransactionIdWhenNeeded() throws Throwable
+    {
+        // GIVEN
+        FileSystemAbstraction fileSystem = fs.get();
+        File storeDir = new File( "/graph.db/" );
+        fileSystem.mkdirs( storeDir );
+        File neoStoreFile = new File( storeDir, "neostore" );
+        StoreFactory factory =
+                new StoreFactory( fileSystem, storeDir, pageCache, StringLogger.DEV_NULL, new Monitors() );
+
+        factory.createNeoStore().close();
+
+        NeoStore.setRecord( fileSystem, neoStoreFile, Position.LAST_TRANSACTION_ID, 40 );
+        NeoStore.setRecord( fileSystem, neoStoreFile, Position.LAST_TRANSACTION_CHECKSUM, 4444 );
+
+        // WHEN
+        try( NeoStore neoStore = factory.newNeoStore( false ) )
+        {
+            neoStore.transactionCommitted( 39, 3333 );
+            neoStore.flush();
+        }
+
+        // THEN
+        assertEquals( 40, NeoStore.getRecord( fileSystem, neoStoreFile, Position.LAST_TRANSACTION_ID ) );
+        assertEquals( 4444, NeoStore.getRecord( fileSystem, neoStoreFile, Position.LAST_TRANSACTION_CHECKSUM ) );
     }
 }
