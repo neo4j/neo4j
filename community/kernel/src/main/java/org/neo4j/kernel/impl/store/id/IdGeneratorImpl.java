@@ -328,7 +328,7 @@ public class IdGeneratorImpl implements IdGenerator
     @Override
     public synchronized void close()
     {
-        if ( highId.get() == -1 )
+        if ( isClosed() )
         {
             return;
         }
@@ -358,18 +358,28 @@ public class IdGeneratorImpl implements IdGenerator
 
             markAsCleanlyClosed( buffer );
 
-            // flush and close
-            fileChannel.force( false );
-            fileChannel.close();
-            fileChannel = null;
-            // make this generator unusable
-            highId.set( -1 );
+            closeChannel();
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException(
                     "Unable to close id generator " + file, e );
         }
+    }
+
+    private boolean isClosed()
+    {
+        return highId.get() == -1;
+    }
+
+    private void closeChannel() throws IOException
+    {
+        // flush and close
+        fileChannel.force( false );
+        fileChannel.close();
+        fileChannel = null;
+        // make this generator unusable
+        highId.set( -1 );
     }
 
     private void markAsCleanlyClosed( ByteBuffer buffer ) throws IOException
@@ -660,12 +670,20 @@ public class IdGeneratorImpl implements IdGenerator
     }
 
     @Override
-    public void delete()
+    public synchronized void delete()
     {
-        if ( highId.get() != -1 )
+        if ( !isClosed() )
         {
-            throw new RuntimeException( "Must be closed to delete" );
+            try
+            {
+                closeChannel();
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( "Unable to safe close id generator " + file, e );
+            }
         }
+
         if ( !fs.deleteFile( file ) )
         {
             throw new UnderlyingStorageException( "Unable to delete id generator " + file );

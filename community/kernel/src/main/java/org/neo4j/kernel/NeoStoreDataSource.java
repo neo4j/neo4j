@@ -1012,6 +1012,16 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                 return PhysicalLogFile.openForVersion( logFiles, fileSystemAbstraction,
                         recoveryVersion );
             }
+
+            @Override
+            public void recoveryRequired()
+            {
+                // This method will be called before recovery actually starts and so will ensure that
+                // each store is aware that recovery will be performed. At this point all the stores have
+                // already started btw.
+                // Go and read more at {@link CommonAbstractStore#recoveryRequired()}
+                neoStore.deleteIdGenerators();
+            }
         }, recoveryMonitor );
 
         life.add( recovery );

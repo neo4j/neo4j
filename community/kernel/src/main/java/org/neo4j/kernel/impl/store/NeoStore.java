@@ -1020,4 +1020,17 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             }
         } );
     }
+
+    public void deleteIdGenerators()
+    {
+        visitStore( new Visitor<CommonAbstractStore,RuntimeException>()
+        {
+            @Override
+            public boolean visit( CommonAbstractStore store ) throws RuntimeException
+            {
+                store.deleteIdGenerator();
+                return false;
+            }
+        } );
+    }
 }

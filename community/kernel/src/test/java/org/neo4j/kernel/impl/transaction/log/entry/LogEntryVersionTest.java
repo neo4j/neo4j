@@ -33,7 +33,6 @@ public class LogEntryVersionTest
             // GIVEN
             byte code = version.byteCode();
             byte logHeaderFormatVersion = version.logHeaderFormatVersion();
-            System.out.println( "trying " + code +  ", " + logHeaderFormatVersion );
 
             // WHEN
             LogEntryVersion selectedVersion = LogEntryVersion.byVersion( code, logHeaderFormatVersion );

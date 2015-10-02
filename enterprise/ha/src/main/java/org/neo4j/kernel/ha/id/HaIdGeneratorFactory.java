@@ -73,6 +73,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             initialIdGenerator = localFactory.open( fs, fileName, grabSize, idType, highId );
             break;
         case SLAVE:
+            fs.deleteFile( fileName );
             initialIdGenerator = new SlaveIdGenerator( idType, highId, master.cement(), logger, requestContextFactory );
             break;
         default:
@@ -157,7 +158,9 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         private void switchToSlave( Master master )
         {
             long highId = delegate.getHighId();
-            delegate.close();
+            // The .id file is open and marked DIRTY
+            delegate.delete();
+            // The .id file underneath is now gone
             delegate = new SlaveIdGenerator( idType, highId, master, logger, requestContextFactory );
             logger.debug( "Instantiated slave delegate " + delegate + " of type " + idType + " with highid " + highId );
             state = IdGeneratorState.SLAVE;
@@ -168,12 +171,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             if ( state == IdGeneratorState.SLAVE )
             {
                 long highId = delegate.getHighId();
-                delegate.close();
-                if ( fs.fileExists( fileName ) )
-                {
-                    fs.deleteFile( fileName );
-                }
-
+                delegate.delete();
                 localFactory.create( fs, fileName, highId );
                 delegate = localFactory.open( fs, fileName, grabSize, idType, highId );
                 logger.debug( "Instantiated master delegate " + delegate + " of type " + idType + " with highid " + highId );

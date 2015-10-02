@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -46,10 +47,13 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
@@ -88,14 +92,14 @@ public class RecoveryTest
         LifeSupport life = new LifeSupport();
         final PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         Recovery.Monitor monitor = mock( Recovery.Monitor.class );
+        final AtomicBoolean recoveryRequiredCalled = new AtomicBoolean();
         try
         {
-            life.add(new Recovery( new Recovery.SPI()
+            life.add( new Recovery( new Recovery.SPI()
             {
                 @Override
                 public void forceEverything()
                 {
-
                 }
 
                 @Override
@@ -133,8 +137,13 @@ public class RecoveryTest
                 @Override
                 public PhysicalLogVersionedStoreChannel getLogFile( long recoveryVersion ) throws IOException
                 {
-                    return PhysicalLogFile.openForVersion( logFiles, fs,
-                                                                    recoveryVersion );
+                    return PhysicalLogFile.openForVersion( logFiles, fs, recoveryVersion );
+                }
+
+                @Override
+                public void recoveryRequired()
+                {
+                    assertFalse( recoveryRequiredCalled.getAndSet( true ) );
                 }
             }, monitor ));
 
@@ -146,6 +155,75 @@ public class RecoveryTest
             InOrder order = inOrder( monitor );
             order.verify( monitor, times( 1 ) ).recoveryRequired( logVersion );
             order.verify( monitor, times( 1 ) ).recoveryCompleted();
+            assertTrue( recoveryRequiredCalled.get() );
+        }
+        finally
+        {
+            life.shutdown();
+        }
+    }
+
+    @Test
+    public void shouldSeeThatACleanDatabaseShouldNotRequireRecovery() throws Exception
+    {
+        String name = "log";
+        File file = new File( directory.directory(), name + ".1" );
+        final int logVersion = 1;
+        writeSomeData( file, new Visitor<ByteBuffer, IOException>()
+        {
+            @Override
+            public boolean visit( ByteBuffer buffer ) throws IOException
+            {
+                writeLogHeader( buffer, logVersion, 3 );
+                buffer.position( LOG_HEADER_SIZE );
+                return true;
+            }
+        } );
+
+        LifeSupport life = new LifeSupport();
+        final PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
+        Recovery.Monitor monitor = mock( Recovery.Monitor.class );
+        final AtomicBoolean recoveryRequiredCalled = new AtomicBoolean();
+        try
+        {
+            life.add( new Recovery( new Recovery.SPI()
+            {
+                @Override
+                public void forceEverything()
+                {
+                }
+
+                @Override
+                public long getCurrentLogVersion()
+                {
+                    return logVersionRepository.getCurrentLogVersion();
+                }
+
+                @Override
+                public Visitor<LogVersionedStoreChannel, IOException> getRecoverer()
+                {
+                    throw new AssertionError( "Recovery should not be required" );
+                }
+
+                @Override
+                public PhysicalLogVersionedStoreChannel getLogFile( long recoveryVersion ) throws IOException
+                {
+                    return PhysicalLogFile.openForVersion( logFiles, fs, recoveryVersion );
+                }
+
+                @Override
+                public void recoveryRequired()
+                {
+                    fail( "Recovery should not be required" );
+                }
+            }, monitor ));
+
+            life.add( new PhysicalLogFile( fs, logFiles, 50, transactionIdStore, logVersionRepository, mock( PhysicalLogFile.Monitor.class),
+                    new TransactionMetadataCache( 10, 100 )) );
+
+            life.start();
+
+            verifyZeroInteractions( monitor );
         }
         finally
         {
