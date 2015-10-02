@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.Config;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -33,15 +34,12 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class GraphDatabaseSettingsTest
 {
-    private static final long KiB = 1024;
-    private static final long MiB = KiB * 1024;
-    private static final long GiB = MiB * 1024;
     @Test
     public void mustHaveReasonableDefaultPageCacheMemorySizeInBytes() throws Exception
     {
         long bytes = new Config().get( GraphDatabaseSettings.pagecache_memory );
-        assertThat( bytes, greaterThanOrEqualTo( 32 * MiB ) );
-        assertThat( bytes, lessThanOrEqualTo( 1024 * GiB ) );
+        assertThat( bytes, greaterThanOrEqualTo( ByteUnit.mebiBytes( 32 ) ) );
+        assertThat( bytes, lessThanOrEqualTo( ByteUnit.tebiBytes( 1 ) ) );
     }
 
     @Test
@@ -49,8 +47,8 @@ public class GraphDatabaseSettingsTest
     {
         Setting<Long> setting = GraphDatabaseSettings.pagecache_memory;
         String name = setting.name();
-        assertThat( new Config( stringMap( name, "245760" ) ).get( setting ), is( 30 * 8 * KiB ) );
-        assertThat( new Config( stringMap( name, "2244g" ) ).get( setting ), is( 2244 * GiB ) );
+        assertThat( new Config( stringMap( name, "245760" ) ).get( setting ), is( ByteUnit.kibiBytes( 240 ) ) );
+        assertThat( new Config( stringMap( name, "2244g" ) ).get( setting ), is( ByteUnit.gibiBytes( 2244 ) ) );
     }
 
     @Test( expected = InvalidSettingException.class )

@@ -28,7 +28,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Format;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.configuration.Internal;
@@ -325,8 +325,8 @@ public abstract class GraphDatabaseSettings
                 if ( 0 < physicalMemory && physicalMemory < Long.MAX_VALUE && maxHeapMemory < physicalMemory )
                 {
                     long heuristic = (long) ((physicalMemory - maxHeapMemory) * ratioOfFreeMem);
-                    long min = 32 * Format.MB; // We'd like at least 32 MiBs.
-                    long max = 1024 * Format.GB; // Don't heuristically take more than 1 TiB.
+                    long min = ByteUnit.mebiBytes( 32 ); // We'd like at least 32 MiBs.
+                    long max = ByteUnit.tebiBytes( 1 ); // Don't heuristically take more than 1 TiB.
                     long memory = Math.min( max, Math.max( min, heuristic ) );
                     return String.valueOf( memory );
                 }
