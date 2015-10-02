@@ -161,7 +161,6 @@ import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
 import static java.lang.reflect.Proxy.newProxyInstance;
-
 import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
 
 /**
@@ -189,7 +188,7 @@ public class HighlyAvailableEditionModule
 
         life.add( new BranchedDataMigrator( platformModule.storeDir ) );
         DelegateInvocationHandler<Master> masterDelegateInvocationHandler =
-                new DelegateInvocationHandler<>( Master.class );
+                new DelegateInvocationHandler<>( Master.class, logging.getInternalLogProvider() );
         Master master = (Master) newProxyInstance( Master.class.getClassLoader(), new Class[]{Master.class},
                 masterDelegateInvocationHandler );
         InstanceId serverId = config.get( ClusterSettings.server_id );
@@ -207,11 +206,11 @@ public class HighlyAvailableEditionModule
         transactionStartTimeout = config.get( HaSettings.state_switch_timeout );
 
         DelegateInvocationHandler<ClusterMemberEvents> clusterEventsDelegateInvocationHandler =
-                new DelegateInvocationHandler<>( ClusterMemberEvents.class );
+                new DelegateInvocationHandler<>( ClusterMemberEvents.class, logging.getInternalLogProvider() );
         DelegateInvocationHandler<HighAvailabilityMemberContext> memberContextDelegateInvocationHandler =
-                new DelegateInvocationHandler<>( HighAvailabilityMemberContext.class );
+                new DelegateInvocationHandler<>( HighAvailabilityMemberContext.class, logging.getInternalLogProvider() );
         DelegateInvocationHandler<ClusterMemberAvailability> clusterMemberAvailabilityDelegateInvocationHandler =
-                new DelegateInvocationHandler<>( ClusterMemberAvailability.class );
+                new DelegateInvocationHandler<>( ClusterMemberAvailability.class, logging.getInternalLogProvider() );
 
         ClusterMemberEvents clusterEvents = dependencies.satisfyDependency(
                 (ClusterMemberEvents) newProxyInstance(
@@ -365,7 +364,7 @@ public class HighlyAvailableEditionModule
         LastUpdateTime lastUpdateTime = new LastUpdateTime();
 
         DelegateInvocationHandler<UpdatePuller> updatePullerDelegate =
-                new DelegateInvocationHandler<>( UpdatePuller.class );
+                new DelegateInvocationHandler<>( UpdatePuller.class, logging.getInternalLogProvider() );
         UpdatePuller updatePullerProxy = (UpdatePuller) Proxy.newProxyInstance(
                 UpdatePuller.class .getClassLoader(), new Class[]{UpdatePuller.class}, updatePullerDelegate );
         dependencies.satisfyDependency( updatePullerProxy );
@@ -516,12 +515,13 @@ public class HighlyAvailableEditionModule
 
         propertyKeyTokenHolder = dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder(
                 createPropertyKeyCreator( config, paxosLife, highAvailabilityModeSwitcher, masterDelegateInvocationHandler,
-                        requestContextFactory, kernelProvider ) ) );
+                        requestContextFactory, kernelProvider, logging ) ) );
         labelTokenHolder = dependencies.satisfyDependency( new DelegatingLabelTokenHolder( createLabelIdCreator( config,
-                paxosLife, highAvailabilityModeSwitcher, masterDelegateInvocationHandler, requestContextFactory, kernelProvider ) ) );
+                paxosLife, highAvailabilityModeSwitcher, masterDelegateInvocationHandler, requestContextFactory,
+                kernelProvider, logging ) ) );
         relationshipTypeTokenHolder = dependencies.satisfyDependency( new DelegatingRelationshipTypeTokenHolder(
-                createRelationshipTypeCreator( config, paxosLife, highAvailabilityModeSwitcher, masterDelegateInvocationHandler,
-                        requestContextFactory, kernelProvider ) ) );
+                createRelationshipTypeCreator( config, paxosLife, highAvailabilityModeSwitcher,
+                        masterDelegateInvocationHandler, requestContextFactory, kernelProvider, logging ) ) );
 
         life.add( dependencies.satisfyDependency(
                 createKernelData( config, platformModule.graphDatabaseFacade, members, fs, platformModule.pageCache,
@@ -588,7 +588,7 @@ public class HighlyAvailableEditionModule
                                                                final HighAvailabilityModeSwitcher highAvailabilityModeSwitcher )
     {
         final DelegateInvocationHandler<TransactionCommitProcess> commitProcessDelegate =
-                new DelegateInvocationHandler<>( TransactionCommitProcess.class );
+                new DelegateInvocationHandler<>( TransactionCommitProcess.class, logging.getInternalLogProvider() );
 
         DefaultSlaveFactory slaveFactory = dependencies.satisfyDependency(
                 new DefaultSlaveFactory( logging.getInternalLogProvider(), monitors,
@@ -654,7 +654,8 @@ public class HighlyAvailableEditionModule
                                        RequestContextFactory requestContextFactory,
                                        AvailabilityGuard availabilityGuard, final LogService logging )
     {
-        DelegateInvocationHandler<Locks> lockManagerDelegate = new DelegateInvocationHandler<>( Locks.class );
+        DelegateInvocationHandler<Locks> lockManagerDelegate = new DelegateInvocationHandler<>( Locks.class,
+                logging.getInternalLogProvider() );
         final Locks lockManager = (Locks) newProxyInstance( Locks.class.getClassLoader(),
                 new Class[]{Locks.class},
                 lockManagerDelegate );
@@ -671,12 +672,12 @@ public class HighlyAvailableEditionModule
         return lockManager;
     }
 
-    protected TokenCreator createRelationshipTypeCreator( Config config, final LifeSupport paxosLife,
-                                                          final HighAvailabilityModeSwitcher highAvailabilityModeSwitcher,
-                                                          DelegateInvocationHandler<Master>
-                                                                  masterDelegateInvocationHandler,
+    protected TokenCreator createRelationshipTypeCreator( Config config, LifeSupport paxosLife,
+                                                          HighAvailabilityModeSwitcher haModeSwitcher,
+                                                          DelegateInvocationHandler<Master> masterInvocationHandler,
                                                           RequestContextFactory requestContextFactory,
-                                                          Supplier<KernelAPI> kernelProvider )
+                                                          Supplier<KernelAPI> kernelProvider,
+                                                          LogService logging )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -685,23 +686,23 @@ public class HighlyAvailableEditionModule
         else
         {
             DelegateInvocationHandler<TokenCreator> relationshipTypeCreatorDelegate =
-                    new DelegateInvocationHandler<>( TokenCreator.class );
+                    new DelegateInvocationHandler<>( TokenCreator.class, logging.getInternalLogProvider() );
             TokenCreator relationshipTypeCreator = (TokenCreator) newProxyInstance( TokenCreator.class.getClassLoader(),
                     new Class[]{TokenCreator.class}, relationshipTypeCreatorDelegate );
 
-            paxosLife.add( new RelationshipTypeCreatorModeSwitcher( highAvailabilityModeSwitcher,
-                    relationshipTypeCreatorDelegate,
-                    masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory ) );
+            paxosLife.add( new RelationshipTypeCreatorModeSwitcher( haModeSwitcher, relationshipTypeCreatorDelegate,
+                    masterInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory ) );
 
             return relationshipTypeCreator;
         }
     }
 
-    protected TokenCreator createPropertyKeyCreator( Config config, final LifeSupport paxosLife,
-                                                     final HighAvailabilityModeSwitcher highAvailabilityModeSwitcher,
+    protected TokenCreator createPropertyKeyCreator( Config config, LifeSupport paxosLife,
+                                                     HighAvailabilityModeSwitcher highAvailabilityModeSwitcher,
                                                      DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
                                                      RequestContextFactory requestContextFactory,
-                                                     Supplier<KernelAPI> kernelProvider )
+                                                     Supplier<KernelAPI> kernelProvider,
+                                                     LogService logging )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -710,7 +711,7 @@ public class HighlyAvailableEditionModule
         else
         {
             DelegateInvocationHandler<TokenCreator> propertyKeyCreatorDelegate =
-                    new DelegateInvocationHandler<>( TokenCreator.class );
+                    new DelegateInvocationHandler<>( TokenCreator.class, logging.getInternalLogProvider() );
             TokenCreator propertyTokenCreator = (TokenCreator) newProxyInstance( TokenCreator.class.getClassLoader(),
                     new Class[]{TokenCreator.class}, propertyKeyCreatorDelegate );
             paxosLife.add( new PropertyKeyCreatorModeSwitcher( highAvailabilityModeSwitcher, propertyKeyCreatorDelegate,
@@ -719,11 +720,12 @@ public class HighlyAvailableEditionModule
         }
     }
 
-    protected TokenCreator createLabelIdCreator( Config config, final LifeSupport paxosLife,
-                                                 final HighAvailabilityModeSwitcher highAvailabilityModeSwitcher,
+    protected TokenCreator createLabelIdCreator( Config config, LifeSupport paxosLife,
+                                                 HighAvailabilityModeSwitcher highAvailabilityModeSwitcher,
                                                  DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
                                                  RequestContextFactory requestContextFactory,
-                                                 Supplier<KernelAPI> kernelProvider )
+                                                 Supplier<KernelAPI> kernelProvider,
+                                                 LogService logging )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -732,7 +734,7 @@ public class HighlyAvailableEditionModule
         else
         {
             DelegateInvocationHandler<TokenCreator> labelIdCreatorDelegate =
-                    new DelegateInvocationHandler<>( TokenCreator.class );
+                    new DelegateInvocationHandler<>( TokenCreator.class, logging.getInternalLogProvider() );
             TokenCreator labelIdCreator = (TokenCreator) newProxyInstance( TokenCreator.class.getClassLoader(),
                     new Class[]{TokenCreator.class}, labelIdCreatorDelegate );
             paxosLife.add( new LabelTokenCreatorModeSwitcher( highAvailabilityModeSwitcher, labelIdCreatorDelegate,

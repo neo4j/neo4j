@@ -23,10 +23,13 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Objects;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientDatabaseFailureException;
 import org.neo4j.kernel.impl.util.LazySingleReference;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * InvocationHandler for dynamic proxies that delegate calls to a given backing implementation. This is mostly
@@ -44,7 +47,10 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
     // the next call to setDelegate and will never change since.
     private final LazySingleReference<T> concrete;
 
-    public DelegateInvocationHandler( final Class<T> interfaceClass )
+    private final Log log;
+    private final String componentName;
+
+    public DelegateInvocationHandler( final Class<T> interfaceClass, LogProvider logProvider )
     {
         concrete = new LazySingleReference<T>()
         {
@@ -56,6 +62,8 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
                         new Class[] {interfaceClass}, new Concrete<>() );
             }
         };
+        log = logProvider.getLog( getClass() );
+        componentName = interfaceClass.getSimpleName();
     }
 
     /**
@@ -68,7 +76,8 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
      */
     public void setDelegate( T delegate )
     {
-        this.delegate = delegate;
+        log( "Delegate updated from %s to %s", this.delegate, delegate );
+        this.delegate = Objects.requireNonNull( delegate, "delegate should not be null" );
         harden();
         concrete.invalidate();
     }
@@ -79,9 +88,10 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
      * will see the current delegate.
      */
     @SuppressWarnings( "unchecked" )
-    public void harden()
+    void harden()
     {
-        ((Concrete<T>)Proxy.getInvocationHandler( concrete.get() )).set( delegate );
+        log( "Delegate hardened to %s", delegate );
+        ((Concrete<T>) Proxy.getInvocationHandler( concrete.get() )).set( delegate );
     }
 
     @Override
@@ -113,6 +123,7 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
      */
     public T cement()
     {
+        log( "Delegate cemented" );
         return concrete.get();
     }
 
@@ -120,6 +131,14 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
     public String toString()
     {
         return "Delegate[" + delegate + "]";
+    }
+
+    private void log( String format, Object... arguments )
+    {
+        if ( log.isDebugEnabled() )
+        {
+            log.debug( "[" + componentName + "]" + format, arguments );
+        }
     }
 
     private static class Concrete<T> implements InvocationHandler
