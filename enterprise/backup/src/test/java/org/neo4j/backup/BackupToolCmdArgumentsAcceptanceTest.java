@@ -100,7 +100,7 @@ public class BackupToolCmdArgumentsAcceptanceTest
                 eq( HOST ),
                 eq( PORT ),
                 eq( PATH ),
-                eq( expectedVerifyStoreValue ),
+                expectedVerifyStoreValue ? eq( ConsistencyCheck.DEFAULT ) : eq( ConsistencyCheck.NONE ),
                 any( Config.class ),
                 eq( BackupClient.BIG_READ_TIMEOUT ),
                 eq( false )
