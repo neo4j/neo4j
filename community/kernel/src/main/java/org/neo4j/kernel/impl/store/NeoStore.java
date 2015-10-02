@@ -442,13 +442,13 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         return upgradeTimeField;
     }
 
-    public synchronized void setUpgradeTime( long time )
+    public void setUpgradeTime( long time )
     {
         setRecord( Position.UPGRADE_TIME, time );
         upgradeTimeField = time;
     }
 
-    public synchronized void setUpgradeTransaction( long id, long checksum )
+    public void setUpgradeTransaction( long id, long checksum )
     {
         setRecord( Position.UPGRADE_TRANSACTION_ID, id );
         upgradeTxIdField = id;
@@ -462,7 +462,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         return creationTimeField;
     }
 
-    public synchronized void setCreationTime( long time )
+    public void setCreationTime( long time )
     {
         setRecord( Position.TIME, time );
         creationTimeField = time;
@@ -474,7 +474,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         return randomNumberField;
     }
 
-    public synchronized void setRandomNumber( long nr )
+    public void setRandomNumber( long nr )
     {
         setRecord( Position.RANDOM_NUMBER, nr );
         randomNumberField = nr;
