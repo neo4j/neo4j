@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.pagecache;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 
+import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -126,13 +127,12 @@ public class ConfiguringPageCacheFactory
 
     public void dumpConfiguration()
     {
-        int MiB = 1024 * 1024;
         int cachePageSize = calculatePageSize( config, swapperFactory );
         long maxPages = calculateMaxPages( config, cachePageSize );
         long totalPhysicalMemory = totalPhysicalMemory();
-        String totalPhysicalMemMb = totalPhysicalMemory == -1? "?" : "" + totalPhysicalMemory / MiB;
-        long maxVmUsageMb = Runtime.getRuntime().maxMemory() / MiB;
-        long pageCacheMb = (maxPages * cachePageSize) / MiB;
+        String totalPhysicalMemMb = totalPhysicalMemory == -1? "?" : "" + totalPhysicalMemory / Format.MB;
+        long maxVmUsageMb = Runtime.getRuntime().maxMemory() / Format.MB;
+        long pageCacheMb = (maxPages * cachePageSize) / Format.MB;
         String msg = "Physical mem: " + totalPhysicalMemMb + " MiB," +
                      " Heap size: " + maxVmUsageMb + " MiB," +
                      " Page cache size: " + pageCacheMb + " MiB.";

@@ -28,6 +28,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.helpers.Format;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.configuration.Internal;
@@ -304,6 +305,13 @@ public abstract class GraphDatabaseSettings
             return defaultMemoryOverride;
         }
 
+        double ratioOfFreeMem = 0.50;
+        String defaultMemoryRatioOverride = System.getProperty( "dbms.pagecache.memory.ratio.default.override" );
+        if ( defaultMemoryRatioOverride != null )
+        {
+            ratioOfFreeMem = Double.parseDouble( defaultMemoryRatioOverride );
+        }
+
         // Try to compute (RAM - maxheap) * 0.50 if we can get reliable numbers...
         long maxHeapMemory = Runtime.getRuntime().maxMemory();
         if ( 0 < maxHeapMemory && maxHeapMemory < Long.MAX_VALUE )
@@ -316,11 +324,9 @@ public abstract class GraphDatabaseSettings
                 long physicalMemory = (long) getTotalPhysicalMemorySize.invoke( os );
                 if ( 0 < physicalMemory && physicalMemory < Long.MAX_VALUE && maxHeapMemory < physicalMemory )
                 {
-                    double ratioOfFreeMem = 0.50;
                     long heuristic = (long) ((physicalMemory - maxHeapMemory) * ratioOfFreeMem);
-                    long MiB = 1024 * 1024;
-                    long min = 32 * MiB; // We'd like at least 32 MiBs.
-                    long max = 1024 * 1024 * MiB; // Don't heuristically take more than 1 TiB.
+                    long min = 32 * Format.MB; // We'd like at least 32 MiBs.
+                    long max = 1024 * Format.GB; // Don't heuristically take more than 1 TiB.
                     long memory = Math.min( max, Math.max( min, heuristic ) );
                     return String.valueOf( memory );
                 }
@@ -333,7 +339,7 @@ public abstract class GraphDatabaseSettings
         return "2g";
     }
 
-    @Description( "Specify which page swapper should use to do paged IO. " +
+    @Description( "Specify which page swapper to use for doing paged IO. " +
                   "This is only used when integrating with proprietary storage technology." )
     public static final Setting<String> pagecache_swapper =
             setting( "dbms.pagecache.swapper", STRING, (String) null );
