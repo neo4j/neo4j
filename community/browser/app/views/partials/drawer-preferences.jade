@@ -39,7 +39,7 @@
         input#shouldReportUdc(type="checkbox", ng-model="settings.shouldReportUdc", ng-change="save()")
         span &nbsp; Help improve Neo4j? 
         a.fa.fa-info-circle(href='http://neo4j.com/legal/neo4j-user-experience/') 
-    .checkbox
+    .checkbox(ng-show="neo4j.enterpriseEdition")
       label(for="storeCredentials")
         input#storeCredentials(type='checkbox', ng-model="settings.storeCredentials", ng-change="save()")
         span &nbsp; Save login credentials

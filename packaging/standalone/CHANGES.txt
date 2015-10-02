@@ -1,3 +1,7 @@
+2.3.0-RC1
+---------
+o Neo4j console does not fork a subprocess on Linux, enabling easier process management
+
 2.3.0-M03
 ---------
 o Adds a Windows PowerShell for managing a Neo4j server

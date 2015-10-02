@@ -39,7 +39,6 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -285,34 +284,25 @@ public class StoreMigrator implements StoreMigrationParticipant
         }
     }
 
-    private void copyStores( File storeDir, File migrationDir, String... suffixes ) throws IOException
-    {
-        for ( String suffix : suffixes )
-        {
-            FileUtils.copyFile(
-                    new File( storeDir, MetaDataStore.DEFAULT_NAME + suffix ),
-                    new File( migrationDir, MetaDataStore.DEFAULT_NAME + suffix )
-            );
-        }
-    }
-
     private void removeDuplicateEntityProperties( File storeDir, File migrationDir, PageCache pageCache,
             SchemaIndexProvider schemaIndexProvider, String versionToUpgradeFrom ) throws IOException
     {
-        copyStores( storeDir, migrationDir,
-                StoreFactory.PROPERTY_STORE_NAME,
-                StoreFactory.PROPERTY_STORE_NAME + ".id",
-                StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME,
-                StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME + ".id",
-                StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME,
-                StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME + ".id",
-                StoreFactory.PROPERTY_STRINGS_STORE_NAME,
-                StoreFactory.PROPERTY_ARRAYS_STORE_NAME,
-                StoreFactory.NODE_STORE_NAME,
-                StoreFactory.NODE_STORE_NAME + ".id",
-                StoreFactory.NODE_LABELS_STORE_NAME,
-                StoreFactory.SCHEMA_STORE_NAME
-        );
+        StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Iterables.<StoreFile,StoreFile>iterable(
+                StoreFile.PROPERTY_STORE,
+                StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
+                StoreFile.PROPERTY_KEY_TOKEN_STORE,
+                StoreFile.PROPERTY_ARRAY_STORE,
+                StoreFile.PROPERTY_STRING_STORE,
+                StoreFile.NODE_STORE,
+                StoreFile.NODE_LABEL_STORE,
+                StoreFile.SCHEMA_STORE ), false, false, StoreFileType.STORE );
+
+        // copy ids only if present
+        StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Iterables.<StoreFile,StoreFile>iterable(
+                StoreFile.PROPERTY_STORE,
+                StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
+                StoreFile.PROPERTY_KEY_TOKEN_STORE,
+                StoreFile.NODE_STORE ), true, false, StoreFileType.ID );
 
         // let's remove trailers here on the copied files since the new code doesn't remove them since in 2.3
         // there are no store trailers
@@ -364,10 +354,12 @@ public class StoreMigrator implements StoreMigrationParticipant
         }
 
         Configuration importConfig = new Configuration.Overridden( config );
+        AdditionalInitialIds additionalInitialIds =
+                readAdditionalIds( storeDir, lastTxId, lastTxChecksum,  lastTxLogVersion, lastTxLogByteOffset );
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem,
                 importConfig, logService, withDynamicProcessorAssignment( migrationBatchImporterMonitor(
                 legacyStore ), importConfig ),
-                readAdditionalIds( storeDir, lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset ) );
+                additionalInitialIds );
         InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         InputIterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
         importer.doImport(

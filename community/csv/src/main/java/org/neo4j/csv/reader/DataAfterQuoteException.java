@@ -24,7 +24,7 @@ public class DataAfterQuoteException extends FormatException
     public DataAfterQuoteException( SourceTraceability source, String readValue )
     {
         super( source,
-                " there's a field starting with a quote and whereas it ends that quote there seems " +
+                " there's a field starting with a quote and whereas it ends that quote there seems" +
                 " to be characters in that field after that ending quote. That isn't supported." +
                 " This is what I read: '" + readValue + "'" );
     }

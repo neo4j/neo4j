@@ -20,10 +20,15 @@
 package org.neo4j.kernel.ha;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileUtils;
+
+import static org.neo4j.kernel.impl.util.StoreUtil.cleanStoreDir;
+import static org.neo4j.kernel.impl.util.StoreUtil.getBranchedDataRootDirectory;
+import static org.neo4j.kernel.impl.util.StoreUtil.isBranchedDataDirectory;
+import static org.neo4j.kernel.impl.util.StoreUtil.moveAwayDb;
+import static org.neo4j.kernel.impl.util.StoreUtil.newBranchedDataDir;
 
 public enum BranchedDataPolicy
 {
@@ -56,92 +61,9 @@ public enum BranchedDataPolicy
                 @Override
                 public void handle( File storeDir ) throws IOException
                 {
-                    for ( File file : relevantDbFiles( storeDir ) )
-                    {
-                        FileUtils.deleteRecursively( file );
-                    }
+                    cleanStoreDir( storeDir );
                 }
             };
 
-    // Branched directories will end up in <dbStoreDir>/branched/<timestamp>/
-    static String BRANCH_SUBDIRECTORY = "branched";
-
     public abstract void handle( File storeDir ) throws IOException;
-
-    protected void moveAwayDb( File storeDir, File branchedDataDir ) throws IOException
-    {
-        for ( File file : relevantDbFiles( storeDir ) )
-        {
-            FileUtils.moveFileToDirectory( file, branchedDataDir );
-        }
-    }
-
-    File newBranchedDataDir( File storeDir )
-    {
-        File result = getBranchedDataDirectory( storeDir, System.currentTimeMillis() );
-        result.mkdirs();
-        return result;
-    }
-
-    File[] relevantDbFiles( File storeDir )
-    {
-        if ( !storeDir.exists() )
-        {
-            return new File[0];
-        }
-
-        return storeDir.listFiles( new FileFilter()
-        {
-            @Override
-            public boolean accept( File file )
-            {
-                return !file.getName().startsWith( "metrics" ) && !file.getName().startsWith( "messages." ) && !isBranchedDataRootDirectory( file );
-            }
-        } );
-    }
-
-    public static boolean isBranchedDataRootDirectory( File directory )
-    {
-        return directory.isDirectory() && directory.getName().equals( BRANCH_SUBDIRECTORY );
-    }
-
-    public static boolean isBranchedDataDirectory( File directory )
-    {
-        return directory.isDirectory() && directory.getParentFile().getName().equals( BRANCH_SUBDIRECTORY ) &&
-                isAllDigits( directory.getName() );
-    }
-
-    private static boolean isAllDigits( String string )
-    {
-        for ( char c : string.toCharArray() )
-        {
-            if ( !Character.isDigit( c ) )
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public static File getBranchedDataRootDirectory( File storeDir )
-    {
-        return new File( storeDir, BRANCH_SUBDIRECTORY );
-    }
-
-    public static File getBranchedDataDirectory( File storeDir, long timestamp )
-    {
-        return new File( getBranchedDataRootDirectory( storeDir ), "" + timestamp );
-    }
-
-    public static File[] listBranchedDataDirectories( File storeDir )
-    {
-        return getBranchedDataRootDirectory( storeDir ).listFiles( new FileFilter()
-        {
-            @Override
-            public boolean accept( File directory )
-            {
-                return isBranchedDataDirectory( directory );
-            }
-        } );
-    }
 }

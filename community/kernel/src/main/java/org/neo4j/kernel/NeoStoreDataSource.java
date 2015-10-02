@@ -138,6 +138,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.TimeCheckPointThreshold;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategy;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
@@ -250,7 +251,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         NeoStoreFileListing fileListing();
     }
 
-    private enum Diagnostics implements DiagnosticsExtractor<NeoStoreDataSource>
+    enum Diagnostics implements DiagnosticsExtractor<NeoStoreDataSource>
     {
         NEO_STORE_VERSIONS( "Store versions:" )
                 {
@@ -266,6 +267,43 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                     void dump( NeoStoreDataSource source, Logger logger )
                     {
                         source.neoStoreModule.neoStores().logIdUsage( logger );
+                    }
+                },
+        NEO_STORE_RECORDS( "Neostore records:" )
+                {
+                    @Override
+                    void dump( NeoStoreDataSource source, Logger log )
+                    {
+                        source.neoStoreModule.neoStores().getMetaDataStore().logRecords( log );
+                    }
+                },
+        TRANSACTION_RANGE( "Transaction log:" )
+                {
+                    @Override
+                    void dump( NeoStoreDataSource source, Logger log )
+                    {
+                        PhysicalLogFiles logFiles =
+                                source.getDependencyResolver().resolveDependency( PhysicalLogFiles.class );
+                        try
+                        {
+                            for ( long logVersion = logFiles.getLowestLogVersion();
+                                    logFiles.versionExists( logVersion ); logVersion++ )
+                            {
+                                if ( logFiles.hasAnyTransaction( logVersion ) )
+                                {
+                                    LogHeader header = logFiles.extractHeader( logVersion );
+                                    long firstTransactionIdInThisLog = header.lastCommittedTxId + 1;
+                                    log.log( "Oldest transaction " + firstTransactionIdInThisLog +
+                                            " found in log with version " + logVersion );
+                                    return;
+                                }
+                            }
+                            log.log( "No transactions found in any log" );
+                        }
+                        catch ( IOException e )
+                        {   // It's fine, we just tried to be nice and log this. Failing is OK
+                            log.log( "Error trying to figure out oldest transaction in log" );
+                        }
                     }
                 };
 
