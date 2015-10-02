@@ -76,7 +76,7 @@ public class RebuildFromLogsTest
 
         // when
         File rebuildPath = new File( dir.graphDbDir(), "rebuild" );
-        new RebuildFromLogs( fs ).rebuild( prototypePath, rebuildPath, BASE_TX_ID, false );
+        new RebuildFromLogs( fs ).rebuild( prototypePath, rebuildPath, BASE_TX_ID );
 
         // then
         assertEquals( DbRepresentation.of( prototypePath ), DbRepresentation.of( rebuildPath ) );
@@ -118,7 +118,7 @@ public class RebuildFromLogsTest
 
         // when
         File rebuildPath = new File( dir.graphDbDir(), "rebuild" );
-        new RebuildFromLogs( fs ).rebuild( copy, rebuildPath, txId, false );
+        new RebuildFromLogs( fs ).rebuild( copy, rebuildPath, txId );
 
         // then
         assertEquals( DbRepresentation.of( prototypePath ), DbRepresentation.of( rebuildPath ) );

@@ -74,7 +74,6 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 
 class RebuildFromLogs
 {
-    private static final String FULL_CHECK = "full";
     private static final String UP_TO_TX_ID = "tx";
 
     private final FileSystemAbstraction fs;
@@ -91,9 +90,8 @@ class RebuildFromLogs
             printUsage();
             return;
         }
-        Args params = Args.withFlags( FULL_CHECK ).parse( args );
+        Args params = Args.parse( args );
         @SuppressWarnings("boxing")
-        boolean full = params.getBoolean( FULL_CHECK, false, true );
         long txId = params.getNumber( UP_TO_TX_ID, BASE_TX_ID ).longValue();
         List<String> orphans = params.orphans();
         args = orphans.toArray( new String[orphans.size()] );
@@ -131,10 +129,10 @@ class RebuildFromLogs
             }
         }
 
-        new RebuildFromLogs( new DefaultFileSystemAbstraction() ).rebuild( source, target, txId, full );
+        new RebuildFromLogs( new DefaultFileSystemAbstraction() ).rebuild( source, target, txId );
     }
 
-    public void rebuild( File source, File target, long txId,  boolean full  ) throws Exception
+    public void rebuild( File source, File target, long txId ) throws Exception
     {
         try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
         {
@@ -166,13 +164,9 @@ class RebuildFromLogs
                         NeoStore.Position.LAST_TRANSACTION_ID, lastTxId );
             }
 
-            // if we didn't run the full checker for each transaction, run it afterwards
-            if ( !full )
+            try ( ConsistencyChecker checker = new ConsistencyChecker( target, pageCache ) )
             {
-                try ( ConsistencyChecker checker = new ConsistencyChecker( target, pageCache ) )
-                {
-                    checker.checkConsistency();
-                }
+                checker.checkConsistency();
             }
         }
     }
