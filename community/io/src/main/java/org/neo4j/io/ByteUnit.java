@@ -21,12 +21,15 @@ package org.neo4j.io;
 
 /**
  * A ByteUnit is a unit for a quantity of bytes.
- *
+ * <p/>
  * The unit knows how to convert between other units in its class, so you for instance can turn a number of KiBs into
- * an accurate quantity of bytes. Some loss can occur when quantities are converted between units, due to integer
- * rounding to whole units.
+ * an accurate quantity of bytes. Precision can be lost when converting smaller units into larger units, because of
+ * integer division.
  *
- * The larger units can be in one of two systems of units. See the {@link ByteUnitSystem} for details.
+ * These units all follow the EIC (International Electrotechnical Commission) standard, which uses a multiplier of
+ * 1.024. This system is also known as the binary system, and has been accepted as part of the International System of
+ * Quantities. It is therefor the recommended choice when communicating quantities of information, and the only one
+ * available in this implementation.
  */
 public enum ByteUnit
 {
@@ -34,52 +37,57 @@ public enum ByteUnit
     XXX Future notes: This class can potentially replace some of the functionality in org.neo4j.helpers.Format.
      */
 
-    Byte( 0, ByteUnitSystem.SI, "B" ),
-    KiloByte( 1, ByteUnitSystem.SI, "kB" ),
-    KibiByte( 1, ByteUnitSystem.EIC, "KiB" ),
-    MegaByte( 2, ByteUnitSystem.SI, "MB" ),
-    MebiByte( 2, ByteUnitSystem.EIC, "MiB" ),
-    GigaByte( 3, ByteUnitSystem.SI, "GB" ),
-    GibiByte( 3, ByteUnitSystem.EIC, "GiB" ),
-    TeraByte( 4, ByteUnitSystem.SI, "TB" ),
-    TebiByte( 4, ByteUnitSystem.EIC, "TiB" ),
-    PetaByte( 5, ByteUnitSystem.SI, "PB" ),
-    PebiByte( 5, ByteUnitSystem.EIC, "PiB" ),
-    ExaByte( 6, ByteUnitSystem.SI, "EB" ),
-    ExbiByte( 6, ByteUnitSystem.EIC, "EiB" ),
-    ;
+    Byte( 0, "B" ),
+    KibiByte( 1, "KiB" ),
+    MebiByte( 2, "MiB" ),
+    GibiByte( 3, "GiB" ),
+    TebiByte( 4, "TiB" ),
+    PebiByte( 5, "PiB" ),
+    ExbiByte( 6, "EiB" ),;
+
+    private static final long EIC_MULTIPLIER = 1024;
 
     private final long factor;
-    private final ByteUnitSystem unitSystem;
     private final String shortName;
 
-    ByteUnit( long power, ByteUnitSystem unitSystem, String shortName )
+    ByteUnit( long power, String shortName )
     {
-        this.factor = unitSystem.factorFromPower( power );
-        this.unitSystem = unitSystem;
+        this.factor = factorFromPower( power );
         this.shortName = shortName;
     }
 
     /**
-     * Get the {@link ByteUnitSystem} of this unit, which determines its conversion factor.
-     * @return The ByteUnitSystem used.
+     * Compute the increment factor from the given power.
+     * <p/>
+     * Giving zero always produces 1. Giving 1 will produce 1000 or 1024, for SI and EIC respectively, and so on.
      */
-    public ByteUnitSystem getUnitSystem()
+    private long factorFromPower( long power )
     {
-        return unitSystem;
+        if ( power == 0 )
+        {
+            return 1;
+        }
+        long product = EIC_MULTIPLIER;
+        for ( int i = 0; i < power - 1; i++ )
+        {
+            product = product * EIC_MULTIPLIER;
+        }
+        return product;
     }
 
     /**
-     * Get the short or abbreviated name of this unit, e.g. kB or MiB.
+     * Get the short or abbreviated name of this unit, e.g. KiB or MiB.
+     *
      * @return The short unit name.
      */
-    public String getShortName()
+    public String abbreviation()
     {
         return shortName;
     }
 
     /**
      * Convert the given value of this unit, to a value in the given unit.
+     *
      * @param value The value to convert from this unit.
      * @param toUnit The unit of the resulting value.
      * @return The value in the given result unit.
@@ -94,19 +102,9 @@ public enum ByteUnit
         return factor * value;
     }
 
-    public long toKiloBytes( long value )
-    {
-        return convert( value, KiloByte );
-    }
-
     public long toKibiBytes( long value )
     {
         return convert( value, KibiByte );
-    }
-
-    public long toMegaBytes( long value )
-    {
-        return convert( value, MegaByte );
     }
 
     public long toMebiBytes( long value )
@@ -114,19 +112,9 @@ public enum ByteUnit
         return convert( value, MebiByte );
     }
 
-    public long toGigaBytes( long value )
-    {
-        return convert( value, GigaByte );
-    }
-
     public long toGibiBytes( long value )
     {
         return convert( value, GibiByte );
-    }
-
-    public long toTeraBytes( long value )
-    {
-        return convert( value, TeraByte );
     }
 
     public long toTebiBytes( long value )
@@ -134,19 +122,9 @@ public enum ByteUnit
         return convert( value, TebiByte );
     }
 
-    public long toPetaBytes( long value )
-    {
-        return convert( value, PetaByte );
-    }
-
     public long toPebiBytes( long value )
     {
         return convert( value, PebiByte );
-    }
-
-    public long toExaBytes( long value )
-    {
-        return convert( value, ExaByte );
     }
 
     public long toExbiBytes( long value )
@@ -159,19 +137,9 @@ public enum ByteUnit
         return bytes;
     }
 
-    public static long kiloBytes( long kilobytes )
-    {
-        return KiloByte.toBytes( kilobytes );
-    }
-
     public static long kibiBytes( long kibibytes )
     {
         return KibiByte.toBytes( kibibytes );
-    }
-
-    public static long megaBytes( long megabytes )
-    {
-        return MegaByte.toBytes( megabytes );
     }
 
     public static long mebiBytes( long mebibytes )
@@ -179,19 +147,9 @@ public enum ByteUnit
         return MebiByte.toBytes( mebibytes );
     }
 
-    public static long gigaBytes( long gigabytes )
-    {
-        return GigaByte.toBytes( gigabytes );
-    }
-
     public static long gibiBytes( long gibibytes )
     {
         return GibiByte.toBytes( gibibytes );
-    }
-
-    public static long teraBytes( long terabytes )
-    {
-        return TeraByte.toBytes( terabytes );
     }
 
     public static long tebiBytes( long tebibytes )
@@ -199,19 +157,9 @@ public enum ByteUnit
         return TebiByte.toBytes( tebibytes );
     }
 
-    public static long petaBytes( long petabytes )
-    {
-        return PetaByte.toBytes( petabytes );
-    }
-
     public static long pebiBytes( long pebibytes )
     {
         return PebiByte.toBytes( pebibytes );
-    }
-
-    public static long exaBytes( long exabytes )
-    {
-        return ExaByte.toBytes( exabytes );
     }
 
     public static long exbiBytes( long exbibytes )
