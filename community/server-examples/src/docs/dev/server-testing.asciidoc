@@ -12,6 +12,13 @@ You can access this toolkit by adding the following test dependency to your proj
    <version>{neo4j-version}</version>
    <scope>test</scope>
 </dependency>
+<dependency>
+   <groupId>org.neo4j.app</groupId>
+   <artifactId>neo4j-server</artifactId>
+   <version>{neo4j-version}</version>
+   <type>test-jar</type>
+   <scope>test</scope>
+</dependency>
 --------
 
 The test toolkit provides a mechanism to start a Neo4j instance with custom configuration and with extensions of your choice.
