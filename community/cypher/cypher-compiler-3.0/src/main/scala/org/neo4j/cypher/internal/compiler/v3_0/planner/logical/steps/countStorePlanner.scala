@@ -36,7 +36,7 @@ case object countStorePlanner {
 
         case (aggregationIdent, FunctionInvocation(FunctionName("count"), false, Vector(Identifier(countName)))) =>
 
-          query.graph match {
+          query.queryGraph match {
 
             case QueryGraph(patternRelationships, patternNodes, argumentIds, selections, Seq(), hints, shortestPathPatterns)
               if hints.isEmpty && shortestPathPatterns.isEmpty =>

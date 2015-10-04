@@ -19,29 +19,36 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
-import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 
-trait NoEffectsPipe {
-  self: Pipe =>
+/*
+ * Caches the inner pipe on first encounter and then returns the cached result on any subsequent requests
+ * within the execution of the query.
+ */
+case class RepeatableReadPipe(src: Pipe)(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(src, pipeMonitor) with NoEffectsPipe with RonjaPipe {
 
-  // reset effects to empty by loading all input data in memory
-  override val localEffects = Effects()
+  private var cached: List[ExecutionContext] = null
 
-  override val effects = Effects()
-}
+  override def internalOpen(): Unit = {
+    cached = null
+  }
 
-case class EagerPipe(src: Pipe)(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(src, pipeMonitor) with NoEffectsPipe with RonjaPipe {
+  override def internalClose(): Unit = {
+    cached = null
+  }
+
   def symbols: SymbolTable = src.symbols
 
-  override def planDescription = src.planDescription.andThen(this.id, "Eager", identifiers)
+  override def planDescription = src.planDescription.andThen(this.id, "RepeatableRead", identifiers)
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
-    input.toList.toIterator
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+    if (cached == null) cached = input.toList
+    cached.toIterator
+  }
 
-  override def planDescriptionWithoutCardinality: InternalPlanDescription = src.planDescription.andThen(this.id, "Eager", identifiers)
+  override def planDescriptionWithoutCardinality: InternalPlanDescription = src.planDescription.andThen(this.id, "RepeatableRead", identifiers)
 
   override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 

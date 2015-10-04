@@ -44,7 +44,10 @@ case class PlanEventHorizon(config: QueryPlannerConfiguration = QueryPlannerConf
 
       case queryProjection: RegularQueryProjection =>
         val sortedAndLimited = sortSkipAndLimit(selectedPlan, query)
-        projection(sortedAndLimited, queryProjection.projections)
+        if (queryProjection.projections.isEmpty && query.tail.isEmpty)
+          context.logicalPlanProducer.planEmptyProjection(plan)
+        else
+          projection(sortedAndLimited, queryProjection.projections)
 
       case UnwindProjection(identifier, expression) =>
         context.logicalPlanProducer.planUnwind(plan, identifier, expression)

@@ -90,6 +90,8 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
         taskCloser.close(success = true)
         new ExplainExecutionResult(columns, pipeInfo.pipe.planDescription, queryType, notificationLogger.notifications)
       } else {
+        pipeInfo.pipe.open()
+        taskCloser.addTask(_ => pipeInfo.pipe.close())
         val results = pipeInfo.pipe.createResults(state)
         val resultIterator = buildResultIterator(results, pipeInfo.updating)
         val descriptor = buildDescriptor(pipeInfo.pipe, resultIterator.wasMaterialized)

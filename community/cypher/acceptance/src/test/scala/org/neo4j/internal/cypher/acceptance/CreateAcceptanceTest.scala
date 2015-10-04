@@ -54,6 +54,24 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList shouldBe empty
   }
 
+  test("combine match, with, and create") {
+    createNode()
+    createNode()
+    val result = updateWithBothPlanners("match (n) create (n1) with * match(p) create (n2)")
+    assertStats(result, nodesCreated = 10)
+    // then
+    result.toList shouldBe empty
+    updateWithBothPlanners("match (n) create (n1) with * match(p) create (n2)").toList
+  }
+
+
+  test("should not see updates created by itself") {
+    createNode()
+
+    val result = updateWithBothPlanners("match n create ()")
+    assertStats(result, nodesCreated = 1)
+  }
+
   test("create a single node with properties") {
     val result = updateWithBothPlanners("create (n {prop: 'foo'}) return n.prop as p")
     assertStats(result, nodesCreated = 1, propertiesSet = 1)
@@ -67,14 +85,11 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
   test("create node using null properties should just ignore those properties") {
     // when
-    val result = updateWithBothPlanners("create (n {id: 12, property: null}) return n")
-    val node = result.columnAs[Node]("n").next()
+    val result = updateWithBothPlanners("create (n {id: 12, property: null}) return n.id as id")
     assertStats(result, nodesCreated = 1, propertiesSet = 1)
 
     // then
-    graph.inTx {
-      node.getProperty("id") should equal(12)
-    }
+   result.toList should equal(List(Map("id" -> 12)))
   }
 
   test("create relationship using null properties should just ignore those properties") {

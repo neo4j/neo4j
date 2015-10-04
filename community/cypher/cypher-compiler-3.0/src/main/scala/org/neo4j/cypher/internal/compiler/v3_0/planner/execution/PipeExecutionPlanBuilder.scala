@@ -23,21 +23,19 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionCo
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.OtherConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.StatementConverters
-import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.PatternConverters
 import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v3_0.commands.EntityProducerFactory
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{AggregationExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{True, _}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.prepare.KeyTokenResolver
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, PipeInfo, PlanFingerprint, ReadsAllNodes}
-import org.neo4j.cypher.internal.compiler.v3_0.mutation.CreateNode
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, PipeInfo, PlanFingerprint, ReadsAllNodes, addEagernessIfNecessary}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyTypes, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{Limit, Skip, Union, _}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v3_0.{ast => compilerAst, commands, ExecutionContext, Monitors, PlannerName}
+import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, Monitors, PlannerName, ast => compilerAst}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, SemanticTable, ast, bottomUp}
@@ -166,6 +164,9 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         case Apply(outer, inner) =>
           ApplyPipe(buildPipe(outer), buildPipe(inner))()
 
+        case EagerApply(outer, inner) =>
+          EagerApplyPipe(buildPipe(outer), buildPipe(inner))()
+
         case SemiApply(outer, inner) =>
           SemiApplyPipe(buildPipe(outer), buildPipe(inner), negated = false)()
 
@@ -246,6 +247,12 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
           val f = patterns.flatMap(_.asLegacyCreates)
           CreateNodesPipe(f)()
 
+        case Eager(inner) =>
+          EagerPipe(buildPipe(inner))()
+
+        case RepeatableRead(inner) =>
+          RepeatableReadPipe(buildPipe(inner))()
+
         case x =>
           throw new CantHandleQueryException(x.toString)
       }
@@ -280,7 +287,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
       toCommandPredicate(rewrittenExpr).rewrite(resolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
     }
 
-    val topLevelPipe = buildPipe(plan)
+    val topLevelPipe: RonjaPipe = buildPipe(plan)
 
     val fingerprint = planContext.statistics match {
       case igs: InstrumentedGraphStatistics =>

@@ -40,6 +40,10 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def size = patternRelationships.size
 
+  def isEmpty: Boolean = this == QueryGraph.empty
+
+  def nonEmpty: Boolean = !isEmpty
+
   def mapSelections(f: Selections => Selections): QueryGraph =
     copy(selections = f(selections), optionalMatches = optionalMatches.map(_.mapSelections(f)))
 
@@ -96,6 +100,9 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     selections
       .labelPredicates.getOrElse(node, Seq.empty)
       .flatMap(_.labels).toSeq
+
+  def allKnownLabelsOnNode(node: IdName): Seq[LabelName] =
+    knownLabelsOnNode(node) ++ optionalMatches.flatMap(_.allKnownLabelsOnNode(node))
 
   def findRelationshipsEndingOn(id: IdName): Set[PatternRelationship] =
     patternRelationships.filter { r => r.left == id || r.right == id }

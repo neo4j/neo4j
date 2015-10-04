@@ -313,7 +313,7 @@ order by a.age""").toList)
   }
 
   test("renaming in multiple steps should still work") {
-    val result = executeWithRulePlanner(
+    val result = executeWithCostPlannerOnly(
       """CREATE (m)
         |WITH {FIRST: id(m)} AS m
         |WITH {SECOND: m.FIRST} AS m
@@ -325,7 +325,7 @@ order by a.age""").toList)
   }
 
   test("aggregating by an array property has a correct definition of equality") {
-    executeWithRulePlanner(
+    updateWithBothPlanners(
       """    create
         |    (_0  {a:[1,2,3]}),
         |    (_1  {a:[1,2,3]})

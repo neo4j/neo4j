@@ -43,7 +43,7 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
   test("single row returns itself as the leafs") {
     val singleRow = Argument(Set(IdName("a")))(solved)()
 
-    singleRow.leafs should equal(Seq(singleRow))
+    singleRow.leaves should equal(Seq(singleRow))
   }
 
   test("apply with two singlerows should return them both") {
@@ -51,7 +51,7 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
     val singleRow2 = SingleRow()(solved)
     val apply = Apply(singleRow1, singleRow2)(solved)
 
-    apply.leafs should equal(Seq(singleRow1, singleRow2))
+    apply.leaves should equal(Seq(singleRow1, singleRow2))
   }
 
   test("apply pyramid should work multiple levels deep") {
@@ -63,7 +63,7 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
     val apply2 = Apply(singleRow3, singleRow4)(solved)
     val metaApply = Apply(apply1, apply2)(solved)
 
-    metaApply.leafs should equal(Seq(singleRow1, singleRow2, singleRow3, singleRow4))
+    metaApply.leaves should equal(Seq(singleRow1, singleRow2, singleRow3, singleRow4))
   }
 
   test("calling updateSolved on argument should work") {

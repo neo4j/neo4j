@@ -53,6 +53,8 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, returns: Seq[IdName]
     current.queryGraph
   }
 
+  def readOnly: Boolean = q.updateGraph.isEmpty
+
   def build(): PlannerQuery = {
 
     def fixArgumentIdsOnOptionalMatch(plannerQuery: PlannerQuery): PlannerQuery = {
@@ -88,7 +90,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, returns: Seq[IdName]
     val withFixedArgumentIds = fixArgumentIdsOnOptionalMatch(fixedArgumentIds)
     val withGroupedInequalities = groupInequalities(withFixedArgumentIds)
 
-    withGroupedInequalities
+    withGroupedInequalities.withUpdateGraph(updateGraph = q.updateGraph)
   }
 }
 

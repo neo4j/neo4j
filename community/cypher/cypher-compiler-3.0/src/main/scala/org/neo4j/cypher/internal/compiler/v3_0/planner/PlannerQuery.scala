@@ -51,12 +51,19 @@ case class PlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
     case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
   }
 
+  def readOnly: Boolean = updateGraph.isEmpty
 
-  def withoutHints(hintsToIgnore: GenTraversableOnce[Hint]) = copy(graph = queryGraph.withoutHints(hintsToIgnore))
+  def writeOnly: Boolean = queryGraph.isEmpty
+
+  def writes: Boolean = updateGraph.nonEmpty
+
+  def reads: Boolean = queryGraph.nonEmpty
+
+  def withoutHints(hintsToIgnore: GenTraversableOnce[Hint]) = copy(queryGraph = queryGraph.withoutHints(hintsToIgnore))
 
   def withHorizon(horizon: QueryHorizon): PlannerQuery = copy(horizon = horizon)
 
-  def withQueryGraph(graph: QueryGraph): PlannerQuery = copy(graph = graph)
+  def withQueryGraph(queryGraph: QueryGraph): PlannerQuery = copy(queryGraph = queryGraph)
 
   def withUpdateGraph(updateGraph: UpdateGraph) = copy(updateGraph = updateGraph)
 
@@ -118,10 +125,10 @@ case class PlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
   }
 
   // This is here to stop usage of copy from the outside
-  private def copy(graph: QueryGraph = queryGraph,
+  private def copy(queryGraph: QueryGraph = queryGraph,
                    updateGraph: UpdateGraph = updateGraph,
                    horizon: QueryHorizon = horizon,
-                   tail: Option[PlannerQuery] = tail) = PlannerQuery(graph, updateGraph, horizon, tail)
+                   tail: Option[PlannerQuery] = tail) = PlannerQuery(queryGraph, updateGraph, horizon, tail)
 
   def foldMap(f: (PlannerQuery, PlannerQuery) => PlannerQuery): PlannerQuery = tail match {
     case None => this
@@ -143,6 +150,17 @@ case class PlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
     }
 
     recurse(in, this)
+  }
+
+  //Returns list of querygraph of planner query and all of its tails
+  def allQueryGraphs = {
+    @tailrec
+    def loop(acc: Seq[QueryGraph], remaining: Option[PlannerQuery]): Seq[QueryGraph] = remaining match {
+      case None => acc
+      case Some(inner) => loop(acc :+ inner.queryGraph, inner.tail)
+    }
+
+    loop(Seq.empty, Some(this))
   }
 
   def labelInfo: Map[IdName, Set[LabelName]] = lastQueryGraph.selections.labelInfo

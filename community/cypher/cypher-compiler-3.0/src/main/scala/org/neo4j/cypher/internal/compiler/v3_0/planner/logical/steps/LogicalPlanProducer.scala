@@ -60,6 +60,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     Apply(left, right)(solved = solved)
   }
 
+  def planEagerTailApply(left: LogicalPlan, right: LogicalPlan)(implicit context: LogicalPlanningContext) = {
+    val solved = left.solved.updateTailOrSelf(_.withTail(right.solved))
+    EagerApply(left, right)(solved = solved)
+  }
+
   def planCartesianProduct(left: LogicalPlan, right: LogicalPlan)(implicit context: LogicalPlanningContext) = {
     val solved: PlannerQuery = left.solved ++ right.solved
     CartesianProduct(left, right)(solved)
@@ -330,7 +335,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planSingleRow()(implicit context: LogicalPlanningContext) =
     SingleRow()(PlannerQuery.empty)
 
-  def planEmptyProjection(inner: LogicalPlan)(implicit context: LogicalPlanningContext) =
+  def planEmptyProjection(inner: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
     EmptyResult(inner)(inner.solved)
 
   def planStarProjection(inner: LogicalPlan, expressions: Map[String, Expression])
@@ -446,11 +451,14 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     CreateNodes(patterns)(solved)
   }
 
-  def planProduceResults(in: LogicalPlan, unionQuery: UnionQuery, returns: Boolean)
-  (implicit context: LogicalPlanningContext): LogicalPlan = {
-    val columns = unionQuery.returns.map(_.name)
-    ProduceResult(columns, in)
+  def planRepeatableRead(inner: LogicalPlan)
+                     (implicit context: LogicalPlanningContext): LogicalPlan = {
+
+
+    RepeatableRead(inner)(inner.solved)
   }
+
+  def planEager(inner: LogicalPlan) = Eager(inner)(inner.solved)
 
   implicit def estimatePlannerQuery(plannerQuery: PlannerQuery)(implicit context: LogicalPlanningContext): PlannerQuery with CardinalityEstimation = {
     val cardinality = cardinalityModel(plannerQuery, context.input, context.semanticTable)

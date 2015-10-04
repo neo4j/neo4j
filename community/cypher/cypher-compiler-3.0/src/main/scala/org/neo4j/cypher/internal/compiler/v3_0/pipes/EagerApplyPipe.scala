@@ -21,23 +21,23 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{PlanDescriptionImpl, TwoChildren}
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{TwoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 
-case class ApplyPipe(source: Pipe, inner: Pipe)(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+case class EagerApplyPipe(source: Pipe, inner: Pipe)(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
-    input.flatMap {
+    input.toList.flatMap {
       (outerContext) =>
         val original = outerContext.clone()
         val innerState = state.withInitialContext(outerContext)
         val innerResults = inner.createResults(innerState)
         innerResults.map { context => context ++ original }
-    }
+    }.toIterator
 
   def planDescriptionWithoutCardinality =
-    PlanDescriptionImpl(this.id, "Apply", TwoChildren(source.planDescription, inner.planDescription), Seq.empty, identifiers)
+    PlanDescriptionImpl(this.id, "EagerApply", TwoChildren(source.planDescription, inner.planDescription), Seq.empty, identifiers)
 
   def symbols: SymbolTable = source.symbols.add(inner.symbols.identifiers)
 
@@ -52,5 +52,3 @@ case class ApplyPipe(source: Pipe, inner: Pipe)(val estimatedCardinality: Option
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }
-
-

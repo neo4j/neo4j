@@ -74,7 +74,7 @@ object ClauseConverters {
       case c: Unwind => c.addUnwindToLogicalPlanInput(acc)
       case c: Start => c.addStartToLogicalPlanInput(acc)
       case c: Create => c.addCreateToLogicalPlanInput(acc)
-      case x         => throw new CantHandleQueryException//(x.toString)
+      case x         => throw new CantHandleQueryException(s"$x is not supported by the new runtime yet")
     }
   }
 
@@ -174,7 +174,7 @@ object ClauseConverters {
           && ri.items.forall {
           case item: AliasedReturnItem => item.expression == item.identifier
           case x => throw new InternalException("This should have been rewritten to an AliasedReturnItem.")
-        } =>
+        } && builder.readOnly =>
         val selections = where.asSelections
         builder.
           updateQueryGraph(_.addSelections(selections))

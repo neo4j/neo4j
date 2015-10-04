@@ -19,19 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{PropertyKeyToken, LabelToken, Expression}
-import org.neo4j.cypher.internal.compiler.v3_0.commands.QueryExpression
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{PlannerQuery, CardinalityEstimation}
 
-case class NodeIndexSeek(idName: IdName,
-                         label: LabelToken,
-                         propertyKey: PropertyKeyToken,
-                         valueExpr: QueryExpression[Expression],
-                         argumentIds: Set[IdName])
-                        (val solved: PlannerQuery with CardinalityEstimation) extends NodeLogicalLeafPlan {
+case class EagerApply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
+  extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
 
-  def availableSymbols = argumentIds + idName
+  val lhs = Some(left)
+  val rhs = Some(right)
 
-  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
-    copy(valueExpr = valueExpr.map(f(argumentIds, _)))(solved)
+  def availableSymbols = left.availableSymbols ++ right.availableSymbols
 }

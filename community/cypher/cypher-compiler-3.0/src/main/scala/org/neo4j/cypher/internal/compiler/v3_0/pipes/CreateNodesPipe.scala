@@ -20,13 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{CreatesAnyNode, Effects, ReadsAllNodes}
-import org.neo4j.cypher.internal.compiler.v3_0.mutation.{UpdateAction, CreateNode, GraphElementPropertyFunctions}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v3_0.mutation.CreateNode
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.CreateNodes
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_0.{ParameterWrongTypeException, InternalException}
+import org.neo4j.cypher.internal.frontend.v3_0.InternalException
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.graphdb.NotInTransactionException
 
@@ -57,7 +55,7 @@ case class CreateNodesPipe(actions: Seq[CreateNode])(val estimatedCardinality: O
 
   override def monitor = pipeMonitor
 
-  override def localEffects: Effects = Effects(CreatesAnyNode)
+  override def localEffects: Effects = actions.foldLeft(Effects())(_ ++ _.localEffects(symbols))
 
   def dup(sources: List[Pipe]): Pipe = {
     require(sources.isEmpty)

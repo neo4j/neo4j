@@ -40,7 +40,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
   private def createSymbols() = {
     val keyIdentifiers = keyExpressions.map(id => id -> source.symbols.evaluateType(id, CTAny)).toMap
     val aggrIdentifiers = aggregations.map {
-      case (id, exp) => id -> exp.getType(source.symbols)
+      case (innerId, exp) => innerId -> exp.getType(source.symbols)
     }
 
     SymbolTable(keyIdentifiers ++ aggrIdentifiers)
@@ -53,7 +53,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
     // This is the temporary storage used while the aggregation is going on
     val result = MutableMap[NiceHasher, (ExecutionContext, Seq[AggregationFunction])]()
     val keyNames: Seq[String] = keyExpressions.toSeq
-    val aggregationNames: Seq[String] = aggregations.map(_._1).toSeq
+    val aggregationNames: Seq[String] = aggregations.keys.toSeq
     val mapSize = keyNames.size + aggregationNames.size
 
     def createResults(key: NiceHasher, aggregator: scala.Seq[AggregationFunction], ctx: ExecutionContext): ExecutionContext = {

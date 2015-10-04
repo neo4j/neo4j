@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_0.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan, NodeLogicalLeafPlan}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.{countStorePlanner, verifyBestPlan}
 import org.neo4j.cypher.internal.frontend.v3_0.Rewriter
 
@@ -37,14 +37,42 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
   override def apply(in: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val partPlan = countStorePlanner(in).getOrElse(planPart(in, context, None))
 
-    val planWithUpdates = planUpdates(in, partPlan)(context)
+    val planWithEffect =
+      if (conflicts(partPlan, in)) context.logicalPlanProducer.planRepeatableRead(partPlan)
+      else partPlan
+    val planWithUpdates = planUpdates(in, planWithEffect)(context)
+
     val projectedPlan = planEventHorizon(in, planWithUpdates)
     val projectedContext = context.recurse(projectedPlan)
     val expressionRewriter = expressionRewriterFactory(projectedContext)
     val completePlan = projectedPlan.endoRewrite(expressionRewriter)
 
-    val finalReadPlan = planWithTail(completePlan, in.tail)(projectedContext)
-    verifyBestPlan(finalReadPlan, in)
+    val finalPlan = planWithTail(completePlan, in.tail)(projectedContext)
+    verifyBestPlan(finalPlan, in)
+  }
+
+  /*
+   * The first reading leaf node is always stable. However for every preceding leaf node
+   * we must make sure there are no updates in this planner query that will match any of the reads.
+   * If so we must make that read a RepeatableRead.
+   */
+  private def conflicts(plan: LogicalPlan, plannerQuery: PlannerQuery): Boolean = {
+    if (plannerQuery.updateGraph.isEmpty) false
+    else {
+      val leaves = plan.leaves.collect {
+        case n: NodeLogicalLeafPlan => n.idName
+      }
+      //1 leaf is always ok, second one is not stable though
+      leaves.size > 1 && leaves.drop(1).exists(overlaps(_, plannerQuery))
+    }
+  }
+
+  private def overlaps(start: IdName, plannerQuery: PlannerQuery): Boolean = {
+    val startLabels = plannerQuery.queryGraph.allKnownLabelsOnNode(start).toSet
+    val writeLabels = plannerQuery.updateGraph.labels
+    startLabels.isEmpty || //MATCH ()?
+      writeLabels.isEmpty || //CREATE()?
+      (startLabels intersect writeLabels).nonEmpty//MATCH (:A) CREATE (:A)?
   }
 }
 

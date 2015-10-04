@@ -24,7 +24,7 @@ import org.mockito.Mockito.{times, verify, when}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LazyMode, LogicalPlan, ProduceResult, Projection}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, LogicalPlanningTestSupport2, PlannerQuery, QueryGraph, RegularQueryProjection, UnionQuery}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{UpdateGraph, CardinalityEstimation, LogicalPlanningTestSupport2, PlannerQuery, QueryGraph, RegularQueryProjection, UnionQuery}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{ASTAnnotationMap, Expression, Hint}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
@@ -83,6 +83,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     when(plannerQuery.lastQueryHorizon).thenReturn(RegularQueryProjection())
     when(plannerQuery.tail).thenReturn(None)
     when(plannerQuery.allHints).thenReturn(Set[Hint]())
+    when(plannerQuery.updateGraph).thenReturn(UpdateGraph.empty)
 
     val lp = {
       val plan = mock[Projection]
@@ -99,6 +100,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     when(context.withStrictness(any())).thenReturn(context)
     val producer = mock[LogicalPlanProducer]
     when(producer.planStarProjection(any(), any())(any())).thenReturn(lp)
+    when(producer.planEmptyProjection(any())(any())).thenReturn(lp)
     when(context.logicalPlanProducer).thenReturn(producer)
     val queryPlanner = new DefaultQueryPlanner(planRewriter = Rewriter.noop,
       planSingleQuery = PlanSingleQuery(expressionRewriterFactory = (lpc) => Rewriter.noop ))
