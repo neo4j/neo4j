@@ -75,6 +75,8 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             initialIdGenerator = localFactory.open( fileName, grabSize, idType, highId );
             break;
         case SLAVE:
+            // Initially we may call switchToSlave() before calling open, so we need this additional
+            // (and, you might say, hacky) call to delete the .id file here as well as in switchToSlave().
             fs.deleteFile( fileName );
             initialIdGenerator = new SlaveIdGenerator( idType, highId, master.cement(), log, requestContextFactory );
             break;
