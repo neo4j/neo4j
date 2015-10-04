@@ -13,6 +13,8 @@ o Message logging about failure to push to slaves is now capped, no longer filli
 o Slaves pulls updates much faster and are very unlikely to every fall behind master.
   Transaction application on slaves now apply up to 50x faster, comparatively usually
   at least a couple of times faster than master
+o Switching to slave will now ensure no .id files are present, solving a bug that
+  could prevent recovery from completing
 
 2.2.5
 -----

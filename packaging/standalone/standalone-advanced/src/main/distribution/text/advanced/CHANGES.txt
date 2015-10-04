@@ -135,6 +135,14 @@ o Added ability to skip duplicate nodes, i.e. multiple nodes with the same ID in
 
 2.2.6
 -----
+Kernel:
+o Fixes an issue where label updates where supplied unordered during batch import
+  when deduplicating nodes. This issue could prevent any import containing duplicate
+  input ids from completing successfully.
+o ID files will now be properly always marked as unclean on unclean
+  shutdowns, fixing issue where recovery could require a database
+  restart to complete
+
 IO:
 o File lock deletion is retried on failure, fixing an issue with file lock
   release on Windows
@@ -143,6 +151,7 @@ Server:
 o Fixes #5258 - ClientError and TransientError make REST API transactions rollback
 o Query log now supports rotation through the `dbms.querylog.rotation.threshold`
   option
+o HTTP utility will now allow custom headers
 
 CSV:
 o Ability to treat empty quoted strings as null
