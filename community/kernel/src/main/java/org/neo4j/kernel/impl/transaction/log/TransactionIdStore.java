@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.neo4j.kernel.impl.store.TransactionId;
+
 /**
  * Keeps a latest transaction id. There's one counter for {@code committed transaction id} and one for
  * {@code closed transaction id}. The committed transaction id is for writing into a log before making
@@ -68,13 +70,13 @@ public interface TransactionIdStore
      * Returns transaction information about the last committed transaction, i.e.
      * transaction id as well as checksum.
      */
-    long[] getLastCommittedTransaction();
+    TransactionId getLastCommittedTransaction();
 
     /**
      * Returns transaction information about transaction where the last upgrade was performed, i.e.
      * transaction id as well as checksum.
      */
-    long[] getUpgradeTransaction();
+    TransactionId getUpgradeTransaction();
 
     /**
      * @return highest seen gap-free {@link #transactionClosed(long) closed transaction id}.

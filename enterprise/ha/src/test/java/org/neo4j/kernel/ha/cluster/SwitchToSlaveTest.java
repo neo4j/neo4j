@@ -64,6 +64,7 @@ import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -264,7 +265,7 @@ public class SwitchToSlaveTest
         when( resolver.resolveDependency( UpdatePuller.class ) ).thenReturn( updatePuller );
 
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-        when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new long[]{42, 42} );
+        when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 42, 42 ) );
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( TransactionIdStore.BASE_TX_ID );
         when( resolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( transactionIdStore );
 

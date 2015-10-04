@@ -40,9 +40,9 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class StoreFactoryTest
@@ -90,7 +90,7 @@ public class StoreFactoryTest
         neoStore = storeFactory.createNeoStore();
 
         // Then
-        assertArrayEquals( neoStore.getUpgradeTransaction(), neoStore.getLastCommittedTransaction() );
+        assertEquals( neoStore.getUpgradeTransaction(), neoStore.getLastCommittedTransaction() );
     }
 
     @Test

@@ -50,11 +50,11 @@ import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.MasterClient210;
+import org.neo4j.kernel.ha.PullerFactory;
 import org.neo4j.kernel.ha.StoreOutOfDateException;
 import org.neo4j.kernel.ha.StoreUnableToParticipateInClusterException;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.UpdatePullerScheduler;
-import org.neo4j.kernel.ha.PullerFactory;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMemberVersionCheck;
 import org.neo4j.kernel.ha.cluster.member.ClusterMemberVersionCheck.Outcome;
@@ -75,6 +75,7 @@ import org.neo4j.kernel.ha.store.UnavailableMembersException;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -87,6 +88,7 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.single;
@@ -559,8 +561,8 @@ public class SwitchToSlave
                                                  NeoStoreDataSource neoDataSource,
                                                  TransactionIdStore transactionIdStore )
     {
-        long[] myLastCommittedTxData = transactionIdStore.getLastCommittedTransaction();
-        long myLastCommittedTx = myLastCommittedTxData[0];
+        TransactionId myLastCommittedTxData = transactionIdStore.getLastCommittedTransaction();
+        long myLastCommittedTx = myLastCommittedTxData.transactionId();
         HandshakeResult handshake;
         try ( Response<HandshakeResult> response = master.handshake( myLastCommittedTx, neoDataSource.getStoreId() ) )
         {
@@ -591,7 +593,7 @@ public class SwitchToSlave
             throw e;
         }
 
-        long myChecksum = myLastCommittedTxData[1];
+        long myChecksum = myLastCommittedTxData.checksum();
         if ( myChecksum != handshake.txChecksum() )
         {
             String msg = "The cluster contains two logically different versions of the database.. This will be " +

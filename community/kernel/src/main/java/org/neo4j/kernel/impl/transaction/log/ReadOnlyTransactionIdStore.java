@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 
 public class ReadOnlyTransactionIdStore implements TransactionIdStore
@@ -62,13 +63,13 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public long[] getLastCommittedTransaction()
+    public TransactionId getLastCommittedTransaction()
     {
-        return new long[] {transactionId, transactionChecksum};
+        return new TransactionId( transactionId, transactionChecksum );
     }
 
     @Override
-    public long[] getUpgradeTransaction()
+    public TransactionId getUpgradeTransaction()
     {
         return getLastCommittedTransaction();
     }
