@@ -44,6 +44,7 @@ import org.neo4j.logging.Logger;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.kernel.impl.util.CappedOperation.time;
@@ -108,14 +109,17 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     private volatile long latestConstraintIntroducingTxField = FIELD_NOT_INITIALIZED;
     private volatile long upgradeTxIdField = FIELD_NOT_INITIALIZED;
     private volatile long upgradeTimeField = FIELD_NOT_INITIALIZED;
-    private volatile long lastTransactionChecksum = FIELD_NOT_INITIALIZED;
     private volatile long lastClosedTransactionLogVersion = FIELD_NOT_INITIALIZED;
     private volatile long lastClosedTransactionLogByteOffset = FIELD_NOT_INITIALIZED;
     private volatile long upgradeTxChecksumField = FIELD_NOT_INITIALIZED;
 
+    // This is not a field in the store, but something keeping track of which is the currently highest
+    // committed transaction id, together with its checksum.
+    private final HighestTransactionId highestCommittedTransaction =
+            new HighestTransactionId( FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
+
     // This is not a field in the store, but something keeping track of which of the committed
     // transactions have been closed. Useful in rotation and shutdown.
-    private final OutOfOrderSequence lastCommittedTx = new ArrayQueueOutOfOrderSequence( -1, 200, new long[1] );
     private final OutOfOrderSequence lastClosedTx = new ArrayQueueOutOfOrderSequence( -1, 200, new long[2] );
 
     private final CappedOperation<Void> transactionCloseWaitLogger;
@@ -132,7 +136,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
             {
                 log.info( format(
                         "Waiting for all transactions to close...%n committed:  %s%n  committing: %s%n  closed:     %s",
-                        lastCommittedTx, lastCommittingTxField, lastClosedTx ) );
+                        highestCommittedTransaction.get(), lastCommittingTxField, lastClosedTx ) );
             }
         };
     }
@@ -322,13 +326,13 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         return upgradeTimeField;
     }
 
-    public synchronized void setUpgradeTime( long time )
+    public void setUpgradeTime( long time )
     {
         setRecord( Position.UPGRADE_TIME, time );
         upgradeTimeField = time;
     }
 
-    public synchronized void setUpgradeTransaction( long id, long checksum )
+    public void setUpgradeTransaction( long id, long checksum )
     {
         setRecord( Position.UPGRADE_TRANSACTION_ID, id );
         upgradeTxIdField = id;
@@ -342,7 +346,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         return creationTimeField;
     }
 
-    public synchronized void setCreationTime( long time )
+    public void setCreationTime( long time )
     {
         setRecord( Position.TIME, time );
         creationTimeField = time;
@@ -354,7 +358,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         return randomNumberField;
     }
 
-    public synchronized void setRandomNumber( long nr )
+    public void setRandomNumber( long nr )
     {
         setRecord( Position.RANDOM_NUMBER, nr );
         randomNumberField = nr;
@@ -457,12 +461,12 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
             storeVersionField = getRecordValue( cursor, Position.STORE_VERSION );
             graphNextPropField = getRecordValue( cursor, Position.FIRST_GRAPH_PROPERTY );
             latestConstraintIntroducingTxField = getRecordValue( cursor, Position.LAST_CONSTRAINT_TRANSACTION );
-            lastTransactionChecksum = getRecordValue( cursor, Position.LAST_TRANSACTION_CHECKSUM );
             lastClosedTransactionLogVersion = getRecordValue( cursor, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION );
             lastClosedTransactionLogByteOffset = getRecordValue( cursor, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
             lastClosedTx.set( lastCommittedTxId,
                     new long[]{lastClosedTransactionLogVersion, lastClosedTransactionLogByteOffset} );
-            lastCommittedTx.set( lastCommittedTxId, new long[]{lastTransactionChecksum} );
+            highestCommittedTransaction.set( lastCommittedTxId,
+                    getRecordValue( cursor, Position.LAST_TRANSACTION_CHECKSUM ) );
             upgradeTxChecksumField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_CHECKSUM );
         }
         while ( cursor.shouldRetry() );
@@ -629,12 +633,23 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     @Override
     public void transactionCommitted( long transactionId, long checksum )
     {
-        if ( lastCommittedTx.offer( transactionId, new long[]{checksum} ) )
+        if ( highestCommittedTransaction.offer( transactionId, checksum ) )
         {
-            long[] transactionData = lastCommittedTx.get();
-            setRecord( Position.LAST_TRANSACTION_ID, transactionData[0] );
-            setRecord( Position.LAST_TRANSACTION_CHECKSUM, transactionData[1] );
-            lastTransactionChecksum = checksum;
+            // We need to synchronize here in order to guarantee that the two field are written consistently
+            // together. Note that having the exclusive lock on tha page is not enough for 2 reasons:
+            // 1. the records might be in different pages
+            // 2. some other thread might kick in while we have been written only one record
+            synchronized ( this )
+            {
+                // Double-check with highest tx id under the lock, so that there haven't been
+                // another higher transaction committed between our id being accepted and
+                // acquiring this monitor.
+                if ( highestCommittedTransaction.get().transactionId() == transactionId )
+                {
+                    setRecord( Position.LAST_TRANSACTION_ID, transactionId );
+                    setRecord( Position.LAST_TRANSACTION_CHECKSUM, checksum );
+                }
+            }
         }
     }
 
@@ -642,21 +657,21 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     public long getLastCommittedTransactionId()
     {
         checkInitialized( lastCommittingTxField.get() );
-        return lastCommittedTx.getHighestGapFreeNumber();
+        return highestCommittedTransaction.get().transactionId();
     }
 
     @Override
-    public long[] getLastCommittedTransaction()
+    public TransactionId getLastCommittedTransaction()
     {
         checkInitialized( lastCommittingTxField.get() );
-        return lastCommittedTx.get();
+        return highestCommittedTransaction.get();
     }
 
     @Override
-    public long[] getUpgradeTransaction()
+    public TransactionId getUpgradeTransaction()
     {
         checkInitialized( upgradeTxChecksumField );
-        return new long[]{upgradeTxIdField, upgradeTxChecksumField};
+        return new TransactionId( upgradeTxIdField, upgradeTxChecksumField );
     }
 
     @Override
@@ -682,6 +697,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         }
     }
 
+    // only for initialization
     @Override
     public void setLastCommittedAndClosedTransactionId( long transactionId, long checksum, long logVersion, long byteOffset )
     {
@@ -691,11 +707,10 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, byteOffset );
         checkInitialized( lastCommittingTxField.get() );
         lastCommittingTxField.set( transactionId );
-        lastCommittedTx.set( transactionId, new long[]{checksum} );
-        lastTransactionChecksum = checksum;
         lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset} );
         lastClosedTransactionLogVersion = logVersion;
         lastClosedTransactionLogByteOffset = byteOffset;
+        highestCommittedTransaction.set( transactionId, checksum );
     }
 
     @Override

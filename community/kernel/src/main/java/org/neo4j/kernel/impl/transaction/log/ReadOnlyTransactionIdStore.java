@@ -24,9 +24,10 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.TransactionId;
 
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 
 public class ReadOnlyTransactionIdStore implements TransactionIdStore
@@ -73,13 +74,13 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public long[] getLastCommittedTransaction()
+    public TransactionId getLastCommittedTransaction()
     {
-        return new long[] {transactionId, transactionChecksum};
+        return new TransactionId( transactionId, transactionChecksum );
     }
 
     @Override
-    public long[] getUpgradeTransaction()
+    public TransactionId getUpgradeTransaction()
     {
         return getLastCommittedTransaction();
     }

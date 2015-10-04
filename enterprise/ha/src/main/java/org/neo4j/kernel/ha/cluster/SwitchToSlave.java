@@ -77,6 +77,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -90,6 +91,7 @@ import org.neo4j.logging.Log;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
+
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.single;
@@ -136,7 +138,7 @@ public class SwitchToSlave
     private final UpdatePuller updatePuller;
     private final PageCache pageCache;
     private final Monitors monitors;
-    private TransactionCounters transactionCounters;
+    private final TransactionCounters transactionCounters;
 
     private final Log userLog;
     private final Log msgLog;
@@ -624,8 +626,8 @@ public class SwitchToSlave
             StoreId storeId,
             TransactionIdStore transactionIdStore )
     {
-        long[] myLastCommittedTxData = transactionIdStore.getLastCommittedTransaction();
-        long myLastCommittedTx = myLastCommittedTxData[0];
+        TransactionId myLastCommittedTxData = transactionIdStore.getLastCommittedTransaction();
+        long myLastCommittedTx = myLastCommittedTxData.transactionId();
         HandshakeResult handshake;
         try ( Response<HandshakeResult> response = master.handshake( myLastCommittedTx, storeId ) )
         {
@@ -656,7 +658,7 @@ public class SwitchToSlave
             throw e;
         }
 
-        long myChecksum = myLastCommittedTxData[1];
+        long myChecksum = myLastCommittedTxData.checksum();
         if ( myChecksum != handshake.txChecksum() )
         {
             String msg = "The cluster contains two logically different versions of the database.. This will be " +

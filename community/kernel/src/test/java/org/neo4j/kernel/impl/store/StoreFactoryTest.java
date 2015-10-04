@@ -40,7 +40,6 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
@@ -95,10 +94,7 @@ public class StoreFactoryTest
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
 
         // Then
-        long[] lastCommittedTransaction = metaDataStore.getLastCommittedTransaction();
-        long[] txIdChecksum = new long[2];
-        System.arraycopy( lastCommittedTransaction, 0, txIdChecksum, 0, 2 );
-        assertArrayEquals( metaDataStore.getUpgradeTransaction(), txIdChecksum );
+        assertEquals( metaDataStore.getUpgradeTransaction(), metaDataStore.getLastCommittedTransaction() );
     }
 
     @Test

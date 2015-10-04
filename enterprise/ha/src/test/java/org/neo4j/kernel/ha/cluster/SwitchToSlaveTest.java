@@ -66,6 +66,7 @@ import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -74,7 +75,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -90,6 +90,8 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
+
+import static java.util.Arrays.asList;
 
 public class SwitchToSlaveTest
 {
@@ -151,7 +153,7 @@ public class SwitchToSlaveTest
         StoreId storeId = new StoreId( 1, 2, 3, 4 );
 
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-        when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new long[]{42, 42} );
+        when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 42, 42 ) );
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( TransactionIdStore.BASE_TX_ID );
 
         // When
@@ -179,7 +181,7 @@ public class SwitchToSlaveTest
         when( masterClient.handshake( anyLong(), any( StoreId.class ) ) ).thenThrow( new BranchedDataException( "" ) );
 
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-        when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new long[]{42, 42} );
+        when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 42, 42 ) );
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( TransactionIdStore.BASE_TX_ID );
 
         // When
@@ -296,7 +298,7 @@ public class SwitchToSlaveTest
 
         TransactionIdStore transactionIdStoreMock = mock( TransactionIdStore.class );
         // note that the checksum (the second member of the array) is the same as the one in the handshake mock above
-        when( transactionIdStoreMock.getLastCommittedTransaction() ).thenReturn( new long[]{42, 42} );
+        when( transactionIdStoreMock.getLastCommittedTransaction() ).thenReturn( new TransactionId( 42, 42 ) );
 
         MasterClientResolver masterClientResolver = mock( MasterClientResolver.class );
         when( masterClientResolver.instantiate( anyString(), anyInt(), any( Monitors.class ), any( StoreId.class ),

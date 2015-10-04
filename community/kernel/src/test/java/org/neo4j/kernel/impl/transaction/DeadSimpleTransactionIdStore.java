@@ -20,8 +20,10 @@
 package org.neo4j.kernel.impl.transaction;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
@@ -33,8 +35,9 @@ import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 public class DeadSimpleTransactionIdStore implements TransactionIdStore
 {
     private final AtomicLong committingTransactionId = new AtomicLong();
-    private final OutOfOrderSequence committedTransactionId = new ArrayQueueOutOfOrderSequence( -1, 100, new long[3] );
     private final OutOfOrderSequence closedTransactionId = new ArrayQueueOutOfOrderSequence( -1, 100, new long[1] );
+    private final AtomicReference<TransactionId> committedTransactionId =
+            new AtomicReference<>( new TransactionId( BASE_TX_ID, BASE_TX_CHECKSUM ) );
     private final long previouslyCommittedTxId;
     private final long initialTransactionChecksum;
 
@@ -60,27 +63,31 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void transactionCommitted( long transactionId, long checksum )
+    public synchronized void transactionCommitted( long transactionId, long checksum )
     {
-        committedTransactionId.offer( transactionId, new long[]{checksum} );
+        TransactionId current = committedTransactionId.get();
+        if ( current == null || transactionId > current.transactionId() )
+        {
+            committedTransactionId.set( new TransactionId( transactionId, checksum ) );
+        }
     }
 
     @Override
     public long getLastCommittedTransactionId()
     {
-        return committedTransactionId.getHighestGapFreeNumber();
+        return committedTransactionId.get().transactionId();
     }
 
     @Override
-    public long[] getLastCommittedTransaction()
+    public TransactionId getLastCommittedTransaction()
     {
         return committedTransactionId.get();
     }
 
     @Override
-    public long[] getUpgradeTransaction()
+    public TransactionId getUpgradeTransaction()
     {
-        return new long[] {previouslyCommittedTxId, initialTransactionChecksum};
+        return new TransactionId( previouslyCommittedTxId, initialTransactionChecksum );
     }
 
     @Override
@@ -99,7 +106,7 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     public void setLastCommittedAndClosedTransactionId( long transactionId, long checksum, long logVersion, long byteOffset )
     {
         committingTransactionId.set( transactionId );
-        committedTransactionId.set( transactionId, new long[]{checksum, logVersion, byteOffset} );
+        committedTransactionId.set( new TransactionId( transactionId, checksum ) );
         closedTransactionId.set( transactionId, new long[]{checksum, logVersion, byteOffset} );
     }
 
@@ -112,7 +119,7 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     @Override
     public boolean closedTransactionIdIsOnParWithOpenedTransactionId()
     {
-        return closedTransactionId.getHighestGapFreeNumber() == committedTransactionId.getHighestGapFreeNumber();
+        return closedTransactionId.getHighestGapFreeNumber() == committedTransactionId.get().transactionId();
     }
 
     @Override

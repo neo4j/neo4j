@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -67,8 +66,8 @@ import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState.PropertyReceiver;
@@ -80,11 +79,11 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class NeoStoreTest
@@ -168,7 +167,6 @@ public class NeoStoreTest
         propertyLoader = new PropertyLoader( neoStores );
     }
 
-    private byte txCount = (byte) 0;
     private KernelTransaction tx;
     private TransactionRecordState transaction;
     private StoreReadLayer storeLayer;
@@ -176,7 +174,6 @@ public class NeoStoreTest
 
     private void startTx() throws TransactionFailureException
     {
-        txCount++;
         tx = ds.getKernel().newTransaction();
         transaction = ((KernelTransactionImplementation) tx).getTransactionRecordState();
     }
@@ -185,38 +182,6 @@ public class NeoStoreTest
     {
         tx.success();
         tx.close();
-    }
-
-    @After
-    public void tearDownNeoStores()
-    {
-        for ( String file : new String[]{
-                "neo",
-                "neo.nodestore.db",
-                "neo.nodestore.db.labels",
-                "neo.propertystore.db",
-                "neo.propertystore.db.index",
-                "neo.propertystore.db.index.keys",
-                "neo.propertystore.db.strings",
-                "neo.propertystore.db.arrays",
-                "neo.relationshipstore.db",
-                "neo.relationshiptypestore.db",
-                "neo.relationshiptypestore.db.names",
-                "neo.schemastore.db",
-        } )
-        {
-            fs.get().deleteFile( new File( storeDir, file ) );
-            fs.get().deleteFile( new File( storeDir, file + ".id" ) );
-        }
-
-        File file = new File( "." );
-        for ( File nioFile : fs.get().listFiles( file ) )
-        {
-            if ( nioFile.getName().startsWith( PhysicalLogFile.DEFAULT_NAME ) )
-            {
-                fs.get().deleteFile( nioFile );
-            }
-        }
     }
 
     private int index( String key )
@@ -680,7 +645,7 @@ public class NeoStoreTest
 
     private void deleteRel1( long rel, DefinedProperty prop1, DefinedProperty prop2,
             DefinedProperty prop3, long firstNode, long secondNode, int relType )
-            throws IOException, EntityNotFoundException
+            throws IOException
     {
         ArrayMap<Integer,Pair<DefinedProperty,Long>> props = new ArrayMap<>();
         propertyLoader.relLoadProperties( rel, newPropertyReceiver( props ) );
@@ -741,7 +706,7 @@ public class NeoStoreTest
 
     private void deleteRel2( long rel, DefinedProperty prop1, DefinedProperty prop2,
             DefinedProperty prop3, long firstNode, long secondNode, int relType )
-            throws IOException, EntityNotFoundException
+            throws IOException
     {
         ArrayMap<Integer,Pair<DefinedProperty,Long>> props = new ArrayMap<>();
         propertyLoader.relLoadProperties( rel, newPropertyReceiver( props ) );
@@ -805,7 +770,7 @@ public class NeoStoreTest
 
     private void deleteNode1( long node, DefinedProperty prop1,
             DefinedProperty prop2, DefinedProperty prop3 )
-            throws IOException, EntityNotFoundException
+            throws IOException
     {
         ArrayMap<Integer,Pair<DefinedProperty,Long>> props = new ArrayMap<>();
         propertyLoader.nodeLoadProperties( node, newPropertyReceiver( props ) );
@@ -851,7 +816,7 @@ public class NeoStoreTest
 
     private void deleteNode2( long node, DefinedProperty prop1,
             DefinedProperty prop2, DefinedProperty prop3 )
-            throws IOException, EntityNotFoundException
+            throws IOException
     {
         ArrayMap<Integer,Pair<DefinedProperty,Long>> props = new ArrayMap<>();
         propertyLoader.nodeLoadProperties( node, newPropertyReceiver( props ) );
@@ -1087,9 +1052,9 @@ public class NeoStoreTest
         File storeDir = new File( "target/test-data/set-version" ).getAbsoluteFile();
         new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();
         assertEquals( 0, MetaDataStore.setRecord( pageCache, new File( storeDir,
-                MetaDataStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, (long) 10 ) );
+                MetaDataStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, 10 ) );
         assertEquals( 10, MetaDataStore.setRecord( pageCache, new File( storeDir,
-                MetaDataStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, (long) 12 ) );
+                MetaDataStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, 12 ) );
 
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
         StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
@@ -1110,13 +1075,13 @@ public class NeoStoreTest
         try ( NeoStores neoStores = factory.openNeoStores( true ) )
         {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-            metaDataStore.setCreationTime( (long) 3 );
-            metaDataStore.setRandomNumber( (long) 4 );
-            metaDataStore.setCurrentLogVersion( (long) 5 );
-            metaDataStore.setLastCommittedAndClosedTransactionId( (long) 6, (long) 0, (long) 0, (long) 0 );
-            metaDataStore.setStoreVersion( (long) 7 );
-            metaDataStore.setGraphNextProp( (long) 8 );
-            metaDataStore.setLatestConstraintIntroducingTx( (long) 9 );
+            metaDataStore.setCreationTime( 3 );
+            metaDataStore.setRandomNumber( 4 );
+            metaDataStore.setCurrentLogVersion( 5 );
+            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 0, 0, 0 );
+            metaDataStore.setStoreVersion( 7 );
+            metaDataStore.setGraphNextProp( 8 );
+            metaDataStore.setLatestConstraintIntroducingTx( 9 );
         }
 
         File file = new File( neoStoreDir, MetaDataStore.DEFAULT_NAME );
@@ -1219,13 +1184,13 @@ public class NeoStoreTest
         try ( NeoStores neoStores = factory.openNeoStores( true ) )
         {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-            metaDataStore.setCreationTime( (long) 3 );
-            metaDataStore.setRandomNumber( (long) 4 );
-            metaDataStore.setCurrentLogVersion( (long) 5 );
-            metaDataStore.setLastCommittedAndClosedTransactionId( (long) 6, (long) 0, (long) 0, (long) 0 );
-            metaDataStore.setStoreVersion( (long) 7 );
-            metaDataStore.setGraphNextProp( (long) 8 );
-            metaDataStore.setLatestConstraintIntroducingTx( (long) 9 );
+            metaDataStore.setCreationTime( 3 );
+            metaDataStore.setRandomNumber( 4 );
+            metaDataStore.setCurrentLogVersion( 5 );
+            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 0, 0, 0 );
+            metaDataStore.setStoreVersion( 7 );
+            metaDataStore.setGraphNextProp( 8 );
+            metaDataStore.setLatestConstraintIntroducingTx( 9 );
         }
 
         File file = new File( neoStoreDir, MetaDataStore.DEFAULT_NAME );
@@ -1233,9 +1198,9 @@ public class NeoStoreTest
         assertNotEquals( 10, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_ID ) );
         assertNotEquals( 11, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM ) );
 
-        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_ID, (long) 10 );
-        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM, (long) 11 );
-        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TIME, (long) 12 );
+        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_ID, 10 );
+        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM, 11 );
+        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TIME, 12 );
 
         try ( NeoStores neoStores = factory.openNeoStores( false ) )
         {
@@ -1247,8 +1212,50 @@ public class NeoStoreTest
             assertEquals( 7, metaDataStore.getStoreVersion() );
             assertEquals( 8, metaDataStore.getGraphNextProp() );
             assertEquals( 9, metaDataStore.getLatestConstraintIntroducingTx() );
-            assertArrayEquals( new long[]{10, 11}, metaDataStore.getUpgradeTransaction() );
+            assertEquals( new TransactionId( 10, 11 ), metaDataStore.getUpgradeTransaction() );
             assertEquals( 12, metaDataStore.getUpgradeTime() );
+        }
+    }
+
+    @Test
+    public void shouldSetHighestTransactionIdWhenNeeded() throws Throwable
+    {
+        // GIVEN
+        FileSystemAbstraction fileSystem = fs.get();
+        fileSystem.mkdirs( storeDir );
+        StoreFactory factory = new StoreFactory( fileSystem, storeDir, pageCache, NullLogProvider.getInstance() );
+
+        try ( NeoStores neoStore = factory.openNeoStores( true ) )
+        {
+            MetaDataStore store = neoStore.getMetaDataStore();
+            store.setLastCommittedAndClosedTransactionId( 40, 4444, 0, LogHeader.LOG_HEADER_SIZE );
+
+            // WHEN
+            store.transactionCommitted( 42, 6666 );
+
+            // THEN
+            assertEquals( new TransactionId( 42, 6666 ), store.getLastCommittedTransaction() );
+        }
+    }
+
+    @Test
+    public void shouldNotSetHighestTransactionIdWhenNeeded() throws Throwable
+    {
+        // GIVEN
+        FileSystemAbstraction fileSystem = fs.get();
+        fileSystem.mkdirs( storeDir );
+        StoreFactory factory = new StoreFactory( fileSystem, storeDir, pageCache, NullLogProvider.getInstance() );
+
+        try ( NeoStores neoStore = factory.openNeoStores( true ) )
+        {
+            MetaDataStore store = neoStore.getMetaDataStore();
+            store.setLastCommittedAndClosedTransactionId( 40, 4444, 0, LogHeader.LOG_HEADER_SIZE );
+
+            // WHEN
+            store.transactionCommitted( 39, 3333 );
+
+            // THEN
+            assertEquals( new TransactionId( 40, 4444 ), store.getLastCommittedTransaction() );
         }
     }
 }
