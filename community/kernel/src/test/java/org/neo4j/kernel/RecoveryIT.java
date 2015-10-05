@@ -32,7 +32,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Format;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.test.TargetDirectory;
@@ -129,7 +129,7 @@ public class RecoveryIT
 
     private String createLongString()
     {
-        String[] strings = new String[Format.KB * 2];
+        String[] strings = new String[(int) ByteUnit.kibiBytes( 2 )];
         Arrays.fill( strings, "a" );
         return Arrays.toString( strings );
     }
