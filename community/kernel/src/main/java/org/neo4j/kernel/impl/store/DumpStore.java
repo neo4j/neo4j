@@ -102,7 +102,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
                 throw new IllegalArgumentException( "No such file: " + arg );
             }
         }
-        try ( NeoStores neoStores = createStoreFactory.apply( file ).openNeoStores( false ) )
+        try ( NeoStores neoStores = createStoreFactory.apply( file ).openNeoStoresEagerly() )
         {
             switch ( file.getName() )
             {

@@ -84,7 +84,7 @@ public class RsdrMain
         try ( PageCache pageCache = createPageCache( files, config ) )
         {
             StoreFactory factory = openStore( new File( storedir, MetaDataStore.DEFAULT_NAME ), config, pageCache );
-            NeoStores neoStores = factory.openNeoStores( false );
+            NeoStores neoStores = factory.openNeoStoresEagerly();
             interact( neoStores );
         }
     }

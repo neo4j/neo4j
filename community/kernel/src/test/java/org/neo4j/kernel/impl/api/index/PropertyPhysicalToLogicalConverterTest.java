@@ -49,6 +49,7 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 
 public class PropertyPhysicalToLogicalConverterTest
 {
@@ -221,7 +222,7 @@ public class PropertyPhysicalToLogicalConverterTest
         fs.get().mkdirs( storeDir );
         StoreFactory storeFactory = new StoreFactory( storeDir, new Config(), new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
-        neoStores = storeFactory.openNeoStores( true );
+        neoStores = storeFactory.openNeoStores( SF_CREATE );
         store = neoStores.getPropertyStore();
         converter = new PropertyPhysicalToLogicalConverter( store );
     }

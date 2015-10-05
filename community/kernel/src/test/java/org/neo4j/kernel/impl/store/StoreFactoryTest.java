@@ -42,6 +42,7 @@ import org.neo4j.test.TargetDirectory;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 
 public class StoreFactoryTest
 {
@@ -79,7 +80,7 @@ public class StoreFactoryTest
     public void shouldHaveSameCreationTimeAndUpgradeTimeOnStartup() throws Exception
     {
         // When
-        neoStores = storeFactory.openNeoStores( true );
+        neoStores = storeFactory.openNeoStores( SF_CREATE );
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
 
         // Then
@@ -90,7 +91,7 @@ public class StoreFactoryTest
     public void shouldHaveSameCommittedTransactionAndUpgradeTransactionOnStartup() throws Exception
     {
         // When
-        neoStores = storeFactory.openNeoStores( true );
+        neoStores = storeFactory.openNeoStores( SF_CREATE );
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
 
         // Then
@@ -106,7 +107,7 @@ public class StoreFactoryTest
         StoreFactory readOnlyStoreFactory = new StoreFactory( testDirectory.directory( "readOnlyStore" ),
                 new Config( MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) ),
                 new DefaultIdGeneratorFactory( fs ), pageCache, fs, NullLogProvider.getInstance() );
-        neoStores = readOnlyStoreFactory.openNeoStores( true );
+        neoStores = readOnlyStoreFactory.openNeoStores( SF_CREATE );
         long lastClosedTransactionId = neoStores.getMetaDataStore().getLastClosedTransactionId();
 
         // then
@@ -116,7 +117,7 @@ public class StoreFactoryTest
     @Test( expected = StoreNotFoundException.class )
     public void shouldThrowWhenOpeningNonExistingNeoStores()
     {
-        try ( NeoStores neoStores = storeFactory.openNeoStores( false ) )
+        try ( NeoStores neoStores = storeFactory.openNeoStoresEagerly() )
         {
             neoStores.getMetaDataStore();
         }

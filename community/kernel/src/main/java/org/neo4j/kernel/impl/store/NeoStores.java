@@ -601,14 +601,6 @@ public class NeoStores implements AutoCloseable
         }
     }
 
-    public void rebuildIdGenerators()
-    {
-        for ( CommonAbstractStore store : instantiatedRecordStores() )
-        {
-            store.rebuildIdGenerator();
-        }
-    }
-
     /**
      * Throws cause of store not being OK.
      */

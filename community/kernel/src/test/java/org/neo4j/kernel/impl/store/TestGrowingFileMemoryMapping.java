@@ -40,6 +40,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 
 public class TestGrowingFileMemoryMapping
 {
@@ -63,7 +64,7 @@ public class TestGrowingFileMemoryMapping
         StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, NullLogProvider.getInstance() );
 
-        NeoStores neoStores = storeFactory.openNeoStores( true );
+        NeoStores neoStores = storeFactory.openNeoStores( SF_CREATE );
         NodeStore nodeStore = neoStores.getNodeStore();
 
         // when

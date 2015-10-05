@@ -49,6 +49,7 @@ import org.neo4j.perftest.enterprise.util.Parameters;
 import org.neo4j.perftest.enterprise.util.Setting;
 
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
+import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
 import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
 import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.param;
@@ -141,7 +142,7 @@ public class ConsistencyPerformanceCheck
     {
         StoreFactory factory = new StoreFactory( storeDir, tuningConfiguration,
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, NullLogProvider.getInstance() );
-        NeoStores neoStores = factory.openNeoStores( true );
+        NeoStores neoStores = factory.openNeoStores( SF_CREATE );
         SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
                 fileSystem,
                 DirectoryFactory.PERSISTENT,

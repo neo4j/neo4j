@@ -273,7 +273,8 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * map their own temporary PagedFile for the store file, and do their file IO through that,
      * if they need to access the data in the store file.
      */
-    protected final void rebuildIdGenerator()
+    // accessible only for testing
+    final void rebuildIdGenerator()
     {
         int blockSize = getRecordSize();
         if ( blockSize <= 0 )
@@ -297,8 +298,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             {
                 try ( PageCursor cursor = storeFile.io( 0, PagedFile.PF_EXCLUSIVE_LOCK | PF_READ_AHEAD ) )
                 {
-                    defraggedCount = rebuildIdGeneratorSlow( cursor, getRecordsPerPage(), blockSize,
-                            foundHighId );
+                    defraggedCount = rebuildIdGeneratorSlow( cursor, getRecordsPerPage(), blockSize, foundHighId );
                 }
             }
         }

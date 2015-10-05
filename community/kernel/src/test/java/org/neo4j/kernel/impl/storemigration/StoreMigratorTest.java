@@ -99,7 +99,7 @@ public class StoreMigratorTest
         // THEN starting the new store should be successful
         StoreFactory storeFactory =
                 new StoreFactory( fs, storeDirectory, pageCache, logService.getInternalLogProvider() );
-        storeFactory.openNeoStores( false ).close();
+        storeFactory.openNeoStoresEagerly().close();
     }
 
     @Test
@@ -131,6 +131,6 @@ public class StoreMigratorTest
         // THEN starting the new store should be successful
         StoreFactory storeFactory =
                 new StoreFactory( fs, storeDirectory, pageCache, logService.getInternalLogProvider() );
-        storeFactory.openNeoStores( false ).close();
+        storeFactory.openNeoStoresEagerly().close();
     }
 }

@@ -67,6 +67,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 
 @RunWith( Enclosed.class )
 public class StorePropertyCursorTest
@@ -307,7 +308,7 @@ public class StorePropertyCursorTest
             }
             fs.mkdirs( storeDir );
             StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, log );
-            neoStores = storeFactory.openNeoStores( true );
+            neoStores = storeFactory.openNeoStores( SF_CREATE );
             propertyStore = neoStores.getPropertyStore();
         }
 

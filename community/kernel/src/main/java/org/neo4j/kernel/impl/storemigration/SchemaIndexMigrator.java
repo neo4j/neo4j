@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.getRootDirectory;
+import static org.neo4j.kernel.impl.store.StoreFactory.SF_LAZY;
 import static org.neo4j.kernel.impl.store.record.SchemaRule.Kind.UNIQUENESS_CONSTRAINT;
 
 public class SchemaIndexMigrator implements StoreMigrationParticipant
@@ -91,7 +92,7 @@ public class SchemaIndexMigrator implements StoreMigrationParticipant
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
         List<File> indexesToBeDeleted = new ArrayList<>();
         storeFactory.setStoreDir( storeDir );
-        try ( NeoStores neoStores = storeFactory.openNeoStores( false, false ) )
+        try ( NeoStores neoStores = storeFactory.openNeoStores( SF_LAZY ) )
         {
             SchemaStore schema = neoStores.getSchemaStore();
             Iterator<SchemaRule> rules = schema.loadAllSchemaRules();

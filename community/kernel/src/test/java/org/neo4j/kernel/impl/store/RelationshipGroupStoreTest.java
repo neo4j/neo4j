@@ -57,6 +57,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 
 public class RelationshipGroupStoreTest
 {
@@ -135,18 +136,18 @@ public class RelationshipGroupStoreTest
     {
         int expectedThreshold = customThreshold != null ? customThreshold : defaultThreshold;
         StoreFactory factory = factory( customThreshold );
-        NeoStores neoStores = factory.openNeoStores( true );
+        NeoStores neoStores = factory.openNeoStores( SF_CREATE );
         assertEquals( expectedThreshold, neoStores.getRelationshipGroupStore().getDenseNodeThreshold() );
         neoStores.close();
 
         // Next time we open it it should be the same
-        neoStores = factory.openNeoStores( false );
+        neoStores = factory.openNeoStoresEagerly();
         assertEquals( expectedThreshold, neoStores.getRelationshipGroupStore().getDenseNodeThreshold() );
         neoStores.close();
 
         // Even if we open with a different config setting it should just ignore it
         factory = factory( 999999 );
-        neoStores = factory.openNeoStores( false );
+        neoStores = factory.openNeoStoresEagerly();
         assertEquals( expectedThreshold, neoStores.getRelationshipGroupStore().getDenseNodeThreshold() );
         neoStores.close();
     }
@@ -306,7 +307,7 @@ public class RelationshipGroupStoreTest
         pageCache = pageCacheRule.withInconsistentReads( pageCache, nextReadIsInconsistent );
         StoreFactory factory = factory( null, pageCache );
 
-        try ( NeoStores neoStores = factory.openNeoStores( true ) )
+        try ( NeoStores neoStores = factory.openNeoStores( SF_CREATE ) )
         {
             RelationshipGroupStore relationshipGroupStore = neoStores.getRelationshipGroupStore();
             RelationshipGroupRecord record = new RelationshipGroupRecord( 1, 2, 3, 4, 5, 6, true );
