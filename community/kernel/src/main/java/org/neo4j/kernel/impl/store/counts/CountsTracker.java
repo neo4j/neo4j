@@ -76,7 +76,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
 {
     /** The format specifier for the current version of the store file format. */
     private static final byte[] FORMAT = {'N', 'e', 'o', 'C', 'o', 'u', 'n', 't',
-                                          'S', 't', 'o', 'r', 'e', /**/0, 0, 'V'};
+                                          'S', 't', 'o', 'r', 'e', /**/0, 1, 'V'};
     @SuppressWarnings("unchecked")
     private static final HeaderField<?>[] HEADER_FIELDS = new HeaderField[]{FileVersion.FILE_VERSION};
     public static final String LEFT = ".a", RIGHT = ".b";

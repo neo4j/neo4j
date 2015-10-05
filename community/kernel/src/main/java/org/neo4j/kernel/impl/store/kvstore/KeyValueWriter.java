@@ -52,7 +52,7 @@ class KeyValueWriter implements Closeable
     public boolean writeHeader( BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value ) throws IOException
     {
         boolean result = state.header( this, value.allZeroes() );
-        doWrite( key, value, State.writing_trailer );
+        doWrite( key, value, State.done );
         return result;
     }
 
@@ -72,14 +72,6 @@ class KeyValueWriter implements Closeable
             throw new IllegalStateException( "MetadataCollector stopped on data field." );
         }
     }
-
-    public boolean writeTrailer( BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value ) throws IOException
-    {
-        boolean result = state.trailer( this, value.allZeroes() );
-        doWrite( key, value, State.done );
-        return result;
-    }
-
 
     private void doWrite( BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value, State expectedNextState )
             throws IOException
@@ -155,7 +147,7 @@ class KeyValueWriter implements Closeable
             {
                 if ( zeroValue )
                 {
-                    writer.state = writing_trailer;
+                    writer.state = done;
                 }
                 return true;
             }
@@ -173,7 +165,7 @@ class KeyValueWriter implements Closeable
             {
                 if ( zeroValue )
                 {
-                    writer.state = writing_trailer;
+                    writer.state = done;
                     return true;
                 }
                 else
@@ -201,7 +193,7 @@ class KeyValueWriter implements Closeable
                 }
                 else
                 {
-                    writer.state = writing_trailer;
+                    writer.state = done;
                     return true;
                 }
             }
@@ -210,23 +202,6 @@ class KeyValueWriter implements Closeable
             void data( KeyValueWriter writer )
             {
                 // keep the same state
-            }
-        },
-        writing_trailer
-        {
-            @Override
-            boolean trailer( KeyValueWriter writer, boolean zeroValue )
-            {
-                if ( zeroValue )
-                {
-                    writer.state = in_error;
-                    return false;
-                }
-                else
-                {
-                    writer.state = done;
-                    return true;
-                }
             }
         },
         done

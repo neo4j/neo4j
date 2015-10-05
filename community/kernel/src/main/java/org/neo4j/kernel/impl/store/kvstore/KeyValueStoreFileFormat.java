@@ -202,13 +202,6 @@ public abstract class KeyValueStoreFileFormat
                 throw new IllegalStateException( "The trailing size header should be valid" );
             }
 
-            // write again the format specifier as trailer
-            writeFormatSpecifier( value );
-            if ( !writer.writeTrailer( key, value ) )
-            {
-                throw new IllegalStateException( "The trailer should be valid" );
-            }
-
             return writer.openStoreFile();
         }
     }
