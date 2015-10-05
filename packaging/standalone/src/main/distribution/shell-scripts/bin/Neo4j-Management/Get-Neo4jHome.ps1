@@ -29,6 +29,9 @@ Get-Neo4jHome
 
 Returns the path to the default Neo4j installation
 
+.LINK
+http://neo4j.com/docs/stable/server-installation.html#windows-console
+
 .OUTPUTS
 System.String
 
