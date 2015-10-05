@@ -394,7 +394,7 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> params = new HashMap<String, Object>();
         List<Map<String, Object>> maps = Arrays.asList( n1, n2 );
         params.put( "props", maps );
-        String query = "CREATE (n:Person {props}) RETURN n";
+        String query = "UNWIND {props} AS properties CREATE (n:Person) SET n = properties RETURN n";
         db.execute( query, params );
         // END SNIPPET: create_multiple_nodes_from_map
         dumpToFile( "create_multiple_nodes_from_map", query, params );

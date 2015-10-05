@@ -61,10 +61,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
 
   test("should plan single create with return") {
     planFor("CREATE (a) return a").plan should equal(
-      Projection(
-        CreateNode(SingleRow()(solved), IdName("a"), Seq.empty, None)(solved),
-        Map("a" -> Identifier("a")_))
-      (solved)
+        CreateNode(SingleRow()(solved), IdName("a"), Seq.empty, None)(solved)
     )
   }
 
@@ -100,9 +97,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
     planFor("MATCH (a) CREATE (b) WITH * MATCH(c) CREATE (d)").plan should equal(
       EmptyResult(
         EagerApply(
-          Projection(
             CreateNode(AllNodesScan(IdName("a"), Set.empty)(solved), IdName("b"), Seq.empty, None)(solved),
-            Map("a" -> Identifier("a")_, "b" -> Identifier("b")_))(solved),
           CreateNode(RepeatableRead(
             AllNodesScan(IdName("c"), Set(IdName("a"), IdName("b")))(solved))(solved),
             IdName("d"), Seq.empty, None)(solved))(solved)

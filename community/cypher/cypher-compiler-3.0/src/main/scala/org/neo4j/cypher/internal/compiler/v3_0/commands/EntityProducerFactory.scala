@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.commands
 
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.GetGraphElements
-import org.neo4j.cypher.internal.compiler.v3_0.mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.compiler.v3_0.mutation.{makeValueNeoSafe, GraphElementPropertyFunctions}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{NodeByLabelEntityProducer, EntityProducer, IndexSeekModeFactory, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext

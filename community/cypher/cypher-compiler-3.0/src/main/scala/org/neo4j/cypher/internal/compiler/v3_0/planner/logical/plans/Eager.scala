@@ -24,13 +24,11 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, P
 
 case class Eager(inner: LogicalPlan)
                            (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions {
+  extends LogicalPlan with LogicalPlanWithoutExpressions with EagerLogicalPlan {
 
   override def availableSymbols: Set[IdName] = inner.availableSymbols
 
   override def lhs: Option[LogicalPlan] = Some(inner)
 
   override def rhs: Option[LogicalPlan] = None
-
-  override def strictness: StrictnessMode = inner.strictness
 }

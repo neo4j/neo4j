@@ -35,6 +35,10 @@ trait LogicalPlanningFunction2[-A1, -A2, +B] {
   def apply(input1: A1, input2: A2)(implicit context: LogicalPlanningContext): B
 }
 
+trait LogicalPlanningFunction3[-A1, -A2, -A3, +B] {
+  def apply(input1: A1, input2: A2, input3: A3)(implicit context: LogicalPlanningContext): B
+}
+
 // TODO: Return Iterator
 trait CandidateGenerator[T] extends LogicalPlanningFunction2[T, QueryGraph, Seq[LogicalPlan]]
 

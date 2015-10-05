@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{LabelName, NodePattern}
 
-//todo this should probably not use NodePatterns?
 case class UpdateGraph(nodePatterns: Seq[NodePattern] = Seq.empty) {
 
   def ++(other: UpdateGraph) = copy(nodePatterns = nodePatterns ++ other.nodePatterns)

@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 
 /*
- * Caches the inner pipe on first encounter and then returns the cached result on any subsequent requests
- * within the execution of the query.
+ * Caches the result of the source pipe in QueryContext.
  */
 case class RepeatableReadPipe(src: Pipe)(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(src, pipeMonitor) with NoEffectsPipe with RonjaPipe {
 
@@ -34,7 +33,7 @@ case class RepeatableReadPipe(src: Pipe)(val estimatedCardinality: Option[Double
   override def planDescription = src.planDescription.andThen(this.id, "RepeatableRead", identifiers)
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    val cached = state.cachedReads.getOrElseUpdate(this, input.toList)
+    val cached = state.repeatableReads.getOrElseUpdate(this, input.toList)
 
     cached.toIterator
   }

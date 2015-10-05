@@ -31,5 +31,5 @@ object QueryStateHelper {
                 params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullPipeDecorator,
                 initialContext: Option[ExecutionContext] = None) =
     new QueryState(query = query, resources = resources, params = params, decorator = decorator,
-      initialContext = initialContext, triadicState = mutable.Map.empty, cachedReads = mutable.Map.empty)
+      initialContext = initialContext, triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
 }

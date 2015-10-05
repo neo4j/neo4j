@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.commands
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, InequalitySeekRangeExpression, PrefixSeekRangeExpression}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.IsCollection
-import org.neo4j.cypher.internal.compiler.v3_0.mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.compiler.v3_0.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.graphdb.Node

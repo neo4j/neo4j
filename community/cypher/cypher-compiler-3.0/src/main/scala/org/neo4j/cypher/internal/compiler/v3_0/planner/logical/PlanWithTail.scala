@@ -29,39 +29,43 @@ import scala.annotation.tailrec
 This class ties together disparate query graphs through their event horizons. It does so by using Apply,
 which in most cases is then rewritten away by LogicalPlan rewriting.
 
-In cases where the preceding LogicalPlan has updates we must make the Apply an EagerApply if there are overlaps between
-the update and the reads of any of the tails, eg.
+In cases where the preceding PlannerQuery has updates we must make the Apply an EagerApply if there
+are overlaps between the previous update and the reads of any of the tails. We must also make Reads
+in the tail into RepeatableReads if there is overlap between the read and update within the PlannerQuery.
 
-    +Apply*
+For example:
+
+    +Apply2
     |\
-    | +Apply
-    | |\
-    | | +Updates2
+    | +Update3
     | |
-    | +Reads2
+    | +Read3
     |
-    |
-    |
-    +Apply
+    +Apply1
     |\
-    | +Updates1
+    | +Update2
+    | |
+    | +Read2
     |
-    +Reads1
+    +Update1
+    |
+    +Read1
 
-In this case Apply* is eager if anything that is created in Updates1 will be matched by anything in Reads2.
-
-There can also be overlaps between Updates2 and Reads2 if so we must make Updates2 a RepeatableRead.
+In this case the following must hold
+  - Apply1 is eager if updates from Update1 will be matched by Reads2 or Reads3.
+  - Apply2 is eager if updates from Update2 will be matched by Reads3
+  - If Update2 affects Read2, Read2 must use RepeatableRead
+  - If Update3 affects Read3, Read2 must use RepeatableRead
 
 */
 case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Rewriter) = ExpressionRewriterFactory,
                         planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon(),
                         planUpdates: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanUpdates)
-  extends LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] {
+  extends LogicalPlanningFunction3[LogicalPlan, PlannerQuery, Option[PlannerQuery], LogicalPlan] {
 
-  override def apply(pred: LogicalPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan = {
+  override def apply(lhs: LogicalPlan, previous: PlannerQuery, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan = {
     remaining match {
       case Some(query) =>
-        val lhs = pred
         val lhsContext = context.recurse(lhs)
         val partPlan = planPart(query, lhsContext, Some(context.logicalPlanProducer.planQueryArgumentRow(query.queryGraph)))
 
@@ -76,7 +80,8 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
 
         //If previous update interferes with any of the reads here or in tail, make it an EagerApply
         val applyPlan =
-          if (pred.solved.allQueryGraphs.exists(pred.solved.updateGraph.overlaps))
+          if (!previous.writeOnly &&
+            query.allQueryGraphs.exists(previous.updateGraph.overlaps))
             context.logicalPlanProducer.planEagerTailApply(lhs, planWithUpdates)
           else context.logicalPlanProducer.planTailApply(lhs, planWithUpdates)
 
@@ -88,21 +93,10 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
         val completePlan = projectedPlan.endoRewrite(expressionRewriter)
 
         // planning nested expressions doesn't change outer cardinality
-        apply(completePlan, query.tail)(projectedContext)
+        apply(completePlan, query, query.tail)(projectedContext)
 
       case None =>
-        pred
+        lhs
     }
-  }
-
-  //Returns list of querygraph of planner query and all of its tails
-  private def allQueryGraphs(pq: PlannerQuery): Seq[QueryGraph] = {
-    @tailrec
-    def loop(acc: Seq[QueryGraph], remaining: Option[PlannerQuery]): Seq[QueryGraph] = remaining match {
-      case None => acc
-      case Some(inner) => loop(acc :+ inner.queryGraph, inner.tail)
-    }
-
-    loop(Seq.empty, Some(pq))
   }
 }

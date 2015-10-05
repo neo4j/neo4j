@@ -52,5 +52,3 @@ case class ApplyPipe(source: Pipe, inner: Pipe)(val estimatedCardinality: Option
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }
-
-

@@ -29,10 +29,10 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, returns: Seq[IdName]
 
   def withReturns(returns: Seq[IdName]): PlannerQueryBuilder = copy(returns = returns)
 
-  def updateQueryGraph(f: QueryGraph => QueryGraph): PlannerQueryBuilder =
+  def amendQueryGraph(f: QueryGraph => QueryGraph): PlannerQueryBuilder =
     copy(q = q.updateTailOrSelf(_.updateQueryGraph(f)))
 
-  def updateUpdateGraph(f: UpdateGraph => UpdateGraph): PlannerQueryBuilder =
+  def amendUpdateGraph(f: UpdateGraph => UpdateGraph): PlannerQueryBuilder =
     copy(q = q.updateTailOrSelf(_.updateUpdateGraph(f)))
 
   def withHorizon(horizon: QueryHorizon): PlannerQueryBuilder =

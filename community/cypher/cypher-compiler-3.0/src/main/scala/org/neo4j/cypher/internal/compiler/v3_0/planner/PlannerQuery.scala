@@ -51,13 +51,11 @@ case class PlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
     case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
   }
 
-  def readOnly: Boolean = updateGraph.isEmpty
+  def readOnly: Boolean = updateGraph.isEmpty && queryGraph.nonEmpty
 
-  def writeOnly: Boolean = queryGraph.isEmpty
+  def writeOnly: Boolean = queryGraph.isEmpty && updateGraph.nonEmpty
 
-  def writes: Boolean = updateGraph.nonEmpty
-
-  def reads: Boolean = queryGraph.nonEmpty
+  def writes: Boolean = exists(_.updateGraph.nonEmpty)
 
   def withoutHints(hintsToIgnore: GenTraversableOnce[Hint]) = copy(queryGraph = queryGraph.withoutHints(hintsToIgnore))
 

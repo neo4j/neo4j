@@ -61,7 +61,6 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesCreated = 10)
     // then
     result.toList shouldBe empty
-    updateWithBothPlanners("match (n) create (n1) with * match(p) create (n2)").toList
   }
 
 

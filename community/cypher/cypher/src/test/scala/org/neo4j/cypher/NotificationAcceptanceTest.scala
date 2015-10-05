@@ -338,6 +338,15 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     resultCorrectlySpelled.notifications shouldBe empty
   }
 
+  test("should not warn for missing label on update") {
+
+    //when
+    val result = innerExecute("EXPLAIN CREATE (n:Person)")
+
+    //then
+    result.notifications shouldBe empty
+  }
+
   test("should warn for misspelled/missing relationship type") {
     //given
     relate(createNode(), createNode(), "R")
@@ -359,6 +368,12 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     resultMisspelled.notifications should contain(MissingPropertyNameNotification(InputPosition(18, 1, 19), "propp"))
     resultCorrectlySpelled.notifications shouldBe empty
+  }
+
+  test("should not warn for missing properties on update") {
+    val result = innerExecute("EXPLAIN CREATE (n {prop: 42})")
+
+    result.notifications shouldBe empty
   }
 
   test("should warn about unbounded shortest path") {

@@ -105,7 +105,7 @@ object ClauseConverters {
       clause.pattern.patternParts.foldLeft(acc) {
         case (builder, EveryPath(pattern@NodePattern(Some(id), _, _, _))) =>
           builder
-            .updateUpdateGraph(ug => ug.copy(nodePatterns = ug.nodePatterns :+ pattern))
+            .amendUpdateGraph(ug => ug.copy(nodePatterns = ug.nodePatterns :+ pattern))
         case _ => throw new CantHandleQueryException(s"$clause is not yet supported")
       }
     }
@@ -130,7 +130,7 @@ object ClauseConverters {
 
       if (clause.optional) {
         acc.
-          updateQueryGraph { qg => qg.withAddedOptionalMatch(
+          amendQueryGraph { qg => qg.withAddedOptionalMatch(
           // When adding QueryGraphs for optional matches, we always start with a new one.
           // It's either all or nothing per match clause.
           QueryGraph(
@@ -142,7 +142,7 @@ object ClauseConverters {
           ))
         }
       } else {
-        acc.updateQueryGraph {
+        acc.amendQueryGraph {
           qg => qg.
             addSelections(selections).
             addPatternNodes(patternContent.nodeIds: _*).
@@ -177,7 +177,7 @@ object ClauseConverters {
         } && builder.readOnly =>
         val selections = where.asSelections
         builder.
-          updateQueryGraph(_.addSelections(selections))
+          amendQueryGraph(_.addSelections(selections))
 
       /*
       When encountering a WITH that is an event horizon, we introduce the horizon and start a new empty QueryGraph.
@@ -222,7 +222,7 @@ object ClauseConverters {
 
   implicit class StartConverter(val clause: Start) extends AnyVal {
     def addStartToLogicalPlanInput(builder: PlannerQueryBuilder): PlannerQueryBuilder = {
-        builder.updateQueryGraph { qg =>
+        builder.amendQueryGraph { qg =>
           val items = clause.items.map {
             case hints: LegacyIndexHint => Right(hints)
             case item              => Left(item)

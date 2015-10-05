@@ -39,7 +39,7 @@ class QueryState(val query: QueryContext,
                  var initialContext: Option[ExecutionContext] = None,
                  val queryId: AnyRef = UUID.randomUUID().toString,
                  val triadicState: mutable.Map[String, PrimitiveLongSet],
-                 val cachedReads: mutable.Map[Pipe, Seq[ExecutionContext]]) {
+                 val repeatableReads: mutable.Map[Pipe, Seq[ExecutionContext]]) {
   private var _pathValueBuilder: PathValueBuilder = null
 
   def clearPathValueBuilder = {
@@ -57,13 +57,13 @@ class QueryState(val query: QueryContext,
   def getStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
   def withDecorator(decorator: PipeDecorator) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, cachedReads)
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads)
 
   def withInitialContext(initialContext: ExecutionContext) =
-    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), queryId, triadicState, cachedReads)
+    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), queryId, triadicState, repeatableReads)
 
   def withQueryContext(query: QueryContext) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, cachedReads)
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads)
 }
 
 object QueryState {

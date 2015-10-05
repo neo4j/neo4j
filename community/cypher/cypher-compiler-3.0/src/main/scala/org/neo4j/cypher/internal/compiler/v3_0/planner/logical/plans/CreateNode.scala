@@ -30,7 +30,9 @@ case class CreateNode(source: LogicalPlan, idName: IdName, labels: Seq[LazyLabel
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def availableSymbols: Set[IdName] = source.availableSymbols
+  override def availableSymbols: Set[IdName] = {
+    source.availableSymbols + idName
+  }
 
   override def rhs: Option[LogicalPlan] = None
 

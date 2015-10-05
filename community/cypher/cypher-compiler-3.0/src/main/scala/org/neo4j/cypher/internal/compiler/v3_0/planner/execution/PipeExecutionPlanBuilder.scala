@@ -51,18 +51,10 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
   val entityProducerFactory = new EntityProducerFactory
   val resolver = new KeyTokenResolver
 
-  private def isUpdating(pipe: RonjaPipe) = {
-    import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
-    pipe.treeFold(false) {
-      case pipe: RonjaPipe if pipe.updating => (_, _) => true
-      case _ => (acc, children) => children(acc)
-    }
-  }
-
   def build(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeInfo = {
     implicit val table: SemanticTable = context.semanticTable
 
-    def buildPipe(plan: LogicalPlan, updating: Boolean = false): Pipe with RonjaPipe = {
+    def buildPipe(plan: LogicalPlan): Pipe with RonjaPipe = {
       implicit val monitor = monitors.newMonitor[PipeMonitor]()
 
       val result = plan match {
@@ -245,7 +237,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
           TriadicSelectionPipe(positivePredicate, buildPipe(left), sourceId.name, seenId.name, targetId.name, buildPipe(right))()
 
         case CreateNode(inner, idName, labels, props) =>
-          CreateNodePipe(buildPipe(inner), idName.name, labels, convertToLegacyProperties(props))()
+          CreateNodePipe(buildPipe(inner), idName.name, labels, props.map(toCommandExpression))()
 
         case Eager(inner) =>
           EagerPipe(buildPipe(inner))()
@@ -296,6 +288,6 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         None
     }
 
-    PipeInfo(topLevelPipe, isUpdating(topLevelPipe), None, fingerprint, context.plannerName)
+    PipeInfo(topLevelPipe, plan.solved.writes, None, fingerprint, context.plannerName)
   }
 }

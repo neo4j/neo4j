@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescr
 
 // Marks a pipe being used by Ronja
 trait RonjaPipe extends Pipe {
-  def updating: Boolean = false
   def planDescriptionWithoutCardinality:InternalPlanDescription
   override def planDescription: InternalPlanDescription = estimatedCardinality.foldLeft(planDescriptionWithoutCardinality){
     case (planDescription, cardinality) => planDescription.addArgument(EstimatedRows(cardinality))
