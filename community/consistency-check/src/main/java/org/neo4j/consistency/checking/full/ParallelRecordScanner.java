@@ -19,11 +19,8 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import java.util.concurrent.BlockingQueue;
-
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.statistics.Statistics;
-import org.neo4j.function.Function;
 import org.neo4j.helpers.progress.ProgressMonitorFactory.MultiPartBuilder;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 
@@ -48,32 +45,7 @@ public class ParallelRecordScanner<RECORD> extends RecordScanner<RECORD>
         long recordsPerCPU = (store.maxCount() / numberOfThreads) + 1;
         cacheAccess.prepareForProcessingOfSingleStore( recordsPerCPU );
 
-        Function<BlockingQueue<RECORD>,Worker<RECORD>> workerFactory = new Function<BlockingQueue<RECORD>,Worker<RECORD>>()
-        {
-            @Override
-            public Worker<RECORD> apply( BlockingQueue<RECORD> source )
-            {
-                return new Worker<>( source, processor );
-            }
-        };
         distributeRecords( numberOfThreads, getClass().getSimpleName() + "-" + name,
-                DEFAULT_QUEUE_SIZE, workerFactory, store, progress );
-    }
-
-    private static class Worker<RECORD> extends RecordCheckWorker<RECORD>
-    {
-        private final RecordProcessor<RECORD> processor;
-
-        Worker( BlockingQueue<RECORD> recordsQ, RecordProcessor<RECORD> processor )
-        {
-            super( recordsQ );
-            this.processor = processor;
-        }
-
-        @Override
-        protected void process( RECORD record )
-        {
-            processor.process( record );
-        }
+                DEFAULT_QUEUE_SIZE, store, progress, processor );
     }
 }
