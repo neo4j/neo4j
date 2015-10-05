@@ -60,12 +60,16 @@ public class Neo4jMetrics implements Closeable
     private static final String COUNTS_NODE = name( COUNTS_PREFIX, "node" );
 
     private final NetworkMetrics networkMetrics;
+    private final MetricRegistry registry;
+    private final Config config;
 
-    public Neo4jMetrics( MetricRegistry registry,
-                         Config config, Monitors monitors, final TransactionCounters transactionCounters,
-                         final PageCacheMonitor pageCacheCounters, final IdGeneratorFactory idGeneratorFactory )
+    public Neo4jMetrics( MetricRegistry registry, Config config, Monitors monitors,
+            final TransactionCounters transactionCounters, final PageCacheMonitor pageCacheCounters,
+            final IdGeneratorFactory idGeneratorFactory )
     {
-        networkMetrics = new NetworkMetrics( config, monitors, registry );
+        this.registry = registry;
+        this.config = config;
+        this.networkMetrics = new NetworkMetrics( config, monitors, registry );
 
         // Neo stats
         // TxManager metrics
@@ -229,6 +233,38 @@ public class Neo4jMetrics implements Closeable
     @Override
     public void close() throws IOException
     {
+        // Neo stats
+        // TxManager metrics
+        if ( config.get( MetricsSettings.neoTxEnabled ) )
+        {
+            registry.remove( TX_ACTIVE );
+            registry.remove( TX_COMMITTED );
+            registry.remove( TX_ROLLBACKS );
+            registry.remove( TX_TERMINATED );
+            registry.remove( TX_STARTED );
+            registry.remove( TX_PEAK_CONCURRENT );
+        }
+
+        // Page cache metrics
+        if ( config.get( MetricsSettings.neoPageCacheEnabled ) )
+        {
+            registry.remove( PC_PAGE_FAULTS );
+            registry.remove( PC_EVICTIONS );
+            registry.remove( PC_PINS );
+            registry.remove( PC_UNPINS );
+            registry.remove( PC_FLUSHES );
+            registry.remove( PC_EVICTION_EXCEPTIONS );
+        }
+
+        // Node/rel count metrics
+        if ( config.get( MetricsSettings.neoCountsEnabled ) )
+        {
+            registry.remove( COUNTS_NODE );
+            registry.remove( COUNTS_RELATIONSHIP );
+            registry.remove( COUNTS_PROPERTY );
+            registry.remove( COUNTS_RELATIONSHIP_TYPE );
+        }
+
         networkMetrics.close();
     }
 }
