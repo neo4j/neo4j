@@ -43,6 +43,7 @@ Pass through the Neo4j Server object instead of the result of the start operatio
 'C:\Neo4j\neo4j-enterprise' | Start-Neo4jServer
 
 Start the Neo4j Server Windows Service for the Neo4j installation at 'C:\Neo4j\neo4j-enterprise'
+Assumes the Neo4j Windows Service has already been installed
 
 .EXAMPLE
 'C:\Neo4j\neo4j-enterprise' | Start-Neo4jServer -Console -Wait
