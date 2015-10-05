@@ -72,6 +72,15 @@ public class MetricsSettings
     public static Setting<Boolean> neoNetworkEnabled = setting(
             "metrics.neo4j.network.enabled", Settings.BOOLEAN, neoEnabled );
 
+    @Description( "Enable reporting metrics about the duration of garbage collections of the HA cluster component." )
+    public static Setting<Boolean> jvmGcEnabled = setting( "metrics.jvm.gc.enabled", Settings.BOOLEAN, neoEnabled );
+    @Description( "Enable reporting metrics about the memory usage of the HA cluster component." )
+    public static Setting<Boolean> jvmMemoryEnabled = setting( "metrics.jvm.memory.enabled", Settings.BOOLEAN, neoEnabled );
+    @Description( "Enable reporting metrics about the buffer pools of the HA cluster component." )
+    public static Setting<Boolean> jvmBuffersEnabled = setting( "metrics.jvm.buffers.enabled", Settings.BOOLEAN, neoEnabled );
+    @Description( "Enable reporting metrics about the current number of threads running on the HA cluster component." )
+    public static Setting<Boolean> jvmThreadsEnabled = setting( "metrics.jvm.threads.enabled", Settings.BOOLEAN, neoEnabled );
+
     // CSV settings
     @Description( "Set to `true` to enable exporting metrics to CSV files" )
     public static Setting<Boolean> csvEnabled = setting( "metrics.csv.enabled", Settings.BOOLEAN, Settings.FALSE );

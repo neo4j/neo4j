@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.metrics.MetricsSettings;
@@ -62,14 +63,16 @@ public class Neo4jMetrics implements Closeable
     private final NetworkMetrics networkMetrics;
     private final MetricRegistry registry;
     private final Config config;
+    private final JvmMetrics jvmMetrics;
 
-    public Neo4jMetrics( MetricRegistry registry, Config config, Monitors monitors,
+    public Neo4jMetrics( LogService logService, MetricRegistry registry, Config config, Monitors monitors,
             final TransactionCounters transactionCounters, final PageCacheMonitor pageCacheCounters,
             final IdGeneratorFactory idGeneratorFactory )
     {
         this.registry = registry;
         this.config = config;
         this.networkMetrics = new NetworkMetrics( config, monitors, registry );
+        this.jvmMetrics = new JvmMetrics( logService, config, registry );
 
         // Neo stats
         // TxManager metrics
@@ -266,5 +269,6 @@ public class Neo4jMetrics implements Closeable
         }
 
         networkMetrics.close();
+        jvmMetrics.close();
     }
 }
