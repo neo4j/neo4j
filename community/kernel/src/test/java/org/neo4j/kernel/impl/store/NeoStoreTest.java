@@ -1226,7 +1226,7 @@ public class NeoStoreTest
         fileSystem.mkdirs( storeDir );
         StoreFactory factory = new StoreFactory( fileSystem, storeDir, pageCache, NullLogProvider.getInstance() );
 
-        try ( NeoStores neoStore = factory.openNeoStores( true ) )
+        try ( NeoStores neoStore = factory.openNeoStores( SF_CREATE ) )
         {
             MetaDataStore store = neoStore.getMetaDataStore();
             store.setLastCommittedAndClosedTransactionId( 40, 4444, 0, LogHeader.LOG_HEADER_SIZE );
@@ -1247,7 +1247,7 @@ public class NeoStoreTest
         fileSystem.mkdirs( storeDir );
         StoreFactory factory = new StoreFactory( fileSystem, storeDir, pageCache, NullLogProvider.getInstance() );
 
-        try ( NeoStores neoStore = factory.openNeoStores( true ) )
+        try ( NeoStores neoStore = factory.openNeoStores( SF_CREATE ) )
         {
             MetaDataStore store = neoStore.getMetaDataStore();
             store.setLastCommittedAndClosedTransactionId( 40, 4444, 0, LogHeader.LOG_HEADER_SIZE );
