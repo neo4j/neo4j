@@ -19,10 +19,10 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import java.util.Iterator;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-import org.neo4j.function.Function;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
 
@@ -31,30 +31,58 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
  */
 public class RecordDistributor
 {
-    public static <RECORD,WORKER extends RecordCheckWorker<RECORD>> void distributeRecords(
+    public static <RECORD> void distributeRecords(
             int numberOfThreads,
             String workerNames,
             int queueSize,
-            Function<BlockingQueue<RECORD>,WORKER> workerFactory,
             Iterable<RECORD> records,
-            ProgressListener progress )
+            ProgressListener progress,
+            RecordProcessor<RECORD> processor )
     {
+        Iterator<RECORD> iterator = records.iterator();
+
+        // Run the first record in the main thread since there are filters in some
+        // checkers that change state on first and last record, state that may affect other concurrent
+        // processors.
+        if ( iterator.hasNext() )
+        {
+            processor.process( iterator.next() );
+            progress.add( 1 );
+        }
+        else
+        {
+            // No need to set up a bunch of threads if there are no records to process anyway
+            return;
+        }
+
         ArrayBlockingQueue<RECORD>[] recordQ = new ArrayBlockingQueue[numberOfThreads];
-        Workers<WORKER> workers = new Workers<>( workerNames );
+        Workers<Worker<RECORD>> workers = new Workers<>( workerNames );
         for ( int threadId = 0; threadId < numberOfThreads; threadId++ )
         {
             recordQ[threadId] = new ArrayBlockingQueue<>( queueSize );
-            workers.start( workerFactory.apply( recordQ[threadId] ) );
+            workers.start( new Worker<>( recordQ[threadId], processor ) );
         }
 
         int[] recsProcessed = new int[numberOfThreads];
         int qIndex = 0;
-        for ( RECORD record : records )
+
+        RECORD last = null;
+        while ( iterator.hasNext() )
         {
             try
             {
                 // Put records round-robin style into the queue of each thread, where a Worker
                 // will sit and pull from and process.
+                RECORD record = iterator.next();
+
+                // Detect the last record and defer processing that until after all the others
+                // since there are filters in some checkers that change state on first and last record,
+                // state that may affect other concurrent processors.
+                if ( !iterator.hasNext() )
+                {
+                    last = record;
+                    break;
+                }
                 qIndex = (qIndex + 1)%numberOfThreads;
                 recordQ[qIndex].put( record );
                 recsProcessed[qIndex]++;
@@ -66,7 +94,7 @@ public class RecordDistributor
             }
             progress.add( 1 );
         }
-        for ( WORKER worker : workers )
+        for ( Worker<RECORD> worker : workers )
         {
             worker.done();
         }
@@ -78,6 +106,30 @@ public class RecordDistributor
         {
             Thread.currentThread().interrupt();
             throw new RuntimeException( "Was interrupted while awaiting completion" );
+        }
+
+        // Here we process the last record. Why? See comments above
+        if ( last != null )
+        {
+            processor.process( last );
+            progress.add( 1 );
+        }
+    }
+
+    private static class Worker<RECORD> extends RecordCheckWorker<RECORD>
+    {
+        private final RecordProcessor<RECORD> processor;
+
+        Worker( BlockingQueue<RECORD> recordsQ, RecordProcessor<RECORD> processor )
+        {
+            super( recordsQ );
+            this.processor = processor;
+        }
+
+        @Override
+        protected void process( RECORD record )
+        {
+            processor.process( record );
         }
     }
 }

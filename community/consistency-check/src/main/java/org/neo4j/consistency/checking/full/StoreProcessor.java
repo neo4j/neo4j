@@ -19,8 +19,6 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import java.util.concurrent.BlockingQueue;
-
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.AbstractStoreProcessor;
 import org.neo4j.consistency.checking.CheckDecorator;
@@ -31,7 +29,6 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
 import org.neo4j.consistency.statistics.Counts;
-import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -212,32 +209,20 @@ public class StoreProcessor extends AbstractStoreProcessor
             throws Exception
     {
         cacheAccess.prepareForProcessingOfSingleStore( recordsPerCpu );
-        Function<BlockingQueue<R>,Worker<R>> workerFactory = new Function<BlockingQueue<R>,Worker<R>>()
+        RecordProcessor<R> processor = new RecordProcessor<R>()
         {
             @Override
-            public Worker<R> apply( BlockingQueue<R> source )
+            public void process( R record )
             {
-                return new Worker<>( source, store );
+                store.accept( StoreProcessor.this, record );
+            }
+
+            @Override
+            public void close()
+            {
             }
         };
-        distributeRecords( numberOfThreads, getClass().getSimpleName(), qSize, workerFactory,
-                scan( store, stage.isForward(), filters ), progressListener );
-    }
-
-    private class Worker<RECORD extends AbstractBaseRecord> extends RecordCheckWorker<RECORD>
-    {
-        private final RecordStore<RECORD> store;
-
-        public Worker( BlockingQueue<RECORD> recordsQ, RecordStore<RECORD> store )
-        {
-            super( recordsQ );
-            this.store = store;
-        }
-
-        @Override
-        protected void process( RECORD record )
-        {
-            store.accept( StoreProcessor.this, record );
-        }
+        distributeRecords( numberOfThreads, getClass().getSimpleName(), qSize,
+                scan( store, stage.isForward(), filters ), progressListener, processor );
     }
 }
