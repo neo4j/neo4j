@@ -68,7 +68,7 @@ public class JvmMetrics implements Closeable
             for ( GarbageCollectorMXBean gcBean : ManagementFactory.getGarbageCollectorMXBeans() )
             {
                 final AtomicLong periodGcDuration = new AtomicLong();
-                registry.register( name( GC, gcBean.getName().toLowerCase() ), new Gauge<Long>()
+                registry.register( name( GC, prettifyName( gcBean.getName() ) ), new Gauge<Long>()
                 {
                     public Long getValue()
                     {
@@ -121,10 +121,9 @@ public class JvmMetrics implements Closeable
         // Memory metrics
         if ( config.get( MetricsSettings.jvmMemoryEnabled ) )
         {
-            List<MemoryPoolMXBean> memPools = ManagementFactory.getMemoryPoolMXBeans();
-            for ( final MemoryPoolMXBean memPool : memPools )
+            for ( final MemoryPoolMXBean memPool : ManagementFactory.getMemoryPoolMXBeans() )
             {
-                registry.register( name( MEMORY_POOL, memPool.getName().toLowerCase() ), new Gauge<Long>()
+                registry.register( name( MEMORY_POOL, prettifyName( memPool.getName() ) ), new Gauge<Long>()
                 {
                     public Long getValue()
                     {
@@ -137,10 +136,9 @@ public class JvmMetrics implements Closeable
         // Buffer pools
         if ( config.get( MetricsSettings.jvmBuffersEnabled ) )
         {
-            List<BufferPoolMXBean> pools = ManagementFactory.getPlatformMXBeans( BufferPoolMXBean.class );
-            for ( final BufferPoolMXBean pool : pools )
+            for ( final BufferPoolMXBean pool : ManagementFactory.getPlatformMXBeans( BufferPoolMXBean.class ) )
             {
-                registry.register( name( MEMORY_BUFFER, pool.getName().toLowerCase(), "count" ), new Gauge<Long>()
+                registry.register( name( MEMORY_BUFFER, prettifyName( pool.getName() ), "count" ), new Gauge<Long>()
                 {
                     public Long getValue()
                     {
@@ -148,7 +146,7 @@ public class JvmMetrics implements Closeable
                     }
                 } );
 
-                registry.register( name( MEMORY_BUFFER, pool.getName().toLowerCase(), "used" ), new Gauge<Long>()
+                registry.register( name( MEMORY_BUFFER, prettifyName( pool.getName() ), "used" ), new Gauge<Long>()
                 {
                     public Long getValue()
                     {
@@ -156,7 +154,7 @@ public class JvmMetrics implements Closeable
                     }
                 } );
 
-                registry.register( name( MEMORY_BUFFER, pool.getName().toLowerCase(), "capacity" ),
+                registry.register( name( MEMORY_BUFFER, prettifyName( pool.getName() ), "capacity" ),
                         new Gauge<Long>()
                         {
                             public Long getValue()
@@ -196,5 +194,10 @@ public class JvmMetrics implements Closeable
                 return name.startsWith( NAME_PREFIX );
             }
         } );
+    }
+
+    private static String prettifyName( String name )
+    {
+        return name.toLowerCase().replace( ' ', '_' );
     }
 }
