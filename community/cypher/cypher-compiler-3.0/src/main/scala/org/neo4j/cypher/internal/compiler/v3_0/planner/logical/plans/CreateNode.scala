@@ -23,11 +23,15 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.NodePattern
 
-case class CreateNodes(nodePatterns: Seq[NodePattern])
+case class CreateNode(inner: LogicalPlan, nodePattern: NodePattern)
                            (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalLeafPlan with LogicalPlanWithoutExpressions {
+  extends LogicalPlan with LogicalPlanWithoutExpressions {
 
-  override def availableSymbols: Set[IdName] = argumentIds
+  override def lhs: Option[LogicalPlan] = Some(inner)
 
-  override def argumentIds: Set[IdName] = Set.empty
+  override def availableSymbols: Set[IdName] = inner.availableSymbols
+
+  override def rhs: Option[LogicalPlan] = None
+
+  override def strictness: StrictnessMode = inner.strictness
 }

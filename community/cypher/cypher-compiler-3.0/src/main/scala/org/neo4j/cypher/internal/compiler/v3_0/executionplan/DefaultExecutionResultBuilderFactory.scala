@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, ExplainMode, _}
 import org.neo4j.cypher.internal.frontend.v3_0.CypherException
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 
+import scala.collection.mutable
+
 case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: List[String]) extends ExecutionResultBuilderFactory {
   def create(): ExecutionResultBuilder =
     ExecutionWorkflowBuilder()
@@ -57,7 +59,7 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
 
     def build(queryId: AnyRef, planType: ExecutionMode, params: Map[String, Any], notificationLogger: InternalNotificationLogger): InternalExecutionResult = {
       taskCloser.addTask(queryContext.close)
-      val state = new QueryState(queryContext, externalResource, params, pipeDecorator, queryId = queryId)
+      val state = new QueryState(queryContext, externalResource, params, pipeDecorator, queryId = queryId, triadicState = mutable.Map.empty, cachedReads = mutable.Map.empty)
       try {
         try {
           createResults(state, planType, notificationLogger)
@@ -90,8 +92,6 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
         taskCloser.close(success = true)
         new ExplainExecutionResult(columns, pipeInfo.pipe.planDescription, queryType, notificationLogger.notifications)
       } else {
-        pipeInfo.pipe.open()
-        taskCloser.addTask(_ => pipeInfo.pipe.close())
         val results = pipeInfo.pipe.createResults(state)
         val resultIterator = buildResultIterator(results, pipeInfo.updating)
         val descriptor = buildDescriptor(pipeInfo.pipe, resultIterator.wasMaterialized)

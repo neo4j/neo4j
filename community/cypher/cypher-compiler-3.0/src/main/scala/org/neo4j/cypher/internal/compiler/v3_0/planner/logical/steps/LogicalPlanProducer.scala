@@ -443,12 +443,12 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     TriadicSelection(positivePredicate, left, sourceId, seenId, targetId, right)(solved)
   }
 
-  def planCreateNodes(patterns: Seq[NodePattern])
+  def planCreateNode(inner: LogicalPlan, pattern: NodePattern)
                      (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = PlannerQuery(updateGraph = UpdateGraph(nodePatterns = patterns))
+    val solved = inner.solved.updateUpdateGraph(_.withNodePattern(pattern))
 
-    CreateNodes(patterns)(solved)
+    CreateNode(inner, pattern)(solved)
   }
 
   def planRepeatableRead(inner: LogicalPlan)

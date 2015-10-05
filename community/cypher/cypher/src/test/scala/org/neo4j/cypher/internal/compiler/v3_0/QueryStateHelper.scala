@@ -19,25 +19,27 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0
 
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ExternalResource, NullPipeDecorator, PipeDecorator, QueryState}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{QueryContext, UpdateCountingQueryContext}
+import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext
 import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
 import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ExternalResource, PipeDecorator, NullPipeDecorator, QueryState}
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.api.Statement
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{UpdateCountingQueryContext, QueryContext}
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+
+import scala.collection.mutable
 
 object QueryStateHelper {
-  def empty: QueryState = emptyWith()
+  def empty: QueryState = newWith()
 
-  def emptyWith(db: GraphDatabaseService = null, query: QueryContext = null, resources: ExternalResource = null,
+  def newWith(db: GraphDatabaseService = null, query: QueryContext = null, resources: ExternalResource = null,
                 params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullPipeDecorator) =
-    new QueryState(query = query, resources = resources, params = params, decorator = decorator)
+    new QueryState(query = query, resources = resources, params = params, decorator = decorator, triadicState = mutable.Map.empty, cachedReads = mutable.Map.empty)
 
   def queryStateFrom(db: GraphDatabaseAPI, tx: Transaction, params: Map[String, Any] = Map.empty): QueryState = {
     val statement: Statement = db.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
     val context = new TransactionBoundQueryContext(db, tx, isTopLevelTx = true, statement)
-    emptyWith(db = db, query = context, params = params)
+    newWith(db = db, query = context, params = params)
   }
 
   def countStats(q: QueryState) = q.withQueryContext(query = new UpdateCountingQueryContext(q.query))

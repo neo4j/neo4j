@@ -193,9 +193,8 @@ class ActualCostCalculationTest extends CypherFunSuite {
   private def runSimulation(graph: GraphDatabaseService, pipes: Seq[Pipe]) = {
     val results = new ListBuffer[DataPoint]
     graph.withTx { tx =>
-      val resources: ExternalResource = mock[ExternalResource]
       val queryContext = new TransactionBoundQueryContext(graph.asInstanceOf[GraphDatabaseAPI], tx, true, graph.statement)
-      val state = new QueryState(queryContext, resources, params = Map.empty, decorator = NullPipeDecorator)
+      val state = QueryStateHelper.emptyWith(queryContext)
       for (x <- 0 to 25) {
         for (pipe <- pipes) {
           val start = System.currentTimeMillis()

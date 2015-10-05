@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.PlannerQuery
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.frontend.v3_0.ast.NodePattern
 
 /*
  * This coordinates PlannerQuery planning of updates.
@@ -30,8 +31,9 @@ case object PlanUpdates
 
   override def apply(query: PlannerQuery, plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
     if (query.updateGraph.nonEmpty) {
-      val rhs = context.logicalPlanProducer.planCreateNodes(query.updateGraph.nodePatterns)
-      context.logicalPlanProducer.planApply(plan, rhs)
+      query.updateGraph.nodePatterns.foldLeft(plan) {
+        case (acc, pattern: NodePattern) => context.logicalPlanProducer.planCreateNode(acc, pattern)
+      }
     } else plan
   }
 }

@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, InternalPlanDescription, SingleRowPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_0.Foldable
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 import scala.collection.immutable
@@ -52,28 +51,6 @@ trait Pipe extends Effectful {
   def monitor: PipeMonitor
 
   def dup(sources: List[Pipe]): Pipe
-
-  def open(): Unit = {
-    import Foldable._
-    self.treeFold(()){
-      case p: Pipe =>
-        p.internalOpen()
-        (a, c) => c(a)
-    }
-  }
-
-  def close(): Unit = {
-    import Foldable._
-    self.treeFold(()){
-      case p: Pipe =>
-        p.internalClose()
-        (a, c) => c(a)
-    }
-  }
-
-  protected def internalOpen(): Unit = ()
-
-  protected def internalClose(): Unit = ()
 
   def createResults(state: QueryState) : Iterator[ExecutionContext] = {
     val decoratedState = state.decorator.decorate(self, state)

@@ -227,9 +227,8 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode()
     createNode()
     val query = "MATCH (), () CREATE ()"
-    val result = updateWithBothPlanners(query)
 
-    result should use("RepeatableRead")
+    assertNumberOfEagerness(query, 1)
   }
 
   test("should not add eagerness when not writing to nodes") {

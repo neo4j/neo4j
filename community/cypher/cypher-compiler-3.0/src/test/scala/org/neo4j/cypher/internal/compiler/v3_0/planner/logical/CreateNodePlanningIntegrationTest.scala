@@ -29,14 +29,14 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
   test("should plan single create") {
     planFor("CREATE (a)").plan should equal(
       EmptyResult(
-        CreateNodes(Seq(NodePattern(Some(Identifier("a") _), Seq.empty, None, naked = false)(pos)))(solved))(solved)
+        CreateNode(SingleRow()(solved), NodePattern(Some(Identifier("a") _), Seq.empty, None, naked = false)(pos))(solved))(solved)
     )
   }
 
   test("should plan single create with return") {
     planFor("CREATE (a) return a").plan should equal(
       Projection(
-        CreateNodes(Seq(NodePattern(Some(Identifier("a") _), Seq.empty, None, naked = false)(pos)))(solved),
+        CreateNode(SingleRow()(solved), NodePattern(Some(Identifier("a") _), Seq.empty, None, naked = false)(pos))(solved),
         Map("a" -> Identifier("a")_))
       (solved)
     )
@@ -45,10 +45,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
   test("should plan match and create") {
     planFor("MATCH (a) CREATE (b)").plan should equal(
       EmptyResult(
-        Apply(
-          AllNodesScan(IdName("a"), Set.empty)(solved),
-          CreateNodes(Seq(NodePattern(Some(Identifier("b") _), Seq.empty, None, naked = false)(pos)))(solved)
-        )(solved)
+          CreateNode(AllNodesScan(IdName("a"), Set.empty)(solved), NodePattern(Some(Identifier("b") _), Seq.empty, None, naked = false)(pos))(solved)
       )(solved)
     )
   }
@@ -58,18 +55,11 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
       EmptyResult(
         EagerApply(
           Projection(
-            Apply(
-              AllNodesScan(IdName("a"), Set.empty)(solved),
-              CreateNodes(Seq(NodePattern(Some(Identifier("b") _), Seq.empty, None, naked = false)(pos)))(solved)
-            )(solved),
-          Map("a" -> Identifier("a")_, "b" -> Identifier("b")_)
-          )(solved),
-          Apply(
-            RepeatableRead(
-              AllNodesScan(IdName("c"), Set(IdName("a"), IdName("b")))(solved))(solved),
-              CreateNodes(Seq(NodePattern(Some(Identifier("d") _), Seq.empty, None, naked = false)(pos)))(solved)
-            )(solved)
-          )(solved)
+            CreateNode(AllNodesScan(IdName("a"), Set.empty)(solved), NodePattern(Some(Identifier("b") _), Seq.empty, None, naked = false)(pos))(solved),
+            Map("a" -> Identifier("a")_, "b" -> Identifier("b")_))(solved),
+          CreateNode(RepeatableRead(
+            AllNodesScan(IdName("c"), Set(IdName("a"), IdName("b")))(solved))(solved),
+            NodePattern(Some(Identifier("d") _), Seq.empty, None, naked = false)(pos))(solved))(solved)
         )(solved)
     )
   }

@@ -29,22 +29,13 @@ import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
  */
 case class RepeatableReadPipe(src: Pipe)(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(src, pipeMonitor) with NoEffectsPipe with RonjaPipe {
 
-  private var cached: List[ExecutionContext] = null
-
-  override def internalOpen(): Unit = {
-    cached = null
-  }
-
-  override def internalClose(): Unit = {
-    cached = null
-  }
-
   def symbols: SymbolTable = src.symbols
 
   override def planDescription = src.planDescription.andThen(this.id, "RepeatableRead", identifiers)
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    if (cached == null) cached = input.toList
+    val cached = state.cachedReads.getOrElseUpdate(this, input.toList)
+
     cached.toIterator
   }
 

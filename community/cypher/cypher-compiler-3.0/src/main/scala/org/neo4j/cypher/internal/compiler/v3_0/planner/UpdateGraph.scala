@@ -43,6 +43,8 @@ case class UpdateGraph(nodePatterns: Seq[NodePattern] = Seq.empty) {
         nodePatterns.exists(p => p.labels.isEmpty) || //CREATE()?
         (qg.patternNodeLabels.values.flatten.toSet intersect labels).nonEmpty // CREATE(:A:B) MATCH(:B:C)?
       )
+
+  def withNodePattern(nodePattern: NodePattern): UpdateGraph = copy(nodePatterns = nodePatterns :+ nodePattern)
 }
 
 object UpdateGraph {

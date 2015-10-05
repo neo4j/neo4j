@@ -38,7 +38,7 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
     val partPlan = countStorePlanner(in).getOrElse(planPart(in, context, None))
 
     val planWithEffect =
-      if (conflicts(partPlan, in)) context.logicalPlanProducer.planRepeatableRead(partPlan)
+      if (conflicts(partPlan, in)) context.logicalPlanProducer.planEager(partPlan)
       else partPlan
     val planWithUpdates = planUpdates(in, planWithEffect)(context)
 

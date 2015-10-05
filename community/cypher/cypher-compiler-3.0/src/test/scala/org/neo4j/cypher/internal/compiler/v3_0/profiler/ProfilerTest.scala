@@ -165,7 +165,7 @@ class ProfilerTest extends CypherFunSuite {
 
     val pipe1 = SingleRowPipe()
     val ctx1 = mock[QueryContext]
-    val state1 = new QueryState(ctx1, mock[ExternalResource], Map.empty, mock[PipeDecorator])
+    val state1 = QueryStateHelper.emptyWith(ctx1, mock[ExternalResource])
 
     val profiled1 = profiler.decorate(pipe1, state1)
     profiled1.query.createNode()
@@ -173,7 +173,8 @@ class ProfilerTest extends CypherFunSuite {
 
     val pipe2 = SingleRowPipe()
     val ctx2 = mock[QueryContext]
-    val state2 = new QueryState(ctx2, mock[ExternalResource], Map.empty, mock[PipeDecorator])
+    val state2 = QueryStateHelper.emptyWith(ctx2, mock[ExternalResource])
+
 
     val profiled2 = profiler.decorate(pipe2, state2)
     profiled2.query.createNode()

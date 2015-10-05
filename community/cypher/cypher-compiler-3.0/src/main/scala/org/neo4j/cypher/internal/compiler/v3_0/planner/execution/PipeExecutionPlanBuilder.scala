@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.EntityProducerFactory
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{AggregationExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{True, _}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.prepare.KeyTokenResolver
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, PipeInfo, PlanFingerprint, ReadsAllNodes, addEagernessIfNecessary}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, PipeInfo, PlanFingerprint, ReadsAllNodes}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyTypes, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics
@@ -243,9 +243,9 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         case TriadicSelection(positivePredicate, left, sourceId, seenId, targetId, right) =>
           TriadicSelectionPipe(positivePredicate, buildPipe(left), sourceId.name, seenId.name, targetId.name, buildPipe(right))()
 
-        case CreateNodes(patterns) =>
-          val f = patterns.flatMap(_.asLegacyCreates)
-          CreateNodesPipe(f)()
+        case CreateNode(inner, pattern: NodePattern) =>
+          //todo fix the head thing
+          CreateNodePipe(buildPipe(inner), pattern.asLegacyCreates.head)()
 
         case Eager(inner) =>
           EagerPipe(buildPipe(inner))()
