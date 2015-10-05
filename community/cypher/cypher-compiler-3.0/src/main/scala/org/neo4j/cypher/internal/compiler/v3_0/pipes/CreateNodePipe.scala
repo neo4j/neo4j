@@ -20,18 +20,74 @@
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_0.mutation.CreateNode
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{CreatesAnyNode, CreatesNodesWithLabels, Effects}
+import org.neo4j.cypher.internal.compiler.v3_0.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
-case class CreateNodePipe(src: Pipe, create: CreateNode)(val estimatedCardinality: Option[Double] = None)
-                           (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(src, pipeMonitor) with RonjaPipe  {
+import scala.collection.Map
+
+case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Map[String, Expression])(val estimatedCardinality: Option[Double] = None)
+                           (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions{
 
   protected def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap { row =>
-      create.exec(row, state)
+      createNode(row, state)
+    }
+  }
+
+  private def createNode(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext] = {
+    def fromAnyToLiteral(x: Map[String, Any]): Map[String, Expression] = x.map {
+      case (k, v:Any) => k -> Literal(v)
+    }
+
+    def createNodeWithPropertiesAndLabels(props: Map[String, Expression]): ExecutionContext = {
+      val node = state.query.createNode()
+      setProperties(node, props, context, state)
+
+      val queryCtx = state.query
+      val labelIds = labels.map(l => l.id(queryCtx) match {
+        case None => queryCtx.getOrCreateLabelId(l.name)
+        case Some(v) => v.id
+      })
+      if (labelIds.nonEmpty)
+        queryCtx.setLabelsOnNode(node.getId, labelIds.iterator)
+
+      val newContext = context.newWith(key -> node)
+      newContext
+    }
+
+    def isParametersMap(m: Map[String, Expression]) = properties.size == 1 && properties.head._1 == "*"
+
+    /*
+     Parameters coming in from the outside in queries using parameters like this:
+
+     CREATE (n {param})
+
+     This parameter can either be a collection of maps, or a single map. Cypher creates one node per incoming map.
+
+     This is encoded using a map containing the expression that when applied will produce the incoming maps.
+     */
+    if (isParametersMap(properties)) {
+      val singleMapExpression: Expression = properties.head._2
+
+      val maps = makeTraversable(singleMapExpression(context)(state))
+
+      maps.toIterator.map {
+        case untyped: Map[_, _] => {
+          //We want to use the same code to actually create nodes and properties as a normal expression would, so we
+          //encode the incoming Map[String,Any] to a Map[String, Literal] wrapping the values.
+          val m: Map[String, Expression] = fromAnyToLiteral(untyped.asInstanceOf[Map[String, Any]])
+
+          createNodeWithPropertiesAndLabels(m)
+        }
+        case _ => throw new CypherTypeException("Parameter provided for node creation is not a Map")
+      }
+    } else {
+      Iterator(createNodeWithPropertiesAndLabels(properties))
     }
   }
 
@@ -39,14 +95,17 @@ case class CreateNodePipe(src: Pipe, create: CreateNode)(val estimatedCardinalit
 
   def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "CreateNode", identifiers)
 
-  def symbols = new SymbolTable(Map(create.key -> CTNode))
-
-  override def localEffects: Effects = create.localEffects(symbols)
+  def symbols = new SymbolTable(Map(key -> CTNode))
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
-    CreateNodePipe(onlySource, create)(estimatedCardinality)
+    CreateNodePipe(onlySource, key, labels, properties)(estimatedCardinality)
   }
+
+  override def localEffects = if (labels.isEmpty)
+    Effects(CreatesAnyNode)
+  else
+    Effects(CreatesNodesWithLabels(labels.map(_.name).toSet))
 }

@@ -20,18 +20,19 @@
 
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.NodePattern
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 
-case class CreateNode(inner: LogicalPlan, nodePattern: NodePattern)
+case class CreateNode(source: LogicalPlan, idName: IdName, labels: Seq[LazyLabel], properties: Option[Expression])
                            (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LogicalPlanWithoutExpressions {
 
-  override def lhs: Option[LogicalPlan] = Some(inner)
+  override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def availableSymbols: Set[IdName] = inner.availableSymbols
+  override def availableSymbols: Set[IdName] = source.availableSymbols
 
   override def rhs: Option[LogicalPlan] = None
 
-  override def strictness: StrictnessMode = inner.strictness
+  override def strictness: StrictnessMode = source.strictness
 }

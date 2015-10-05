@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionCo
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.OtherConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.StatementConverters
+import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.PatternConverters
 import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v3_0.commands.EntityProducerFactory
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{AggregationExpression, Expression => CommandExpression}
@@ -243,9 +244,8 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         case TriadicSelection(positivePredicate, left, sourceId, seenId, targetId, right) =>
           TriadicSelectionPipe(positivePredicate, buildPipe(left), sourceId.name, seenId.name, targetId.name, buildPipe(right))()
 
-        case CreateNode(inner, pattern: NodePattern) =>
-          //todo fix the head thing
-          CreateNodePipe(buildPipe(inner), pattern.asLegacyCreates.head)()
+        case CreateNode(inner, idName, labels, props) =>
+          CreateNodePipe(buildPipe(inner), idName.name, labels, convertToLegacyProperties(props))()
 
         case Eager(inner) =>
           EagerPipe(buildPipe(inner))()

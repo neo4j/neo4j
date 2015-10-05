@@ -29,6 +29,13 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 
 object PatternConverters {
 
+  def convertToLegacyProperties(props: Option[ast.Expression]) = props match {
+    case Some(m: ast.MapExpression) => m.items.map(p => (p._1.name, toCommandExpression(p._2))).toMap
+    case Some(p: ast.Parameter)     => Map[String, CommandExpression]("*" -> toCommandExpression(p))
+    case Some(p)                    => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.position})")
+    case None                       => Map[String, CommandExpression]()
+  }
+
   implicit class PatternConverter(val pattern: ast.Pattern) extends AnyVal {
     def asLegacyPatterns: Seq[commands.Pattern] = pattern.patternParts.flatMap(_.asLegacyPatterns)
     def asLegacyNamedPaths: Seq[commands.NamedPath] = pattern.patternParts.flatMap(_.asLegacyNamedPath)
@@ -242,12 +249,7 @@ object PatternConverters {
 
     private def labels = node.labels.map(t => commandvalues.KeyToken.Unresolved(t.name, commandvalues.TokenType.Label))
 
-    def legacyProperties = node.properties match {
-      case Some(m: ast.MapExpression) => m.items.map(p => (p._1.name, toCommandExpression(p._2))).toMap
-      case Some(p: ast.Parameter)     => Map[String, CommandExpression]("*" -> toCommandExpression(p))
-      case Some(p)                    => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.position})")
-      case None                       => Map[String, CommandExpression]()
-    }
+    def legacyProperties = convertToLegacyProperties(node.properties)
   }
 
   implicit class RelationshipPatternConverter(val relationship: ast.RelationshipPattern) extends AnyVal {

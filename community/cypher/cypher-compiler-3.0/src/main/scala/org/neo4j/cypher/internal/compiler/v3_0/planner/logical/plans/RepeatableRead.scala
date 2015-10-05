@@ -21,13 +21,12 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.NodePattern
 
 /*
  * Repeatable reads are enforcing that the encapsulated logical plan is only read once within a query execution.
  */
 case class RepeatableRead(inner: LogicalPlan)
-                           (val solved: PlannerQuery with CardinalityEstimation)extends LogicalPlan with LogicalPlanWithoutExpressions {
+                           (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LogicalPlanWithoutExpressions {
 
   override def availableSymbols: Set[IdName] = inner.availableSymbols
 

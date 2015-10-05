@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
+import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
@@ -29,23 +31,67 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
   test("should plan single create") {
     planFor("CREATE (a)").plan should equal(
       EmptyResult(
-        CreateNode(SingleRow()(solved), NodePattern(Some(Identifier("a") _), Seq.empty, None, naked = false)(pos))(solved))(solved)
+        CreateNode(SingleRow()(solved), IdName("a"), Seq.empty, None)(solved))(solved)
+    )
+  }
+
+  test("should plan for multiple creates") {
+    planFor("CREATE (a), (b), (c)").plan should equal(
+      EmptyResult(
+        CreateNode(
+          CreateNode(
+            CreateNode(SingleRow()(solved), IdName("a"), Seq.empty, None)(solved),
+            IdName("b"), Seq.empty, None)(solved),
+          IdName("c"), Seq.empty, None)(solved))
+        (solved)
+    )
+  }
+
+  test("should plan for multiple creates via multiple statements") {
+    planFor("CREATE (a) CREATE (b) CREATE (c)").plan should equal(
+      EmptyResult(
+        CreateNode(
+          CreateNode(
+            CreateNode(SingleRow()(solved), IdName("a"), Seq.empty, None)(solved),
+            IdName("b"), Seq.empty, None)(solved),
+          IdName("c"), Seq.empty, None)(solved))
+        (solved)
     )
   }
 
   test("should plan single create with return") {
     planFor("CREATE (a) return a").plan should equal(
       Projection(
-        CreateNode(SingleRow()(solved), NodePattern(Some(Identifier("a") _), Seq.empty, None, naked = false)(pos))(solved),
+        CreateNode(SingleRow()(solved), IdName("a"), Seq.empty, None)(solved),
         Map("a" -> Identifier("a")_))
       (solved)
+    )
+  }
+
+  test("should plan create with labels") {
+    planFor("CREATE (a:A:B)").plan should equal(
+      EmptyResult(
+        CreateNode(SingleRow()(solved), IdName("a"), Seq(LazyLabel("A"), LazyLabel("B")), None)(solved))(solved)
+    )
+  }
+
+  test("should plan create with properties") {
+
+    planFor("CREATE (a {prop: 42})").plan should equal(
+      EmptyResult(
+        CreateNode(SingleRow()(solved), IdName("a"), Seq.empty,
+          Some(
+            MapExpression(Seq((PropertyKeyName("prop")(pos), SignedDecimalIntegerLiteral("42")(pos))))(pos)
+          )
+        )(solved)
+      )(solved)
     )
   }
 
   test("should plan match and create") {
     planFor("MATCH (a) CREATE (b)").plan should equal(
       EmptyResult(
-          CreateNode(AllNodesScan(IdName("a"), Set.empty)(solved), NodePattern(Some(Identifier("b") _), Seq.empty, None, naked = false)(pos))(solved)
+          CreateNode(AllNodesScan(IdName("a"), Set.empty)(solved), IdName("b"), Seq.empty, None)(solved)
       )(solved)
     )
   }
@@ -55,11 +101,11 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
       EmptyResult(
         EagerApply(
           Projection(
-            CreateNode(AllNodesScan(IdName("a"), Set.empty)(solved), NodePattern(Some(Identifier("b") _), Seq.empty, None, naked = false)(pos))(solved),
+            CreateNode(AllNodesScan(IdName("a"), Set.empty)(solved), IdName("b"), Seq.empty, None)(solved),
             Map("a" -> Identifier("a")_, "b" -> Identifier("b")_))(solved),
           CreateNode(RepeatableRead(
             AllNodesScan(IdName("c"), Set(IdName("a"), IdName("b")))(solved))(solved),
-            NodePattern(Some(Identifier("d") _), Seq.empty, None, naked = false)(pos))(solved))(solved)
+            IdName("d"), Seq.empty, None)(solved))(solved)
         )(solved)
     )
   }

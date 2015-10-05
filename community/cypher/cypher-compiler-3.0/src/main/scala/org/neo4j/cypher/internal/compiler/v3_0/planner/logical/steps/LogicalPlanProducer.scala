@@ -448,7 +448,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
     val solved = inner.solved.updateUpdateGraph(_.withNodePattern(pattern))
 
-    CreateNode(inner, pattern)(solved)
+    CreateNode(inner, IdName.fromIdentifier(pattern.identifier.get),
+      pattern.labels.map(LazyLabel(_)(context.semanticTable)), pattern.properties)(solved)
   }
 
   def planRepeatableRead(inner: LogicalPlan)

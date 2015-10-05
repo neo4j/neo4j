@@ -51,7 +51,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
       setProperties(node, props, context, state)
 
       val queryCtx = state.query
-      val labelIds = labels.map(_.getOrCreateId(state.query))
+      val labelIds: Seq[Int] = labels.map(_.getOrCreateId(state.query))
       if (labelIds.nonEmpty)
         queryCtx.setLabelsOnNode(node.getId, labelIds.iterator)
 
