@@ -42,10 +42,6 @@ include::../parsed-graphgists/intro/compose-statements.adoc[]
 
 :leveloffset: 2
 
-include::../parsed-graphgists/intro/data-structures.adoc[]
-
-:leveloffset: 2
-
 include::../parsed-graphgists/intro/labels.adoc[]
 
 //include::indexes-and-constraints.adoc[]
@@ -53,6 +49,10 @@ include::../parsed-graphgists/intro/labels.adoc[]
 :leveloffset: 2
 
 include::../parsed-graphgists/intro/loading-data.adoc[]
+
+:leveloffset: 2
+
+include::../parsed-graphgists/intro/data-structures.adoc[]
 
 :leveloffset: 2
 

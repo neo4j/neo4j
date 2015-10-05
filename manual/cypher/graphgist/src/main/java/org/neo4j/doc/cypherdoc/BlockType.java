@@ -51,10 +51,9 @@ enum BlockType
         boolean isA( List<String> block )
         {
             int size = block.size();
-            return size > 0 && ( ( block.get( 0 )
-                    .startsWith( "=" ) && !block.get( 0 )
-                    .startsWith( "==" ) ) || size > 1 && block.get( 1 )
-                    .startsWith( "=" ) );
+            return size > 0 && 
+                ( ( block.get( 0 ).startsWith( "=" ) 
+                 && !block.get( 0 ).startsWith( "==" )));
         }
 
         @Override

@@ -1,5 +1,4 @@
-Uniqueness
-==========
+= Uniqueness
 
 While pattern matching, Neo4j makes sure to not include matches where the same graph relationship is found multiple times in a single pattern.
 In most use cases, this is a sensible thing to do.
