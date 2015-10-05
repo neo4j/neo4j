@@ -24,6 +24,7 @@ import org.neo4j.cypher._
 import org.neo4j.graphdb._
 
 import scala.collection.JavaConverters._
+import scala.util.Random
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
