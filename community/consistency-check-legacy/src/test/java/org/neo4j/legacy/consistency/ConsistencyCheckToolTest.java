@@ -44,6 +44,7 @@ import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.legacy.consistency.checking.full.TaskExecutionOrder;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.SystemExitRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -65,6 +66,10 @@ import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
 public class ConsistencyCheckToolTest
 {
+
+    @Rule
+    public SystemExitRule systemExitRule = SystemExitRule.none();
+
     @Test
     public void runsConsistencyCheck() throws Exception
     {
@@ -185,7 +190,7 @@ public class ConsistencyCheckToolTest
         monitors.addMonitorListener( listener );
 
         ConsistencyCheckTool consistencyCheckTool =
-                newConsistencyCheckToolWith( monitors, mock( ConsistencyCheckTool.ExitHandle.class ), fs.get() );
+                newConsistencyCheckToolWith( monitors, fs.get() );
 
         // When
         consistencyCheckTool.run( "-recovery", storeDirectory.graphDbDir().getAbsolutePath() );
@@ -199,6 +204,7 @@ public class ConsistencyCheckToolTest
     public void shouldExitWhenRecoveryNeededButRecoveryFalseOptionSpecified() throws Exception
     {
         // Given
+        systemExitRule.expectExit( 1 );
         File storeDir = storeDirectory.graphDbDir();
         EphemeralFileSystemAbstraction fileSystem = createDataBaseWithStateThatNeedsRecovery( storeDir );
 
@@ -206,15 +212,13 @@ public class ConsistencyCheckToolTest
         PhysicalLogFile.Monitor listener = mock( PhysicalLogFile.Monitor.class );
         monitors.addMonitorListener( listener );
 
-        ConsistencyCheckTool.ExitHandle exitHandle = mock( ConsistencyCheckTool.ExitHandle.class );
-        ConsistencyCheckTool consistencyCheckTool = newConsistencyCheckToolWith( monitors, exitHandle, fileSystem );
+        ConsistencyCheckTool consistencyCheckTool = newConsistencyCheckToolWith( monitors, fileSystem );
 
         // When
         consistencyCheckTool.run( "-recovery=false", storeDir.getAbsolutePath() );
 
         // Then
         verifyZeroInteractions( listener );
-        verify( exitHandle ).pull();
     }
 
     private EphemeralFileSystemAbstraction createDataBaseWithStateThatNeedsRecovery( File storeDir )
@@ -252,7 +256,7 @@ public class ConsistencyCheckToolTest
     }
 
     private ConsistencyCheckTool newConsistencyCheckToolWith( Monitors monitors,
-            ConsistencyCheckTool.ExitHandle exitHandle, FileSystemAbstraction fileSystem ) throws IOException
+            FileSystemAbstraction fileSystem ) throws IOException
     {
         GraphDatabaseFactory graphDbFactory = new TestGraphDatabaseFactory()
         {
@@ -264,14 +268,14 @@ public class ConsistencyCheckToolTest
         }.setFileSystem( fileSystem ).setMonitors( monitors );
 
         return new ConsistencyCheckTool( mock( ConsistencyCheckService.class ),
-                graphDbFactory, fileSystem, mock( PrintStream.class ), exitHandle );
+                graphDbFactory, fileSystem, mock( PrintStream.class ) );
     }
 
     private ConsistencyCheckTool newConsistencyCheckToolWith ( ConsistencyCheckService
         consistencyCheckService, PrintStream systemError )
     {
         return new ConsistencyCheckTool( consistencyCheckService, new GraphDatabaseFactory(),
-                new DefaultFileSystemAbstraction(), systemError, ConsistencyCheckTool.ExitHandle.SYSTEM_EXIT );
+                new DefaultFileSystemAbstraction(), systemError );
     }
 
     @Rule

@@ -52,24 +52,10 @@ public class ConsistencyCheckTool
     private static final String CONFIG = "config";
     private static final String PROP_OWNER = "propowner";
 
-    public interface ExitHandle
-    {
-        ExitHandle SYSTEM_EXIT = new ExitHandle()
-        {
-            @Override
-            public void pull()
-            {
-                System.exit( 1 );
-            }
-        };
-
-        void pull();
-    }
-
     public static void main( String[] args ) throws IOException
     {
         ConsistencyCheckTool tool = new ConsistencyCheckTool( new ConsistencyCheckService(), new GraphDatabaseFactory(),
-                new DefaultFileSystemAbstraction(), System.err, ExitHandle.SYSTEM_EXIT );
+                new DefaultFileSystemAbstraction(), System.err );
         try
         {
             tool.run( args );
@@ -83,17 +69,15 @@ public class ConsistencyCheckTool
     private final ConsistencyCheckService consistencyCheckService;
     private final GraphDatabaseFactory dbFactory;
     private final PrintStream systemError;
-    private final ExitHandle exitHandle;
     private final FileSystemAbstraction fs;
 
     public ConsistencyCheckTool( ConsistencyCheckService consistencyCheckService,
-            GraphDatabaseFactory dbFactory, FileSystemAbstraction fs, PrintStream systemError, ExitHandle exitHandle )
+            GraphDatabaseFactory dbFactory, FileSystemAbstraction fs, PrintStream systemError )
     {
         this.consistencyCheckService = consistencyCheckService;
         this.dbFactory = dbFactory;
         this.fs = fs;
         this.systemError = systemError;
-        this.exitHandle = exitHandle;
     }
 
     public void run( String... args ) throws ToolFailureException, IOException
@@ -134,7 +118,7 @@ public class ConsistencyCheckTool
                             "Consistency checking will continue, abort if you wish to perform recovery first.",
                             "To perform recovery before checking consistency, use the '--recovery' flag." ) );
 
-                    exitHandle.pull();
+                    exit();
                 }
             }
             catch ( IOException e )
@@ -211,7 +195,12 @@ public class ConsistencyCheckTool
                 getCause().printStackTrace( System.err );
             }
 
-            exitHandle.pull();
+            exit();
         }
+    }
+
+    private static void exit()
+    {
+        System.exit( 1 );
     }
 }

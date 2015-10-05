@@ -39,12 +39,10 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
-import org.neo4j.legacy.consistency.ConsistencyCheckTool.ExitHandle;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.helpers.Args.jarUsage;
 import static org.neo4j.helpers.Strings.joinAsLines;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -66,7 +64,7 @@ public class ConsistencyCheckTool
     public static void main( String[] args ) throws IOException
     {
         ConsistencyCheckTool tool = new ConsistencyCheckTool( new ConsistencyCheckService(), new GraphDatabaseFactory(),
-                new DefaultFileSystemAbstraction(), System.err, ExitHandle.SYSTEM_EXIT );
+                new DefaultFileSystemAbstraction(), System.err );
         try
         {
             tool.run( args );
@@ -80,17 +78,15 @@ public class ConsistencyCheckTool
     private final ConsistencyCheckService consistencyCheckService;
     private final GraphDatabaseFactory dbFactory;
     private final PrintStream systemError;
-    private final ExitHandle exitHandle;
     private final FileSystemAbstraction fs;
 
     ConsistencyCheckTool( ConsistencyCheckService consistencyCheckService,
-            GraphDatabaseFactory dbFactory, FileSystemAbstraction fs, PrintStream systemError, ExitHandle exitHandle )
+            GraphDatabaseFactory dbFactory, FileSystemAbstraction fs, PrintStream systemError )
     {
         this.consistencyCheckService = consistencyCheckService;
         this.dbFactory = dbFactory;
         this.fs = fs;
         this.systemError = systemError;
-        this.exitHandle = exitHandle;
     }
 
     void run( String... args ) throws ToolFailureException, IOException
@@ -131,10 +127,7 @@ public class ConsistencyCheckTool
         {
             org.neo4j.legacy.consistency.ConsistencyCheckTool legacyTool = new org.neo4j.legacy.consistency.ConsistencyCheckTool(
                     new org.neo4j.legacy.consistency.ConsistencyCheckService(),
-                    dbFactory,
-                    fs,
-                    systemError,
-                    exitHandle );
+                    dbFactory, fs, systemError);
             legacyTool.run( args );
         }
         catch ( org.neo4j.legacy.consistency.ConsistencyCheckTool.ToolFailureException e )
@@ -182,7 +175,7 @@ public class ConsistencyCheckTool
                             "Consistency checking will continue, abort if you wish to perform recovery first.",
                             "To perform recovery before checking consistency, use the '--recovery' flag." ) );
 
-                    exitHandle.pull();
+                    exit();
                 }
             }
             catch ( IOException e )
@@ -264,7 +257,12 @@ public class ConsistencyCheckTool
                 getCause().printStackTrace( System.err );
             }
 
-            exitHandle.pull();
+            exit();
         }
+    }
+
+    private static void exit()
+    {
+        System.exit( 1 );
     }
 }

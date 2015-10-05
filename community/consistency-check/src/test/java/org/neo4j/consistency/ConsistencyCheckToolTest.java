@@ -47,9 +47,9 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.Recovery;
-import org.neo4j.legacy.consistency.ConsistencyCheckTool.ExitHandle;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.SystemExitRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -66,7 +66,6 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-
 import static org.neo4j.consistency.ConsistencyCheckTool.EXPERIMENTAL;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.ArrayUtil.concat;
@@ -76,6 +75,9 @@ import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 public class ConsistencyCheckToolTest
 {
     private final boolean experimental;
+
+    @Rule
+    public SystemExitRule systemExitRule = SystemExitRule.none();
 
     @Parameters( name = "Experimental:{0}" )
     public static Collection<Object[]> data()
@@ -217,7 +219,7 @@ public class ConsistencyCheckToolTest
         monitors.addMonitorListener( listener );
 
         // When
-        runConsistencyCheckToolWith( monitors, mock( ExitHandle.class ), fs.get(),
+        runConsistencyCheckToolWith( monitors, fs.get(),
                 "-recovery", storeDirectory.graphDbDir().getAbsolutePath() );
 
         // Then
@@ -229,6 +231,7 @@ public class ConsistencyCheckToolTest
     public void shouldExitWhenRecoveryNeededButRecoveryFalseOptionSpecified() throws Exception
     {
         // Given
+        systemExitRule.expectExit( 1 );
         File storeDir = storeDirectory.graphDbDir();
         EphemeralFileSystemAbstraction fileSystem = createDataBaseWithStateThatNeedsRecovery( storeDir );
 
@@ -236,15 +239,11 @@ public class ConsistencyCheckToolTest
         PhysicalLogFile.Monitor listener = mock( PhysicalLogFile.Monitor.class );
         monitors.addMonitorListener( listener );
 
-        ExitHandle exitHandle = mock( ExitHandle.class );
-
         // When
-        runConsistencyCheckToolWith( monitors, exitHandle, fileSystem,
-                "-recovery=false", storeDir.getAbsolutePath() );
+        runConsistencyCheckToolWith( monitors, fileSystem, "-recovery=false", storeDir.getAbsolutePath() );
 
         // Then
         verifyZeroInteractions( listener );
-        verify( exitHandle ).pull();
     }
 
     private EphemeralFileSystemAbstraction createDataBaseWithStateThatNeedsRecovery( File storeDir )
@@ -281,8 +280,7 @@ public class ConsistencyCheckToolTest
         fs.snapshot( shutdownDbAction( db ) );
     }
 
-    private void runConsistencyCheckToolWith( Monitors monitors,
-            ExitHandle exitHandle, FileSystemAbstraction fileSystem, String... args )
+    private void runConsistencyCheckToolWith( Monitors monitors, FileSystemAbstraction fileSystem, String... args )
                     throws IOException, ToolFailureException
     {
         GraphDatabaseFactory graphDbFactory = new TestGraphDatabaseFactory()
@@ -295,7 +293,7 @@ public class ConsistencyCheckToolTest
         }.setFileSystem( fileSystem ).setMonitors( monitors );
 
         new ConsistencyCheckTool( mock( ConsistencyCheckService.class ),
-                graphDbFactory, fileSystem, mock( PrintStream.class ), exitHandle ).run( augment( args ) );
+                graphDbFactory, fileSystem, mock( PrintStream.class ) ).run( augment( args ) );
     }
 
     private String[] augment( String[] args )
@@ -307,7 +305,7 @@ public class ConsistencyCheckToolTest
         consistencyCheckService, PrintStream systemError, String... args ) throws ToolFailureException, IOException
     {
         new ConsistencyCheckTool( consistencyCheckService, new GraphDatabaseFactory(),
-                new DefaultFileSystemAbstraction(), systemError, ExitHandle.SYSTEM_EXIT )
+                new DefaultFileSystemAbstraction(), systemError )
                 .run( augment( args ) );
     }
 

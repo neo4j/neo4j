@@ -19,31 +19,26 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.codehaus.jackson.JsonGenerator;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.codehaus.jackson.JsonGenerator;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.powermock.api.mockito.PowerMockito.doThrow;
-import static org.powermock.api.mockito.PowerMockito.mock;
-import static org.powermock.api.mockito.PowerMockito.when;
+import static org.mockito.Mockito.when;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest(JsonGenerator.class)
 public class Neo4jJsonCodecTest
 {
 
