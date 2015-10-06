@@ -128,8 +128,6 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   @throws(classOf[SyntaxException])
   protected def planQuery(queryText: String): (PreparedPlanExecution, TransactionInfo) = {
-    logger.debug(queryText)
-
     val preParsedQuery = preParseQuery(queryText)
     val executionMode = preParsedQuery.executionMode
     val cacheKey = preParsedQuery.statementWithVersionAndPlanner

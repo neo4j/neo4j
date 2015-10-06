@@ -41,7 +41,6 @@ public class CypherLoggingTest
             return debugEnabled;
         }
     };
-    private static final String LINE_SEPARATOR = System.getProperty( "line.separator" );
 
     @Test
     public void shouldLogQueriesWhenDebugLoggingIsEnabled() throws Exception
@@ -54,10 +53,7 @@ public class CypherLoggingTest
         engine.execute( "MATCH n RETURN n" );
 
         // then
-        assertEquals(
-                "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" + LINE_SEPARATOR +
-                        "MATCH n RETURN n" + LINE_SEPARATOR,
-                logger.toString() );
+        assertEquals("", logger.toString() );
     }
 
     @Test
