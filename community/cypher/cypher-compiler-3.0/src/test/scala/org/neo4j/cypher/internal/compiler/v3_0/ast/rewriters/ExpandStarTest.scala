@@ -22,10 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_0.{SemanticState, inSequence}
+import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, InputPosition, SemanticState, inSequence}
 
-class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
-  import parser.ParserFixture.parser
+class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport with RewriterNeedingSemanticStateTest {
 
   test("rewrites * in return") {
     assertRewrite(
@@ -106,15 +105,34 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
     )
   }
 
-  private def assertRewrite(originalQuery: String, expectedQuery: String) {
-    val mkException = new SyntaxExceptionCreator(originalQuery, Some(pos))
+  override def createRewriter(semanticState: SemanticState): Rewriter = expandStar(semanticState)
+}
+
+trait RewriterNeedingSemanticStateTest {
+  self:CypherFunSuite =>
+
+  import parser.ParserFixture.parser
+
+  def createRewriter(semanticState: SemanticState): Rewriter
+
+  def assertRewrite(originalQuery: String, expectedQuery: String) {
+    val mkException = new SyntaxExceptionCreator(originalQuery, InputPosition.NONE)
     val original = parser.parse(originalQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
     val expected = parser.parse(expectedQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
 
     val checkResult = original.semanticCheck(SemanticState.clean)
-    val rewriter = expandStar(checkResult.state)
 
-    val result = original.rewrite(rewriter)
+    val result = original.rewrite(createRewriter(checkResult.state))
     assert(result === expected)
+  }
+
+  def assertIsNotRewritten(query: String) {
+    val mkException = new SyntaxExceptionCreator(query, InputPosition.NONE)
+    val original = parser.parse(query).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
+
+    val checkResult = original.semanticCheck(SemanticState.clean)
+
+    val result = original.rewrite(createRewriter(checkResult.state))
+    assert(result === original)
   }
 }
