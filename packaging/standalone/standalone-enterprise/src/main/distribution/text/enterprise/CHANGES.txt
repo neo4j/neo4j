@@ -19,6 +19,10 @@ o Add config to control outgoing connections
 Packaging:
 o Neo4j console does not fork a subprocess on Linux, enabling easier process management
 
+Kernel:
+o Change the default `dbms.pagecache.memory` setting from 75% to 50% of free system memory after the JVM heap.
+o Fix a bug that caused an incorrect page cache size to be reported when the `dump_configuration` setting was enabled.
+
 2.3.0-M03
 ---------
 
