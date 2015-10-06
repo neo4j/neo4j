@@ -744,7 +744,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
             boolean looseFilters ) throws ShellException
     {
         Map<String, Direction> matches = new TreeMap<String, Direction>();
-        for ( RelationshipType type : GlobalGraphOperations.at( db ).getAllRelationshipTypes() )
+        for ( RelationshipType type : db.getRelationshipTypes() )
         {
             Direction direction = null;
             if ( filterMap == null || filterMap.isEmpty() )

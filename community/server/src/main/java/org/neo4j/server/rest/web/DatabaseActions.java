@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.rest.web;
 
-import com.sun.jersey.api.core.HttpContext;
-import org.apache.lucene.search.Sort;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import com.sun.jersey.api.core.HttpContext;
+import org.apache.lucene.search.Sort;
 
 import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
@@ -245,7 +245,7 @@ public class DatabaseActions
             {
                 return ValueRepresentation.string( key );
             }
-        }, GlobalGraphOperations.at( graphDb ).getAllPropertyKeys() ) );
+        }, graphDb.getAllPropertyKeys() ) );
 
         return new ListRepresentation( RepresentationType.STRING, propKeys );
     }
@@ -1457,8 +1457,7 @@ public class DatabaseActions
 
     public ListRepresentation getAllLabels( boolean inUse )
     {
-        GlobalGraphOperations operations = GlobalGraphOperations.at( graphDb );
-        ResourceIterable<Label> labels = inUse ? operations.getAllLabelsInUse() : operations.getAllLabels();
+        ResourceIterable<Label> labels = inUse ? graphDb.getAllLabelsInUse() : graphDb.getAllLabels();
         Collection<ValueRepresentation> labelNames = asSet( map( new Function<Label,ValueRepresentation>()
         {
             @Override

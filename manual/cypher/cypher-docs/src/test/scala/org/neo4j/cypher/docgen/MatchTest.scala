@@ -23,8 +23,6 @@ import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.junit.Test
 import org.neo4j.graphdb._
-import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 
 import scala.collection.JavaConverters._
@@ -112,7 +110,7 @@ This is not recommended practice. See <<match-node-by-id>> for more information 
       queryText = """match (n) return n""",
       optionalResultExplanation = "Returns all the nodes in the database.",
       assertions = (p) => {
-        val allNodes: List[Node] = GlobalGraphOperations.at(db).getAllNodes.asScala.toList
+        val allNodes: List[Node] = db.getAllNodes.asScala.toList
 
         assertEquals(allNodes, p.columnAs[Node]("n").toList)
       }
@@ -126,7 +124,7 @@ This is not recommended practice. See <<match-node-by-id>> for more information 
       queryText = """match (a), (b) where id(a) = id(b) return a, b""",
       optionalResultExplanation = "Returns the combinations of the two nodes from the database.",
       assertions = (p) => {
-        val allNodes: List[Node] = GlobalGraphOperations.at(db).getAllNodes.asScala.toList
+        val allNodes: List[Node] = db.getAllNodes.asScala.toList
 
         assertEquals(allNodes, p.columnAs[Node]("a").toList)
       }

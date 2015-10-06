@@ -27,7 +27,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -48,7 +47,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         // long numNodesPre = getNodeManager().getNumberOfIdsInUse( Node.class
         // );
         // empty the DB instance
-        for ( Node node : GlobalGraphOperations.at( getGraphDb() ).getAllNodes() )
+        for ( Node node : getGraphDb().getAllNodes() )
         {
             for ( Relationship rel : node.getRelationships() )
             {
@@ -59,7 +58,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         tx.success();
         tx.close();
         tx = getGraphDb().beginTx();
-        assertFalse( GlobalGraphOperations.at( getGraphDb() ).getAllNodes().iterator().hasNext() );
+        assertFalse( getGraphDb().getAllNodes().iterator().hasNext() );
         // TODO: this should be valid, fails right now!
         // assertEquals( 0, numNodesPost );
         tx.success();

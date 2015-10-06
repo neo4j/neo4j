@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.constraints;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DynamicLabel;
@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -119,7 +118,7 @@ public class ConstraintRecoveryIT
 
         try(Transaction tx = db.beginTx())
         {
-            assertEquals(2, Iterables.count( GlobalGraphOperations.at( db ).getAllNodes() ) );
+            assertEquals(2, Iterables.count( db.getAllNodes() ) );
         }
 
         try(Transaction tx = db.beginTx())

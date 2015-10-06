@@ -19,16 +19,17 @@
  */
 package org.neo4j.cypher.internal.spi.v1_9
 
-import org.neo4j.cypher.internal.compiler.v1_9.spi.{Operations, QueryContext}
-import org.neo4j.graphdb._
-import org.neo4j.graphdb.DynamicRelationshipType.withName
-import collection.JavaConverters._
-import java.lang.{Iterable=>JIterable}
-import org.neo4j.tooling.GlobalGraphOperations
+import java.lang.{Iterable => JIterable}
+
 import org.neo4j.cypher.EntityNotFoundException
+import org.neo4j.cypher.internal.compiler.v1_9.spi.{Operations, QueryContext}
+import org.neo4j.graphdb.DynamicRelationshipType.withName
+import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.kernel.impl.core.{ThreadToStatementContextBridge, NodeManager}
 import org.neo4j.kernel.impl.api.KernelStatement
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+
+import scala.collection.JavaConverters._
 
 class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
 
@@ -87,7 +88,7 @@ class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
         graph.index.forNodes(name).query(query).iterator().asScala
 
       def all: Iterator[Node] =
-        GlobalGraphOperations.at(graph).getAllNodes.iterator().asScala
+        graph.getAllNodes.iterator().asScala
 
       def isDeleted(node: Node): Boolean = {
         val nodeManager: ThreadToStatementContextBridge = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
@@ -134,7 +135,7 @@ class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
         graph.index.forRelationships(name).query(query).iterator().asScala
 
       def all: Iterator[Relationship] =
-        GlobalGraphOperations.at(graph).getAllRelationships.iterator().asScala
+        graph.getAllRelationships.iterator().asScala
 
       def isDeleted(rel: Relationship): Boolean = {
         val nodeManager: ThreadToStatementContextBridge = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])

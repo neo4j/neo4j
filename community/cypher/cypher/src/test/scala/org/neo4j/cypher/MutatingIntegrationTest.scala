@@ -31,25 +31,25 @@ import scala.collection.JavaConverters._
 class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions with QueryStatisticsTestSupport {
 
   test("create_a_single_node") {
-    val before = graph.inTx(GlobalGraphOperations.at(graph).getAllNodes.asScala.size)
+    val before = graph.inTx(graph.getAllNodes.asScala.size)
 
     val result = execute("create a")
 
     assertStats(result, nodesCreated = 1)
     graph.inTx {
-      GlobalGraphOperations.at(graph).getAllNodes.asScala should have size before + 1
+      graph.getAllNodes.asScala should have size before + 1
     }
   }
 
 
   test("create_a_single_node_with_props_and_return_it") {
-    val before = graph.inTx(GlobalGraphOperations.at(graph).getAllNodes.asScala.size)
+    val before = graph.inTx(graph.getAllNodes.asScala.size)
 
     val result = execute("create (a {name : 'Andres'}) return a")
 
     assertStats(result, nodesCreated = 1, propertiesSet = 1)
     graph.inTx {
-      GlobalGraphOperations.at(graph).getAllNodes.asScala should have size before + 1
+      graph.getAllNodes.asScala should have size before + 1
     }
 
     val list = result.toList
@@ -287,7 +287,7 @@ return distinct center""")
     execute("""start n=node(*) optional match n-[r]-() delete n,r""")
 
     graph.inTx {
-      GlobalGraphOperations.at(graph).getAllNodes.asScala shouldBe empty
+      graph.getAllNodes.asScala shouldBe empty
     }
   }
 
@@ -299,7 +299,7 @@ return distinct center""")
     execute("""match (n) where id(n) = 0 match p=n-->() delete p""")
 
     graph.inTx {
-      GlobalGraphOperations.at(graph).getAllNodes.asScala shouldBe empty
+      graph.getAllNodes.asScala shouldBe empty
     }
   }
 

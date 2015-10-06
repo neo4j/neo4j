@@ -19,10 +19,10 @@
  */
 package org.neo4j.tooling;
 
+import java.util.Collections;
+
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.Collections;
 
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.DynamicLabel;
@@ -58,12 +58,10 @@ public class GlobalGraphOperationsIT
             tx.success();
         }
 
-        GlobalGraphOperations gg = GlobalGraphOperations.at( db );
-
         // When
         try( Transaction _ = db.beginTx() )
         {
-            assertThat( toList( gg.getAllPropertyKeys() ), equalTo( asList( "myProperty" ) ) );
+            assertThat( toList( db.getAllPropertyKeys() ), equalTo( asList( "myProperty" ) ) );
         }
     }
 
@@ -88,12 +86,10 @@ public class GlobalGraphOperationsIT
             tx.success();
         }
 
-        GlobalGraphOperations gg = GlobalGraphOperations.at( db );
-
         // When - Then
         try( Transaction ignored = db.beginTx() )
         {
-            assertThat( toSet( gg.getAllLabels() ), equalTo( toSet( asList( alive, dead ) ) ) );
+            assertThat( toSet( db.getAllLabels() ), equalTo( toSet( asList( alive, dead ) ) ) );
         }
     }
 
@@ -118,12 +114,10 @@ public class GlobalGraphOperationsIT
             tx.success();
         }
 
-        GlobalGraphOperations gg = GlobalGraphOperations.at( db );
-
         // When - Then
         try( Transaction ignored = db.beginTx() )
         {
-            assertThat( toSet( gg.getAllLabelsInUse() ), equalTo( Collections.singleton( alive ) ) );
+            assertThat( toSet( db.getAllLabelsInUse() ), equalTo( Collections.singleton( alive ) ) );
         }
     }
 
@@ -148,8 +142,6 @@ public class GlobalGraphOperationsIT
             tx.success();
         }
 
-        GlobalGraphOperations gg = GlobalGraphOperations.at( db );
-
         // When - Then
         try( Transaction ignored = db.beginTx() )
         {
@@ -160,7 +152,7 @@ public class GlobalGraphOperationsIT
                 {
                     return relationshipType.name();
                 }
-            }, gg.getAllRelationshipTypes() );
+            }, db.getRelationshipTypes() );
             assertThat( toSet( result ), equalTo( toSet( asList( alive.name(), dead.name() ) ) ) );
         }
     }
@@ -186,8 +178,6 @@ public class GlobalGraphOperationsIT
             tx.success();
         }
 
-        GlobalGraphOperations gg = GlobalGraphOperations.at( db );
-
         // When - Then
         try( Transaction ignored = db.beginTx() )
         {
@@ -198,7 +188,7 @@ public class GlobalGraphOperationsIT
                 {
                     return relationshipType.name();
                 }
-            }, gg.getAllRelationshipTypesInUse() );
+            }, db.getAllRelationshipTypesInUse() );
             assertThat( toSet( result ) , equalTo( Collections.singleton( alive.name() ) ) );
         }
     }

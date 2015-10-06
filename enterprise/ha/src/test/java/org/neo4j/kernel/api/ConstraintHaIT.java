@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.api;
 
+import java.io.File;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
-
-import java.io.File;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstra
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -58,7 +57,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -157,7 +155,7 @@ public class ConstraintHaIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                for ( Relationship relationship : GlobalGraphOperations.at( db ).getAllRelationships() )
+                for ( Relationship relationship : db.getAllRelationships() )
                 {
                     if ( relationship.isType( withName( type ) ) )
                     {

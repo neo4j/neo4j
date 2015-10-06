@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -58,13 +58,10 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.test.ha.ClusterRule;
-import org.neo4j.tooling.GlobalGraphOperations;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.neo4j.cluster.protocol.cluster.ClusterConfiguration.COORDINATOR;
 import static org.neo4j.function.Predicates.not;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
@@ -253,7 +250,7 @@ public class ClusterTopologyChangesIT
     {
         try ( Transaction ignored = db.beginTx() )
         {
-            return Iterables.count( GlobalGraphOperations.at( db ).getAllNodes() );
+            return Iterables.count( db.getAllNodes() );
         }
     }
 

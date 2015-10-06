@@ -19,12 +19,12 @@
  */
 package org.neo4j.server;
 
+import java.net.URI;
+
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.net.URI;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -37,7 +37,6 @@ import org.neo4j.server.helpers.UnitOfWork;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
@@ -111,9 +110,9 @@ public class NeoServerJAXRSDocIT extends ExclusiveServerTestBase
                     graph.createNode();
                 }
 
-                for ( Node n1 : GlobalGraphOperations.at(graph).getAllNodes() )
+                for ( Node n1 : graph.getAllNodes() )
                 {
-                    for ( Node n2 : GlobalGraphOperations.at(graph).getAllNodes() )
+                    for ( Node n2 : graph.getAllNodes() )
                     {
                         if ( n1.equals( n2 ) )
                         {
