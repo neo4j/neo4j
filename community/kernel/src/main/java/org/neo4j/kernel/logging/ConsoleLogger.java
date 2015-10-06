@@ -94,7 +94,7 @@ public class ConsoleLogger
      */
     public void error( String message )
     {
-        realLogger.error( message );
+        realLogger.error( message, null, true, CONSOLE_MARK );
     }
 
     /**
