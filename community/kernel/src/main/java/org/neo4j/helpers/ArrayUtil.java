@@ -441,8 +441,12 @@ public abstract class ArrayUtil
     }
 
     /**
-     * @return a concatenated array where {@code first} as the item at index {@code 0} and the additional
-     * items following it.
+     * Create a array from a existing array and additional items following it.
+     *
+     * @param initial the initial array
+     * @param additional the additional items that would be added into the initial array
+     * @param <T> the type of the array items
+     * @return a concatenated array and the additional items following it.
      */
     public static <T> T[] concat( T[] initial, T... additional )
     {
@@ -454,6 +458,8 @@ public abstract class ArrayUtil
     }
 
     /**
+     * Returns the array version of the vararg argument.
+     *
      * @param varargs the items
      * @param <T> the type of the items
      * @return the array version of the vararg argument.

@@ -34,7 +34,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  * configured to act as a backup server. This class is not instantiable, instead factory methods are used to get
  * instances configured to contact a specific backup server against which all possible backup operations can be
  * performed.
- * <p/>
+ *
  * All backup methods return the same instance, allowing for chaining calls.
  */
 public class OnlineBackup
@@ -91,10 +91,10 @@ public class OnlineBackup
      * Performs a backup into targetDirectory. The server contacted is the one configured in the factory method used to
      * obtain this instance. After the backup is complete, a verification phase will take place, checking
      * the database for consistency. If any errors are found, they will be printed in stderr.
-     * <p>
+     *
      * If the target directory does not contain a database, a full backup will be performed, otherwise an incremental
      * backup mechanism is used.
-     * <p>
+     *
      * If the backup has become too far out of date for an incremental backup to succeed, a full backup is performed.
      *
      * @param targetDirectory A directory holding a complete database previously obtained from the backup server.
@@ -124,10 +124,10 @@ public class OnlineBackup
      * obtain this instance. After the backup is complete, and if the verification parameter is set to true,
      * a verification phase will take place, checking the database for consistency. If any errors are found, they will
      * be printed in stderr.
-     * <p>
+     *
      * If the target directory does not contain a database, a full backup will be performed, otherwise an incremental
      * backup mechanism is used.
-     * <p>
+     *
      * If the backup has become too far out of date for an incremental backup to succeed, a full backup is performed.
      *
      * @param targetDirectory A directory holding a complete database previously obtained from the backup server.
@@ -157,10 +157,10 @@ public class OnlineBackup
      * Performs a backup into targetDirectory. The server contacted is the one configured in the factory method used to
      * obtain this instance. After the backup is complete, a verification phase will take place, checking
      * the database for consistency. If any errors are found, they will be printed in stderr.
-     * <p>
+     *
      * If the target directory does not contain a database, a full backup will be performed, otherwise an incremental
      * backup mechanism is used.
-     * <p>
+     *
      * If the backup has become too far out of date for an incremental backup to succeed, a full backup is performed.
      *
      * @param targetDirectory A directory holding a complete database previously obtained from the backup server.
@@ -192,10 +192,10 @@ public class OnlineBackup
      * obtain this instance. After the backup is complete, and if the verification parameter is set to true,
      * a verification phase will take place, checking the database for consistency. If any errors are found, they will
      * be printed in stderr.
-     * <p>
+     *
      * If the target directory does not contain a database, a full backup will be performed, otherwise an incremental
      * backup mechanism is used.
-     * <p>
+     *
      * If the backup has become too far out of date for an incremental backup to succeed, a full backup is performed.
      *
      * @param targetDirectory A directory holding a complete database previously obtained from the backup server.
@@ -230,7 +230,7 @@ public class OnlineBackup
      * configured in the factory method used to obtain this instance. At the end of the backup, a verification phase
      * will take place, running over the resulting database ensuring it is consistent. If the check fails, the fact
      * will be printed in stderr.
-     * <p>
+     *
      * If the target directory already contains a database, a RuntimeException denoting the fact will be thrown.
      *
      * @param targetDirectory The directory in which to store the database
@@ -250,7 +250,7 @@ public class OnlineBackup
      * configured in the factory method used to obtain this instance. If the verification flag is set, at the end of
      * the backup, a verification phase will take place, running over the resulting database ensuring it is consistent.
      * If the check fails, the fact will be printed in stderr.
-     * <p>
+     *
      * If the target directory already contains a database, a RuntimeException denoting the fact will be thrown.
      *
      * @param targetDirectory The directory in which to store the database
@@ -272,7 +272,7 @@ public class OnlineBackup
      * the backup, a verification phase will take place, running over the resulting database ensuring it is consistent.
      * If the check fails, the fact will be printed in stderr. The consistency check will run with the provided
      * tuning configuration.
-     * <p>
+     *
      * If the target directory already contains a database, a RuntimeException denoting the fact will be thrown.
      *
      * @param targetDirectory The directory in which to store the database
@@ -294,7 +294,7 @@ public class OnlineBackup
      * configured in the factory method used to obtain this instance. After the incremental backup is complete, a
      * verification phase will take place, checking the database for consistency. If any errors are found, they will
      * be printed in stderr.
-     * <p>
+     *
      * If the target directory does not contain a database or it is not compatible with the one present in the
      * configured backup server a RuntimeException will be thrown denoting the fact.
      *
@@ -315,7 +315,7 @@ public class OnlineBackup
      * configured in the factory method used to obtain this instance. After the incremental backup is complete, and if
      * the verification parameter is set to true, a  verification phase will take place, checking the database for
      * consistency. If any errors are found, they will be printed in stderr.
-     * <p>
+     *
      * If the target directory does not contain a database or it is not compatible with the one present in the
      * configured backup server a RuntimeException will be thrown denoting the fact.
      *
@@ -337,7 +337,7 @@ public class OnlineBackup
      * configured in the factory method used to obtain this instance. After the incremental backup is complete
      * a verification phase will take place, checking the database for consistency. If any errors are found, they will
      * be printed in stderr.
-     * <p>
+     *
      * If the target database is not compatible with the one present in the target backup server, a RuntimeException
      * will be thrown denoting the fact.
      *
