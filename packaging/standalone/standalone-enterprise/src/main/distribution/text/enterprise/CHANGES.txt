@@ -148,6 +148,11 @@ o Added ability to skip duplicate nodes, i.e. multiple nodes with the same ID in
 
 2.2.6
 -----
+Cypher:
+o Fixes #5336 - Properly handle matching on multiple labels
+o Fixes #5195 - USING INDEX hints breaks some queries
+o MERGE now prints its start point in the plan description
+
 Kernel:
 o Fixes an issue where label updates where supplied unordered during batch import
   when deduplicating nodes. This issue could prevent any import containing duplicate
