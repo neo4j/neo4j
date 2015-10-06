@@ -9,6 +9,7 @@ o User has ability to configure jettys max header sizes with added configuration
 o Fixes #5258 - ClientError and TransientError make REST API transactions rollback
 o Query log now supports rotation through the `dbms.querylog.rotation.threshold`
   option
+o HTTP utility will now allow custom headers
 
 2.2.3
 -----

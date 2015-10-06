@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static java.lang.Math.max;
 import static java.lang.String.format;
 
 /**
@@ -31,7 +30,6 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     private volatile int version;
     // These don't need to be volatile, reading them is "guarded" by version access
     private long highestGapFreeNumber;
-    private volatile long highestOfferedNumber;
     private long[] highestGapFreeMeta;
     private final SequenceArray outOfOrderQueue;
     private long[] metaArray;
@@ -46,7 +44,6 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     @Override
     public synchronized boolean offer( long number, long[] meta )
     {
-        highestOfferedNumber = max( highestOfferedNumber, number );
         if ( highestGapFreeNumber + 1 == number )
         {
             version++;
@@ -101,12 +98,6 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     public long getHighestGapFreeNumber()
     {
         return highestGapFreeNumber;
-    }
-
-    @Override
-    public long getHighestOfferedNumber()
-    {
-        return highestOfferedNumber;
     }
 
     @Override

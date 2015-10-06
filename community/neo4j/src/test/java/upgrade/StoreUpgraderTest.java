@@ -65,7 +65,6 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.emptyCollectionOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -81,6 +80,9 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allLegacyStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveNoTrailer;
@@ -320,12 +322,10 @@ public class StoreUpgraderTest
         // Then
         StoreFactory storeFactory =
                 new StoreFactory( fileSystem, dbDirectory, pageCache, NullLogProvider.getInstance() );
-        NeoStores neoStores = storeFactory.openNeoStores( false );
+        NeoStores neoStores = storeFactory.openNeoStoresEagerly();
 
-        assertThat( neoStores.getMetaDataStore().getUpgradeTransaction()[0], equalTo( neoStores.getMetaDataStore()
-                                                                          .getLastCommittedTransaction()[0] ) );
-        assertThat( neoStores.getMetaDataStore().getUpgradeTransaction()[1], equalTo( neoStores.getMetaDataStore()
-                                                                          .getLastCommittedTransaction()[1] ) );
+        assertThat( neoStores.getMetaDataStore().getUpgradeTransaction(),
+                equalTo( neoStores.getMetaDataStore() .getLastCommittedTransaction() ) );
         assertThat( neoStores.getMetaDataStore().getUpgradeTime(), not( equalTo( MetaDataStore.FIELD_NOT_INITIALIZED ) ) );
 
         long minuteAgo = System.currentTimeMillis() - MINUTES.toMillis( 1 );

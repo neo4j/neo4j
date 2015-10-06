@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.neo4j.kernel.impl.store.TransactionId;
+
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
 /**
@@ -56,7 +58,7 @@ public interface TransactionIdStore
 
     /**
      * Signals that a transaction with the given transaction id has been committed (i.e. appended to a log).
-     * Calls to this method may come in out-of-transaction-id order. The highest gap-free transaction id
+     * Calls to this method may come in out-of-transaction-id order. The highest transaction id
      * seen given to this method will be visible in {@link #getLastCommittedTransactionId()}.
      * @param transactionId the applied transaction id.
      * @param checksum checksum of the transaction.
@@ -64,23 +66,21 @@ public interface TransactionIdStore
     void transactionCommitted(  long transactionId, long checksum );
 
     /**
-     * @return highest seen gap-free {@link #transactionCommitted(long, long) committed transaction id}.
+     * @return highest seen {@link #transactionCommitted(long, long) committed transaction id}.
      */
     long getLastCommittedTransactionId();
 
     /**
-     * Returns transaction information about the last committed transaction, i.e.
+     * Returns transaction information about the highest committed transaction, i.e.
      * transaction id as well as checksum.
      */
-    long[] getLastCommittedTransaction();
-
-    long getHighestCommittedTransactionId();
+    TransactionId getLastCommittedTransaction();
 
     /**
      * Returns transaction information about transaction where the last upgrade was performed, i.e.
      * transaction id as well as checksum.
      */
-    long[] getUpgradeTransaction();
+    TransactionId getUpgradeTransaction();
 
     /**
      * @return highest seen gap-free {@link #transactionClosed(long, long, long) closed transaction id}.

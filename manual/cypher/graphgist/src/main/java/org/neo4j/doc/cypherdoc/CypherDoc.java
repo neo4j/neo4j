@@ -118,7 +118,7 @@ public final class CypherDoc
         String[] lines = input.split( EOL );
         if ( lines.length < 3 )
         {
-            throw new IllegalArgumentException( "To little content, only "
+            throw new IllegalArgumentException( "Not enough content, only "
                                                 + lines.length + " lines." );
         }
         List<Block> blocks = new ArrayList<>();

@@ -35,7 +35,11 @@ public enum TaskExecutionOrder
         {
             for ( StoppableRunnable task : tasks )
             {
-                task.run();
+                // Synchronization so that the executing thread goes through a memory barrier
+                synchronized ( task )
+                {
+                    task.run();
+                }
             }
             completion.await( 0, TimeUnit.SECONDS );
         }

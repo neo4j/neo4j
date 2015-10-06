@@ -49,13 +49,13 @@ public class BatchInserterImplTest
     public void testHonorsPassedInParams() throws Exception
     {
         BatchInserter inserter = BatchInserters.inserter( testDirectory.graphDbDir(), stringMap(
-                GraphDatabaseSettings.pagecache_memory.name(), "16K",
+                GraphDatabaseSettings.pagecache_memory.name(), "280K",
                 GraphDatabaseSettings.mapped_memory_page_size.name(), "1K" ) );
         NeoStores neoStores = ReflectionUtil.getPrivateField( inserter, "neoStores", NeoStores.class );
         PageCache pageCache = ReflectionUtil.getPrivateField( neoStores, "pageCache", PageCache.class );
         inserter.shutdown();
         int mappedMemoryTotalSize = pageCache.maxCachedPages() * pageCache.pageSize();
-        assertThat( "memory mapped config is active", mappedMemoryTotalSize, is( 16 * 1024 ) );
+        assertThat( "memory mapped config is active", mappedMemoryTotalSize, is( 280 * 1024 ) );
     }
 
     @Test

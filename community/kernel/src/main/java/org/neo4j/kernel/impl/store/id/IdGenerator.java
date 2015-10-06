@@ -32,10 +32,16 @@ public interface IdGenerator extends IdSequence
     void freeId( long id );
 
     /**
-     * Closes the id generator.
+     * Closes the id generator, marking it as clean.
      */
     void close();
     long getNumberOfIdsInUse();
     long getDefragCount();
+
+    /**
+     * Closes the id generator as dirty and deletes it right after closed. This operation is safe, in the sense
+     * that the id generator file is closed but not marked as clean. This has the net result that a crash in the
+     * middle will still leave the file marked as dirty so it will be deleted on the next open call.
+     */
     void delete();
 }

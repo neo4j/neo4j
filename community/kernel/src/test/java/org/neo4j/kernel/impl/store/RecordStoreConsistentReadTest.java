@@ -48,6 +48,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
+import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 
 public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S extends RecordStore<R>>
 {
@@ -73,7 +74,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
         pageCache = pageCacheRule.withInconsistentReads( pageCache, nextReadIsInconsistent );
         File storeDir = new File( "stores" );
         StoreFactory factory = new StoreFactory( fs, storeDir, pageCache, NullLogProvider.getInstance() );
-        NeoStores neoStores = factory.openNeoStores( true );
+        NeoStores neoStores = factory.openNeoStores( SF_CREATE );
         S store = initialiseStore( neoStores );
 
         CommonAbstractStore commonAbstractStore = (CommonAbstractStore) store;

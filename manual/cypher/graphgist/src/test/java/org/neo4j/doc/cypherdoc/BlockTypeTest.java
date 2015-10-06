@@ -117,13 +117,22 @@ public class BlockTypeTest
     }
 
     @Test
-    public void twoLineTitle()
+    public void ignore_second_level_heading()
     {
-        Block block = Block.getBlock( Arrays.asList( "Title here", "==========" ) );
-        assertThat( block.type, sameInstance( BlockType.TITLE ) );
+        Block block = Block.getBlock( Arrays.asList( "== Title here" ) );
+        assertThat( block.type, sameInstance( BlockType.TEXT ) );
         String output = block.process( state );
-        assertThat( output, containsString( "[[cypherdoc-title-here]]" ) );
-        assertThat( output, containsString( "= Title here =" ) );
+        assertThat( output, containsString( "== Title here" ) );
+    }
+
+    @Test
+    public void ignore_second_level_heading_with_id()
+    {
+        Block block = Block.getBlock( Arrays.asList( "[[my-id]]", "== Title here" ) );
+        assertThat( block.type, sameInstance( BlockType.TEXT ) );
+        String output = block.process( state );
+        assertThat( output, containsString( "[[my-id]]" ) );
+        assertThat( output, containsString( "== Title here" ) );
     }
 
     @Test

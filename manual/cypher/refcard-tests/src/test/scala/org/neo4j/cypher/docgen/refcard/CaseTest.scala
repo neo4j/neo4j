@@ -27,7 +27,7 @@ class CaseTest extends RefcardTest with QueryStatisticsTestSupport {
   def graphDescription = List(
     "A KNOWS B")
   val title = "CASE"
-  val css = "general c2-1 c3-3 c4-3 c5-4 c6-1"
+  val css = "general c2-1 c3-3 c4-2 c5-3 c6-1"
   override val linkId = "cypher-expressions"
 
   override def assert(name: String, result: InternalExecutionResult) {

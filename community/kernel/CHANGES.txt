@@ -38,6 +38,11 @@ o Allow GraphDatabaseFactory to accept a LogProvider for user logging, allowing
 o Fixes an issue where label updates where supplied unordered during batch import
   when deduplicating nodes. This issue could prevent any import containing duplicate
   input ids from completing successfully.
+o ID files will now be properly always marked as unclean on unclean
+  shutdowns, fixing issue where recovery could require a database
+  restart to complete
+o TransactionIdStore tracks highest transaction id instead of highest gap-free transaction id.
+  This fixes an issue where a lower transaction id than expected would be seen as last committed.
 
 2.2.5
 -----

@@ -601,14 +601,6 @@ public class NeoStores implements AutoCloseable
         }
     }
 
-    public void rebuildIdGenerators()
-    {
-        for ( CommonAbstractStore store : instantiatedRecordStores() )
-        {
-            store.rebuildIdGenerator();
-        }
-    }
-
     /**
      * Throws cause of store not being OK.
      */
@@ -665,6 +657,20 @@ public class NeoStores implements AutoCloseable
     {
         // TODO: move this to LifeCycle
         getCounts().start();
+    }
+
+
+    public void deleteIdGenerators()
+    {
+        visitStore( new Visitor<CommonAbstractStore, RuntimeException>()
+        {
+            @Override
+            public boolean visit( CommonAbstractStore store ) throws RuntimeException
+            {
+                store.deleteIdGenerator();
+                return false;
+            }
+        } );
     }
 
     public void assertOpen()

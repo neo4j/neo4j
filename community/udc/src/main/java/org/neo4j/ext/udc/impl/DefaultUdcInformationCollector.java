@@ -274,7 +274,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         {
             return ((OperatingSystemMXBean) operatingSystemMXBean).getTotalPhysicalMemorySize();
         }
-        catch ( NoClassDefFoundError e )
+        catch ( Throwable e )
         {
             // If not running on Oracle JDK
 

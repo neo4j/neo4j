@@ -177,6 +177,7 @@ import org.neo4j.logging.Logger;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.neo4j.helpers.collection.Iterables.toList;
+import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
 public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexProviders
@@ -625,32 +626,25 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             labelTokens, final RelationshipTypeTokenHolder relationshipTypeTokens,
             final PropertyKeyTokenHolder propertyKeyTokenHolder )
     {
-        final NeoStores neoStores = storeFactory.openNeoStores( true );
-
         life.add( new LifecycleAdapter()
         {
             @Override
             public void start() throws IOException
             {
-                // TODO: we should not need it anymore in case if we track ids during recovery,
-                // needs to be cleaned up in latest version
-                if ( startupStatistics.numberOfRecoveredTransactions() > 0 )
-                {
-                    neoStores.rebuildIdGenerators();
-                }
                 neoStoreModule.neoStores().makeStoreOk();
 
                 propertyKeyTokenHolder.setInitialTokens(
                         neoStoreModule.neoStores().getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
                 relationshipTypeTokens.setInitialTokens(
                         neoStoreModule.neoStores().getRelationshipTypeTokenStore().getTokens( Integer.MAX_VALUE ) );
-                labelTokens.setInitialTokens( neoStoreModule.neoStores().getLabelTokenStore().getTokens( Integer
-                        .MAX_VALUE ) );
+                labelTokens.setInitialTokens(
+                        neoStoreModule.neoStores().getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
 
-                neoStores.rebuildCountStoreIfNeeded(); // TODO: move this to lifecycle
+                neoStoreModule.neoStores().rebuildCountStoreIfNeeded(); // TODO: move this to counts store lifecycle
             }
         } );
 
+        final NeoStores neoStores = storeFactory.openNeoStores( SF_CREATE );
         return new NeoStoreModule()
         {
             @Override
@@ -997,8 +991,8 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         final LatestCheckPointFinder checkPointFinder =
                 new LatestCheckPointFinder( logFiles, fileSystemAbstraction, logEntryReader );
         Recovery.SPI spi = new DefaultRecoverySPI( labelScanWriters, recoveryLegacyIndexApplierLookup,
-                storeFlusher, logFileRecoverer, logFiles, fileSystemAbstraction, metaDataStore, checkPointFinder,
-                indexUpdatesValidator );
+                storeFlusher, neoStores, logFileRecoverer, logFiles, fileSystemAbstraction, metaDataStore,
+                checkPointFinder, indexUpdatesValidator );
         Recovery recovery = new Recovery( spi, recoveryMonitor );
 
         life.add( recovery );

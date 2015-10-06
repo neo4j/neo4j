@@ -50,7 +50,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class ConsistencyCheckTool
 {
     // This to easily change this behaviour before/after releases
-    static final boolean EXPERIMENTAL_BY_DEFAULT = true;
+    public static final boolean EXPERIMENTAL_BY_DEFAULT = true;
 
     static final String RECOVERY = "recovery";
     static final String CONFIG = "config";

@@ -24,13 +24,12 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.function.ThrowingSupplier;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
-
-import static org.neo4j.helpers.Format.KB;
 
 /**
  * Cache of streams of {@link InputNode} or {@link InputRelationship} from an {@link Input} instance.
@@ -118,7 +117,7 @@ public class InputCache implements Closeable
 
     public InputCache( FileSystemAbstraction fs, File cacheDirectory )
     {
-        this( fs, cacheDirectory, 512*KB );
+        this( fs, cacheDirectory, (int) ByteUnit.kibiBytes( 512 ) );
     }
 
     public InputCache( FileSystemAbstraction fs, File cacheDirectory, int bufferSize )

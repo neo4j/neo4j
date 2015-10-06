@@ -20,9 +20,9 @@
 package org.neo4j.kernel.ha;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.neo4j.function.ThrowingLongUnaryOperator;
+import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -53,10 +53,10 @@ public class TransactionChecksumLookup implements ThrowingLongUnaryOperator<IOEx
     {
         // First off see if the requested txId is in fact the last committed transaction.
         // If so then we can extract the checksum directly from the transaction id store.
-        long[] lastCommittedTransaction = transactionIdStore.getLastCommittedTransaction();
-        if ( lastCommittedTransaction[0] == txId )
+        TransactionId lastCommittedTransaction = transactionIdStore.getLastCommittedTransaction();
+        if ( lastCommittedTransaction.transactionId() == txId )
         {
-            return lastCommittedTransaction[1];
+            return lastCommittedTransaction.checksum();
         }
 
         // It wasn't, so go look for it in the transaction store.
@@ -71,16 +71,16 @@ public class TransactionChecksumLookup implements ThrowingLongUnaryOperator<IOEx
             // OK we couldn't find it there either. So final attempt will be to check for the rare occasion
             // where the txId is the transaction where the last upgrade was performed at. If it is,
             // then we can extract the checksum from transaction id store as well.
-            long[] lastUpgradeTransaction = transactionIdStore.getUpgradeTransaction();
-            if ( lastUpgradeTransaction[0] == txId )
+            TransactionId lastUpgradeTransaction = transactionIdStore.getUpgradeTransaction();
+            if ( lastUpgradeTransaction.transactionId() == txId )
             {
-                return lastUpgradeTransaction[1];
+                return lastUpgradeTransaction.checksum();
             }
 
             // So we truly couldn't find the checksum for this txId, go ahead and throw
             throw withMessage( e, e.getMessage() + " | transaction id store says last transaction is " +
-                    Arrays.toString( lastCommittedTransaction ) + " and last upgrade transaction is " +
-                    Arrays.toString( lastUpgradeTransaction ) );
+                    lastCommittedTransaction + " and last upgrade transaction is " +
+                    lastUpgradeTransaction );
         }
     }
 }

@@ -49,11 +49,6 @@ public interface OutOfOrderSequence
     long getHighestGapFreeNumber();
 
     /**
-     * @return the highest gap-free number, without its meta data.
-     */
-    long getHighestOfferedNumber();
-
-    /**
      * @return true if the pair number/meta data has been offered
      */
     boolean seen( long number, long[] meta );

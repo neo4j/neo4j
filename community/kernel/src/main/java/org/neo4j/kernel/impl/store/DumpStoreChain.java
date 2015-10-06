@@ -105,7 +105,8 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
             Config config = new Config();
             StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider() );
-            try ( NeoStores neoStores = storeFactory.openNeoStores( false ) )
+
+            try ( NeoStores neoStores = storeFactory.openNeoStoresEagerly() )
             {
                 RecordStore<RECORD> store = store( neoStores );
                 for ( long next = first; next != -1; )

@@ -32,11 +32,11 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.helpers.Format;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -44,7 +44,6 @@ import static org.junit.Assert.assertTrue;
 
 public class RecoveryIT
 {
-
     @Rule
     public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 
@@ -75,7 +74,7 @@ public class RecoveryIT
     }
 
     @Test
-    public void deleteAndRemoveNodePropertyDuringOneRecoveryRun() throws IOException
+    public void shouldRecoverIdsCorrectlyWhenWeCreateAndDeleteANodeInTheSameRecoveryRun() throws IOException
     {
         GraphDatabaseService database = startDatabase( directory.graphDbDir() );
         Label testLabel = DynamicLabel.label( "testLabel" );
@@ -130,14 +129,14 @@ public class RecoveryIT
 
     private String createLongString()
     {
-        String[] strings = new String[Format.KB * 2];
+        String[] strings = new String[(int) ByteUnit.kibiBytes( 2 )];
         Arrays.fill( strings, "a" );
         return Arrays.toString( strings );
     }
 
     private GraphDatabaseService startDatabase( File storeDir )
     {
-        return new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() );
+        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() );
     }
 
     private File copyTransactionLogs() throws IOException

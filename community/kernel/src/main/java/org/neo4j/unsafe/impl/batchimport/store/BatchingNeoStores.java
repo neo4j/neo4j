@@ -63,6 +63,7 @@ import static java.lang.String.valueOf;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 
 /**
  * Creator and accessor of {@link NeoStores} with some logic to provide very batch friendly services to the
@@ -181,7 +182,7 @@ public class BatchingNeoStores implements AutoCloseable, NeoStoresSupplier
         {
             StoreFactory storeFactory =
                     new StoreFactory( fileSystem, new File( storeDir ), pageCache, NullLogProvider.getInstance() );
-            try ( NeoStores neoStores = storeFactory.openNeoStores( true ) )
+            try ( NeoStores neoStores = storeFactory.openNeoStores( SF_CREATE ) )
             {
                 neoStores.getMetaDataStore();
                 neoStores.getLabelTokenStore();
@@ -199,7 +200,7 @@ public class BatchingNeoStores implements AutoCloseable, NeoStoresSupplier
         BatchingIdGeneratorFactory idGeneratorFactory = new BatchingIdGeneratorFactory( fileSystem );
         StoreFactory storeFactory =
                 new StoreFactory( storeDir, neo4jConfig, idGeneratorFactory, pageCache, fileSystem, logProvider );
-        return storeFactory.openNeoStores( true );
+        return storeFactory.openNeoStores( SF_CREATE );
     }
 
     public IoTracer getIoTracer()

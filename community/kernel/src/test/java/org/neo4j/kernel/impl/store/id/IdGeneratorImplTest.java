@@ -32,6 +32,7 @@ import org.neo4j.test.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
@@ -132,6 +133,35 @@ public class IdGeneratorImplTest
         {
             // THEN Good
         }
+    }
+
+    @Test
+    public void shouldDeleteIfOpen() throws Exception
+    {
+        // GIVEN
+        IdGeneratorImpl.createGenerator( fsr.get(), file, 42, false );
+        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, 42 );
+
+        // WHEN
+        idGenerator.delete();
+
+        // THEN
+        assertFalse( fsr.get().fileExists( file ) );
+    }
+
+    @Test
+    public void shouldDeleteIfClosed() throws Exception
+    {
+        // GIVEN
+        IdGeneratorImpl.createGenerator( fsr.get(), file, 42, false );
+        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, 42 );
+        idGenerator.close();
+
+        // WHEN
+        idGenerator.delete();
+
+        // THEN
+        assertFalse( fsr.get().fileExists( file ) );
     }
 
     public static void main( String[] args )

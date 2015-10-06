@@ -28,6 +28,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.configuration.Internal;
@@ -291,9 +292,9 @@ public abstract class GraphDatabaseSettings
                   "then it is generally recommended to leave about 2-4 gigabytes for the operating system, give the " +
                   "JVM enough heap to hold all your transaction state and query context, and then leave the rest for " +
                   "the page cache. The default page cache memory assumes the machine is dedicated to running " +
-                  "Neo4j, and is heuristically set to 75% of RAM minus the max Java heap size." )
+                  "Neo4j, and is heuristically set to 50% of RAM minus the max Java heap size." )
     public static final Setting<Long> pagecache_memory =
-            setting( "dbms.pagecache.memory", BYTES, defaultPageCacheMemory(), min( 8192 * 2L ) );
+            setting( "dbms.pagecache.memory", BYTES, defaultPageCacheMemory(), min( 8192 * 30L ) );
 
     private static String defaultPageCacheMemory()
     {
@@ -304,7 +305,14 @@ public abstract class GraphDatabaseSettings
             return defaultMemoryOverride;
         }
 
-        // Try to compute (RAM - maxheap) * 0.75 if we can get reliable numbers...
+        double ratioOfFreeMem = 0.50;
+        String defaultMemoryRatioOverride = System.getProperty( "dbms.pagecache.memory.ratio.default.override" );
+        if ( defaultMemoryRatioOverride != null )
+        {
+            ratioOfFreeMem = Double.parseDouble( defaultMemoryRatioOverride );
+        }
+
+        // Try to compute (RAM - maxheap) * 0.50 if we can get reliable numbers...
         long maxHeapMemory = Runtime.getRuntime().maxMemory();
         if ( 0 < maxHeapMemory && maxHeapMemory < Long.MAX_VALUE )
         {
@@ -316,9 +324,9 @@ public abstract class GraphDatabaseSettings
                 long physicalMemory = (long) getTotalPhysicalMemorySize.invoke( os );
                 if ( 0 < physicalMemory && physicalMemory < Long.MAX_VALUE && maxHeapMemory < physicalMemory )
                 {
-                    long heuristic = (long) ((physicalMemory - maxHeapMemory) * 0.75);
-                    long min = 32 * 1024 * 1024; // We'd like at least 32 MiBs.
-                    long max = 1024 * 1024 * 1024 * 1024L; // Don't heuristically take more than 1 TiB.
+                    long heuristic = (long) ((physicalMemory - maxHeapMemory) * ratioOfFreeMem);
+                    long min = ByteUnit.mebiBytes( 32 ); // We'd like at least 32 MiBs.
+                    long max = ByteUnit.tebiBytes( 1 ); // Don't heuristically take more than 1 TiB.
                     long memory = Math.min( max, Math.max( min, heuristic ) );
                     return String.valueOf( memory );
                 }
@@ -331,7 +339,7 @@ public abstract class GraphDatabaseSettings
         return "2g";
     }
 
-    @Description( "Specify which page swapper should use to do paged IO. " +
+    @Description( "Specify which page swapper to use for doing paged IO. " +
                   "This is only used when integrating with proprietary storage technology." )
     public static final Setting<String> pagecache_swapper =
             setting( "dbms.pagecache.swapper", STRING, (String) null );
