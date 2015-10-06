@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.factory;
 import java.io.File;
 import java.net.URL;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -30,6 +31,7 @@ import org.neo4j.function.LongFunction;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.MultipleFoundException;
 import org.neo4j.graphdb.Node;
@@ -49,6 +51,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -74,6 +77,7 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
@@ -84,12 +88,12 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.security.URLAccessValidationError;
 import org.neo4j.logging.Log;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
+import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+import static org.neo4j.kernel.api.CountsRead.ANY_LABEL;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
 
@@ -351,15 +355,227 @@ public class GraphDatabaseFacade
     }
 
     @Override
-    public Iterable<Node> getAllNodes()
+    public ResourceIterable<Node> getAllNodes()
     {
-        return GlobalGraphOperations.at( this ).getAllNodes();
+        threadToTransactionBridge.assertInUnterminatedTransaction();
+        return new ResourceIterable<Node>()
+        {
+            @Override
+            public ResourceIterator<Node> iterator()
+            {
+                Statement statement = threadToTransactionBridge.get();
+                return map2nodes( statement.readOperations().nodesGetAll(), statement );
+            }
+        };
+    }
+
+    @Override
+    public ResourceIterable<Relationship> getAllRelationships()
+    {
+        threadToTransactionBridge.assertInUnterminatedTransaction();
+        return new ResourceIterable<Relationship>()
+        {
+            @Override
+            public ResourceIterator<Relationship> iterator()
+            {
+                final Statement statement = threadToTransactionBridge.get();
+                final PrimitiveLongIterator ids = statement.readOperations().relationshipsGetAll();
+                return new PrefetchingResourceIterator<Relationship>()
+                {
+                    @Override
+                    public void close()
+                    {
+                        statement.close();
+                    }
+
+                    @Override
+                    protected Relationship fetchNextOrNull()
+                    {
+                        return ids.hasNext() ? nodeManager.newRelationshipProxy( ids.next() ) : null;
+                    }
+                };
+            }
+        };
+    }
+
+    private interface TokenAccess<R>
+    {
+        TokenAccess<RelationshipType> RELATIONSHIP_TYPES = new TokenAccess<RelationshipType>()
+        {
+            @Override
+            public Iterator<Token> tokens( ReadOperations read )
+            {
+                return read.relationshipTypesGetAllTokens();
+            }
+
+            @Override
+            public RelationshipType token( Token token )
+            {
+                if ( token instanceof RelationshipType )
+                {
+                    return (RelationshipType) token;
+                }
+                else
+                {
+                    return DynamicRelationshipType.withName( token.name() );
+                }
+            }
+
+            @Override
+            public long count( ReadOperations read, int tokenId )
+            {
+                return read.countsForRelationship( ANY_LABEL, tokenId, ANY_LABEL );
+            }
+        };
+        TokenAccess<Label> LABELS = new TokenAccess<Label>()
+        {
+            @Override
+            public Iterator<Token> tokens( ReadOperations read )
+            {
+                return read.labelsGetAllTokens();
+            }
+
+            @Override
+            public Label token( Token token )
+            {
+                return label( token.name() );
+            }
+
+            @Override
+            public long count( ReadOperations read, int tokenId )
+            {
+                return read.countsForNode( tokenId );
+            }
+        };
+        TokenAccess<String> PROPERTY_KEYS = new TokenAccess<String>()
+        {
+            @Override
+            public Iterator<Token> tokens( ReadOperations read )
+            {
+                return read.propertyKeyGetAllTokens();
+            }
+
+            @Override
+            public String token( Token token )
+            {
+                return token.name();
+            }
+
+            @Override
+            public long count( ReadOperations read, int tokenId )
+            {
+                return 1; // we don't support this operator, just return a number that ensures it gets included
+            }
+        };
+
+        Iterator<Token> tokens( ReadOperations read );
+
+        R token( Token token );
+
+        long count( ReadOperations read, int tokenId );
     }
 
     @Override
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        return GlobalGraphOperations.at( this ).getAllRelationshipTypes();
+        return all( TokenAccess.RELATIONSHIP_TYPES, false );
+    }
+
+    @Override
+    public ResourceIterable<RelationshipType> getAllRelationshipTypesInUse()
+    {
+        return all( TokenAccess.RELATIONSHIP_TYPES, true );
+    }
+
+    @Override
+    public ResourceIterable<Label> getAllLabels()
+    {
+        return all( TokenAccess.LABELS, false );
+    }
+
+    @Override
+    public ResourceIterable<Label> getAllLabelsInUse()
+    {
+        return all( TokenAccess.LABELS, true );
+    }
+
+    @Override
+    public ResourceIterable<String> getAllPropertyKeys()
+    {
+        return all( TokenAccess.PROPERTY_KEYS, false );
+    }
+
+    private <T> ResourceIterable<T> all( final TokenAccess<T> access, final boolean inUse )
+    {
+        threadToTransactionBridge.assertInUnterminatedTransaction();
+        return new ResourceIterable<T>()
+        {
+            @Override
+            public ResourceIterator<T> iterator()
+            {
+                final Statement statement = threadToTransactionBridge.get();
+                if ( inUse )
+                {
+                    return TokenIterator.inUse( statement, access );
+                }
+                else
+                {
+                    return TokenIterator.all( statement, access );
+                }
+            }
+        };
+    }
+
+    private static abstract class TokenIterator<T> extends PrefetchingResourceIterator<T>
+    {
+        final Statement statement;
+        final TokenAccess<T> access;
+        final Iterator<Token> tokens;
+
+        TokenIterator( Statement statement, TokenAccess<T> access )
+        {
+            this.statement = statement;
+            this.access = access;
+            this.tokens = access.tokens( statement.readOperations() );
+        }
+
+        @Override
+        public void close()
+        {
+            statement.close();
+        }
+
+        static <T> ResourceIterator<T> inUse( Statement statement, TokenAccess<T> access )
+        {
+            return new TokenIterator<T>( statement, access )
+            {
+                @Override
+                protected T fetchNextOrNull()
+                {
+                    while ( tokens.hasNext() )
+                    {
+                        Token token = tokens.next();
+                        if ( access.count( statement.readOperations(), token.id() ) > 0 )
+                        {
+                            return access.token( token );
+                        }
+                    }
+                    return null;
+                }
+            };
+        }
+
+        public static <T> ResourceIterator<T> all( Statement statement, TokenAccess<T> access )
+        {
+            return new TokenIterator<T>( statement, access )
+            {
+                @Override
+                protected T fetchNextOrNull()
+                {
+                    return tokens.hasNext() ? access.token( tokens.next() ) : null;
+                }
+            };
+        }
     }
 
     @Override

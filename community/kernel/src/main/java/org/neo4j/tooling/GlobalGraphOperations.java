@@ -19,12 +19,6 @@
  */
 package org.neo4j.tooling;
 
-import java.util.Iterator;
-
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.Function;
-import org.neo4j.function.Predicate;
-import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -33,41 +27,27 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.PrefetchingResourceIterator;
-import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
-import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.RelationshipTypeToken;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.core.Token;
 
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.cast;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-import static org.neo4j.kernel.api.CountsRead.ANY_LABEL;
+import static org.neo4j.helpers.collection.Iterables.asResourceIterable;
 
 /**
  * A tool for doing global operations, for example {@link #getAllNodes()}.
+ * @deprecated use methods on {@link GraphDatabaseService} instead
  */
+@Deprecated
 public class GlobalGraphOperations
 {
-    private final NodeManager nodeManager;
     private final ThreadToStatementContextBridge statementCtxSupplier;
-    private final RelationshipTypeTokenHolder relationshipTypes;
+    private final GraphDatabaseService db;
 
     private GlobalGraphOperations( GraphDatabaseService db )
     {
+        this.db = db;
         GraphDatabaseAPI dbApi = (GraphDatabaseAPI) db;
         DependencyResolver resolver = dbApi.getDependencyResolver();
-        this.nodeManager = resolver.resolveDependency( NodeManager.class );
         this.statementCtxSupplier = resolver.resolveDependency( ThreadToStatementContextBridge.class );
-        this.relationshipTypes = resolver.resolveDependency( RelationshipTypeTokenHolder.class );
     }
 
     /**
@@ -85,68 +65,24 @@ public class GlobalGraphOperations
      * Returns all nodes in the graph.
      *
      * @return all nodes in the graph.
+     * @deprecated use {@link GraphDatabaseService#getAllNodes()} instead
      */
+    @Deprecated
     public ResourceIterable<Node> getAllNodes()
     {
-        assertInUnterminatedTransaction();
-        return new ResourceIterable<Node>()
-        {
-            @Override
-            public ResourceIterator<Node> iterator()
-            {
-                final Statement statement = statementCtxSupplier.get();
-                final PrimitiveLongIterator ids = statement.readOperations().nodesGetAll();
-                return new PrefetchingResourceIterator<Node>()
-                {
-                    @Override
-                    public void close()
-                    {
-                        statement.close();
-                    }
-
-                    @Override
-                    protected Node fetchNextOrNull()
-                    {
-                        assert ids != null : "ids null";
-                        assert nodeManager != null : "nodeManager null";
-                        return ids.hasNext() ? nodeManager.newNodeProxyById( ids.next() ) : null;
-                    }
-                };
-            }
-        };
+        return asResourceIterable( db.getAllNodes() );
     }
 
     /**
      * Returns all relationships in the graph.
      *
      * @return all relationships in the graph.
+     * @deprecated use {@link GraphDatabaseService#getAllRelationships()} instead
      */
+    @Deprecated
     public Iterable<Relationship> getAllRelationships()
     {
-        assertInUnterminatedTransaction();
-        return new ResourceIterable<Relationship>()
-        {
-            @Override
-            public ResourceIterator<Relationship> iterator()
-            {
-                final Statement statement = statementCtxSupplier.get();
-                final PrimitiveLongIterator ids = statement.readOperations().relationshipsGetAll();
-                return new PrefetchingResourceIterator<Relationship>()
-                {
-                    @Override
-                    public void close()
-                    {
-                        statement.close();
-                    }
-
-                    @Override
-                    protected Relationship fetchNextOrNull()
-                    {
-                        return ids.hasNext() ? nodeManager.newRelationshipProxy( ids.next() ) : null;
-                    }
-                };
-            }
-        };
+        return db.getAllRelationships();
     }
 
     /**
@@ -158,10 +94,12 @@ public class GlobalGraphOperations
      * have any relationships in the graph).
      *
      * @return all relationship types in the underlying store
+     * @deprecated use {@link GraphDatabaseService#getRelationshipTypes()} instead
      */
+    @Deprecated
     public Iterable<RelationshipType> getAllRelationshipTypes()
     {
-        return getAllRelationshipTypes( false );
+        return db.getRelationshipTypes();
     }
 
     /**
@@ -172,32 +110,13 @@ public class GlobalGraphOperations
      * "historic" relationship types that no longer have any relationships in the graph.
      *
      * @return all relationship types in use in the underlying store
+     * @deprecated use {@link GraphDatabaseService#getAllRelationshipTypesInUse()} instead
      */
+    @Deprecated
     public Iterable<RelationshipType> getAllRelationshipTypesInUse()
     {
-        return getAllRelationshipTypes( true );
+        return db.getAllRelationshipTypesInUse();
     }
-
-    private Iterable<RelationshipType> getAllRelationshipTypes( boolean inUse )
-    {
-        assertInUnterminatedTransaction();
-        Iterable<RelationshipTypeToken> relationshipTypes = this.relationshipTypes.getAllTokens();
-        if ( inUse )
-        {
-            relationshipTypes = filter( new Predicate<Token>()
-            {
-                @Override
-                public boolean test( Token token )
-                {
-                    Statement statement = statementCtxSupplier.get();
-                    long count = statement.readOperations().countsForRelationship( ANY_LABEL, token.id(), ANY_LABEL );
-                    return count > 0;
-                }
-            }, relationshipTypes );
-        }
-        return cast( relationshipTypes );
-    }
-
 
     /**
      * Returns all labels currently in the underlying store. Labels are added to the store the first time
@@ -208,10 +127,12 @@ public class GlobalGraphOperations
      * inside your transaction to avoid potential blocking of write operations.
      *
      * @return all labels in the underlying store.
+     * @deprecated use {@link GraphDatabaseService#getAllLabels()} instead
      */
+    @Deprecated
     public ResourceIterable<Label> getAllLabels()
     {
-        return getAllLabels( false );
+        return db.getAllLabels();
     }
 
     /**
@@ -223,45 +144,12 @@ public class GlobalGraphOperations
      * inside your transaction to avoid potential blocking of write operations.
      *
      * @return all labels in use in the underlying store.
+     * @deprecated use {@link GraphDatabaseService#getAllLabelsInUse()} instead
      */
+    @Deprecated
     public ResourceIterable<Label> getAllLabelsInUse()
     {
-        return getAllLabels( true );
-    }
-
-    private ResourceIterable<Label> getAllLabels( final boolean inUse )
-    {
-        assertInUnterminatedTransaction();
-        return new ResourceIterable<Label>()
-        {
-            @Override
-            public ResourceIterator<Label> iterator()
-            {
-                final Statement statement = statementCtxSupplier.get();
-                Iterator<Token> labels = statement.readOperations().labelsGetAllTokens();
-                if ( inUse )
-                {
-                    labels = filter(  new Predicate<Token>()
-                    {
-                        @Override
-                        public boolean test( Token token )
-                        {
-                            long count = statement.readOperations().countsForNode( token.id() );
-                            return count > 0;
-                        }
-                    }, labels );
-                }
-                return ResourceClosingIterator.newResourceIterator( statement, map( new Function<Token,Label>()
-                {
-
-                    @Override
-                    public Label apply( Token labelToken )
-                    {
-                        return label( labelToken.name() );
-                    }
-                }, labels ) );
-            }
-        };
+        return db.getAllLabelsInUse();
     }
 
     /**
@@ -273,27 +161,12 @@ public class GlobalGraphOperations
      * inside your transaction to avoid potential blocking of write operations.
      *
      * @return all property keys in the underlying store.
+     * @deprecated use {@link GraphDatabaseService#getAllPropertyKeys()} instead
      */
+    @Deprecated
     public ResourceIterable<String> getAllPropertyKeys()
     {
-        assertInUnterminatedTransaction();
-        return new ResourceIterable<String>()
-        {
-            @Override
-            public ResourceIterator<String> iterator()
-            {
-                Statement statement = statementCtxSupplier.get();
-                return ResourceClosingIterator.newResourceIterator( statement, map( new Function<Token,String>()
-                {
-
-                    @Override
-                    public String apply( Token propertyToken )
-                    {
-                        return propertyToken.name();
-                    }
-                }, statement.readOperations().propertyKeyGetAllTokens() ) );
-            }
-        };
+        return db.getAllPropertyKeys();
     }
 
     /**
@@ -309,41 +182,14 @@ public class GlobalGraphOperations
     @Deprecated
     public ResourceIterable<Node> getAllNodesWithLabel( final Label label )
     {
-        assertInUnterminatedTransaction();
+        statementCtxSupplier.assertInUnterminatedTransaction();
         return new ResourceIterable<Node>()
         {
             @Override
             public ResourceIterator<Node> iterator()
             {
-                return allNodesWithLabel( label.name() );
+                return db.findNodes( label );
             }
         };
-    }
-
-    private ResourceIterator<Node> allNodesWithLabel( String label )
-    {
-        Statement statement = statementCtxSupplier.get();
-
-        int labelId = statement.readOperations().labelGetForName( label );
-        if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
-        {
-            statement.close();
-            return emptyIterator();
-        }
-
-        final PrimitiveLongIterator nodeIds = statement.readOperations().nodesGetForLabel( labelId );
-        return ResourceClosingIterator.newResourceIterator( statement, map( new FunctionFromPrimitiveLong<Node>()
-        {
-            @Override
-            public Node apply( long nodeId )
-            {
-                return nodeManager.newNodeProxyById( nodeId );
-            }
-        }, nodeIds ) );
-    }
-
-    private void assertInUnterminatedTransaction()
-    {
-        statementCtxSupplier.assertInUnterminatedTransaction();
     }
 }

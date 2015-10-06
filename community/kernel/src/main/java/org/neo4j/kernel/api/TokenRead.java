@@ -52,6 +52,9 @@ interface TokenRead
     /** Returns the labels currently stored in the database * */
     Iterator<Token> labelsGetAllTokens(); // TODO: Token is a store level concern, should not make it this far up the stack
 
+    /** Returns the relationship types currently stored in the database */
+    Iterator<Token> relationshipTypesGetAllTokens();
+
     int relationshipTypeGetForName( String relationshipTypeName );
 
     String relationshipTypeGetName( int relationshipTypeId ) throws RelationshipTypeIdNotFoundKernelException;

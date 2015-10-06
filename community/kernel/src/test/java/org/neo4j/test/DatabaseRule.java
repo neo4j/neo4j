@@ -407,6 +407,36 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
+    public ResourceIterable<Relationship> getAllRelationships()
+    {
+        return database.getAllRelationships();
+    }
+
+    @Override
+    public ResourceIterable<RelationshipType> getAllRelationshipTypesInUse()
+    {
+        return database.getAllRelationshipTypesInUse();
+    }
+
+    @Override
+    public ResourceIterable<Label> getAllLabels()
+    {
+        return database.getAllLabels();
+    }
+
+    @Override
+    public ResourceIterable<Label> getAllLabelsInUse()
+    {
+        return database.getAllLabelsInUse();
+    }
+
+    @Override
+    public ResourceIterable<String> getAllPropertyKeys()
+    {
+        return database.getAllPropertyKeys();
+    }
+
+    @Override
     public ResourceIterator<Node> findNodes( Label label, String key, Object value )
     {
         return database.findNodes( label, key, value );
