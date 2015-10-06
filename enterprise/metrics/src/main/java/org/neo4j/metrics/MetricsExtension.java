@@ -34,7 +34,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.metrics.output.CsvOutput;
 import org.neo4j.metrics.output.GangliaOutput;
 import org.neo4j.metrics.output.GraphiteOutput;
-import org.neo4j.metrics.source.Neo4jMetrics;
+import org.neo4j.metrics.source.Neo4jMetricsFactory;
 
 public class MetricsExtension implements Lifecycle
 {
@@ -76,8 +76,9 @@ public class MetricsExtension implements Lifecycle
         life.add( new GangliaOutput( configuration, registry, logger, prefix ) );
 
         // Setup metric gathering
-        life.add( new Neo4jMetrics( logService, registry, configuration, monitors,
-                transactionCounters, pageCacheCounters, idGeneratorFactory ) );
+        Neo4jMetricsFactory factory = new Neo4jMetricsFactory( logService, registry, configuration, monitors,
+                transactionCounters, pageCacheCounters, idGeneratorFactory );
+        life.add( factory.newInstance() );
 
         life.init();
     }

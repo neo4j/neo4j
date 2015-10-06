@@ -25,7 +25,6 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.sun.management.GarbageCollectionNotificationInfo;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.lang.management.BufferPoolMXBean;
 import java.lang.management.GarbageCollectorMXBean;
@@ -42,25 +41,34 @@ import javax.management.openmbean.CompositeData;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.metrics.MetricsSettings;
 
 import static com.codahale.metrics.MetricRegistry.name;
 import static com.sun.management.GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION;
 
-public class JvmMetrics implements Closeable
+public class JvmMetrics extends LifecycleAdapter
 {
     private static final String NAME_PREFIX = "neo4j.vm";
     private static final String GC = name( NAME_PREFIX, "gc" );
     private static final String MEMORY_POOL = name( NAME_PREFIX, "memory.pool" );
     private static final String MEMORY_BUFFER = name( NAME_PREFIX, "memory.buffer" );
     private static final String THREAD = name( NAME_PREFIX, "thread" );
+    private final LogService logService;
+    private final Config config;
     private final MetricRegistry registry;
     private final List<Runnable> removeListenerHandlers = new ArrayList<>();
 
     public JvmMetrics( LogService logService, Config config, MetricRegistry registry )
     {
+        this.logService = logService;
+        this.config = config;
         this.registry = registry;
+    }
 
+    @Override
+    public void start() throws Throwable
+    {
         // VM stats
         // Garbage collection
         if ( config.get( MetricsSettings.jvmGcEnabled ) )
@@ -179,7 +187,7 @@ public class JvmMetrics implements Closeable
     }
 
     @Override
-    public void close() throws IOException
+    public void stop() throws IOException
     {
         for ( Runnable handle : removeListenerHandlers )
         {

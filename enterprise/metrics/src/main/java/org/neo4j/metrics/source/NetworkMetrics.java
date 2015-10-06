@@ -22,19 +22,19 @@ package org.neo4j.metrics.source;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
-import java.io.Closeable;
 import java.io.IOException;
 
 import org.neo4j.com.storecopy.ToNetworkStoreWriter;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.com.master.MasterServer;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.metrics.MetricsSettings;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-public class NetworkMetrics implements Closeable
+public class NetworkMetrics extends LifecycleAdapter
 {
     private static final String NAME_PREFIX = "neo4j.network";
     private static final String SLAVE_NETWORK_TX_WRITES = name( NAME_PREFIX, "slave_network_tx_writes" );
@@ -44,20 +44,20 @@ public class NetworkMetrics implements Closeable
     private Config config;
     private Monitors monitors;
     private MetricRegistry registry;
-    private final ByteCountsMetric masterNetworkTransactionWrites;
-    private final ByteCountsMetric masterNetworkStoreWrites;
-    private final ByteCountsMetric slaveNetworkTransactionWrites;
+    private final ByteCountsMetric masterNetworkTransactionWrites = new ByteCountsMetric();
+    private final ByteCountsMetric masterNetworkStoreWrites = new ByteCountsMetric();
+    private final ByteCountsMetric slaveNetworkTransactionWrites = new ByteCountsMetric();
 
     public NetworkMetrics( Config config, Monitors monitors, MetricRegistry registry )
     {
         this.config = config;
         this.monitors = monitors;
         this.registry = registry;
+    }
 
-        masterNetworkTransactionWrites = new ByteCountsMetric();
-        masterNetworkStoreWrites = new ByteCountsMetric();
-        slaveNetworkTransactionWrites = new ByteCountsMetric();
-
+    @Override
+    public void start() throws Throwable
+    {
         if ( config.get( MetricsSettings.neoNetworkEnabled ) )
         {
             /*
@@ -66,7 +66,8 @@ public class NetworkMetrics implements Closeable
              *
              * HA: MasterClientXXX.class -> Transactions written to network for commit (writes)
              *
-             * KERNEL: "logdeserializer"  -> Bytes read from network (read - updates for slaves, commits from slaves for master)
+             * KERNEL: "logdeserializer"  -> Bytes read from network (read - updates for slaves, commits from slaves
+             * for master)
              */
             monitors.addMonitorListener( masterNetworkTransactionWrites, MasterServer.class.getName() );
             monitors.addMonitorListener( masterNetworkStoreWrites, ToNetworkStoreWriter.class.getName(),
@@ -99,7 +100,8 @@ public class NetworkMetrics implements Closeable
         }
     }
 
-    public void close() throws IOException
+    @Override
+    public void stop() throws IOException
     {
         if ( config.get( MetricsSettings.neoNetworkEnabled ) )
         {
