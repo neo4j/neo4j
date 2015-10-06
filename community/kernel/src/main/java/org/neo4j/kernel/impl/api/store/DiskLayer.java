@@ -534,6 +534,13 @@ public class DiskLayer implements StoreReadLayer
         return labelTokenHolder.getAllTokens().iterator();
     }
 
+    @SuppressWarnings( "unchecked" )
+    @Override
+    public Iterator<Token> relationshipTypeGetAllTokens()
+    {
+        return (Iterator)relationshipTokenHolder.getAllTokens().iterator();
+    }
+
     @Override
     public int relationshipTypeGetForName( String relationshipTypeName )
     {

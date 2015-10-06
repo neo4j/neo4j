@@ -28,7 +28,6 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.collection.primitive.PrimitiveLongCollections
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, Literal}
@@ -41,12 +40,12 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols.CTInteger
 import org.neo4j.cypher.internal.spi.v3_0.MonoDirectionalTraversalMatcher
 import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._
+import org.neo4j.helpers.collection.Iterables.asResourceIterable
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{ReadOperations, Statement}
 import org.neo4j.kernel.impl.api.OperationsFacade
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
-import org.neo4j.tooling.GlobalGraphOperations
 
 import scala.collection.JavaConverters._
 
@@ -186,8 +185,6 @@ class LazyTest extends ExecutionEngineFunSuite {
 
   test("graph global queries are lazy") {
     //Given:
-    val counter = new CountingJIterator()
-
     val fakeGraph = mock[GraphDatabaseAPI]
     val tx = mock[Transaction]
     val nodeManager = mock[NodeManager]
@@ -213,8 +210,17 @@ class LazyTest extends ExecutionEngineFunSuite {
     when(dependencies.resolveDependency(classOf[TransactionIdStore])).thenReturn(idStore)
     when(dependencies.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])).thenReturn(monitors)
     when(fakeGraph.beginTx()).thenReturn(tx)
-    val nodesIterator = PrimitiveLongCollections.iterator( 0L, 1L, 2L, 3L, 4L, 5L, 6L )
-    when(fakeReadStatement.nodesGetAll()).thenReturn(nodesIterator)
+    val n0 = mock[Node]
+    val n1 = mock[Node]
+    val n2 = mock[Node]
+    val n3 = mock[Node]
+    val n4 = mock[Node]
+    val n5 = mock[Node]
+    val n6 = mock[Node]
+    val nodesIterator = java.util.Arrays.asList( n0, n1, n2, n3, n4, n5, n6 ).iterator()
+    when(fakeGraph.getAllNodes).thenReturn(asResourceIterable(new java.lang.Iterable[Node](){
+      override def iterator() = nodesIterator
+    }))
 
     val cache = new LRUCache[String, (ExecutionPlan, Map[String, Any])](1)
     when(fakeReadStatement.schemaStateGetOrCreate(any(), any())).then(
@@ -226,13 +232,12 @@ class LazyTest extends ExecutionEngineFunSuite {
 
     //When:
     graph.inTx {
-      counter.source = GlobalGraphOperations.at(graph).getAllNodes.iterator()
       engine.execute("match (n) return n limit 5", Map.empty[String,Any]).toList
     }
 
     //Then:
     assert( nodesIterator.hasNext )
-    assert( nodesIterator.next() === 5L )
+    assert( nodesIterator.next() === n5 )
   }
 
   test("traversalmatcherpipe is lazy") {

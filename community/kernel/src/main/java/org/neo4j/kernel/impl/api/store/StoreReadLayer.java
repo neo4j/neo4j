@@ -131,6 +131,8 @@ public interface StoreReadLayer
 
     Iterator<Token> labelsGetAllTokens();
 
+    Iterator relationshipTypeGetAllTokens();
+
     int relationshipTypeGetForName( String relationshipTypeName );
 
     String relationshipTypeGetName( int relationshipTypeId ) throws RelationshipTypeIdNotFoundKernelException;

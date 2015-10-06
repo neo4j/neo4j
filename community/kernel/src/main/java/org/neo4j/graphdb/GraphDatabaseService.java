@@ -28,7 +28,6 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 /**
  * The main access point to a running Neo4j instance. The most common
@@ -92,10 +91,15 @@ public interface GraphDatabaseService
      * Returns all nodes in the graph.
      *
      * @return all nodes in the graph.
-     * @deprecated this operation can be found in {@link GlobalGraphOperations} instead.
      */
-    @Deprecated
-    Iterable<Node> getAllNodes();
+    ResourceIterable<Node> getAllNodes();
+
+    /**
+     * Returns all relationships in the graph.
+     *
+     * @return all relationships in the graph.
+     */
+    ResourceIterable<Relationship> getAllRelationships();
 
     /**
      * Returns all nodes having the label, and the wanted property value.
@@ -183,10 +187,32 @@ public interface GraphDatabaseService
      * space).
      *
      * @return all relationship types in the underlying store
-     * @deprecated this operation can be found in {@link GlobalGraphOperations} instead.
      */
-    @Deprecated
-    Iterable<RelationshipType> getRelationshipTypes();
+    ResourceIterable<RelationshipType> getAllRelationshipTypes();
+
+    /**
+     * Returns all labels currently in the underlying store. Labels are added to the store the first time
+     * they are used. This method guarantees that it will return all labels currently in use. However,
+     * it may also return <i>more</i> than that (e.g. it can return "historic" labels that are no longer used).
+     *
+     * Please take care that the returned {@link ResourceIterable} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
+     *
+     * @return all labels in the underlying store.
+     */
+    ResourceIterable<Label> getAllLabels();
+
+    /**
+     * Returns all property keys currently in the underlying store. This method guarantees that it will return all
+     * property keys currently in use. However, it may also return <i>more</i> than that (e.g. it can return "historic"
+     * labels that are no longer used).
+     *
+     * Please take care that the returned {@link ResourceIterable} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
+     *
+     * @return all property keys in the underlying store.
+     */
+    ResourceIterable<String> getAllPropertyKeys();
 
     /**
      * Use this method to check if the database is currently in a usable state.

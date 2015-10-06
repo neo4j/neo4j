@@ -401,9 +401,27 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
-    public Iterable<Node> getAllNodes()
+    public ResourceIterable<Node> getAllNodes()
     {
         return database.getAllNodes();
+    }
+
+    @Override
+    public ResourceIterable<Relationship> getAllRelationships()
+    {
+        return database.getAllRelationships();
+    }
+
+    @Override
+    public ResourceIterable<Label> getAllLabels()
+    {
+        return database.getAllLabels();
+    }
+
+    @Override
+    public ResourceIterable<String> getAllPropertyKeys()
+    {
+        return database.getAllPropertyKeys();
     }
 
     @Override
@@ -431,9 +449,9 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
-    public Iterable<RelationshipType> getRelationshipTypes()
+    public ResourceIterable<RelationshipType> getAllRelationshipTypes()
     {
-        return database.getRelationshipTypes();
+        return database.getAllRelationshipTypes();
     }
 
     @Override

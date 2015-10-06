@@ -49,6 +49,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -71,6 +72,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -84,10 +86,8 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.security.URLAccessValidationError;
 import org.neo4j.logging.Log;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
@@ -351,15 +351,71 @@ public class GraphDatabaseFacade
     }
 
     @Override
-    public Iterable<Node> getAllNodes()
+    public ResourceIterable<Node> getAllNodes()
     {
-        return GlobalGraphOperations.at( this ).getAllNodes();
+        threadToTransactionBridge.assertInUnterminatedTransaction();
+        return new ResourceIterable<Node>()
+        {
+            @Override
+            public ResourceIterator<Node> iterator()
+            {
+                Statement statement = threadToTransactionBridge.get();
+                return map2nodes( statement.readOperations().nodesGetAll(), statement );
+            }
+        };
     }
 
     @Override
-    public Iterable<RelationshipType> getRelationshipTypes()
+    public ResourceIterable<Relationship> getAllRelationships()
     {
-        return GlobalGraphOperations.at( this ).getAllRelationshipTypes();
+        threadToTransactionBridge.assertInUnterminatedTransaction();
+        return new ResourceIterable<Relationship>()
+        {
+            @Override
+            public ResourceIterator<Relationship> iterator()
+            {
+                final Statement statement = threadToTransactionBridge.get();
+                final PrimitiveLongIterator ids = statement.readOperations().relationshipsGetAll();
+                return new PrefetchingResourceIterator<Relationship>()
+                {
+                    @Override
+                    public void close()
+                    {
+                        statement.close();
+                    }
+
+                    @Override
+                    protected Relationship fetchNextOrNull()
+                    {
+                        return ids.hasNext() ? nodeManager.newRelationshipProxy( ids.next() ) : null;
+                    }
+                };
+            }
+        };
+    }
+
+    @Override
+    public ResourceIterable<RelationshipType> getAllRelationshipTypes()
+    {
+        return all( TokenAccess.RELATIONSHIP_TYPES );
+    }
+
+    @Override
+    public ResourceIterable<Label> getAllLabels()
+    {
+        return all( TokenAccess.LABELS );
+    }
+
+    @Override
+    public ResourceIterable<String> getAllPropertyKeys()
+    {
+        return all( TokenAccess.PROPERTY_KEYS );
+    }
+
+    private <T> ResourceIterable<T> all( final TokenAccess<T> tokens )
+    {
+        threadToTransactionBridge.assertInUnterminatedTransaction();
+        return () -> tokens.inUse( threadToTransactionBridge.get() );
     }
 
     @Override
@@ -523,7 +579,7 @@ public class GraphDatabaseFacade
             @Override
             public Node apply( long id )
             {
-                return getNodeById( id );
+                return nodeManager.newNodeProxyById( id );
             }
         }, input ) );
     }
