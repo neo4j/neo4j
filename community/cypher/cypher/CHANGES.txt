@@ -2,7 +2,9 @@
 -----
 o Fixes #5336 - Properly handle matching on multiple labels
 o Fixes #5195 - USING INDEX hints breaks some queries
+o Fixes #5545 - ExecutionFailure on combination of ORDER BY and LIMIT 0
 o MERGE now prints its start point in the plan description
+o Cypher queries will no longer be logged in messages.log
 
 2.2.5
 -----
