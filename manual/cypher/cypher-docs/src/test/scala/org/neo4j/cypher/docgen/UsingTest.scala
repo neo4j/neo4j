@@ -90,7 +90,7 @@ class UsingTest extends DocumentingTestBase {
     profileQuery(
       title = "Hinting a join on multiple nodes",
       text = "To force the query planner to produce plans with joins in them, use +USING+ +JOIN+.",
-      queryText = "match (andres {name:'Andres'})-[r1]->(x)<-[r2]-(y)-[r3]-(andres) using join on x, y return x, y",
+      queryText = "match (andy {name:'Andres'})-[r1]->(x)<-[r2]-(y)-[r3]-(andy) using join on x, y return x, y",
       assertions = (p) => {
         assertThat(p.executionPlanDescription().toString, containsString("NodeHashJoin"))
         assert(p.toSet === Set(
