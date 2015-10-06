@@ -2,6 +2,7 @@
 -----
 o Fixes #5336 - Properly handle matching on multiple labels
 o Fixes #5195 - USING INDEX hints breaks some queries
+o MERGE now prints its start point in the plan description
 
 2.2.5
 -----
