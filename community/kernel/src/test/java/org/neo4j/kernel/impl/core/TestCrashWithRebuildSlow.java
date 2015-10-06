@@ -51,7 +51,6 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -172,7 +171,7 @@ public class TestCrashWithRebuildSlow
             // Verify that the data we didn't delete is still around
             int nameCount = 0;
             int relCount = 0;
-            for ( Node node : GlobalGraphOperations.at( newDb ).getAllNodes() )
+            for ( Node node : newDb.getAllNodes() )
             {
                 nameCount++;
                 assertThat( node, inTx( newDb, hasProperty( "name" ), true ) );

@@ -875,7 +875,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         try ( Transaction transaction = graphdb().beginTx() )
         {
             long count = 0;
-            for ( Node node : GlobalGraphOperations.at( graphdb() ).getAllNodes() )
+            for ( Node node : graphdb().getAllNodes() )
             {
                 Set<Label> nodeLabels = IteratorUtil.asSet( node.getLabels() );
                 if ( nodeLabels.containsAll( givenLabels ) )

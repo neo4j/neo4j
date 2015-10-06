@@ -32,7 +32,6 @@ import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.server.helpers.Transactor;
 import org.neo4j.server.helpers.UnitOfWork;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 public class EnterpriseServerHelper
 {
@@ -56,7 +55,7 @@ public class EnterpriseServerHelper
 
             private void deleteAllNodesAndRelationships( final EnterpriseNeoServer server )
             {
-                Iterable<Node> allNodes = GlobalGraphOperations.at( server.getDatabase().getGraph() ).getAllNodes();
+                Iterable<Node> allNodes = server.getDatabase().getGraph().getAllNodes();
                 for ( Node n : allNodes )
                 {
                     Iterable<Relationship> relationships = n.getRelationships();

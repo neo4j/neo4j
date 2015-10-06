@@ -764,7 +764,7 @@ public class BatchOperationDocIT extends AbstractRestFunctionalDocTestBase
         try ( Transaction tx = graphdb().beginTx() )
         {
             int count = 0;
-            for(Node node : GlobalGraphOperations.at(graphdb()).getAllNodes())
+            for(Node node : graphdb().getAllNodes())
             {
                 count++;
             }

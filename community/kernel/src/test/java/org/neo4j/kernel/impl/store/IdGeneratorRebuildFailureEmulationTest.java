@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.PageCacheRule;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
@@ -154,7 +153,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         try ( Transaction tx = graphdb.beginTx() )
         {
             int nodecount = 0;
-            for ( Node node : GlobalGraphOperations.at( graphdb ).getAllNodes() )
+            for ( Node node : graphdb.getAllNodes() )
             {
                 int propcount = readProperties( node );
                 int relcount = 0;

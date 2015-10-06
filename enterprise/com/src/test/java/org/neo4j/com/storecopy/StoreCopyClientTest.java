@@ -36,7 +36,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -55,7 +55,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
@@ -127,12 +126,10 @@ public class StoreCopyClientTest
 
         try ( Transaction tx = copy.beginTx() )
         {
-            GlobalGraphOperations globalOps = GlobalGraphOperations.at( copy );
-
-            long nodesCount = Iterables.count( globalOps.getAllNodesWithLabel( label( "BeforeCopyBegins" ) ) );
+            long nodesCount = IteratorUtil.count( copy.findNodes( label( "BeforeCopyBegins" ) ) );
             assertThat( nodesCount, equalTo( 1l ) );
 
-            assertThat( Iterables.single( globalOps.getAllNodesWithLabel( label( "BeforeCopyBegins" ) ) ).getId(),
+            assertThat( IteratorUtil.single( copy.findNodes( label( "BeforeCopyBegins" ) ) ).getId(),
                     equalTo( 0l ) );
 
             tx.success();
@@ -198,9 +195,7 @@ public class StoreCopyClientTest
 
         try ( Transaction tx = copy.beginTx() )
         {
-            GlobalGraphOperations globalOps = GlobalGraphOperations.at( copy );
-
-            long nodesCount = Iterables.count( globalOps.getAllNodesWithLabel( label( "BeforeCopyBegins" ) ) );
+            long nodesCount = IteratorUtil.count( copy.findNodes( label( "BeforeCopyBegins" ) ) );
             assertThat( nodesCount, equalTo( 0l ) );
 
             tx.success();

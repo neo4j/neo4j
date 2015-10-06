@@ -47,7 +47,6 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
-import static org.neo4j.tooling.GlobalGraphOperations.at;
 
 public class TestRelationship extends AbstractNeo4jTestCase
 {
@@ -889,7 +888,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     @Test
     public void getAllRelationships() throws Exception
     {
-        Set<Relationship> existingRelationships = addToCollection( at( getGraphDb() ).getAllRelationships(), new HashSet<Relationship>() );
+        Set<Relationship> existingRelationships = addToCollection( getGraphDb().getAllRelationships(), new HashSet<>() );
 
         Set<Relationship> createdRelationships = new HashSet<>();
         Node node = getGraphDb().createNode();
@@ -904,7 +903,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         allRelationships.addAll( createdRelationships );
 
         int count = 0;
-        for ( Relationship rel : at( getGraphDb() ).getAllRelationships() )
+        for ( Relationship rel : getGraphDb().getAllRelationships() )
         {
             assertTrue( "Unexpected rel " + rel + ", expected one of " + allRelationships, allRelationships.contains( rel ) );
             count++;

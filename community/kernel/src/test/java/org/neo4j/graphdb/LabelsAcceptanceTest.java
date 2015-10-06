@@ -56,7 +56,6 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.impl.EphemeralIdGenerator;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.not;
@@ -418,14 +417,13 @@ public class LabelsAcceptanceTest
     {
         // Given
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
-        GlobalGraphOperations globalOps = GlobalGraphOperations.at( db );
         createNode( db, Labels.MY_LABEL, Labels.MY_OTHER_LABEL );
         List<Label> labels = null;
 
         // When
         try (Transaction tx = db.beginTx())
         {
-            labels = toList( globalOps.getAllLabels() );
+            labels = toList( db.getAllLabels() );
         }
 
         // Then
@@ -457,7 +455,7 @@ public class LabelsAcceptanceTest
         // WHEN
         try ( Transaction tx = db.beginTx() )
         {
-            for ( final Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( final Node node : db.getAllNodes() )
             {
                 node.removeLabel( label ); // remove Label ...
                 node.delete(); // ... and afterwards the node
@@ -468,7 +466,7 @@ public class LabelsAcceptanceTest
         // THEN
         try (Transaction transaction = db.beginTx())
         {
-            assertEquals( 0, count( GlobalGraphOperations.at( db ).getAllNodes() ) );
+            assertEquals( 0, count( db.getAllNodes() ) );
         }
     }
 

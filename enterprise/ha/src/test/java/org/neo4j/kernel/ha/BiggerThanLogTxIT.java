@@ -33,7 +33,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.TransactionTemplate;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
 
@@ -115,7 +114,7 @@ public class BiggerThanLogTxIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            int count = count( GlobalGraphOperations.at( db ).getAllNodes() );
+            int count = count( db.getAllNodes() );
             tx.success();
             return count;
         }
