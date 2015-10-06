@@ -1,3 +1,7 @@
+3.0
+---
+o Updated to use JRE 1.8.0_60
+
 2.2.2
 -----
 o Fixes issue with starting/stopping databases multiple times, where seemingly
