@@ -167,7 +167,7 @@ Note that sizes used for text are the byte counts of the UTF-8 encoded data, not
 |=======================
 |Marker         |Size                                        |Maximum data size
 |`0x80`..`0x8F` |contained within low-order nibble of marker |15 bytes
-|`0xD0`         |8-bit big-endian unsigned integer           |255 bytes
+|`0xD0`         |8-bit unsigned integer                      |255 bytes
 |`0xD1`         |16-bit big-endian unsigned integer          |65 535 bytes
 |`0xD2`         |32-bit big-endian unsigned integer          |4 294 967 295 bytes
 |=======================
@@ -226,7 +226,7 @@ The markers used to denote a list are described in the table below:
 |=======================
 |Marker         |Size                                        |Maximum list size
 |`0x90`..`0x9F` |contained within low-order nibble of marker |15 bytes
-|`0xD4`         |8-bit big-endian unsigned integer           |255 items
+|`0xD4`         |8-bit unsigned integer                      |255 items
 |`0xD5`         |16-bit big-endian unsigned integer          |65 535 items
 |`0xD6`         |32-bit big-endian unsigned integer          |4 294 967 295 items
 |=======================
@@ -277,7 +277,7 @@ The markers used to denote a map are described in the table below:
 |=======================
 |Marker         |Size                                        |Maximum map size
 |`0xA0`..`0xAF` |contained within low-order nibble of marker |15 entries
-|`0xD8`         |8-bit  big-endian unsigned integer          |255 entries
+|`0xD8`         |8-bit unsigned integer                      |255 entries
 |`0xD9`         |16-bit big-endian unsigned integer          |65 535 entries
 |`0xDA`         |32-bit big-endian unsigned integer          |4 294 967 295 entries
 |=======================
@@ -330,7 +330,7 @@ The markers used to denote a structure are described in the table below:
 |=======================
 |Marker         |Size                                        |Maximum structure size
 |`0xB0`..`0xBF` |contained within low-order nibble of marker |15 fields
-|`0xDC`         |8-bit  big-endian unsigned integer          |255 fields
+|`0xDC`         |8-bit unsigned integer                      |255 fields
 |`0xDD`         |16-bit big-endian unsigned integer          |65 535 fields
 |=======================
 
