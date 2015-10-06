@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{NewPlannerTestSupport, ExecutionEngineFunSuite}
+import org.neo4j.cypher.{SyntaxException, NewPlannerTestSupport, ExecutionEngineFunSuite}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CustomMatchers
 
 class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers with NewPlannerTestSupport {
@@ -92,6 +92,6 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
     executeWithAllPlanners("MATCH (p:Person) RETURN p ORDER BY p.name LIMIT 1").length should equal(1)
     executeWithAllPlanners("MATCH (p:Person) RETURN p ORDER BY p.name LIMIT 0").length should equal(0)
     executeWithAllPlanners("MATCH (p:Person) RETURN p ORDER BY p.name LIMIT {limit}", "limit" -> -1).length should equal(0)
-    a[SyntaxException] should be thrownBy executeWithAllPlanners("MATCH (p:Person) RETURN p ORDER BY p.name LIMIT -1")
+    a [SyntaxException] should be thrownBy executeWithAllPlanners("MATCH (p:Person) RETURN p ORDER BY p.name LIMIT -1")
   }
 }
