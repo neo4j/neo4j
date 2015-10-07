@@ -41,7 +41,6 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
-import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.OnlineIndexUpdatesValidator;
@@ -80,6 +79,7 @@ class RebuildFromLogs
 {
     public static final long ALL_TXS = BASE_TX_ID;
     public static final long ALL_LOGS = -1;
+    private static final int BATCH_SIZE = 1000;
 
     private static final String UP_TO_TX_ID = "tx";
     private static final String UP_TO_LOG_VERSION = "ver";
@@ -114,7 +114,7 @@ class RebuildFromLogs
         if ( args.length != 2 )
         {
             printUsage( "Exactly two positional arguments expected: "
-                    + "<source dir with logs> <target dir for graphdb>, got " + args.length );
+                        + "<source dir with logs> <target dir for graphdb>, got " + args.length );
             System.exit( -1 );
             return;
         }
@@ -198,7 +198,7 @@ class RebuildFromLogs
         try ( IOCursor<CommittedTransactionRepresentation> cursor =
                       new PhysicalTransactionCursor<>( logChannel, new VersionAwareLogEntryReader<>() ) )
         {
-            while (cursor.next())
+            while ( cursor.next() )
             {
                 lastTransactionId = cursor.get().getCommitEntry().getTxId();
             }
@@ -213,7 +213,7 @@ class RebuildFromLogs
             System.err.println( line );
         }
         System.err.println( Args.jarUsage( RebuildFromLogs.class, "[-full] <source dir with logs> <target dir for " +
-                "graphdb>" ) );
+                                                                  "graphdb>" ) );
         System.err.println( "WHERE:   <source dir>  is the path for where transactions to rebuild from are stored" );
         System.err.println( "         <target dir>  is the path for where to create the new graph database" );
         System.err.println( "         -full     --  to run a full check over the entire store for each transaction" );
@@ -224,7 +224,7 @@ class RebuildFromLogs
     private static class TransactionApplier implements AutoCloseable
     {
         private final GraphDatabaseAPI graphdb;
-        private final TransactionRepresentationStoreApplier storeApplier;
+        private final BatchingTransactionRepresentationStoreApplier storeApplier;
         private final OnlineIndexUpdatesValidator indexUpdatesValidator;
         private final NeoStore neoStore;
         private final IndexingService indexingService;
@@ -233,12 +233,12 @@ class RebuildFromLogs
         TransactionApplier( FileSystemAbstraction fs, File dbDirectory, PageCache pageCache )
         {
             this.fs = fs;
-            this.graphdb = BackupService.startTemporaryDb( dbDirectory .getAbsolutePath(), pageCache, stringMap() );
+            this.graphdb = BackupService.startTemporaryDb( dbDirectory.getAbsolutePath(), pageCache, stringMap() );
             DependencyResolver resolver = graphdb.getDependencyResolver();
             this.neoStore = resolver.resolveDependency( NeoStore.class );
 
-            // Instead of taking the transaction store applier from the db we construct a batching one to go faster!
             this.indexingService = resolver.resolveDependency( IndexingService.class );
+            // Instead of taking the transaction store applier from the db we construct a batching one to go faster!
             this.storeApplier = new BatchingTransactionRepresentationStoreApplier( indexingService,
                     resolver.resolveDependency( LabelScanStore.class ), neoStore,
                     resolver.resolveDependency( CacheAccessBackDoor.class ),
@@ -260,6 +260,7 @@ class RebuildFromLogs
             ReadableVersionableLogChannel channel =
                     new ReadAheadLogChannel( startingChannel, versionBridge, DEFAULT_READ_AHEAD_SIZE );
             long txId = BASE_TX_ID;
+            long nextFlushOn = txId + BATCH_SIZE;
             try ( IOCursor<CommittedTransactionRepresentation> cursor =
                           new PhysicalTransactionCursor<>( channel, new VersionAwareLogEntryReader<>() ) )
             {
@@ -272,12 +273,19 @@ class RebuildFromLogs
                     {
                         storeApplier.apply( transaction, indexUpdates, locks, txId, EXTERNAL );
                     }
+                    if ( txId == nextFlushOn )
+                    {
+                        System.out.println( "Applied tx #" + txId );
+                        storeApplier.closeBatch();
+                        nextFlushOn += BATCH_SIZE;
+                    }
                     if ( upToTxId != BASE_TX_ID && upToTxId == txId )
                     {
                         return txId;
                     }
                 }
             }
+            storeApplier.closeBatch();
             indexingService.flushAll();
             return txId;
         }
