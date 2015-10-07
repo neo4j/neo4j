@@ -147,7 +147,7 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     /**
      * Set this counter up to a pristine state, as if it had just been initialized.
      */
-    public void initialize()
+    public void clear()
     {
         if ( !counts.isEmpty() )
         {
