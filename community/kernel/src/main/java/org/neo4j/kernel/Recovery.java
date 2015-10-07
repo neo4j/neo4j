@@ -78,9 +78,6 @@ public class Recovery extends LifecycleAdapter
                 spi.getRecoverer().visit( toRecover );
                 recoveredLog = true;
                 monitor.logRecovered();
-
-                // intentionally keep it open since we're continuing using the underlying channel for the writer below
-                spi.forceEverything();
             }
         }
     }
@@ -90,6 +87,11 @@ public class Recovery extends LifecycleAdapter
     {
         // This is here as by now all other services have reacted to the recovery process
         if (recoveredLog)
+        {
+            // intentionally keep it open since we're continuing using the underlying channel for the writer below
+            spi.forceEverything();
+
             monitor.recoveryCompleted();
+        }
     }
 }
