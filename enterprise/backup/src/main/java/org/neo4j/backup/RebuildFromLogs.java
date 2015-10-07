@@ -64,7 +64,6 @@ import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-import static java.lang.String.format;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
@@ -74,7 +73,11 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 
 class RebuildFromLogs
 {
+    public static final long ALL_TXS = BASE_TX_ID;
+    public static final long ALL_LOGS = -1;
+
     private static final String UP_TO_TX_ID = "tx";
+    private static final String UP_TO_LOG_VERSION = "ver";
 
     private final FileSystemAbstraction fs;
 
@@ -91,8 +94,16 @@ class RebuildFromLogs
             return;
         }
         Args params = Args.parse( args );
-        @SuppressWarnings("boxing")
-        long txId = params.getNumber( UP_TO_TX_ID, BASE_TX_ID ).longValue();
+        long txId = params.getNumber( UP_TO_TX_ID, ALL_TXS ).longValue();
+        long logVersion = params.getNumber( UP_TO_LOG_VERSION, ALL_LOGS ).longValue();
+
+        if ( logVersion != ALL_LOGS && txId != ALL_TXS )
+        {
+            System.err.printf( "We do not support both options '%s' and '%s' at the same time ",
+                    UP_TO_TX_ID, UP_TO_LOG_VERSION );
+            return;
+        }
+
         List<String> orphans = params.orphans();
         args = orphans.toArray( new String[orphans.size()] );
         if ( args.length != 2 )
@@ -129,36 +140,35 @@ class RebuildFromLogs
             }
         }
 
-        new RebuildFromLogs( new DefaultFileSystemAbstraction() ).rebuild( source, target, txId );
+        new RebuildFromLogs( new DefaultFileSystemAbstraction() ).rebuild( source, target, txId, logVersion );
     }
 
-    public void rebuild( File source, File target, long txId ) throws Exception
+    public void rebuild( File source, File target, long txId, long logVersion ) throws Exception
     {
         try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
         {
             PhysicalLogFiles logFiles = new PhysicalLogFiles( source, fs );
-            long highestVersion = logFiles.getHighestLogVersion();
-            if ( highestVersion < 0 )
+            long highestLogVersion = logFiles.getHighestLogVersion();
+            if ( logVersion != ALL_LOGS )
+            {
+                highestLogVersion = Math.min( highestLogVersion, logVersion );
+            }
+
+            if ( highestLogVersion < 0 )
             {
                 printUsage( "Inconsistent number of log files found in " + source );
                 return;
             }
-            long txCount = findLastTransactionId( logFiles, highestVersion );
-            ProgressMonitorFactory progress;
+
+            long txCount = findLastTransactionId( logFiles, highestLogVersion );
             if ( txCount < 0 )
             {
-                progress = ProgressMonitorFactory.NONE;
-                System.err.println(
-                        "Unable to report progress, cannot find highest txId, attempting rebuild anyhow." );
+                throw new IllegalStateException( "Cannot find txs in the transaction log files" );
             }
-            else
-            {
-                progress = ProgressMonitorFactory.textual( System.err );
-            }
-            progress.singlePart( format( "Rebuilding store from %s transactions ", txCount ), txCount );
+
             try ( TransactionApplier applier = new TransactionApplier( fs, target, pageCache ) )
             {
-                long lastTxId = applier.applyTransactionsFrom( source, txId );
+                long lastTxId = applier.applyTransactionsFrom( source, txId, highestLogVersion );
                 // set last tx id in neostore otherwise the db is not usable
                 NeoStore.setRecord( fs, new File( target, NeoStore.DEFAULT_NAME ),
                         NeoStore.Position.LAST_TRANSACTION_ID, lastTxId );
@@ -228,7 +238,7 @@ class RebuildFromLogs
                     neoStore, new PropertyLoader( neoStore ), indexingService, IndexUpdateMode.BATCHED );
         }
 
-        long applyTransactionsFrom( File sourceDir, long upToTxId ) throws IOException
+        long applyTransactionsFrom( File sourceDir, long upToTxId, long upToLogVersion ) throws IOException
         {
             PhysicalLogFiles logFiles = new PhysicalLogFiles( sourceDir, fs );
             int startVersion = 0;
@@ -240,7 +250,7 @@ class RebuildFromLogs
             try ( IOCursor<CommittedTransactionRepresentation> cursor =
                           new PhysicalTransactionCursor<>( channel, new VersionAwareLogEntryReader<>() ) )
             {
-                while ( cursor.next() )
+                while ( cursor.next() && channel.getVersion() <= upToLogVersion )
                 {
                     txId = cursor.get().getCommitEntry().getTxId();
                     TransactionRepresentation transaction = cursor.get().getTransactionRepresentation();
