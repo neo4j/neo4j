@@ -21,10 +21,11 @@ package org.neo4j.kernel.ha.com.master;
 
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 
 public interface SlaveFactory
 {
-    Slave newSlave( ClusterMember clusterMember );
+    Slave newSlave( LifeSupport life, ClusterMember clusterMember );
 
     void setStoreId( StoreId storeId );
 }

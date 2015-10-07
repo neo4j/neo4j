@@ -29,6 +29,7 @@ import org.neo4j.kernel.ha.cluster.ModeSwitcherNotifier;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 
 public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
 {
@@ -52,15 +53,15 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
     }
 
     @Override
-    protected Locks getMasterImpl()
+    protected Locks getMasterImpl( LifeSupport life )
     {
-        return locksFactory.newInstance();
+        return life.add( locksFactory.newInstance() );
     }
 
     @Override
-    protected Locks getSlaveImpl()
+    protected Locks getSlaveImpl( LifeSupport life )
     {
-        return new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(),
+        return life.add( new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(),
                 availabilityGuard,
                 new SlaveLockManager.Configuration()
                 {
@@ -69,6 +70,6 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
                     {
                         return config.get( HaSettings.lock_read_timeout );
                     }
-                } );
+                } ) );
     }
 }

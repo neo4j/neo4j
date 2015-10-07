@@ -22,44 +22,59 @@ package org.neo4j.kernel.ha;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.cluster.InstanceId;
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.cluster.ModeSwitcherNotifier;
+import org.neo4j.kernel.ha.com.RequestContextFactory;
+import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.logging.Logging;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class UpdatePullerModeSwitcherTest
 {
-
     private UpdatePullerModeSwitcher modeSwitcher;
-    private PullerFactory pullersFactory;
-    private DelegateInvocationHandler invocationHandler;
-    private ModeSwitcherNotifier switcherNotifier;
 
     @Before
     public void setUp()
     {
-        switcherNotifier = mock( ModeSwitcherNotifier.class );
-        invocationHandler = mock( DelegateInvocationHandler.class );
-        pullersFactory = mock( PullerFactory.class );
+        ModeSwitcherNotifier switcherNotifier = mock( ModeSwitcherNotifier.class );
+        @SuppressWarnings( "unchecked" )
+        DelegateInvocationHandler<UpdatePuller> invocationHandler = mock( DelegateInvocationHandler.class );
+        PullerFactory pullersFactory = new PullerFactory( mock( RequestContextFactory.class ), mock( Master.class ),
+                mock( LastUpdateTime.class ), mock( Logging.class ), mock( InstanceId.class ), mock(
+                InvalidEpochExceptionHandler.class ), 42, mock( JobScheduler.class ), mock( DependencyResolver.class ),
+                mock( AvailabilityGuard.class ), mock( HighAvailabilityMemberStateMachine.class ) );
         modeSwitcher = new UpdatePullerModeSwitcher( switcherNotifier, invocationHandler, pullersFactory );
     }
 
     @Test
     public void masterUpdatePuller()
     {
-        UpdatePuller masterPuller = modeSwitcher.getMasterImpl();
+        LifeSupport life = mock( LifeSupport.class );
+        UpdatePuller masterPuller = modeSwitcher.getMasterImpl( life );
         assertEquals( UpdatePuller.NONE, masterPuller );
+        verifyZeroInteractions( life );
     }
 
     @Test
     public void slaveUpdatePuller()
     {
-        UpdatePuller updatePuller = mock( UpdatePuller.class );
-        when( pullersFactory.createUpdatePuller() ).thenReturn( updatePuller );
-
-        UpdatePuller slavePuller = modeSwitcher.getSlaveImpl();
-        assertEquals( updatePuller, slavePuller );
+        LifeSupport life = spy( new LifeSupport() );
+        UpdatePuller slavePuller = modeSwitcher.getSlaveImpl( life );
+        assertNotNull( slavePuller );
+        verify( life, times( 1 ) ).add( (Lifecycle) slavePuller );
     }
-
 }

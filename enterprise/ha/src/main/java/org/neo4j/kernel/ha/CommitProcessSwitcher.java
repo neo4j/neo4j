@@ -26,6 +26,7 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 
 public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommitProcess>
 {
@@ -46,13 +47,13 @@ public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommi
     }
 
     @Override
-    protected TransactionCommitProcess getSlaveImpl()
+    protected TransactionCommitProcess getSlaveImpl( LifeSupport life )
     {
         return slaveImpl;
     }
 
     @Override
-    protected TransactionCommitProcess getMasterImpl()
+    protected TransactionCommitProcess getMasterImpl( LifeSupport life )
     {
         return masterImpl;
     }

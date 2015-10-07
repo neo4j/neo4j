@@ -275,11 +275,11 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         DelegateInvocationHandler<ClusterMemberAvailability> clusterMemberAvailabilityDelegateInvocationHandler =
                 new DelegateInvocationHandler<>( ClusterMemberAvailability.class );
 
-        ClusterMemberEvents clusterEvents = dependencies.satisfyDependency(
-                (ClusterMemberEvents) Proxy.newProxyInstance(
-                        ClusterMemberEvents.class.getClassLoader(),
-                        new Class[]{ClusterMemberEvents.class, Lifecycle.class},
-                        clusterEventsDelegateInvocationHandler ) );
+        Object clusterEventsProxy = Proxy.newProxyInstance( ClusterMemberEvents.class.getClassLoader(),
+                new Class[]{ClusterMemberEvents.class, Lifecycle.class},
+                clusterEventsDelegateInvocationHandler );
+        ClusterMemberEvents clusterEvents = dependencies.satisfyDependency( (ClusterMemberEvents) clusterEventsProxy );
+        paxosLife.add( (Lifecycle) clusterEventsProxy );
 
         memberContext = (HighAvailabilityMemberContext) Proxy.newProxyInstance(
                 HighAvailabilityMemberContext.class.getClassLoader(),
@@ -307,12 +307,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
 
         ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
-
-
-        clusterClient =
-                dependencies.satisfyDependency( new ClusterClient( monitors, ClusterClient.adapt( config ), logging,
-                        electionCredentialsProvider,
-                        objectStreamFactory, objectStreamFactory ) );
+        clusterClient = paxosLife.add( dependencies.satisfyDependency(
+                new ClusterClient( monitors, ClusterClient.adapt( config ), logging, electionCredentialsProvider,
+                        objectStreamFactory, objectStreamFactory ) ) );
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, logging, new Predicate<PaxosClusterMemberEvents.ClusterMembersSnapshot>()
         {
@@ -365,9 +362,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         HighAvailabilityMemberContext localMemberContext = new SimpleHighAvailabilityMemberContext( clusterClient
                 .getServerId(), config.get( HaSettings.slave_only ) );
-        PaxosClusterMemberAvailability localClusterMemberAvailability = new PaxosClusterMemberAvailability(
-                clusterClient.getServerId(), clusterClient, clusterClient, logging, objectStreamFactory,
-                objectStreamFactory );
+        PaxosClusterMemberAvailability localClusterMemberAvailability = paxosLife.add(
+                new PaxosClusterMemberAvailability( clusterClient.getServerId(), clusterClient, clusterClient, logging,
+                        objectStreamFactory, objectStreamFactory ) );
 
         memberContextDelegateInvocationHandler.setDelegate( localMemberContext );
         clusterEventsDelegateInvocationHandler.setDelegate( localClusterEvents );
@@ -375,9 +372,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         members = dependencies.satisfyDependency( new ClusterMembers( clusterClient, clusterClient, clusterEvents,
                 config.get( ClusterSettings.server_id ) ) );
-        memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, availabilityGuard, members,
-                clusterEvents,
-                clusterClient, logging.getMessagesLog( HighAvailabilityMemberStateMachine.class ) );
+        memberStateMachine = paxosLife.add( new HighAvailabilityMemberStateMachine( memberContext, availabilityGuard,
+                members, clusterEvents, clusterClient, logging.getMessagesLog( HighAvailabilityMemberStateMachine.class
+        ) ) );
 
         HighAvailabilityConsoleLogger highAvailabilityConsoleLogger = new HighAvailabilityConsoleLogger( logging
                 .getConsoleLog( HighAvailabilityConsoleLogger.class ), config.get( ClusterSettings
@@ -385,12 +382,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         availabilityGuard.addListener( highAvailabilityConsoleLogger );
         clusterEvents.addClusterMemberListener( highAvailabilityConsoleLogger );
         clusterClient.addClusterListener( highAvailabilityConsoleLogger );
-
-        paxosLife.add( clusterClient );
-        paxosLife.add( memberStateMachine );
-        paxosLife.add( clusterEvents );
-        paxosLife.add( localClusterMemberAvailability );
-
     }
 
     @Override
@@ -507,11 +498,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 lastUpdateTime, logging, serverId, invalidEpochHandler, config.get( HaSettings.pull_interval ),
                 jobScheduler, dependencies, availabilityGuard, memberStateMachine );
 
-        TransactionObligationFulfiller obligationFulfiller = pullerFactory.createObligationFulfiller(
-                updatePullerProxy );
-        paxosLife.add( obligationFulfiller );
-        dependencies.satisfyDependency( obligationFulfiller );
-
+        TransactionObligationFulfiller obligationFulfiller = dependencies.satisfyDependency(
+                pullerFactory.createObligationFulfiller( paxosLife, updatePullerProxy ) );
 
         MasterClientResolver masterClientResolver = new MasterClientResolver( logging, responseUnpacker,
                 invalidEpochHandler,
@@ -640,12 +628,12 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     }
 
     @Override
-    protected KernelData createKernelData()
+    protected KernelData createKernelData( LifeSupport life )
     {
         OnDiskLastTxIdGetter txIdGetter = new OnDiskLastTxIdGetter( this );
         ClusterDatabaseInfoProvider databaseInfo = new ClusterDatabaseInfoProvider(
                 members, txIdGetter, lastUpdateTime );
-        return new HighlyAvailableKernelData( this, members, databaseInfo );
+        return life.add( new HighlyAvailableKernelData( this, members, databaseInfo ) );
     }
 
     @Override

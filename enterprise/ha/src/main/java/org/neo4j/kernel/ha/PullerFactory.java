@@ -28,6 +28,7 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 
 /**
@@ -68,16 +69,16 @@ public class PullerFactory
         this.memberStateMachine = memberStateMachine;
     }
 
-    public UpdatePuller createUpdatePuller()
+    public UpdatePuller createUpdatePuller( LifeSupport life )
     {
-        return new SlaveUpdatePuller( requestContextFactory, master, lastUpdateTime, logging, serverId,
-                availabilityGuard, invalidEpochHandler );
+        return life.add( new SlaveUpdatePuller( requestContextFactory, master, lastUpdateTime, logging, serverId,
+                availabilityGuard, invalidEpochHandler ) );
     }
 
-    public TransactionObligationFulfiller createObligationFulfiller(UpdatePuller updatePuller)
+    public TransactionObligationFulfiller createObligationFulfiller( LifeSupport life, UpdatePuller updatePuller )
     {
-        return new UpdatePullingTransactionObligationFulfiller( updatePuller, memberStateMachine, serverId,
-                dependencyResolver );
+        return life.add( new UpdatePullingTransactionObligationFulfiller(
+                updatePuller, memberStateMachine, serverId, dependencyResolver ) );
     }
 
     public UpdatePullerScheduler createUpdatePullerScheduler(UpdatePuller updatePuller)

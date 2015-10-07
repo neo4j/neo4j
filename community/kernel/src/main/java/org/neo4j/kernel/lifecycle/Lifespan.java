@@ -36,7 +36,7 @@ public class Lifespan implements AutoCloseable
         life.start();
     }
 
-    public <T> T add( T subject )
+    public <T extends Lifecycle> T add( T subject )
     {
         return life.add( subject );
     }

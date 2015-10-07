@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import org.junit.Test;
+import org.mockito.Matchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -31,11 +36,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -56,8 +56,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.MasterClient214;
-import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.PullerFactory;
+import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -91,7 +91,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
 
@@ -616,7 +615,7 @@ public class HighAvailabilityMemberStateMachineTest
         SwitchToSlave switchToSlave = new SwitchToSlave( mock( ConsoleLogger.class ), config,
                 dependencyResolver, mock( HaIdGeneratorFactory.class ), logging, handler, clusterMemberAvailability,
                 mock( RequestContextFactory.class ), Iterables.<KernelExtensionFactory<?>>empty(), masterClientResolver,
-                updatePuller, mock( PullerFactory.class ), mock( ByteCounterMonitor.class ),
+                updatePuller, mock( PullerFactory.class, RETURNS_MOCKS ), mock( ByteCounterMonitor.class ),
                 mock( RequestMonitor.class ), monitor, mock( StoreCopyClient.Monitor.class ) );
 
         HighAvailabilityModeSwitcher haModeSwitcher = new HighAvailabilityModeSwitcher( switchToSlave,
@@ -634,7 +633,7 @@ public class HighAvailabilityMemberStateMachineTest
                 DelegateInvocationHandler.class ) )
         {
             @Override
-            protected Object getSlaveImpl()
+            protected Object getSlaveImpl( LifeSupport life )
             {
                 Master master = handler.cement();
                 ref.set( master );
@@ -643,7 +642,7 @@ public class HighAvailabilityMemberStateMachineTest
             }
 
             @Override
-            protected Object getMasterImpl()
+            protected Object getMasterImpl( LifeSupport life )
             {
                 return null;
             }
