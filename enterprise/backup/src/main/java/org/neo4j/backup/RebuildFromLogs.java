@@ -39,12 +39,17 @@ import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.OnlineIndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
+import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -231,9 +236,17 @@ class RebuildFromLogs
             this.graphdb = BackupService.startTemporaryDb( dbDirectory .getAbsolutePath(), pageCache, stringMap() );
             DependencyResolver resolver = graphdb.getDependencyResolver();
             this.neoStore = resolver.resolveDependency( NeoStore.class );
-            this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class )
-                    .withLegacyIndexTransactionOrdering( IdOrderingQueue.BYPASS );
+
+            // Instead of taking the transaction store applier from the db we construct a batching one to go faster!
             this.indexingService = resolver.resolveDependency( IndexingService.class );
+            this.storeApplier = new BatchingTransactionRepresentationStoreApplier( indexingService,
+                    resolver.resolveDependency( LabelScanStore.class ), neoStore,
+                    resolver.resolveDependency( CacheAccessBackDoor.class ),
+                    resolver.resolveDependency( LockService.class ),
+                    resolver.resolveDependency( LegacyIndexApplierLookup.class ),
+                    resolver.resolveDependency( IndexConfigStore.class ),
+                    IdOrderingQueue.BYPASS
+            );
             this.indexUpdatesValidator = new OnlineIndexUpdatesValidator(
                     neoStore, new PropertyLoader( neoStore ), indexingService, IndexUpdateMode.BATCHED );
         }
