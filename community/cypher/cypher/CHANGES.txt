@@ -1,3 +1,7 @@
+3.0.0-M01
+---------
+o Improved performance for counting queries by utilizing the counts store
+
 2.3.0-RC1
 ---------
 o Generates a warning when a plan using LOAD CSV uses MATCH or MERGE on a large label without an index

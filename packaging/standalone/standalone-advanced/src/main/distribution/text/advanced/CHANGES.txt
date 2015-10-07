@@ -1,5 +1,11 @@
 For Release Notes, see http://neo4j.com/release-notes/neo4j-#{project.version}/
 
+3.0.0-M01
+---------
+
+Cypher:
+o Improved performance for counting queries by utilizing the counts store
+
 2.3.0-RC1
 ---------
 
