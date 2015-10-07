@@ -282,7 +282,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             throw new InvalidRecordException( "Illegal blockSize: " + blockSize );
         }
 
-        log.debug( "Rebuilding id generator for[" + getStorageFileName() + "] ..." );
+        log.info( "Rebuilding id generator for[" + getStorageFileName() + "] ..." );
         closeIdGenerator();
         createIdGenerator( getIdFileName() );
         openIdGenerator();
@@ -307,10 +307,9 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             throw new UnderlyingStorageException( "Unable to rebuild id generator " + getStorageFileName(), e );
         }
 
-        log.debug( "[" + getStorageFileName() + "] high id=" + getHighId()
-                            + " (defragged=" + defraggedCount + ")" );
-        log.debug( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
-                                 " defragged count=" + defraggedCount );
+        log.info( "[" + getStorageFileName() + "] high id=" + getHighId() + " (defragged=" + defraggedCount + ")" );
+        log.info( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
+                  " defragged count=" + defraggedCount );
 
         if ( !fastRebuild )
         {
