@@ -89,6 +89,7 @@ public class Recovery extends LifecycleAdapter
         }
         recoveredLog = true;
         monitor.logRecovered( recoveryPosition );
+        spi.forceEverything();
     }
 
     @Override
