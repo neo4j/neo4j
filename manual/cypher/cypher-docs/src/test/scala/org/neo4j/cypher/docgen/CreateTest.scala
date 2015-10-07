@@ -166,14 +166,12 @@ In this case we add a +Person+ label to the node as well.
     testQuery(
       title = "Create multiple nodes with a parameter for their properties",
       text = """
-By providing Cypher an array of maps, it will create a node for each map.
-
-NOTE: When you do this, you can't create anything else in the same +CREATE+ clause.
+Use `UNWIND` to create multiple nodes from a parameter.
 """,
       parameters = Map("props" -> List(
         Map("name" -> "Andres", "position" -> "Developer"),
         Map("name" -> "Michael", "position" -> "Developer"))),
-      queryText = "create (n {props}) return n",
+      queryText = "unwind {props} as properties create (n) set n = properties return n",
       optionalResultExplanation = "",
       assertions = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
   }

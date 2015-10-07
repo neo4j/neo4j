@@ -28,7 +28,7 @@ case class NodeUniqueIndexSeek(idName: IdName,
                                propertyKey: PropertyKeyToken,
                                valueExpr: QueryExpression[Expression],
                                argumentIds: Set[IdName])
-                              (val solved: PlannerQuery with CardinalityEstimation) extends LogicalLeafPlan {
+                              (val solved: PlannerQuery with CardinalityEstimation) extends NodeLogicalLeafPlan {
 
   def availableSymbols = argumentIds + idName
 

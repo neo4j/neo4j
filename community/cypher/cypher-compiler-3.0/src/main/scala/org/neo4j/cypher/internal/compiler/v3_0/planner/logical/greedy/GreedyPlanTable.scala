@@ -36,7 +36,7 @@ object GreedyPlanTable {
        val newSolved = newPlan.solved
        val newPlanCoveredByOldPlan = m.values.exists { p =>
          val solved = p.solved
-         newSolved.graph.isCoveredBy(solved.graph) &&
+         newSolved.queryGraph.isCoveredBy(solved.queryGraph) &&
            newSolved.isCoveredByHints(solved)
        }
 
@@ -46,7 +46,7 @@ object GreedyPlanTable {
          val oldPlansNotCoveredByNewPlan: immutable.Map[QueryGraph, LogicalPlan] = m.filter {
            case (_, existingPlan) =>
              val solved = existingPlan.solved
-             !(newSolved.graph.covers(solved.graph) &&
+             !(newSolved.queryGraph.covers(solved.queryGraph) &&
                solved.isCoveredByHints(newSolved))
          }
          DefaultGreedyPlanTable(oldPlansNotCoveredByNewPlan + (newSolved.lastQueryGraph -> newPlan))

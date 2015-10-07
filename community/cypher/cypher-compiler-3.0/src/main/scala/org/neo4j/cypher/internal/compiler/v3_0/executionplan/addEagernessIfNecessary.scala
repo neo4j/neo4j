@@ -29,7 +29,7 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
       val from = fromPipe.effects
       val to = toPipe.localEffects
       if (wouldConflict(from, to)) {
-        new EagerPipe(fromPipe)(fromPipe.monitor)
+        new EagerPipe(fromPipe)()(fromPipe.monitor)
       } else {
         fromPipe
       }

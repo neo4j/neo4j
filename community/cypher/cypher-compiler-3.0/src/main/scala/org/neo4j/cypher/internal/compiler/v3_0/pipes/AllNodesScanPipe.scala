@@ -41,7 +41,7 @@ case class AllNodesScanPipe(ident: String)(val estimatedCardinality: Option[Doub
 
   override def monitor = pipeMonitor
 
-  override def localEffects: Effects = Effects(ReadsAllNodes)
+  override def localEffects: Effects = Effects(ReadsAllNodes).asLeafEffects
 
   def dup(sources: List[Pipe]): Pipe = {
     require(sources.isEmpty)

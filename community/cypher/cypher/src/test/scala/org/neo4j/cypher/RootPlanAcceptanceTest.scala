@@ -49,11 +49,11 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
 
-  test("should fallback to Rule for updates in 3.0") {
+  test("should handle updates in 3.0") {
     given("create() return 1")
       .withCypherVersion(CypherVersion.v3_0)
       .shouldHaveCypherVersion(CypherVersion.v3_0)
-      .shouldHavePlanner(RulePlannerName)
+      .shouldHavePlanner(CostBasedPlannerName.default)
   }
 
   test("should report RULE if we ask it for UNION queries") {
@@ -94,15 +94,6 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .withCypherVersion(CypherVersion.v3_0)
       .shouldHaveCypherVersion(CypherVersion.v3_0)
       .shouldHaveRuntime(InterpretedRuntimeName)
-  }
-
-  test("query that does not go through the compiled runtime nor Cost") {
-    given(
-      "CREATE ()")
-      .withCypherVersion(CypherVersion.v3_0)
-      .shouldHaveCypherVersion(CypherVersion.v3_0)
-      .shouldHaveRuntime(InterpretedRuntimeName)
-      .shouldHavePlanner(RulePlannerName)
   }
 
   test("query that lacks support from the compiled runtime") {

@@ -21,10 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{SingleRowPlanDescription, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
-case class EmptyResultPipe(source: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+case class EmptyResultPipe(source: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) = {
     while(input.hasNext) {
@@ -45,5 +46,14 @@ case class EmptyResultPipe(source: Pipe)(implicit pipeMonitor: PipeMonitor) exte
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
     copy(source = source)
+  }
+
+  def estimatedCardinality: Option[Double] = Some(0.0)
+
+  override def planDescriptionWithoutCardinality: InternalPlanDescription = new SingleRowPlanDescription(this.id, Seq.empty, identifiers)
+
+  override def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = {
+    //TODO should enforce estimated == 0.0
+    this
   }
 }

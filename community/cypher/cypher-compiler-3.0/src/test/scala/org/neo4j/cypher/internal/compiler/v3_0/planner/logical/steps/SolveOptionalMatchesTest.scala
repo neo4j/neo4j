@@ -62,7 +62,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any())).thenReturn((plan: PlannerQuery, _: QueryGraphSolverInput, _: SemanticTable) => plan match {
-      case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("a")) &&
+      case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set(IdName("a")) &&
                                              queryGraph.patternRelationships.isEmpty => Cardinality(1.0)
       case _            => Cardinality(1000.0)
     })
@@ -109,7 +109,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
     implicit val context = createLogicalPlanContext()
     val inputPlan = newMockedLogicalPlanWithSolved(
       Set("a", "b"),
-      solved.withGraph(qg))
+      solved.withQueryGraph(qg))
 
     val planTable = greedyPlanTableWith(inputPlan)
 
@@ -130,7 +130,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
     implicit val context = createLogicalPlanContext()
     val inputPlan = newMockedLogicalPlanWithSolved(
       Set("a", "b"),
-      solved.withGraph(qgWithFirstOptionalMatch))
+      solved.withQueryGraph(qgWithFirstOptionalMatch))
 
     val planTable = greedyPlanTableWith(inputPlan)
 
@@ -175,7 +175,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
     implicit val context = createLogicalPlanContext()
     val lhs = newMockedLogicalPlanWithSolved(
       Set("a", "b", "r1"),
-      solved.withGraph(qgWithFirstOptionalMatch))
+      solved.withQueryGraph(qgWithFirstOptionalMatch))
 
     val planForC = newMockedLogicalPlan("c")
 
@@ -198,7 +198,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
     implicit val context = createLogicalPlanContext()
     val lhs = newMockedLogicalPlanWithSolved(
       Set("a", "b", "r1"),
-      solved.withGraph(qgWithFirstOptionalMatch))
+      solved.withQueryGraph(qgWithFirstOptionalMatch))
 
     val planForC = newMockedLogicalPlan("c")
 
@@ -270,7 +270,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any())).thenReturn((plan: PlannerQuery, _: QueryGraphSolverInput, _: SemanticTable) => plan match {
-      case PlannerQuery(queryGraph, _, _) if queryGraph.argumentIds == Set(IdName("a")) &&
+      case PlannerQuery(queryGraph, _, _, _) if queryGraph.argumentIds == Set(IdName("a")) &&
                                              queryGraph.patternNodes == Set(IdName("a")) &&
                                              queryGraph.patternRelationships.isEmpty  => Cardinality(1.0)
       case _            => Cardinality(1000.0)

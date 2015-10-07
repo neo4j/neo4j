@@ -38,7 +38,7 @@ case class SymbolTable(identifiers: Map[String, CypherType] = Map.empty) {
   }
 
   def filter(f: String => Boolean): SymbolTable = SymbolTable(identifiers.filterKeys(f))
-  def keys: Seq[String] = identifiers.map(_._1).toSeq
+  def keys: Seq[String] = identifiers.keys.toSeq
   def missingSymbolTableDependencies(x: TypeSafe) = x.symbolTableDependencies.filterNot( dep => identifiers.exists(_._1 == dep))
 
   def evaluateType(name: String, expectedType: CypherType): CypherType = identifiers.get(name) match {

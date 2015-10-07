@@ -42,10 +42,10 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
 
     (new given {
       cardinality = mapCardinality {
-        case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("a")) => 1000.0
-        case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("b")) => 2000.0
-        case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("c")) => 3000.0
-        case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("d")) => 4000.0
+        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set(IdName("a")) => 1000.0
+        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set(IdName("b")) => 2000.0
+        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set(IdName("c")) => 3000.0
+        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set(IdName("d")) => 4000.0
         case _ => 100.0
       }
     } planFor "MATCH (a)-[r1]->(b), (c)-[r2]->(d) RETURN r1, r2").plan should beLike {
@@ -75,7 +75,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
     (new given {
       cardinality = mapCardinality {
         // all node scans
-        case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 => 1000.0
+        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes.size == 1 => 1000.0
         case _                                                                   => 1.0
       }
 
@@ -93,7 +93,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
   test("Should build plans expanding from the cheaper side for single relationship pattern") {
 
     def myCardinality(plan: PlannerQuery): Cardinality = Cardinality(plan match {
-      case PlannerQuery(queryGraph, _, _) if !queryGraph.selections.isEmpty  => 10
+      case PlannerQuery(queryGraph, _, _, _) if !queryGraph.selections.isEmpty  => 10
       case _ => 1000
     })
 
@@ -113,7 +113,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
   test("Should build plans expanding from the more expensive side if that is requested by using a hint") {
     (new given {
       cardinality = mapCardinality {
-        case PlannerQuery(queryGraph, _, _) if queryGraph.selections.predicates.size == 2 => 1000.0
+        case PlannerQuery(queryGraph, _, _, _) if queryGraph.selections.predicates.size == 2 => 1000.0
         case _                => 10.0
       }
 

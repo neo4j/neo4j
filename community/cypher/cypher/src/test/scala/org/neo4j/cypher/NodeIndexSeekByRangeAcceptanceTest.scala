@@ -82,6 +82,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
   test("should perform prefix search in an update query") {
     createLabeledNode(Map("name" -> "London"), "Location")
     createLabeledNode(Map("name" -> "london"), "Location")
+    for (i <- 1 to 100) createLabeledNode("Location")
     graph.createIndex("Location", "name")
 
     val query =
@@ -89,9 +90,9 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
         |CREATE (L:Location {name: toUpper(l.name)})
         |RETURN L.name AS NAME""".stripMargin
 
-    val result = executeWithRulePlanner(query)
+    val result = updateWithBothPlanners(query)
 
-    result should (use("SchemaIndex") and evaluateTo(List(Map("NAME" -> "LONDON"))))
+    result should (use("NodeIndexSeekByRange") and evaluateTo(List(Map("NAME" -> "LONDON"))))
   }
 
   test("should only match on the actual prefix") {
@@ -1001,12 +1002,13 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     createLabeledNode(Map("prop" -> 1), "Label")
     createLabeledNode(Map("prop" -> 5), "Label")
     createLabeledNode(Map("prop" -> 10), "Label")
+    for (i <- 1 to 300) createLabeledNode("Label")
 
     val query = "MATCH (n:Label) WHERE n.prop < 10 CREATE () RETURN n.prop"
 
-    val result = executeWithRulePlanner(query)
+    val result = updateWithBothPlanners(query)
 
-    result should (use("SchemaIndex") and evaluateTo(List(Map("n.prop" -> 1), Map("n.prop" -> 5))))
+    result should (use("NodeIndexSeekByRange") and evaluateTo(List(Map("n.prop" -> 1), Map("n.prop" -> 5))))
   }
 
 }

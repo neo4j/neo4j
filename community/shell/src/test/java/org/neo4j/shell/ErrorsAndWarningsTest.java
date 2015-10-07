@@ -73,31 +73,6 @@ public class ErrorsAndWarningsTest
     }
 
     @Test
-    public void unsupportedQueryShouldPresentWarningIfExplain() throws IOException
-    {
-        // Given
-        // an empty database
-
-        startDatabase( false );
-
-        // When
-        InputStream realStdin = System.in;
-        try
-        {
-            System.setIn( new ByteArrayInputStream( "EXPLAIN CYPHER planner=cost CREATE ();".getBytes() ) );
-            String output = runAndCaptureOutput( new String[]{"-file", "-"} );
-
-            // Then we should get a warning
-            assertThat( output, containsString(
-                    "Using COST planner is unsupported for this query, please use RULE planner instead" ) );
-        }
-        finally
-        {
-            System.setIn( realStdin );
-        }
-    }
-
-    @Test
     public void unsupportedQueryShouldBeSilent() throws IOException
     {
         // Given
@@ -115,31 +90,6 @@ public class ErrorsAndWarningsTest
             // Then we should not get a warning
             assertThat( output, not( containsString(
                     "Using COST planner is unsupported for this query, please use RULE planner instead" ) ) );
-        }
-        finally
-        {
-            System.setIn( realStdin );
-        }
-    }
-
-    @Test
-    public void unsupportedQueryShouldPresentErrorIfConfigured() throws IOException
-    {
-        // Given
-        // an empty database
-
-        startDatabase( true );
-
-        // When
-        InputStream realStdin = System.in;
-        try
-        {
-            System.setIn( new ByteArrayInputStream( "CYPHER planner=cost CREATE ();".getBytes() ) );
-            String output = runAndCaptureOutput( new String[]{"-file", "-"} );
-
-            // Then we should get an error
-            assertThat( output,
-                    containsString( "The given query is not currently supported in the selected cost-based planner" ) );
         }
         finally
         {

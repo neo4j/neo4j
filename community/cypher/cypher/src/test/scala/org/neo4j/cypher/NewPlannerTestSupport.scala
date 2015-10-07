@@ -163,6 +163,20 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     idpResult
   }
 
+  /*
+   * Same as executeWithAllPlanners but rolls back all but the final query
+   */
+  def updateWithBothPlanners(queryText: String, params: (String, Any)*): InternalExecutionResult = {
+    val ruleResult = graph.rollback(innerExecute(s"CYPHER planner=rule $queryText", params: _*))
+    val costResult = executeWithCostPlannerOnly(queryText, params: _*)
+    assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners")
+    withClue("Diverging statistics between rule and cost planners") {
+      ruleResult.queryStatistics() should equal(costResult.queryStatistics())
+    }
+    ruleResult.close()
+    costResult
+  }
+
   def executeWithAllPlannersReplaceNaNs(queryText: String, params: (String, Any)*): InternalExecutionResult = {
     val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
     val idpResult = innerExecute(s"CYPHER planner=idp $queryText", params: _*)

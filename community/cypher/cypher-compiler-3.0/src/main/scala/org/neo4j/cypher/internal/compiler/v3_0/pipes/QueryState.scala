@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.ParameterNotFoundException
 
 import scala.collection.mutable
 
+
+
 class QueryState(val query: QueryContext,
                  val resources: ExternalResource,
                  val params: Map[String, Any],
@@ -36,7 +38,8 @@ class QueryState(val query: QueryContext,
                  val timeReader: TimeReader = new TimeReader,
                  var initialContext: Option[ExecutionContext] = None,
                  val queryId: AnyRef = UUID.randomUUID().toString,
-                 val triadicState: mutable.Map[String, PrimitiveLongSet] = new mutable.HashMap[String, PrimitiveLongSet]()) {
+                 val triadicState: mutable.Map[String, PrimitiveLongSet],
+                 val repeatableReads: mutable.Map[Pipe, Seq[ExecutionContext]]) {
   private var _pathValueBuilder: PathValueBuilder = null
 
   def clearPathValueBuilder = {
@@ -54,14 +57,13 @@ class QueryState(val query: QueryContext,
   def getStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
   def withDecorator(decorator: PipeDecorator) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState)
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads)
 
   def withInitialContext(initialContext: ExecutionContext) =
-    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), queryId, triadicState)
+    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), queryId, triadicState, repeatableReads)
 
   def withQueryContext(query: QueryContext) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState)
-
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads)
 }
 
 object QueryState {

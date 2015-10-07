@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, P
 
 case class LegacyIndexSeek(idName: IdName, hint: LegacyIndexHint, argumentIds: Set[IdName])
                           (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalLeafPlan with LogicalPlanWithoutExpressions {
+  extends NodeLogicalLeafPlan with LogicalPlanWithoutExpressions {
 
   def availableSymbols = argumentIds + idName
 }

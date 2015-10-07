@@ -34,11 +34,6 @@ trait FallbackBuilder extends ExecutablePlanBuilder {
     try {
       monitor.newQuerySeen(queryText, statement)
 
-      // Temporary measure, to save time compiling update queries
-      if (containsUpdateClause(statement)) {
-        throw new CantHandleQueryException("Ronja does not handle update queries yet.")
-      }
-
       newBuilder.producePlan(inputQuery, planContext, tracer)
     } catch {
       case e: CantHandleQueryException =>

@@ -63,7 +63,7 @@ case class Selections(predicates: Set[Predicate] = Set.empty) extends PageDocFor
 
   def unsolvedPredicates(plan: LogicalPlan): Seq[Expression] =
     scalarPredicatesGiven(plan.availableSymbols)
-      .filterNot(predicate => plan.solved.exists(_.graph.selections.contains(predicate)))
+      .filterNot(predicate => plan.solved.exists(_.queryGraph.selections.contains(predicate)))
 
   def scalarPredicatesGiven(ids: Set[IdName]): Seq[Expression] = predicatesGiven(ids).filterNot(containsPatternPredicates)
 

@@ -40,6 +40,10 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def size = patternRelationships.size
 
+  def isEmpty: Boolean = this == QueryGraph.empty
+
+  def nonEmpty: Boolean = !isEmpty
+
   def mapSelections(f: Selections => Selections): QueryGraph =
     copy(selections = f(selections), optionalMatches = optionalMatches.map(_.mapSelections(f)))
 
@@ -63,6 +67,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
   }
 
   def addShortestPaths(shortestPaths: ShortestPathPattern*): QueryGraph = shortestPaths.foldLeft(this)((qg, p) => qg.addShortestPath(p))
+  def addArgumentId(newId: IdName): QueryGraph = copy(argumentIds = argumentIds + newId)
   def addArgumentIds(newIds: Seq[IdName]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
   def addSelections(selections: Selections): QueryGraph =
     copy(selections = Selections(selections.predicates ++ this.selections.predicates))
@@ -95,6 +100,9 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     selections
       .labelPredicates.getOrElse(node, Seq.empty)
       .flatMap(_.labels).toSeq
+
+  def allKnownLabelsOnNode(node: IdName): Seq[LabelName] =
+    knownLabelsOnNode(node) ++ optionalMatches.flatMap(_.allKnownLabelsOnNode(node))
 
   def findRelationshipsEndingOn(id: IdName): Set[PatternRelationship] =
     patternRelationships.filter { r => r.left == id || r.right == id }

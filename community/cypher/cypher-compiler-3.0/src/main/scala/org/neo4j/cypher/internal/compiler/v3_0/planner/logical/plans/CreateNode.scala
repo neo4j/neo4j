@@ -17,24 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0.mutation
 
-import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
-class PropertySetActionTest extends CypherFunSuite {
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 
-  val x = new Object with GraphElementPropertyFunctions
+case class CreateNode(source: LogicalPlan, idName: IdName, labels: Seq[LazyLabel], properties: Option[Expression])
+                           (val solved: PlannerQuery with CardinalityEstimation)
+  extends LogicalPlan with LogicalPlanWithoutExpressions {
 
-  test("string_collection_turns_into_string_array") {
-    x.makeValueNeoSafe(Seq("a", "b")) should equal(Array("a", "b"))
+  override def lhs: Option[LogicalPlan] = Some(source)
+
+  override def availableSymbols: Set[IdName] = {
+    source.availableSymbols + idName
   }
 
-  test("empty_collection_in_is_empty_array") {
-    x.makeValueNeoSafe(Seq()) should equal(Array())
-  }
+  override def rhs: Option[LogicalPlan] = None
 
-  test("mixed_types_are_not_ok") {
-    intercept[CypherTypeException](x.makeValueNeoSafe(Seq("a", 12, false)))
-  }
+  override def strictness: StrictnessMode = source.strictness
 }

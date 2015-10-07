@@ -82,6 +82,18 @@ trait GraphIcing {
       }
     }
 
+    def rollback[T](f: => T): T = {
+      val tx = graph.beginTx()
+      try {
+        val result = f
+        tx.failure()
+        result
+      } finally {
+        tx.failure()
+        tx.close()
+      }
+    }
+
     def txCounts = TxCounts(txMonitor.getNumberOfCommittedTransactions, txMonitor.getNumberOfRolledbackTransactions, txMonitor.getNumberOfActiveTransactions)
 
     private def txMonitor: TransactionCounters = graph.getDependencyResolver.resolveDependency(classOf[TransactionCounters])

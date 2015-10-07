@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, SyntaxExcepti
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 object PatternConverters {
-
   implicit class PatternConverter(val pattern: ast.Pattern) extends AnyVal {
     def asLegacyPatterns: Seq[commands.Pattern] = pattern.patternParts.flatMap(_.asLegacyPatterns)
     def asLegacyNamedPaths: Seq[commands.NamedPath] = pattern.patternParts.flatMap(_.asLegacyNamedPath)

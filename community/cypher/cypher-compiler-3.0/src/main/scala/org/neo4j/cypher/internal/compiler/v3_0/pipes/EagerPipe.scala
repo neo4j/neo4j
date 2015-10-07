@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 
 trait NoEffectsPipe {
@@ -32,16 +33,20 @@ trait NoEffectsPipe {
   override val effects = Effects()
 }
 
-case class EagerPipe(src: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(src, pipeMonitor) with NoEffectsPipe {
+case class EagerPipe(src: Pipe)(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(src, pipeMonitor) with NoEffectsPipe with RonjaPipe {
   def symbols: SymbolTable = src.symbols
 
-  def planDescription = src.planDescription.andThen(this.id, "Eager", identifiers)
+  override def planDescription = src.planDescription.andThen(this.id, "Eager", identifiers)
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.toList.toIterator
 
-  def dup(sources: List[Pipe]): Pipe = {
+  override def planDescriptionWithoutCardinality: InternalPlanDescription = src.planDescription.andThen(this.id, "Eager", identifiers)
+
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+
+  override def dup(sources: List[Pipe]): Pipe = {
     val (src :: Nil) = sources
-    copy(src = src)
+    copy(src = src)(estimatedCardinality)
   }
 }

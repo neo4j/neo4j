@@ -530,7 +530,7 @@ order by a.COL1""")
   }
 
   test("with_should_not_forget_original_type") {
-    val result = executeWithRulePlanner("create (a{x:8}) with a.x as foo return sum(foo)")
+    val result = updateWithBothPlanners("create (a{x:8}) with a.x as foo return sum(foo)")
 
     result.toList should equal(List(Map("sum(foo)" -> 8)))
   }
@@ -538,13 +538,11 @@ order by a.COL1""")
   test("with_should_not_forget_parameters") {
     graph.inTx(graph.index().forNodes("test"))
     val id = "bar"
-    val result = executeWithRulePlanner("start n=node:test(name={id}) with count(*) as c where c=0 create (x{name:{id}}) return c, x", "id" -> id).toList
+    val result = updateWithBothPlanners("start n=node:test(name={id}) with count(*) as c where c=0 create (x{name:{id}}) return c, x.name as name", "id" -> id).toList
 
     result should have size 1
     result.head("c").asInstanceOf[Long] should equal(0)
-    graph.inTx {
-      result.head("x").asInstanceOf[Node].getProperty("name") should equal(id)
-    }
+    result.head("name").asInstanceOf[String] should equal(id)
   }
 
   test("with_should_not_forget_parameters2") {
@@ -857,7 +855,7 @@ order by a.COL1""")
 
   test("doctest_gone_wild") {
     // given
-    executeWithRulePlanner("CREATE (n:Actor {name:'Tom Hanks'})")
+    updateWithBothPlanners("CREATE (n:Actor {name:'Tom Hanks'})")
 
     // when
     val result = executeWithRulePlanner("""MATCH (actor:Actor)
@@ -961,7 +959,7 @@ order by a.COL1""")
   }
 
   test("should_not_mind_rewriting_NOT_queries") {
-    val result = executeWithRulePlanner(" create (a {x: 1}) return a.x is not null as A, a.y is null as B, a.x is not null as C, a.y is not null as D")
+    val result = updateWithBothPlanners(" create (a {x: 1}) return a.x is not null as A, a.y is null as B, a.x is not null as C, a.y is not null as D")
     result.toList should equal(List(Map("A" -> true, "B" -> true, "C" -> true, "D" -> false)))
   }
 

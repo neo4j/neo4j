@@ -73,7 +73,8 @@ object ClauseConverters {
       case c: With => c.addWithToLogicalPlanInput(acc)
       case c: Unwind => c.addUnwindToLogicalPlanInput(acc)
       case c: Start => c.addStartToLogicalPlanInput(acc)
-      case x         => throw new CantHandleQueryException//(x.toString)
+      case c: Create => c.addCreateToLogicalPlanInput(acc)
+      case x         => throw new CantHandleQueryException(s"$x is not supported by the new runtime yet")
     }
   }
 
@@ -99,6 +100,17 @@ object ClauseConverters {
     }
   }
 
+  implicit class CreateConverter(val clause: Create) extends AnyVal {
+    def addCreateToLogicalPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = {
+      clause.pattern.patternParts.foldLeft(acc) {
+        case (builder, EveryPath(pattern@NodePattern(Some(id), _, _, _))) =>
+          builder
+            .amendUpdateGraph(ug => ug.copy(nodePatterns = ug.nodePatterns :+ pattern))
+        case _ => throw new CantHandleQueryException(s"$clause is not yet supported")
+      }
+    }
+  }
+
   implicit class ReturnItemsConverter(val clause: ReturnItems) extends AnyVal {
     def asReturnItems(current: QueryGraph): Seq[ReturnItem] =
       if (clause.includeExisting)
@@ -118,7 +130,7 @@ object ClauseConverters {
 
       if (clause.optional) {
         acc.
-          updateGraph { qg => qg.withAddedOptionalMatch(
+          amendQueryGraph { qg => qg.withAddedOptionalMatch(
           // When adding QueryGraphs for optional matches, we always start with a new one.
           // It's either all or nothing per match clause.
           QueryGraph(
@@ -130,7 +142,7 @@ object ClauseConverters {
           ))
         }
       } else {
-        acc.updateGraph {
+        acc.amendQueryGraph {
           qg => qg.
             addSelections(selections).
             addPatternNodes(patternContent.nodeIds: _*).
@@ -162,10 +174,10 @@ object ClauseConverters {
           && ri.items.forall {
           case item: AliasedReturnItem => item.expression == item.identifier
           case x => throw new InternalException("This should have been rewritten to an AliasedReturnItem.")
-        } =>
+        } && builder.readOnly =>
         val selections = where.asSelections
         builder.
-          updateGraph(_.addSelections(selections))
+          amendQueryGraph(_.addSelections(selections))
 
       /*
       When encountering a WITH that is an event horizon, we introduce the horizon and start a new empty QueryGraph.
@@ -210,7 +222,7 @@ object ClauseConverters {
 
   implicit class StartConverter(val clause: Start) extends AnyVal {
     def addStartToLogicalPlanInput(builder: PlannerQueryBuilder): PlannerQueryBuilder = {
-        builder.updateGraph { qg =>
+        builder.amendQueryGraph { qg =>
           val items = clause.items.map {
             case hints: LegacyIndexHint => Right(hints)
             case item              => Left(item)

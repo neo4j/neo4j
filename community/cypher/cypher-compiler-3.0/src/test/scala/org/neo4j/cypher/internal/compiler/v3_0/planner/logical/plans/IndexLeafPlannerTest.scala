@@ -146,7 +146,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
         case Seq(NodeIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) => ()
       }
 
-      resultPlans.map(_.solved.graph) should beLike {
+      resultPlans.map(_.solved.queryGraph) should beLike {
         case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
       }
     }
@@ -168,7 +168,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
         case Seq(NodeUniqueIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) => ()
       }
 
-      resultPlans.map(_.solved.graph) should beLike {
+      resultPlans.map(_.solved.queryGraph) should beLike {
         case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
       }
     }

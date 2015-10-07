@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 
+import scala.collection.mutable
+
 object QueryStateHelper {
   def empty: QueryState = emptyWith()
 
@@ -29,5 +31,5 @@ object QueryStateHelper {
                 params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullPipeDecorator,
                 initialContext: Option[ExecutionContext] = None) =
     new QueryState(query = query, resources = resources, params = params, decorator = decorator,
-      initialContext = initialContext)
+      initialContext = initialContext, triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
 }

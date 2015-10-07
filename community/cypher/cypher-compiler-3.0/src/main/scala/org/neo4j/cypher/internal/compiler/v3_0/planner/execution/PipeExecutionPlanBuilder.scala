@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionCo
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.OtherConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.StatementConverters
+import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.PatternConverters
 import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v3_0.commands.EntityProducerFactory
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{AggregationExpression, Expression => CommandExpression}
@@ -52,7 +53,6 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
 
   def build(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeInfo = {
     implicit val table: SemanticTable = context.semanticTable
-    val updating = false
 
     def buildPipe(plan: LogicalPlan): Pipe with RonjaPipe = {
       implicit val monitor = monitors.newMonitor[PipeMonitor]()
@@ -69,6 +69,9 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
 
         case sr @ SingleRow() =>
           SingleRowPipe()
+
+        case EmptyResult(inner) =>
+          EmptyResultPipe(buildPipe(inner))
 
         case sr @ Argument(ids) =>
           ArgumentPipe(new SymbolTable(sr.typeInfo))()
@@ -154,6 +157,9 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         case Apply(outer, inner) =>
           ApplyPipe(buildPipe(outer), buildPipe(inner))()
 
+        case EagerApply(outer, inner) =>
+          EagerApplyPipe(buildPipe(outer), buildPipe(inner))()
+
         case SemiApply(outer, inner) =>
           SemiApplyPipe(buildPipe(outer), buildPipe(inner), negated = false)()
 
@@ -230,6 +236,15 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         case TriadicSelection(positivePredicate, left, sourceId, seenId, targetId, right) =>
           TriadicSelectionPipe(positivePredicate, buildPipe(left), sourceId.name, seenId.name, targetId.name, buildPipe(right))()
 
+        case CreateNode(inner, idName, labels, props) =>
+          CreateNodePipe(buildPipe(inner), idName.name, labels, props.map(toCommandExpression))()
+
+        case Eager(inner) =>
+          EagerPipe(buildPipe(inner))()
+
+        case RepeatableRead(inner) =>
+          RepeatableReadPipe(buildPipe(inner))()
+
         case x =>
           throw new CantHandleQueryException(x.toString)
       }
@@ -264,7 +279,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
       toCommandPredicate(rewrittenExpr).rewrite(resolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
     }
 
-    val topLevelPipe = buildPipe(plan)
+    val topLevelPipe: RonjaPipe = buildPipe(plan)
 
     val fingerprint = planContext.statistics match {
       case igs: InstrumentedGraphStatistics =>
@@ -273,6 +288,6 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         None
     }
 
-    PipeInfo(topLevelPipe, updating, None, fingerprint, context.plannerName)
+    PipeInfo(topLevelPipe, plan.solved.writes, None, fingerprint, context.plannerName)
   }
 }

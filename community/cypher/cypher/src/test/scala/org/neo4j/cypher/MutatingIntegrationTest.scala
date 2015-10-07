@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import java.util.HashMap
+import java.util
 
 import org.neo4j.graphdb._
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
@@ -28,12 +28,12 @@ import org.scalatest.Assertions
 
 import scala.collection.JavaConverters._
 
-class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions with QueryStatisticsTestSupport {
+class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
-  test("create_a_single_node") {
+  test("create a single node") {
     val before = graph.inTx(GlobalGraphOperations.at(graph).getAllNodes.asScala.size)
 
-    val result = execute("create a")
+    val result = updateWithBothPlanners("create a")
 
     assertStats(result, nodesCreated = 1)
     graph.inTx {
@@ -42,47 +42,37 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   }
 
 
-  test("create_a_single_node_with_props_and_return_it") {
+  test("create a single node with props and return it") {
     val before = graph.inTx(GlobalGraphOperations.at(graph).getAllNodes.asScala.size)
 
-    val result = execute("create (a {name : 'Andres'}) return a")
+    val result = updateWithBothPlanners("create (a {name : 'Andres'}) return a.name")
 
     assertStats(result, nodesCreated = 1, propertiesSet = 1)
     graph.inTx {
       GlobalGraphOperations.at(graph).getAllNodes.asScala should have size before + 1
     }
 
-    val list = result.toList
-    list should have size 1
-    val createdNode = list.head("a").asInstanceOf[Node]
-    graph.inTx{
-      createdNode.getProperty("name") should equal("Andres")
-    }
+    result.toList should equal(List(Map("a.name" -> "Andres")))
   }
 
-  test("start_with_a_node_and_create_a_new_node_with_the_same_properties") {
+  test("start with a node and create a new node with the same properties") {
     createNode("age" -> 15)
 
-    val result = execute("match (a) where id(a) = 0 with a create (b {age : a.age * 2}) return b")
+    val result = updateWithBothPlanners("match (a) where id(a) = 0 with a create (b {age : a.age * 2}) return b.age")
 
     assertStats(result, nodesCreated = 1, propertiesSet = 1)
 
-    val list = result.toList
-    list should have size 1
-    val createdNode = list.head("b").asInstanceOf[Node]
-    graph.inTx{
-      createdNode.getProperty("age") should equal(30l)
-    }
+    result.toList should equal(List(Map("b.age" -> 30)))
   }
 
-  test("create_two_nodes_and_a_relationship_between_them") {
-    val result = execute("create a, b, a-[r:REL]->b")
+  test("create two nodes and a relationship between them") {
+    val result = executeWithRulePlanner("create a, b, a-[r:REL]->b")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
 
-  test("create_one_node_and_dumpToString") {
-    val result = execute("create (a {name:'Cypher'})")
+  test("create one node and dumpToString") {
+    val result = updateWithBothPlanners("create (a {name:'Cypher'})")
 
     assertStats(result,
       nodesCreated = 1,
@@ -90,26 +80,26 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     )
   }
 
-  test("deletes_single_node") {
+  test("deletes single node") {
     val a = createNode().getId
 
-    val result = execute("match (a) where id(a) = 0 delete a")
+    val result = executeWithRulePlanner("match (a) where id(a) = 0 delete a")
     assertStats(result, nodesDeleted = 1)
 
     result.toList shouldBe empty
     intercept[NotFoundException](graph.inTx(graph.getNodeById(a)))
   }
 
-  test("multiple_deletes_should_not_break_anything") {
+  test("multiple deletes should not break anything") {
     (1 to 4).foreach(i => createNode())
 
-    val result = execute("match (a), (b) where id(a) = 0 AND id(b) IN [1, 2, 3] delete a")
+    val result = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) IN [1, 2, 3] delete a")
     assertStats(result, nodesDeleted = 1)
 
     result.toList shouldBe empty
   }
 
-  test("deletes_all_relationships") {
+  test("deletes all relationships") {
     val a = createNode()
     val b = createNode()
     val c = createNode()
@@ -119,7 +109,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     relate(a, c)
     relate(a, d)
 
-    val result = execute("match (a) where id(a) = 0 match a-[r]->() delete r")
+    val result = executeWithRulePlanner("match (a) where id(a) = 0 match a-[r]->() delete r")
     assertStats( result, relationshipsDeleted = 3  )
 
     graph.inTx {
@@ -127,12 +117,12 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     }
   }
 
-  test("create_multiple_relationships_in_one_query") {
+  test("create multiple relationships in one query") {
     val a = createNode()
     val b = createNode()
     val c = createNode()
 
-    val result = execute("create n with n MATCH x WHERE id(x) IN [0, 1, 2] create n-[:REL]->x")
+    val result = executeWithRulePlanner("create n with n MATCH x WHERE id(x) IN [0, 1, 2] create n-[:REL]->x")
     assertStats(result,
       nodesCreated = 1,
       relationshipsCreated = 3
@@ -145,51 +135,41 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     }
   }
 
-  test("set_a_property_to_a_collection") {
+  test("set a property to a collection") {
     createNode("Andres")
     createNode("Michael")
     createNode("Peter")
 
-    val result = execute("MATCH n WHERE id(n) IN [0, 1, 2] with collect(n.name) as names create ({name : names})")
+    val result = updateWithBothPlanners("MATCH n with collect(n.name) as names create (m {name : names}) RETURN m.name")
     assertStats(result,
       propertiesSet = 1,
       nodesCreated = 1
     )
 
-    graph.inTx {
-      graph.getNodeById(3).getProperty("name") should equal(Array("Andres", "Michael", "Peter"))
-    }
+      result.toComparableResult should equal(List(Map("m.name" -> List("Andres", "Michael", "Peter"))))
   }
 
-  test("set_a_property_to_an_empty_collection") {
-    createNode("Andres")
-
-    val result = execute("match (n) where id(n) = 0 with filter(x in collect(n.name) WHERE x = 12) as names create ({x : names})")
+  test("set a property to an empty collection") {
+    val result = updateWithBothPlanners("create (n {x : []}) return n.x")
     assertStats(result,
       propertiesSet = 1,
       nodesCreated = 1
     )
-
-    graph.inTx {
-      graph.getNodeById(1).getProperty("x") should equal(Array())
-    }
+    result.toComparableResult should equal (List(Map("n.x" -> List.empty)))
   }
 
-  test("create_node_from_map_values") {
-    execute("create (n {a}) return n", "a" -> Map("name" -> "Andres", "age" -> 66))
-    val n = graph.createdNodes.dequeue()
-    graph.inTx {
-      n.getProperty("name") should equal("Andres")
-      n.getProperty("age") should equal(66)
-    }
+  test("create node from map values") {
+    val result = updateWithBothPlanners("create (n {a}) return n.age, n.name", "a" -> Map("name" -> "Andres", "age" -> 66))
+
+    result.toList should equal(List(Map("n.age" -> 66, "n.name" -> "Andres")))
   }
 
 
-  test("create_rel_from_map_values") {
+  test("create rel from map values") {
     createNode()
     createNode()
 
-    val r = execute("match (a), (b) where id(a) = 0 AND id(b) = 1 create a-[r:REL {param}]->b return r", "param" -> Map("name" -> "Andres", "age" -> 66)).
+    val r = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) = 1 create a-[r:REL {param}]->b return r", "param" -> Map("name" -> "Andres", "age" -> 66)).
       toList.head("r").asInstanceOf[Relationship]
     graph.inTx {
       r.getProperty("name") should equal("Andres")
@@ -197,31 +177,31 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     }
   }
 
-  test("match_and_delete") {
+  test("match and delete") {
     val a = createNode()
     val b = createNode()
 
     relate(a, b, "HATES")
     relate(a, b, "LOVES")
 
-    intercept[NodeStillHasRelationshipsException](execute("match (n) where id(n) = 0 match n-[r:HATES]->() delete n,r"))
+    intercept[NodeStillHasRelationshipsException](executeWithRulePlanner("match (n) where id(n) = 0 match n-[r:HATES]->() delete n,r"))
   }
 
-  test("delete_and_return") {
+  test("delete and return") {
     val a = createNode()
 
-    val result = execute("match (n) where id(n) = 0 delete n return n").toList
+    val result = executeWithRulePlanner("match (n) where id(n) = 0 delete n return n").toList
 
     result should equal(List(Map("n" -> a)))
   }
 
-  test("create_multiple_nodes") {
+  test("create multiple nodes") {
     val maps = List(
       Map("name" -> "Andres", "prefers" -> "Scala"),
       Map("name" -> "Michael", "prefers" -> "Java"),
       Map("name" -> "Peter", "prefers" -> "Java"))
 
-    val result = execute("create ({params})", "params" -> maps)
+    val result = executeWithRulePlanner("unwind {params} as m create (x) set x = m ", "params" -> maps)
 
     assertStats(result,
       nodesCreated = 3,
@@ -229,18 +209,25 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     )
   }
 
-  test("create_multiple_nodes_and_return") {
+  test("not allowed to create multiple nodes with parameter list") {
     val maps = List(
-      Map("name" -> "Andres"),
-      Map("name" -> "Michael"),
-      Map("name" -> "Peter"))
+      Map("name" -> "Andres", "prefers" -> "Scala"),
+      Map("name" -> "Michael", "prefers" -> "Java"),
+      Map("name" -> "Peter", "prefers" -> "Java"))
 
-    val result = execute("create (n {params}) return n", "params" -> maps).toList
-
-    result should have size 3
+    intercept[CypherTypeException](executeWithCostPlannerOnly("create ({params})", "params" -> maps))
   }
 
-  test("fail_to_create_from_two_iterables") {
+  test("not allowed to create multiple nodes with parameter list in rule planner") {
+    val maps = List(
+      Map("name" -> "Andres", "prefers" -> "Scala"),
+      Map("name" -> "Michael", "prefers" -> "Java"),
+      Map("name" -> "Peter", "prefers" -> "Java"))
+
+    intercept[CypherTypeException](eengine.execute("cypher planner=rule create ({params})", Map("params" -> maps)))
+  }
+
+  test("fail to create from two iterables") {
     val maps1 = List(
       Map("name" -> "Andres"),
       Map("name" -> "Michael"),
@@ -250,10 +237,10 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
       Map("name" -> "Michael"),
       Map("name" -> "Peter"))
 
-    intercept[ParameterWrongTypeException](execute("create (a {params1}), (b {params2})", "params1" -> maps1, "params2" -> maps2))
+    intercept[CypherTypeException](updateWithBothPlanners("create (a {params1}), (b {params2})", "params1" -> maps1, "params2" -> maps2))
   }
 
-  test("first_read_then_write") {
+  test("first read then write") {
     val root = createNode()
     val a = createNode("Alfa")
     val b = createNode("Beta")
@@ -263,14 +250,14 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     relate(root, b)
     relate(root, c)
 
-    execute("match (root) where id(root) = 0 match root-->other create (new {name:other.name}), root-[:REL]->new")
+    executeWithRulePlanner("match (root) where id(root) = 0 match root-->other create (new {name:other.name}), root-[:REL]->new")
 
-    val result = execute("match (root) where id(root) = 0 match root-->other return other.name order by other.name").columnAs[String]("other.name").toList
+    val result = executeWithAllPlanners("match (root) where id(root) = 0 match root-->other return other.name order by other.name").columnAs[String]("other.name").toList
     result should equal(List("Alfa", "Alfa", "Beta", "Beta", "Gamma", "Gamma"))
   }
 
-  test("create_node_and_rel_in_foreach") {
-    execute("""
+  test("create node and rel in foreach") {
+    executeWithRulePlanner("""
 create center
 foreach(x in range(1,10) |
   create (leaf1 {number : x}) , center-[:X]->leaf1
@@ -278,38 +265,39 @@ foreach(x in range(1,10) |
 return distinct center""")
   }
 
-  test("delete_optionals") {
+  test("delete optionals") {
     createNode()
     val a = createNode()
     val b = createNode()
     relate(a,b)
 
-    execute("""start n=node(*) optional match n-[r]-() delete n,r""")
+    executeWithRulePlanner("""start n=node(*) optional match n-[r]-() delete n,r""")
 
     graph.inTx {
       GlobalGraphOperations.at(graph).getAllNodes.asScala shouldBe empty
     }
   }
 
-  test("delete_path") {
+  test("delete path") {
     val a = createNode()
     val b = createNode()
     relate(a,b)
 
-    execute("""match (n) where id(n) = 0 match p=n-->() delete p""")
+    executeWithRulePlanner("""match (n) where id(n) = 0 match p=n-->() delete p""")
 
     graph.inTx {
       GlobalGraphOperations.at(graph).getAllNodes.asScala shouldBe empty
     }
   }
 
-  test("string_literals_should_not_be_mistaken_for_identifiers") {
+  test("string literals should not be mistaken for identifiers") {
     //https://github.com/neo4j/community/issues/523
+    updateWithBothPlanners("EXPLAIN create (tag1 {name:'tag2'}), (tag2 {name:'tag1'}) return [tag1,tag2] as tags")
     val result = executeScalar[List[Node]]("create (tag1 {name:'tag2'}), (tag2 {name:'tag1'}) return [tag1,tag2] as tags")
     result should have size 2
   }
 
-  test("create_node_from_map_with_array_value_from_java") {
+  test("create node from map with array value from java") {
     val list = new java.util.ArrayList[String]()
     list.add("foo")
     list.add("bar")
@@ -320,23 +308,23 @@ return distinct center""")
     val q = "create (a{param}) return a.arrayProp"
     val result =  executeScalar[Array[String]](q, "param" -> map)
 
-    assertStats(execute(q, "param"->map), nodesCreated = 1, propertiesSet = 1)
+    assertStats(updateWithBothPlanners(q, "param"->map), nodesCreated = 1, propertiesSet = 1)
     result.toList should equal(List("foo","bar"))
   }
 
-  test("failed_query_should_not_leave_dangling_transactions") {
-    intercept[RuntimeException](execute("RETURN 1 / 0"))
+  test("failed query should not leave dangling transactions") {
+    intercept[RuntimeException](executeWithAllPlannersAndRuntimes("RETURN 1 / 0"))
 
     val contextBridge : ThreadToStatementContextBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
     contextBridge.getTopLevelTransactionBoundToThisThread( false ) should be(null)
   }
 
-  test("create_unique_twice_with_param_map") {
+  test("create unique twice with param map") {
     createNode()
     createNode()
 
     val map1 = Map("name" -> "Anders")
-    val map2 = new HashMap[String, Any]()
+    val map2 = new util.HashMap[String, Any]()
     map2.put("name", "Anders")
 
     val r1 = executeScalar[Relationship]("match (a), (b) where id(a) = 0 AND id(b) = 1 create unique a-[r:FOO {param}]->b return r", "param" -> map1)
@@ -344,7 +332,7 @@ return distinct center""")
 
     r1 should equal(r2)
   }
-  test("create_unique_relationship_and_use_created_identifier_in_set") {
+  test("create unique relationship and use created identifier in set") {
     createNode()
     createNode()
 
@@ -355,106 +343,101 @@ return distinct center""")
     }
   }
 
-  test("create_unique_twice_with_array_prop") {
+  test("create unique twice with array prop") {
     createNode()
     createNode()
 
-    execute("match (a) where id(a) = 0 create unique a-[:X]->({foo:[1,2,3]})")
-    val result = execute("match (a) where id(a) = 0 create unique a-[:X]->({foo:[1,2,3]})")
+    eengine.execute("match (a) where id(a) = 0 create unique a-[:X]->({foo:[1,2,3]})")
+    val result = eengine.execute("match (a) where id(a) = 0 create unique a-[:X]->({foo:[1,2,3]})")
 
     result.queryStatistics().containsUpdates should be(false)
   }
 
-  test("full_path_in_one_create") {
+  test("full path in one create") {
     createNode()
     createNode()
-    val result = execute("match (a), (b) where id(a) = 0 AND id(b) = 1 create a-[:KNOWS]->()-[:LOVES]->b")
+    val result = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) = 1 create a-[:KNOWS]->()-[:LOVES]->b")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 2)
   }
 
-  test("delete_and_delete_again") {
+  test("delete and delete again") {
     createNode()
-    val result = execute("match (a) where id(a) = 0 delete a foreach( x in [1] | delete a)")
+    val result = executeWithRulePlanner("match (a) where id(a) = 0 delete a foreach( x in [1] | delete a)")
 
     assertStats(result, nodesDeleted = 1)
   }
 
-  test("created_paths_honor_directions") {
+  test("created paths honor directions") {
     val a = createNode()
     val b = createNode()
-    val result = execute("match (a), (b) where id(a) = 0 AND id(b) = 1 create p = a<-[:X]-b return p").toList.head("p").asInstanceOf[Path]
+    val result = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) = 1 create p = a<-[:X]-b return p").toList.head("p").asInstanceOf[Path]
 
     result.startNode() should equal(a)
     result.endNode() should equal(b)
   }
 
-  test("create_unique_paths_honor_directions") {
+  test("create unique paths honor directions") {
     val a = createNode()
     val b = createNode()
-    val result = execute("match (a), (b) where id(a) = 0 AND id(b) = 1 create unique p = a<-[:X]-b return p").toList.head("p").asInstanceOf[Path]
+    val result = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) = 1 create unique p = a<-[:X]-b return p").toList.head("p").asInstanceOf[Path]
 
     result.startNode() should equal(a)
     result.endNode() should equal(b)
   }
 
-  test("create_with_parameters_is_not_ok_when_identifier_already_exists") {
-    intercept[SyntaxException](execute("create a with a create (a {name:\"Foo\"})-[:BAR]->()").toList)
+  test("create with parameters is not ok when identifier already exists") {
+    intercept[SyntaxException](updateWithBothPlanners("create a with a create (a {name:\"Foo\"})-[:BAR]->()").toList)
   }
 
   test("failure_only_fails_inner_transaction") {
     val tx = graph.beginTx()
     try {
-      execute("match a where id(a) = {id} set a.foo = 'bar' return a","id"->"0")
+      executeWithRulePlanner("match a where id(a) = {id} set a.foo = 'bar' return a","id"->"0")
     } catch {
       case _: Throwable => tx.failure()
     }
     finally tx.close()
   }
 
-  test("create_two_rels_in_one_command_should_work") {
-    val result = execute("create (a{name:'a'})-[:test]->b, a-[:test2]->c")
+  test("create two rels in one command should work") {
+    val result = executeWithRulePlanner("create (a{name:'a'})-[:test]->b, a-[:test2]->c")
 
     assertStats(result, nodesCreated = 3, relationshipsCreated = 2, propertiesSet = 1)
   }
 
-  test("cant_set_properties_after_node_is_already_created") {
-    intercept[SyntaxException](execute("create a-[:test]->b, (a {name:'a'})-[:test2]->c"))
+  test("cant set properties after node is already created") {
+    intercept[SyntaxException](executeWithRulePlanner("create a-[:test]->b, (a {name:'a'})-[:test2]->c"))
   }
 
-  test("cant_set_properties_after_node_is_already_created2") {
-    intercept[SyntaxException](execute("create a-[:test]->b create unique (a {name:'a'})-[:test2]->c"))
+  test("cant set properties after node is already created2") {
+    intercept[SyntaxException](executeWithRulePlanner("create a-[:test]->b create unique (a {name:'a'})-[:test2]->c"))
   }
 
-  test("can_create_anonymous_nodes_inside_foreach") {
+  test("can create anonymous nodes inside foreach") {
     createNode()
-    val result = execute("match (me) where id(me) = 0 foreach (i in range(1,10) | create me-[:FRIEND]->())")
+    val result = executeWithRulePlanner("match (me) where id(me) = 0 foreach (i in range(1,10) | create me-[:FRIEND]->())")
 
     result.toList shouldBe empty
   }
 
-  test("should_be_able_to_use_external_identifiers_inside_foreach") {
+  test("should be able to use external identifiers inside foreach") {
     createNode()
-    val result = execute("match a, b where id(a) = 0 AND id(b) = 0 foreach(x in [b] | create x-[:FOO]->a) ")
+    val result = executeWithRulePlanner("match a, b where id(a) = 0 AND id(b) = 0 foreach(x in [b] | create x-[:FOO]->a) ")
 
     result.toList shouldBe empty
   }
 
-  test("should_be_able_to_create_node_with_labels") {
-    val result = execute("create (n:FOO:BAR) return n")
-    val createdNode = result.columnAs[Node]("n").next()
+  test("should be able to create node with labels") {
+    val result = updateWithBothPlanners("create (n:FOO:BAR) return labels(n) as l")
 
     assertStats(result, nodesCreated = 1, labelsAdded = 2)
-
-    graph.inTx {
-      val labels = createdNode.getLabels().asScala.map(_.name).toSet
-      labels should equal(Set("FOO", "BAR"))
-    }
+    result.toList should equal(List(Map("l" -> List("FOO", "BAR"))))
   }
 
-  test("complete_graph") {
+  test("complete graph") {
     val result =
-      execute("""CREATE (center { count:0 })
+      executeWithRulePlanner("""CREATE (center { count:0 })
                  FOREACH (x IN range(1,6) | CREATE (leaf { count : x }),(center)-[:X]->(leaf))
                  WITH center
                  MATCH (leaf1)<--(center)-->(leaf2)
@@ -467,20 +450,20 @@ return distinct center""")
     assertStats(result, nodesCreated = 7, propertiesSet = 7, relationshipsCreated = 21, nodesDeleted = 1, relationshipsDeleted = 6)
   }
 
-  test("for_each_applied_to_null_should_never_execute") {
-    val result = execute("foreach(x in null| create ())")
+  test("for each applied to null should never execute") {
+    val result = executeWithRulePlanner("foreach(x in null| create ())")
 
     assertStats(result, nodesCreated = 0)
   }
 
-  test("should_execute_when_null_is_contained_in_a_collection") {
-    val result = execute("foreach(x in [null]| create ())")
+  test("should execute when null is contained in a collection") {
+    val result = executeWithRulePlanner("foreach(x in [null]| create ())")
 
     assertStats(result, nodesCreated = 1)
   }
 
   test("should be possible to remove nodes created in the same query") {
-    val result = execute(
+    val result = executeWithRulePlanner(
       """CREATE (a)-[:FOO]->(b)
          WITH *
          MATCH (x)-[r]-(y)

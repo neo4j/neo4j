@@ -36,7 +36,7 @@ class GreedyLeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanni
       // when
       implicit val _ = ctx
       val result = solver.apply(cfg.qg, None)
-      val solved = PlannerQuery.empty.withGraph(cfg.qg)
+      val solved = PlannerQuery.empty.withQueryGraph(cfg.qg)
 
       // then
       result should equal(greedyPlanTableWith(AllNodesScan("n", Set.empty)(solved)))
@@ -53,8 +53,8 @@ class GreedyLeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanni
         patternNodes = Set("a", "b"),
         selections = Selections.from(hasLabels)
       )
-      val solvedA = PlannerQuery.empty.withGraph(QueryGraph(patternNodes = Set("a"), selections = Selections.from(hasLabels)))
-      val solvedB = PlannerQuery.empty.withGraph(QueryGraph(patternNodes = Set("b")))
+      val solvedA = PlannerQuery.empty.withQueryGraph(QueryGraph(patternNodes = Set("a"), selections = Selections.from(hasLabels)))
+      val solvedB = PlannerQuery.empty.withQueryGraph(QueryGraph(patternNodes = Set("b")))
 
       knownLabels = Set("Label")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -84,9 +84,9 @@ class GreedyLeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanni
         patternNodes = Set("a", "b"),
         selections = Selections.from(hasLabels1, hasLabels2)
       )
-      val solvedA = PlannerQuery.empty.withGraph(QueryGraph(patternNodes = Set("a"), selections = Selections.from(hasLabels2)))
-      val solvedAWithLabels1 = solvedA.updateGraph(_.addPredicates(hasLabels1))
-      val solvedB = PlannerQuery.empty.withGraph(QueryGraph(patternNodes = Set("b")))
+      val solvedA = PlannerQuery.empty.withQueryGraph(QueryGraph(patternNodes = Set("a"), selections = Selections.from(hasLabels2)))
+      val solvedAWithLabels1 = solvedA.updateQueryGraph(_.addPredicates(hasLabels1))
+      val solvedB = PlannerQuery.empty.withQueryGraph(QueryGraph(patternNodes = Set("b")))
 
       knownLabels = Set("Label1", "Label2")
       labelCardinality = Map(

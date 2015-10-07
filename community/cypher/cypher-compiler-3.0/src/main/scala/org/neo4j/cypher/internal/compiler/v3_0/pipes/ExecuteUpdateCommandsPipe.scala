@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v3_0.mutation._
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, ParameterWrongTypeException, SyntaxException}
+import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, InternalException, ParameterWrongTypeException, SyntaxException}
 import org.neo4j.graphdb.NotInTransactionException
 
 import scala.collection.mutable
@@ -34,14 +34,13 @@ case class ExecuteUpdateCommandsPipe(source: Pipe, commands: Seq[UpdateAction])(
   extends PipeWithSource(source, pipeMonitor) with CollectionSupport with NoLushEntityCreation {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) = input.flatMap {
-    case ctx => executeMutationCommands(ctx, state, commands.size == 1)
+    case ctx => executeMutationCommands(ctx, state)
   }
 
   private def executeMutationCommands(ctx: ExecutionContext,
-                                      state: QueryState,
-                                      singleCommand: Boolean): Iterator[ExecutionContext] =
+                                      state: QueryState): Iterator[ExecutionContext] =
     try {
-      commands.foldLeft(Iterator(ctx))((context, cmd) => context.flatMap(c => exec(cmd, c, state, singleCommand)))
+      commands.foldLeft(Iterator(ctx))((context, cmd) => context.flatMap(c => exec(cmd, c, state)))
     } catch {
       case e: NotInTransactionException =>
         throw new InternalException("Expected to be in a transaction at this point", e)
@@ -49,14 +48,13 @@ case class ExecuteUpdateCommandsPipe(source: Pipe, commands: Seq[UpdateAction])(
 
   private def exec(cmd: UpdateAction,
                    ctx: ExecutionContext,
-                   state: QueryState,
-                   singleCommand: Boolean): Iterator[ExecutionContext] = {
+                   state: QueryState): Iterator[ExecutionContext] = {
 
     val result: Iterator[ExecutionContext] = cmd.exec(ctx, state)
 
     cmd match {
-      case _:CreateNode if !singleCommand =>
-        singleOr(result, new ParameterWrongTypeException("If you create multiple elements, you can only create one of each."))
+      case _:CreateNode =>
+        singleOr(result, new CypherTypeException("If you want to create multiple nodes, please use UNWIND."))
       case _ =>
         result
     }

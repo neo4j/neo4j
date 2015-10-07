@@ -151,7 +151,7 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
     val c = FakePipeWithSources("c", List(b), Effects(CreatesAnyNode))
     val d = FakePipeWithSources("d", List(c), Effects())
 
-    val eagerB = EagerPipe(b)
+    val eagerB = EagerPipe(b)()
     val eagerC = FakePipeWithSources("c", List(eagerB), Effects(CreatesAnyNode))
     val eagerD = FakePipeWithSources("d", List(eagerC), Effects())
 
@@ -167,7 +167,7 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
     val d = FakePipeWithSources("d", List(c), Effects(CreatesAnyNode))
     val e = FakePipeWithSources("e", List(d), Effects())
 
-    val eagerC = EagerPipe(c)
+    val eagerC = EagerPipe(c)()
     val eagerD = FakePipeWithSources("d", List(eagerC), Effects(CreatesAnyNode))
     val eagerE = FakePipeWithSources("e", List(eagerD), Effects())
 

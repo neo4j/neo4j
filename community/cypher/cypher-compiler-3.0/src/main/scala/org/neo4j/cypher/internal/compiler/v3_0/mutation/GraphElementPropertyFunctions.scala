@@ -89,24 +89,6 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
       }
     }
   }
-
-  def makeValueNeoSafe(a: Any): Any = if (isCollection(a)) {
-    transformTraversableToArray(makeTraversable(a))
-  } else {
-    a
-  }
-
-
-  private def transformTraversableToArray(a: Any): Any = {
-    val seq: Seq[Any] = a.asInstanceOf[Traversable[_]].toSeq
-
-    if (seq.size == 0) {
-      Array[String]()
-    } else {
-      val typeValue = seq.reduce(CastSupport.merge)
-      val converter = CastSupport.getConverter(typeValue)
-
-      converter.arrayConverter(seq.map(converter.valueConverter))
-    }
-  }
 }
+
+

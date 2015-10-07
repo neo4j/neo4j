@@ -53,7 +53,7 @@ abstract class LogicalPlan
   def solved: PlannerQuery with CardinalityEstimation
   def availableSymbols: Set[IdName]
 
-  def leafs: Seq[LogicalPlan] = this.treeFold(Seq.empty[LogicalPlan]) {
+  def leaves: Seq[LogicalPlan] = this.treeFold(Seq.empty[LogicalPlan]) {
     case plan: LogicalPlan
       if plan.lhs.isEmpty && plan.rhs.isEmpty => (acc, r) => r(acc :+ plan)
   }
@@ -109,6 +109,10 @@ abstract class LogicalLeafPlan extends LogicalPlan with LazyLogicalPlan {
   final val lhs = None
   final val rhs = None
   def argumentIds: Set[IdName]
+}
+
+abstract class NodeLogicalLeafPlan extends LogicalLeafPlan {
+  def idName: IdName
 }
 
 object LogicalLeafPlan {

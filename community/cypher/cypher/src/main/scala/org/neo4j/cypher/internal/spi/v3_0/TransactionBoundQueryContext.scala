@@ -64,8 +64,6 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   def isOpen = open
 
-  private val protocolWhiteList: Seq[String] = Seq("file", "http", "https", "ftp")
-
   def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (statement.dataWriteOperations().nodeAddLabel(node, labelId)) count + 1 else count
   }

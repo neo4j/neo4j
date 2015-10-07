@@ -35,7 +35,7 @@ object planJoinsOnTopOfExpands {
       lhs <- lhsOpt.iterator;
       joinHints = qg.joinHints if joinHints.nonEmpty;
       rhs <- rhsSet;
-      overlap = lhs.solved.graph.patternNodes intersect rhs.solved.graph.patternNodes if overlap.nonEmpty
+      overlap = lhs.solved.queryGraph.patternNodes intersect rhs.solved.queryGraph.patternNodes if overlap.nonEmpty
     ) yield {
         val matchingHints = joinHints.filter(_.coveredBy(overlap)).toSet
         Iterator(

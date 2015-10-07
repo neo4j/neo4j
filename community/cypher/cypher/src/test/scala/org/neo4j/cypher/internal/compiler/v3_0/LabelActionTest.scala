@@ -28,13 +28,13 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.{LabelAction, LabelSetOp
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{IdempotentResult, LockingQueryContext, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.graphdb.{Path, Node, Relationship}
+import org.neo4j.graphdb.{Node, Path, Relationship}
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class LabelActionTest extends GraphDatabaseFunSuite {
   val queryContext = new SnitchingQueryContext
-  val state = QueryStateHelper.emptyWith(query = queryContext)
+  val state = QueryStateHelper.newWith(query = queryContext)
   val ctx = ExecutionContext()
 
   test("set single label on node") {

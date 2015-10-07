@@ -1046,13 +1046,6 @@ return b
     result.toList should equal (List(Map("n" -> jake)))
   }
 
-  test("should not see updates created by itself") {
-    createNode()
-
-    val result = executeWithRulePlanner("match n create ()")
-    assertStats(result, nodesCreated = 1)
-  }
-
   test("id in where leads to empty result") {
     // when
     val result = executeWithAllPlanners("MATCH n WHERE id(n)=1337 RETURN n")

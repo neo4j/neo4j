@@ -138,7 +138,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val projections = RegularQueryProjection(projections = ids.map((id) => id -> ident(id)).toMap)
     FakePlan(ids.map(IdName(_)).toSet)(CardinalityEstimation.lift(PlannerQuery(
         horizon = projections,
-        graph = QueryGraph.empty.addPatternNodes(ids.map(IdName(_)): _*)
+        queryGraph = QueryGraph.empty.addPatternNodes(ids.map(IdName(_)): _*)
       ), Cardinality(0))
     )
   }

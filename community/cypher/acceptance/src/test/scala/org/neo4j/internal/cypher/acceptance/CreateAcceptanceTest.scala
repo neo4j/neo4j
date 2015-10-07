@@ -19,32 +19,81 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport, SyntaxException}
+import org.neo4j.cypher.{NewPlannerTestSupport, ExecutionEngineFunSuite, QueryStatisticsTestSupport, SyntaxException}
 import org.neo4j.graphdb.{Node, Relationship}
 
-class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
+class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+
+  test("create a single node") {
+    val result = updateWithBothPlanners("create ()")
+    assertStats(result, nodesCreated = 1)
+    // then
+    result.toList shouldBe empty
+  }
+
+  test("create a single node with single label") {
+    val result = updateWithBothPlanners("create (:A)")
+    assertStats(result, nodesCreated = 1, labelsAdded = 1)
+    // then
+    result.toList shouldBe empty
+  }
+
+  test("create a single node with multiple labels") {
+    val result = updateWithBothPlanners("create (n:A:B:C:D)")
+    assertStats(result, nodesCreated = 1, labelsAdded = 4)
+    // then
+    result.toList shouldBe empty
+  }
+
+  test("combine match and create") {
+    createNode()
+    createNode()
+    val result = updateWithBothPlanners("match (n) create ()")
+    assertStats(result, nodesCreated = 2)
+    // then
+    result.toList shouldBe empty
+  }
+
+  test("combine match, with, and create") {
+    createNode()
+    createNode()
+    val result = updateWithBothPlanners("match (n) create (n1) with * match(p) create (n2)")
+    assertStats(result, nodesCreated = 10)
+    // then
+    result.toList shouldBe empty
+  }
+
+
+  test("should not see updates created by itself") {
+    createNode()
+
+    val result = updateWithBothPlanners("match n create ()")
+    assertStats(result, nodesCreated = 1)
+  }
+
+  test("create a single node with properties") {
+    val result = updateWithBothPlanners("create (n {prop: 'foo'}) return n.prop as p")
+    assertStats(result, nodesCreated = 1, propertiesSet = 1)
+    // then
+    result.toList should equal(List(Map("p" -> "foo")))
+  }
 
   test("using an undirected relationship pattern should fail on create") {
-    evaluating {
-      executeScalar[Relationship]("create (a {id: 2})-[r:KNOWS]-(b {id: 1}) RETURN r")
-    }  should produce[SyntaxException]
+      intercept[SyntaxException](executeScalar[Relationship]("create (a {id: 2})-[r:KNOWS]-(b {id: 1}) RETURN r"))
   }
 
   test("create node using null properties should just ignore those properties") {
     // when
-    val result = execute("create (n {id: 12, property: null}) return n")
-    val node = result.columnAs[Node]("n").next()
+    val result = updateWithBothPlanners("create (n {id: 12, property: null}) return n.id as id")
     assertStats(result, nodesCreated = 1, propertiesSet = 1)
 
     // then
-    graph.inTx {
-      node.getProperty("id") should equal(12)
-    }
+   result.toList should equal(List(Map("id" -> 12)))
   }
 
   test("create relationship using null properties should just ignore those properties") {
     // when
-    val result = execute("create ()-[r:X {id: 12, property: null}]->() return r")
+    val result = executeWithRulePlanner("create ()-[r:X {id: 12, property: null}]->() return r")
     val relationship = result.columnAs[Relationship]("r").next()
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 1)
 

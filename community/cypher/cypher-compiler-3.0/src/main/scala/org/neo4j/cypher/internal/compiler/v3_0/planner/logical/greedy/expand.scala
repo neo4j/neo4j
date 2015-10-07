@@ -28,7 +28,7 @@ object expand extends CandidateGenerator[GreedyPlanTable] {
   def apply(planTable: GreedyPlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
     for {
       plan <- planTable.plans
-      nodeId <- plan.solved.graph.patternNodes
+      nodeId <- plan.solved.queryGraph.patternNodes
       patternRel <- queryGraph.findRelationshipsEndingOn(nodeId)
       if !plan.availableSymbols(patternRel.name)
     } yield {

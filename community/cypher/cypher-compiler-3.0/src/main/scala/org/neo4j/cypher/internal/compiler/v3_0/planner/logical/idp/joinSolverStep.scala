@@ -86,7 +86,7 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
   }
 
   private def nodes(plan: LogicalPlan) =
-    plan.solved.graph.patternNodes
+    plan.solved.queryGraph.patternNodes
 
   private def show(goal: Goal, symbols: Set[IdName]) =
     s"${showIds(goal.toSet)}: ${showNames(symbols)}"

@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, _}
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{IsMap, CollectionSupport}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_0.{ParameterWrongTypeException, CypherTypeException}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 import scala.collection.Map
@@ -51,7 +51,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
       setProperties(node, props, context, state)
 
       val queryCtx = state.query
-      val labelIds = labels.map(_.getOrCreateId(state.query))
+      val labelIds: Seq[Int] = labels.map(_.getOrCreateId(state.query))
       if (labelIds.nonEmpty)
         queryCtx.setLabelsOnNode(node.getId, labelIds.iterator)
 
@@ -61,12 +61,13 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
 
     def isParametersMap(m: Map[String, Expression]) = properties.size == 1 && properties.head._1 == "*"
 
+
     /*
      Parameters coming in from the outside in queries using parameters like this:
 
      CREATE (n {param})
 
-     This parameter can either be a collection of maps, or a single map. Cypher creates one node per incoming map.
+     This parameter needs to be a map, collections of maps are no longer valid
 
      This is encoded using a map containing the expression that when applied will produce the incoming maps.
      */
@@ -86,7 +87,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
         case _ => throw new CypherTypeException("Parameter provided for node creation is not a Map")
       }
     } else {
-      Iterator(createNodeWithPropertiesAndLabels(properties))
+      Iterator.single(createNodeWithPropertiesAndLabels(properties))
     }
   }
 
