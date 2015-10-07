@@ -110,6 +110,8 @@
         <exclude>*:pom:*</exclude>
         <exclude>org.neo4j:neo4j-advanced:jar</exclude>
         <exclude>org.neo4j:neo4j</exclude>
+        <!-- Temporary move bolt to system/lib - to be removed entirely as a dependency in 2.3.1 -->
+        <exclude>org.neo4j:neo4j-bolt*</exclude>
       </excludes>
     </dependencySet>
     <dependencySet>
@@ -130,6 +132,17 @@
         <exclude>net.sf.opencsv:opencsv</exclude>
         <exclude>org.apache.commons:commons-lang3</exclude>
       </excludes>
+    </dependencySet>
+    <dependencySet><!-- Temporary move bolt to system/lib - to be removed entirely as a dependency in 2.3.1 -->
+      <outputDirectory>system/lib</outputDirectory>
+      <directoryMode>0755</directoryMode>
+      <fileMode>0755</fileMode>
+      <unpack>false</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <useStrictFiltering>true</useStrictFiltering>
+      <includes>
+        <include>org.neo4j:neo4j-bolt*</include>
+      </includes>
     </dependencySet>
   </dependencySets>
 </assembly>
