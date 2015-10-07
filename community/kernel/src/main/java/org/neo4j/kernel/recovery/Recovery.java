@@ -89,7 +89,6 @@ public class Recovery extends LifecycleAdapter
         }
         recoveredLog = true;
         monitor.logRecovered( recoveryPosition );
-        spi.forceEverything();
     }
 
     @Override
@@ -98,6 +97,7 @@ public class Recovery extends LifecycleAdapter
         // This is here as by now all other services have reacted to the recovery process
         if ( recoveredLog )
         {
+            spi.forceEverything();
             monitor.recoveryCompleted();
         }
     }
