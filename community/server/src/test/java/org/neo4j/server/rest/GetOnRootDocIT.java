@@ -112,7 +112,7 @@ public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
     public void streaming() throws Exception
     {
         data.get();
-        ResponseEntity responseEntity = gen().docHeadingLevel( 2 )
+        ResponseEntity responseEntity = gen().docHeadingLevel( 2 ).noGraph()
                 .withHeader( StreamingFormat.STREAM_HEADER, "true" )
                 .expectedType( APPLICATION_JSON_TYPE )
                 .expectedStatus( 200 )

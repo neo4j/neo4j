@@ -69,6 +69,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
         String nodeUri = getNodeUri( nodes.get( "Clint Eastwood" ) );
 
         gen.get()
+            .description( startGraph( "adding a label to a node" ) )
             .expectedStatus( 204 )
             .payload( createJsonFrom( "Person" ) )
             .post( nodeUri + "/labels"  );
@@ -86,6 +87,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
         String nodeUri = getNodeUri( nodes.get( "Clint Eastwood" ) );
 
         gen.get()
+                .description( startGraph( "adding multiple labels to a node" ) )
                 .expectedStatus( 204 )
                 .payload( createJsonFrom( new String[]{"Person", "Actor"} ) )
                 .post( nodeUri + "/labels"  );
@@ -109,6 +111,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
         String nodeUri = getNodeUri( nodes.get( "Clint Eastwood" ) );
 
         gen.get()
+            .noGraph()
             .expectedStatus( 400 )
             .payload( createJsonFrom( "" ) )
             .post( nodeUri + "/labels"  );
@@ -131,6 +134,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
 
         // When
         gen.get()
+                .description( startGraph( "replacing labels on a node" ) )
                 .expectedStatus( 204 )
                 .payload( createJsonFrom( new String[]{"Actor", "Director"}) )
                 .put( nodeUri + "/labels" );
@@ -173,6 +177,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
 
         String labelName = "Person";
         gen.get()
+            .description( startGraph( "removing a label from a node" ) )
             .expectedStatus( 204 )
             .delete( nodeUri + "/labels/" + labelName );
 
@@ -193,6 +198,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
 
         String labelName = "Person";
         gen.get()
+            .description( startGraph( "removing a non-existent label from a node" ) )
             .expectedStatus( 204 )
             .delete( nodeUri + "/labels/" + labelName );
 
@@ -300,6 +306,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
         data.get();
         String uri = getLabelsUri();
         String body = gen.get()
+                .noGraph()
                 .expectedStatus( 200 )
                 .get( uri )
                 .entity();

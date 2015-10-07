@@ -52,7 +52,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
-public class RelationshipDocIT extends AbstractRestFunctionalTestBase
+public class RelationshipDocIT extends AbstractRestFunctionalDocTestBase
 {
     private static FunctionalTestHelper functionalTestHelper;
 
@@ -71,9 +71,9 @@ public class RelationshipDocIT extends AbstractRestFunctionalTestBase
     public void shouldReturn204WhenPropertiesAreRemovedFromRelationship()
     {
         Relationship loves = getFirstRelationshipFromRomeoNode();
-        gen().expectedStatus( Status.NO_CONTENT.getStatusCode() ).delete(
-                functionalTestHelper.relationshipPropertiesUri( loves.getId() ) )
-                .entity();
+        gen().description( startGraph( "remove properties from a relationship" ) )
+                .expectedStatus( Status.NO_CONTENT.getStatusCode() )
+                .delete( functionalTestHelper.relationshipPropertiesUri( loves.getId() ) ).entity();
     }
 
     @Test
@@ -130,8 +130,9 @@ public class RelationshipDocIT extends AbstractRestFunctionalTestBase
     {
         data.get();
         Relationship loves = getFirstRelationshipFromRomeoNode();
-        gen().expectedStatus( Status.NOT_FOUND.getStatusCode() ).delete(
-                getPropertiesUri( loves ) + "/non-existent" ).entity();
+        gen().description( startGraph( "remove non-existent property from relationship" ) ).noGraph()
+                .expectedStatus( Status.NOT_FOUND.getStatusCode() )
+                .delete( getPropertiesUri( loves ) + "/non-existent" ).entity();
     }
 
     @Test
@@ -159,7 +160,7 @@ public class RelationshipDocIT extends AbstractRestFunctionalTestBase
     public void shouldReturn404WhenPropertiesRemovedFromARelationshipWhichDoesNotExist()
     {
         data.get();
-        gen().expectedStatus( Status.NOT_FOUND.getStatusCode() )
+        gen().noGraph().expectedStatus( Status.NOT_FOUND.getStatusCode() )
                 .delete( functionalTestHelper.relationshipPropertiesUri( 1234L ) )
                 .entity();
     }
@@ -175,7 +176,7 @@ public class RelationshipDocIT extends AbstractRestFunctionalTestBase
     public void shouldReturn404WhenPropertyRemovedFromARelationshipWhichDoesNotExist()
     {
         data.get();
-        gen().expectedStatus( Status.NOT_FOUND.getStatusCode() )
+        gen().noGraph().expectedStatus( Status.NOT_FOUND.getStatusCode() )
                 .delete(
                         functionalTestHelper.relationshipPropertiesUri( 1234L )
                                 + "/cost" )
