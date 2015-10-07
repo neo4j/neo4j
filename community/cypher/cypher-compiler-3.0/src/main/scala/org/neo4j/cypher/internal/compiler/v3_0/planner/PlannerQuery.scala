@@ -44,6 +44,7 @@ case class PlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
     horizon.preferredStrictness orElse tail.flatMap(_.preferredStrictness)
 
   def lastQueryGraph: QueryGraph = tail.map(_.lastQueryGraph).getOrElse(queryGraph)
+  def lastUpdateGraph: UpdateGraph = tail.map(_.lastUpdateGraph).getOrElse(updateGraph)
   def lastQueryHorizon: QueryHorizon = tail.map(_.lastQueryHorizon).getOrElse(horizon)
 
   def withTail(newTail: PlannerQuery): PlannerQuery = tail match {

@@ -61,9 +61,9 @@ In this case the following must hold
 case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Rewriter) = ExpressionRewriterFactory,
                         planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon(),
                         planUpdates: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanUpdates)
-  extends LogicalPlanningFunction3[LogicalPlan, PlannerQuery, Option[PlannerQuery], LogicalPlan] {
+  extends LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] {
 
-  override def apply(lhs: LogicalPlan, previous: PlannerQuery, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan = {
+  override def apply(lhs: LogicalPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan = {
     remaining match {
       case Some(query) =>
         val lhsContext = context.recurse(lhs)
@@ -79,21 +79,28 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
         val planWithUpdates = planUpdates(query, planWithEffects)(context)
 
         //If previous update interferes with any of the reads here or in tail, make it an EagerApply
-        val applyPlan =
-          if (!previous.writeOnly &&
-            query.allQueryGraphs.exists(previous.updateGraph.overlaps))
+        val applyPlan = {
+          val lastUpdateGraph = lhs.solved.lastUpdateGraph
+          val previousWriteOnly = lhs.solved.lastQueryGraph.isEmpty && lastUpdateGraph.nonEmpty
+
+          if (!previousWriteOnly &&
+            query.allQueryGraphs.exists(lastUpdateGraph.overlaps))
             context.logicalPlanProducer.planEagerTailApply(lhs, planWithUpdates)
           else context.logicalPlanProducer.planTailApply(lhs, planWithUpdates)
+        }
 
         val applyContext = lhsContext.recurse(applyPlan)
         val projectedPlan = planEventHorizon(query, applyPlan)(applyContext)
-
         val projectedContext = applyContext.recurse(projectedPlan)
-        val expressionRewriter = expressionRewriterFactory(projectedContext)
-        val completePlan = projectedPlan.endoRewrite(expressionRewriter)
+
+        val completePlan = {
+          val expressionRewriter = expressionRewriterFactory(projectedContext)
+
+          projectedPlan.endoRewrite(expressionRewriter)
+        }
 
         // planning nested expressions doesn't change outer cardinality
-        apply(completePlan, query, query.tail)(projectedContext)
+        apply(completePlan, query.tail)(projectedContext)
 
       case None =>
         lhs
