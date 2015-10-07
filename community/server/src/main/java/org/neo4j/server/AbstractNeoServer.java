@@ -58,7 +58,6 @@ import org.neo4j.server.database.DatabaseProvider;
 import org.neo4j.server.database.ExecutionEngineProvider;
 import org.neo4j.server.database.GraphDatabaseServiceProvider;
 import org.neo4j.server.database.InjectableProvider;
-import org.neo4j.server.database.RrdDbWrapper;
 import org.neo4j.server.guard.GuardingRequestFilter;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
@@ -74,8 +73,6 @@ import org.neo4j.server.rest.transactional.TransactionHandleRegistry;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
-import org.neo4j.server.rrd.RrdDbProvider;
-import org.neo4j.server.rrd.RrdFactory;
 import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.ssl.Certificates;
@@ -137,9 +134,6 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private DatabaseActions databaseActions;
 
-    private RoundRobinJobScheduler rrdDbScheduler;
-    private RrdDbWrapper rrdDbWrapper;
-
     private TransactionFacade transactionFacade;
     private TransactionHandleRegistry transactionRegistry;
 
@@ -174,7 +168,6 @@ public abstract class AbstractNeoServer implements NeoServer
         this.authManager = life.add(new AuthManager( users, Clock.SYSTEM_CLOCK, config.get( ServerSettings.auth_enabled ) ));
         this.webServer = createWebServer();
 
-
         this.keyStoreInfo = createKeyStore();
 
         for ( ServerModule moduleClass : createServerModules() )
@@ -192,21 +185,13 @@ public abstract class AbstractNeoServer implements NeoServer
         try
         {
             life.start();
-            
+
             DiagnosticsManager diagnosticsManager = resolveDependency(DiagnosticsManager.class);
 
             Log diagnosticsLog = diagnosticsManager.getTargetLog();
             diagnosticsLog.info( "--- SERVER STARTED START ---" );
 
             databaseActions = createDatabaseActions();
-
-            if(getConfig().get( ServerInternalSettings.webadmin_enabled ))
-            {
-                // TODO: RrdDb is not needed once we remove the old webadmin
-                rrdDbScheduler = new RoundRobinJobScheduler( logProvider );
-                rrdDbWrapper = new RrdFactory( config, logProvider )
-                        .createRrdDbAndSampler( database, rrdDbScheduler );
-            }
 
             transactionFacade = createTransactionalActions();
 
@@ -224,9 +209,6 @@ public abstract class AbstractNeoServer implements NeoServer
         }
         catch ( Throwable t )
         {
-            // Make sure we don't leak rrd db files
-            stopRrdDb();
-
             // If the database has been started, attempt to cleanly shut it down to avoid unclean shutdowns.
             life.shutdown();
 
@@ -519,13 +501,6 @@ public abstract class AbstractNeoServer implements NeoServer
                 @Override
                 public void run()
                 {
-                    stopRrdDb();
-                }
-            },
-            new Runnable() {
-                @Override
-                public void run()
-                {
                     life.stop();
                 }
             }
@@ -533,26 +508,6 @@ public abstract class AbstractNeoServer implements NeoServer
 
         //noinspection deprecation
         log.info( "Successfully shutdown database" );
-    }
-
-    private void stopRrdDb()
-    {
-        try
-        {
-            if( rrdDbScheduler != null)
-            {
-                rrdDbScheduler.stopJobs();
-            }
-            if( rrdDbWrapper != null )
-            {
-                rrdDbWrapper.close();
-            }
-            log.info( "Successfully shutdown Neo4j Server" );
-        } catch(IOException e)
-        {
-            // If we fail on shutdown, we can't really recover from it. Log the issue and carry on.
-            log.error( "Unable to cleanly shut down statistics database", e );
-        }
     }
 
     private void stopWebServer()
@@ -622,11 +577,6 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new NeoServerProvider( this ) );
         singletons.add( providerForSingleton( new ConfigWrappingConfiguration( getConfig() ), Configuration.class ) );
         singletons.add( providerForSingleton( getConfig(), Config.class ) );
-
-        if(getConfig().get( ServerInternalSettings.webadmin_enabled ))
-        {
-            singletons.add( new RrdDbProvider( rrdDbWrapper ) );
-        }
 
         singletons.add( new WebServerProvider( getWebServer() ) );
 
