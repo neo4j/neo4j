@@ -165,10 +165,26 @@ In this case we add a +Person+ label to the node as well.
   @Test def create_multiple_nodes_from_maps() {
     testQuery(
       title = "Create multiple nodes with a parameter for their properties",
+      text = "By providing Cypher an array of maps, it will create a node for each map.",
+      parameters = Map("props" -> List(
+        Map("name" -> "Andres", "position" -> "Developer"),
+        Map("name" -> "Michael", "position" -> "Developer"))),
+      queryText = "UNWIND {props} as map CREATE (n) SET n = map",
+      optionalResultExplanation = "",
+      assertions = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
+  }
+
+  @Test def create_multiple_nodes_from_maps_deprecated() {
+    testQuery(
+      title = "Create multiple nodes with a parameter for their properties using old syntax",
       text = """
 By providing Cypher an array of maps, it will create a node for each map.
 
 NOTE: When you do this, you can't create anything else in the same +CREATE+ clause.
+
+NOTE: This syntax is deprecated in Neo4j version 2.3.
+It may be removed in a future major release.
+See the above example using +UNWIND+ for how to achieve the same functionality.
 """,
       parameters = Map("props" -> List(
         Map("name" -> "Andres", "position" -> "Developer"),

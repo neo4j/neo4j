@@ -46,5 +46,7 @@ include::create-node-with-a-parameter-for-the-properties.asciidoc[]
 
 include::create-multiple-nodes-with-a-parameter-for-their-properties.asciidoc[]
 
+include::create-multiple-nodes-with-a-parameter-for-their-properties-using-old-syntax.asciidoc[]
+
 :leveloffset: 2
 
