@@ -43,7 +43,6 @@ import org.neo4j.server.modules.ThirdPartyJAXRSModule;
 import org.neo4j.server.modules.WebAdminModule;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.management.JmxService;
-import org.neo4j.server.rest.management.MonitorService;
 import org.neo4j.server.rest.management.console.ConsoleService;
 import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.server.web.ServerInternalSettings;
@@ -107,7 +106,6 @@ public class CommunityNeoServer extends AbstractNeoServer
         List<AdvertisableService> toReturn = new ArrayList<>( 3 );
         toReturn.add( new ConsoleService( null, null, logProvider, null ) );
         toReturn.add( new JmxService( null, null ) );
-        toReturn.add( new MonitorService( null, null ) );
 
         return toReturn;
     }
