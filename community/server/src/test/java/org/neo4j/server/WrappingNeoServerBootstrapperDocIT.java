@@ -42,6 +42,7 @@ import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.RestRequest;
+import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -104,6 +105,7 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
         config.configuration().setProperty(
                 Configurator.WEBSERVER_PORT_PROPERTY_KEY, "7575" );
         config.configuration().setProperty( ServerSettings.auth_enabled.name(), "false" );
+        config.configuration().setProperty( ServerInternalSettings.webadmin_enabled.name(), "true" );
 
         WrappingNeoServerBootstrapper srv;
         srv = new WrappingNeoServerBootstrapper( graphdb, config );
@@ -124,6 +126,7 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
     {
         ServerConfigurator config = new ServerConfigurator( myDb );
         config.configuration().setProperty( ServerSettings.auth_enabled.name(), "false" );
+        config.configuration().setProperty( ServerInternalSettings.webadmin_enabled.name(), "true" );
         WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb, config );
         srv.start();
         String response = gen.get().payload(

@@ -19,17 +19,17 @@
  */
 package org.neo4j.server.rest.security;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.Charset;
-
-import javax.ws.rs.core.HttpHeaders;
-
+import com.sun.jersey.core.util.Base64;
 import org.codehaus.jackson.JsonNode;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import javax.ws.rs.core.HttpHeaders;
 
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
@@ -42,8 +42,6 @@ import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.RawPayload;
-
-import com.sun.jersey.core.util.Base64;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -216,7 +214,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         assertAuthorizationRequired( "GET",  "db/data/node/1234", 404 );
         assertAuthorizationRequired( "POST", "db/data/transaction/commit", RawPayload.quotedJson(
                 "{'statements':[{'statement':'MATCH (n) RETURN n'}]}" ), 200 );
-        assertEquals(200, HTTP.GET( server.baseUri().resolve( "webadmin" ).toString() ).status());
+
         assertEquals(200, HTTP.GET( server.baseUri().resolve( "browser" ).toString() ).status());
         assertEquals(200, HTTP.GET( server.baseUri().resolve( "" ).toString() ).status() );
     }
@@ -314,7 +312,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         assertEquals( 200, post.status() );
     }
 
-    public void startServer(boolean authEnabled) throws IOException
+    public void startServer( boolean authEnabled ) throws IOException
     {
         new File( "neo4j-home/data/dbms/authorization" ).delete(); // TODO: Implement a common component for managing Neo4j file structure and use that here
         server = CommunityServerBuilder.server()

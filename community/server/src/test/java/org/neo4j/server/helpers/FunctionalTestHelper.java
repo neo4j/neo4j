@@ -19,16 +19,16 @@
  */
 package org.neo4j.server.helpers;
 
-import static org.neo4j.server.rest.web.RestfulGraphDatabase.PATH_AUTO_INDEX;
+import com.sun.jersey.api.client.Client;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.rest.JaxRsResponse;
@@ -36,7 +36,7 @@ import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.web.RestfulGraphDatabase;
 
-import com.sun.jersey.api.client.Client;
+import static org.neo4j.server.rest.web.RestfulGraphDatabase.PATH_AUTO_INDEX;
 
 public final class FunctionalTestHelper
 {
@@ -56,7 +56,7 @@ public final class FunctionalTestHelper
         this.server = server;
         this.request = new RestRequest(server.baseUri().resolve("db/data/"));
     }
-    
+
     public static Matcher<String[]> arrayContains( final String element )
     {
         return new TypeSafeMatcher<String[]>()
@@ -97,7 +97,7 @@ public final class FunctionalTestHelper
     {
         return helper;
     }
-    
+
     public String dataUri()
     {
         return server.baseUri().toString() + "db/data/";
@@ -158,12 +158,12 @@ public final class FunctionalTestHelper
     {
         return dataUri() + "index/";
     }
-    
+
     String nodeAutoIndexUri()
     {
         return indexUri() + "auto/node/";
     }
-    
+
     String relationshipAutoIndexUri()
     {
         return indexUri() + "auto/relationship/";
@@ -189,12 +189,12 @@ public final class FunctionalTestHelper
     {
         return nodeIndexUri() + indexName;
     }
-    
+
     public String indexNodeUri( String indexName, String key, Object value )
     {
         return indexNodeUri( indexName ) + "/" + key + "/" + value;
     }
-    
+
 
     public String indexRelationshipUri( String indexName )
     {
@@ -272,7 +272,7 @@ public final class FunctionalTestHelper
     {
         return getNodeIdFromUri( relationshipUri );
     }
-    
+
     public Map<String, Object> removeAnyAutoIndex( Map<String, Object> map )
     {
         Map<String, Object> result = new HashMap<String, Object>();
@@ -280,8 +280,8 @@ public final class FunctionalTestHelper
         {
             Map<?, ?> innerMap = (Map<?,?>) entry.getValue();
             String template = innerMap.get( "template" ).toString();
-            if ( !template.contains( PATH_AUTO_INDEX.replace("{type}", RestfulGraphDatabase.NODE_AUTO_INDEX_TYPE) ) && 
-                 !template.contains( PATH_AUTO_INDEX.replace("{type}", RestfulGraphDatabase.RELATIONSHIP_AUTO_INDEX_TYPE) ) && 
+            if ( !template.contains( PATH_AUTO_INDEX.replace("{type}", RestfulGraphDatabase.NODE_AUTO_INDEX_TYPE) ) &&
+                 !template.contains( PATH_AUTO_INDEX.replace("{type}", RestfulGraphDatabase.RELATIONSHIP_AUTO_INDEX_TYPE) ) &&
                  !template.contains( "_auto_" ) )
                 result.put( entry.getKey(), entry.getValue() );
         }
@@ -291,5 +291,10 @@ public final class FunctionalTestHelper
     public URI baseUri()
     {
         return server.baseUri();
+    }
+
+    public String browserUri()
+    {
+        return server.baseUri().toString() + "browser/";
     }
 }

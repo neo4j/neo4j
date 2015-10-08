@@ -65,7 +65,7 @@ public class NeoServerDocIT extends AbstractRestFunctionalTestBase
     @Test
     public void serverShouldProvideAWelcomePage() throws Exception
     {
-        JaxRsResponse response = RestRequest.req().get( functionalTestHelper.webAdminUri() );
+        JaxRsResponse response = RestRequest.req().get( functionalTestHelper.browserUri() );
 
         assertThat( response.getStatus(), is( 200 ) );
         assertThat( response.getHeaders().getFirst( "Content-Type" ), containsString( "html" ) );
