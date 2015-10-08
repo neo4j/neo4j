@@ -27,7 +27,7 @@
     <docs.tools>${project.build.directory}/tools</docs.tools>
     <docs.resources>${docs.tools}/main/resources</docs.resources>
     <neo4j.version>${project.version}</neo4j.version>
-    <doctools.version>31</doctools.version>
+    <doctools.version>32</doctools.version>
     <attach-docs-phase>none</attach-docs-phase>
     <licensing.phase>none</licensing.phase>
   </properties>
@@ -471,7 +471,7 @@
             <configuration>
               <includes>neo4j-manual-shortinfo.xml</includes>
               <foCustomization>${docs.resources}/conf/fo.xsl</foCustomization>
-              <externalFOPConfiguration>${project.basedir}/conf/fop.xml</externalFOPConfiguration>
+              <externalFOPConfiguration>${docs.resources}/conf/fop.xml</externalFOPConfiguration>
               <generateToc>
                 book toc
                 part toc

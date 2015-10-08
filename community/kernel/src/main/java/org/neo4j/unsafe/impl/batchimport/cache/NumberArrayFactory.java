@@ -66,7 +66,7 @@ public interface NumberArrayFactory
     /**
      * Implements the dynamic array methods, because they are the same in most implementations.
      */
-    public static abstract class Adapter implements NumberArrayFactory
+    abstract class Adapter implements NumberArrayFactory
     {
         @Override
         public IntArray newDynamicIntArray( long chunkSize, int defaultValue )
@@ -84,7 +84,7 @@ public interface NumberArrayFactory
     /**
      * Puts arrays inside the heap.
      */
-    public static final NumberArrayFactory HEAP = new Adapter()
+    NumberArrayFactory HEAP = new Adapter()
     {
         @Override
         public IntArray newIntArray( long length, int defaultValue )
@@ -108,7 +108,7 @@ public interface NumberArrayFactory
     /**
      * Puts arrays off-heap, using unsafe calls.
      */
-    public static final NumberArrayFactory OFF_HEAP = new Adapter()
+    NumberArrayFactory OFF_HEAP = new Adapter()
     {
         @Override
         public IntArray newIntArray( long length, int defaultValue )
@@ -134,7 +134,7 @@ public interface NumberArrayFactory
      * array off-heap, then inside heap. If all else fails a dynamic array is returned with a smaller chunk size
      * so that collectively the whole array will fit in memory available on the machine.
      */
-    public static class Auto extends Adapter
+    class Auto extends Adapter
     {
         private final NumberArrayFactory[] candidates;
 
@@ -191,7 +191,7 @@ public interface NumberArrayFactory
      * ({@link #newLongArray(long, long)} and {@link #newIntArray(long, int)} into smaller chunks where
      * some can live on heap and some off heap.
      */
-    public static final NumberArrayFactory CHUNKED_FIXED_SIZE = new Adapter()
+    NumberArrayFactory CHUNKED_FIXED_SIZE = new Adapter()
     {
         private final NumberArrayFactory delegate = new Auto( OFF_HEAP, HEAP );
 
@@ -244,5 +244,5 @@ public interface NumberArrayFactory
     /**
      * {@link Auto} factory which uses JVM stats for gathering information about available memory.
      */
-    public static final NumberArrayFactory AUTO = new Auto( OFF_HEAP, HEAP, CHUNKED_FIXED_SIZE );
+    NumberArrayFactory AUTO = new Auto( OFF_HEAP, HEAP, CHUNKED_FIXED_SIZE );
 }

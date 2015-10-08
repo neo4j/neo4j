@@ -19,20 +19,29 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.longThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
+
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.longThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 public class RelationshipCountsProcessorTest
 {
+
+    private final static int ANY = -1;
+    private NodeLabelsCache nodeLabelCache = mock( NodeLabelsCache.class );
+    private CountsAccessor.Updater countsUpdater = mock( CountsAccessor.Updater.class );
+
     @Test
     public void shouldHandleBigNumberOfLabelsAndRelationshipTypes() throws Exception
     {
@@ -58,18 +67,53 @@ public class RelationshipCountsProcessorTest
         NumberArrayFactory numberArrayFactory = mock( NumberArrayFactory.class );
 
         // When
-        new RelationshipCountsProcessor( mock( NodeLabelsCache.class ), labelCount, relTypeCount,
-                mock( CountsAccessor.Updater.class ), numberArrayFactory );
+        new RelationshipCountsProcessor( nodeLabelCache, labelCount, relTypeCount, countsUpdater, numberArrayFactory );
 
         // Then
-        verify( numberArrayFactory, times( 1 ) ).newLongArray( longThat( new IsNonNegativeLong() ), anyLong() );
+        verify( numberArrayFactory, times( 2 ) ).newLongArray( longThat( new IsNonNegativeLong() ), anyLong() );
+    }
+
+    @Test
+    public void testRelationshipCountersUpdates()
+    {
+        int relationTypes = 2;
+        int labels = 3;
+
+        NodeLabelsCache.Client client = mock( NodeLabelsCache.Client.class );
+        when( nodeLabelCache.newClient() ).thenReturn( client );
+        when( nodeLabelCache.get( eq( client ), eq( 1l ), any( int[].class ) ) ).thenReturn( new int[]{0, 2} );
+        when( nodeLabelCache.get( eq( client ), eq( 2l ), any( int[].class ) ) ).thenReturn( new int[]{1} );
+        when( nodeLabelCache.get( eq( client ), eq( 3l ), any( int[].class ) ) ).thenReturn( new int[]{1, 2} );
+        when( nodeLabelCache.get( eq( client ), eq( 4l ), any( int[].class ) ) ).thenReturn( new int[]{} );
+
+        RelationshipCountsProcessor countsProcessor = new RelationshipCountsProcessor( nodeLabelCache, labels,
+                relationTypes, countsUpdater, NumberArrayFactory.AUTO );
+
+        countsProcessor.process( 1, 0, 3 );
+        countsProcessor.process( 2, 1, 4 );
+
+
+        countsProcessor.done();
+
+        // wildcard counts
+        verify( countsUpdater ).incrementRelationshipCount( ANY, ANY, ANY, 2l );
+        verify( countsUpdater ).incrementRelationshipCount( ANY, 0, ANY, 1l );
+        verify( countsUpdater ).incrementRelationshipCount( ANY, 1, ANY, 1l );
+
+        // start labels counts
+        verify( countsUpdater ).incrementRelationshipCount( 0, 0, ANY, 1l );
+        verify( countsUpdater ).incrementRelationshipCount( 2, 0, ANY, 1l );
+
+        // end labels counts
+        verify( countsUpdater ).incrementRelationshipCount( ANY, 0, 1, 1l );
+        verify( countsUpdater ).incrementRelationshipCount( ANY, 0, 2, 1l );
     }
 
     private class IsNonNegativeLong extends ArgumentMatcher<Long>
     {
-        public boolean matches( Object theLong )
+        public boolean matches( Object argument )
         {
-            return theLong != null && ((Long) theLong) >= 0;
+            return argument != null && ((Long) argument) >= 0;
         }
     }
 }

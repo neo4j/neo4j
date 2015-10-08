@@ -1,13 +1,12 @@
 [[server-configuration]]
-Server Configuration
-====================
+= Server Configuration
 
 .Quick info
 ***********
-* The server's primary configuration file is found under _conf/neo4j-server.properties_
-* Low-level performance tuning parameters and configuration of legacy indexes and the remote shell are found in _conf/neo4j.properties_
-* Configuration of the daemonizing wrapper is found in _conf/neo4j-wrapper.properties_
-* HTTP logging configuration is found in _conf/neo4j-http-logging.xml_
+* The server's primary configuration file is found under _conf/neo4j-server.properties_.
+* Low-level performance tuning parameters and configuration of legacy indexes and the remote shell are found in _conf/neo4j.properties_.
+* Configuration of the daemonizing wrapper is found in _conf/neo4j-wrapper.properties_.
+* HTTP logging configuration is found in _conf/neo4j-http-logging.xml_.
 ***********
 
 == Important server configuration parameters ==
@@ -165,9 +164,7 @@ If an `X-Forwarded-Host` header value contains more than one address (`X-Forward
 In order to take advantage of this functionality your proxy server must be configured to transmit these headers to the Neo4j server.
 Failure to transmit both `X-Forwarded-Host` and `X-Forwarded-Proto` headers will result in the original base URI being used.
 
-== Other configuration options ==
-
-=== Enabling logging from the garbage collector ===
+== Enabling logging from the garbage collector ==
 
 To get garbage collection logging output you have to pass the corresponding option to the server JVM executable by setting the following value in _conf/neo4j-wrapper.conf_:
 [source,properties]
@@ -177,6 +174,9 @@ wrapper.java.additional=-Xloggc:data/log/neo4j-gc.log
 This line is already present and needs uncommenting.
 Note also that logging is not directed to console.
 You will find the logging statements in _data/log/ne4j-gc.log_ or whatever directory you set the option to.
+
+[[server-browser-config]]
+== Web Interface configuration settings ==
 
 === Whitelist for remote guides in Browser ===
 

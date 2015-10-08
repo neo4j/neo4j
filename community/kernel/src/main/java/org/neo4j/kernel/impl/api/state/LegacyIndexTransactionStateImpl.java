@@ -244,7 +244,7 @@ public class LegacyIndexTransactionStateImpl implements LegacyIndexTransactionSt
 
     /** Set this data structure to it's initial state, allowing it to be re-used as if it had just been new'ed up. */
     @Override
-    public void initialize()
+    public void clear()
     {
         if ( !transactions.isEmpty() )
         {

@@ -498,8 +498,8 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       text =
         """Using a hash table, a node hash join joins the inputs coming from the left with the inputs coming from the right. The join key is specified in the arguments of the operator.""".stripMargin,
       queryText =
-        """MATCH (andreas:Person {name:'Andreas'})-[:WORKS_IN]->(location)<-[:WORKS_IN]-(mattias:Person {name:'Mattis'})
-           RETURN location""",
+        """MATCH (andy:Person {name:'Andreas'})-[:WORKS_IN]->(loc)<-[:WORKS_IN]-(matt:Person {name:'Mattis'})
+           RETURN loc""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeHashJoin"))
     )
   }

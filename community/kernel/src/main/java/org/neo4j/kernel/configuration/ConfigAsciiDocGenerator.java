@@ -36,10 +36,14 @@ import org.neo4j.helpers.Triplet;
  */
 public class ConfigAsciiDocGenerator
 {
+    private static final String DEFAULT_MARKER = "__DEFAULT__";
     private static final Pattern CONFIG_SETTING_PATTERN = Pattern.compile( "[a-z0-9]+((\\.|_)[a-z0-9]+)+" );
     private static final Pattern NUMBER_OR_IP = Pattern.compile( "[0-9\\.]+" );
     private static final List<String> CONFIG_NAMES_BLACKLIST = Arrays.asList( "round_robin", "keep_all", "keep_last",
             "keep_none", "metrics.neo4j", "i.e", "e.g" );
+    static final String IFDEF_HTMLOUTPUT = "ifndef::nonhtmloutput[]\n";
+    static final String IFDEF_NONHTMLOUTPUT = "ifdef::nonhtmloutput[]\n";
+    static final String ENDIF = "endif::nonhtmloutput[]\n\n";
 
     public String generateDocsFor(
             Class<? extends SettingsResourceBundle> settingsResource )
@@ -84,77 +88,27 @@ public class ConfigAsciiDocGenerator
             if ( property.endsWith( SettingsResourceBundle.DESCRIPTION ) )
             {
                 String name = property.substring( 0, property.lastIndexOf( "." ) );
-                String monospacedName = "+" + name + "+";
                 String internalKey = name + SettingsResourceBundle.INTERNAL;
-                if ( bundle.containsKey( internalKey ) )
+                if ( !bundle.containsKey( internalKey ) )
                 {
-                    continue;
-                }
-                String id = "config_" + name;
-                details.append( "[[" )
-                        .append( id )
-                        .append( "]]\n" )
-                        .append( '.' )
-                        .append( name )
-                        .append( '\n' )
-                        .append( "[cols=\"<1h,<4\"]\n" )
-                        .append( "|===\n" );
-
-                String defaultKey = name + SettingsResourceBundle.DEFAULT;
-                String description = linkifyConfigSettings( bundle.getString( property ) );
-                details.append( "|Description a|" );
-                addWithDotAtEndAsNeeeded( details, description );
-                
-                String validationKey = name + SettingsResourceBundle.VALIDATIONMESSAGE;
-                if ( bundle.containsKey( validationKey ) )
-                {
-                    String validation = bundle.getString( validationKey );
-                    validation = validation.replace( name, monospacedName );
-                    details.append( "|Valid values a|" );
-                    addWithDotAtEndAsNeeeded( details, linkifyConfigSettings( validation, name ) );
-                }
-
-                if ( bundle.containsKey( defaultKey ) )
-                {
-                    String defaultValue = bundle.getString( defaultKey );
-                    if ( !defaultValue.equals( "__DEFAULT__" ) )
+                    String id = "config_" + name;
+                    String descriptionKey = name + SettingsResourceBundle.DESCRIPTION;
+                    String description = linkifyConfigSettings( bundle.getString( descriptionKey ), name, false );
+                    Triplet<String,String,String> beanSummary = Triplet.of( id, name, description );
+                    String deprecatedKey = name + SettingsResourceBundle.DEPRECATED;
+                    String obsoletedKey = name + SettingsResourceBundle.OBSOLETED;
+                    if ( bundle.containsKey( deprecatedKey ) || bundle.containsKey( obsoletedKey ) )
                     {
-                        details.append( "|Default value m|" )
-                          .append( defaultValue )
-                          .append( '\n' );
-                    }
-                }
-                
-                String mandatorykey = name + SettingsResourceBundle.MANDATORY;
-                if ( bundle.containsKey( mandatorykey ) )
-                {
-                    details.append( "|Mandatory a|" );
-                    addWithDotAtEndAsNeeeded( details, bundle.getString( mandatorykey ).replace( name, monospacedName ) );
-                }
-
-                Triplet<String, String, String> beanSummary = Triplet.of( id, name, description );
-
-                String deprecatedKey = name + SettingsResourceBundle.DEPRECATED;
-                String obsoletedKey = name + SettingsResourceBundle.OBSOLETED;
-                if ( bundle.containsKey( deprecatedKey ) || bundle.containsKey( obsoletedKey ) )
-                {
-                    details.append( "|Deprecated a|" );
-                    if ( bundle.containsKey( obsoletedKey ) )
-                    {
-                        addWithDotAtEndAsNeeeded( details, linkifyConfigSettings( bundle.getString( obsoletedKey ) ) );
+                        deprecatedBeansList.add( beanSummary );
                     }
                     else
                     {
-                        addWithDotAtEndAsNeeeded( details, linkifyConfigSettings( bundle.getString( deprecatedKey ) ) );
+                        beanList.add( beanSummary );
                     }
-                    deprecatedBeansList.add( beanSummary );
+                    // add normal and pdf output
+                    details.append( addDocsForOneSetting( bundle, id, name, description, false ) );
+                    details.append( addDocsForOneSetting( bundle, id, name, description, true ) );
                 }
-                else
-                {
-                    beanList.add( beanSummary );
-                }
-
-                details.append( "|===\n\n" );
             }
         }
         return listGenerator.generateListAndTableCombo( beanList )
@@ -162,8 +116,81 @@ public class ConfigAsciiDocGenerator
                        : deprecatedBeanslistGenerator.generateListAndTableCombo( deprecatedBeansList ) )
                + details.toString();
     }
+
+    private String addDocsForOneSetting( ResourceBundle bundle, String id, String name, String description, boolean pdfOutput )
+    {
+        StringBuilder table = new StringBuilder( 1024 );
+        if ( pdfOutput )
+        {
+            table.append( IFDEF_NONHTMLOUTPUT );
+        }
+        else
+        {
+            table.append( IFDEF_HTMLOUTPUT );
+        }
+        String monospacedName = "`" + name + "`";
+        table.append( "[[" )
+                .append( id )
+                .append( "]]\n" )
+                .append( '.' )
+                .append( name )
+                .append( '\n' )
+                .append( "[cols=\"<1h,<4\"]\n" )
+                .append( "|===\n" );
+
+        table.append( "|Description a|" );
+        addWithDotAtEndAsNeeded( table, description );
+        
+        String validationKey = name + SettingsResourceBundle.VALIDATIONMESSAGE;
+        if ( bundle.containsKey( validationKey ) )
+        {
+            String validation = bundle.getString( validationKey );
+            table.append( "|Valid values a|" );
+            addWithDotAtEndAsNeeded( table, linkifyConfigSettings( validation, name, pdfOutput ) );
+        }
+
+        String defaultKey = name + SettingsResourceBundle.DEFAULT;
+        if ( bundle.containsKey( defaultKey ) )
+        {
+            String defaultValue = bundle.getString( defaultKey );
+            if ( !defaultValue.equals( DEFAULT_MARKER ) )
+            {
+                table.append( "|Default value m|" )
+                  .append( defaultValue )
+                  .append( '\n' );
+            }
+        }
+        
+        String mandatorykey = name + SettingsResourceBundle.MANDATORY;
+        if ( bundle.containsKey( mandatorykey ) )
+        {
+            table.append( "|Mandatory a|" );
+            addWithDotAtEndAsNeeded( table, bundle.getString( mandatorykey ).replace( name, monospacedName ) );
+        }
+
+        String deprecatedKey = name + SettingsResourceBundle.DEPRECATED;
+        String obsoletedKey = name + SettingsResourceBundle.OBSOLETED;
+        if ( bundle.containsKey( deprecatedKey ) || bundle.containsKey( obsoletedKey ) )
+        {
+            table.append( "|Deprecated a|" );
+            if ( bundle.containsKey( obsoletedKey ) )
+            {
+                addWithDotAtEndAsNeeded( table,
+                        linkifyConfigSettings( bundle.getString( obsoletedKey ), name, pdfOutput ) );
+            }
+            else
+            {
+                addWithDotAtEndAsNeeded( table,
+                        linkifyConfigSettings( bundle.getString( deprecatedKey ), name, pdfOutput ) );
+            }
+        }
+
+        table.append( "|===\n" )
+                .append( ENDIF );
+        return table.toString();
+    }
     
-    private void addWithDotAtEndAsNeeeded( StringBuilder sb, String message )
+    private void addWithDotAtEndAsNeeded( StringBuilder sb, String message )
     {
         sb.append( message );
         if ( !message.endsWith( "." ) && !message.endsWith( ". " ) )
@@ -173,7 +200,7 @@ public class ConfigAsciiDocGenerator
         sb.append( '\n' );
     }
 
-    private String linkifyConfigSettings( String text, String nameToNotLink )
+    private String linkifyConfigSettings( String text, String nameToNotLink, boolean pdfOutput )
     {
         Matcher matcher = CONFIG_SETTING_PATTERN.matcher( text );
         StringBuffer result = new StringBuffer( 256 );
@@ -200,18 +227,20 @@ public class ConfigAsciiDocGenerator
             }
             else
             {
-                // replace setting name with link to setting
-                match = makeConfigXref( match );
+                // replace setting name with link to setting, if not pdf output
+                if ( pdfOutput )
+                {
+                    match = "`" + match + "`";
+                }
+                else
+                {
+                    match = makeConfigXref( match );
+                }
             }
             matcher.appendReplacement( result, match );
         }
         matcher.appendTail( result );
         return result.toString();
-    }
-
-    private String linkifyConfigSettings( String text )
-    {
-        return linkifyConfigSettings( text, null );
     }
 
     private String makeConfigXref( String settingName )
