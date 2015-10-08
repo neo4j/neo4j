@@ -168,7 +168,6 @@ public class CountsComputerTest
         {
             CountsTracker store = life.add( createCountsTracker() );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1, store.txId() );
-//            assertEquals( 11, store.totalRecordsStored() ); // we do not support yet (label,type,label) counts
             assertEquals( 9, store.totalEntriesStored() );
             assertEquals( 2, get( store, nodeKey( -1 ) ) );
             assertEquals( 1, get( store, nodeKey( 0 ) ) );
@@ -177,7 +176,6 @@ public class CountsComputerTest
             assertEquals( 0, get( store, nodeKey( 3 ) ) );
             assertEquals( 0, get( store, relationshipKey( -1, 0, -1 ) ) );
             assertEquals( 1, get( store, relationshipKey( -1, 1, -1 ) ) );
-//            assertEquals( 1, get( store, relationshipKey( 1, 1, 0 ) ) ); // we do not support yet (label,type,label) counts
         }
     }
 
@@ -205,7 +203,6 @@ public class CountsComputerTest
         {
             CountsTracker store = life.add( createCountsTracker() );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1, store.txId() );
-//            assertEquals( 15, store.totalRecordsStored() ); // we do not support yet (label,type,label) counts
             assertEquals( 13, store.totalEntriesStored() );
             assertEquals( 4, get( store, nodeKey( -1 ) ) );
             assertEquals( 1, get( store, nodeKey( 0 ) ) );
@@ -216,8 +213,6 @@ public class CountsComputerTest
             assertEquals( 1, get( store, relationshipKey( -1, 0, -1 ) ) );
             assertEquals( 1, get( store, relationshipKey( -1, 1, -1 ) ) );
             assertEquals( 0, get( store, relationshipKey( -1, 2, -1 ) ) );
-//            assertEquals( 1, get( store, relationshipKey( 0, 0, 2 ) ) ); // we do not support yet (label,type,label) counts
-//            assertEquals( 0, get( store, relationshipKey( 2, 0, 0 ) ) ); // we do not support yet (label,type,label) counts
             assertEquals( 1, get( store, relationshipKey( -1, 1, 1 ) ) );
             assertEquals( 0, get( store, relationshipKey( -1, 0, 1 ) ) );
         }
@@ -250,7 +245,6 @@ public class CountsComputerTest
             CountsTracker store = life.add( createCountsTracker() );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1, store.txId() );
             assertEquals( 22, store.totalEntriesStored() );
-//            assertEquals( 30, store.totalRecordsStored() ); // we do not support yet (label,type,label) counts
             assertEquals( 3, get( store, nodeKey( -1 ) ) );
             assertEquals( 1, get( store, nodeKey( 0 ) ) );
             assertEquals( 1, get( store, nodeKey( 1 ) ) );
@@ -262,11 +256,8 @@ public class CountsComputerTest
             assertEquals( 1, get( store, relationshipKey( -1, 2, -1 ) ) );
             assertEquals( 1, get( store, relationshipKey( -1, 3, -1 ) ) );
             assertEquals( 0, get( store, relationshipKey( -1, 4, -1 ) ) );
-//            assertEquals( 1, get( store, relationshipKey( 0, 2, 2 ) ) ); // we do not support yet (label,type,label) counts
-//            assertEquals( 0, get( store, relationshipKey( 2, 0, 0 ) ) ); // we do not support yet (label,type,label) counts
             assertEquals( 1, get( store, relationshipKey( -1, 1, 1 ) ) );
             assertEquals( 2, get( store, relationshipKey( -1, -1, 1 ) ) );
-//            assertEquals( 0, get( store, relationshipKey( 1, -1, 2 ) ) ); // we do not support yet (label,type,label) counts
             assertEquals( 3, get( store, relationshipKey( 0, -1, -1 ) ) );
         }
     }

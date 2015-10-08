@@ -42,8 +42,6 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relations
 
 public class CountsRecordState implements CountsAccessor, RecordState, CountsAccessor.Updater, CountsAccessor.IndexStatsUpdater
 {
-    /** Don't support these counts at the moment so don't compute them */
-    private static final boolean COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS = false;
     private static final long DEFAULT_FIRST_VALUE = 0, DEFAULT_SECOND_VALUE = 0;
     private final Map<CountsKey, DoubleLongRegister> counts = new HashMap<>();
 
@@ -229,14 +227,6 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
         {
             incrementRelationshipCount( (int) startLabelId, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
             incrementRelationshipCount( (int) startLabelId, type, ANY_LABEL, 1 );
-            if ( COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS )
-            {
-                for ( long endLabelId : endLabels )
-                {
-                    incrementRelationshipCount( (int) startLabelId, ANY_RELATIONSHIP_TYPE, (int) endLabelId, 1 );
-                    incrementRelationshipCount( (int) startLabelId, type, (int) endLabelId, 1 );
-                }
-            }
         }
         for ( long endLabelId : endLabels )
         {
