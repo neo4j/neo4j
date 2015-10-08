@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.Expressi
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.frontend.v3_0.InternalException
+import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, InternalException}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 
 object ClauseConverters {
@@ -103,12 +103,36 @@ object ClauseConverters {
   implicit class CreateConverter(val clause: Create) extends AnyVal {
     def addCreateToLogicalPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = {
       clause.pattern.patternParts.foldLeft(acc) {
-        case (builder, EveryPath(pattern@NodePattern(Some(id), _, _))) =>
+        //CREATE (n :L1:L2 {prop: 42})
+        case (builder, EveryPath(NodePattern(Some(id), labels, props))) =>
           builder
-            .amendUpdateGraph(ug => ug.copy(nodePatterns = ug.nodePatterns :+ pattern))
+            .amendUpdateGraph(ug => ug.addNodePatterns(CreateNodePattern(IdName.fromIdentifier(id), labels, props)))
+
+        //CREATE (n)-[r: R]->(m)
+        case (builder, EveryPath(pattern@RelationshipChain(
+          NodePattern(Some(leftId), labelsLeft, propsLeft),
+          RelationshipPattern(Some(relId), _, types, _, properties, direction),
+          NodePattern(Some(rightId), labelsRight, propsRight)))) =>
+
+          val (start, end) = if (direction == SemanticDirection.OUTGOING) (leftId, rightId) else (rightId, leftId)
+
+          //create nodes that are not already matched or created
+          val nodesToCreate = Seq(
+            CreateNodePattern(IdName.fromIdentifier(leftId), labelsLeft, propsLeft),
+            CreateNodePattern(IdName.fromIdentifier(rightId), labelsRight, propsRight)
+          ).filterNot(pattern => builder.allSeenPatternNodes(pattern.nodeName))
+
+          builder
+            .amendUpdateGraph(ug => ug
+              .addNodePatterns(nodesToCreate:_*)
+              .addRelPatterns(
+                CreateRelationshipPattern(IdName.fromIdentifier(relId), IdName.fromIdentifier(start),
+                  types.head, IdName.fromIdentifier(end), properties)))
+
         case _ => throw new CantHandleQueryException(s"$clause is not yet supported")
       }
     }
+
   }
 
   implicit class ReturnItemsConverter(val clause: ReturnItems) extends AnyVal {

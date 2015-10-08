@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyLabel, LazyTypes, SortDescription}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyType, LazyLabel, LazyTypes, SortDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.CardinalityModel
@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirec
 
 case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends CollectionSupport {
   def solvePredicate(plan: LogicalPlan, solved: Expression)(implicit context: LogicalPlanningContext) =
-    plan.updateSolved(_.updateQueryGraph(_.addPredicates(solved)))
+    plan.updateSolved(_.amendQueryGraph(_.addPredicates(solved)))
 
   def planAggregation(left: LogicalPlan, grouping: Map[String, Expression], aggregation: Map[String, Expression])
                      (implicit context: LogicalPlanningContext) = {
@@ -49,7 +49,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
   def planApply(left: LogicalPlan, right: LogicalPlan)(implicit context: LogicalPlanningContext) = {
     // We don't want to keep the arguments that this Apply is inserting on the RHS, so we remove them here.
-    val rhsSolved: PlannerQuery = right.solved.updateTailOrSelf(_.updateQueryGraph(_.withArgumentIds(Set.empty)))
+    val rhsSolved: PlannerQuery = right.solved.updateTailOrSelf(_.amendQueryGraph(_.withArgumentIds(Set.empty)))
     val lhsSolved: PlannerQuery = left.solved
     val solved: PlannerQuery = lhsSolved ++ rhsSolved
     Apply(left, right)(solved = solved)
@@ -103,7 +103,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                        to: IdName,
                        pattern: PatternRelationship,
                        mode: ExpansionMode)(implicit context: LogicalPlanningContext) = {
-    val solved = left.solved.updateQueryGraph(_.addPatternRelationship(pattern))
+    val solved = left.solved.amendQueryGraph(_.addPatternRelationship(pattern))
     Expand(left, from, dir, pattern.types, to, pattern.name, mode)(solved)
   }
 
@@ -120,7 +120,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
         if (from == pattern.left) SemanticDirection.OUTGOING else SemanticDirection.INCOMING
       } else pattern.dir
 
-      val solved = left.solved.updateQueryGraph(_
+      val solved = left.solved.amendQueryGraph(_
         .addPatternRelationship(pattern)
         .addPredicates(allPredicates: _*)
       )
@@ -205,7 +205,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                       (implicit context: LogicalPlanningContext) = {
 
     val plannerQuery = left.solved ++ right.solved
-    val solved = plannerQuery.updateQueryGraph(_.addHints(hints))
+    val solved = plannerQuery.amendQueryGraph(_.addHints(hints))
     NodeHashJoin(nodes, left, right)(solved)
   }
 
@@ -233,7 +233,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                          mode: ExpansionMode = ExpandAll,
                          predicates: Seq[Expression] = Seq.empty,
                          solvedQueryGraph: QueryGraph)(implicit context: LogicalPlanningContext) = {
-    val solved = left.solved.updateQueryGraph(_.withAddedOptionalMatch(solvedQueryGraph))
+    val solved = left.solved.amendQueryGraph(_.withAddedOptionalMatch(solvedQueryGraph))
     OptionalExpand(left, from, dir, pattern.types, to, pattern.name, mode, predicates)(solved)
   }
 
@@ -247,12 +247,12 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
   def planOuterHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPlan)
                        (implicit context: LogicalPlanningContext) = {
-    val solved = left.solved.updateQueryGraph(_.withAddedOptionalMatch(right.solved.queryGraph))
+    val solved = left.solved.amendQueryGraph(_.withAddedOptionalMatch(right.solved.queryGraph))
     OuterHashJoin(nodes, left, right)(solved)
   }
 
   def planSelection(predicates: Seq[Expression], left: LogicalPlan)(implicit context: LogicalPlanningContext) = {
-    val solved = left.solved.updateTailOrSelf(_.updateQueryGraph(_.addPredicates(predicates: _*)))
+    val solved = left.solved.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicates: _*)))
     Selection(predicates, left)(solved)
   }
 
@@ -282,13 +282,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
   def planAntiSemiApply(left: LogicalPlan, right: LogicalPlan, predicate: PatternExpression, expr: Expression)
                        (implicit context: LogicalPlanningContext) = {
-    val solved = left.solved.updateTailOrSelf(_.updateQueryGraph(_.addPredicates(expr)))
+    val solved = left.solved.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(expr)))
     AntiSemiApply(left, right)(solved)
   }
 
   def planSemiApply(left: LogicalPlan, right: LogicalPlan, predicate: Expression)
                    (implicit context: LogicalPlanningContext) = {
-    val solved = left.solved.updateTailOrSelf(_.updateQueryGraph(_.addPredicates(predicate)))
+    val solved = left.solved.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
     SemiApply(left, right)(solved)
   }
 
@@ -401,7 +401,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planShortestPaths(inner: LogicalPlan, shortestPaths: ShortestPathPattern, predicates: Seq[Expression])
                        (implicit context: LogicalPlanningContext) = {
     // TODO: Tell the planner that the shortestPath predicates are solved in shortestPath
-    val solved = inner.solved.updateQueryGraph(_.addShortestPath(shortestPaths))
+    val solved = inner.solved.amendQueryGraph(_.addShortestPath(shortestPaths))
     FindShortestPaths(inner, shortestPaths, predicates)(solved)
   }
 
@@ -409,7 +409,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                             (implicit context: LogicalPlanningContext) = {
     val relTypes = patternRel.types.asNonEmptyOption
     val directed = patternRel.dir != SemanticDirection.BOTH
-    val solved = inner.solved.updateQueryGraph(_.addPatternRelationship(patternRel))
+    val solved = inner.solved.amendQueryGraph(_.addPatternRelationship(patternRel))
     ProjectEndpoints(inner, patternRel.name,
       start, startInScope,
       end, endInScope,
@@ -434,17 +434,25 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
   def planTriadicSelection(positivePredicate: Boolean, left: LogicalPlan, sourceId: IdName, seenId: IdName, targetId: IdName, right: LogicalPlan, predicate: Expression)
                          (implicit context: LogicalPlanningContext): LogicalPlan = {
-    val solved = (left.solved ++ right.solved).updateTailOrSelf(_.updateQueryGraph(_.addPredicates(predicate)))
+    val solved = (left.solved ++ right.solved).updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
     TriadicSelection(positivePredicate, left, sourceId, seenId, targetId, right)(solved)
   }
 
-  def planCreateNode(inner: LogicalPlan, pattern: NodePattern)
+  def planCreateNode(inner: LogicalPlan, pattern: CreateNodePattern)
                      (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.updateUpdateGraph(_.withNodePattern(pattern))
+    val solved = inner.solved.amendUpdateGraph(_.addNodePatterns(pattern))
 
-    CreateNode(inner, IdName.fromIdentifier(pattern.identifier.get),
+    CreateNode(inner, pattern.nodeName,
       pattern.labels.map(LazyLabel(_)(context.semanticTable)), pattern.properties)(solved)
+  }
+
+  def planCreateRelationship(inner: LogicalPlan, pattern: CreateRelationshipPattern)
+                    (implicit context: LogicalPlanningContext): LogicalPlan = {
+
+    val solved = inner.solved.amendUpdateGraph(_.addRelPatterns(pattern))
+
+    CreateRelationship(inner, pattern.relName, pattern.startNode, LazyType(pattern.relType)(context.semanticTable), pattern.endNode, pattern.properties)(solved)
   }
 
   def planRepeatableRead(inner: LogicalPlan)

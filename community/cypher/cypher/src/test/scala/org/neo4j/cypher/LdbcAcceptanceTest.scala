@@ -31,7 +31,7 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
   LDBC_QUERIES.foreach { ldbcQuery =>
     test(ldbcQuery.name) {
       //given
-      executeWithRulePlanner(ldbcQuery.createQuery, ldbcQuery.createParams.toSeq: _*)
+      eengine.execute(ldbcQuery.createQuery, ldbcQuery.createParams)
       ldbcQuery.constraintQueries.foreach(executeWithRulePlanner(_))
 
       //when

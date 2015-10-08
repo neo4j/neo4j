@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{NewPlannerTestSupport, ExecutionEngineFunSuite, QueryStatisticsTestSupport, SyntaxException}
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.{DynamicRelationshipType, Direction, Node, Relationship}
 
 class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
@@ -93,13 +93,70 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
   test("create relationship using null properties should just ignore those properties") {
     // when
-    val result = executeWithRulePlanner("create ()-[r:X {id: 12, property: null}]->() return r")
-    val relationship = result.columnAs[Relationship]("r").next()
+    val result = updateWithBothPlanners("create ()-[r:X {id: 12, property: null}]->() return r.id")
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 1)
 
     // then
+    result.toList should equal(List(Map("r.id" -> 12)))
+  }
+
+  test("single create after with") {
+    //given
+    createNode()
+    createNode()
+
+    //when
+    val query = "MATCH (n) CREATE() WITH * CREATE ()"
+    val result = updateWithBothPlanners(query)
+
+    //then
+    assertStats(result, nodesCreated = 4)
+    result should not(use("Apply"))
+  }
+
+  test("create simple pattern") {
+    val result = updateWithBothPlanners("CREATE (a)-[r:R]->(b)")
+
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  test("create both nodes and relationships") {
+    val result = updateWithBothPlanners("CREATE (a), (b), (a)-[r:R]->(b)")
+
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  test("create relationship with property") {
+    val result = updateWithBothPlanners("CREATE (a)-[r:R {prop: 42}]->(b)")
+
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 1)
+  }
+
+  test("creates relationship in correct direction") {
+    import scala.collection.JavaConverters._
+    val start = createLabeledNode("Y")
+    val end = createLabeledNode("X")
+
+    val typ = "TYPE"
+    val result = updateWithBothPlanners(s"MATCH (x:X), (y:Y) CREATE (x)<-[:$typ]-(y)")
+
+    assertStats(result, relationshipsCreated = 1)
     graph.inTx {
-      relationship.getProperty("id") should equal(12)
+      start.getRelationships(DynamicRelationshipType.withName(typ), Direction.OUTGOING).asScala should have size 1
+      end.getRelationships(DynamicRelationshipType.withName(typ), Direction.INCOMING).asScala should have size 1
+    }
+  }
+
+  test("creates one node, matches one and create relationship") {
+    import scala.collection.JavaConverters._
+    val start = createLabeledNode("Start")
+
+    val typ = "TYPE"
+    val result = updateWithBothPlanners(s"MATCH (x:Start) CREATE (x)-[:$typ]->(y:End)")
+
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, relationshipsCreated = 1)
+    graph.inTx {
+      start.getRelationships(DynamicRelationshipType.withName(typ), Direction.OUTGOING).asScala should have size 1
     }
   }
 

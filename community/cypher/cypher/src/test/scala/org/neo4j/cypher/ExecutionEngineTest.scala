@@ -797,7 +797,7 @@ order by a.COL1""")
     relate(a,b,"FOO")
 
     //WHEN
-    val result = executeWithRulePlanner(
+    val result = updateWithBothPlanners(
       """MATCH (a), (b)
          WHERE id(a) = 0 AND id(b) = 1
          AND not (a)-[:FOO]->(b)
@@ -858,7 +858,7 @@ order by a.COL1""")
     updateWithBothPlanners("CREATE (n:Actor {name:'Tom Hanks'})")
 
     // when
-    val result = executeWithRulePlanner("""MATCH (actor:Actor)
+    val result = updateWithBothPlanners("""MATCH (actor:Actor)
                                WHERE actor.name = "Tom Hanks"
                                CREATE (movie:Movie {title:'Sleepless in Seattle'})
                                CREATE (actor)-[:ACTED_IN]->(movie)""")
@@ -870,7 +870,7 @@ order by a.COL1""")
   test("should_iterate_all_node_id_sets_from_start_during_matching") {
     // given
     val nodes: List[Node] =
-      executeWithRulePlanner("CREATE (a)-[:EDGE]->(b), (b)<-[:EDGE]-(c), (a)-[:EDGE]->(c) RETURN [a, b, c] AS nodes")
+      executeWithCostPlannerOnly("CREATE (a)-[:EDGE]->(b), (b)<-[:EDGE]-(c), (a)-[:EDGE]->(c) RETURN [a, b, c] AS nodes")
         .columnAs[List[Node]]("nodes").next().sortBy(_.getId)
 
     val nodeIds = s"[${nodes.map(_.getId).mkString(",")}]"

@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{UpdateGraph, Selections, PlannerQuery, QueryGraph, QueryHorizon}
-import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList._
 
 case class PlannerQueryBuilder(private val q: PlannerQuery, returns: Seq[IdName] = Seq.empty)
   extends CollectionSupport {
@@ -30,10 +29,10 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, returns: Seq[IdName]
   def withReturns(returns: Seq[IdName]): PlannerQueryBuilder = copy(returns = returns)
 
   def amendQueryGraph(f: QueryGraph => QueryGraph): PlannerQueryBuilder =
-    copy(q = q.updateTailOrSelf(_.updateQueryGraph(f)))
+    copy(q = q.updateTailOrSelf(_.amendQueryGraph(f)))
 
   def amendUpdateGraph(f: UpdateGraph => UpdateGraph): PlannerQueryBuilder =
-    copy(q = q.updateTailOrSelf(_.updateUpdateGraph(f)))
+    copy(q = q.updateTailOrSelf(_.amendUpdateGraph(f)))
 
   def withHorizon(horizon: QueryHorizon): PlannerQueryBuilder =
     copy(q = q.updateTailOrSelf(_.withHorizon(horizon)))
@@ -53,6 +52,13 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, returns: Seq[IdName]
     current.queryGraph
   }
 
+  def allSeenPatternNodes: Set[IdName] = {
+    val all = q.allPlannerQueries.toSet
+
+    all.flatMap(_.queryGraph.patternNodes) ++
+      all.flatMap(_.updateGraph.nodePatterns.map(_.nodeName))
+  }
+
   def readOnly: Boolean = q.updateGraph.isEmpty
 
   def build(): PlannerQuery = {
@@ -63,7 +69,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, returns: Seq[IdName]
         (args ++ qg.allCoveredIds, qg.withArgumentIds(args intersect qg.allCoveredIds))
       }
       plannerQuery
-        .updateQueryGraph(_.withOptionalMatches(newOptionalMatches))
+        .amendQueryGraph(_.withOptionalMatches(newOptionalMatches))
         .updateTail(fixArgumentIdsOnOptionalMatch)
     }
 
@@ -75,8 +81,10 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, returns: Seq[IdName]
     }
 
     def groupInequalities(plannerQuery: PlannerQuery): PlannerQuery = {
+      import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList._
+
       plannerQuery
-        .updateQueryGraph(_.mapSelections {
+        .amendQueryGraph(_.mapSelections {
           case Selections(predicates) =>
             val optPredicates = predicates.toNonEmptyListOption
             val newPredicates = optPredicates.map { predicates =>

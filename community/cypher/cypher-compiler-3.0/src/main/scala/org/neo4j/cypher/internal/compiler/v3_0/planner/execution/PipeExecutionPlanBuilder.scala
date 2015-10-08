@@ -239,6 +239,9 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         case CreateNode(inner, idName, labels, props) =>
           CreateNodePipe(buildPipe(inner), idName.name, labels, props.map(toCommandExpression))()
 
+        case CreateRelationship(inner, idName, startNode, typ, endNode, props) =>
+          CreateRelationshipPipe(buildPipe(inner), idName.name, startNode.name, typ, endNode.name, props.map(toCommandExpression))()
+
         case Eager(inner) =>
           EagerPipe(buildPipe(inner))()
 

@@ -60,6 +60,10 @@ case class PlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
 
   def writes: Boolean = exists(_.updateGraph.nonEmpty)
 
+  def writesNodes: Boolean = exists(_.updateGraph.nodePatterns.nonEmpty)
+
+  def writesRelationships: Boolean = exists(_.updateGraph.relPatterns.nonEmpty)
+
   def withoutHints(hintsToIgnore: GenTraversableOnce[Hint]) = copy(queryGraph = queryGraph.withoutHints(hintsToIgnore))
 
   def withHorizon(horizon: QueryHorizon): PlannerQuery = copy(horizon = horizon)
@@ -80,9 +84,9 @@ case class PlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
     case None => queryGraph.numHints
   }
 
-  def updateQueryGraph(f: QueryGraph => QueryGraph): PlannerQuery = withQueryGraph(f(queryGraph))
+  def amendQueryGraph(f: QueryGraph => QueryGraph): PlannerQuery = withQueryGraph(f(queryGraph))
 
-  def updateUpdateGraph(f: UpdateGraph => UpdateGraph): PlannerQuery = withUpdateGraph(f(updateGraph))
+  def amendUpdateGraph(f: UpdateGraph => UpdateGraph): PlannerQuery = withUpdateGraph(f(updateGraph))
 
   def updateHorizon(f: QueryHorizon => QueryHorizon): PlannerQuery = withHorizon(f(horizon))
 
@@ -154,11 +158,15 @@ case class PlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
   }
 
   //Returns list of querygraph of planner query and all of its tails
-  def allQueryGraphs = {
+  def allQueryGraphs: Seq[QueryGraph] = allPlannerQueries.map(_.queryGraph)
+
+
+  //Returns list of planner query and all of its tails
+  def allPlannerQueries: Seq[PlannerQuery] = {
     @tailrec
-    def loop(acc: Seq[QueryGraph], remaining: Option[PlannerQuery]): Seq[QueryGraph] = remaining match {
+    def loop(acc: Seq[PlannerQuery], remaining: Option[PlannerQuery]): Seq[PlannerQuery] = remaining match {
       case None => acc
-      case Some(inner) => loop(acc :+ inner.queryGraph, inner.tail)
+      case Some(inner) => loop(acc :+ inner, inner.tail)
     }
 
     loop(Seq.empty, Some(this))

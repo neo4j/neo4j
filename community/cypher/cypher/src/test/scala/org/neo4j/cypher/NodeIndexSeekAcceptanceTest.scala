@@ -105,7 +105,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
   }
 
   private def setUpDatabaseForTests() {
-    executeWithRulePlanner(
+    updateWithBothPlanners(
       """CREATE (architect:Matrix { name:'The Architect' }),
         |       (smith:Matrix { name:'Agent Smith' }),
         |       (cypher:Matrix:Crew { name:'Cypher' }),
