@@ -19,13 +19,11 @@
  */
 package org.neo4j.cypher.docgen.tooling
 
-import org.neo4j.cypher.ExecutionEngine
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.frontend.v3_0.InternalException
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
-import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.immutable.Iterable
 import scala.util.{Failure, Success, Try}
@@ -55,9 +53,8 @@ class QueryRunner(formatter: (GraphDatabaseService, Transaction) => (InternalExe
           else {
             queries.map {
               case q: Query =>
-                val (result, needsRestart) = runSingleQuery(db, q.queryText, q.assertions, q)
-                if (needsRestart)
-                  db.restart()
+                val result = runSingleQuery(db, q.queryText, q.assertions, q)
+                db.nowIsASafePointToRestartDatabase()
 
                 result
 
@@ -75,39 +72,31 @@ class QueryRunner(formatter: (GraphDatabaseService, Transaction) => (InternalExe
     TestRunResult(results.toSeq)
   }
 
-  private def initialize(engine: ExecutionEngine, init: Seq[String], failContent: Content): Seq[QueryRunResult] =
-    init.flatMap { q =>
-      val result = Try(engine.execute(q))
-      result.failed.toOption.map((e: Throwable) => QueryRunResult(q, failContent, Left(e)))
-    }
-
-  private def runSingleQuery(database: RestartableDatabase, queryText: String, assertions: QueryAssertions, content: Content): (QueryRunResult, Boolean) = {
+  private def runSingleQuery(database: RestartableDatabase, queryText: String, assertions: QueryAssertions, content: Content): QueryRunResult = {
     val format: (Transaction) => (InternalExecutionResult) => Content = (tx: Transaction) => formatter(database.getInnerDb, tx)(_, content)
 
-    val NEEDS_RESTART = true
-
-      val result: Either[Throwable, Transaction => (Content, Boolean)] =
+      val result: Either[Throwable, Transaction => Content] =
         try {
           val resultTry = Try(database.execute(queryText))
           (assertions, resultTry) match {
             // *** Success conditions
             case (expectation: ExpectedFailure[_], Failure(exception: Exception)) =>
               expectation.handle(exception)
-              Right(_ => content -> NEEDS_RESTART)
+              Right(_ => content)
 
             case (ResultAssertions(f), Success(inner)) =>
               val result = RewindableExecutionResult(inner)
               f(result)
-              Right(format(_)(result) -> result.queryStatistics().containsUpdates)
+              Right(format(_)(result))
 
             case (ResultAndDbAssertions(f), Success(inner)) =>
               val result = RewindableExecutionResult(inner)
               f(result, database.getInnerDb)
-              Right(format(_)(result) -> result.queryStatistics().containsUpdates)
+              Right(format(_)(result))
 
             case (NoAssertions, Success(inner)) =>
               val result = RewindableExecutionResult(inner)
-              Right(format(_)(result) -> result.queryStatistics().containsUpdates)
+              Right(format(_)(result))
 
             // *** Error conditions
             case (e: ExpectedFailure[_], _: Success[_]) =>
@@ -124,57 +113,14 @@ class QueryRunner(formatter: (GraphDatabaseService, Transaction) => (InternalExe
             Left(e)
         }
 
-      val (formattedResult: Either[Throwable, Content], needsRestart) = database.getInnerDb.withTx { tx =>
-        result match {
-          case _: Left[_, _] => result -> true
-          case Right(contentBuilder) =>
-            val (newContent, restart) = contentBuilder(tx)
-            Right(newContent) -> restart
+      val formattedResult: Either[Throwable, Content] = database.getInnerDb.withTx { tx =>
+        result.right.map {
+          case contentBuilder => contentBuilder(tx)
         }
       }
 
-      QueryRunResult(queryText, content, formattedResult) -> needsRestart
+      QueryRunResult(queryText, content, formattedResult)
     }
-
-  /* I exist so my users can have a restartable database that is lazily created */
-  class RestartableDatabase(init: Seq[String]) {
-    val factory = new TestGraphDatabaseFactory()
-    private var _db: GraphDatabaseService = null
-    private var _engine: ExecutionEngine = null
-    private var _failures: Seq[QueryRunResult] = null
-
-    private def createAndStartIfNecessary() {
-      if (_db != null) return
-      _db = factory.newImpermanentDatabase()
-      _engine = new ExecutionEngine(_db)
-      _failures = initialize(_engine, init, NoContent)
-    }
-
-    def failures = {
-      createAndStartIfNecessary()
-      _failures
-    }
-
-    def getInnerDb = {
-      createAndStartIfNecessary()
-      _db
-    }
-
-    def shutdown() {
-      restart()
-    }
-
-    def execute(q: String) = {
-      createAndStartIfNecessary()
-      _engine.execute(q)
-    }
-
-    def restart() {
-      if (_db == null) return
-      _db.shutdown()
-      _db = null
-    }
-  }
 }
 
 sealed trait RunResult {
