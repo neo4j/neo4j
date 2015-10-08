@@ -60,11 +60,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     Apply(left, right)(solved = solved)
   }
 
-  def planEagerTailApply(left: LogicalPlan, right: LogicalPlan)(implicit context: LogicalPlanningContext) = {
-    val solved = left.solved.updateTailOrSelf(_.withTail(right.solved))
-    EagerApply(left, right)(solved = solved)
-  }
-
   def planCartesianProduct(left: LogicalPlan, right: LogicalPlan)(implicit context: LogicalPlanningContext) = {
     val solved: PlannerQuery = left.solved ++ right.solved
     CartesianProduct(left, right)(solved)

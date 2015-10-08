@@ -80,13 +80,12 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
 
         //If previous update interferes with any of the reads here or in tail, make it an EagerApply
         val applyPlan = {
-          val lastUpdateGraph = lhs.solved.lastUpdateGraph
-          val previousWriteOnly = lhs.solved.lastQueryGraph.isEmpty && lastUpdateGraph.nonEmpty
+          val lastPlannerQuery = lhs.solved.last
+          val newLhs = if (!lastPlannerQuery.writeOnly && query.allQueryGraphs.exists(lastPlannerQuery.updateGraph.overlaps))
+              context.logicalPlanProducer.planEager(lhs)
+          else lhs
 
-          if (!previousWriteOnly &&
-            query.allQueryGraphs.exists(lastUpdateGraph.overlaps))
-            context.logicalPlanProducer.planEagerTailApply(lhs, planWithUpdates)
-          else context.logicalPlanProducer.planTailApply(lhs, planWithUpdates)
+          context.logicalPlanProducer.planTailApply(newLhs, planWithUpdates)
         }
 
         val applyContext = lhsContext.recurse(applyPlan)

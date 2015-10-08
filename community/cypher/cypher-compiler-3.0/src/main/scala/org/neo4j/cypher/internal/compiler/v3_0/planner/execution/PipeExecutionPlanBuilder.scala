@@ -154,11 +154,11 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         case Optional(inner) =>
           OptionalPipe(inner.availableSymbols.map(_.name), buildPipe(inner))()
 
+        case Apply(Eager(outer), inner) =>
+          EagerApplyPipe(buildPipe(outer), buildPipe(inner))()
+
         case Apply(outer, inner) =>
           ApplyPipe(buildPipe(outer), buildPipe(inner))()
-
-        case EagerApply(outer, inner) =>
-          EagerApplyPipe(buildPipe(outer), buildPipe(inner))()
 
         case SemiApply(outer, inner) =>
           SemiApplyPipe(buildPipe(outer), buildPipe(inner), negated = false)()
