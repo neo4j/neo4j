@@ -33,7 +33,7 @@ public class Utils
     {
         if ( value > Integer.MAX_VALUE )
         {
-            throw new UnsupportedOperationException( "Not supported a.t.m" );
+            throw new ArithmeticException( getOverflowMessage( value, Integer.class ) );
         }
         return (int) value;
     }
@@ -42,7 +42,7 @@ public class Utils
     {
         if ( value > Short.MAX_VALUE )
         {
-            throw new UnsupportedOperationException( "Not supported a.t.m" );
+            throw new ArithmeticException( getOverflowMessage( value, Short.class ) );
         }
         return (short) value;
     }
@@ -51,7 +51,7 @@ public class Utils
     {
         if ( value > Byte.MAX_VALUE )
         {
-            throw new UnsupportedOperationException( "Not supported a.t.m" );
+            throw new ArithmeticException( getOverflowMessage( value, Byte.class ) );
         }
         return (byte) value;
     }
@@ -191,6 +191,11 @@ public class Utils
                 into[t--] = into[i--];
             }
         }
+    }
+
+    private static String getOverflowMessage( long value, Class clazz )
+    {
+        return "Value " + value + " is too big to be represented as " + clazz.getName();
     }
 
     private Utils()
