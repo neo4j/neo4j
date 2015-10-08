@@ -18,6 +18,7 @@ o ID files will now be properly always marked as unclean on unclean
   restart to complete
 o TransactionIdStore tracks highest transaction id instead of highest gap-free transaction id.
   This fixes an issue where a lower transaction id than expected would be seen as last committed.
+o Fixes #5528 - Unique constraint not being respected
 
 IO:
 o File lock deletion is retried on failure, fixing an issue with file lock
