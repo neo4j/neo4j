@@ -43,5 +43,4 @@ public interface ServerControls extends AutoCloseable
 
     /** Access the {@link org.neo4j.graphdb.GraphDatabaseService} used by the server */
     GraphDatabaseService graph();
-
 }
