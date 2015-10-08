@@ -143,10 +143,15 @@ detectrunning() {
     ## SmartOS has a different lsof command line arguments
     newpid=$(lsof -o $NEO4J_SERVER_PORT | grep '::' | head -n1 | cut -d ' ' -f 1)
   else
-    # For some reason, this breaks stuff. Can there be multiple pids?
-    #newpid=$(lsof -i :$NEO4J_SERVER_PORT -F T -Ts | grep "p")
-    # This does NOT work on lsof > 4.87
-    newpid=$(lsof -i :$NEO4J_SERVER_PORT -F T -Ts | grep -i "TST=LISTEN" -B1 | head -n1)
+    ## Don't use same on both as second one managed to break stuff somehow
+    LSOFVER=`lsof -v 2>&1 | grep revision | grep -v latest | cut -d: -f2 | tr -d ' ' | tr -d .`
+    ## What lsof outputs changed in 4.87 so handle later versions differently
+    ## Will likely break if 4.100 is ever released
+    if [ $LSOFVER -ge 487 ]; then
+      newpid=$(lsof -i :$NEO4J_SERVER_PORT -F T -Ts | grep "p")
+    else
+      newpid=$(lsof -i :$NEO4J_SERVER_PORT -F T -Ts | grep -i "TST=LISTEN" -B1 | head -n1)
+    fi
     newpid=${newpid:1}
   fi
 }
