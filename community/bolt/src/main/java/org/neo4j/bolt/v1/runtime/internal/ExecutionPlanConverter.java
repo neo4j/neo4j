@@ -36,6 +36,12 @@ public class ExecutionPlanConverter
         out.put( "args", plan.getArguments() );
         out.put( "identifiers", plan.getIdentifiers() );
         out.put( "children", children( plan ) );
+        if ( plan.hasProfilerStatistics() )
+        {
+            ExecutionPlanDescription.ProfilerStatistics profile = plan.getProfilerStatistics();
+            out.put( "dbHits", profile.getDbHits() );
+            out.put( "rows", profile.getRows() );
+        }
         return out;
     }
 
