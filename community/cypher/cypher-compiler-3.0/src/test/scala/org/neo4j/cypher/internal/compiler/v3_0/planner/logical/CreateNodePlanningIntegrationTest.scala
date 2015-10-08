@@ -96,14 +96,18 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
   test("should plan create in tail") {
     planFor("MATCH (a) CREATE (b) WITH * MATCH(c) CREATE (d)").plan should equal(
       EmptyResult(
-        Apply(
+        CreateNode(
+          Apply(
             Eager(
-              CreateNode(AllNodesScan(IdName("a"), Set.empty)(solved), IdName("b"), Seq.empty, None)(solved)
+              CreateNode(
+                AllNodesScan(IdName("a"), Set.empty)(solved),
+                IdName("b"), Seq.empty, None)(solved)
             )(solved),
-          CreateNode(RepeatableRead(
-            AllNodesScan(IdName("c"), Set(IdName("a"), IdName("b")))(solved))(solved),
-            IdName("d"), Seq.empty, None)(solved))(solved)
-      )(solved)
+            RepeatableRead(
+              AllNodesScan(IdName("c"), Set(IdName("a"), IdName("b")))(solved)
+            )(solved)
+          )(solved),
+          IdName("d"), Seq.empty, None)(solved))(solved)
     )
   }
 }
