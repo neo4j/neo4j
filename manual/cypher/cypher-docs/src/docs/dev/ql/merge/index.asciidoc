@@ -32,6 +32,7 @@ The following graph is used for the examples below:
 .Graph
 include::includes/cypher-merge-graph.asciidoc[]
 
+[[query-merge-node-derived]]
 == Merge nodes ==
 
 :leveloffset: 3
@@ -41,6 +42,8 @@ include::merge-single-node-with-a-label.asciidoc[]
 include::merge-single-node-with-properties.asciidoc[]
 
 include::merge-single-node-specifying-both-label-and-property.asciidoc[]
+
+include::merge-single-node-derived-from-an-existing-node-property.asciidoc[]
 
 :leveloffset: 2
 
@@ -67,6 +70,10 @@ include::merge-on-a-relationship.asciidoc[]
 include::merge-on-multiple-relationships.asciidoc[]
 
 include::merge-on-an-undirected-relationship.asciidoc[]
+
+include::merge-on-a-relationship-between-two-existing-nodes.asciidoc[]
+
+include::merge-on-a-relationship-between-an-existing-node-and-a-merged-node-derived-from-a-node-property.asciidoc[]
 
 :leveloffset: 2
 

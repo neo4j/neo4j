@@ -41,11 +41,11 @@ class MergeTest extends DocumentingTestBase with QueryStatisticsTestSupport with
     "Charlie:Person FATHER Martin:Person")
 
   override val properties = Map(
-    "Charlie" -> Map("name" -> "Charlie Sheen"),
-    "Oliver" -> Map("name" -> "Oliver Stone"),
-    "Michael" -> Map("name" -> "Michael Douglas"),
-    "Rob" -> Map("name" -> "Rob Reiner"),
-    "Martin" -> Map("name" -> "Martin Sheen"),
+    "Charlie" -> Map("name" -> "Charlie Sheen", "bornIn" -> "New York", "chauffeurName" -> "John Brown"),
+    "Oliver" -> Map("name" -> "Oliver Stone", "bornIn" -> "New York", "chauffeurName" -> "Bill White"),
+    "Michael" -> Map("name" -> "Michael Douglas", "bornIn" -> "New Jersey", "chauffeurName" -> "John Brown"),
+    "Rob" -> Map("name" -> "Rob Reiner", "bornIn" -> "New York", "chauffeurName" -> "Ted Green"),
+    "Martin" -> Map("name" -> "Martin Sheen", "bornIn" -> "Ohio", "chauffeurName" -> "Bob Brown"),
     "WallStreet" -> Map("title" -> "Wall Street"),
     "TheAmericanPresident" -> Map("title" -> "The American President")
   )
@@ -59,7 +59,7 @@ class MergeTest extends DocumentingTestBase with QueryStatisticsTestSupport with
       title = "Merge single node with a label",
       text = "Merging a single node with a given label.",
       queryText = "merge (robert:Critic)\nreturn robert, labels(robert)",
-      optionalResultExplanation = "Because there are no nodes labeled +Critic+ in the database, a new node is created.",
+      optionalResultExplanation = "A new node is created because there are no nodes labeled +Critic+ in the database.",
       assertions = (p) => assertStats(p, nodesCreated = 1, labelsAdded = 1)
     )
   }
@@ -69,8 +69,8 @@ class MergeTest extends DocumentingTestBase with QueryStatisticsTestSupport with
       title = "Merge single node with properties",
       text = "Merging a single node with properties where not all properties match any existing node.",
       queryText = "merge (charlie {name:'Charlie Sheen', age:10})\nreturn charlie",
-      optionalResultExplanation = "A new node with the name Charlie Sheen will be created since not all properties " +
-        "matched the existing Charlie Sheen node.",
+      optionalResultExplanation = "A new node with the name 'Charlie Sheen' will be created since not all properties " +
+        "matched the existing 'Charlie Sheen' node.",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2)
     )
   }
@@ -80,8 +80,25 @@ class MergeTest extends DocumentingTestBase with QueryStatisticsTestSupport with
       title = "Merge single node specifying both label and property",
       text = "Merging a single node with both label and property matching an existing node.",
       queryText = "merge (michael:Person {name:'Michael Douglas'})\nreturn michael",
-      optionalResultExplanation = "Michael Douglas will be matched and returned.",
+      optionalResultExplanation = "'Michael Douglas' will be matched and returned.",
       assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 0)
+    )
+  }
+
+  @Test def merge_single_node_derived_from_an_existing_node_property() {
+    testQuery(
+      title = "Merge single node derived from an existing node property",
+      text =
+        """For some property 'p' in each bound node in a set of nodes, a single new node is created for each
+unique value for 'p'.""",
+      queryText = "match (person:Person)\nmerge (city:City {name: person.bornIn})\nreturn city",
+      optionalResultExplanation = """Three nodes labeled +City+ are created, each of which contains a 'name' property
+with the value of 'New York', 'Ohio', and 'New Jersey', respectively. Note that even
+though the +MATCH+ clause results in three bound nodes having the value 'New York' for
+the 'bornIn' property, only a single 'New York' node (i.e. a +City+ node with a name
+of 'New York') is created. As the 'New York' node is not matched for the first bound
+node, it is created. However, the newly-created 'New York' node is matched and bound for the second and third bound nodes.""",
+      assertions = (p) => assertStats(p, nodesCreated = 3, propertiesSet = 3, labelsAdded = 3)
     )
   }
 
@@ -91,8 +108,8 @@ class MergeTest extends DocumentingTestBase with QueryStatisticsTestSupport with
       text = "Merge a node and set properties if the node needs to be created.",
       queryText = """merge (keanu:Person {name:'Keanu Reeves'})
 on create set keanu.created = timestamp()
-return keanu""",
-      optionalResultExplanation = "Creates the Keanu node, and sets a timestamp on creation time.",
+return keanu.name, keanu.created""",
+      optionalResultExplanation = "The query creates the 'keanu' node and sets a timestamp on creation time.",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
     )
   }
@@ -101,8 +118,8 @@ return keanu""",
     testQuery(
       title = "Merge with ON MATCH",
       text = "Merging nodes and setting properties on found nodes.",
-      queryText = "merge (person:Person)\non match set person.found = true\nreturn person",
-      optionalResultExplanation = "Finds all the +Person+ nodes, sets a property on them, and returns them.",
+      queryText = "merge (person:Person)\non match set person.found = true\nreturn person.name, person.found",
+      optionalResultExplanation = "The query finds all the +Person+ nodes, sets a property on them, and returns them.",
       assertions = (p) => assertStats(p, propertiesSet = 5)
     )
   }
@@ -116,7 +133,7 @@ return keanu""",
 on create set keanu.created = timestamp()
 on match set keanu.lastSeen = timestamp()
 return keanu""",
-      optionalResultExplanation = "The query creates the Keanu node, and sets a timestamp on creation time. If Keanu already existed, a " +
+      optionalResultExplanation = "The query creates the 'keanu' node, and sets a timestamp on creation time. If 'keanu' had already existed, a " +
         "different property would have been set.",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
     )
@@ -128,7 +145,7 @@ return keanu""",
       text = "If multiple properties should be set, simply separate them with commas.",
       queryText = """merge (person:Person)
                     |on match set person.found = true, person.lastAccessed = timestamp()
-                    |return person""".stripMargin,
+                    |return person.name, person.found, person.lastAccessed""".stripMargin,
       optionalResultExplanation = "",
       assertions = (p) => assertStats(p, propertiesSet = 10)
     )
@@ -139,7 +156,7 @@ return keanu""",
       title = "Merge using unique constraints creates a new node if no node is found",
       text = "Merge using unique constraints creates a new node if no node is found.",
       queryText = """merge (laurence:Person {name: 'Laurence Fishburne'}) return laurence""",
-      optionalResultExplanation = "The query creates the laurence node. If laurence already existed, merge would " +
+      optionalResultExplanation = "The query creates the 'laurence' node. If 'laurence' had already existed, +MERGE+ would " +
         "just return the existing node.",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1)
     )
@@ -150,7 +167,7 @@ return keanu""",
       title = "Merge using unique constraints matches an existing node",
       text = "Merge using unique constraints matches an existing node.",
       queryText = """merge (oliver:Person {name:'Oliver Stone'}) return oliver""",
-      optionalResultExplanation = "The oliver node already exists, so merge just returns it.",
+      optionalResultExplanation = "The 'oliver' node already exists, so +MERGE+ just returns it.",
       assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 0, labelsAdded = 0)
     )
   }
@@ -161,8 +178,8 @@ return keanu""",
       title = "Merge with unique constraints and partial matches",
       text = "Merge using unique constraints fails when finding partial matches.",
       queryText = """merge (michael:Person {name:'Michael Douglas', role:'Gordon Gekko'}) return michael""",
-      optionalResultExplanation = "While there is a matching unique michael node with the name 'Michael Douglas', there is no " +
-        "unique node with the role of 'Gordon Gekko' and merge fails to match."
+      optionalResultExplanation = "While there is a matching unique 'michael' node with the name 'Michael Douglas', there is no " +
+        "unique node with the role of 'Gordon Gekko' and +MERGE+ fails to match."
     )
   }
 
@@ -172,8 +189,8 @@ return keanu""",
       title = "Merge with unique constraints and conflicting matches",
       text = "Merge using unique constraints fails when finding conflicting matches.",
       queryText = """merge (oliver:Person {name:'Oliver Stone', role:'Gordon Gekko'}) return oliver""",
-      optionalResultExplanation = "While there is a matching unique oliver node with the name 'Oliver Stone', there is also another " +
-        "unique node with the role of 'Gordon Gekko' and merge fails to match."
+      optionalResultExplanation = "While there is a matching unique 'oliver' node with the name 'Oliver Stone', there is also another " +
+        "unique node with the role of 'Gordon Gekko' and +MERGE+ fails to match."
     )
   }
 
@@ -198,7 +215,7 @@ For more information on parameters, see <<cypher-parameters>>.""",
         """match (charlie:Person {name:'Charlie Sheen'}), (wallStreet:Movie {title:'Wall Street'})
 merge (charlie)-[r:ACTED_IN]->(wallStreet)
 return r""",
-      optionalResultExplanation = "Charlie Sheen had already been marked as acting on Wall Street, so the existing relationship is found " +
+      optionalResultExplanation = "'Charlie Sheen' had already been marked as acting in 'Wall Street', so the existing relationship is found " +
         "and returned. Note that in order to match or create a relationship when using +MERGE+, at least one bound node " +
         "must be specified, which is done via the +MATCH+ clause in the above example.",
       assertions = (p) => assertStats(p, relationshipsCreated = 0)
@@ -213,9 +230,9 @@ return r""",
         """match (oliver:Person {name:'Oliver Stone'}), (reiner:Person {name:'Rob Reiner'})
 merge (oliver)-[:DIRECTED]->(movie:Movie)<-[:ACTED_IN]-(reiner)
 return movie""",
-      optionalResultExplanation = "In our example graph, Oliver Stone and Rob Reiner have never worked together. When we try to +MERGE+ a " +
+      optionalResultExplanation = "In our example graph, 'Oliver Stone' and 'Rob Reiner' have never worked together. When we try to +MERGE+ a " +
         "movie between them, Cypher will not use any of the existing movies already connected to either person. Instead, " +
-        "a new movie node is created.",
+        "a new 'movie' node is created.",
       assertions = (p) => assertStats(p, relationshipsCreated = 2, nodesCreated = 1, propertiesSet = 0, labelsAdded = 1)
     )
   }
@@ -228,11 +245,55 @@ return movie""",
         """match (charlie:Person {name:'Charlie Sheen'}), (oliver:Person {name:'Oliver Stone'})
 merge (charlie)-[r:KNOWS]-(oliver)
 return r""",
-      optionalResultExplanation = "Assume that Charlie Sheen and Oliver Stone do not know each other then " +
+      optionalResultExplanation = "As 'Charlie Sheen' and 'Oliver Stone' do not know each other, " +
         "this +MERGE+ query will create a +:KNOWS+ relationship between them. " +
         "The direction of the created relationship is arbitrary.",
       assertions = (p) => assertStats(p, relationshipsCreated = 1)
     )
   }
 
+  @Test def merge_on_a_relationship_between_two_existing_nodes() {
+    testQuery(
+      title = "Merge on a relationship between two existing nodes",
+      text =
+        """+MERGE+ can be used in conjunction with preceding +MATCH+ and +MERGE+ clauses to create a relationship
+between two bound nodes 'm' and 'n', where 'm' is returned by +MATCH+ and 'n' is created or matched by the earlier +MERGE+.""",
+      queryText =
+        """match (person:Person)
+merge (city:City {name: person.bornIn})
+merge (person)-[r:BORN_IN]->(city)
+return person.name, person.bornIn, city""".stripMargin,
+      optionalResultExplanation =
+        """This builds on the example from the 'Merge single node derived from existing node property' section above
+(in <<query-merge-node-derived>>). The second +MERGE+ creates a +BORN_IN+ relationship between each person and a city
+corresponding to the value of the person’s 'bornIn' property. 'Charlie Sheen', 'Rob Reiner' and 'Oliver Stone' all have
+a +BORN_IN+ relationship to the 'same' +City+ node ('New York').""",
+      assertions = (p) => assertStats(p, nodesCreated = 3, propertiesSet = 3, labelsAdded = 3, relationshipsCreated = 5)
+    )
+  }
+
+  @Test def merge_on_a_relationship_between_an_existing_node_and_a_merged_node_derived_from_a_node_property() {
+    testQuery(
+      title = "Merge on a relationship between an existing node and a merged node derived from a node property",
+      text =
+        """+MERGE+ can be used to simultaneously create both a new node 'n' and a relationship between a bound node 'm'
+and 'n'.""".stripMargin,
+      queryText =
+        """match (person:Person)
+merge (person)-[r:HAS_CHAUFFEUR]->(chauffeur:Chauffeur {name: person.chauffeurName})
+return person.name, person.chauffeurName, chauffeur""".stripMargin,
+      optionalResultExplanation =
+        """As +MERGE+ found no matches -- in our example graph, there are no nodes labeled with +Chauffeur+ and no +HAS_CHAUFFEUR+
+relationships -- +MERGE+ creates five nodes labeled with +Chauffeur+, each of which contains a 'name' property whose value corresponds
+to each matched +Person+ node's 'chauffeurName' property value. +MERGE+ also creates a +HAS_CHAUFFEUR+ relationship between each
++Person+ node and the newly-created corresponding +Chauffeur+ node.
+As 'Charlie Sheen' and 'Michael Douglas' both have a chauffeur with the same name -- 'John Brown' -- a new node is created in
+each case, resulting in 'two' +Chauffeur+ nodes having a 'name' of 'John Brown', correctly denoting the fact that
+even though the 'name' property may be identical, these are two separate people.
+This is in contrast to the example shown above in the 'Merge on a relationship between two existing nodes' section,
+where we used the first +MERGE+ to bind the +City+ nodes to prevent them from being recreated (and thus duplicated) in the
+second +MERGE+.""",
+      assertions = (p) => assertStats(p, nodesCreated = 5, propertiesSet = 5, labelsAdded = 5, relationshipsCreated = 5)
+    )
+  }
 }
