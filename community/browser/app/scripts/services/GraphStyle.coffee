@@ -177,8 +177,15 @@ angular.module('neo4jApp.services')
 
       getDefaultNodeCaption: (item) ->
         return {caption: '<id>'} if not item or not item.propertyList?.length > 0
-        default_caption = {caption: "{#{item.propertyList?[0].key}}"}
-        default_caption
+        caption_prio_order = [/^name$/i, /^title$/i, /^label$/i, /name$/i, /description$/i, /^.+/]
+        default_caption = caption_prio_order.reduceRight((leading, current) ->
+          hits = item.propertyList.filter((prop) ->
+            return current.test(prop.key)
+          )
+          return if hits.length then "{#{hits[0].key}}" else leading
+        , '')
+        default_caption ||= '<id>'
+        {caption: default_caption}
 
       changeForSelector: (selector, props) ->
         rule = @findRule(selector)
