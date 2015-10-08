@@ -90,6 +90,7 @@ include::matching-on-a-bound-relationship.asciidoc[]
 
 :leveloffset: 2
 
+[[query-shortest-path]]
 == Shortest path ==
 
 :leveloffset: 3

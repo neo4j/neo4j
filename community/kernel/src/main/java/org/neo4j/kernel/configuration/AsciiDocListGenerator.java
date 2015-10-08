@@ -29,9 +29,6 @@ import org.neo4j.helpers.Triplet;
  */
 public class AsciiDocListGenerator
 {
-    private static final String IFDEF_HTMLOUTPUT = "ifndef::nonhtmloutput[]\n";
-    private static final String IFDEF_NONHTMLOUTPUT = "ifdef::nonhtmloutput[]\n";
-    private static final String ENDIF = "endif::nonhtmloutput[]\n";
     private String listId;
     private String title;
     private boolean shortenDescription;
@@ -55,11 +52,11 @@ public class AsciiDocListGenerator
         {
             sb.append( '.' ).append( title ).append( '\n' );
         }
-        sb.append( IFDEF_HTMLOUTPUT ).append( '\n' )
+        sb.append( ConfigAsciiDocGenerator.IFDEF_HTMLOUTPUT ).append( '\n' )
           .append( "[options=\"header\"]\n" )
           .append( "|===\n" )
           .append( "|Name|Description\n" );
-        print.append( IFDEF_NONHTMLOUTPUT ).append( '\n' );
+        print.append( ConfigAsciiDocGenerator.IFDEF_NONHTMLOUTPUT ).append( '\n' );
         for ( Triplet<String,String,String> item : items )
         {
             String id = item.first();
@@ -100,8 +97,8 @@ public class AsciiDocListGenerator
             print.append( '\n' );
         }
         sb.append( "|===\n" )
-            .append( ENDIF );
-        print.append( ENDIF )
+            .append( ConfigAsciiDocGenerator.ENDIF );
+        print.append( ConfigAsciiDocGenerator.ENDIF )
             .append( '\n' );
         sb.append( print.toString() );
         return sb.toString();

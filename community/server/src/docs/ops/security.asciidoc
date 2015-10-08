@@ -1,6 +1,5 @@
 [[security-server]]
-Securing access to the Neo4j Server
-===================================
+= Securing access to the Neo4j Server
 
 == Secure the port and remote client connection accepts ==
 
@@ -24,18 +23,17 @@ Note that firewalls et cetera have to be configured accordingly as well.
 [[security-server-auth]]
 == Server authentication and authorization ==
 
-Neo4j requires clients to supply authentication credentials when accessing the
-REST API. Without valid credentials, access to the database will be forbidden.
+Neo4j requires clients to supply authentication credentials when accessing the REST API.
+Without valid credentials, access to the database will be forbidden.
 
 The authentication and authorization data is stored under _data/dbms/auth_.
-If necessary, this file can be copied over to other neo4j instances to ensure
-they share the same username/password (see <<rest-api-security-copy-config>>).
+If necessary, this file can be copied over to other neo4j instances to ensure they share the same username/password (see <<rest-api-security-copy-config>>).
 
-Please refer to <<rest-api-security>> for additional details. When access Neo4j over
-unsecured networks, ensure HTTPS is configured and used for access (see <<security-server-https>>).
+Please refer to <<rest-api-security>> for additional details.
+When accessing Neo4j over unsecured networks, make sure HTTPS is configured and used for access (see <<security-server-https>>).
 
-If necessary, authentication may be disabled. This will allow any client to access
-the database without supplying authentication credentials.
+If necessary, authentication may be disabled.
+This will allow any client to access the database without supplying authentication credentials.
 
 [source,properties]
 ----
@@ -43,11 +41,9 @@ the database without supplying authentication credentials.
 dbms.security.auth_enabled=false
 ----
 
-WARNING: Disabling authentication is not recommended, and should only be done if
-the operator has a good understanding of their network security, including protection
-against http://en.wikipedia.org/wiki/Cross-site_scripting[cross-site scripting (XSS)]
-attacks via user browsers. Developers should not disable authentication if they
-have a local installation using the default listening ports.
+[WARNING]
+Disabling authentication is not recommended, and should only be done if the operator has a good understanding of their network security, including protection against http://en.wikipedia.org/wiki/Cross-site_scripting[cross-site scripting (XSS)] attacks via web browsers.
+Developers should not disable authentication if they have a local installation using the default listening ports.
 
 [[security-server-https]]
 == HTTPS support ==
@@ -86,9 +82,13 @@ org.neo4j.server.webserver.https.port=443
 
 == Arbitrary code execution ==
 
+[IMPORTANT]
+The Neo4j server exposes remote scripting functionality by default that allow full access to the underlying system.
+Exposing your server without implementing a security layer presents a substantial security vulnerability.
+
 By default, the Neo4j Server comes with some places where arbitrary code code execution can happen. These are the <<rest-api-traverse>> REST endpoints.
 To secure these, either disable them completely by removing offending plugins from the server classpath, or secure access to these URLs through proxies or Authorization Rules.
-Also, the Java Security Manager, see http://docs.oracle.com/javase/7/docs/technotes/guides/security/index.html can be used to secure parts of the codebase.
+Also, the Java Security Manager, see http://docs.oracle.com/javase/7/docs/technotes/guides/security/index.html, can be used to secure parts of the codebase.
 
 == Server authorization rules ==
 
@@ -99,19 +99,14 @@ To facilitate domain-specific authorization policies in Neo4j Server, security r
 This makes scenarios like user and role based security and authentication against external lookup services possible.
 See +org.neo4j.server.rest.security.SecurityRule+ in the javadocs downloadable from http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.neo4j.app%22%20AND%20a%3A%22neo4j-server%22[Maven Central (org.neo4j.app:neo4j-server)].
 
-CAUTION: The use of Server Authorization Rules may interact unexpectedly with the built-in <<security-server-auth>>, if enabled.
+[CAUTION]
+The use of Server Authorization Rules may interact unexpectedly with the built-in authentication and authorization (see <<security-server-auth>>), if enabled.
 
 include::enforcing-server-authorization-rules.asciidoc[]
 
 include::using-wildcards-to-target-security-rules.asciidoc[]
 
 include::using-complex-wildcards-to-target-security-rules.asciidoc[]
-
-== Hosted scripting ==
-
-[IMPORTANT]
-The neo4j server exposes remote scripting functionality by default that allow full access to the underlying system.
-Exposing your server without implementing a security layer poses a substantial security vulnerability.
 
 == Security in depth ==
 
@@ -129,8 +124,9 @@ This provides a number of advantages:
   Allow from 192.168.0
 </Proxy>
 ---------------
-
-While equivalent functionality can be implemented with Neo4j's +SecurityRule+ plugins (see above), for operations professionals configuring servers like Apache is often preferable to developing plugins. However it should be noted that where both approaches are used, they will work harmoniously providing the behavior is consistent across proxy server and +SecurityRule+ plugins.
++
+While it is possible to develop plugins using Neo4j's `SecurityRule` (see above), operations professionals would often prefer to configure proxy servers such as Apache.
+However, it should be noted that in cases where both approaches are being used, they will work harmoniously provided that the behavior is consistent across proxy server and `SecurityRule` plugins.
 
 * Run Neo4j Server as a non-root user on a Linux/Unix system on a port < 1000 (e.g. port 80) using
 +
@@ -151,3 +147,6 @@ BalancerMember http://192.168.1.51:80
 ProxyPass /test balancer://mycluster
 --------------
 
+== Neo4j Web Interface Security
+
+For configuration settings to consider in order to get the level of security you want to achieve, see <<server-browser-config>>.

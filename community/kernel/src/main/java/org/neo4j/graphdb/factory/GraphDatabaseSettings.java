@@ -470,7 +470,8 @@ public abstract class GraphDatabaseSettings
     @Obsoleted( "Write batching can no longer be turned off" )
     public static final Setting<Boolean> batched_writes = setting( "batched_writes", BOOLEAN, Boolean.TRUE.toString() );
 
-    @Description( "Log executed queries that takes longer than the configured threshold." )
+    @Description( "Log executed queries that takes longer than the configured threshold. "
+            + "_NOTE: This feature is only available in the Neo4j Enterprise Edition_." )
     public static final Setting<Boolean> log_queries = setting("dbms.querylog.enabled", BOOLEAN, FALSE );
 
     @Description( "Log executed queries that take longer than the configured threshold" )

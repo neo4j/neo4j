@@ -1,16 +1,15 @@
 [[configuration-io-examples]]
-Memory mapped IO settings
-=========================
+= Memory mapped IO settings
 
 == Introduction ==
 
 .Quick info
-***********
-* The page cache is sometimes called _low level cache_, _file system cache_ or _file buffer cache _.
+****
+* The page cache is sometimes called _low level cache_, _file system cache_ or _file buffer cache_.
 * It caches the Neo4j data as stored on the durable media.
 * The default configuration of the cache relies on heuristics and assumes that the machine is dedicated to running Neo4j, so you might want to tune it yourself to get the most out of the available memory.
-* There is just one setting for the file buffer cache: `dbms.pagecache.memory` - it specifies how much memory Neo4j is allowed to use for this cache.
-***********
+* There is just one setting for the file buffer cache: `dbms.pagecache.memory` -- it specifies how much memory Neo4j is allowed to use for this cache.
+****
 
 Each file in the Neo4j store is accessed through the Neo4j page cache, when reading from, or writing to, the store files.
 Since there is only one page cache, there is only one setting for specifying how much memory Neo4j is allowed to use for page caching.
