@@ -98,6 +98,7 @@ public class Recovery extends LifecycleAdapter
         // This is here as by now all other services have reacted to the recovery process
         if ( recoveredLog )
         {
+            spi.forceEverything();
             monitor.recoveryCompleted();
         }
     }

@@ -118,6 +118,73 @@ if ($PSVersionTable.PSVersion -ne '2.0') {
       }
     }
 
+    Context "Uses specified port parameter alias" {
+      Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
+      Mock Get-Neo4jSetting {
+        @(
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_enabled'; 'Value'='true' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_host'; 'Value'='somehost.domain.com' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_port'; 'Value'='1234' })
+        )
+      }
+      Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
+      Mock Start-Process { }
+      Mock Start-Process -Verifiable -ParameterFilter { 
+        ($ArgumentList -join ' ').Contains('-host anotherhost.domain.com') -and ($ArgumentList -join ' ').Contains('-port 5678')
+      }
+      
+      Start-Neo4jShell -UseHost 'anotherhost.domain.com' -Port 5678 
+
+      It "uses values specified in parameters" {
+        Assert-VerifiableMocks
+      }
+    }
+
+    Context "Uses specified shellport parameter alias" {
+      Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
+      Mock Get-Neo4jSetting {
+        @(
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_enabled'; 'Value'='true' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_host'; 'Value'='somehost.domain.com' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_port'; 'Value'='1234' })
+        )
+      }
+      Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
+      Mock Start-Process { }
+      Mock Start-Process -Verifiable -ParameterFilter { 
+        ($ArgumentList -join ' ').Contains('-host anotherhost.domain.com') -and ($ArgumentList -join ' ').Contains('-port 5678')
+      }
+      
+      Start-Neo4jShell -UseHost 'anotherhost.domain.com' -ShellPort 5678 
+
+      It "uses values specified in parameters" {
+        Assert-VerifiableMocks
+      }
+    }
+
+    Context "Uses specified host parameter alias" {
+      Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
+      Mock Get-Neo4jSetting {
+        @(
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_enabled'; 'Value'='true' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_host'; 'Value'='somehost.domain.com' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_port'; 'Value'='1234' })
+        )
+      }
+      Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
+      Mock Start-Process { }
+      Mock Start-Process -Verifiable -ParameterFilter { 
+        ($ArgumentList -join ' ').Contains('-host anotherhost.domain.com') -and ($ArgumentList -join ' ').Contains('-port 5678')
+      }
+      
+      Start-Neo4jShell -Host 'anotherhost.domain.com' -UsePort 5678 
+
+      It "uses values specified in parameters" {
+        Assert-VerifiableMocks
+      }
+    }
+
+
     Context "Appends other startup commands" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
       Mock Get-Neo4jSetting { }

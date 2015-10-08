@@ -69,10 +69,11 @@ Function Start-Neo4jShell
     [object]$Neo4jServer = ''
     
     ,[Parameter(Mandatory=$false,ValueFromPipeline=$false)]
+    [Alias('Host')]
     [string]$UseHost = ''
 
     ,[Parameter(Mandatory=$false,ValueFromPipeline=$false)]
-    [Alias('ShellPort')]
+    [Alias('ShellPort','Port')]
     [ValidateRange(0,65535)]
     [int]$UsePort = -1
     
@@ -139,7 +140,10 @@ Function Start-Neo4jShell
     # Add unbounded command line arguments
     if ($OtherArgs -ne $null) { $ShellArgs += $OtherArgs }
 
-    $result = (Start-Process -FilePath $JavaCMD.java -ArgumentList $ShellArgs -Wait:$Wait -NoNewWindow:$Wait -PassThru)
+    if ($PSCmdlet.ShouldProcess("$($JavaCMD.java) $($ShellArgs)", 'Start Neo4j Shell'))
+    {
+      $result = (Start-Process -FilePath $JavaCMD.java -ArgumentList $ShellArgs -Wait:$Wait -NoNewWindow:$Wait -PassThru)
+    }
     
     if ($PassThru) { Write-Output $thisServer } else { Write-Output $result.ExitCode }
   }

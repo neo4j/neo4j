@@ -15,6 +15,7 @@ o Generates a warning when a plan using LOAD CSV also contains an EagerPipe
 o Introduce STARTS WITH, ENDS WITH and CONTAINS
 o ShortestPath no longer has a max limit of 15 steps
 o Generates a warning when using shortestPath without supplying an upper limit
+o Removes eagerness from query execution plans in cases where it is not necessary
 
 Browser:
 o New drawer for :config settings
@@ -24,6 +25,10 @@ o Add config to control outgoing connections
 
 Packaging:
 o Neo4j console does not fork a subprocess on Linux, enabling easier process management
+
+Kernel:
+o Change the default `dbms.pagecache.memory` setting from 75% to 50% of free system memory after the JVM heap.
+o Fix a bug that caused an incorrect page cache size to be reported when the `dump_configuration` setting was enabled.
 
 2.3.0-M03
 ---------
@@ -150,6 +155,13 @@ o Added ability to skip duplicate nodes, i.e. multiple nodes with the same ID in
 
 2.2.6
 -----
+Cypher:
+o Fixes #5336 - Properly handle matching on multiple labels
+o Fixes #5195 - USING INDEX hints breaks some queries
+o Fixes #5545 - ExecutionFailure on combination of ORDER BY and LIMIT 0
+o MERGE now prints its start point in the plan description
+o Cypher queries will no longer be logged in messages.log
+
 Kernel:
 o Fixes an issue where label updates where supplied unordered during batch import
   when deduplicating nodes. This issue could prevent any import containing duplicate

@@ -9,6 +9,7 @@ o Generates a warning when a plan using LOAD CSV also contains an EagerPipe
 o Introduce STARTS WITH, ENDS WITH and CONTAINS
 o ShortestPath no longer has a max limit of 15 steps
 o Generates a warning when using shortestPath without supplying an upper limit
+o Removes eagerness from query execution plans in cases where it is not necessary
 
 2.3.0-M03
 -------
@@ -57,6 +58,9 @@ o Cypher may now use full index scans to solve queries containing has(n.prop) if
 -----
 o Fixes #5336 - Properly handle matching on multiple labels
 o Fixes #5195 - USING INDEX hints breaks some queries
+o Fixes #5545 - ExecutionFailure on combination of ORDER BY and LIMIT 0
+o MERGE now prints its start point in the plan description
+o Cypher queries will no longer be logged in messages.log
 
 2.2.5
 -----

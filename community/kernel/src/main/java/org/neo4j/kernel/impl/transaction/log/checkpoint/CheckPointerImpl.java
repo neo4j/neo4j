@@ -163,6 +163,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
          */
         msgLog.info( prefix( lastClosedTransactionId ) + " Starting store flush..." );
         storeFlusher.forceEverything();
+        msgLog.info( prefix( lastClosedTransactionId ) + " Store flush completed" );
 
         /*
          * Check kernel health before going to write the next check point.  In case of a panic this check point
@@ -170,8 +171,12 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
          * repair the damages.
          */
         kernelHealth.assertHealthy( IOException.class );
+
+        msgLog.info( prefix( lastClosedTransactionId ) + " Starting appending check point entry into the tx log..." );
         appender.checkPoint( logPosition, logCheckPointEvent );
         threshold.checkPointHappened( lastClosedTransactionId );
+        msgLog.info( prefix( lastClosedTransactionId ) + " Appending check point entry into the tx log completed" );
+
         msgLog.info( prefix( lastClosedTransactionId ) + "Check pointing completed" );
 
         /*

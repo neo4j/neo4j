@@ -1,3 +1,8 @@
+2.3.0-RC1
+---------
+o Change the default `dbms.pagecache.memory` setting from 75% to 50% of free system memory after the JVM heap.
+o Fix a bug that caused an incorrect page cache size to be reported when the `dump_configuration` setting was enabled.
+
 2.3.0-M03
 ---------
 o Introducing cursors in Kernel API. Cursors will allow for less garbage (objects) created and more efficient usage of PageCursors

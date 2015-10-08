@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{NewPlannerTestSupport, ExecutionEngineFunSuite}
 import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CustomMatchers
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
 
 class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers with NewPlannerTestSupport {
 
@@ -84,5 +84,14 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
       Map("crew" -> crew4),
       Map("crew" -> crew5)
     ))
+  }
+
+  test("Order by with limit zero or negative should not generate errors") {
+    createLabeledNode(Map("name" -> "Steven"), "Person")
+    createLabeledNode(Map("name" -> "Craig"), "Person")
+    executeWithAllPlanners("MATCH (p:Person) RETURN p ORDER BY p.name LIMIT 1").length should equal(1)
+    executeWithAllPlanners("MATCH (p:Person) RETURN p ORDER BY p.name LIMIT 0").length should equal(0)
+    executeWithAllPlanners("MATCH (p:Person) RETURN p ORDER BY p.name LIMIT {limit}", "limit" -> -1).length should equal(0)
+    a [SyntaxException] should be thrownBy executeWithAllPlanners("MATCH (p:Person) RETURN p ORDER BY p.name LIMIT -1")
   }
 }

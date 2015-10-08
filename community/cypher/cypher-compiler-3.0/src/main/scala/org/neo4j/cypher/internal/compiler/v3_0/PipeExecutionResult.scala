@@ -100,7 +100,7 @@ class PipeExecutionResult(val result: ResultIterator,
   }
 
   private trait WrappingResourceIterator[T] extends ResourceIterator[T] {
-    def remove() { Collections.emptyIterator[T]().remove() }
+    def remove() { throw new UnsupportedOperationException("remove") }
     def close() { self.close() }
   }
 

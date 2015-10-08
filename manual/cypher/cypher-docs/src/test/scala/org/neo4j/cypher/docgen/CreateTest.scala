@@ -165,13 +165,11 @@ In this case we add a +Person+ label to the node as well.
   @Test def create_multiple_nodes_from_maps() {
     testQuery(
       title = "Create multiple nodes with a parameter for their properties",
-      text = """
-Use `UNWIND` to create multiple nodes from a parameter.
-""",
+      text = "By providing Cypher an array of maps, it will create a node for each map.",
       parameters = Map("props" -> List(
         Map("name" -> "Andres", "position" -> "Developer"),
         Map("name" -> "Michael", "position" -> "Developer"))),
-      queryText = "unwind {props} as properties create (n) set n = properties return n",
+      queryText = "UNWIND {props} as map CREATE (n) SET n = map",
       optionalResultExplanation = "",
       assertions = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
   }

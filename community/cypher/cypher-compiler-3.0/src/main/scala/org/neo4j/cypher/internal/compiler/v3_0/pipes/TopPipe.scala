@@ -82,38 +82,43 @@ case class TopNPipe(source: Pipe, sortDescription: List[SortItem], countExpressi
       input
     else {
 
-      val lessThan = new LessThanComparator(this)
-
       val first = input.next()
       val count = countExpression(first).asInstanceOf[Number].intValue()
-      var result = new Array[SortDataWithContext](count)
-      result(0) = arrayEntry(first)
-      var last : Int = 0
 
-      while ( last < count - 1 && input.hasNext ) {
-        last += 1
-        result(last) = arrayEntry(input.next())
-      }
-
-      if (input.isEmpty) {
-        result.slice(0,last + 1).sorted(lessThan).iterator.map(_._2)
+      if (count <= 0) {
+        Iterator.empty
       } else {
-        result = result.sorted(lessThan)
 
-        val search = binarySearch(result, lessThan) _
-        input.foreach {
-          ctx =>
-            val next = arrayEntry(ctx)
-            if (lessThan.compare(next, result(last)) < 0) {
-              val idx = search(next)
-              val insertPosition = if (idx < 0 )  - idx - 1 else idx + 1
-              if (insertPosition >= 0 && insertPosition < count) {
-                Array.copy(result, insertPosition, result, insertPosition + 1, count - insertPosition - 1)
-                result(insertPosition) = next
-              }
-            }
+        var result = new Array[SortDataWithContext](count)
+        result(0) = arrayEntry(first)
+        var last : Int = 0
+
+        while ( last < count - 1 && input.hasNext ) {
+          last += 1
+          result(last) = arrayEntry(input.next())
         }
-        result.toIterator.map(_._2)
+
+        val lessThan = new LessThanComparator(this)
+        if (input.isEmpty) {
+          result.slice(0,last + 1).sorted(lessThan).iterator.map(_._2)
+        } else {
+          result = result.sorted(lessThan)
+
+          val search = binarySearch(result, lessThan) _
+          input.foreach {
+            ctx =>
+              val next = arrayEntry(ctx)
+              if (lessThan.compare(next, result(last)) < 0) {
+                val idx = search(next)
+                val insertPosition = if (idx < 0 )  - idx - 1 else idx + 1
+                if (insertPosition >= 0 && insertPosition < count) {
+                  Array.copy(result, insertPosition, result, insertPosition + 1, count - insertPosition - 1)
+                  result(insertPosition) = next
+                }
+              }
+          }
+          result.toIterator.map(_._2)
+        }
       }
     }
   }

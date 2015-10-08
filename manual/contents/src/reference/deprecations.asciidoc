@@ -2,6 +2,7 @@
 = Deprecations =
 
 This section outlines deprecations in Neo4j {neo4j-version} or earlier in order to help you find a smoother transition path to future releases.
+All features listed below may be removed in a future major release.
 
 Cypher ExecutionEngine::
 There's no need to use `ExecutionEngine` anymore.
@@ -20,12 +21,15 @@ For more information, see <<powershell>>.
 
 `STR()` function::
 The `STR()` function is deprecated from Neo4j version 2.3 and onwards.
-It may be removed in a future major release.
 
 `HAS()` function::
-The `HAS()` function is deprecated from Neo4j version 2.3 and onwards. Please use `EXISTS()` instead.
-It will be removed in a future major release.
+The `HAS()` function is deprecated from Neo4j version 2.3 and onwards.
+Please use `EXISTS()` instead.
 
 Bare node patterns::
 The usage of node identifiers without enclosing them in parentheses, such as in `MATCH n-->m RETURN n.prop`, is deprecated from Neo4j version 2.3 and onwards.
 Please use `MATCH (n)-->(m) RETURN n.prop` instead.
+
+Create nodes from a parameter list of maps::
+The syntax `CREATE (:X {param})`, where `param` is a list of maps, is deprecated in Neo4j version 2.3 and onwards.
+To achieve the same functionality, use +UNWIND+ instead: `UNWIND {param} as props CREATE (n:X) SET n = props`

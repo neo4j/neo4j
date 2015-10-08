@@ -22,7 +22,6 @@ package org.neo4j.metrics.source;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
-import java.io.Closeable;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
@@ -30,12 +29,12 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.metrics.MetricsSettings;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-public class Neo4jMetrics implements Closeable
+public class DBMetrics extends LifecycleAdapter
 {
     private static final String TRANSACTION_PREFIX = "neo4j.transaction";
     private static final String TX_PEAK_CONCURRENT = name( TRANSACTION_PREFIX, "peak_concurrent" );
@@ -59,14 +58,26 @@ public class Neo4jMetrics implements Closeable
     private static final String COUNTS_RELATIONSHIP = name( COUNTS_PREFIX, "relationship" );
     private static final String COUNTS_NODE = name( COUNTS_PREFIX, "node" );
 
-    private final NetworkMetrics networkMetrics;
+    private final MetricRegistry registry;
+    private final Config config;
+    private final TransactionCounters transactionCounters;
+    private final PageCacheMonitor pageCacheCounters;
+    private final IdGeneratorFactory idGeneratorFactory;
 
-    public Neo4jMetrics( MetricRegistry registry,
-                         Config config, Monitors monitors, final TransactionCounters transactionCounters,
-                         final PageCacheMonitor pageCacheCounters, final IdGeneratorFactory idGeneratorFactory )
+    public DBMetrics( MetricRegistry registry, Config config, TransactionCounters transactionCounters,
+            PageCacheMonitor pageCacheCounters, IdGeneratorFactory idGeneratorFactory )
     {
-        networkMetrics = new NetworkMetrics( config, monitors, registry );
+        this.registry = registry;
+        this.config = config;
 
+        this.transactionCounters = transactionCounters;
+        this.pageCacheCounters = pageCacheCounters;
+        this.idGeneratorFactory = idGeneratorFactory;
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
         // Neo stats
         // TxManager metrics
         if ( config.get( MetricsSettings.neoTxEnabled ) )
@@ -227,8 +238,38 @@ public class Neo4jMetrics implements Closeable
     }
 
     @Override
-    public void close() throws IOException
+    public void stop() throws IOException
     {
-        networkMetrics.close();
+        // Neo stats
+        // TxManager metrics
+        if ( config.get( MetricsSettings.neoTxEnabled ) )
+        {
+            registry.remove( TX_ACTIVE );
+            registry.remove( TX_COMMITTED );
+            registry.remove( TX_ROLLBACKS );
+            registry.remove( TX_TERMINATED );
+            registry.remove( TX_STARTED );
+            registry.remove( TX_PEAK_CONCURRENT );
+        }
+
+        // Page cache metrics
+        if ( config.get( MetricsSettings.neoPageCacheEnabled ) )
+        {
+            registry.remove( PC_PAGE_FAULTS );
+            registry.remove( PC_EVICTIONS );
+            registry.remove( PC_PINS );
+            registry.remove( PC_UNPINS );
+            registry.remove( PC_FLUSHES );
+            registry.remove( PC_EVICTION_EXCEPTIONS );
+        }
+
+        // Node/rel count metrics
+        if ( config.get( MetricsSettings.neoCountsEnabled ) )
+        {
+            registry.remove( COUNTS_NODE );
+            registry.remove( COUNTS_RELATIONSHIP );
+            registry.remove( COUNTS_PROPERTY );
+            registry.remove( COUNTS_RELATIONSHIP_TYPE );
+        }
     }
 }
