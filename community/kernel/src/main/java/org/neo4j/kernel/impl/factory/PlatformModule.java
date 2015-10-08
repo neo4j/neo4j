@@ -163,7 +163,8 @@ public class PlatformModule
         // Anyways please fix this.
         dataSourceManager = life.add( dependencies.satisfyDependency( new DataSourceManager() ) );
 
-        availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK );
+        availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK, logging.getInternalLog(
+                AvailabilityGuard.class ) );
 
         transactionMonitor = dependencies.satisfyDependency( createTransactionCounters() );
 
