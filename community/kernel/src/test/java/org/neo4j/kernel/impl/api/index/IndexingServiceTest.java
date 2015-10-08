@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -69,6 +71,7 @@ import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.test.DoubleLatch;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -126,6 +129,18 @@ public class IndexingServiceTest
     private final IndexStoreView storeView  = mock( IndexStoreView.class );
     private final TokenNameLookup nameLookup = mock( TokenNameLookup.class );
     private final TestLogging logging = new TestLogging();
+
+    {
+        when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) ).thenAnswer(
+                new Answer<DoubleLongRegister>()
+                {
+                    @Override
+                    public DoubleLongRegister answer( InvocationOnMock invocation ) throws Throwable
+                    {
+                        return (DoubleLongRegister) invocation.getArguments()[1];
+                    }
+                } );
+    }
 
     @Test
     public void shouldBringIndexOnlineAndFlipOverToIndexAccessor() throws Exception
@@ -746,6 +761,67 @@ public class IndexingServiceTest
         // THEN our index should still have been recovered properly
         // apparently we create updaters two times during recovery, get over it
         verify( accessor, times( 2 ) ).newUpdater( BATCHED );
+    }
+
+    @Test
+    public void shouldWaitForRecoveredUniquenessConstraintIndexesToBeFullyPopulated() throws Exception
+    {
+        // I.e. when a uniqueness constraint is created, but database crashes before that schema record
+        // ends up in the store, so that next start have no choice but to rebuild it.
+
+        // GIVEN
+        final DoubleLatch latch = new DoubleLatch();
+        ControlledIndexPopulator populator = new ControlledIndexPopulator( latch );
+        final AtomicLong indexId = new AtomicLong( -1 );
+        IndexingService.Monitor monitor = new IndexingService.MonitorAdapter()
+        {
+            @Override
+            public void awaitingPopulationOfRecoveredIndex( long index, IndexDescriptor descriptor )
+            {
+                // When we see that we start to await the index to populate, notify the slow-as-heck
+                // populator that it can actually go and complete its job.
+                indexId.set( index );
+                latch.start();
+            }
+        };
+        // leaving out the IndexRule here will have the index being populated from scratch
+        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor,
+                withData( NodePropertyUpdate.add( 0, 0, "value", new long[] {1} ) ), monitor );
+
+        // WHEN initializing, i.e. preparing for recovery
+        life.init();
+        // simulating an index being created as part of applying recovered transactions
+        long fakeOwningConstraintRuleId = 1;
+        indexing.createIndex( new IndexRule( 2, labelId, propertyKeyId, PROVIDER_DESCRIPTOR,
+                fakeOwningConstraintRuleId ) );
+        // and then starting, i.e. considering recovery completed
+        life.start();
+
+        // THEN afterwards the index should be ONLINE
+        assertEquals( 2, indexId.get() );
+        assertEquals( ONLINE, indexing.getIndexProxy( indexId.get() ).getState() );
+    }
+
+    private static class ControlledIndexPopulator extends IndexPopulator.Adapter
+    {
+        private final DoubleLatch latch;
+
+        ControlledIndexPopulator( DoubleLatch latch )
+        {
+            this.latch = latch;
+        }
+
+        @Override
+        public void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException, IOException
+        {
+            latch.awaitStart();
+        }
+
+        @Override
+        public void close( boolean populationCompletedSuccessfully ) throws IOException
+        {
+            latch.finish();
+        }
     }
 
     private Answer<Void> waitForLatch( final CountDownLatch latch )
