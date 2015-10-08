@@ -109,8 +109,12 @@ public class TransactionRecordState implements RecordState
     public void initialize( long lastCommittedTxWhenTransactionStarted )
     {
         this.lastCommittedTxWhenTransactionStarted = lastCommittedTxWhenTransactionStarted;
-        context.initialize();
         prepared = false;
+    }
+
+    public void clear()
+    {
+        context.clear();
     }
 
     @Override

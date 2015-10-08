@@ -42,9 +42,9 @@ class CachingLegacyIndexTransactionState implements LegacyIndexTransactionState
     }
 
     @Override
-    public void initialize()
+    public void clear()
     {
-        txState.initialize();
+        txState.clear();
         if ( nodeLegacyIndexChanges != null && !nodeLegacyIndexChanges.isEmpty() )
         {
             nodeLegacyIndexChanges.clear();

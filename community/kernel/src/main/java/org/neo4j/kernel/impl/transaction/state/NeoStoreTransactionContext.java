@@ -116,7 +116,7 @@ public class NeoStoreTransactionContext
         creator.createToken( name, id, getRelationshipTypeTokenRecords() );
     }
 
-    public void initialize()
+    public void clear()
     {
         recordChangeSet.close();
     }
