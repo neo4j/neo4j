@@ -252,7 +252,7 @@ class CompiledExecutionResult(taskCloser: TaskCloser,
     new EntityNotFoundException("No column named '" + column + "' was found. Found: " + data.keys.mkString("(\"", "\", \"", "\")"))
 
   private trait WrappingResourceIterator[T] extends ResourceIterator[T] {
-    def remove() { Collections.emptyIterator[T]().remove() }
+    def remove() { throw new UnsupportedOperationException("remove") }
     def close() { self.close() }
   }
 
