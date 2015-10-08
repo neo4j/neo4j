@@ -210,17 +210,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         assert locks != null : "This transaction has been disposed off, it should not be used.";
         this.terminated = closing = closed = failure = success = false;
         this.transactionType = TransactionType.ANY;
-        this.hooksState = null;
         this.beforeHookInvoked = false;
-        this.txState = null; // TODO: Implement txState.clear() instead, to re-use data structures
-        this.legacyIndexTransactionState.initialize();
         this.recordState.initialize( lastCommittedTx );
-        this.counts.initialize();
         this.startTimeMillis = clock.currentTimeMillis();
         this.lastTransactionIdWhenStarted = lastCommittedTx;
         this.transactionEvent = tracer.beginTransaction();
         assert transactionEvent != null: "transactionEvent was null!";
-        this.closeListener = null;
         return this;
     }
 
@@ -442,6 +437,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 transactionEvent.setReadOnly( txState == null || !txState.hasChanges() );
                 transactionEvent.close();
                 transactionEvent = null;
+                legacyIndexTransactionState.clear();
+                recordState.clear();
+                counts.clear();
+                txState = null;
+                hooksState = null;
+                closeListener = null;
             }
             finally
             {
