@@ -135,18 +135,20 @@
       <artifactId>neo4j-cypher-frontend-2.3</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-frontend-2.3</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-    </dependency>
 
     <!-- neo4j testing -->
 
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-frontend-2.3</artifactId>
+      <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
