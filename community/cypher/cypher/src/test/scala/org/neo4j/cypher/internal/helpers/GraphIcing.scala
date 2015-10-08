@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.helpers
 import java.util.concurrent.TimeUnit
 
 import org.neo4j.graphdb.DynamicLabel._
-import org.neo4j.graphdb.{DynamicLabel, Node, Transaction}
+import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
@@ -40,7 +40,10 @@ trait GraphIcing {
     }
   }
 
-  implicit class RichGraph(graph: GraphDatabaseAPI) {
+  implicit class RichGraphDatabaseService(graph: GraphDatabaseService)
+    extends RichGraphDatabaseAPI(graph.asInstanceOf[GraphDatabaseAPI])
+
+  implicit class RichGraphDatabaseAPI(graph: GraphDatabaseAPI) {
 
     def indexPropsForLabel(label: String): List[List[String]] = {
       val indexDefs = graph.schema.getIndexes(DynamicLabel.label(label)).asScala.toList
