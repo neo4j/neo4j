@@ -115,6 +115,37 @@ node {
       expect(GraphStyle.forNode(labels: ['Movie']).get('color')).toBe('#A5ABB6')
       expect(GraphStyle.forNode(labels: ['Animal']).get('color')).toBe('#A5ABB6')
 
+    it 'should return "{name}" as default caption because of higher priority', ->
+      property_list = []
+      property_list.push({key: 'name', val: 'x'})
+      property_list.push({key: 'title', val: 'x'})
+      item = {propertyList: property_list}
+      expect(GraphStyle.getDefaultNodeCaption(item).caption).toBe('{name}')
+
+    it 'should return "{Title}" as default caption because of higher priority', ->
+      # To make sure the property list ordering is ignored
+      # and that the matching is case insensitive
+      property_list = []
+      property_list.push({key: 'username', val: 'x'})
+      property_list.push({key: 'Title', val: 'x'})
+      item = {propertyList: property_list}
+      expect(GraphStyle.getDefaultNodeCaption(item).caption).toBe('{Title}')
+
+    it 'should return "{city}" as default caption', ->
+      # Because first in property list and doesn't match
+      # any of the more specific regexps.
+      property_list = []
+      property_list.push({key: 'city', val: 'x'})
+      property_list.push({key: 'email', val: 'x'})
+      item = {propertyList: property_list}
+      expect(GraphStyle.getDefaultNodeCaption(item).caption).toBe('{city}')  
+
+    it 'should return "<id>" as default caption when there are no properties', ->
+      # To make sure the property list ordering is ignored
+      property_list = []
+      item = {propertyList: property_list}
+      expect(GraphStyle.getDefaultNodeCaption(item).caption).toBe('<id>')
+
   describe '#forRelationship: ', ->
     it 'default style should give relationships a caption', ->
       GraphStyle.loadRules(GraphStyle.defaultStyle)

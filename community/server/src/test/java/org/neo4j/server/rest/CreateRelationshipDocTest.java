@@ -37,8 +37,7 @@ import org.neo4j.test.TestData.Title;
 import com.sun.jersey.api.client.ClientResponse.Status;
 import static org.junit.Assert.assertTrue;
 
-public class CreateRelationshipDocTest extends
-        AbstractRestFunctionalTestBase
+public class CreateRelationshipDocTest extends AbstractRestFunctionalDocTestBase
 {
     /**
      * Upon successful creation of a relationship, the new relationship is
@@ -83,8 +82,9 @@ public class CreateRelationshipDocTest extends
                             + "\", \"type\" : \"LOVES\"}";
         Node i = getNode( "Joe" );
         String entity = gen.get().expectedStatus(
-                Status.CREATED.getStatusCode() ).payload( jsonString ).post(
-                getNodeUri( i ) + "/relationships" ).entity();
+                Status.CREATED.getStatusCode() ).payload( jsonString )
+                .description( startGraph( "create relationship" ) )
+                .post( getNodeUri( i ) + "/relationships" ).entity();
         try ( Transaction tx = graphdb().beginTx() )
         {
             assertTrue( i.hasRelationship( DynamicRelationshipType.withName( "LOVES" ) ) );

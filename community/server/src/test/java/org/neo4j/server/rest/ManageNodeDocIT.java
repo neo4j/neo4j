@@ -19,8 +19,12 @@
  */
 package org.neo4j.server.rest;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasKey;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,6 +32,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
+
 import javax.ws.rs.core.MediaType;
 
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -36,14 +41,10 @@ import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasKey;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-public class ManageNodeDocIT extends AbstractRestFunctionalTestBase
+public class ManageNodeDocIT extends AbstractRestFunctionalDocTestBase
 {
     private static final long NON_EXISTENT_NODE_ID = 999999;
     private static String NODE_URI_PATTERN = "^.*/node/[0-9]+$";
@@ -221,9 +222,10 @@ public class ManageNodeDocIT extends AbstractRestFunctionalTestBase
     @Test
     public void shouldRespondWith204WhenNodeDeleted() throws Exception
     {
-        gen.get()
+        long node = helper.createNode();
+        gen.get().description( startGraph( "delete node" ) )
                 .expectedStatus( 204 )
-                .delete( functionalTestHelper.dataUri() + "node/" + helper.createNode() );
+                .delete( functionalTestHelper.dataUri() + "node/" + node );
     }
 
     @Test
@@ -242,6 +244,8 @@ public class ManageNodeDocIT extends AbstractRestFunctionalTestBase
      *
      * The relationships on a node has to be deleted before the node can be
      * deleted.
+     * 
+     * TIP: You can use `DETACH DELETE` in Cypher to delete nodes and their relationships in one go.
      */
     @Documented
     @Test
@@ -255,7 +259,7 @@ public class ManageNodeDocIT extends AbstractRestFunctionalTestBase
         assertThat( jsonMap, hasKey( "message" ) );
         assertNotNull( jsonMap.get( "message" ) );
 
-        gen.get()
+        gen.get().description( startGraph( "nodes with rels can not be deleted" ) ).noGraph()
                 .expectedStatus( 409 )
                 .delete( functionalTestHelper.dataUri() + "node/" + id );
     }

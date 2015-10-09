@@ -45,7 +45,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
-public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
+public class BatchOperationDocIT extends AbstractRestFunctionalDocTestBase
 {
     /**
      * Execute multiple operations in batch.
@@ -112,6 +112,7 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
 
 
         String entity = gen.get()
+        .description( startGraph( "execute multiple operations in batch" ) )
         .payload(jsonString)
         .expectedStatus(200)
         .post(batchUri()).entity();
