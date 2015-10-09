@@ -39,6 +39,11 @@ import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.test.ha.ClusterRule;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
@@ -67,23 +72,27 @@ public class TxPushStrategyConfigIT
     {
         ManagedCluster cluster = startCluster( 4, 2, "round_robin" );
 
-        createTransactionOnMaster( cluster );
-        assertLastTransactions( cluster,
-                lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
-                lastTx( SECOND_SLAVE, BASE_TX_ID + 1 ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID ) );
+        long txId = getLastTx( cluster.getMaster() );
+        int count = 15;
+        for ( int i = 0; i < count; i++ )
+        {
+            createTransactionOnMaster( cluster );
+        }
 
-        createTransactionOnMaster( cluster );
-        assertLastTransactions( cluster,
-                lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
-                lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID + 2 ) );
+        long min = -1, max = -1;
+        for ( GraphDatabaseAPI db : cluster.getAllMembers() )
+        {
+            long tx = getLastTx( db );
+            min = min == -1 ? tx : min( min, tx );
+            max = max == -1 ? tx : max( max, tx );
+        }
 
-        createTransactionOnMaster( cluster );
-        assertLastTransactions( cluster,
-                lastTx( FIRST_SLAVE, BASE_TX_ID + 3 ),
-                lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID + 3 ) );
+        assertEquals( txId + count, max );
+        assertTrue( "There should be members with transactions in the cluster", min != -1 );
+        assertTrue( "There should be members with transactions in the cluster", max != -1 );
+        assertThat( "There should at most be a txId gap of 1 among the cluster members since the transaction pushing " +
+                "goes in a round robin fashion. min:" + min + ", max:" + max,
+                (int) (max - min), lessThanOrEqualTo( 1 ) );
     }
 
     @Test
