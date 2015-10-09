@@ -309,8 +309,6 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
       NotificationCode.JOIN_HINT_UNSUPPORTED.notification(InputPosition.empty, NotificationDetail.Factory.joinKey(identifiers.asJava))
     case IndexLookupUnfulfillableNotification(labels) =>
       NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(InputPosition.empty, NotificationDetail.Factory.indexSeekOrScan(labels.asJava))
-    case BareNodeSyntaxDeprecatedNotification(pos) =>
-      NotificationCode.BARE_NODE_SYNTAX_DEPRECATED.notification(pos.asInputPosition)
     case EagerLoadCsvNotification =>
       NotificationCode.EAGER_LOAD_CSV.notification(InputPosition.empty)
     case LargeLabelWithLoadCsvNotification =>

@@ -128,8 +128,8 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
 
   test("sp = shortestPath((a)-[rel*1..]->(b))") {
     val patRel = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, VarPatternLength(1, None))
-    val nodeA = NodePattern(identifier = Some(ident("a")), Seq.empty, None, naked = false)_
-    val nodeB = NodePattern(identifier = Some(ident("b")), Seq.empty, None, naked = false)_
+    val nodeA = NodePattern(identifier = Some(ident("a")), Seq.empty, None)_
+    val nodeB = NodePattern(identifier = Some(ident("b")), Seq.empty, None)_
     val length: Some[Some[Range]] = Some(Some(Range(Some(UnsignedDecimalIntegerLiteral("1")_), None)_))
 
     val relPat = RelationshipPattern(Some(ident("rel")), optional = false, Seq.empty, length, None, OUTGOING)_
@@ -143,8 +143,8 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
 
   test("shortestPath((a)-[rel*1..]->(b))") {
     val patRel = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, VarPatternLength(1, None))
-    val nodeA = NodePattern(identifier = Some(ident("a")), Seq.empty, None, naked = false)_
-    val nodeB = NodePattern(identifier = Some(ident("b")), Seq.empty, None, naked = false)_
+    val nodeA = NodePattern(identifier = Some(ident("a")), Seq.empty, None)_
+    val nodeB = NodePattern(identifier = Some(ident("b")), Seq.empty, None)_
     val length: Some[Some[Range]] = Some(Some(Range(Some(UnsignedDecimalIntegerLiteral("1")_), None)_))
 
     val relPat = RelationshipPattern(Some(ident("rel")), optional = false, Seq.empty, length, None, OUTGOING)_
@@ -158,8 +158,8 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
 
   test("sp = allShortestPath((a)-[rel*1..]->(b))") {
     val patRel = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, VarPatternLength(1, None))
-    val nodeA = NodePattern(identifier = Some(ident("a")), Seq.empty, None, naked = false)_
-    val nodeB = NodePattern(identifier = Some(ident("b")), Seq.empty, None, naked = false)_
+    val nodeA = NodePattern(identifier = Some(ident("a")), Seq.empty, None)_
+    val nodeB = NodePattern(identifier = Some(ident("b")), Seq.empty, None)_
     val length: Some[Some[Range]] = Some(Some(Range(Some(UnsignedDecimalIntegerLiteral("1")_), None)_))
 
     val relPat = RelationshipPattern(Some(ident("rel")), optional = false, Seq.empty, length, None, OUTGOING)_

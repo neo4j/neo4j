@@ -39,12 +39,12 @@ case object getDegreeOptimizer extends Rewriter {
       replacer.expand(that) match {
 
         // LENGTH( (a)-[]->() )
-        case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None, _), RelationshipPattern(None, _, types, None, None, dir), NodePattern(None, List(), None, _))))))
+        case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None), RelationshipPattern(None, _, types, None, None, dir), NodePattern(None, List(), None))))))
           if func.function == Some(functions.Length) || func.function == Some(functions.Size) =>
           calculateUsingGetDegree(func, node, types, dir)
 
         // LENGTH( ()-[]->(a) )
-        case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None, _), RelationshipPattern(None, _, types, None, None, dir), NodePattern(Some(node), List(), None, _))))))
+        case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None), RelationshipPattern(None, _, types, None, None, dir), NodePattern(Some(node), List(), None))))))
           if func.function == Some(functions.Length) || func.function == Some(functions.Size) =>
           calculateUsingGetDegree(func, node, types, dir.reversed)
 

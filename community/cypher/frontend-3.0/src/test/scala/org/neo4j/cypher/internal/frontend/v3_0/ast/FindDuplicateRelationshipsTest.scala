@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, SemanticDirection
 class FindDuplicateRelationshipsTest extends CypherFunSuite {
 
   val pos = DummyPosition(0)
-  val node = NodePattern(None, Seq.empty, None, naked = true)(pos)
+  val node = NodePattern(None, Seq.empty, None)(pos)
   val relR = Identifier("r")(pos)
   val relS = Identifier("s")(pos)
 

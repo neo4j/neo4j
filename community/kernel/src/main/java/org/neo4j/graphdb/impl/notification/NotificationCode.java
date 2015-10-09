@@ -79,8 +79,8 @@ public enum NotificationCode
         Status.Statement.DynamicPropertyWarning,
         "Using a dynamic property makes it impossible to use an index lookup for this query"
     ),
-    BARE_NODE_SYNTAX_DEPRECATED(
-        SeverityLevel.WARNING,
+    BARE_NODE_SYNTAX_DEPRECATED( // This notification is no longer produced by current Cypher compilers
+        SeverityLevel.WARNING,   // but it is left here for backwards compatibility.
         Status.Statement.DeprecationWarning,
         "Use of bare node patterns has been deprecated. Please enclose the identifier in parenthesis."
     ),

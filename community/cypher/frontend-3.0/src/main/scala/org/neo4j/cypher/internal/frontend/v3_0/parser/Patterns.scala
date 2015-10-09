@@ -108,8 +108,7 @@ trait Patterns extends Parser
   )
 
   private def NodePattern: Rule1[ast.NodePattern] = rule("a node pattern") (
-      group("(" ~~ MaybeIdentifier ~ MaybeNodeLabels ~ MaybeProperties ~~ ")") ~~>> (ast.NodePattern(_, _, _, naked = false))
-    | group(MaybeIdentifier ~ MaybeNodeLabels ~ MaybeProperties ~~~? ((i, l, p) => !(i.isEmpty && l.isEmpty && p.isEmpty))) ~~>> (ast.NodePattern(_, _, _, naked = true))
+      group("(" ~~ MaybeIdentifier ~ MaybeNodeLabels ~ MaybeProperties ~~ ")") ~~>> (ast.NodePattern(_, _, _))
   )
 
   private def MaybeIdentifier: Rule1[Option[ast.Identifier]] = rule("an identifier") {

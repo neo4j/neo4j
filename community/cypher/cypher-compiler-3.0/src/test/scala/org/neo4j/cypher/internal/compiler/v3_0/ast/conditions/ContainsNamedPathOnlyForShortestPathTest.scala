@@ -27,7 +27,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
 
   test("happy when we have no named paths") {
     val ast = Query(None, SingleQuery(Seq(
-      Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(ident("n")), Seq.empty, None, naked = false)(pos))))(pos), Seq.empty, None)(pos),
+      Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(ident("n")), Seq.empty, None)(pos))))(pos), Seq.empty, None)(pos),
       Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(ident("n"), ident("n"))(pos)))(pos), None, None, None)(pos)
     ))(pos))(pos)
 
@@ -35,7 +35,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
   }
 
   test("unhappy when we have a named path") {
-    val namedPattern: NamedPatternPart = NamedPatternPart(ident("p"), EveryPath(NodePattern(Some(ident("n")), Seq.empty, None, naked = false)(pos)))(pos)
+    val namedPattern: NamedPatternPart = NamedPatternPart(ident("p"), EveryPath(NodePattern(Some(ident("n")), Seq.empty, None)(pos)))(pos)
     val ast = Query(None, SingleQuery(Seq(
       Match(optional = false, Pattern(Seq(namedPattern))(pos), Seq.empty, None)(pos),
       Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(ident("n"), ident("n"))(pos)))(pos), None, None, None)(pos)
@@ -46,7 +46,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
 
   test("should allow named path for shortest path") {
     val ast = Query(None, SingleQuery(Seq(
-      Match(optional = false, Pattern(Seq(NamedPatternPart(ident("p"), ShortestPaths(NodePattern(Some(ident("n")), Seq.empty, None, naked = false)(pos), single = true)(pos))(pos)))(pos), Seq.empty, None)(pos),
+      Match(optional = false, Pattern(Seq(NamedPatternPart(ident("p"), ShortestPaths(NodePattern(Some(ident("n")), Seq.empty, None)(pos), single = true)(pos))(pos)))(pos), Seq.empty, None)(pos),
       Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(ident("n"), ident("n"))(pos)))(pos), None, None, None)(pos)
     ))(pos))(pos)
 

@@ -37,7 +37,7 @@ case object noUnnamedPatternElementsInMatch extends Condition {
 
   private def unnamedNodePatterns(that: Any): Seq[String] = {
     collectNodesOfType[NodePattern].apply(that).collect {
-      case node@NodePattern(None, _, _, _) =>
+      case node@NodePattern(None, _, _) =>
         s"NodePattern at ${node.position} is unnamed"
     }
   }

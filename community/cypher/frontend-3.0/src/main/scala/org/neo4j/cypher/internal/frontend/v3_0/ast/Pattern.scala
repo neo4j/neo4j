@@ -233,8 +233,7 @@ case class RelationshipChain(element: PatternElement, relationship: Relationship
 case class NodePattern(
   identifier: Option[Identifier],
   labels: Seq[LabelName],
-  properties: Option[Expression],
-  naked: Boolean)(val position: InputPosition) extends PatternElement with SemanticChecking {
+  properties: Option[Expression])(val position: InputPosition) extends PatternElement with SemanticChecking {
 
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck =
     identifier.fold(SemanticCheckResult.success) {
@@ -249,15 +248,9 @@ case class NodePattern(
     }
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
-    checkParens chain
     checkProperties(ctx)
 
   override def isSingleNode = true
-
-  private def checkParens: SemanticCheck =
-    when (naked && (!labels.isEmpty || properties.isDefined)) {
-      SemanticError("Parentheses are required to identify nodes in patterns", position)
-    }
 
   private def checkProperties(ctx: SemanticContext): SemanticCheck = (properties, ctx) match {
     case (Some(e: Parameter), SemanticContext.Match) =>

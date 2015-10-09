@@ -90,7 +90,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
 
   private def checkForCartesianProducts: SemanticCheck = (state: SemanticState) => {
     val nodes = pattern.patternParts.map(_.fold(Set.empty[Identifier]) {
-      case NodePattern(Some(id), _, _, _) => list => list + id
+      case NodePattern(Some(id), _, _) => list => list + id
     })
 
     @tailrec
@@ -171,7 +171,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
       }
       case None => Seq.empty
     }) ++ pattern.treeFold(Seq.empty[String]) {
-      case NodePattern(Some(Identifier(id)), _, Some(MapExpression(prop)), _) if identifier == id => {
+      case NodePattern(Some(Identifier(id)), _, Some(MapExpression(prop))) if identifier == id => {
         case (acc, _) =>
           acc ++ prop.map(_._1.name)
       }
@@ -195,7 +195,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
 
   private def containsLabelPredicate(identifier: String, label: String): Boolean = {
     var labels = pattern.fold(Seq.empty[String]) {
-      case NodePattern(Some(Identifier(id)), labels, _, _) if identifier == id =>
+      case NodePattern(Some(Identifier(id)), labels, _) if identifier == id =>
         list => list ++ labels.map(_.name)
     }
     labels = where match {

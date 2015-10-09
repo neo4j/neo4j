@@ -28,13 +28,13 @@ class NoReferenceEqualityAmongIdentifiersTest extends CypherFunSuite with AstCon
 
   test("unhappy when same identifier instance is used multiple times") {
     val id = ident("a")
-    val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(id), Seq(), Some(id), naked = true)_)))_, Seq(), None)_
+    val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(id), Seq(), Some(id))_)))_, Seq(), None)_
 
     collector(ast) should equal(Seq(s"The instance $id is used 2 times"))
   }
 
   test("happy when all identifier are no reference equal") {
-    val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(ident("a")), Seq(), Some(ident("a")), naked = true)_)))_, Seq(), None)_
+    val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(ident("a")), Seq(), Some(ident("a")))_)))_, Seq(), None)_
 
     collector(ast) shouldBe empty
   }

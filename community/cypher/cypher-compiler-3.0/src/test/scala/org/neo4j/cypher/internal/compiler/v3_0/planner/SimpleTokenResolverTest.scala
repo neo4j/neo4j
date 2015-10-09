@@ -44,7 +44,7 @@ class SimpleTokenResolverTest extends CypherFunSuite {
         SingleQuery(Seq(
           Match(
             false,
-            Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None, true)))),
+            Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None)))),
             Seq(),
             Some(Where(Equals(Property(Identifier("n"), pkToken), StringLiteral("Resolved"))))
           ),
@@ -67,7 +67,7 @@ class SimpleTokenResolverTest extends CypherFunSuite {
         SingleQuery(Seq(
           Match(
             false,
-            Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None, true)))),
+            Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None)))),
             Seq(),
             Some(Where(Equals(Property(Identifier("n"), pkToken), StringLiteral("Unresolved"))))
           ),
@@ -90,7 +90,7 @@ class SimpleTokenResolverTest extends CypherFunSuite {
       SingleQuery(Seq(
         Match(
           false,
-          Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None, true)))),
+          Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None)))),
           Seq(),
           Some(Where(HasLabels(Identifier("n"), Seq(labelToken))))
         ),
@@ -113,7 +113,7 @@ class SimpleTokenResolverTest extends CypherFunSuite {
       SingleQuery(Seq(
         Match(
           false,
-          Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None, true)))),
+          Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None)))),
           Seq(),
           Some(Where(HasLabels(Identifier("n"), Seq(labelToken))))
         ),
@@ -137,9 +137,9 @@ class SimpleTokenResolverTest extends CypherFunSuite {
         Match(
           false,
           Pattern(Seq(EveryPath(RelationshipChain(
-            NodePattern(None, Seq(), None, false),
+            NodePattern(None, Seq(), None),
             RelationshipPattern(None, false, Seq(relTypeToken), None, None, SemanticDirection.OUTGOING),
-            NodePattern(None, Seq(), None, false)
+            NodePattern(None, Seq(), None)
           )))),
           Seq(),
           None
@@ -164,9 +164,9 @@ class SimpleTokenResolverTest extends CypherFunSuite {
         Match(
           false,
           Pattern(Seq(EveryPath(RelationshipChain(
-            NodePattern(None, Seq(), None, false),
+            NodePattern(None, Seq(), None),
             RelationshipPattern(None, false, Seq(relTypeToken), None, None, SemanticDirection.OUTGOING),
-            NodePattern(None, Seq(), None, false)
+            NodePattern(None, Seq(), None)
           )))),
           Seq(),
           None

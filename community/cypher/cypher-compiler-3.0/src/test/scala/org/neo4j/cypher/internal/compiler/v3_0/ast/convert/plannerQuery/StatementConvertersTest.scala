@@ -440,9 +440,9 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val relName = "  UNNAMED18"
     val nodeName = "  UNNAMED21"
     val exp: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
+      NodePattern(Some(Identifier("a")(pos)), Seq(), None) _,
       RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, OUTGOING) _,
-      NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
+      NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None) _
     ) _) _)
     val predicate= Predicate(Set(IdName("a")), exp)
     val selections = Selections(Set(predicate))
@@ -493,9 +493,9 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val relName = "  UNNAMED33"
     val nodeName = "  UNNAMED36"
     val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
+      NodePattern(Some(Identifier("a")(pos)), Seq(), None) _,
       RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, OUTGOING) _,
-      NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
+      NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None) _
     ) _) _)
     val exp2: Expression = In(
       Property(Identifier("a")_, PropertyKeyName("prop")_)_,
@@ -516,9 +516,9 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val relName = "  UNNAMED18"
     val nodeName = "  UNNAMED21"
     val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
+      NodePattern(Some(Identifier("a")(pos)), Seq(), None) _,
       RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, OUTGOING) _,
-      NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
+      NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None) _
     ) _) _)
     val exp2: Expression = In(
       Property(Identifier("a")_, PropertyKeyName("prop")_)_,
@@ -539,9 +539,9 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val relName = "  UNNAMED34"
     val nodeName = "  UNNAMED37"
     val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
+      NodePattern(Some(Identifier("a")(pos)), Seq(), None) _,
       RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, OUTGOING) _,
-      NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
+      NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None) _
     ) _) _)
     val exp2: Expression = In(
       Property(Identifier("a")_, PropertyKeyName("prop")_)_,
