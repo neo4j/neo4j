@@ -47,6 +47,7 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -278,6 +279,54 @@ public class TestGraphProperties
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
         assertFalse( graphProperties.equals( properties( db ) ) );
         db.shutdown();
+    }
+
+    @Test
+    public void shouldBeAbleToCreateLongGraphPropertyChainsAndReadTheCorrectNextPointerFromTheStore()
+    {
+        GraphDatabaseService database = new TestGraphDatabaseFactory().newImpermanentDatabase();
+
+        PropertyContainer graphProperties = properties( (GraphDatabaseAPI) database );
+
+        try ( Transaction tx = database.beginTx() )
+        {
+            graphProperties.setProperty( "a", new String[]{"A", "B", "C", "D", "E"} );
+            graphProperties.setProperty( "b", true );
+            graphProperties.setProperty( "c", "C" );
+            tx.success();
+        }
+
+        try ( Transaction tx = database.beginTx() )
+        {
+            graphProperties.setProperty( "d", new String[]{"A", "F"} );
+            graphProperties.setProperty( "e", true );
+            graphProperties.setProperty( "f", "F" );
+            tx.success();
+        }
+
+        try ( Transaction tx = database.beginTx() )
+        {
+            graphProperties.setProperty( "g", new String[]{"F"} );
+            graphProperties.setProperty( "h", false );
+            graphProperties.setProperty( "i", "I" );
+            tx.success();
+        }
+
+        try ( Transaction tx = database.beginTx() )
+        {
+            assertArrayEquals( new String[]{"A", "B", "C", "D", "E"}, (String[]) graphProperties.getProperty( "a" ) );
+            assertTrue( (boolean) graphProperties.getProperty( "b" ) );
+            assertEquals( "C", graphProperties.getProperty( "c" ) );
+
+            assertArrayEquals( new String[]{"A", "F"}, (String[]) graphProperties.getProperty( "d" ) );
+            assertTrue( (boolean) graphProperties.getProperty( "e" ) );
+            assertEquals( "F", graphProperties.getProperty( "f" ) );
+
+            assertArrayEquals( new String[]{"F"}, (String[]) graphProperties.getProperty( "g" ) );
+            assertFalse( (boolean) graphProperties.getProperty( "h" ) );
+            assertEquals( "I", graphProperties.getProperty( "i" ) );
+            tx.success();
+        }
     }
 
     private static class State
