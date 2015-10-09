@@ -19,26 +19,17 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
-import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.graphdb.Transaction;
@@ -49,6 +40,21 @@ import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
+
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
+import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class TxPushStrategyConfigIT
 {
@@ -71,17 +77,27 @@ public class TxPushStrategyConfigIT
     {
         startCluster( 4, 2, "round_robin" );
 
-        createTransactionOnMaster();
-        assertLastTransactions( lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ), lastTx( SECOND_SLAVE, BASE_TX_ID + 1 ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID ) );
+        long txId = getLastTx( cluster.getMaster() );
+        int count = 15;
+        for ( int i = 0; i < count; i++ )
+        {
+            createTransactionOnMaster();
+        }
 
-        createTransactionOnMaster();
-        assertLastTransactions( lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ), lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID + 2 ) );
+        long min = -1, max = -1;
+        for ( GraphDatabaseAPI db : cluster.getAllMembers() )
+        {
+            long tx = getLastTx( db );
+            min = min == -1 ? tx : min( min, tx );
+            max = max == -1 ? tx : max( max, tx );
+        }
 
-        createTransactionOnMaster();
-        assertLastTransactions( lastTx( FIRST_SLAVE, BASE_TX_ID + 3 ), lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID + 3 ) );
+        assertEquals( txId + count, max );
+        assertTrue( "There should be members with transactions in the cluster", min != -1 );
+        assertTrue( "There should be members with transactions in the cluster", max != -1 );
+        assertThat( "There should at most be a txId gap of 1 among the cluster members since the transaction pushing " +
+                "goes in a round robin fashion. min:" + min + ", max:" + max,
+                (int) (max - min), lessThanOrEqualTo( 1 ) );
     }
 
     @Test
@@ -146,7 +162,6 @@ public class TxPushStrategyConfigIT
     private static int FIRST_SLAVE = 2;
     private static int SECOND_SLAVE = 3;
     private static int THIRD_SLAVE = 4;
-    private static int FOURTH_SLAVE = 5;
     private InstanceId[] machineIds;
 
     @Before
@@ -184,7 +199,7 @@ public class TxPushStrategyConfigIT
     {
         machineIds = new InstanceId[cluster.size()];
         machineIds[0] = cluster.getServerId( cluster.getMaster() );
-        List<HighlyAvailableGraphDatabase> slaves = new ArrayList<HighlyAvailableGraphDatabase>();
+        List<HighlyAvailableGraphDatabase> slaves = new ArrayList<>();
         for ( HighlyAvailableGraphDatabase hadb : cluster.getAllMembers() )
         {
             if ( !hadb.isMaster() )
@@ -265,7 +280,7 @@ public class TxPushStrategyConfigIT
 
     private void createTransaction( GraphDatabaseAPI db )
     {
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
             tx.success();
