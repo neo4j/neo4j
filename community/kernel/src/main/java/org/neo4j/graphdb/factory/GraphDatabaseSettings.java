@@ -112,7 +112,7 @@ public abstract class GraphDatabaseSettings
                   " statistics used to create the plan has changed more than this value, " +
                   "the plan is considered stale and will be replanned. " +
                   "A value of 0 means always replan, and 1 means never replan." )
-    public static Setting<Double> query_statistics_divergence_threshold = setting( "dbms.cypher.statistics_divergence_threshold", DOUBLE, "0.1", min( 0.0 ), max( 1.0 ) );
+    public static Setting<Double> query_statistics_divergence_threshold = setting( "dbms.cypher.statistics_divergence_threshold", DOUBLE, "0.5", min( 0.0 ), max( 1.0 ) );
 
     @Description("The minimum lifetime of a query plan before a query is considered for replanning")
     public static Setting<Long> cypher_min_replan_interval = setting( "dbms.cypher.min_replan_interval", DURATION, "1s" );
