@@ -30,7 +30,7 @@ class SumFunctionTest extends CypherFunSuite with AggregateTest {
     val result = aggregateOn(1)
 
     result should equal(1)
-    result shouldBe a [java.lang.Integer]
+    result shouldBe a [java.lang.Double]
   }
 
   test("singleValueOfDecimalReturnsDecimal") {
@@ -51,21 +51,21 @@ class SumFunctionTest extends CypherFunSuite with AggregateTest {
     val result = aggregateOn(1.byteValue(), 1.shortValue())
 
     result should equal(2)
-    result shouldBe a [java.lang.Integer]
+    result shouldBe a [java.lang.Double]
   }
 
   test("noNumbersEqualsZero") {
     val result = aggregateOn()
 
     result should equal(0)
-    result shouldBe a [java.lang.Integer]
+    result shouldBe a [java.lang.Double]
   }
 
   test("nullDoesNotChangeTheSum") {
     val result = aggregateOn(1, null)
 
     result should equal(1)
-    result shouldBe a [java.lang.Integer]
+    result shouldBe a [java.lang.Double]
   }
 
   test("noNumberValuesThrowAnException") {

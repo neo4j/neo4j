@@ -24,6 +24,12 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.TypeSafeMathSupport
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 
+/**
+ * AVG computation is calculated using cumulative moving average approach
+ * with Kahan's summation algorithm:
+ * https://en.wikipedia.org/wiki/Moving_average#Cumulative_moving_average
+ * https://en.wikipedia.org/wiki/Kahan_summation_algorithm
+ */
 class AvgFunction(val value: Expression)
   extends AggregationFunction
   with TypeSafeMathSupport
@@ -32,13 +38,11 @@ class AvgFunction(val value: Expression)
   def name = "AVG"
 
   private var count: Int = 0
-  // avg computation is performed using Kahan's summation algorithm
-  private var sum = 0d
-  private var c = 0d
+  private val sum = new KahanSum()
 
   def result =
     if (count > 0) {
-      sum
+      sum.value
     } else {
       null
     }
@@ -46,12 +50,8 @@ class AvgFunction(val value: Expression)
   def apply(data: ExecutionContext)(implicit state: QueryState) {
     actOnNumber(value(data), (number) => {
       count += 1
-      val add = (number.doubleValue() - sum) / count.toDouble
-
-      val y = add - c
-      val t = sum + y
-      c = (t - sum) - y
-      sum = t
+      val next = (number.doubleValue() - sum.value) / count.toDouble
+      sum.add(next)
     })
   }
 }

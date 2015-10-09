@@ -35,4 +35,21 @@ trait NumericExpressionOnly {
         throw new CypherTypeException("%s(%s) can only handle numerical values, or null.".format(name, value))
     }
   }
+
+  class KahanSum {
+    private var c = 0d
+    var value = 0d
+
+    /**
+     * @param next  next number to add to the total sum
+     * @return      current value of the sum variable
+     */
+    def add(next: Number): Double = {
+      val y = next.doubleValue() - c
+      val t = value + y
+      c = (t - value) - y
+      value = t
+      value
+    }
+  }
 }
