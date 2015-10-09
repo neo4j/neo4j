@@ -19,6 +19,24 @@
  */
 package org.neo4j.server.rest;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
+
+import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.server.helpers.FunctionalTestHelper;
+import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
+import org.neo4j.server.rest.domain.GraphDbHelper;
+import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.repr.formats.CompactJsonFormat;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -29,24 +47,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.Map;
-import javax.ws.rs.core.MediaType;
-
-import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
-import org.neo4j.server.rest.domain.GraphDbHelper;
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.repr.formats.CompactJsonFormat;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
-public class RetrieveNodeDocIT extends AbstractRestFunctionalTestBase
+public class RetrieveNodeDocIT extends AbstractRestFunctionalDocTestBase
 {
     private URI nodeUri;
     private static FunctionalTestHelper functionalTestHelper;

@@ -11,6 +11,8 @@ include::replacing-labels-on-a-node.asciidoc[]
 
 include::removing-a-label-from-a-node.asciidoc[]
 
+include::removing-a-non-existent-label-from-a-node.asciidoc[]
+
 include::listing-labels-for-a-node.asciidoc[]
 
 include::get-all-nodes-with-a-label.asciidoc[]
