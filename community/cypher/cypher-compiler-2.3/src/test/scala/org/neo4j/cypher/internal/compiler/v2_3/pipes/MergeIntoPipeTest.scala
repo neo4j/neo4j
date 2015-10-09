@@ -45,7 +45,9 @@ class MergeIntoPipeTest extends CypherFunSuite {
   val node_c = newMockedNode(3)
   val node_d = newMockedNode(4)
   val rel_a_A_b = newMockedRelationship(1, node_a, node_b, "A")
+  val rel_b_A_a = newMockedRelationship(1, node_b, node_a, "A")
   val rel_a_A_b2 = newMockedRelationship(2, node_a, node_b, "A")
+  val rel_b_A_a2 = newMockedRelationship(2, node_a, node_b, "A")
   val rel_a_A_c = newMockedRelationship(3, node_a, node_c, "A")
   val rel_a_B_c = newMockedRelationship(4, node_a, node_c, "B")
   val rel_a_C_d = newMockedRelationship(5, node_a, node_d, "C")
@@ -71,6 +73,26 @@ class MergeIntoPipeTest extends CypherFunSuite {
     single.m("a") should equal(node_a)
     single.m("b") should equal(node_b)
     single.m("r") should equal(rel_a_A_b)
+  }
+
+  test("should create a relationship when no-one exists between two nodes (reverse direction)") {
+    // given
+    implicit val query = setupMockingInQueryContext()
+
+    setUpNodesWithoutRelationships(node_a, node_b)
+    setUpCreationOfRelationship(node_b, node_a, rel_b_A_a)
+
+    val left = newMockedPipe("a",
+      row("a" -> node_a, "b" -> node_b))
+
+    // when
+    val result = createPipeAndRun(query, left, INCOMING, "A", Map.empty)
+
+    // then
+    val (single :: Nil) = result
+    single.m("a") should equal(node_a)
+    single.m("b") should equal(node_b)
+    single.m("r") should equal(rel_b_A_a)
   }
 
   test("should find a matching relationship between two nodes - neither dense") {
@@ -164,7 +186,7 @@ class MergeIntoPipeTest extends CypherFunSuite {
     single.m should equal(Map("a" -> node_a, "r" -> rel_a_A_b, "b" -> node_b))
   }
 
-  test("should find a matching relationship between two nodes - both are dense node_a has no matching rel degree zero") {
+  test("should not find a matching relationship between two nodes - both are dense node_a has no matching rel degree zero") {
     // given
     implicit val query = setupMockingInQueryContext()
 
@@ -182,6 +204,24 @@ class MergeIntoPipeTest extends CypherFunSuite {
     single.m should equal(Map("a" -> node_a, "r" -> rel_a_A_b, "b" -> node_b))
   }
 
+  test("should not find a matching relationship between two nodes - both are dense node_a has no matching rel degree zero (reverse direction)") {
+    // given
+    implicit val query = setupMockingInQueryContext()
+
+    markAsDense(node_a, 0)
+    markAsDense(node_b, 1)
+    val left = newMockedPipe("a",
+      row("a" -> node_a, "b" -> node_b))
+    setUpCreationOfRelationship(node_b, node_a, rel_b_A_a)
+
+    // when
+    val result = createPipeAndRun(query, left, INCOMING, "A", Map.empty)
+
+    // then
+    val (single :: Nil) = result
+    single.m should equal(Map("a" -> node_a, "r" -> rel_b_A_a, "b" -> node_b))
+  }
+
   test("should find a matching relationship between two nodes with no matching properties") {
     // given
     implicit val query = setupMockingInQueryContext()
@@ -192,10 +232,33 @@ class MergeIntoPipeTest extends CypherFunSuite {
     setupRelationshipFromNode(node_a, INCOMING, rel_a_A_b)
     when(query.relationshipOps.getProperty(1, "key".hashCode())).thenReturn(null, Seq.empty: _*)
     when(query.relationshipOps.getProperty(1, "foo".hashCode())).thenReturn(null, Seq.empty: _*)
-    setUpCreationOfRelationship(node_a, node_b, rel_a_A_b2)
+    setUpCreationOfRelationship(node_b, node_a, rel_b_A_a2)
 
     val left = newMockedPipe("a", row("a" -> node_a, "b" -> node_b))
     val result = createPipeAndRun(query, left, INCOMING, "A", Map("key" -> Literal(42),
+      "foo" -> Literal("bar")))
+
+    // then
+    val (single :: Nil) = result
+    single.m should equal(Map("a" -> node_a, "r" -> rel_b_A_a2, "b" -> node_b))
+    verify(query.relationshipOps).setProperty(2, "key".hashCode(), 42)
+    verify(query.relationshipOps).setProperty(2, "foo".hashCode(), "bar")
+  }
+
+  test("should find a matching relationship between two nodes with no matching properties (reverse direction)") {
+    // given
+    implicit val query = setupMockingInQueryContext()
+    markAsNotDense(node_a)
+    markAsNotDense(node_b)
+
+    // when
+    setupRelationshipFromNode(node_a, OUTGOING, rel_a_A_b)
+    when(query.relationshipOps.getProperty(1, "key".hashCode())).thenReturn(null, Seq.empty: _*)
+    when(query.relationshipOps.getProperty(1, "foo".hashCode())).thenReturn(null, Seq.empty: _*)
+    setUpCreationOfRelationship(node_a, node_b, rel_a_A_b2)
+
+    val left = newMockedPipe("a", row("a" -> node_a, "b" -> node_b))
+    val result = createPipeAndRun(query, left, OUTGOING, "A", Map("key" -> Literal(42),
       "foo" -> Literal("bar")))
 
     // then
@@ -234,7 +297,7 @@ class MergeIntoPipeTest extends CypherFunSuite {
     markAsNotDense(node_a)
     markAsNotDense(node_b)
     setUpNodesWithoutRelationships(node_a, node_b)
-    setUpCreationOfRelationship(node_a, node_b, rel_a_A_b)
+    setUpCreationOfRelationship(node_b, node_a, rel_b_A_a)
 
     // when
     val left = newMockedPipe("a", row("a" -> node_a, "b" -> node_b))
@@ -242,6 +305,29 @@ class MergeIntoPipeTest extends CypherFunSuite {
       PropertySetAction(Property(Identifier("r"), resolve("key")), Literal(42)),
       PropertySetAction(Property(Identifier("r"), resolve("foo")), Literal("bar")))
     val result = createPipeAndRun(query, left, INCOMING, "A", relProperties = Map.empty,
+      onCreateProperties = propertySetAction)
+
+    // then
+    val (single :: Nil) = result
+    single.m should equal(Map("a" -> node_a, "r" -> rel_b_A_a, "b" -> node_b))
+    verify(query.relationshipOps).setProperty(rel_b_A_a.getId, "key".hashCode(), 42)
+    verify(query.relationshipOps).setProperty(rel_b_A_a.getId, "foo".hashCode(), "bar")
+  }
+
+  test("should set properties on create (reverse direction)") {
+    // given
+    implicit val query = setupMockingInQueryContext()
+    markAsNotDense(node_a)
+    markAsNotDense(node_b)
+    setUpNodesWithoutRelationships(node_a, node_b)
+    setUpCreationOfRelationship(node_a, node_b, rel_a_A_b)
+
+    // when
+    val left = newMockedPipe("a", row("a" -> node_a, "b" -> node_b))
+    val propertySetAction = Seq(
+      PropertySetAction(Property(Identifier("r"), resolve("key")), Literal(42)),
+      PropertySetAction(Property(Identifier("r"), resolve("foo")), Literal("bar")))
+    val result = createPipeAndRun(query, left, OUTGOING, "A", relProperties = Map.empty,
       onCreateProperties = propertySetAction)
 
     // then
