@@ -25,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -40,16 +41,18 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.backup.RebuildFromLogs.ALL_LOGS;
+import static org.neo4j.backup.RebuildFromLogs.ALL_TXS;
 import static org.neo4j.test.TargetDirectory.testDirForTest;
 
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class RebuildFromLogsTest
 {
     @Rule
@@ -76,7 +79,7 @@ public class RebuildFromLogsTest
 
         // when
         File rebuildPath = new File( dir.graphDbDir(), "rebuild" );
-        new RebuildFromLogs( fs ).rebuild( prototypePath, rebuildPath, BASE_TX_ID );
+        new RebuildFromLogs( fs ).rebuild( prototypePath, rebuildPath, ALL_TXS, ALL_LOGS );
 
         // then
         assertEquals( DbRepresentation.of( prototypePath ), DbRepresentation.of( rebuildPath ) );
@@ -103,6 +106,50 @@ public class RebuildFromLogsTest
             prototype.shutdown();
         }
 
+        File copy = copyDbAndAddSomeExtraData( prototypePath );
+
+        // when
+        File rebuildPath = new File( dir.graphDbDir(), "rebuild" );
+        new RebuildFromLogs( fs ).rebuild( copy, rebuildPath, txId, ALL_LOGS );
+
+        // then
+        assertEquals( DbRepresentation.of( prototypePath ), DbRepresentation.of( rebuildPath ) );
+    }
+
+    @Test
+    public void shouldRebuildFromLogUpToAGivenLogVersion() throws Exception
+    {
+        // given
+        File prototypePath = new File( dir.graphDbDir(), "prototype" );
+        GraphDatabaseAPI prototype = db( prototypePath );
+        long logVersion = 0;
+        try
+        {
+            for ( Transaction transaction : work )
+            {
+                transaction.applyTo( prototype );
+            }
+        }
+        finally
+        {
+            logVersion = prototype.getDependencyResolver()
+                    .resolveDependency( NeoStore.class ).getCurrentLogVersion();
+            prototype.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+            prototype.shutdown();
+        }
+
+        File copy = copyDbAndAddSomeExtraData( prototypePath );
+
+        // when
+        File rebuildPath = new File( dir.graphDbDir(), "rebuild" );
+        new RebuildFromLogs( fs ).rebuild( copy, rebuildPath, ALL_TXS, logVersion );
+
+        // then
+        assertEquals( DbRepresentation.of( prototypePath ), DbRepresentation.of( rebuildPath ) );
+    }
+
+    private File copyDbAndAddSomeExtraData( File prototypePath ) throws IOException
+    {
         File copy = new File( dir.graphDbDir(), "copy" );
         FileUtils.copyRecursively( prototypePath, copy );
         GraphDatabaseAPI db = db( copy );
@@ -115,13 +162,7 @@ public class RebuildFromLogsTest
         {
             db.shutdown();
         }
-
-        // when
-        File rebuildPath = new File( dir.graphDbDir(), "rebuild" );
-        new RebuildFromLogs( fs ).rebuild( copy, rebuildPath, txId );
-
-        // then
-        assertEquals( DbRepresentation.of( prototypePath ), DbRepresentation.of( rebuildPath ) );
+        return copy;
     }
 
     private GraphDatabaseAPI db( File rebuiltPath )
@@ -187,7 +228,7 @@ public class RebuildFromLogsTest
 
         private final Transaction[] dependencies;
 
-        private Transaction( Transaction... dependencies )
+        Transaction( Transaction... dependencies )
         {
             this.dependencies = dependencies;
         }
@@ -244,7 +285,7 @@ public class RebuildFromLogsTest
 
         static Set<WorkLog> combinations()
         {
-            Set<WorkLog> combinations = Collections.newSetFromMap( new LinkedHashMap<WorkLog, Boolean>() );
+            Set<WorkLog> combinations = Collections.newSetFromMap( new LinkedHashMap<WorkLog,Boolean>() );
             for ( Transaction transaction : Transaction.values() )
             {
                 combinations.add( BASE.extend( transaction ) );
@@ -275,7 +316,7 @@ public class RebuildFromLogsTest
         this.work = work.transactions();
     }
 
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static List<Object[]> commands()
     {
         List<Object[]> commands = new ArrayList<>();
