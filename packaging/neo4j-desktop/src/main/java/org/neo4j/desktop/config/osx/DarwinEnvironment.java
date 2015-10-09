@@ -44,7 +44,16 @@ class DarwinEnvironment extends PortableEnvironment
     {
         if ( isPortableEditFileSupported() )
         {
-            portableEditFile( file );
+            try
+            {
+                portableEditFile(file);
+            }
+            catch( IOException ioe )
+            {
+                String commands[] = { "open", "-nt", file.getAbsolutePath() };
+                Runtime.getRuntime().exec( commands );
+            }
+
             return;
         }
 
