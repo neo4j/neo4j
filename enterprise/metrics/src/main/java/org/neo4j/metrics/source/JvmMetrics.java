@@ -49,7 +49,7 @@ import static com.sun.management.GarbageCollectionNotificationInfo.GARBAGE_COLLE
 
 public class JvmMetrics extends LifecycleAdapter
 {
-    private static final String NAME_PREFIX = "neo4j.vm";
+    private static final String NAME_PREFIX = "vm";
     private static final String GC = name( NAME_PREFIX, "gc" );
     private static final String MEMORY_POOL = name( NAME_PREFIX, "memory.pool" );
     private static final String MEMORY_BUFFER = name( NAME_PREFIX, "memory.buffer" );
