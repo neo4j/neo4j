@@ -4,6 +4,7 @@ o Improved performance for counting queries by utilizing the counts store
 
 2.3.0-RC1
 ---------
+o Fixed a MergeInto bug so that the direction of the relationship is considered when creating relationships
 o Generates a warning when a plan using LOAD CSV uses MATCH or MERGE on a large label without an index
 o Generates a warning when a plan using LOAD CSV also contains an EagerPipe
 o Introduce STARTS WITH, ENDS WITH and CONTAINS
