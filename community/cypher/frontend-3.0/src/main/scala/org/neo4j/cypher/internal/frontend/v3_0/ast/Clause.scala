@@ -156,9 +156,13 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
           (acc, _) => acc :+ name
         case Contains(Property(Identifier(id), PropertyKeyName(name)), _) if id == identifier =>
           (acc, _) => acc :+ name
-        case expr: InequalityExpression => expr.lhs match {
-            case Property(Identifier(id), PropertyKeyName(name)) if id == identifier =>
-              (acc, _) => acc :+ name
+        case expr: InequalityExpression =>
+          (acc, _) => Seq(expr.lhs, expr.rhs).foldLeft(acc) { (acc, expr) =>
+            expr match {
+              case Property(Identifier(id), PropertyKeyName(name)) if id == identifier =>
+                acc :+ name
+              case _ => acc
+            }
           }
         case _: Where | _: And | _: Ands | _: Set[_] =>
           (acc, children) => children(acc)
