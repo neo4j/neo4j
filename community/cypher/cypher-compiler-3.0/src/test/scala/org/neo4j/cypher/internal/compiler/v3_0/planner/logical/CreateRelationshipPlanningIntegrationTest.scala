@@ -38,4 +38,40 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
       )(solved)
     )
   }
+
+  test("should plan complicated create") {
+    planFor("CREATE (a)-[r1:R1]->(b)<-[r2:R2]-(c)-[r3:R3]->(d)").plan should equal(
+      EmptyResult(
+        CreateRelationship(
+          CreateRelationship(
+            CreateRelationship(
+              CreateNode(
+                CreateNode(
+                  CreateNode(
+                    CreateNode(SingleRow()(solved),IdName("a"),Seq.empty,None)(solved),
+                    IdName("b"),Seq.empty,None)(solved),
+                  IdName("c"),Seq.empty,None)(solved),
+                IdName("d"),Seq.empty,None)(solved),
+              IdName("r1"),IdName("a"),LazyType("R1"),IdName("b"),None)(solved),
+            IdName("r2"),IdName("c"),LazyType("R2"),IdName("b"),None)(solved),
+          IdName("r3"),IdName("c"),LazyType("R3"),IdName("d"),None)(solved)
+      )(solved)
+    )
+  }
+
+  test("should plan reversed create pattern") {
+    planFor("CREATE (a)<-[r1:R1]-(b)<-[r2:R2]-(c)").plan should equal(
+      EmptyResult(
+        CreateRelationship(
+          CreateRelationship(
+            CreateNode(
+              CreateNode(
+                CreateNode(SingleRow()(solved),IdName("a"),Seq.empty,None)(solved),
+                IdName("b"),Seq.empty,None)(solved),
+              IdName("c"),Seq.empty,None)(solved),
+            IdName("r1"),IdName("b"),LazyType("R1"),IdName("a"),None)(solved),
+          IdName("r2"),IdName("c"),LazyType("R2"),IdName("b"),None)(solved)
+      )(solved)
+    )
+  }
 }

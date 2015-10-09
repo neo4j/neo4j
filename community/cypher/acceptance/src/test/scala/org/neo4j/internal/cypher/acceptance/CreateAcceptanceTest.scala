@@ -100,20 +100,6 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList should equal(List(Map("r.id" -> 12)))
   }
 
-  test("single create after with") {
-    //given
-    createNode()
-    createNode()
-
-    //when
-    val query = "MATCH (n) CREATE() WITH * CREATE ()"
-    val result = updateWithBothPlanners(query)
-
-    //then
-    assertStats(result, nodesCreated = 4)
-    result should not(use("Apply"))
-  }
-
   test("create simple pattern") {
     val result = updateWithBothPlanners("CREATE (a)-[r:R]->(b)")
 
@@ -172,5 +158,52 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     //then
     assertStats(result, nodesCreated = 4)
     result should not(use("Apply"))
+  }
+  test("create relationship with reversed direction") {
+    val result = updateWithBothPlanners("CREATE (a)<-[r1:R]-(b)")
+
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
+
+    executeWithAllPlanners("MATCH (a)<-[r1:R]-(b) RETURN *").toList should have size 1
+  }
+
+  test("create relationship with multiple hops") {
+    val result = updateWithBothPlanners("CREATE (a)-[r1:R]->(b)-[r2:R]->(c)")
+
+    assertStats(result, nodesCreated = 3, relationshipsCreated = 2)
+
+    executeWithAllPlanners("MATCH (a)-[r1:R]->(b)-[r2:R]->(c) RETURN *").toList should have size 1
+  }
+
+  test("create relationship with multiple hops and reversed direction") {
+    val result = updateWithBothPlanners("CREATE (a)<-[r1:R]-(b)<-[r2:R]-(c)")
+
+    assertStats(result, nodesCreated = 3, relationshipsCreated = 2)
+
+    executeWithAllPlanners("MATCH (a)<-[r1:R]-(b)<-[r2:R]-(c) RETURN *").toList should have size 1
+  }
+
+  test("create relationship with multiple hops and changing directions") {
+    val result = updateWithBothPlanners("CREATE (a:A)-[r1:R]->(b:B)<-[r2:R]-(c:C)")
+
+    assertStats(result, nodesCreated = 3, relationshipsCreated = 2, labelsAdded = 3)
+
+    executeWithAllPlanners("MATCH (a:A)-[r1:R]->(b:B)<-[r2:R]-(c:C) RETURN *").toList should have size 1
+  }
+
+  test("create relationship with multiple hops and changing directions 2") {
+    val result = updateWithBothPlanners("CYPHER planner=rule CREATE (a:A)<-[r1:R]-(b:B)-[r2:R]->(c:C)")
+
+    assertStats(result, nodesCreated = 3, relationshipsCreated = 2, labelsAdded = 3)
+
+    executeWithAllPlanners("MATCH (a:A)<-[r1:R]-(b:B)-[r2:R]->(c:C) RETURN *").toList should have size 1
+  }
+
+  test("create relationship with multiple hops and varying directions and types") {
+    val result = updateWithBothPlanners("CREATE (a)-[r1:R1]->(b)<-[r2:R2]-(c)-[r3:R3]->(d)")
+
+    assertStats(result, nodesCreated = 4, relationshipsCreated = 3)
+
+    executeWithAllPlanners("MATCH (a)-[r1:R1]->(b)<-[r2:R2]-(c)-[r3:R3]->(d) RETURN *").toList should have size 1
   }
 }

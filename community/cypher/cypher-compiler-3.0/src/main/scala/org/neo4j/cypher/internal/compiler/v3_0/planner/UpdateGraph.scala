@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, RelTypeName, RelationshipPattern, LabelName, NodePattern}
 
 case class UpdateGraph(nodePatterns: Seq[CreateNodePattern] = Seq.empty,
@@ -71,4 +72,14 @@ object UpdateGraph {
 }
 
 case class CreateNodePattern(nodeName: IdName, labels: Seq[LabelName], properties: Option[Expression])
-case class CreateRelationshipPattern(relName: IdName, startNode: IdName, relType: RelTypeName, endNode: IdName, properties: Option[Expression])
+
+case class CreateRelationshipPattern(relName: IdName, leftNode: IdName, relType: RelTypeName, rightNode: IdName,
+                                     properties: Option[Expression], direction: SemanticDirection) {
+  assert(direction != SemanticDirection.BOTH)
+
+  def startNode = inOrder._1
+
+  def endNode = inOrder._2
+
+  def inOrder =  if (direction == SemanticDirection.OUTGOING) (leftNode, rightNode) else (rightNode, leftNode)
+}

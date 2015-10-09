@@ -354,7 +354,7 @@ return distinct center""")
   test("full path in one create") {
     createNode()
     createNode()
-    val result = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) = 1 create (a)-[:KNOWS]->()-[:LOVES]->(b)")
+    val result = updateWithBothPlanners("match (a), (b) where id(a) = 0 AND id(b) = 1 create (a)-[:KNOWS]->()-[:LOVES]->(b)")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 2)
   }

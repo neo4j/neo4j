@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.Expressi
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, InternalException}
+import org.neo4j.cypher.internal.frontend.v3_0.InternalException
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 
 object ClauseConverters {
@@ -109,30 +109,49 @@ object ClauseConverters {
             .amendUpdateGraph(ug => ug.addNodePatterns(CreateNodePattern(IdName.fromIdentifier(id), labels, props)))
 
         //CREATE (n)-[r: R]->(m)
-        case (builder, EveryPath(pattern@RelationshipChain(
-          NodePattern(Some(leftId), labelsLeft, propsLeft),
-          RelationshipPattern(Some(relId), _, types, _, properties, direction),
-          NodePattern(Some(rightId), labelsRight, propsRight)))) =>
+        case (builder, EveryPath(pattern:RelationshipChain)) =>
 
-          val (start, end) = if (direction == SemanticDirection.OUTGOING) (leftId, rightId) else (rightId, leftId)
+          val (nodes, rels) = allCreatePatterns(pattern)
 
           //create nodes that are not already matched or created
-          val nodesToCreate = Seq(
-            CreateNodePattern(IdName.fromIdentifier(leftId), labelsLeft, propsLeft),
-            CreateNodePattern(IdName.fromIdentifier(rightId), labelsRight, propsRight)
-          ).filterNot(pattern => builder.allSeenPatternNodes(pattern.nodeName))
+          val nodesToCreate = nodes.filterNot(pattern => builder.allSeenPatternNodes(pattern.nodeName))
 
           builder
             .amendUpdateGraph(ug => ug
               .addNodePatterns(nodesToCreate:_*)
-              .addRelPatterns(
-                CreateRelationshipPattern(IdName.fromIdentifier(relId), IdName.fromIdentifier(start),
-                  types.head, IdName.fromIdentifier(end), properties)))
+              .addRelPatterns(rels:_*))
 
         case _ => throw new CantHandleQueryException(s"$clause is not yet supported")
       }
     }
 
+    private def allCreatePatterns(element: PatternElement): (Vector[CreateNodePattern], Vector[CreateRelationshipPattern]) = element match {
+      case NodePattern(None, _, _, _) => throw new InternalException("All nodes must be named at this instance")
+      //CREATE ()
+      case NodePattern(Some(identifier), labels, props, _) =>
+        (Vector(CreateNodePattern(IdName.fromIdentifier(identifier), labels, props)), Vector.empty)
+
+      //CREATE ()-[:R]->()
+      case RelationshipChain(leftNode: NodePattern, rel, rightNode) =>
+        val leftIdName = IdName.fromIdentifier(leftNode.identifier.get)
+        val rightIdName = IdName.fromIdentifier(rightNode.identifier.get)
+
+        (Vector(
+          CreateNodePattern(leftIdName, leftNode.labels, leftNode.properties),
+          CreateNodePattern(rightIdName, rightNode.labels, rightNode.properties)
+        ), Vector(CreateRelationshipPattern(IdName.fromIdentifier(rel.identifier.get),
+          leftIdName, rel.types.head, rightIdName, rel.properties, rel.direction)))
+
+      //CREATE ()->[:R]->()-[:R]->...->()
+      case RelationshipChain(left, rel, rightNode) =>
+        val (nodes, rels) = allCreatePatterns(left)
+        val rightIdName = IdName.fromIdentifier(rightNode.identifier.get)
+
+        (nodes :+
+          CreateNodePattern(rightIdName, rightNode.labels, rightNode.properties)
+        , rels :+
+          CreateRelationshipPattern(IdName.fromIdentifier(rel.identifier.get), nodes.last.nodeName, rel.types.head, rightIdName, rel.properties, rel.direction))
+    }
   }
 
   implicit class ReturnItemsConverter(val clause: ReturnItems) extends AnyVal {

@@ -953,7 +953,7 @@ return b
 
   test("should use predicates in the correct place") {
     // given
-    val m = updateWithBothPlanners( """create
+    val m = executeWithCostPlannerOnly( """create
                         (advertiser {name:"advertiser1"}),
                         (thing      {name:"Color"}),
                         (red        {name:"red"}),
