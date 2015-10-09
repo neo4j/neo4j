@@ -36,6 +36,10 @@ trait NumericExpressionOnly {
     }
   }
 
+  /**
+   * Encapsulates Kahan's algorithm for summation with the error minimization:
+   * https://en.wikipedia.org/wiki/Kahan_summation_algorithm
+   */
   class KahanSum {
     private var c = 0d
     var value = 0d

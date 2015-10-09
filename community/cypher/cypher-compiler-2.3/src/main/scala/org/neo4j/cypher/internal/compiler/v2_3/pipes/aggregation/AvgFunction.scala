@@ -25,10 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers.TypeSafeMathSupport
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 
 /**
- * AVG computation is calculated using cumulative moving average approach
- * with Kahan's summation algorithm:
+ * AVG computation is calculated using cumulative moving average approach:
  * https://en.wikipedia.org/wiki/Moving_average#Cumulative_moving_average
- * https://en.wikipedia.org/wiki/Kahan_summation_algorithm
  */
 class AvgFunction(val value: Expression)
   extends AggregationFunction
