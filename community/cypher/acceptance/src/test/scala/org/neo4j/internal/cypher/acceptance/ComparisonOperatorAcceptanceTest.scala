@@ -75,4 +75,37 @@ class ComparisonOperatorAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
     executeWithAllPlanners("MATCH (n)-->(m) WHERE n.prop1 < m.prop1 = n.prop2 <> m.prop2 RETURN m").toSet should equal(Set(Map("m" -> node2)))
   }
+
+  test("should handle numerical literal on the left when using an index") {
+    graph.createIndex("Product", "unitsInStock")
+    val small = createLabeledNode(Map("unitsInStock" -> 8), "Product")
+    val large = createLabeledNode(Map("unitsInStock" -> 12), "Product")
+
+    val result = executeWithCostPlannerOnly(
+      """
+        |MATCH (p:Product)
+        |USING index p:Product(unitsInStock)
+        |WHERE 10 < p.unitsInStock
+        |RETURN p
+      """.stripMargin)
+
+    result.toList should equal(List(Map("p" -> large)))
+  }
+
+  test("should handle numerical literal on the right when using an index") {
+    graph.createIndex("Product", "unitsInStock")
+    val small = createLabeledNode(Map("unitsInStock" -> 8), "Product")
+    val large = createLabeledNode(Map("unitsInStock" -> 12), "Product")
+
+    val result = executeWithCostPlannerOnly(
+      """
+        |MATCH (p:Product)
+        |USING index p:Product(unitsInStock)
+        |WHERE p.unitsInStock > 10
+        |RETURN p
+      """.stripMargin)
+
+    result.toList should equal(List(Map("p" -> large)))
+  }
+
 }
