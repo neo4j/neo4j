@@ -72,12 +72,12 @@ class PrettifierTest extends CypherFunSuite {
   }
 
   test("should upcase multiple keywords") {
-    actual("match n where n.name='B' return n") should equal(expected("MATCH n%nWHERE n.name='B'%nRETURN n"))
+    actual("match (n) where n.name='B' return n") should equal(expected("MATCH (n)%nWHERE n.name='B'%nRETURN n"))
   }
 
   test("should upcase multiple keywords 2") {
-    actual("match a where a.name='A' return a.age as SomethingTotallyDifferent") should equal(
-      expected("MATCH a%nWHERE a.name='A'%nRETURN a.age AS SomethingTotallyDifferent")
+    actual("match (a) where a.name='A' return a.age as SomethingTotallyDifferent") should equal(
+      expected("MATCH (a)%nWHERE a.name='A'%nRETURN a.age AS SomethingTotallyDifferent")
     )
   }
 

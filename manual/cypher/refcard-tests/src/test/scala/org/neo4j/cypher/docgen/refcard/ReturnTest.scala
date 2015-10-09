@@ -68,14 +68,14 @@ class ReturnTest extends RefcardTest with QueryStatisticsTestSupport {
   def text = """
 ###assertion=all-nodes
 //
-MATCH n
+MATCH (n)
 
 RETURN *###
 
 Return the value of all identifiers.
 
 ### assertion=alias
-MATCH n
+MATCH (n)
 WHERE id(n) = 1
 
 RETURN n AS columnName###
@@ -83,7 +83,7 @@ RETURN n AS columnName###
 Use alias for result column name.
 
 ### assertion=unique
-MATCH n--x
+MATCH (n)--(x)
 WHERE id(x) in [%A%,%C%]
 AND n.name = "B"
 
@@ -93,7 +93,7 @@ Return unique rows.
 
 ###assertion=all-nodes
 //
-MATCH n
+MATCH (n)
 RETURN *
 
 ORDER BY n.property
@@ -103,7 +103,7 @@ Sort the result.
 
 ###assertion=all-nodes
 //
-MATCH n
+MATCH (n)
 RETURN *
 
 ORDER BY n.property DESC
@@ -113,7 +113,7 @@ Sort the result in descending order.
 
 ###assertion=skip parameters=limits
 //
-MATCH n
+MATCH (n)
 RETURN *
 
 SKIP {skip_number}
@@ -123,7 +123,7 @@ Skip a number of results.
 
 ###assertion=skiplimit parameters=limits
 //
-MATCH n
+MATCH (n)
 RETURN *
 
 LIMIT {limit_number}
@@ -133,7 +133,7 @@ Limit the number of results.
 
 ###assertion=skiplimit parameters=limits
 //
-MATCH n
+MATCH (n)
 RETURN *
 
 SKIP {skip_number} LIMIT {limit_number}
@@ -142,7 +142,7 @@ SKIP {skip_number} LIMIT {limit_number}
 Skip results at the top and limit the number of results.
 
 ###assertion=count
-MATCH n
+MATCH (n)
 
 RETURN count(*)
 ###

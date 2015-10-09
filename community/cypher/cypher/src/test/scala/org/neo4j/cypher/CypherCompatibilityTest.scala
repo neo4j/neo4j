@@ -70,18 +70,18 @@ class CypherCompatibilityTest extends CypherFunSuite {
   test("should handle profile") {
     runWithConfig() {
       (engine: ExecutionEngine) =>
-        assertProfiled(engine, "CYPHER 2.3 runtime=interpreted PROFILE MATCH n RETURN n")
-        assertProfiled(engine, "CYPHER 2.3 runtime=compiled PROFILE MATCH n RETURN n")
-        assertProfiled(engine, "CYPHER 3.0 runtime=interpreted PROFILE MATCH n RETURN n")
-        assertProfiled(engine, "CYPHER 3.0 runtime=compiled PROFILE MATCH n RETURN n")
+        assertProfiled(engine, "CYPHER 2.3 runtime=interpreted PROFILE MATCH (n) RETURN n")
+        assertProfiled(engine, "CYPHER 2.3 runtime=compiled PROFILE MATCH (n) RETURN n")
+        assertProfiled(engine, "CYPHER 3.0 runtime=interpreted PROFILE MATCH (n) RETURN n")
+        assertProfiled(engine, "CYPHER 3.0 runtime=compiled PROFILE MATCH (n) RETURN n")
     }
   }
 
   test("should allow the use of explain in the supported compilers") {
     runWithConfig() {
       engine =>
-        assertExplained(engine, "CYPHER 2.3 EXPLAIN MATCH n RETURN n")
-        assertExplained(engine, "CYPHER 3.0 EXPLAIN MATCH n RETURN n")
+        assertExplained(engine, "CYPHER 2.3 EXPLAIN MATCH (n) RETURN n")
+        assertExplained(engine, "CYPHER 3.0 EXPLAIN MATCH (n) RETURN n")
     }
   }
 
@@ -246,10 +246,10 @@ class CypherCompatibilityTest extends CypherFunSuite {
   test("should not support old 1.9 - 2.2 compilers") {
     runWithConfig() {
       engine =>
-        intercept[SyntaxException](engine.execute("CYPHER 1.9 MATCH n RETURN n"))
-        intercept[SyntaxException](engine.execute("CYPHER 2.0 MATCH n RETURN n"))
-        intercept[SyntaxException](engine.execute("CYPHER 2.1 MATCH n RETURN n"))
-        intercept[SyntaxException](engine.execute("CYPHER 2.2 MATCH n RETURN n"))
+        intercept[SyntaxException](engine.execute("CYPHER 1.9 MATCH (n) RETURN n"))
+        intercept[SyntaxException](engine.execute("CYPHER 2.0 MATCH (n) RETURN n"))
+        intercept[SyntaxException](engine.execute("CYPHER 2.1 MATCH (n) RETURN n"))
+        intercept[SyntaxException](engine.execute("CYPHER 2.2 MATCH (n) RETURN n"))
     }
   }
 

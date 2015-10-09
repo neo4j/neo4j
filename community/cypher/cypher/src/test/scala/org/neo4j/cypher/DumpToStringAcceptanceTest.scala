@@ -24,13 +24,14 @@ class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("format node") {
     createNode(Map("prop1" -> "A", "prop2" -> 2))
 
-    executeWithAllPlannersAndRuntimes("match n return n").dumpToString() should equal("""+----------------------------+
-                                                                                         || n                          |
-                                                                                         |+----------------------------+
-                                                                                         || Node[0]{prop1:"A",prop2:2} |
-                                                                                         |+----------------------------+
-                                                                                         |1 row
-                                                                                         |""".stripMargin)
+    executeWithAllPlannersAndRuntimes("match (n) return n").dumpToString() should
+      equal( """+----------------------------+
+               || n                          |
+               |+----------------------------+
+               || Node[0]{prop1:"A",prop2:2} |
+               |+----------------------------+
+               |1 row
+               |""".stripMargin)
   }
 
   test("format relationship") {

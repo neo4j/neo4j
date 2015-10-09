@@ -44,7 +44,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
     val b = createNode()
     relate(a, b, "X")
 
-    val result = execute("match (a) where id(a) = 0 create unique a-[r:X]->(b:FOO) return b")
+    val result = execute("match (a) where id(a) = 0 create unique (a)-[r:X]->(b:FOO) return b")
     val createdNode = result.columnAs[Node]("b").toList.head
 
     assertStats(result, relationshipsCreated =  1, nodesCreated = 1, labelsAdded = 1)
@@ -62,7 +62,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
     val nodeProps2: Map[String, Any] = Map("foo"-> Array("Pontus"))
 
     // when
-    val query = "MATCH (s) WHERE id(s) = 0 CREATE UNIQUE s-[:REL]->(n:label {param}) RETURN n"
+    val query = "MATCH (s) WHERE id(s) = 0 CREATE UNIQUE (s)-[:REL]->(n:label {param}) RETURN n"
     val res1 = execute(query,"param" -> nodeProps1)
     val res2 = execute(query, "param" -> nodeProps2)
 
@@ -76,7 +76,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
     val b = createNode()
     relate(a, b, "X")
 
-    val result = execute("match (b) where id(b) = 0 create unique (a:FOO)-[r:X]->b return a")
+    val result = execute("match (b) where id(b) = 0 create unique (a:FOO)-[r:X]->(b) return a")
     val createdNode = result.columnAs[Node]("a").toList.head
 
     assertStats(result, relationshipsCreated =  1, nodesCreated = 1, labelsAdded = 1)
@@ -88,7 +88,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
   test("create_new_node_with_labels_everywhere") {
     val a = createNode()
 
-    val result = execute("match (a) where id(a) = 0 create unique a-[:X]->(b:FOO)-[:X]->(c:BAR)-[:X]->(d:BAZ) RETURN d")
+    val result = execute("match (a) where id(a) = 0 create unique (a)-[:X]->(b:FOO)-[:X]->(c:BAR)-[:X]->(d:BAZ) RETURN d")
     val createdNode = result.columnAs[Node]("d").toList.head
 
     assertStats(result, relationshipsCreated = 3, nodesCreated = 3, labelsAdded = 3)
@@ -102,7 +102,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
     val b = createNode()
     relate(a, b, "X")
 
-    val result = execute(s"match (b) where id(b) = ${b.getId} create unique (a:FOO {name: 'Andres'})-[r:X]->b return a, b")
+    val result = execute(s"match (b) where id(b) = ${b.getId} create unique (a:FOO {name: 'Andres'})-[r:X]->(b) return a, b")
 
     val row: Map[String, Any] = result.toList.head
     val resultA = row("a").asInstanceOf[Node]
@@ -117,7 +117,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
     val a = createNode()
     val b = createNode()
 
-    val result = execute("match (a), (b) where id(a) = 0 and id(b) = 1 create unique a-[r:X]->b return r")
+    val result = execute("match (a), (b) where id(a) = 0 and id(b) = 1 create unique (a)-[r:X]->(b) return r")
     val createdRel = result.columnAs[Relationship]("r").toList.head
 
     assertStats(result, relationshipsCreated = 1)
@@ -136,7 +136,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
 
     val nodeProps = Map("name"->"Lasse")
 
-    val result = execute("match (a) where id(a) = 0 create unique a-[r:X]->({p}) return r", "p" -> nodeProps)
+    val result = execute("match (a) where id(a) = 0 create unique (a)-[r:X]->({p}) return r", "p" -> nodeProps)
     val createdRel = result.columnAs[Relationship]("r").toList.head
 
     assertStats(result, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1)
@@ -154,7 +154,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
     createNode()
     val nodeProps = Map("name"->"Lasse")
 
-    val result = execute("match (a) where id(a) = 0 create unique path=a-[:X]->({p}) return last(nodes(path))", "p" -> nodeProps)
+    val result = execute("match (a) where id(a) = 0 create unique path=(a)-[:X]->({p}) return last(nodes(path))", "p" -> nodeProps)
     val endNode = result.columnAs[Node]("last(nodes(path))").toList.head
 
     assertStats(result, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1)
@@ -168,7 +168,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
     val props1 = Map[String, Any]("name"->"Andres", "position"->"Developer")
     val props2 = Map[String, Any]("name"->"Lasse", "awesome"->true)
 
-    val result = execute("match (n) where id(n) = 0 create unique n-[:REL]->(a {props1})-[:LER]->(b {props2}) return a,b", "props1"->props1, "props2"->props2)
+    val result = execute("match (n) where id(n) = 0 create unique (n)-[:REL]->(a {props1})-[:LER]->(b {props2}) return a,b", "props1"->props1, "props2"->props2)
 
     assertStats(result, relationshipsCreated = 2, nodesCreated = 2, propertiesSet = 4)
     val resultMap = result.toList.head
@@ -187,7 +187,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
     val props1 = Map[String, Any]("name"->"Andres", "position"->"Developer")
     val props2 = Map[String, Any]("name"->"Lasse", "awesome"->true)
 
-    val result = execute("match (n) where id(n) = 0 create unique p=n-[:REL]->({props1})-[:LER]->({props2}) return p", "props1"->props1, "props2"->props2)
+    val result = execute("match (n) where id(n) = 0 create unique p=(n)-[:REL]->({props1})-[:LER]->({props2}) return p", "props1"->props1, "props2"->props2)
 
     assertStats(result, relationshipsCreated = 2, nodesCreated = 2, propertiesSet = 4)
     val path = result.toList.head("p").asInstanceOf[Path]
@@ -205,14 +205,14 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
 
   test("should_be_able_to_handle_a_param_as_node") {
     val n = createNode()
-    intercept[CypherTypeException](execute("match (a) where id(a) = 0 create unique a-[r:X]->({param}) return r", "param" -> n))
+    intercept[CypherTypeException](execute("match (a) where id(a) = 0 create unique (a)-[r:X]->({param}) return r", "param" -> n))
   }
 
   test("does_not_create_a_missing_relationship") {
     val a = createNode()
     val b = createNode()
     val r = relate(a, b, "X")
-    val result = execute("match (a), (b) where id(a) = 0 and id(b) = 1 create unique a-[r:X]->b return r")
+    val result = execute("match (a), (b) where id(a) = 0 and id(b) = 1 create unique (a)-[r:X]->(b) return r")
     val createdRel = result.columnAs[Relationship]("r").toList.head
 
     createdRel should equal(r)
@@ -225,7 +225,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
     val a = createNode()
     val b = createNode()
     val r = relate(a, b, "BAR")
-    val result = execute("match (a), (b) where id(a) = 0 and id(b) = 1 create unique a-[r:FOO]->b return r")
+    val result = execute("match (a), (b) where id(a) = 0 and id(b) = 1 create unique (a)-[r:FOO]->(b) return r")
     val createdRel = result.columnAs[Relationship]("r").toList.head
 
     assertStats(result, relationshipsCreated = 1)
@@ -242,7 +242,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
     val c = createNode()
     val d = createNode()
 
-    val result = execute("match (a), (b), (c) where id(a) in [0,1] and id(b) = 2 and id(c) = 3 create unique a-[:X]->b-[:X]->c")
+    val result = execute("match (a), (b), (c) where id(a) in [0,1] and id(b) = 2 and id(c) = 3 create unique (a)-[:X]->(b)-[:X]->(c)")
 
     assertStats(result, relationshipsCreated = 3)
     graph.inTx {
@@ -256,7 +256,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
   test("creates_minimal_amount_of_nodes_reverse") {
     val a = createNode()
 
-    val result = execute("match (a) where id(a) = 0 create unique c-[:X]->b-[:X]->a")
+    val result = execute("match (a) where id(a) = 0 create unique (c)-[:X]->(b)-[:X]->(a)")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 2)
     graph.inTx {
@@ -270,7 +270,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
   test("creates_node_if_it_is_missing") {
     val a = createNode()
 
-    val result = execute("match (a) where id(a) = 0 create unique a-[:X]->root return root")
+    val result = execute("match (a) where id(a) = 0 create unique (a)-[:X]->(root) return root")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 1)
     graph.inTx {
@@ -281,7 +281,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
   test("creates_node_if_it_is_missing_pattern_reversed") {
     val a = createNode()
 
-    val result = execute("match (a) where id(a) = 0 create unique root-[:X]->a return root")
+    val result = execute("match (a) where id(a) = 0 create unique (root)-[:X]->(a) return root")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 1)
     graph.inTx {
@@ -294,7 +294,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
     val b = createNode("name" -> "Michael")
     relate(a, b, "X")
 
-    val createdNode = executeScalar[Node]("match (a) where id(a) = 0 create unique a-[:X]->(b {name:'Andres'}) return b")
+    val createdNode = executeScalar[Node]("match (a) where id(a) = 0 create unique (a)-[:X]->(b {name:'Andres'}) return b")
 
     createdNode should not equal b
     graph.inTx {
@@ -307,7 +307,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
     val b = createNode()
     relate(a, b, "X", Map("foo" -> "bar"))
 
-    val createdNode = executeScalar[Node]("match (a) where id(a) = 0 create unique a-[:X {foo:'not bar'}]->b return b")
+    val createdNode = executeScalar[Node]("match (a) where id(a) = 0 create unique (a)-[:X {foo:'not bar'}]->(b) return b")
 
     createdNode should not equal b
     graph.inTx {
@@ -320,7 +320,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
     val b = createNode()
     val r = relate(a, b, "X", Map("foo" -> "bar"))
 
-    val createdRel = executeScalar[Relationship]("match (a), (b) where id(a) = 0 and id(b) = 1 create unique a-[r:X {foo:'not bar'}]->b return r")
+    val createdRel = executeScalar[Relationship]("match (a), (b) where id(a) = 0 and id(b) = 1 create unique (a)-[r:X {foo:'not bar'}]->(b) return r")
 
     createdRel should not equal r
 
@@ -335,7 +335,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
     val a = createNode()
     val b = createNode()
 
-    val result = execute("match (a), (b) where id(a) = 0 and id(b) = 1 create unique a-[:X]->root<-[:X]-b return root")
+    val result = execute("match (a), (b) where id(a) = 0 and id(b) = 1 create unique (a)-[:X]->(root)<-[:X]-(b) return root")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 2)
     graph.inTx {
@@ -378,9 +378,9 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
 
     val result = execute("""
 match (root) where id(root) = 0
-CREATE book
+CREATE (book)
 FOREACH(name in ['a','b','c'] |
-  CREATE UNIQUE root-[:tag]->(tag {name:name})<-[:tagged]-book
+  CREATE UNIQUE (root)-[:tag]->(tag {name:name})<-[:tagged]-(book)
 )
 return book
 """)
@@ -413,7 +413,7 @@ return book
     val result = execute("""
 match (root) where id(root) = 0
 FOREACH(name in ['a','b','c'] |
-  CREATE UNIQUE root-[:tag]->(tag {name:name})
+  CREATE UNIQUE (root)-[:tag]->(tag {name:name})
 )
 """)
 
@@ -434,8 +434,8 @@ FOREACH(name in ['a','b','c'] |
     val result = execute("""
 MATCH (a), (b) WHERE id(a) = 0 AND id(b) = 1
 CREATE UNIQUE
-  a-[:X]->()-[:X]->(x {foo:'bar'}),
-  b-[:X]->x
+  (a)-[:X]->()-[:X]->(x {foo:'bar'}),
+  (b)-[:X]->(x)
 RETURN x""")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 3, propertiesSet = 1)
@@ -448,7 +448,7 @@ RETURN x""")
     val result = execute("""
 MATCH (a), (b) WHERE id(a) = 0 AND id(b) = 1
 CREATE UNIQUE
-  a-[:X]->()-[:X]->()-[:X]->b""")
+  (a)-[:X]->()-[:X]->()-[:X]->(b)""")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 3)
   }
@@ -462,8 +462,8 @@ CREATE UNIQUE
     val result = execute("""
 MATCH (a), (b) WHERE id(a) = 0 AND id(b) = 1
 CREATE UNIQUE
-  a-[:X]->z-[:X]->(x {foo:'bar'}),
-  b-[:X]->x-[:X]->(z {foo:'buzz'})
+  (a)-[:X]->(z)-[:X]->(x {foo:'bar'}),
+  (b)-[:X]->(x)-[:X]->(z {foo:'buzz'})
 RETURN x""")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 4, propertiesSet = 2)
@@ -479,7 +479,7 @@ MATCH (a)
 WITH collect(a) as nodes
 FOREACH( x in nodes |
       FOREACH( y in nodes |
-          CREATE UNIQUE x-[:FOO]->y
+          CREATE UNIQUE (x)-[:FOO]->(y)
       )
 )""")
 
@@ -497,7 +497,7 @@ FOREACH( x in nodes |
     relate(a,b1,"X")
     relate(a,b2,"X")
 
-    intercept[UniquePathNotUniqueException](execute("""match (a) where id(a) = 0 CREATE UNIQUE a-[:X]->b-[:X]->d"""))
+    intercept[UniquePathNotUniqueException](execute("""match (a) where id(a) = 0 CREATE UNIQUE (a)-[:X]->(b)-[:X]->(d)"""))
   }
 
   test("tree_structure") {
@@ -506,7 +506,7 @@ FOREACH( x in nodes |
     val result = execute("""match (root) where id(root) = 0
 CREATE (value {year:2012, month:5, day:11})
 WITH root,value
-CREATE UNIQUE root-[:X]->(year {value:value.year})-[:X]->(month {value:value.month})-[:X]->(day {value:value.day})-[:X]->value
+CREATE UNIQUE (root)-[:X]->(year {value:value.year})-[:X]->(month {value:value.month})-[:X]->(day {value:value.day})-[:X]->(value)
 RETURN value;""")
 
     /*
@@ -526,7 +526,7 @@ RETURN value;""")
     val result2 = execute("""match (root) where id(root) = 0
 CREATE (value { year:2012, month:5, day:12 })
 WITH root,value
-CREATE UNIQUE root-[:X]->(year {value:value.year})-[:X]->(month {value:value.month})-[:X]->(day {value:value.day})-[:X]->value
+CREATE UNIQUE (root)-[:X]->(year {value:value.year})-[:X]->(month {value:value.month})-[:X]->(day {value:value.day})-[:X]->(value)
 RETURN value;""")
 
     assertStats(result2, nodesCreated = 2, relationshipsCreated = 2, propertiesSet = 4)

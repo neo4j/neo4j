@@ -58,7 +58,7 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
     createNode("prop" -> 3)
     createNode("prop" -> -5)
 
-    executeWithAllPlanners("MATCH n RETURN n.prop AS n ORDER BY n + 2").toList should
+    executeWithAllPlanners("MATCH (n) RETURN n.prop AS n ORDER BY n + 2").toList should
       equal(List(
         Map("n" -> -5),
         Map("n" -> 1),

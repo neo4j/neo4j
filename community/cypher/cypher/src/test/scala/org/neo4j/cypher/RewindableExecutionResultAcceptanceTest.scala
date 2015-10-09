@@ -28,7 +28,7 @@ class RewindableExecutionResultAcceptanceTest extends ExecutionEngineFunSuite {
     val a = createNode()
     val b = createNode()
 
-    val result = rewindableExecutionResult("match n return n")
+    val result = rewindableExecutionResult("match (n) return n")
 
     result.toList should equal(List(Map("n" -> a), Map("n" -> b)))
     result.toList should equal(List(Map("n" -> a), Map("n" -> b)))
@@ -38,7 +38,7 @@ class RewindableExecutionResultAcceptanceTest extends ExecutionEngineFunSuite {
     val a = createNode("name" -> "Aslan")
     val b = createNode("name" -> "White Queen")
 
-    val result = rewindableExecutionResult(" match n return n")
+    val result = rewindableExecutionResult(" match (n) return n")
 
     assert(List(Map("n" -> a), Map("n" -> b)) === result.toList)
 
@@ -52,7 +52,7 @@ class RewindableExecutionResultAcceptanceTest extends ExecutionEngineFunSuite {
     val a = createNode("name" -> "Aslan")
     val b = createNode("name" -> "White Queen")
 
-    val result = rewindableExecutionResult("match n return n")
+    val result = rewindableExecutionResult("match (n) return n")
 
     assert(List(Map("n" -> a), Map("n" -> b)) === result.toList)
 

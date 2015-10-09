@@ -88,7 +88,7 @@ All aggregation functions also take the `DISTINCT` modifier,
 which removes duplicates from the values.
 
 ###assertion=returns-one
-MATCH n WHERE id(n) IN [%A%, %B%, %C%]
+MATCH (n) WHERE id(n) IN [%A%, %B%, %C%]
 RETURN
 
 collect(n.property)
@@ -97,7 +97,7 @@ collect(n.property)
 Collection from the values, ignores `NULL`.
 
 ###assertion=returns-one
-MATCH n WHERE id(n) IN [%A%, %B%, %C%]
+MATCH (n) WHERE id(n) IN [%A%, %B%, %C%]
 RETURN
 
 sum(n.property)
@@ -108,7 +108,7 @@ sum(n.property)
 Sum numerical values. Similar functions are +avg+, +min+, +max+.
 
 ###assertion=returns-one parameters=percentile
-MATCH n WHERE id(n) IN [%A%, %B%, %C%]
+MATCH (n) WHERE id(n) IN [%A%, %B%, %C%]
 RETURN
 
 percentileDisc(n.property, {percentile})
@@ -120,7 +120,7 @@ Discrete percentile. Continuous percentile is +percentileCont+.
 The `percentile` argument is from `0.0` to `1.0`.
 
 ###assertion=returns-one parameters=percentile
-MATCH n WHERE id(n) IN [%A%, %B%, %C%]
+MATCH (n) WHERE id(n) IN [%A%, %B%, %C%]
 RETURN
 
 stdev(n.property)

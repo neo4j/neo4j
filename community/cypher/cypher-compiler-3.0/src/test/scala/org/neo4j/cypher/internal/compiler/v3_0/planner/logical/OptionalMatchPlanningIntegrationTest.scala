@@ -48,12 +48,12 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   }
 
   test("should build simple optional match plans") { // This should be built using plan rewriting
-    planFor("OPTIONAL MATCH a RETURN a").plan should equal(
+    planFor("OPTIONAL MATCH (a) RETURN a").plan should equal(
       Optional(AllNodesScan("a", Set.empty)(solved))(solved))
   }
 
   test("should build simple optional expand") {
-    planFor("MATCH n OPTIONAL MATCH n-[:NOT_EXIST]->x RETURN n").plan.endoRewrite(unnestOptional) match {
+    planFor("MATCH (n) OPTIONAL MATCH (n)-[:NOT_EXIST]->(x) RETURN n").plan.endoRewrite(unnestOptional) match {
       case OptionalExpand(
       AllNodesScan(IdName("n"), _),
       IdName("n"),
@@ -120,19 +120,19 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   }
 
   test("should solve multiple optional matches") {
-    val plan = planFor("MATCH a OPTIONAL MATCH (a)-[:R1]->(x1) OPTIONAL MATCH (a)-[:R2]->(x2) RETURN a, x1, x2").plan.endoRewrite(unnestOptional)
+    val plan = planFor("MATCH (a) OPTIONAL MATCH (a)-[:R1]->(x1) OPTIONAL MATCH (a)-[:R2]->(x2) RETURN a, x1, x2").plan.endoRewrite(unnestOptional)
     plan should equal(
       OptionalExpand(
         OptionalExpand(
           AllNodesScan(IdName("a"), Set.empty)(solved),
-          IdName("a"), SemanticDirection.OUTGOING, List(RelTypeName("R1") _), IdName("x1"), IdName("  UNNAMED27"), ExpandAll, Seq.empty)(solved),
-        IdName("a"), SemanticDirection.OUTGOING, List(RelTypeName("R2") _), IdName("x2"), IdName("  UNNAMED58"), ExpandAll, Seq.empty)(solved)
+          IdName("a"), SemanticDirection.OUTGOING, List(RelTypeName("R1") _), IdName("x1"), IdName("  UNNAMED29"), ExpandAll, Seq.empty)(solved),
+        IdName("a"), SemanticDirection.OUTGOING, List(RelTypeName("R2") _), IdName("x2"), IdName("  UNNAMED60"), ExpandAll, Seq.empty)(solved)
     )
   }
 
   test("should solve optional matches with arguments and predicates") {
     val plan = planFor("""MATCH (n)
-                         |OPTIONAL MATCH n-[r]-(m)
+                         |OPTIONAL MATCH (n)-[r]-(m)
                          |WHERE m.prop = 42
                          |RETURN m""".stripMargin).plan.endoRewrite(unnestOptional)
     val s = solved

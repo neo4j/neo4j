@@ -151,7 +151,7 @@ public class JavaExecutionEngineDocTest
     public void exampleQuery() throws Exception
     {
 // START SNIPPET: JavaQuery
-        Result result = db.execute( "MATCH n WHERE id(n) = 0 AND 1=1 RETURN n" );
+        Result result = db.execute( "MATCH (n) WHERE id(n) = 0 AND 1=1 RETURN n" );
 
         assertThat( result.columns(), hasItem( "n" ) );
         Iterator<Node> n_column = result.columnAs( "n" );
@@ -165,7 +165,7 @@ public class JavaExecutionEngineDocTest
         makeFriends( michaelaNode, andreasNode );
         makeFriends( michaelaNode, johanNode );
 
-        Result result = db.execute( "MATCH n-->friend WHERE id(n) = 0 RETURN collect(friend)" );
+        Result result = db.execute( "MATCH (n)-->(friend) WHERE id(n) = 0 RETURN collect(friend)" );
 
         Iterable<Node> friends = (Iterable<Node>) result.columnAs( "collect(friend)" ).next();
         assertThat( friends, hasItems( andreasNode, johanNode ) );
@@ -176,7 +176,7 @@ public class JavaExecutionEngineDocTest
     public void testColumnAreInTheRightOrder() throws Exception
     {
         createTenNodes();
-        String q = "match one, two, three, four, five, six, seven, eight, nine, ten " +
+        String q = "match (one), (two), (three), (four), (five), (six), (seven), (eight), (nine), (ten) " +
                 "where id(one) = 1 and id(two) = 2 and id(three) = 3 and id(four) = 4 and id(five) = 5 " +
                 "and id(six) = 6 and id(seven) = 7 and id(eight) = 8 and id(nine) = 9 and id(ten) = 10 " +
                 "return one, two, three, four, five, six, seven, eight, nine, ten";
@@ -202,7 +202,7 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithParameterForNodeId
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "id", 0 );
-        String query = "MATCH n WHERE id(n) = {id} RETURN n.name";
+        String query = "MATCH (n) WHERE id(n) = {id} RETURN n.name";
         Result result = db.execute( query, params );
         // END SNIPPET: exampleWithParameterForNodeId
 
@@ -218,7 +218,7 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithParameterForMultipleNodeIds
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "ids", Arrays.asList( 0, 1, 2 ) );
-        String query = "MATCH n WHERE id(n) in {ids} RETURN n.name";
+        String query = "MATCH (n) WHERE id(n) in {ids} RETURN n.name";
         Result result = db.execute( query, params );
         // END SNIPPET: exampleWithParameterForMultipleNodeIds
 
@@ -299,7 +299,7 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithParameterForNodeObject
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "node", andreasNode );
-        String query = "MATCH n WHERE n = {node} RETURN n.name";
+        String query = "MATCH (n) WHERE n = {node} RETURN n.name";
         Result result = db.execute( query, params );
         // END SNIPPET: exampleWithParameterForNodeObject
 
@@ -442,7 +442,7 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "props", props );
 
-        String query = "MATCH n WHERE id(n) = 0 CREATE UNIQUE p = n-[:REL]->({props}) RETURN last(nodes(p)) AS X";
+        String query = "MATCH (n) WHERE id(n) = 0 CREATE UNIQUE p = (n)-[:REL]->({props}) RETURN last(nodes(p)) AS X";
         Result result = db.execute( query, params );
         assertThat( count( result ), is( 1 ) );
     }
@@ -462,7 +462,7 @@ public class JavaExecutionEngineDocTest
         params.put( "props1", props1 );
         params.put( "props2", props2 );
 
-        String query = "MATCH n WHERE id(n) = 0 CREATE UNIQUE p = n-[:REL]->({props1})-[:LER]->({props2}) RETURN p";
+        String query = "MATCH (n) WHERE id(n) = 0 CREATE UNIQUE p = (n)-[:REL]->({props1})-[:LER]->({props2}) RETURN p";
         Result result = db.execute( query, params );
         assertThat( count( result ), is( 1 ) );
     }

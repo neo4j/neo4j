@@ -37,28 +37,28 @@ Feature: MatchAcceptanceTest
 
   Scenario: Get node degree via length of pattern expression
     Given init: CREATE (x:X), (x)-[:T]->(), (x)-[:T]->(), (x)-[:T]->();
-    When running: MATCH (a:X) RETURN length(a-->()) as length;
+    When running: MATCH (a:X) RETURN length((a)-->()) as length;
     Then result:
       | length |
       | 3      |
 
   Scenario: Get node degree via length of pattern expression that specifies a relationship type
     Given init: CREATE (x:X), (x)-[:T]->(), (x)-[:T]->(), (x)-[:T]->(), (x)-[:AFFE]->();
-    When running: MATCH (a:X) RETURN length(a-[:T]->()) as length;
+    When running: MATCH (a:X) RETURN length((a)-[:T]->()) as length;
     Then result:
       | length |
       | 3      |
 
   Scenario: Get node degree via length of pattern expression that specifies multiple relationship types
     Given init: CREATE (x:X), (x)-[:T]->(), (x)-[:T]->(), (x)-[:T]->(), (x)-[:AFFE]->();
-    When running: MATCH (a:X) RETURN length(a-[:T|AFFE]->()) as length;
+    When running: MATCH (a:X) RETURN length((a)-[:T|AFFE]->()) as length;
     Then result:
       | length |
       | 4      |
 
   Scenario: should be able to use multiple MATCH clauses to do a cartesian product
     Given init: CREATE ({value: 1}), ({value: 2}), ({value: 3});
-    When running: MATCH n, m RETURN n.value AS n, m.value AS m;
+    When running: MATCH (n), (m) RETURN n.value AS n, m.value AS m;
     Then result:
       | n | m |
       | 1 | 1 |
@@ -73,7 +73,7 @@ Feature: MatchAcceptanceTest
 
   Scenario: should be able to use params in pattern matching predicates
     Given init: CREATE (:a)-[:A {foo: "bar"}]->(:b {name: 'me'})
-    When running parametrized: match a-[r]->b where r.foo =~ {param} return b
+    When running parametrized: match (a)-[r]->(b) where r.foo =~ {param} return b
       | param |
       | bar   |
     Then result:
@@ -96,7 +96,7 @@ Feature: MatchAcceptanceTest
 
   Scenario: should honour the column name for RETURN items
     Given init: CREATE ({name: "Someone Else"})
-    When running: MATCH a WITH a.name AS a RETURN a
+    When running: MATCH (a) WITH a.name AS a RETURN a
     Then result:
       | a            |
       | Someone Else |
@@ -110,7 +110,7 @@ Feature: MatchAcceptanceTest
 
   Scenario: should cope with shadowed variables
     Given init: CREATE ({value: 1, name: 'King Kong'}), ({value: 2, name: 'Ann Darrow'})
-    When running: MATCH n WITH n.name AS n RETURN n
+    When running: MATCH (n) WITH n.name AS n RETURN n
     Then result:
       | n          |
       | Ann Darrow |
@@ -133,7 +133,7 @@ Feature: MatchAcceptanceTest
 
   Scenario: should get related to related to
     Given init: CREATE (a:A {value: 1})-[:KNOWS]->(b:B {value: 2})-[:FRIEND]->(c:C {value: 3})
-    When running: MATCH n-->a-->b RETURN b
+    When running: MATCH (n)-->(a)-->(b) RETURN b
     Then result:
       | b               |
       | (:C {value: 3}) |
@@ -148,7 +148,7 @@ Feature: MatchAcceptanceTest
 
   Scenario: should return two subgraphs with bound undirected relationship
     Given init: CREATE (a:A {value: 1})-[:REL {name: "r"}]->(b:B {value: 2})
-    When running: MATCH a-[r {name: 'r'}]-b RETURN a,b
+    When running: match (a)-[r {name: 'r'}]-(b) RETURN a,b
     Then result:
       | a               | b               |
       | (:B {value: 2}) | (:A {value: 1}) |
@@ -187,62 +187,62 @@ Feature: MatchAcceptanceTest
 
   Scenario: should return a simple path
     Given init: CREATE (a:A {name: "A"})-[:KNOWS]->(b:B {name: "B"})
-    When running: MATCH p=(a {name:'A'})-->b RETURN p
+    When running: MATCH p=(a {name:'A'})-->(b) RETURN p
     Then result:
       | p                                           |
       | (:A {name: "A"})-[:KNOWS]->(:B {name: "B"}) |
 
   Scenario: should return a three node path
     Given init: CREATE (a:A {name: "A"})-[:KNOWS]->(b:B {name: "B"})-[:KNOWS]->(c:C {name: "C"})
-    When running: MATCH p = (a {name:'A'})-[rel1]->b-[rel2]->c RETURN p
+    When running: MATCH p = (a {name:'A'})-[rel1]->(b)-[rel2]->(c) RETURN p
     Then result:
       | p                                                                      |
       | (:A {name: "A"})-[:KNOWS]->(:B {name: "B"})-[:KNOWS]->(:C {name: "C"}) |
 
   Scenario: should not return anything because path length does not match
     Given init: CREATE (a:A {name: "A"})-[:KNOWS]->(b:B {name: "B"})
-    When running: MATCH p = n-->x WHERE length(p) = 10 RETURN x
+    When running: MATCH p = (n)-->(x) WHERE length(p) = 10 RETURN x
     Then result:
       |  |
 
   Scenario: should pass the path length test
     Given init: CREATE (a:A {name: "A"})-[:KNOWS]->(b:B {name: "B"})
-    When running: MATCH p = n-->x WHERE length(p)=1 RETURN x
+    When running: MATCH p = (n)-->(x) WHERE length(p)=1 RETURN x
     Then result:
       | x                |
       | (:B {name: "B"}) |
 
   Scenario: should be able to filter on path nodes
     Given init: CREATE (a:A {foo: "bar"})-[:REL]->(b:B {foo: "bar"})-[:REL]->(c:C {foo: "bar"})-[:REL]->(d:D {foo: "bar"})
-    When running: MATCH p = pA-[:REL*3..3]->pB WHERE all(i in nodes(p) WHERE i.foo = 'bar') RETURN pB
+    When running: MATCH p = (pA)-[:REL*3..3]->(pB) WHERE all(i in nodes(p) WHERE i.foo = 'bar') RETURN pB
     Then result:
       | pB                |
       | (:D {foo: "bar"}) |
 
   Scenario: should return relationships by fetching them from the path - starting from the end
     Given init: CREATE (a:A)-[:REL {value: 1}]->(b:B)-[:REL {value: 2}]->(e:End)
-    When running: MATCH p = a-[:REL*2..2]->(b:End) RETURN relationships(p)
+    When running: MATCH p = (a)-[:REL*2..2]->(b:End) RETURN relationships(p)
     Then result:
       | relationships(p)                       |
       | [[:REL {value: 1}], [:REL {value: 2}]] |
 
   Scenario: should return relationships by fetching them from the path
     Given init: CREATE (s:Start)-[:REL {value: 1}]->(b:B)-[:REL {value: 2}]->(c:C)
-    When running: MATCH p = (a:Start)-[:REL*2..2]->b RETURN relationships(p)
+    When running: MATCH p = (a:Start)-[:REL*2..2]->(b) RETURN relationships(p)
     Then result:
       | relationships(p)                       |
       | [[:REL {value: 1}], [:REL {value: 2}]] |
 
   Scenario: should return relationships by collecting them as a list - wrong way
     Given init: CREATE (a:A)-[:REL {value: 1}]->(b:B)-[:REL {value: 2}]->(e:End)
-    When running: MATCH a-[r:REL*2..2]->(b:End) RETURN r
+    When running: MATCH (a)-[r:REL*2..2]->(b:End) RETURN r
     Then result:
       | r                                      |
       | [[:REL {value: 1}], [:REL {value: 2}]] |
 
   Scenario: should return relationships by collecting them as a list - undirected
     Given init: CREATE (a:End {value: 1})-[:REL {value: 1}]->(b:B)-[:REL {value: 2}]->(c:End {value : 2})
-    When running: MATCH a-[r:REL*2..2]-(b:End) RETURN r
+    When running: MATCH (a)-[r:REL*2..2]-(b:End) RETURN r
     Then result:
       | r                                      |
       | [[:REL {value: 1}], [:REL {value: 2}]] |
@@ -250,14 +250,14 @@ Feature: MatchAcceptanceTest
 
   Scenario: should return relationships by collecting them as a list
     Given init: CREATE (s:Start)-[:REL {value: 1}]->(b:B)-[:REL {value: 2}]->(c:C)
-    When running: MATCH (a:Start)-[r:REL*2..2]->b RETURN r
+    When running: MATCH (a:Start)-[r:REL*2..2]-(b) RETURN r
     Then result:
       | r                                      |
       | [[:REL {value: 1}], [:REL {value: 2}]] |
 
   Scenario: should return a var length path
     Given init: CREATE (a:A {name: "A"})-[:KNOWS {value: 1}]->(b:B {name: "B"})-[:KNOWS {value: 2}]->(c:C {name: "C"})
-    When running: MATCH p=(n {name:'A'})-[:KNOWS*1..2]->x RETURN p
+    When running: MATCH p=(n {name:'A'})-[:KNOWS*1..2]->(x) RETURN p
     Then result:
       | p                                                                                            |
       | (:A {name: "A"})-[:KNOWS {value: 1}]->(:B {name: "B"})                                       |
@@ -265,7 +265,7 @@ Feature: MatchAcceptanceTest
 
   Scenario: a var length path of length zero
     Given init: CREATE (a:A)-[:REL]->(b:B)
-    When running: MATCH p=a-[*0..1]->b RETURN a,b, length(p) AS l
+    When running: MATCH p=(a)-[*0..1]->(b) RETURN a,b, length(p) AS l
     Then result:
       | a    | b    | l |
       | (:A) | (:A) | 0 |
@@ -274,7 +274,7 @@ Feature: MatchAcceptanceTest
 
   Scenario: a named var length path of length zero
     Given init: CREATE (a:A {name: "A"})-[:KNOWS]->(b:B {name: "B"})-[:FRIEND]->(c:C {name: "C"})
-    When running: MATCH p=(a {name:'A'})-[:KNOWS*0..1]->b-[:FRIEND*0..1]->c RETURN p
+    When running: MATCH p=(a {name:'A'})-[:KNOWS*0..1]->(b)-[:FRIEND*0..1]->(c) RETURN p
     Then result:
       | p                                                                       |
       | (:A {name: "A"})                                                        |

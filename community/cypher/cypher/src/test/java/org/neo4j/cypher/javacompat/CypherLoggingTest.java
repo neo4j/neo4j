@@ -41,7 +41,7 @@ public class CypherLoggingTest
 
         // when
         engine.execute( "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" );
-        engine.execute( "MATCH n RETURN n" );
+        engine.execute( "MATCH (n) RETURN n" );
 
         // then
         inLog( org.neo4j.cypher.ExecutionEngine.class );

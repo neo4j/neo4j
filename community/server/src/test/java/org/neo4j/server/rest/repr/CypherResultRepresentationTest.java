@@ -133,8 +133,8 @@ public class CypherResultRepresentationTest
         try ( Transaction ignored = database.getGraphDatabaseService().beginTx() )
         {
             GraphDatabaseService graphdb = database.getGraphDatabaseService();
-            graphdb.execute( "CREATE (n {name: 'Sally'}), (m {age: 42}), n-[r:FOO {drunk: false}]->m" );
-            Result result = graphdb.execute( "MATCH p=n-[r]->m RETURN n, r, p, {node: n, edge: r, path: p}" );
+            graphdb.execute( "CREATE (n {name: 'Sally'}), (m {age: 42}), (n)-[r:FOO {drunk: false}]->(m)" );
+            Result result = graphdb.execute( "MATCH p=(n)-[r]->(m) RETURN n, r, p, {node: n, edge: r, path: p}" );
             CypherResultRepresentation representation = new CypherResultRepresentation( result, false, false );
 
             // When

@@ -65,7 +65,7 @@ class FunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
 
   def text = """
 ###assertion=returns-one parameters=default
-MATCH n WHERE id(n) = %A%
+MATCH (n)  WHERE id(n) = %A%
 RETURN
 
 coalesce(n.property, {defaultValue})###

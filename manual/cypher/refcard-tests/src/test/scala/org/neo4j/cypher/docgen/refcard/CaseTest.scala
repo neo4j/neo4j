@@ -47,7 +47,7 @@ class CaseTest extends RefcardTest with QueryStatisticsTestSupport {
 
   def text = """
 ###assertion=simple
-MATCH n
+MATCH (n)
 RETURN
 
 CASE n.eyes
@@ -63,7 +63,7 @@ Return `THEN` value from the matching `WHEN` value.
 The `ELSE` value is optional, and substituted for `NULL` if missing.
 
 ###assertion=generic
-MATCH n
+MATCH (n)
 RETURN
 
 CASE

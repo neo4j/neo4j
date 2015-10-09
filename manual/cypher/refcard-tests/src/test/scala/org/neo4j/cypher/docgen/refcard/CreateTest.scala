@@ -97,7 +97,7 @@ RETURN n###
 Create nodes with the given properties.
 
 ###assertion=create-rel
-MATCH n, m
+MATCH (n), (m)
 WHERE id(n) = %A% AND id(m) = %B%
 
 CREATE (n)-[r:KNOWS]->(m)
@@ -107,7 +107,7 @@ RETURN r###
 Create a relationship with the given type and direction; bind an identifier to it.
 
 ###assertion=create-rel-prop parameters=ayear
-MATCH n, m
+MATCH (n), (m)
 WHERE id(n) = %A% AND id(m) = %B%
 
 CREATE (n)-[:LOVES {since: {value}}]->(m)

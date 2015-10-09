@@ -397,20 +397,20 @@ class CypherParserTest extends CypherFunSuite {
 
   test("relatedTo") {
     expectQuery(
-      "start a = NODE(1) match a -[:KNOWS]-> (b) return a, b",
+      "start a = NODE(1) match (a) -[:KNOWS]-> (b) return a, b",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED26", Seq("KNOWS"), SemanticDirection.OUTGOING)).
+        matches(RelatedTo("a", "b", "  UNNAMED28", Seq("KNOWS"), SemanticDirection.OUTGOING)).
         returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"))
     )
   }
 
   test("relatedToUsingUnicodeDashes") {
     expectQuery(
-      "start a = NODE(1) match a —[:KNOWS]﹘> (b) return a, b",
+      "start a = NODE(1) match (a) —[:KNOWS]﹘> (b) return a, b",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED26", Seq("KNOWS"), SemanticDirection.OUTGOING)).
+        matches(RelatedTo("a", "b", "  UNNAMED28", Seq("KNOWS"), SemanticDirection.OUTGOING)).
         returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"))
     )
   }
@@ -427,17 +427,17 @@ class CypherParserTest extends CypherFunSuite {
 
   test("relatedToWithoutRelType") {
     expectQuery(
-      "start a = NODE(1) match a --> (b) return a, b",
+      "start a = NODE(1) match (a) --> (b) return a, b",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED26", Seq(), SemanticDirection.OUTGOING)).
+        matches(RelatedTo("a", "b", "  UNNAMED28", Seq(), SemanticDirection.OUTGOING)).
         returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"))
     )
   }
 
   test("relatedToWithoutRelTypeButWithRelVariable") {
     expectQuery(
-      "start a = NODE(1) match a-[r]->b return r",
+      "start a = NODE(1) match (a)-[r]->(b) return r",
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "r", Seq(), SemanticDirection.OUTGOING)).
@@ -446,17 +446,17 @@ class CypherParserTest extends CypherFunSuite {
 
   test("relatedToTheOtherWay") {
     expectQuery(
-      "start a = NODE(1) match a <-[:KNOWS]- (b) return a, b",
+      "start a = NODE(1) match (a) <-[:KNOWS]- (b) return a, b",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED26", Seq("KNOWS"), SemanticDirection.INCOMING)).
+        matches(RelatedTo("a", "b", "  UNNAMED28", Seq("KNOWS"), SemanticDirection.INCOMING)).
         returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"))
     )
   }
 
   test("twoDoubleOptionalWithFourHalfs") {
     expectQuery(
-      "START a=node(1), b=node(2) OPTIONAL MATCH a-[r1]->X<-[r2]-b, a<-[r3]-Z-[r4]->b return r1,r2,r3,r4 order by id(r1),id(r2),id(r3),id(r4)",
+      "START a=node(1), b=node(2) OPTIONAL MATCH (a)-[r1]->(X)<-[r2]-(b), (a)<-[r3]-(Z)-[r4]->(b) return r1,r2,r3,r4 order by id(r1),id(r2),id(r3),id(r4)",
       Query.
       start(NodeById("a", 1), NodeById("b", 2)).
       matches(
@@ -508,7 +508,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("relatedToWithRelationOutput") {
     expectQuery(
-      "start a = NODE(1) match a -[rel:KNOWS]-> (b) return rel",
+      "start a = NODE(1) match (a) -[rel:KNOWS]-> (b) return rel",
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "rel", Seq("KNOWS"), SemanticDirection.OUTGOING)).
@@ -518,29 +518,29 @@ class CypherParserTest extends CypherFunSuite {
 
   test("relatedToWithoutEndName") {
     expectQuery(
-      "start a = NODE(1) match a -[r:MARRIED]-> () return a",
+      "start a = NODE(1) match (a) -[r:MARRIED]-> () return a",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "  UNNAMED41", "r", Seq("MARRIED"), SemanticDirection.OUTGOING)).
+        matches(RelatedTo("a", "  UNNAMED43", "r", Seq("MARRIED"), SemanticDirection.OUTGOING)).
         returns(ReturnItem(Identifier("a"), "a"))
     )
   }
 
   test("relatedInTwoSteps") {
     expectQuery(
-      "start a = NODE(1) match a -[:KNOWS]-> b -[:FRIEND]-> (c) return c",
+      "start a = NODE(1) match (a) -[:KNOWS]-> (b) -[:FRIEND]-> (c) return c",
       Query.
         start(NodeById("a", 1)).
         matches(
-        RelatedTo("a", "b", "  UNNAMED26", Seq("KNOWS"), SemanticDirection.OUTGOING),
-        RelatedTo("b", "c", "  UNNAMED40", Seq("FRIEND"), SemanticDirection.OUTGOING)).
+        RelatedTo("a", "b", "  UNNAMED28", Seq("KNOWS"), SemanticDirection.OUTGOING),
+        RelatedTo("b", "c", "  UNNAMED44", Seq("FRIEND"), SemanticDirection.OUTGOING)).
         returns(ReturnItem(Identifier("c"), "c"))
     )
   }
 
   test("djangoCTRelationship") {
     expectQuery(
-      "start a = NODE(1) match a -[r:`<<KNOWS>>`]-> b return b",
+      "start a = NODE(1) match (a) -[r:`<<KNOWS>>`]-> (b) return b",
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "r", Seq("<<KNOWS>>"), SemanticDirection.OUTGOING)).
@@ -549,10 +549,10 @@ class CypherParserTest extends CypherFunSuite {
 
   test("countTheNumberOfHits") {
     expectQuery(
-      "start a = NODE(1) match a --> b return a, b, count(*)",
+      "start a = NODE(1) match (a) --> (b) return a, b, count(*)",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED26", Seq(), SemanticDirection.OUTGOING)).
+        matches(RelatedTo("a", "b", "  UNNAMED28", Seq(), SemanticDirection.OUTGOING)).
         aggregation(CountStar()).
         columns("a", "b", "count(*)").
         returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"), ReturnItem(CountStar(), "count(*)")))
@@ -571,7 +571,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("distinct") {
     expectQuery(
-      "start a = NODE(1) match a -[r]-> b return distinct a, b",
+      "start a = NODE(1) match (a) -[r]-> (b) return distinct a, b",
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "r", Seq(), SemanticDirection.OUTGOING)).
@@ -581,7 +581,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("sumTheAgesOfPeople") {
     expectQuery(
-      "start a = NODE(1) match a -[r]-> b return a, b, sum(a.age)",
+      "start a = NODE(1) match (a) -[r]-> (b) return a, b, sum(a.age)",
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "r", Seq(), SemanticDirection.OUTGOING)).
@@ -592,10 +592,10 @@ class CypherParserTest extends CypherFunSuite {
 
   test("avgTheAgesOfPeople") {
     expectQuery(
-      "start a = NODE(1) match a --> b return a, b, avg(a.age)",
+      "start a = NODE(1) match (a) --> (b) return a, b, avg(a.age)",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED26", Seq(), SemanticDirection.OUTGOING)).
+        matches(RelatedTo("a", "b", "  UNNAMED28", Seq(), SemanticDirection.OUTGOING)).
         aggregation(Avg(Property(Identifier("a"), PropertyKey("age")))).
         columns("a", "b", "avg(a.age)").
         returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"), ReturnItem(Avg(Property(Identifier("a"), PropertyKey("age"))), "avg(a.age)")))
@@ -603,7 +603,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("minTheAgesOfPeople") {
     expectQuery(
-      "start a = NODE(1) match (a) --> b return a, b, min(a.age)",
+      "start a = NODE(1) match (a) --> (b) return a, b, min(a.age)",
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED28", Seq(), SemanticDirection.OUTGOING)).
@@ -615,10 +615,10 @@ class CypherParserTest extends CypherFunSuite {
 
   test("maxTheAgesOfPeople") {
     expectQuery(
-      "start a = NODE(1) match a --> b return a, b, max(a.age)",
+      "start a = NODE(1) match (a) --> (b) return a, b, max(a.age)",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED26", Seq(), SemanticDirection.OUTGOING)).
+        matches(RelatedTo("a", "b", "  UNNAMED28", Seq(), SemanticDirection.OUTGOING)).
         aggregation(Max(Property(Identifier("a"), PropertyKey("age")))).
         columns("a", "b", "max(a.age)").
         returns(
@@ -761,7 +761,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("relationshipType") {
     expectQuery(
-      "start n=NODE(1) match n-[r]->(x) where type(r) = \"something\" return r",
+      "start n=NODE(1) match (n)-[r]->(x) where type(r) = \"something\" return r",
       Query.
         start(NodeById("n", 1)).
         matches(RelatedTo("n", "x", "r", Seq(), SemanticDirection.OUTGOING)).
@@ -771,7 +771,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("pathLength") {
     expectQuery(
-      "start n=NODE(1) match p=(n-[r]->x) where LENGTH(p) = 10 return p",
+      "start n=NODE(1) match p=((n)-[r]->(x)) where LENGTH(p) = 10 return p",
       Query.
         start(NodeById("n", 1)).
         matches(RelatedTo("n", "x", "r", Seq(), SemanticDirection.OUTGOING)).
@@ -806,7 +806,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("relationshipTypeOut") {
     expectQuery(
-      "start n=NODE(1) match n-[r]->(x) return TYPE(r)",
+      "start n=NODE(1) match (n)-[r]->(x) return TYPE(r)",
 
       Query.
         start(NodeById("n", 1)).
@@ -817,7 +817,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("shouldBeAbleToParseCoalesce") {
     expectQuery(
-      "start n=NODE(1) match n-[r]->(x) return COALESCE(r.name,x.name)",
+      "start n=NODE(1) match (n)-[r]->(x) return COALESCE(r.name,x.name)",
       Query.
         start(NodeById("n", 1)).
         matches(RelatedTo("n", "x", "r", Seq(), SemanticDirection.OUTGOING)).
@@ -826,7 +826,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("relationshipsFromPathOutput") {
     expectQuery(
-      "start n=NODE(1) match p=n-[r]->x return RELATIONSHIPS(p)",
+      "start n=NODE(1) match p=(n)-[r]->(x) return RELATIONSHIPS(p)",
 
       Query.
         start(NodeById("n", 1)).
@@ -837,7 +837,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("keepDirectionForNamedPaths") {
     expectQuery(
-      "START a=node(1) match p=b<-[r]-a return p",
+      "START a=node(1) match p=(b)<-[r]-(a) return p",
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("b", "a", "r", Seq(), SemanticDirection.INCOMING)).
@@ -847,7 +847,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("relationshipsFromPathInWhere") {
     expectQuery(
-      "start n=NODE(1) match p=n-[r]->x where length(rels(p))=1 return p",
+      "start n=NODE(1) match p=(n)-[r]->(x) where length(rels(p))=1 return p",
 
       Query.
         start(NodeById("n", 1)).
@@ -894,18 +894,18 @@ class CypherParserTest extends CypherFunSuite {
 
   test("simplePathExample") {
     expectQuery(
-      "start a = node(0) match p = a-->b return a",
+      "start a = node(0) match p = (a)-->(b) return a",
       Query.
         start(NodeById("a", 0)).
-        matches(RelatedTo("a", "b", "  UNNAMED29", Seq(), SemanticDirection.OUTGOING)).
-        namedPaths(NamedPath("p", ParsedRelation("  UNNAMED29", "a", "b", Seq.empty, SemanticDirection.OUTGOING))).
+        matches(RelatedTo("a", "b", "  UNNAMED31", Seq(), SemanticDirection.OUTGOING)).
+        namedPaths(NamedPath("p", ParsedRelation("  UNNAMED31", "a", "b", Seq.empty, SemanticDirection.OUTGOING))).
         returns(ReturnItem(Identifier("a"), "a"))
     )
   }
 
   test("threeStepsPath") {
     expectQuery(
-      "start a = node(0) match p = ( a-[r1]->b-[r2]->c ) return a",
+      "start a = node(0) match p = ( (a)-[r1]->(b)-[r2]->c ) return a",
       Query.
         start(NodeById("a", 0)).
         matches(
@@ -919,7 +919,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("pathsShouldBePossibleWithoutParenthesis") {
     expectQuery(
-      "start a = node(0) match p = a-[r]->b return a",
+      "start a = node(0) match p = (a)-[r]->(b) return a",
       Query.
         start(NodeById("a", 0)).
         matches(RelatedTo("a", "b", "r", Seq(), SemanticDirection.OUTGOING)).
@@ -929,30 +929,30 @@ class CypherParserTest extends CypherFunSuite {
 
   test("variableLengthPath") {
     expectQuery(
-      "start a=node(0) match a -[:knows*1..3]-> x return x",
+      "start a=node(0) match (a) -[:knows*1..3]-> (x) return x",
       Query.
         start(NodeById("a", 0)).
-        matches(VarLengthRelatedTo("  UNNAMED24", "a", "x", Some(1), Some(3), "knows", SemanticDirection.OUTGOING)).
+        matches(VarLengthRelatedTo("  UNNAMED26", "a", "x", Some(1), Some(3), "knows", SemanticDirection.OUTGOING)).
         returns(ReturnItem(Identifier("x"), "x"))
     )
   }
 
   test("variableLengthPathWithRelsIterable") {
     expectQuery(
-      "start a=node(0) match a -[r:knows*1..3]-> x return length(r)",
+      "start a=node(0) match (a) -[r:knows*1..3]-> (x) return length(r)",
       Query.
         start(NodeById("a", 0)).
-        matches(VarLengthRelatedTo("  UNNAMED24", "a", "x", Some(1), Some(3), "knows", SemanticDirection.OUTGOING, Some("r"))).
+        matches(VarLengthRelatedTo("  UNNAMED26", "a", "x", Some(1), Some(3), "knows", SemanticDirection.OUTGOING, Some("r"))).
         returns(ReturnItem(LengthFunction(Identifier("r")), "length(r)"))
     )
   }
 
   test("fixedVarLengthPath") {
     expectQuery(
-      "start a=node(0) match a -[*3]-> x return x",
+      "start a=node(0) match (a) -[*3]-> (x) return x",
       Query.
         start(NodeById("a", 0)).
-        matches(VarLengthRelatedTo("  UNNAMED24", SingleNode("a"), SingleNode("x"), Some(3), Some(3), Seq(),
+        matches(VarLengthRelatedTo("  UNNAMED26", SingleNode("a"), SingleNode("x"), Some(3), Some(3), Seq(),
         SemanticDirection.OUTGOING, None, Map.empty)).
         returns(ReturnItem(Identifier("x"), "x"))
     )
@@ -960,50 +960,50 @@ class CypherParserTest extends CypherFunSuite {
 
   test("variableLengthPathWithoutMinDepth") {
     expectQuery(
-      "start a=node(0) match a -[:knows*..3]-> x return x",
+      "start a=node(0) match (a) -[:knows*..3]-> (x) return x",
       Query.
         start(NodeById("a", 0)).
-        matches(VarLengthRelatedTo("  UNNAMED24", "a", "x", None, Some(3), "knows", SemanticDirection.OUTGOING)).
+        matches(VarLengthRelatedTo("  UNNAMED26", "a", "x", None, Some(3), "knows", SemanticDirection.OUTGOING)).
         returns(ReturnItem(Identifier("x"), "x"))
     )
   }
 
   test("variableLengthPathWithRelationshipIdentifier") {
     expectQuery(
-      "start a=node(0) match a -[r:knows*2..]-> x return x",
+      "start a=node(0) match (a) -[r:knows*2..]-> (x) return x",
       Query.
         start(NodeById("a", 0)).
-        matches(VarLengthRelatedTo("  UNNAMED24", "a", "x", Some(2), None, "knows", SemanticDirection.OUTGOING, Some("r"))).
+        matches(VarLengthRelatedTo("  UNNAMED26", "a", "x", Some(2), None, "knows", SemanticDirection.OUTGOING, Some("r"))).
         returns(ReturnItem(Identifier("x"), "x"))
     )
   }
 
   test("variableLengthPathWithoutMaxDepth") {
     expectQuery(
-      "start a=node(0) match a -[:knows*2..]-> x return x",
+      "start a=node(0) match (a) -[:knows*2..]-> (x) return x",
       Query.
         start(NodeById("a", 0)).
-        matches(VarLengthRelatedTo("  UNNAMED24", "a", "x", Some(2), None, "knows", SemanticDirection.OUTGOING)).
+        matches(VarLengthRelatedTo("  UNNAMED26", "a", "x", Some(2), None, "knows", SemanticDirection.OUTGOING)).
         returns(ReturnItem(Identifier("x"), "x"))
     )
   }
 
   test("unboundVariableLengthPath") {
     expectQuery(
-      "start a=node(0) match a -[:knows*]-> x return x",
+      "start a=node(0) match (a) -[:knows*]-> (x) return x",
       Query.
         start(NodeById("a", 0)).
-        matches(VarLengthRelatedTo("  UNNAMED24", "a", "x", None, None, "knows", SemanticDirection.OUTGOING)).
+        matches(VarLengthRelatedTo("  UNNAMED26", "a", "x", None, None, "knows", SemanticDirection.OUTGOING)).
         returns(ReturnItem(Identifier("x"), "x"))
     )
   }
 
   test("optionalRelationship") {
     expectQuery(
-      "start a = node(1) optional match a --> (b) return b",
+      "start a = node(1) optional match (a) --> (b) return b",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED35", Seq(), SemanticDirection.OUTGOING, Map.empty)).
+        matches(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED37", Seq(), SemanticDirection.OUTGOING, Map.empty)).
         makeOptional().
         returns(ReturnItem(Identifier("b"), "b"))
     )
@@ -1011,10 +1011,10 @@ class CypherParserTest extends CypherFunSuite {
 
   test("optionalTypedRelationship") {
     expectQuery(
-      "start a = node(1) optional match a -[:KNOWS]-> (b) return b",
+      "start a = node(1) optional match (a) -[:KNOWS]-> (b) return b",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED35", Seq("KNOWS"), SemanticDirection.OUTGOING)).
+        matches(RelatedTo("a", "b", "  UNNAMED37", Seq("KNOWS"), SemanticDirection.OUTGOING)).
         makeOptional().
         returns(ReturnItem(Identifier("b"), "b"))
     )
@@ -1022,7 +1022,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("optionalTypedAndNamedRelationship") {
     expectQuery(
-      "start a = node(1) optional match a -[r:KNOWS]-> (b) return b",
+      "start a = node(1) optional match (a) -[r:KNOWS]-> (b) return b",
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq("KNOWS"), SemanticDirection.OUTGOING, Map.empty)).
@@ -1033,7 +1033,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("optionalNamedRelationship") {
     expectQuery(
-      "start a = node(1) optional match a -[r]-> (b) return b",
+      "start a = node(1) optional match (a) -[r]-> (b) return b",
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "r", Seq(), SemanticDirection.OUTGOING)).
@@ -1044,7 +1044,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("testAllIterablePredicate") {
     expectQuery(
-      """start a = node(1) match p=(a-[r]->b) where all(x in NODES(p) WHERE x.name = "Andres") return b""",
+      """start a = node(1) match p=((a)-[r]->(b)) where all(x in NODES(p) WHERE x.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq(), SemanticDirection.OUTGOING, Map.empty)).
@@ -1056,7 +1056,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("testAnyIterablePredicate") {
     expectQuery(
-      """start a = node(1) match p=(a-[r]->b) where any(x in NODES(p) WHERE x.name = "Andres") return b""",
+      """start a = node(1) match p=((a)-[r]->(b)) where any(x in NODES(p) WHERE x.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
         where(SingleInCollection(NodesFunction(Identifier("p")), "x", Equals(Property(Identifier("x"), PropertyKey("name")), Literal("Andres")))).
@@ -1069,7 +1069,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("testNoneIterablePredicate") {
     expectQuery(
-      """start a = node(1) match p=(a-[r]->b) where none(x in NODES(p) WHERE x.name = "Andres") return b""",
+      """start a = node(1) match p=((a)-[r]->(b)) where none(x in NODES(p) WHERE x.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq(), SemanticDirection.OUTGOING, Map.empty)).
@@ -1081,7 +1081,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("testSingleIterablePredicate") {
     expectQuery(
-      """start a = node(1) match p=(a-[r]->b) where single(x in NODES(p) WHERE x.name = "Andres") return b""",
+      """start a = node(1) match p=((a)-[r]->(b)) where single(x in NODES(p) WHERE x.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq(), SemanticDirection.OUTGOING, Map.empty)).
@@ -1201,7 +1201,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("testShortestPathWithMaxDepth") {
     expectQuery(
-      """start a=node(0), b=node(1) match p = shortestPath( a-[*..6]->b ) return p""",
+      """start a=node(0), b=node(1) match p = shortestPath( (a)-[*..6]->(b) ) return p""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
         matches(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), SemanticDirection.OUTGOING, false, Some(6), single = true, None)).
@@ -1211,7 +1211,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("testShortestPathWithMaxDepth and rel iterator") {
     expectQuery(
-      """start a=node(0), b=node(1) match p = shortestPath( a-[r*..6]->b ) return p""",
+      """start a=node(0), b=node(1) match p = shortestPath( (a)-[r*..6]->(b) ) return p""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
         matches(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), SemanticDirection.OUTGOING, false, Some(6), single = true, Some("r"))).
@@ -1221,7 +1221,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("testShortestPathWithType") {
     expectQuery(
-      """start a=node(0), b=node(1) match p = shortestPath( a-[:KNOWS*..6]->b ) return p""",
+      """start a=node(0), b=node(1) match p = shortestPath( a-[:KNOWS*..6]->(b) ) return p""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
         matches(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq("KNOWS"), SemanticDirection.OUTGOING, false, Some(6), single = true, relIterator = None)).
@@ -1231,7 +1231,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("testAllShortestPathsWithType") {
     expectQuery(
-      """start a=node(0), b=node(1) match p = allShortestPaths( a-[:KNOWS*..6]->b ) return p""",
+      """start a=node(0), b=node(1) match p = allShortestPaths( a-[:KNOWS*..6]->(b) ) return p""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
         matches(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq("KNOWS"), SemanticDirection.OUTGOING, false, Some(6), single = false, relIterator = None)).
@@ -1241,7 +1241,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("testShortestPathWithoutStart") {
     expectQuery(
-      """match p = shortestPath( a-[*1..3]->b ) WHERE a.name = 'John' AND b.name = 'Sarah' return p""",
+      """match p = shortestPath( a-[*1..3]->(b) ) WHERE a.name = 'John' AND b.name = 'Sarah' return p""",
       Query.
         matches(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), SemanticDirection.OUTGOING, false, Some(3), single = true, None)).
         where(And(
@@ -1253,7 +1253,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("testShortestPathExpression") {
     expectQuery(
-      """start a=node(0), b=node(1) return shortestPath(a-[:KNOWS*0..3]->b) AS path""",
+      """start a=node(0), b=node(1) return shortestPath(a-[:KNOWS*0..3]->(b)) AS path""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
         returns(ReturnItem(ShortestPathExpression(
@@ -1262,7 +1262,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("shortest path with 0 as min length and no max length") {
     expectQuery(
-      """start a=node(0), b=node(1) return shortestPath(a-[:KNOWS*0..]->b) AS path""",
+      """start a=node(0), b=node(1) return shortestPath(a-[:KNOWS*0..]->(b)) AS path""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
         returns(ReturnItem(ShortestPathExpression(
@@ -1304,7 +1304,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("supportsPatternExistsInTheWhereClause") {
     expectQuery(
-      """start a=node(0), b=node(1) where a-->b return a""",
+      """start a=node(0), b=node(1) where a-->(b) return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
         where(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED34", Seq(), SemanticDirection.OUTGOING, Map.empty))))).
@@ -1607,10 +1607,10 @@ class CypherParserTest extends CypherFunSuite {
 
   test("variable length path with collection for relationships") {
     expectQuery(
-      "start a=node(0) optional match a -[r*1..3]-> x return x",
+      "start a=node(0) optional match (a) -[r*1..3]-> (x) return x",
       Query.
         start(NodeById("a", 0)).
-        matches(VarLengthRelatedTo("  UNNAMED33", SingleNode("a"), SingleNode("x"), Some(1), Some(3), Seq(), SemanticDirection.OUTGOING, Some("r"), Map.empty)).
+        matches(VarLengthRelatedTo("  UNNAMED35", SingleNode("a"), SingleNode("x"), Some(1), Some(3), Seq(), SemanticDirection.OUTGOING, Some("r"), Map.empty)).
         makeOptional().
         returns(ReturnItem(Identifier("x"), "x"))
     )
@@ -1721,7 +1721,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("start with two nodes and create relationship") {
     expectQuery(
-      "start a=node(0), b=node(1) with a,b create a-[r:REL]->b", {
+      "start a=node(0), b=node(1) with a,b create a-[r:REL]->(b)", {
       val secondQ = Query.
         start(CreateRelationshipStartItem(CreateRelationship("r",
         RelationshipEndpoint(Identifier("a"), Map(), Seq.empty),
@@ -1770,7 +1770,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("create relationship with properties") {
     expectQuery(
-      "start a=node(0), b=node(1) with a,b create a-[r:REL {why : 42, foo : 'bar'}]->b", {
+      "start a=node(0), b=node(1) with a,b create a-[r:REL {why : 42, foo : 'bar'}]->(b)", {
       val secondQ = Query.
         start(CreateRelationshipStartItem(CreateRelationship("r",
         RelationshipEndpoint(Identifier("a"),Map(),Seq.empty),
@@ -1953,7 +1953,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("foreach on path") {
     expectQuery(
-      "start a=node(0) match p = a-[r:REL]->b with p foreach(n in nodes(p) | set n.touched = true ) ", {
+      "start a=node(0) match p = a-[r:REL]->(b) with p foreach(n in nodes(p) | set n.touched = true ) ", {
       val secondQ = Query.
         updates(ForeachAction(NodesFunction(Identifier("p")), "n", Seq(PropertySetAction(Property(Identifier("n"), PropertyKey("touched")), True())))).
         returns()
@@ -1969,7 +1969,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("foreach on path with multiple updates") {
     expectQuery(
-      "match n foreach(n in [1,2,3] | create (x)-[r1:HAS]->(z) create (x)-[r2:HAS]->(z2) )", {
+      "match (n) foreach(n in [1,2,3] | create (x)-[r1:HAS]->(z) create (x)-[r2:HAS]->(z2) )", {
       val secondQ = Query.
         updates(ForeachAction(Collection(Literal(1), Literal(2), Literal(3)), "n", Seq(
         CreateRelationship("r1", RelationshipEndpoint("x"), RelationshipEndpoint("z"), "HAS", Map.empty),
@@ -2000,7 +2000,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("simple start with two nodes and create relationship") {
     expectQuery(
-      "start a=node(0), b=node(1) create a-[r:REL]->b", {
+      "start a=node(0), b=node(1) create a-[r:REL]->(b)", {
       val secondQ = Query.
         start(CreateRelationshipStartItem(CreateRelationship("r",
         RelationshipEndpoint(Identifier("a"), Map(), Seq.empty),
@@ -2061,7 +2061,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("simple foreach on path") {
     expectQuery(
-      "start a=node(0) match p = a-[r:REL]->b foreach(n in nodes(p) | set n.touched = true ) ", {
+      "start a=node(0) match p = a-[r:REL]->(b) foreach(n in nodes(p) | set n.touched = true ) ", {
       val secondQ = Query.
         updates(ForeachAction(NodesFunction(Identifier("p")), "n", Seq(PropertySetAction(Property(Identifier("n"), PropertyKey("touched")), True())))).
         returns()
@@ -2085,7 +2085,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("single create unique") {
     expectQuery(
-      "start a = node(1), b=node(2) create unique a-[:reltype]->b", {
+      "start a = node(1), b=node(2) create unique a-[:reltype]->(b)", {
       val secondQ = Query.
         unique(UniqueLink("a", "b", "  UNNAMED44", "reltype", SemanticDirection.OUTGOING)).
         returns()
@@ -2099,7 +2099,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("single create unique with rel") {
     expectQuery(
-      "start a = node(1), b=node(2) create unique a-[r:reltype]->b", {
+      "start a = node(1), b=node(2) create unique a-[r:reltype]->(b)", {
       val secondQ = Query.
         unique(UniqueLink("a", "b", "r", "reltype", SemanticDirection.OUTGOING)).
         returns()
@@ -2127,11 +2127,11 @@ class CypherParserTest extends CypherFunSuite {
 
   test("create unique with two patterns") {
     expectQuery(
-      "start a = node(1) create unique a-[:X]->b<-[:X]-c", {
+      "start a = node(1) create unique (a)-[:X]->(b)<-[:X]-c", {
       val secondQ = Query.
         unique(
-        UniqueLink("a", "b", "  UNNAMED33", "X", SemanticDirection.OUTGOING),
-        UniqueLink("c", "b", "  UNNAMED41", "X", SemanticDirection.OUTGOING)).
+        UniqueLink("a", "b", "  UNNAMED35", "X", SemanticDirection.OUTGOING),
+        UniqueLink("c", "b", "  UNNAMED45", "X", SemanticDirection.OUTGOING)).
         returns()
 
       Query.
@@ -2161,7 +2161,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("create unique with initial values for rel") {
     expectQuery(
-      "start a = node(1) create unique a-[:X {name:'Andres'}]->b", {
+      "start a = node(1) create unique a-[:X {name:'Andres'}]->(b)", {
       val secondQ = Query.
         unique(
         UniqueLink(
@@ -2204,7 +2204,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("relate with two rels to same node") {
     expectQuery(
-      "start root=node(0) create unique x<-[r1:X]-root-[r2:Y]->x return x", {
+      "start root=node(0) create unique (x)<-[r1:X]-(root)-[r2:Y]->(x) return x", {
       val returns = Query.
         start(CreateUniqueStartItem(CreateUniqueAction(
         UniqueLink("root", "x", "r1", "X", SemanticDirection.OUTGOING),
@@ -2218,7 +2218,7 @@ class CypherParserTest extends CypherFunSuite {
   test("optional shortest path") {
     expectQuery(
       """start a  = node(1), x = node(2,3)
-         optional match p = shortestPath(a -[*]-> x)
+         optional match p = shortestPath((a) -[*]-> (x))
          return *""",
       Query.
         start(NodeById("a", 1),NodeById("x", 2,3)).
@@ -2281,7 +2281,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("full path in create") {
     expectQuery(
-      "start a=node(1), b=node(2) create a-[r1:KNOWS]->()-[r2:LOVES]->b", {
+      "start a=node(1), b=node(2) create a-[r1:KNOWS]->()-[r2:LOVES]->(b)", {
       val secondQ = Query.
         start(
         CreateRelationshipStartItem(CreateRelationship("r1",
@@ -2338,10 +2338,10 @@ class CypherParserTest extends CypherFunSuite {
 
   test("create unique should support parameter maps") {
     expectQuery(
-      "START n=node(0) CREATE UNIQUE n-[:foo]->({param}) RETURN *", {
+      "START n=node(0) CREATE UNIQUE (n)-[:foo]->({param}) RETURN *", {
       val start = NamedExpectation("n")
-      val rel = NamedExpectation("  UNNAMED31")
-      val end = NamedExpectation("  UNNAMED40", Map("*" -> ParameterExpression("param")), Seq.empty)
+      val rel = NamedExpectation("  UNNAMED33")
+      val end = NamedExpectation("  UNNAMED42", Map("*" -> ParameterExpression("param")), Seq.empty)
       val secondQ = Query.
         unique(UniqueLink(start, end, rel, "foo", SemanticDirection.OUTGOING)).
         returns(AllIdentifiers())
@@ -2709,7 +2709,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("single node match pattern") {
     expectQuery(
-      "start s = node(*) match s return s",
+      "start s = node(*) match (s) return s",
       Query.
         start(AllNodes("s")).
         matches(SingleNode("s")).
@@ -2749,11 +2749,11 @@ class CypherParserTest extends CypherFunSuite {
 
   test("varlength named path") {
     expectQuery(
-      "start n=node(1) match p=n-[:KNOWS*..2]->x return p",
+      "start n=node(1) match p=(n)-[:KNOWS*..2]->(x) return p",
       Query.
         start(NodeById("n", 1)).
-        matches(VarLengthRelatedTo("  UNNAMED25", SingleNode("n"), SingleNode("x"), None, Some(2), Seq("KNOWS"), SemanticDirection.OUTGOING, None, Map.empty)).
-        namedPaths(NamedPath("p", ParsedVarLengthRelation("  UNNAMED25", Map.empty, ParsedEntity("n"), ParsedEntity("x"), Seq("KNOWS"), SemanticDirection.OUTGOING, optional = false, None, Some(2), None))).
+        matches(VarLengthRelatedTo("  UNNAMED27", SingleNode("n"), SingleNode("x"), None, Some(2), Seq("KNOWS"), SemanticDirection.OUTGOING, None, Map.empty)).
+        namedPaths(NamedPath("p", ParsedVarLengthRelation("  UNNAMED27", Map.empty, ParsedEntity("n"), ParsedEntity("x"), Seq("KNOWS"), SemanticDirection.OUTGOING, optional = false, None, Some(2), None))).
         returns(ReturnItem(Identifier("p"), "p"))
     )
   }
@@ -2787,7 +2787,7 @@ class CypherParserTest extends CypherFunSuite {
     val stdev = Stdev(property)
     val stdevP = StdevP(property)
     expectQuery(
-      "match n return percentileCont(n.property, 0.4), percentileDisc(n.property, 0.5), stdev(n.property), stdevp(n.property)",
+      "match (n) return percentileCont(n.property, 0.4), percentileDisc(n.property, 0.5), stdev(n.property), stdevp(n.property)",
       Query.
         matches(SingleNode("n")).
         aggregation(percentileCont, percentileDisc, stdev, stdevP).
@@ -2811,7 +2811,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("aliased column does not keep escape symbols") {
     expectQuery(
-      "match a return a as `Escaped alias`",
+      "match (a) return a as `Escaped alias`",
       Query.
         matches(SingleNode("a")).
         returns(

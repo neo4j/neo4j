@@ -34,10 +34,10 @@ class FoldConstantsTest extends CypherFunSuite with RewriteTest {
   }
 
   test("solve multiplication regardless of order") {
-    assertRewrite("MATCH n RETURN 5 * 3 * n.prop AS r", "MATCH n RETURN n.prop * 15 AS r")
-    assertRewrite("MATCH n RETURN n.prop * 4 * 2 AS r", "MATCH n RETURN n.prop * 8 AS r")
-    assertRewrite("MATCH n RETURN 12 * n.prop * 5 AS r", "MATCH n RETURN n.prop * 60 AS r")
-    assertRewrite("MATCH n RETURN (12 * n.prop) * 5 AS r", "MATCH n RETURN n.prop * 60 AS r")
-    assertRewrite("MATCH n RETURN 12 * (n.prop * 5) AS r", "MATCH n RETURN n.prop * 60 AS r")
+    assertRewrite("MATCH (n) RETURN 5 * 3 * n.prop AS r", "MATCH (n) RETURN n.prop * 15 AS r")
+    assertRewrite("MATCH (n) RETURN n.prop * 4 * 2 AS r", "MATCH (n) RETURN n.prop * 8 AS r")
+    assertRewrite("MATCH (n) RETURN 12 * n.prop * 5 AS r", "MATCH (n) RETURN n.prop * 60 AS r")
+    assertRewrite("MATCH (n) RETURN (12 * n.prop) * 5 AS r", "MATCH (n) RETURN n.prop * 60 AS r")
+    assertRewrite("MATCH (n) RETURN 12 * (n.prop * 5) AS r", "MATCH (n) RETURN n.prop * 60 AS r")
   }
 }

@@ -107,7 +107,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
   }
 
   test("node by id seek should not be produced when the argument expression is an unbound identifier") {
-    // given match n where id(n) in arr
+    // given match (n) where id(n) in arr
     val identifier: Identifier = Identifier("n")_
     val expr = In(
       FunctionInvocation(FunctionName("id")_, identifier)_,
@@ -138,7 +138,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
   }
 
   test("node by id seek should not be produced when the node identifier is an argument") {
-    // given match n where id(n) in arr
+    // given match (n) where id(n) in arr
     val identifier: Identifier = Identifier("n")_
     val expr = In(
       FunctionInvocation(FunctionName("id")_, identifier)_,

@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 class PatternGraphBuilderTest extends CypherFunSuite with PatternGraphBuilder {
 
   test("should_only_include_connected_patterns") {
-    // given MATCH a-[r1]->b, c-[r2]->d
+    // given MATCH (a)-[r1]->b, c-[r2]-(d)
     val symbols = new SymbolTable(Map("a" -> CTNode, "b" -> CTNode, "c" -> CTNode, "d" -> CTNode))
     val r1 = RelatedTo("a", "b", "r1", "FOO", SemanticDirection.OUTGOING)
     val r2 = RelatedTo("c", "d", "r2", "FOO", SemanticDirection.OUTGOING)
@@ -41,7 +41,7 @@ class PatternGraphBuilderTest extends CypherFunSuite with PatternGraphBuilder {
   }
 
   test("should_include_connected_patterns") {
-    // given MATCH a-[r1]->b-[r2]->c-[r2]->d
+    // given MATCH (a)-[r1]->b-[r2]->c-[r2]-(d)
     val symbols = new SymbolTable(Map("a" -> CTNode))
     val r1 = RelatedTo("a", "b", "r1", "FOO", SemanticDirection.OUTGOING)
     val r2 = RelatedTo("b", "c", "r2", "FOO", SemanticDirection.OUTGOING)

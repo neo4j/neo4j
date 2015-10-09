@@ -83,8 +83,8 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest {
       "MATCH (a)-[r1]->(b), shortestPath((a)-[r]->(b)) RETURN *")
 
     assertRewrite(
-      "MATCH (a)-[r1]->(b)-[r2]->c, shortestPath((a)-[r]->(b)) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2]->c, shortestPath((a)-[r]->(b)) WHERE not(r1 = r2) RETURN *")
+      "MATCH (a)-[r1]->(b)-[r2]->(c), shortestPath((a)-[r]->(b)) RETURN *",
+      "MATCH (a)-[r1]->(b)-[r2]->(c), shortestPath((a)-[r]->(b)) WHERE not(r1 = r2) RETURN *")
   }
 
   test("ignores allShortestPaths relationships for uniqueness") {
@@ -93,8 +93,8 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest {
       "MATCH (a)-[r1]->(b), allShortestPaths((a)-[r]->(b)) RETURN *")
 
     assertRewrite(
-      "MATCH (a)-[r1]->(b)-[r2]->c, allShortestPaths((a)-[r]->(b)) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2]->c, allShortestPaths((a)-[r]->(b)) WHERE not(r1 = r2) RETURN *")
+      "MATCH (a)-[r1]->(b)-[r2]->(c), allShortestPaths((a)-[r]->(b)) RETURN *",
+      "MATCH (a)-[r1]->(b)-[r2]->(c), allShortestPaths((a)-[r]->(b)) WHERE not(r1 = r2) RETURN *")
   }
 
   val rewriterUnderTest: Rewriter = addUniquenessPredicates

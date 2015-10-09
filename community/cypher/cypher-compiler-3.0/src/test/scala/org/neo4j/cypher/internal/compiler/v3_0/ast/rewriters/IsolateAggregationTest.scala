@@ -38,34 +38,34 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
       "MATCH (n) WITH n.name AS `  AGGREGATION27`, count(*) AS `  AGGREGATION40` RETURN { name: `  AGGREGATION27`, count: `  AGGREGATION40` } AS result")
   }
 
-  test("MATCH n RETURN n.foo + count(*) AS result") {
+  test("MATCH (n) RETURN n.foo + count(*) AS result") {
     assertRewrite(
-      "MATCH n RETURN n.foo + count(*) AS result",
-      "MATCH n WITH n.foo AS `  AGGREGATION17`, count(*) AS `  AGGREGATION23` RETURN `  AGGREGATION17` + `  AGGREGATION23` AS result")
+      "MATCH (n) RETURN n.foo + count(*) AS result",
+      "MATCH (n) WITH n.foo AS `  AGGREGATION19`, count(*) AS `  AGGREGATION25` RETURN `  AGGREGATION19` + `  AGGREGATION25` AS result")
   }
 
-  test("MATCH n RETURN count(*)/60/42 AS result") {
+  test("MATCH (n) RETURN count(*)/60/42 AS result") {
     assertRewrite(
-      "MATCH n RETURN count(*)/60/42 AS result",
-      "MATCH n WITH count(*) AS `  AGGREGATION15` RETURN `  AGGREGATION15`/60/42 AS result")
+      "MATCH (n) RETURN count(*)/60/42 AS result",
+      "MATCH (n) WITH count(*) AS `  AGGREGATION17` RETURN `  AGGREGATION17`/60/42 AS result")
   }
 
-  test("MATCH n-->() RETURN (n)-->({k: count(*)}) AS result") {
+  test("MATCH (n)-->() RETURN (n)-->({k: count(*)}) AS result") {
     assertRewrite(
-      "MATCH n-->() RETURN (n)-->({k: count(*)}) AS result",
-      "MATCH n-->() WITH n, count(*) AS `  AGGREGATION31` RETURN (n)-->({k:`  AGGREGATION31`}) AS result")
+      "MATCH (n)-->() RETURN (n)-->({k: count(*)}) AS result",
+      "MATCH (n)-->() WITH n, count(*) AS `  AGGREGATION33` RETURN (n)-->({k:`  AGGREGATION33`}) AS result")
   }
 
-  test("MATCH n RETURN n.prop AS prop, n.foo + count(*) AS count") {
+  test("MATCH (n) RETURN n.prop AS prop, n.foo + count(*) AS count") {
     assertRewrite(
-      "MATCH n RETURN n.prop AS prop, n.foo + count(*) AS count",
-      "MATCH n WITH n.prop AS `  AGGREGATION17`, n.foo AS `  AGGREGATION33`, count(*) AS `  AGGREGATION39` RETURN `  AGGREGATION17` AS prop, `  AGGREGATION33` + `  AGGREGATION39` AS count")
+      "MATCH (n) RETURN n.prop AS prop, n.foo + count(*) AS count",
+      "MATCH (n) WITH n.prop AS `  AGGREGATION19`, n.foo AS `  AGGREGATION35`, count(*) AS `  AGGREGATION41` RETURN `  AGGREGATION19` AS prop, `  AGGREGATION35` + `  AGGREGATION41` AS count")
   }
 
-  test("MATCH n RETURN n AS n, count(n) + 3 AS count") {
+  test("MATCH (n) RETURN n AS n, count(n) + 3 AS count") {
     assertRewrite(
-      "MATCH n RETURN n AS n, count(n) + 3 AS count",
-      "MATCH n WITH n AS n, count(n) as `  AGGREGATION23`  RETURN n AS n, `  AGGREGATION23` + 3 AS count")
+      "MATCH (n) RETURN n AS n, count(n) + 3 AS count",
+      "MATCH (n) WITH n AS n, count(n) as `  AGGREGATION25`  RETURN n AS n, `  AGGREGATION25` + 3 AS count")
   }
 
   test("UNWIND [1,2,3] AS a RETURN reduce(y=0, x IN collect(a) | x) AS z") {
@@ -92,10 +92,10 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
       "UNWIND [1,2,3] AS a WITH collect(a) AS `  AGGREGATION33` RETURN [x IN `  AGGREGATION33` | x] AS z")
   }
 
-  test("MATCH n WITH 60/60/count(*) AS x RETURN x AS x") {
+  test("MATCH (n) WITH 60/60/count(*) AS x RETURN x AS x") {
     assertRewrite(
-      "MATCH n WITH 60/60/count(*) AS x RETURN x AS x",
-      "MATCH n WITH 60/60 AS `  AGGREGATION15`, count(*) AS `  AGGREGATION19` WITH `  AGGREGATION15`/`  AGGREGATION19` AS x RETURN x AS x")
+      "MATCH (n) WITH 60/60/count(*) AS x RETURN x AS x",
+      "MATCH (n) WITH 60/60 AS `  AGGREGATION17`, count(*) AS `  AGGREGATION21` WITH `  AGGREGATION17`/`  AGGREGATION21` AS x RETURN x AS x")
   }
 
   test("MATCH (a:Start)<-[:R]-(b) RETURN { foo:a.prop=42, bar:collect(b.prop2) } AS result") {
@@ -108,28 +108,28 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
       "RETURN { foo:`  AGGREGATION45`, bar:`  AGGREGATION54`} AS result")
   }
 
-  test("MATCH n RETURN count(*) + max(id(n)) AS r") {
+  test("MATCH (n) RETURN count(*) + max(id(n)) AS r") {
     assertRewrite(
-      "MATCH n RETURN count(*) + max(id(n)) AS r",
-      "MATCH n WITH count(*) AS `  AGGREGATION15`, max(id(n)) AS `  AGGREGATION26` RETURN `  AGGREGATION15`+`  AGGREGATION26` AS r")
+      "MATCH (n) RETURN count(*) + max(id(n)) AS r",
+      "MATCH (n) WITH count(*) AS `  AGGREGATION17`, max(id(n)) AS `  AGGREGATION28` RETURN `  AGGREGATION17`+`  AGGREGATION28` AS r")
   }
 
-  test("MATCH a RETURN length(collect(a)) AS length") {
+  test("MATCH (a) RETURN length(collect(a)) AS length") {
     assertRewrite(
-      "MATCH a RETURN length(collect(a)) AS length",
-      "MATCH a WITH collect(a) AS `  AGGREGATION22` RETURN length(`  AGGREGATION22`) AS length")
+      "MATCH (a) RETURN length(collect(a)) AS length",
+      "MATCH (a) WITH collect(a) AS `  AGGREGATION24` RETURN length(`  AGGREGATION24`) AS length")
   }
 
-  test("MATCH a RETURN count(a) > 0 AS bool") {
+  test("MATCH (a) RETURN count(a) > 0 AS bool") {
     assertRewrite(
-      "MATCH a RETURN count(a) > 0 AS bool",
-      "MATCH a WITH count(a) AS `  AGGREGATION15` RETURN `  AGGREGATION15` > 0 AS bool")
+      "MATCH (a) RETURN count(a) > 0 AS bool",
+      "MATCH (a) WITH count(a) AS `  AGGREGATION17` RETURN `  AGGREGATION17` > 0 AS bool")
   }
 
-  test("MATCH a RETURN count(a) > {param} AS bool") {
+  test("MATCH (a) RETURN count(a) > {param} AS bool") {
     assertRewrite(
-      "MATCH a RETURN count(a) > {param} AS bool",
-      "MATCH a WITH count(a) AS `  AGGREGATION15` RETURN `  AGGREGATION15` > {param} AS bool")
+      "MATCH (a) RETURN count(a) > {param} AS bool",
+      "MATCH (a) WITH count(a) AS `  AGGREGATION17` RETURN `  AGGREGATION17` > {param} AS bool")
   }
 
   test("should not introduce multiple return items for the same expression") {

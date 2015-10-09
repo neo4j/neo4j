@@ -89,7 +89,7 @@ RETURN p###
 Assign a path to `p`.
 
 ###assertion=related
-MATCH n, m
+MATCH (n), (m)
 WHERE id(n) = %A% AND id(m) = %B%
 
 OPTIONAL MATCH (n)-[r]->(m)

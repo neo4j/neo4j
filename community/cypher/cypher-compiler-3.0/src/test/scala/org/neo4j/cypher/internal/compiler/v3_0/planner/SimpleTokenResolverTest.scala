@@ -32,7 +32,7 @@ class SimpleTokenResolverTest extends CypherFunSuite {
   val resolver = new SimpleTokenResolver
 
 
-  parseTest("match n where n.name = 'Resolved' return *") { query =>
+  parseTest("match (n) where n.name = 'Resolved' return *") { query =>
     implicit val semanticTable = SemanticTable()
     val planContext = mock[PlanContext]
     when(planContext.getOptPropertyKeyId("name")).thenReturn(Some(12))
@@ -55,7 +55,7 @@ class SimpleTokenResolverTest extends CypherFunSuite {
     }
   }
 
-  parseTest("match n where n.name = 'Unresolved' return *") { query =>
+  parseTest("match (n) where n.name = 'Unresolved' return *") { query =>
     implicit val semanticTable = SemanticTable()
     val planContext = mock[PlanContext]
     when(planContext.getOptPropertyKeyId("name")).thenReturn(None)
@@ -78,7 +78,7 @@ class SimpleTokenResolverTest extends CypherFunSuite {
     }
   }
 
-  parseTest("match n where n:Resolved return *") { query =>
+  parseTest("match (n) where n:Resolved return *") { query =>
     implicit val semanticTable = SemanticTable()
     val planContext = mock[PlanContext]
     when(planContext.getOptLabelId("Resolved")).thenReturn(Some(12))
@@ -101,7 +101,7 @@ class SimpleTokenResolverTest extends CypherFunSuite {
     }
   }
 
-  parseTest("match n where n:Unresolved return *") { query =>
+  parseTest("match (n) where n:Unresolved return *") { query =>
     implicit val semanticTable = SemanticTable()
     val planContext = mock[PlanContext]
     when(planContext.getOptLabelId("Unresolved")).thenReturn(None)

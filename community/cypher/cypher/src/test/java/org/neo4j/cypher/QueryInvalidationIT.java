@@ -144,7 +144,7 @@ public class QueryInvalidationIT
             params.put( "user1", user1 );
             params.put( "user2", user2 );
             db.execute( "MATCH (user1:User { userId: {user1} }), (user2:User { userId: {user2} }) " +
-                        "CREATE UNIQUE user1 -[:FRIEND]- user2", params );
+                        "CREATE UNIQUE (user1) -[:FRIEND]- (user2)", params );
         }
     }
 

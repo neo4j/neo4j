@@ -92,7 +92,7 @@ RETURN
 Combination of filter and extract in a concise notation.
 
 ###assertion=returns-one
-MATCH n WHERE id(n) = %A%
+MATCH (n)  WHERE id(n) = %A%
 WITH [n] as coll
 RETURN
 
@@ -102,7 +102,7 @@ extract(x IN coll | x.prop)
 A collection of the value of the expression for each element in the orignal collection.
 
 ###assertion=returns-one parameters=value
-MATCH n WHERE id(n) = %A%
+MATCH (n)  WHERE id(n) = %A%
 WITH [n] as coll
 RETURN
 
@@ -112,7 +112,7 @@ filter(x IN coll WHERE x.prop <> {value})
 A filtered collection of the elements where the predicate is `TRUE`.
 
 ###assertion=returns-one
-MATCH n WHERE id(n) = %A%
+MATCH (n)  WHERE id(n) = %A%
 WITH [n] as coll
 RETURN
 

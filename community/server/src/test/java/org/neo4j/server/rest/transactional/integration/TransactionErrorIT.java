@@ -52,7 +52,7 @@ public class TransactionErrorIT extends AbstractRestFunctionalTestBase
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin
-        HTTP.Response response = POST( txUri(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        HTTP.Response response = POST( txUri(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
         String commitResource = response.stringFromContent( "commit" );
 
         // commit with invalid cypher
@@ -71,7 +71,7 @@ public class TransactionErrorIT extends AbstractRestFunctionalTestBase
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin
-        HTTP.Response begin = POST( txUri(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        HTTP.Response begin = POST( txUri(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
         String commitResource = begin.stringFromContent( "commit" );
 
         // commit with malformed json

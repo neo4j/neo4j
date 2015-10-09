@@ -193,7 +193,7 @@ with CollectionSupport with EnterpriseGraphDatabaseTestSupport{
     numberOfRelationships shouldBe 1
   }
 
-  private def numberOfNodes = executeScalar[Long]("match n return count(n)")
+  private def numberOfNodes = executeScalar[Long]("match (n) return count(n)")
 
   private def numberOfRelationships = executeScalar[Long]("match ()-[r]->() return count(r)")
 }

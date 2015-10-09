@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("finds shortest paths") {
-    planFor("MATCH a, b, shortestPath(a-[r]->b) RETURN b").plan should equal(
+    planFor("MATCH (a), (b), shortestPath((a)-[r]->(b)) RETURN b").plan should equal(
       FindShortestPaths(
         CartesianProduct(
           AllNodesScan("b", Set.empty)(solved),
@@ -45,7 +45,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
   }
 
   test("finds all shortest paths") {
-    planFor("MATCH a, b, allShortestPaths(a-[r]->b) RETURN b").plan should equal(
+    planFor("MATCH (a), (b), allShortestPaths((a)-[r]->(b)) RETURN b").plan should equal(
       FindShortestPaths(
         CartesianProduct(
           AllNodesScan("b", Set.empty)(solved),

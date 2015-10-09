@@ -229,6 +229,26 @@ case class RelationshipChain(element: PatternElement, relationship: Relationship
     rightNode.semanticCheck(ctx)
 }
 
+object InvalidNodePattern {
+  def apply(id: Identifier, labels: Seq[LabelName], properties: Option[Expression])(position: InputPosition) =
+    new InvalidNodePattern(id)(position)
+}
+
+class InvalidNodePattern(val id: Identifier)(position: InputPosition) extends NodePattern(Some(id), Seq.empty, None)(position) {
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck = super.semanticCheck(ctx) chain
+    SemanticError(s"Parentheses are required to identify nodes in patterns, i.e. (${id.name})", position)
+
+  override def canEqual(other: Any): Boolean = other.isInstanceOf[InvalidNodePattern]
+
+  override def equals(other: Any): Boolean = other match {
+    case that: InvalidNodePattern =>
+      (that canEqual this) &&
+        id == that.id
+    case _ => false
+  }
+
+  override def hashCode(): Int = 31 * id.hashCode()
+}
 
 case class NodePattern(
   identifier: Option[Identifier],

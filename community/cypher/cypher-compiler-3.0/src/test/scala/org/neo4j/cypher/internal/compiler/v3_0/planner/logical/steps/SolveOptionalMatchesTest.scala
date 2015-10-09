@@ -88,7 +88,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
     // Given
     val qg = QueryGraph(
       patternNodes = Set("a", "b") // MATCH a, b
-    ).withAddedOptionalMatch(qgForAtoB.withArgumentIds(Set("a", "b"))) // GIVEN a, b OPTIONAL MATCH a-[r]->b
+    ).withAddedOptionalMatch(qgForAtoB.withArgumentIds(Set("a", "b"))) // GIVEN a, b OPTIONAL MATCH (a)-[r]->(b)
 
     implicit val context = createLogicalPlanContext()
     val planForA = newMockedLogicalPlan("a")

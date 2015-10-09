@@ -32,7 +32,7 @@ class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers w
     createNode()
     createNode()
     createNode()
-    val result = executeWithAllPlannersAndRuntimes("match n return n limit 0")
+    val result = executeWithAllPlannersAndRuntimes("match (n) return n limit 0")
     result should be(empty)
   }
 
@@ -59,7 +59,7 @@ order by a.age""").toList)
 
   test("expose problem with aliasing") {
     createNode("nisse")
-    executeWithAllPlanners("match n return n.name, count(*) as foo order by n.name")
+    executeWithAllPlanners("match (n) return n.name, count(*) as foo order by n.name")
   }
 
   test("distinct on nullable values") {
@@ -67,7 +67,7 @@ order by a.age""").toList)
     createNode()
     createNode()
 
-    val result = executeWithAllPlanners("match a return distinct a.name").toList
+    val result = executeWithAllPlanners("match (a) return distinct a.name").toList
 
     result should equal(List(Map("a.name" -> "Florescu"), Map("a.name" -> null)))
   }
@@ -77,7 +77,7 @@ order by a.age""").toList)
     val b = createNode()
     val r = relate(a, b)
 
-    val result = executeWithAllPlanners("match p=(a:Start)-->b return *").toList
+    val result = executeWithAllPlanners("match p=(a:Start)-->(b) return *").toList
     val first = result.head
     first.keys should equal(Set("a", "b", "p"))
 
@@ -87,7 +87,7 @@ order by a.age""").toList)
   test("issue 508") {
     createNode()
 
-    val q = "match n set n.x=[1,2,3] return length(n.x)"
+    val q = "match (n) set n.x=[1,2,3] return length(n.x)"
 
     executeWithRulePlanner(q).toList should equal(List(Map("length(n.x)" -> 3)))
   }
@@ -126,11 +126,11 @@ order by a.age""").toList)
 
     executeWithAllPlanners(
       """
-    match me-[r1:ATE]->food<-[r2:ATE]-you
+    match (me)-[r1:ATE]->(food)<-[r2:ATE]-(you)
     where id(me) = 1
 
     with me,count(distinct r1) as H1,count(distinct r2) as H2,you
-    match me-[r1:ATE]->food<-[r2:ATE]-you
+    match (me)-[r1:ATE]->(food)<-[r2:ATE]-(you)
 
     return me,you,sum((1-ABS(r1.times/H1-r2.times/H2))*(r1.times+r2.times)/(H1+H2))""").dumpToString()
   }
@@ -157,10 +157,10 @@ order by a.age""").toList)
 
     executeWithAllPlanners(
       """
-    match me-[r1]->you
+    match (me)-[r1]->(you)
 
     with 1 AS x
-    match me-[r1]->food<-[r2]-you
+    match (me)-[r1]->(food)<-[r2]-(you)
 
     return r1.times""").dumpToString()
   }
@@ -172,7 +172,7 @@ order by a.age""").toList)
     relate(a, b)
     relate(b, c)
 
-    val result = eengine.execute("match a, c where id(a) = 0 and id(c) = 2 return shortestPath(a-[*]->c)").columnAs[Path]("shortestPath(a-[*]->c)").toList.head
+    val result = eengine.execute("match (a), (c) where id(a) = 0 and id(c) = 2 return shortestPath((a)-[*]->(c))").columnAs[Path]("shortestPath((a)-[*]->(c))").toList.head
     result.endNode() should equal(c)
     result.startNode() should equal(a)
     result.length() should equal(2)
@@ -185,7 +185,7 @@ order by a.age""").toList)
     relate(a, b)
     relate(b, c)
 
-    val result = executeWithAllPlanners("match (a:Start), (c:End) return shortestPath(a-[*]->c)").columnAs[Path]("shortestPath(a-[*]->c)").toList.head
+    val result = executeWithAllPlanners("match (a:Start), (c:End) return shortestPath((a)-[*]->(c))").columnAs[Path]("shortestPath((a)-[*]->(c))").toList.head
     result.endNode() should equal(c)
     result.startNode() should equal(a)
     result.length() should equal(2)
@@ -194,7 +194,7 @@ order by a.age""").toList)
   test("array prop output") {
     createNode("foo" -> Array(1, 2, 3))
 
-    val result = executeWithAllPlannersAndRuntimes("match n return n").dumpToString()
+    val result = executeWithAllPlannersAndRuntimes("match (n) return n").dumpToString()
 
     result should include ("[1,2,3]")
   }
@@ -207,7 +207,7 @@ order by a.age""").toList)
 
   test("should be able to return predicate result") {
     createNode()
-    val result = executeWithAllPlanners("match a return id(a) = 0, a is null").toList
+    val result = executeWithAllPlanners("match (a) return id(a) = 0, a is null").toList
     result should equal(List(Map("id(a) = 0" -> true, "a is null" -> false)))
   }
 
@@ -218,7 +218,7 @@ order by a.age""").toList)
 
   test("array property should be accessible as collection") {
     createNode()
-    val result = executeWithRulePlanner("match n SET n.array = [1,2,3,4,5] RETURN tail(tail(n.array))").
+    val result = executeWithRulePlanner("match (n) SET n.array = [1,2,3,4,5] RETURN tail(tail(n.array))").
       toList.
       head("tail(tail(n.array))").
       asInstanceOf[Iterable[_]]
@@ -230,7 +230,7 @@ order by a.age""").toList)
     val r = new Random(1337)
     val nodes = (0 to 15).map(x => createNode("count" -> x)).sortBy(x => r.nextInt(100))
 
-    val result = executeWithAllPlanners("MATCH a RETURN a.count ORDER BY a.count SKIP 10 LIMIT 10", "nodes" -> nodes)
+    val result = executeWithAllPlanners("MATCH (a) RETURN a.count ORDER BY a.count SKIP 10 LIMIT 10", "nodes" -> nodes)
 
     result.toList should equal(List(
       Map("a.count" -> 10),
@@ -250,7 +250,7 @@ order by a.age""").toList)
 
   test("sort columns do not leak") {
     //GIVEN
-    val result = executeWithAllPlanners("match n return * order by id(n)")
+    val result = executeWithAllPlanners("match (n) return * order by id(n)")
 
     //THEN
     result.columns should equal(List("n"))
@@ -271,7 +271,7 @@ order by a.age""").toList)
 
   test("columns should not change when using order by and distinct") {
     val n = createNode()
-    val result = executeWithAllPlanners("match n return distinct n order by id(n)")
+    val result = executeWithAllPlanners("match (n) return distinct n order by id(n)")
 
     result.toList should equal(List(Map("n" -> n)))
   }
@@ -287,7 +287,7 @@ order by a.age""").toList)
     createNode()
 
     // then shouldn't throw
-    executeWithAllPlanners("match x RETURN DISTINCT x as otherName ORDER BY x.name ")
+    executeWithAllPlanners("match (x)RETURN DISTINCT x as otherName ORDER BY x.name ")
   }
 
   test("should propagate null through math funcs") {
@@ -308,7 +308,7 @@ order by a.age""").toList)
 
   test("should not get into a neverending loop") {
     val n = createNode("id" -> 42)
-    val result = executeWithAllPlanners("MATCH n RETURN n, count(n) + 3")
+    val result = executeWithAllPlanners("MATCH (n) RETURN n, count(n) + 3")
     result.toList should equal(List(Map("n" -> n, "count(n) + 3" -> 4)))
   }
 
