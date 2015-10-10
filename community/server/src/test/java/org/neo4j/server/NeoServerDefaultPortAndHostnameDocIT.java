@@ -35,7 +35,7 @@ public class NeoServerDefaultPortAndHostnameDocIT extends AbstractRestFunctional
     {
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server() );
 
-        JaxRsResponse response = functionalTestHelper.get( functionalTestHelper.webAdminUri() );
+        JaxRsResponse response = functionalTestHelper.get( functionalTestHelper.managementUri() );
 
         assertThat( response.getStatus(), is( 200 ) );
     }

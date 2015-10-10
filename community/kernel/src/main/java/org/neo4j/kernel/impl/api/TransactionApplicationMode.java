@@ -49,8 +49,7 @@ public enum TransactionApplicationMode
      * a recovered transaction may have already been applied previously to the store.
      */
     RECOVERY(
-            true,  // id tracking needed because of the cases when we will free ids of entities that was created as
-                   // part of recovery with ids that potentially higher then current highId
+            false, // id tracking not needed because id generators will be rebuilt after recovery anyway
             false, // during recovery there's not really a cache to invalidate so don't bother
             true   // extra care needs to be taken to ensure idempotency since this transaction
                     // may have been applied previously

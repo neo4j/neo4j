@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -162,6 +163,29 @@ public class IdGeneratorImplTest
 
         // THEN
         assertFalse( fsr.get().fileExists( file ) );
+    }
+
+    @Test
+    public void shouldTruncateTheFileIfOverwriting() throws Exception
+    {
+        // GIVEN
+        IdGeneratorImpl.createGenerator( fsr.get(), file, 10, true );
+        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 5, 100, false, 30 );
+        for ( int i = 0; i < 17; i++ )
+        {
+            idGenerator.freeId( i );
+        }
+        idGenerator.close();
+        assertThat( (int) fsr.get().getFileSize( file ), greaterThan( IdGeneratorImpl.HEADER_SIZE ) );
+
+        // WHEN
+        IdGeneratorImpl.createGenerator( fsr.get(), file, 30, false );
+
+        // THEN
+        assertEquals( IdGeneratorImpl.HEADER_SIZE, (int) fsr.get().getFileSize( file ) );
+        assertEquals( 30, IdGeneratorImpl.readHighId( fsr.get(), file ) );
+        idGenerator = new IdGeneratorImpl( fsr.get(), file, 5, 100, false, 30 );
+        assertEquals( 30, idGenerator.nextId() );
     }
 
     public static void main( String[] args )
