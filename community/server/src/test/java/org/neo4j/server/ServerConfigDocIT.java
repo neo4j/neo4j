@@ -131,6 +131,19 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     }
 
     @Test
+    public void shouldEnableWebadminWhenAskedTo() throws IOException
+    {
+        // Given
+        server = server().withProperty( ServerInternalSettings.webadmin_enabled.name(), "true" )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .build();
+        server.start();
+
+        // When & then
+        assertEquals( 200, new RestRequest().get( "http://localhost:7474/webadmin" ).getStatus() );
+    }
+
+    @Test
     public void shouldDisableWebadminWhenAskedTo() throws IOException
     {
         // Given
@@ -141,7 +154,6 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
 
         // When & then
         assertEquals( 404, new RestRequest().get( "http://localhost:7474/webadmin" ).getStatus() );
-        assertEquals( 404, new RestRequest().get( "http://localhost:7474/db/manage/monitor" ).getStatus() );
     }
 
     @Test

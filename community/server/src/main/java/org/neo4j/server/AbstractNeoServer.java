@@ -192,7 +192,7 @@ public abstract class AbstractNeoServer implements NeoServer
         try
         {
             life.start();
-            
+
             DiagnosticsManager diagnosticsManager = resolveDependency(DiagnosticsManager.class);
 
             Log diagnosticsLog = diagnosticsManager.getTargetLog();
@@ -200,7 +200,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
             databaseActions = createDatabaseActions();
 
-            if(getConfig().get( ServerInternalSettings.webadmin_enabled ))
+            if( getConfig().get( ServerInternalSettings.webadmin_enabled ) )
             {
                 // TODO: RrdDb is not needed once we remove the old webadmin
                 rrdDbScheduler = new RoundRobinJobScheduler( logProvider );
@@ -623,7 +623,7 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( providerForSingleton( new ConfigWrappingConfiguration( getConfig() ), Configuration.class ) );
         singletons.add( providerForSingleton( getConfig(), Config.class ) );
 
-        if(getConfig().get( ServerInternalSettings.webadmin_enabled ))
+        if ( getConfig().get( ServerInternalSettings.webadmin_enabled ) )
         {
             singletons.add( new RrdDbProvider( rrdDbWrapper ) );
         }
