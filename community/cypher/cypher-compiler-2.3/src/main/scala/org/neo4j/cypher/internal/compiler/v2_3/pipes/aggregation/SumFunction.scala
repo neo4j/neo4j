@@ -31,7 +31,7 @@ class SumFunction(val value: Expression)
 
   def name = "SUM"
 
-  private val sum = new KahanSum
+  private val sum = new OverflowAwareSum
 
   def result = sum.value
 

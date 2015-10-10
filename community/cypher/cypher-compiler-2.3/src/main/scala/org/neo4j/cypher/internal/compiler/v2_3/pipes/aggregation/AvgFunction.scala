@@ -36,7 +36,7 @@ class AvgFunction(val value: Expression)
   def name = "AVG"
 
   private var count: Int = 0
-  private val sum = new KahanSum()
+  private val sum = new OverflowAwareSum()
 
   def result =
     if (count > 0) {
@@ -48,7 +48,7 @@ class AvgFunction(val value: Expression)
   def apply(data: ExecutionContext)(implicit state: QueryState) {
     actOnNumber(value(data), (number) => {
       count += 1
-      val next = (number.doubleValue() - sum.value) / count.toDouble
+      val next = divide(minus(number, sum.value), count.toDouble)
       sum.add(next)
     })
   }

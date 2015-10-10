@@ -219,4 +219,84 @@ trait TypeSafeMathSupport {
 
     }
   }
+
+  /**
+   * Serves for a type-safe, overflow-aware summation.
+   * That is, tries to keep the sum type as narrow as possible, widening its value if necessary.
+   * Initial result type is Int. If a Double is added, the result becomes Double.
+   * If Long is added, the result becomes Long with the possibility to widen to Double later.
+   *
+   * @note  For the summation of floating-point numbers this class encapsulates Kahan's algorithm
+   *        for error minimization (https://en.wikipedia.org/wiki/Kahan_summation_algorithm)
+   */
+  final class OverflowAwareSum {
+    import OverflowAwareSum._
+
+    private var adder: Adder[_] = IntAdder(0)
+    def value = adder.value
+
+    /**
+     * @param next  next number to add to the total sum
+     * @return      current value of the sum variable
+     * @note        sticks to integral type for as long as possible
+     */
+    def add(next: Any) = {
+      adder = adder.add(next)
+    }
+  }
+
+  object OverflowAwareSum {
+    abstract sealed class Adder[T](var value: T) {
+      def add(x: Any): Adder[_]
+    }
+
+    abstract sealed class IntegralAdder[T, N](_value: T) extends Adder[T](_value) {
+      protected val asDoubleAdder: T => DoubleAdder
+      protected val widerAdder: T => Adder[N]
+      protected val adderFunction: Any => T
+
+      override def add(x: Any): Adder[_] = {
+        if (x.isInstanceOf[Double]) {
+          asDoubleAdder(value).add(x)
+        } else {
+          try {
+            value = adderFunction(x)
+            this
+          } catch {
+            case e: ArithmeticException => widerAdder(value).add(x)
+            case anyOther: Exception => throw anyOther
+          }
+        }
+      }
+    }
+
+    final case class DoubleAdder(v: Double) extends Adder(v) {
+      private var c: Double = 0d
+      /**
+       * Performs a single Kahan's algorithm step
+       * @param x value to add to the current sum
+       * @return  value of the sum after the addition
+       * @note    modifies [[c]] as a side-effect
+       */
+      override def add(x: Any): Adder[_] = {
+        val y = minus(x, c).asInstanceOf[Double]
+        val t = plus(value, y).asInstanceOf[Double]
+        c = minus(minus(t, value), y).asInstanceOf[Double]
+        value = t
+        this
+      }
+    }
+
+    final case class LongAdder(v: Long) extends IntegralAdder[Long, Double](v) {
+      override val asDoubleAdder = (x: Long) => DoubleAdder(x)
+      override val widerAdder = (x: Long) => DoubleAdder(x)
+      override val adderFunction = (x: Any) => Math.addExact(value, x.asInstanceOf[Number].longValue())
+    }
+
+    final case class IntAdder(v: Int) extends IntegralAdder[Int, Long](v) {
+      override val asDoubleAdder = (x: Int) => DoubleAdder(x)
+      override val widerAdder = (x: Int) => LongAdder(x)
+      override val adderFunction = (x: Any) => Math.addExact(value, x.asInstanceOf[Number].intValue())
+    }
+  }
 }

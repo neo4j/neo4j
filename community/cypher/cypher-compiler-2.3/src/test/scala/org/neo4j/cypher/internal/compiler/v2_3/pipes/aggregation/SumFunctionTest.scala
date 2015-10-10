@@ -30,7 +30,7 @@ class SumFunctionTest extends CypherFunSuite with AggregateTest {
     val result = aggregateOn(1)
 
     result should equal(1)
-    result shouldBe a [java.lang.Double]
+    result shouldBe a [java.lang.Integer]
   }
 
   test("singleValueOfDecimalReturnsDecimal") {
@@ -51,24 +51,39 @@ class SumFunctionTest extends CypherFunSuite with AggregateTest {
     val result = aggregateOn(1.byteValue(), 1.shortValue())
 
     result should equal(2)
-    result shouldBe a [java.lang.Double]
+    result shouldBe a [java.lang.Integer]
   }
 
   test("noNumbersEqualsZero") {
     val result = aggregateOn()
 
     result should equal(0)
-    result shouldBe a [java.lang.Double]
+    result shouldBe a [java.lang.Integer]
   }
 
   test("nullDoesNotChangeTheSum") {
     val result = aggregateOn(1, null)
 
     result should equal(1)
-    result shouldBe a [java.lang.Double]
+    result shouldBe a [java.lang.Integer]
   }
 
   test("noNumberValuesThrowAnException") {
     intercept[CypherTypeException](aggregateOn(1, "wut"))
+  }
+
+  test("intOverflowTransformsSumToLong") {
+    val halfInt= Int.MaxValue
+    val result = aggregateOn(halfInt, halfInt, halfInt)
+    val expected = 3L * halfInt
+    result should equal(expected)
+  }
+
+  test("typesArentUnnecessaryWidened") {
+    val thirdOfMaxInt: Int = Int.MaxValue / 3
+    val result = aggregateOn(thirdOfMaxInt, thirdOfMaxInt)
+    val expected = thirdOfMaxInt + thirdOfMaxInt
+    result should equal(expected)
+    result shouldBe a [java.lang.Integer]
   }
 }
