@@ -46,11 +46,55 @@ import org.neo4j.function.Consumer;
  */
 public class BufferingLog extends AbstractLog
 {
-    private interface LogMessage
+    public interface LogMessage
     {
         void replayInto( Log other );
 
         void printTo( PrintWriter pw );
+
+        Level level();
+    }
+
+    public interface LogVisitor
+    {
+        /**
+         * Visits a previously made {@link LogMessage log message}.
+         *
+         * @param message {@link LogMessage} to visit.
+         * @return {@code true} to signal that no more log messages should be visited,
+         * otherwise {@code false} where more log messages, if any, will be visited.
+         */
+        boolean visit( LogMessage message );
+    }
+
+    private static abstract class AbstractLogMessage implements LogMessage
+    {
+        private final Level level;
+
+        AbstractLogMessage( Level level )
+        {
+            this.level = level;
+        }
+
+        @Override
+        public Level level()
+        {
+            return level;
+        }
+
+        /**
+         * A {@link String} representation of what {@link #printTo(PrintWriter)} prints.
+         */
+        @Override
+        public String toString()
+        {
+            StringWriter out = new StringWriter();
+            try ( PrintWriter writer = new PrintWriter( out, false ) )
+            {
+                printTo( writer );
+            }
+            return out.getBuffer().toString();
+        }
     }
 
     private final Queue<LogMessage> buffer = new LinkedList<>();
@@ -108,7 +152,7 @@ public class BufferingLog extends AbstractLog
         @Override
         public LogMessage buildMessage( final String message )
         {
-            return new LogMessage()
+            return new AbstractLogMessage( Level.DEBUG )
             {
                 @Override
                 public void replayInto( Log other )
@@ -127,7 +171,7 @@ public class BufferingLog extends AbstractLog
         @Override
         public LogMessage buildMessage( final String message, final Throwable throwable )
         {
-            return new LogMessage()
+            return new AbstractLogMessage( Level.DEBUG )
             {
                 @Override
                 public void replayInto( Log other )
@@ -147,7 +191,7 @@ public class BufferingLog extends AbstractLog
         @Override
         public LogMessage buildMessage( final String format, final Object... arguments )
         {
-            return new LogMessage()
+            return new AbstractLogMessage( Level.DEBUG )
             {
                 @Override
                 public void replayInto( Log other )
@@ -169,7 +213,7 @@ public class BufferingLog extends AbstractLog
         @Override
         public LogMessage buildMessage( final String message )
         {
-            return new LogMessage()
+            return new AbstractLogMessage( Level.INFO )
             {
                 @Override
                 public void replayInto( Log other )
@@ -188,7 +232,7 @@ public class BufferingLog extends AbstractLog
         @Override
         public LogMessage buildMessage( final String message, final Throwable throwable )
         {
-            return new LogMessage()
+            return new AbstractLogMessage( Level.INFO )
             {
                 @Override
                 public void replayInto( Log other )
@@ -208,7 +252,7 @@ public class BufferingLog extends AbstractLog
         @Override
         public LogMessage buildMessage( final String format, final Object... arguments )
         {
-            return new LogMessage()
+            return new AbstractLogMessage( Level.INFO )
             {
                 @Override
                 public void replayInto( Log other )
@@ -230,7 +274,7 @@ public class BufferingLog extends AbstractLog
         @Override
         public LogMessage buildMessage( final String message )
         {
-            return new LogMessage()
+            return new AbstractLogMessage( Level.WARN )
             {
                 @Override
                 public void replayInto( Log other )
@@ -249,7 +293,7 @@ public class BufferingLog extends AbstractLog
         @Override
         public LogMessage buildMessage( final String message, final Throwable throwable )
         {
-            return new LogMessage()
+            return new AbstractLogMessage( Level.WARN )
             {
                 @Override
                 public void replayInto( Log other )
@@ -269,7 +313,7 @@ public class BufferingLog extends AbstractLog
         @Override
         public LogMessage buildMessage( final String format, final Object... arguments )
         {
-            return new LogMessage()
+            return new AbstractLogMessage( Level.WARN )
             {
                 @Override
                 public void replayInto( Log other )
@@ -291,7 +335,7 @@ public class BufferingLog extends AbstractLog
         @Override
         public LogMessage buildMessage( final String message )
         {
-            return new LogMessage()
+            return new AbstractLogMessage( Level.ERROR )
             {
                 @Override
                 public void replayInto( Log other )
@@ -310,7 +354,7 @@ public class BufferingLog extends AbstractLog
         @Override
         public LogMessage buildMessage( final String message, final Throwable throwable )
         {
-            return new LogMessage()
+            return new AbstractLogMessage( Level.ERROR )
             {
                 @Override
                 public void replayInto( Log other )
@@ -330,7 +374,7 @@ public class BufferingLog extends AbstractLog
         @Override
         public LogMessage buildMessage( final String format, final Object... arguments )
         {
-            return new LogMessage()
+            return new AbstractLogMessage( Level.ERROR )
             {
                 @Override
                 public void replayInto( Log other )
@@ -408,15 +452,32 @@ public class BufferingLog extends AbstractLog
     @Override
     public String toString()
     {
-        synchronized (buffer)
+        StringWriter stringWriter = new StringWriter();
+        final PrintWriter sb = new PrintWriter( stringWriter );
+        accept( new LogVisitor()
         {
-            StringWriter stringWriter = new StringWriter();
-            PrintWriter sb = new PrintWriter( stringWriter );
-            for ( LogMessage message : buffer )
+            @Override
+            public boolean visit( LogMessage message )
             {
                 message.printTo( sb );
+                return false;
             }
-            return stringWriter.toString();
+        } );
+        return stringWriter.toString();
+    }
+
+    public boolean accept( LogVisitor visitor )
+    {
+        synchronized ( buffer )
+        {
+            for ( LogMessage message : buffer )
+            {
+                if ( visitor.visit( message ) )
+                {
+                    return true;
+                }
+            }
         }
+        return false;
     }
 }

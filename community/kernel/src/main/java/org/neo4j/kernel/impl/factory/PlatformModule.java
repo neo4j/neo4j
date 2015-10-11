@@ -28,6 +28,7 @@ import org.neo4j.function.Consumer;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -57,7 +58,6 @@ import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
-import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -217,9 +217,10 @@ public class PlatformModule
         int internalLogRotationDelay = config.get( GraphDatabaseSettings.store_internal_log_rotation_delay );
         int internalLogMaxArchives = config.get( GraphDatabaseSettings.store_internal_log_max_archives );
 
-        final StoreLogService.Builder builder =
-                StoreLogService.withRotation( internalLogRotationThreshold, internalLogRotationDelay,
-                        internalLogMaxArchives, jobScheduler );
+        final StoreLogService.Builder builder = StoreLogService
+                .withRotation( internalLogRotationThreshold, internalLogRotationDelay,
+                        internalLogMaxArchives, jobScheduler )
+                .withAsyncronousLogging( jobScheduler );
 
         if ( userLogProvider != null )
         {

@@ -66,4 +66,25 @@ public class Lifecycles
             }
         };
     }
+
+    private static class Closer extends LifecycleAdapter
+    {
+        private final AutoCloseable closeable;
+
+        Closer( AutoCloseable closeable )
+        {
+            this.closeable = closeable;
+        }
+
+        @Override
+        public void shutdown() throws Exception
+        {
+            closeable.close();
+        }
+    }
+
+    public static Lifecycle close( AutoCloseable closeable )
+    {
+        return new Closer( closeable );
+    }
 }

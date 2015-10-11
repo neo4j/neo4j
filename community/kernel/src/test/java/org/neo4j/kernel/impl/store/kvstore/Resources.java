@@ -19,22 +19,22 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 import java.io.File;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifecycleException;
+import org.neo4j.kernel.lifecycle.Lifecycles;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -182,7 +182,7 @@ public final class Resources implements TestRule
         }
         else if ( service instanceof AutoCloseable )
         {
-            lifecycle = new Closer( (AutoCloseable) service );
+            lifecycle = Lifecycles.close( (AutoCloseable) service );
         }
         life.add( lifecycle );
         return service;
@@ -191,21 +191,5 @@ public final class Resources implements TestRule
     public LogProvider logProvider()
     {
         return NullLogProvider.getInstance();
-    }
-
-    private static class Closer extends LifecycleAdapter
-    {
-        private final AutoCloseable closeable;
-
-        Closer( AutoCloseable closeable )
-        {
-            this.closeable = closeable;
-        }
-
-        @Override
-        public void shutdown() throws Exception
-        {
-            closeable.close();
-        }
     }
 }

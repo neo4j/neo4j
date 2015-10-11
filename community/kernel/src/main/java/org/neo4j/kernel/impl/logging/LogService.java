@@ -23,7 +23,9 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 /**
- * Logging service that is used to obtain loggers for different output purposes
+ * Logging service that is used to obtain {@link LogProvider log providers} for different output purposes.
+ * There are short-hand methods, like {@link #getUserLog(Class)} and {@link #getInternalLog(Class)} that
+ * are for convenience and uses their "provider" counterpart to obtain those {@link Log loggers}.
  */
 public interface LogService
 {

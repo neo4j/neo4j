@@ -17,35 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.logging;
+package org.neo4j.logging;
 
-import org.neo4j.logging.DuplicatingLogProvider;
-import org.neo4j.logging.LogProvider;
-
-/**
- * Simplest form of a {@link LogService} where already constructed {@link LogProvider} instances
- * are handed into the constructor.
- */
-public class SimpleLogService extends AbstractLogService
+public class BufferingLogProvider extends AbstractLogProvider<BufferingLog>
 {
-    private final LogProvider userLogProvider;
-    private final LogProvider internalLogProvider;
-
-    public SimpleLogService( LogProvider userLogProvider, LogProvider internalLogProvider )
+    @Override
+    protected BufferingLog buildLog( Class loggingClass )
     {
-        this.userLogProvider = new DuplicatingLogProvider( userLogProvider, internalLogProvider );
-        this.internalLogProvider = internalLogProvider;
+        return buildLog( loggingClass.getName() );
     }
 
     @Override
-    public LogProvider getUserLogProvider()
+    protected BufferingLog buildLog( String name )
     {
-        return this.userLogProvider;
-    }
-
-    @Override
-    public LogProvider getInternalLogProvider()
-    {
-        return this.internalLogProvider;
+        return new BufferingLog();
     }
 }

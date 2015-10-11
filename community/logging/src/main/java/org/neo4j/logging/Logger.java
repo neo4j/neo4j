@@ -22,7 +22,7 @@ package org.neo4j.logging;
 import org.neo4j.function.Consumer;
 
 /**
- * A log into which messages can be written
+ * A log into which messages can be written. Log level is determined externally and fixed within this logger.
  */
 public interface Logger
 {
