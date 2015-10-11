@@ -110,8 +110,8 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
                        "reallylong" -> 0.22429997158103274)
 
     prefixes.foreach { case (prefix, selectivity) =>
-      calculator(StartsWith(Property(Identifier("a") _, propKey) _, StringLiteral(prefix)(InputPosition.NONE)) _) should equal(
-        Selectivity.of(selectivity).get)
+      val actual = calculator(StartsWith(Property(Identifier("a") _, propKey) _, StringLiteral(prefix)(InputPosition.NONE)) _)
+      assert( actual.factor === selectivity +- selectivity * 0.000000000000001)
     }
   }
 
@@ -138,8 +138,8 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
                        "reallylong" -> 0.22429997158103274)
 
     prefixes.foreach { case (prefix, selectivity) =>
-      calculator(StartsWith(Property(Identifier("a") _, propKey) _, StringLiteral(prefix)(InputPosition.NONE)) _) should equal(
-        Selectivity.of(selectivity).get)
+      val actual = calculator(StartsWith(Property(Identifier("a") _, propKey) _, StringLiteral(prefix)(InputPosition.NONE)) _)
+      assert( actual.factor === selectivity +- selectivity * 0.000000000000001)
     }
   }
 }
