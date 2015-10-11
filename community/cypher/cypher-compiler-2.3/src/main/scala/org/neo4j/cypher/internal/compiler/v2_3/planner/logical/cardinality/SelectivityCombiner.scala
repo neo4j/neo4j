@@ -33,23 +33,26 @@ trait SelectivityCombiner {
 
 case object IndependenceCombiner extends SelectivityCombiner {
 
-  // This is the simple and straight forward way of combining two statistically independent probabilities
-  //P(A ∪ B) = P(A) * P(B)
-  def andTogetherSelectivities(selectivities: Seq[Selectivity]): Option[Selectivity] = {
-    BigDecimalCombiner.andTogetherBigDecimals(toBigDecimals(selectivities)).map(fromBigDecimal)
-  }
+  override def andTogetherSelectivities(selectivities: Seq[Selectivity]): Option[Selectivity] =
+    selectivities.reduceOption(_ * _)
 
-  // A ∪ B = ¬ ( ¬ A ∩ ¬ B )
+  /**
+   * We transform the disjunction to a negation of a the conjunction of negations
+   * ∪{s ∈ selectivities} = ¬ ∩{ ¬ s | s ∈ selectivities}
+   * Where conjunction is computed through multiplication of the factors,
+   * and negation is computed as (1 - s.factor).
+   * Making the total formula:
+   * r = 1 - ∏{s ∈ selectivities}(1 - s.factor)
+   * Through expanding this formula we realize an iterative way to compute it:
+   * selectivities = {a} ⇒ r1 = 1 - (1-a) = a
+   * selectivities = {a, b} ⇒ r2 =  1 - (1-a)(1-b) = a + b - a * b = r1 + b - r1 * b
+   * selectivities = {a, b, c} ⇒ r3 =  1 - (1-a)(1-b)(1-c) = a + b + c - a*b - a*c - b*c + a*b*c = r2 + c - r2 * c
+   * Making the iterative formula:
+   * r[i] = r[i-1] + s[i].factor - r[i-1] * s[i].factor
+   * We then implement this formula with reduce.
+   */
   override def orTogetherSelectivities(selectivities: Seq[Selectivity]): Option[Selectivity] = {
-    BigDecimalCombiner.orTogetherBigDecimals(toBigDecimals(selectivities)).map(fromBigDecimal)
-  }
-
-  private def toBigDecimals(selectivities: Seq[Selectivity]): Seq[math.BigDecimal] = {
-    selectivities.map(s => math.BigDecimal.valueOf(s.factor))
-  }
-
-  private def fromBigDecimal(bigDecimal: math.BigDecimal): Selectivity = {
-    Selectivity.of(bigDecimal.doubleValue()).get
+    selectivities.map(_.factor).reduceLeftOption((result, value) => result + value - result * value).flatMap(Selectivity.of)
   }
 }
 
