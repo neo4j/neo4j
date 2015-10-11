@@ -1046,7 +1046,7 @@ order by a.COL1""")
     planningListener.planRequests.toSeq should equal(Seq(
       s"match (n:Person) return n"
     ))
-    (0 until 50).foreach { _ => createLabeledNode("Person") }
+    (0 until 100).foreach { _ => createLabeledNode("Person") }
     eengine.execute(s"match (n:Person) return n").toList
 
     //THEN
