@@ -61,6 +61,36 @@ In addition, the Neo4j Java API (see <<advanced-usage>>) enables explicit lockin
 Using locks gives the opportunity to simulate the effects of higher levels of isolation by obtaining and releasing locks explicitly.
 For example, if a write lock is taken on a common node or relationship, then all transactions will serialize on that lock -- giving the effect of a serialization isolation level.
 
+=== Lost Updates in Cypher ===
+
+In cypher it is possible to acquire write locks to simulate improved isolation in some cases.
+Consider, for example, the case where multiple concurrent cypher queries increment the value of a property.
+Due to the read-committed isolation level, the increments will not results in a deterministic final solution.
+
+For example, the following query, if run by one hundred concurrent clients, will not increment the property `n.prop` to 100, but some value lower than 100.
+
+[source,cypher]
+----
+MATCH (n:X {id: 42})
+SET n.prop = n.prop + 1
+----
+
+This is because all queries will read the value of `n.prop` within their own transaction.
+They will not see the incremented value from other transactions.
+
+To ensure deterministic behavior, it is necessary to grab a write lock on the node in question.
+In Cypher there is no explicit support for this, but we can workaround this limitation by writing to a temporary property.
+
+[source,cypher]
+----
+MATCH (n:X {id: 42})
+SET n._LOCK_ = true
+SET n.prop = n.prop + 1
+REMOVE n._LOCK_
+----
+
+The existence of the first `SET` before the `n.prop` read ensures the lock is acquired before the read action, and no updates will be lost due to enforced serialization of all concurrent queries on that specific node.
+
 [[transactions-locking]]
 == Default locking behavior ==
 
