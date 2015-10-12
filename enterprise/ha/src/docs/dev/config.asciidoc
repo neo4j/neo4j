@@ -1,6 +1,5 @@
 [[ha-configuration]]
-Setup and configuration
-=======================
+= HA Setup and configuration
 
 Neo4j HA can be set up to accommodate differing requirements for load, fault tolerance and available hardware.
 
