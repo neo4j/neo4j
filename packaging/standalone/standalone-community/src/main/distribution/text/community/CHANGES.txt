@@ -148,6 +148,7 @@ o MERGE now prints its start point in the plan description
 o Cypher queries will no longer be logged in messages.log
 
 Kernel:
+o Fixes #4415 - not leaking tx state containing neo store records across transactions
 o Fixes an issue where label updates where supplied unordered during batch import
   when deduplicating nodes. This issue could prevent any import containing duplicate
   input ids from completing successfully.

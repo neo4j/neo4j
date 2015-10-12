@@ -114,6 +114,8 @@ public class TransactionRecordState implements RecordState
 
     public void clear()
     {
+        // no point in caching neostore record changes since they are rare, let's simply make sure they are cleared
+        neoStoreRecord = null;
         context.clear();
     }
 
