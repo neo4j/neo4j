@@ -44,16 +44,17 @@ import org.neo4j.function.Consumer;
 public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, Runnable
 {
     // TODO use VarHandles in Java 9
-    private static AtomicReferenceFieldUpdater<AsyncEvents,AsyncEvent> updater =
+    private static AtomicReferenceFieldUpdater<AsyncEvents,AsyncEvent> STACK =
             AtomicReferenceFieldUpdater.newUpdater( AsyncEvents.class, AsyncEvent.class, "stack" );
-    private static final AsyncEvent endSentinel = new Sentinel();
-    private static final AsyncEvent shutdownSentinel = new Sentinel();
+    private static final AsyncEvent END_SENTINEL = new EndSentinel();
+    private static final AsyncEvent SHUTDOWN_SENTINEL = new ShutdownSentinel();
 
     private final Consumer<T> eventConsumer;
+    private final BinaryLatch shutdownLatch;
 
     @SuppressWarnings( {"unused", "FieldCanBeLocal"} )
     private volatile AsyncEvent stack; // Accessed via AtomicReferenceFieldUpdater
-    private volatile Thread runner;
+    private volatile Thread backgroundThread;
     private volatile boolean shutdown;
 
     /**
@@ -64,22 +65,23 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
     public AsyncEvents( Consumer<T> eventConsumer )
     {
         this.eventConsumer = eventConsumer;
-        stack = endSentinel;
+        shutdownLatch = new BinaryLatch();
+        stack = END_SENTINEL;
     }
 
     @Override
     public void send( T event )
     {
-        AsyncEvent prev = updater.getAndSet( this, event );
+        AsyncEvent prev = STACK.getAndSet( this, event );
         assert prev != null;
         event.next = prev;
-        if ( prev == endSentinel )
+        if ( prev == END_SENTINEL )
         {
-            LockSupport.unpark( runner );
+            LockSupport.unpark( backgroundThread );
         }
-        else if ( prev == shutdownSentinel )
+        else if ( prev == SHUTDOWN_SENTINEL )
         {
-            AsyncEvent events = updater.getAndSet( this, shutdownSentinel );
+            AsyncEvent events = STACK.getAndSet( this, SHUTDOWN_SENTINEL );
             process( events );
         }
     }
@@ -87,51 +89,53 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
     @Override
     public void run()
     {
-        assert runner == null : "A thread is already running " + runner;
-        runner = Thread.currentThread();
+        assert backgroundThread == null : "A thread is already running " + backgroundThread;
+        backgroundThread = Thread.currentThread();
 
         try
         {
             do
             {
-                AsyncEvent events = updater.getAndSet( this, endSentinel );
+                AsyncEvent events = STACK.getAndSet( this, END_SENTINEL );
                 process( events );
-                if ( stack == endSentinel && !shutdown )
+                if ( stack == END_SENTINEL && !shutdown )
                 {
                     LockSupport.park( this );
                 }
             }
             while ( !shutdown );
 
-            AsyncEvent events = updater.getAndSet( this, shutdownSentinel );
+            AsyncEvent events = STACK.getAndSet( this, SHUTDOWN_SENTINEL );
             process( events );
         }
         finally
         {
-            runner = null;
+            backgroundThread = null;
+            shutdownLatch.release();
         }
     }
 
     private void process( AsyncEvent events )
     {
         events = reverseAndStripEndMark( events );
+        Consumer<T> consumer = this.eventConsumer;
 
         while ( events != null )
         {
             @SuppressWarnings( "unchecked" )
             T event = (T) events;
-            eventConsumer.accept( event );
+            consumer.accept( event );
             events = events.next;
         }
 
-        endSentinel.next = null;
-        shutdownSentinel.next = null;
+        END_SENTINEL.next = null;
+        SHUTDOWN_SENTINEL.next = null;
     }
 
     private AsyncEvent reverseAndStripEndMark( AsyncEvent events )
     {
         AsyncEvent result = null;
-        while ( events != endSentinel && events != shutdownSentinel )
+        while ( events != END_SENTINEL && events != SHUTDOWN_SENTINEL )
         {
             AsyncEvent tmp;
             do
@@ -153,23 +157,21 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
      */
     public void shutdown()
     {
-        assert runner != null : "Already shut down";
+        assert backgroundThread != null : "Already shut down";
         shutdown = true;
-        LockSupport.unpark( runner );
+        LockSupport.unpark( backgroundThread );
     }
 
     public void awaitTermination() throws InterruptedException
     {
-        while ( runner != null )
-        {
-            Thread.sleep( 10 );
-        }
+        shutdownLatch.await();
     }
 
-    private static class Sentinel extends AsyncEvent
+    private static class EndSentinel extends AsyncEvent
     {
-        {
-            next = this;
-        }
+    }
+
+    private static class ShutdownSentinel extends AsyncEvent
+    {
     }
 }

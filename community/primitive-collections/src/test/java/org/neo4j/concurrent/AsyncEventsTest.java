@@ -27,6 +27,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -34,6 +35,9 @@ import org.neo4j.function.Consumer;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
 
 public class AsyncEventsTest
@@ -43,7 +47,7 @@ public class AsyncEventsTest
     @Before
     public void setUp()
     {
-        executor = Executors.newSingleThreadExecutor();
+        executor = Executors.newCachedThreadPool();
     }
 
     @After
@@ -186,5 +190,67 @@ public class AsyncEventsTest
         {
             asyncEvents.shutdown();
         }
+    }
+
+    @Test
+    public void awaitingShutdownMustBlockUntilAllMessagesHaveBeenProcessed() throws Exception
+    {
+        final Event specialShutdownObservedEvent = new Event();
+        final CountDownLatch awaitStartLatch = new CountDownLatch( 1 );
+        final EventConsumer consumer = new EventConsumer();
+        final AsyncEvents<Event> asyncEvents = new AsyncEvents<>( consumer );
+        executor.submit( asyncEvents );
+
+        // Wait for the background thread to start processing events
+        do
+        {
+            asyncEvents.send( new Event() );
+        }
+        while ( consumer.eventsProcessed.take().processedBy == Thread.currentThread() );
+
+        // Start a thread that awaits the termination
+        Future<?> awaitShutdownFuture = executor.submit( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                awaitStartLatch.countDown();
+                try
+                {
+                    asyncEvents.awaitTermination();
+                }
+                catch ( InterruptedException e )
+                {
+                    throw new RuntimeException( e );
+                }
+                consumer.eventsProcessed.offer( specialShutdownObservedEvent );
+            }
+        } );
+
+        awaitStartLatch.await();
+
+        // Send 5 events
+        asyncEvents.send( new Event() );
+        asyncEvents.send( new Event() );
+        asyncEvents.send( new Event() );
+        asyncEvents.send( new Event() );
+        asyncEvents.send( new Event() );
+
+        // Observe 5 events processed
+        assertThat( consumer.eventsProcessed.take(), is( notNullValue() ) );
+        assertThat( consumer.eventsProcessed.take(), is( notNullValue() ) );
+        assertThat( consumer.eventsProcessed.take(), is( notNullValue() ) );
+        assertThat( consumer.eventsProcessed.take(), is( notNullValue() ) );
+        assertThat( consumer.eventsProcessed.take(), is( notNullValue() ) );
+
+        // Observe no events left
+        assertThat( consumer.eventsProcessed.poll( 20, TimeUnit.MILLISECONDS ), is( nullValue() ) );
+
+        // Shutdown and await termination
+        asyncEvents.shutdown();
+        awaitShutdownFuture.get();
+
+        // Observe termination
+        assertThat( consumer.eventsProcessed.take(), sameInstance( specialShutdownObservedEvent ) );
     }
 }
