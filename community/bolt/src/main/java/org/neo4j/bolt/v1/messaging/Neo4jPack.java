@@ -57,7 +57,6 @@ public class Neo4jPack
 
     public static class Packer extends PackStream.Packer
     {
-        private IdentityPack.Packer identityPacker = new IdentityPack.Packer();
         private PathPack.Packer pathPacker = new PathPack.Packer();
 
         public Packer( PackOutput output )
@@ -223,23 +222,11 @@ public class Neo4jPack
                 pack( property.getValue() );
             }
         }
-
-        public void packNodeIdentity( long id ) throws IOException
-        {
-            identityPacker.packNodeIdentity( this, id );
-        }
-
-        public void packRelationshipIdentity( long id ) throws IOException
-        {
-            identityPacker.packRelationshipIdentity( this, id );
-        }
-
     }
 
 
     public static class Unpacker extends PackStream.Unpacker
     {
-        private IdentityPack.Unpacker identityUnpacker = new IdentityPack.Unpacker();
         private PathPack.Unpacker pathUnpacker = new PathPack.Unpacker();
 
         public Unpacker( PackInput input )
@@ -389,16 +376,5 @@ public class Neo4jPack
             }
             return map;
         }
-
-        public long unpackNodeIdentity() throws IOException
-        {
-            return identityUnpacker.unpackNodeIdentity( this );
-        }
-
-        public long unpackRelationshipIdentity() throws IOException
-        {
-            return identityUnpacker.unpackRelationshipIdentity( this );
-        }
-
     }
 }

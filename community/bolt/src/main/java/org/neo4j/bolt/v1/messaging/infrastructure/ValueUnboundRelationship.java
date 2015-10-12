@@ -39,7 +39,7 @@ public class ValueUnboundRelationship
             throws IOException
     {
         packer.packStructHeader( STRUCT_FIELD_COUNT, Neo4jPack.UNBOUND_RELATIONSHIP );
-        packer.packRelationshipIdentity( rel.getId() );
+        packer.pack( rel.getId() );
         packer.pack( rel.getType().name() );
         packer.packProperties( rel );
     }
@@ -55,7 +55,7 @@ public class ValueUnboundRelationship
     public static ValueUnboundRelationship unpackFields( Neo4jPack.Unpacker unpacker )
             throws IOException
     {
-        long relId = unpacker.unpackRelationshipIdentity();
+        long relId = unpacker.unpackLong();
         String relTypeName = unpacker.unpackText();
 
         Map<String, Object> props = unpacker.unpackMap();

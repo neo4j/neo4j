@@ -19,15 +19,15 @@
  */
 package org.neo4j.bolt.v1.docs;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueNode;
@@ -38,7 +38,6 @@ import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.bolt.v1.messaging.example.Nodes.ALICE;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.BOB;
 import static org.neo4j.bolt.v1.messaging.example.Relationships.ALICE_KNOWS_BOB;
@@ -114,15 +113,10 @@ public class BoltValueStructsDocTest
 
     private void packValueOf( DocStruct.Field field, Neo4jPack.Packer packer ) throws IOException
     {
-        String name = field.name().toLowerCase();
         String type = field.type();
-        if ( name.endsWith( "nodeidentity" ) )
+        if( type.equalsIgnoreCase( "Integer" ))
         {
-            packer.pack( field.exampleValueOr( "node/12345" ) );
-        }
-        else if ( name.endsWith( "relidentity" ) )
-        {
-            packer.pack( field.exampleValueOr( "rel/12345" ) );
+            packer.pack( 1337 );
         }
         else if ( type.equalsIgnoreCase( "Text" ) )
         {

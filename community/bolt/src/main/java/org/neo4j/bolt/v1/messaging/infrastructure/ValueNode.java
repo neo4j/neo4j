@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.bolt.v1.messaging.BoltIOException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -38,6 +39,7 @@ import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
+import org.neo4j.kernel.api.exceptions.Status;
 
 public class ValueNode
         extends ValuePropertyContainer
@@ -49,7 +51,7 @@ public class ValueNode
             throws IOException
     {
         packer.packStructHeader( STRUCT_FIELD_COUNT, Neo4jPack.NODE );
-        packer.packNodeIdentity( node.getId() );
+        packer.pack( node.getId() );
         Collection<Label> collectedLabels = Iterables.toList( node.getLabels() );
         packer.packListHeader( collectedLabels.size() );
         for ( Label label : collectedLabels )
@@ -62,15 +64,22 @@ public class ValueNode
     public static ValueNode unpack( Neo4jPack.Unpacker unpacker )
             throws IOException
     {
-        assert unpacker.unpackStructHeader() == STRUCT_FIELD_COUNT;
-        assert unpacker.unpackStructSignature() == Neo4jPack.NODE;
+        long numFields = unpacker.unpackStructHeader();
+        char signature = unpacker.unpackStructSignature();
+        if( signature != Neo4jPack.NODE ) {
+            throw new BoltIOException( Status.Request.InvalidFormat, "Expected a node structure, recieved 0x" + Integer.toHexString( signature ) );
+        }
+        if( numFields != STRUCT_FIELD_COUNT ) {
+            throw new BoltIOException( Status.Request.InvalidFormat, "Node structures should have " + STRUCT_FIELD_COUNT
+                                                                     + " fields, structure sent contained " + numFields );
+        }
         return unpackFields( unpacker );
     }
 
     public static ValueNode unpackFields( Neo4jPack.Unpacker unpacker )
             throws IOException
     {
-        long id = unpacker.unpackNodeIdentity();
+        long id = unpacker.unpackLong();
 
         int numLabels = (int) unpacker.unpackListHeader();
         List<Label> labels;
