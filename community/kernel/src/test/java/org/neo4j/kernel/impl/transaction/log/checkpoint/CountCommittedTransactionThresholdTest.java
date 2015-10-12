@@ -23,10 +23,14 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class CountCommittedTransactionThresholdTest
 {
-
+    private final TriggerInfo triggerInfo = mock( TriggerInfo.class );
     @Test
     public void checkPointIsNotNeededWhenThereAreNoTransactions() throws Throwable
     {
@@ -35,10 +39,11 @@ public class CountCommittedTransactionThresholdTest
         threshold.initialize( 2 );
 
         // when
-        boolean checkPointingNeeded = threshold.isCheckPointingNeeded( 2 );
+        boolean checkPointingNeeded = threshold.isCheckPointingNeeded( 2, triggerInfo );
 
         // then
         assertFalse( checkPointingNeeded );
+        verifyZeroInteractions( triggerInfo );
     }
 
     @Test
@@ -49,10 +54,11 @@ public class CountCommittedTransactionThresholdTest
         threshold.initialize( 2 );
 
         // when
-        boolean checkPointingNeeded = threshold.isCheckPointingNeeded( 3 );
+        boolean checkPointingNeeded = threshold.isCheckPointingNeeded( 3, triggerInfo );
 
         // then
         assertFalse( checkPointingNeeded );
+        verifyZeroInteractions( triggerInfo );
     }
 
     @Test
@@ -63,10 +69,11 @@ public class CountCommittedTransactionThresholdTest
         threshold.initialize( 2 );
 
         // when
-        boolean checkPointingNeeded = threshold.isCheckPointingNeeded( 4 );
+        boolean checkPointingNeeded = threshold.isCheckPointingNeeded( 4, triggerInfo );
 
         // then
         assertTrue( checkPointingNeeded );
+        verify( triggerInfo, times( 1 ) ).accept( threshold.description() );
     }
 
     @Test
@@ -78,10 +85,11 @@ public class CountCommittedTransactionThresholdTest
 
         // when
         threshold.checkPointHappened( 4 );
-        boolean checkPointingNeeded = threshold.isCheckPointingNeeded( 4 );
+        boolean checkPointingNeeded = threshold.isCheckPointingNeeded( 4, triggerInfo );
 
         // then
         assertFalse( checkPointingNeeded );
+        verifyZeroInteractions( triggerInfo );
     }
 
     @Test
@@ -94,10 +102,11 @@ public class CountCommittedTransactionThresholdTest
 
         // when
         threshold.checkPointHappened( 4 );
-        boolean checkPointingNeeded = threshold.isCheckPointingNeeded( 5 );
+        boolean checkPointingNeeded = threshold.isCheckPointingNeeded( 5, triggerInfo );
 
         // then
         assertFalse( checkPointingNeeded );
+        verifyZeroInteractions( triggerInfo );
     }
 
     @Test
@@ -109,9 +118,10 @@ public class CountCommittedTransactionThresholdTest
 
         // when
         threshold.checkPointHappened( 4 );
-        boolean checkPointingNeeded = threshold.isCheckPointingNeeded( 6 );
+        boolean checkPointingNeeded = threshold.isCheckPointingNeeded( 6, triggerInfo );
 
         // then
         assertTrue( checkPointingNeeded );
+        verify( triggerInfo, times( 1 ) ).accept( threshold.description() );
     }
 }

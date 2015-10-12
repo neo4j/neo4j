@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import org.neo4j.helpers.Clock;
 
-public class TimeCheckPointThreshold implements CheckPointThreshold
+public class TimeCheckPointThreshold extends AbstractCheckPointThreshold
 {
     private volatile long lastCheckPointedTransactionId;
     private volatile long nextCheckPointTime;
@@ -44,10 +44,16 @@ public class TimeCheckPointThreshold implements CheckPointThreshold
     }
 
     @Override
-    public boolean isCheckPointingNeeded( long lastCommittedTransactionId )
+    protected boolean thresholdReached( long lastCommittedTransactionId )
     {
         return lastCommittedTransactionId > lastCheckPointedTransactionId &&
                clock.currentTimeMillis() >= nextCheckPointTime;
+    }
+
+    @Override
+    protected String description()
+    {
+        return "time threshold";
     }
 
     @Override

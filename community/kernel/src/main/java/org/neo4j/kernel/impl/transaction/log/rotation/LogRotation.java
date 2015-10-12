@@ -63,12 +63,4 @@ public interface LogRotation
      * @throws IOException
      */
     void rotateLogFile() throws IOException;
-
-    class PrintFormat
-    {
-        public static String prefix( long currentVersion )
-        {
-            return "Log Rotation [" + currentVersion + "]: ";
-        }
-    }
 }

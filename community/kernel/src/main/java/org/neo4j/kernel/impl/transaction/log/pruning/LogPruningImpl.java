@@ -25,8 +25,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer.PrintFormat.prefix;
-
 /**
  * This class listens for rotations and does log pruning.
  */
@@ -51,8 +49,9 @@ public class LogPruningImpl implements LogPruning
         {
             Thread thread = Thread.currentThread();
             String threadStr = "[" + thread.getId() + ":" + thread.getName() + "]";
+            String prefix = "Log Rotation [" + upToVersion + "]: ";
 
-            msgLog.info( prefix( upToVersion ) + threadStr + " Starting log pruning." );
+            msgLog.info( prefix + threadStr + " Starting log pruning." );
 
             try
             {
@@ -61,9 +60,8 @@ public class LogPruningImpl implements LogPruning
             finally
             {
                 pruneLock.unlock();
+                msgLog.info( prefix + threadStr + " Log pruning complete." );
             }
-
-            msgLog.info( prefix( upToVersion ) + threadStr + " Log pruning complete." );
         }
     }
 }

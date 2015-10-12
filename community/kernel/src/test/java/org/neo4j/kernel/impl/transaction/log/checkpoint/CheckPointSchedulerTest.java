@@ -84,7 +84,7 @@ public class CheckPointSchedulerTest
         // then
         verify( jobScheduler, times( 2 ) ).schedule( eq( checkPoint ), any( Runnable.class ),
                 eq( 20l ), eq( TimeUnit.MILLISECONDS ) );
-        verify( checkPointer, times( 1 ) ).checkPointIfNeeded();
+        verify( checkPointer, times( 1 ) ).checkPointIfNeeded( any( TriggerInfo.class ) );
         assertEquals( scheduledJob, jobScheduler.getJob() );
     }
 
@@ -115,7 +115,7 @@ public class CheckPointSchedulerTest
         jobScheduler.runJob();
 
         // verify checkpoint was triggered
-        verify( checkPointer ).checkPointIfNeeded();
+        verify( checkPointer ).checkPointIfNeeded( any( TriggerInfo.class ) );
 
         // simulate scheduled run that was triggered just before stop
         scheduler.stop();
@@ -136,7 +136,7 @@ public class CheckPointSchedulerTest
         CheckPointer checkPointer = new CheckPointer()
         {
             @Override
-            public long checkPointIfNeeded() throws IOException
+            public long checkPointIfNeeded( TriggerInfo triggerInfo ) throws IOException
             {
                 checkPointerLatch.start();
                 checkPointerLatch.awaitFinish();
@@ -144,13 +144,13 @@ public class CheckPointSchedulerTest
             }
 
             @Override
-            public long tryCheckPoint() throws IOException
+            public long tryCheckPoint( TriggerInfo triggerInfo ) throws IOException
             {
                 throw new RuntimeException( "this should have not been called" );
             }
 
             @Override
-            public long forceCheckPoint() throws IOException
+            public long forceCheckPoint( TriggerInfo triggerInfo ) throws IOException
             {
                 throw new RuntimeException( "this should have not been called" );
             }

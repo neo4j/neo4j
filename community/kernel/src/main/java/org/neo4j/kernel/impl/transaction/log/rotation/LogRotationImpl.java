@@ -92,7 +92,7 @@ public class LogRotationImpl implements LogRotation
 
         monitor.startedRotating( currentVersion );
 
-        msgLog.info( PrintFormat.prefix( currentVersion ) + " Preparing new log file..." );
+        msgLog.info( "Log Rotation [" + currentVersion + "]: Preparing new log file...");
         logFile.rotate();
 
         monitor.finishedRotating( currentVersion );

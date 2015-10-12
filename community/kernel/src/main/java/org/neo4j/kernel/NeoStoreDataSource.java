@@ -134,6 +134,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThresholds;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CountCommittedTransactionThreshold;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.TimeCheckPointThreshold;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -871,7 +872,8 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                 new CountCommittedTransactionThreshold( txThreshold );
 
         long timeMillisThreshold = config.get( GraphDatabaseSettings.check_point_interval_time );
-        TimeCheckPointThreshold timeCheckPointThreshold = new TimeCheckPointThreshold( timeMillisThreshold, Clock.SYSTEM_CLOCK );
+        TimeCheckPointThreshold timeCheckPointThreshold =
+                new TimeCheckPointThreshold( timeMillisThreshold, Clock.SYSTEM_CLOCK );
 
         CheckPointThreshold threshold =
                 CheckPointThresholds.or( countCommittedTransactionThreshold, timeCheckPointThreshold );
@@ -1180,7 +1182,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             {
                 try
                 {
-                    checkPointer.forceCheckPoint();
+                    checkPointer.forceCheckPoint( new SimpleTriggerInfo( "database shutdown" ) );
                 }
                 catch ( IOException e )
                 {

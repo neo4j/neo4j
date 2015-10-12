@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.test.TargetDirectory;
@@ -246,7 +247,9 @@ public class UniqueIndexRecoveryTests
     private void rotateLogAndCheckPoint() throws IOException
     {
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
-        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint();
+        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
+                new SimpleTriggerInfo( "test" )
+        );
     }
 
     private void flushAll()
