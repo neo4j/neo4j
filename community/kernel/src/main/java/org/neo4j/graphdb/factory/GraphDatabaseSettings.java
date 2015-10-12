@@ -129,7 +129,7 @@ public abstract class GraphDatabaseSettings
                   "the plan is considered stale and will be replanned. " +
                   "A value of 0 means always replan, and 1 means never replan." )
     public static Setting<Double> query_statistics_divergence_threshold = setting(
-            "dbms.cypher.statistics_divergence_threshold", DOUBLE, "0.1", min( 0.0 ), max(
+            "dbms.cypher.statistics_divergence_threshold", DOUBLE, "0.5", min( 0.0 ), max(
                     1.0 ) );
 
     @Description( "The threshold when a warning is generated if a label scan is done after a load csv " +
