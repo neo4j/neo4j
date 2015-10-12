@@ -161,7 +161,6 @@ import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
 import static java.lang.reflect.Proxy.newProxyInstance;
-import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
 
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
@@ -199,7 +198,7 @@ public class HighlyAvailableEditionModule
 
         TransactionCommittingResponseUnpacker responseUnpacker = dependencies.satisfyDependency(
                 new TransactionCommittingResponseUnpacker( new DefaultUnpackerDependencies( dependencies ),
-                        DEFAULT_BATCH_SIZE ) );
+                        config.get( HaSettings.pull_apply_batch_size ) ) );
 
         Supplier<KernelAPI> kernelProvider = dependencies.provideDependency( KernelAPI.class );
 
