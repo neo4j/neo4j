@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.ha.factory;
 
-import org.jboss.netty.logging.InternalLoggerFactory;
-
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -46,7 +46,6 @@ import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.DefaultUnpackerDependencies;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
-import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.function.BiFunction;
 import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
@@ -334,9 +333,8 @@ public class HighlyAvailableEditionModule
 
         LifeSupport paxosLife = new LifeSupport();
 
-        paxosLife.add( clusterClient );
         paxosLife.add( memberStateMachine );
-        paxosLife.add( clusterEvents );
+        paxosLife.add( (Lifecycle)clusterEvents );
         paxosLife.add( localClusterMemberAvailability );
 
         idGeneratorFactory = dependencies.satisfyDependency( createIdGeneratorFactory(
@@ -374,9 +372,7 @@ public class HighlyAvailableEditionModule
                 config.get( HaSettings.pull_interval ), platformModule.jobScheduler,
                 dependencies, platformModule.availabilityGuard, memberStateMachine );
 
-        TransactionObligationFulfiller fulfiller = pullerFactory.createObligationFulfiller( updatePullerProxy );
-        paxosLife.add( fulfiller );
-        dependencies.satisfyDependency( fulfiller );
+        dependencies.satisfyDependency( pullerFactory.createObligationFulfiller( paxosLife, updatePullerProxy ) );
 
         Function<Slave, SlaveServer> slaveServerFactory = new Function<Slave, SlaveServer>()
         {
@@ -435,13 +431,13 @@ public class HighlyAvailableEditionModule
             }
         };
 
-        Function<ConversationManager, Master> masterFactory = new Function<ConversationManager, Master>()
+        BiFunction<ConversationManager, LifeSupport, Master> masterFactory = new BiFunction<ConversationManager, LifeSupport, Master>()
         {
             @Override
-            public Master apply(ConversationManager conversationManager)
+            public Master apply( ConversationManager conversationManager, LifeSupport life )
             {
-                return new MasterImpl( masterSPIFactory.newInstance(),
-                        conversationManager, monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ), config );
+                return life.add( new MasterImpl( masterSPIFactory.newInstance(),
+                        conversationManager, monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ), config ) );
             }
         };
 
@@ -523,9 +519,9 @@ public class HighlyAvailableEditionModule
                 createRelationshipTypeCreator( config, paxosLife, highAvailabilityModeSwitcher,
                         masterDelegateInvocationHandler, requestContextFactory, kernelProvider, logging ) ) );
 
-        life.add( dependencies.satisfyDependency(
+        dependencies.satisfyDependency(
                 createKernelData( config, platformModule.graphDatabaseFacade, members, fs, platformModule.pageCache,
-                        storeDir, lastUpdateTime, dependencies.provideDependency( NeoStores.class ) ) ) );
+                        storeDir, lastUpdateTime, dependencies.provideDependency( NeoStores.class ), life ) );
 
         commitProcessFactory = createCommitProcessFactory( dependencies, logging, monitors, config, paxosLife,
                 clusterClient, members, platformModule.jobScheduler, master, requestContextFactory,
@@ -744,14 +740,14 @@ public class HighlyAvailableEditionModule
     }
 
     protected KernelData createKernelData( Config config, GraphDatabaseAPI graphDb, ClusterMembers members,
-                                           FileSystemAbstraction fs, PageCache pageCache, File storeDir,
-                                           LastUpdateTime lastUpdateTime, Supplier<NeoStores> neoStoreSupplier )
+            FileSystemAbstraction fs, PageCache pageCache, File storeDir,
+            LastUpdateTime lastUpdateTime, Supplier<NeoStores> neoStoreSupplier, LifeSupport life )
     {
         OnDiskLastTxIdGetter txIdGetter = new OnDiskLastTxIdGetter( neoStoreSupplier );
         ClusterDatabaseInfoProvider databaseInfo = new ClusterDatabaseInfoProvider( members,
                 txIdGetter,
                 lastUpdateTime );
-        return new HighlyAvailableKernelData( graphDb, members, databaseInfo, fs, pageCache, storeDir, config );
+        return life.add( new HighlyAvailableKernelData( graphDb, members, databaseInfo, fs, pageCache, storeDir, config ) );
     }
 
     protected void registerRecovery( final String editionName, final DependencyResolver dependencyResolver,

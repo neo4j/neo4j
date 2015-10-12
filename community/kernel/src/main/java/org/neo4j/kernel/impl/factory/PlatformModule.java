@@ -127,7 +127,7 @@ public class PlatformModule
         // Database system information, used by UDC
         dependencies.satisfyDependency( new UsageData() );
 
-        fileSystem = life.add( dependencies.satisfyDependency( createFileSystemAbstraction() ) );
+        fileSystem = dependencies.satisfyDependency( createFileSystemAbstraction() );
 
         // Component monitoring
         monitors = externalDependencies.monitors() == null ? new Monitors() : externalDependencies.monitors();
@@ -137,7 +137,7 @@ public class PlatformModule
 
         // If no logging was passed in from the outside then create logging and register
         // with this life
-        logging = life.add( dependencies.satisfyDependency( createLogService( externalDependencies.userLogProvider() ) ) );
+        logging = dependencies.satisfyDependency( createLogService( externalDependencies.userLogProvider() ) );
 
         config.setLogger( logging.getInternalLog( Config.class ) );
 
@@ -242,7 +242,7 @@ public class PlatformModule
         builder.withDefaultLevel( config.get( GraphDatabaseSettings.store_internal_log_level ) );
 
         File internalLog = config.get( GraphDatabaseSettings.store_internal_log_location );
-        LogService logService;
+        StoreLogService logService;
         try
         {
             if ( internalLog == null )

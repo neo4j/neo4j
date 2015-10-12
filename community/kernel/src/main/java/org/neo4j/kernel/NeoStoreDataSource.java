@@ -816,9 +816,9 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                         legacyIndexTransactionOrdering ) );
 
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-        final PhysicalLogFile logFile = new PhysicalLogFile( fileSystemAbstraction, logFiles,
+        final PhysicalLogFile logFile = life.add( new PhysicalLogFile( fileSystemAbstraction, logFiles,
                 config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), metaDataStore,
-                metaDataStore, physicalLogMonitor, transactionMetadataCache );
+                metaDataStore, physicalLogMonitor, transactionMetadataCache ) );
 
         final PhysicalLogFileInformation.LogVersionToTimestamp
                 logInformation = new PhysicalLogFileInformation.LogVersionToTimestamp()
@@ -860,9 +860,9 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         final LogRotation logRotation = new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ),
                 logFile, kernelHealth, logProvider );
 
-        final TransactionAppender appender = new BatchingTransactionAppender(
+        final TransactionAppender appender = life.add( new BatchingTransactionAppender(
                 logFile, logRotation, transactionMetadataCache, metaDataStore, legacyIndexTransactionOrdering,
-                kernelHealth );
+                kernelHealth ) );
         final LogicalTransactionStore logicalTransactionStore =
                 new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache );
 
@@ -883,8 +883,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         long recurringPeriod = Math.min( timeMillisThreshold, TimeUnit.SECONDS.toMillis( 10 ) );
         CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, scheduler, recurringPeriod );
 
-        life.add( logFile );
-        life.add( appender );
         life.add( checkPointer );
         life.add( checkPointScheduler );
 

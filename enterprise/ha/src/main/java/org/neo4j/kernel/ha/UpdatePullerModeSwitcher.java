@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha;
 
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
 import org.neo4j.kernel.ha.cluster.ModeSwitcherNotifier;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 
 /**
  * UpdatePullerModeSwitcher will provide different implementations of {@link UpdatePuller}
@@ -42,13 +43,13 @@ public class UpdatePullerModeSwitcher extends AbstractModeSwitcher<UpdatePuller>
     }
 
     @Override
-    protected UpdatePuller getSlaveImpl()
+    protected UpdatePuller getSlaveImpl( LifeSupport life )
     {
-        return pullerFactory.createUpdatePuller();
+        return pullerFactory.createUpdatePuller( life );
     }
 
     @Override
-    protected UpdatePuller getMasterImpl()
+    protected UpdatePuller getMasterImpl( LifeSupport life )
     {
         return UpdatePuller.NONE;
     }

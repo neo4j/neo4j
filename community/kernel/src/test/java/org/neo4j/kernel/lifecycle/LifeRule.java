@@ -78,7 +78,7 @@ public class LifeRule implements TestRule
         };
     }
 
-    public <T> T add( T instance )
+    public <T extends Lifecycle> T add( T instance )
     {
         return life.add(instance);
     }

@@ -102,8 +102,8 @@ public class CommunityEditionModule
         relationshipTypeTokenHolder = life.add( dependencies.satisfyDependency(new DelegatingRelationshipTypeTokenHolder(
                 createRelationshipTypeCreator( config, dataSourceManager, idGeneratorFactory ) ) ));
 
-        life.add( dependencies.satisfyDependency(
-                createKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade ) ) );
+        dependencies.satisfyDependency(
+                createKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade, life ) );
 
         commitProcessFactory = createCommitProcessFactory();
 
@@ -234,10 +234,10 @@ public class CommunityEditionModule
         }
     }
 
-    protected KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config,
-            GraphDatabaseAPI graphAPI )
+    protected KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
+            Config config, GraphDatabaseAPI graphAPI, LifeSupport life )
     {
-        return new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphAPI );
+        return life.add( new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphAPI ) );
     }
 
     protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs )

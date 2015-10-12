@@ -506,7 +506,6 @@ public class SwitchToSlave
         masterDelegateHandler.setDelegate( master );
 
         haCommunicationLife.add( updatePullerScheduler );
-        haCommunicationLife.add( slaveImpl );
         haCommunicationLife.add( server );
         haCommunicationLife.start();
 

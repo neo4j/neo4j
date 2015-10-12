@@ -27,7 +27,6 @@ import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.function.BiFunction;
 import org.neo4j.function.Factory;
-import org.neo4j.function.Function;
 import org.neo4j.function.Supplier;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
@@ -45,7 +44,6 @@ import org.neo4j.logging.Log;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 
@@ -53,7 +51,7 @@ public class SwitchToMaster implements AutoCloseable
 {
     private LogService logService;
     Factory<ConversationManager> conversationManagerFactory;
-    Function<ConversationManager, Master> masterFactory;
+    BiFunction<ConversationManager, LifeSupport, Master> masterFactory;
     BiFunction<Master, ConversationManager, MasterServer> masterServerFactory;
     private TransactionCounters transactionCounters;
     private Log userLog;
@@ -67,7 +65,7 @@ public class SwitchToMaster implements AutoCloseable
     public SwitchToMaster( LogService logService,
             HaIdGeneratorFactory idGeneratorFactory, Config config, Supplier<SlaveFactory> slaveFactorySupplier,
             Factory<ConversationManager> conversationManagerFactory,
-            Function<ConversationManager, Master> masterFactory,
+            BiFunction<ConversationManager, LifeSupport, Master> masterFactory,
             BiFunction<Master, ConversationManager, MasterServer> masterServerFactory,
             DelegateInvocationHandler<Master> masterDelegateHandler, ClusterMemberAvailability clusterMemberAvailability,
             Supplier<NeoStoreDataSource> dataSourceSupplier, TransactionCounters transactionCounters)
@@ -118,11 +116,10 @@ public class SwitchToMaster implements AutoCloseable
             neoStoreXaDataSource.afterModeSwitch();
 
             ConversationManager conversationManager = conversationManagerFactory.newInstance();
-            Master master = masterFactory.apply( conversationManager );
+            Master master = masterFactory.apply( conversationManager, haCommunicationLife );
 
             MasterServer masterServer = masterServerFactory.apply( master, conversationManager );
 
-            haCommunicationLife.add( master );
             haCommunicationLife.add( masterServer );
             masterDelegateHandler.setDelegate( master );
 
