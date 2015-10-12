@@ -113,9 +113,9 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         {
             final JobScheduler scheduler = dependencies.scheduler();
 
-            final Sessions sessions = life.add( new ThreadedSessions(
+            final Sessions sessions = new ThreadedSessions(
                     life.add( new StandardSessions( api, dependencies.usageData(), logging ) ),
-                    scheduler, logging ) );
+                    scheduler, logging );
 
             SelfSignedCertificate ssc = new SelfSignedCertificate();
             SslContext sslCtx = SslContextBuilder.forServer( ssc.certificate(), ssc.privateKey() ).build();

@@ -99,10 +99,10 @@ public class BoltModule implements ServerModule
 
             if ( config.get( ServerSettings.bolt_enabled ) )
             {
-                final Sessions sessions = life.add( new ThreadedSessions(
+                final Sessions sessions = new ThreadedSessions(
                         life.add( new StandardSessions( api, usageData, logging ) ),
                         scheduler,
-                        logging ) );
+                        logging );
 
                 PrimitiveLongObjectMap<Function<Channel,SocketProtocol>> availableVersions = longObjectMap();
                 availableVersions.put( SocketProtocolV1.VERSION, new Function<Channel,SocketProtocol>()

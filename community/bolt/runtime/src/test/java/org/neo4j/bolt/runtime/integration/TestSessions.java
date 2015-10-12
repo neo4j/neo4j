@@ -56,9 +56,9 @@ public class TestSessions implements TestRule, Sessions
                 Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler() );
                 StandardSessions sessions = life.add(
                         new StandardSessions( (GraphDatabaseAPI) gdb, new UsageData(), NullLogService.getInstance() ) );
-                actual = life.add( new ThreadedSessions(
+                actual = new ThreadedSessions(
                         sessions,
-                        scheduler, NullLogService.getInstance() ) );
+                        scheduler, NullLogService.getInstance() );
 
                 life.start();
                 try
