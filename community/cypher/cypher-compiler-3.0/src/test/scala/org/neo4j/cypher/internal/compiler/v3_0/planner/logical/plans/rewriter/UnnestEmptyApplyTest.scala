@@ -157,6 +157,23 @@ class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )(solved))
   }
 
+  test("should unnest apply with a create on top of argument on rhs") {
+    val lhs = newMockedLogicalPlan()
+    val rhs = CreateNode(Argument(Set.empty)(solved)(), IdName("a"), Seq.empty, None)(solved)
+    val input = Apply(lhs, rhs)(solved)
+
+    rewrite(input) should equal(CreateNode(lhs, IdName("a"), Seq.empty, None)(solved))
+  }
+
+  test("should unnest apply and put create node on top of apply") {
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
+    val create = CreateNode(rhs, IdName("a"), Seq.empty, None)(solved)
+    val input = Apply(lhs, create)(solved)
+
+    rewrite(input) should equal(CreateNode(Apply(lhs, rhs)(solved), IdName("a"), Seq.empty, None)(solved))
+  }
+
   private def rewrite(p: LogicalPlan): LogicalPlan =
     iterateUntilConverged((p: LogicalPlan) => p.endoRewrite(unnestApply))(p)
 }

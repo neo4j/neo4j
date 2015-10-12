@@ -102,4 +102,18 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
       relationship.getProperty("id") should equal(12)
     }
   }
+
+  test("single create after with") {
+    //given
+    createNode()
+    createNode()
+
+    //when
+    val query = "MATCH (n) CREATE() WITH * CREATE ()"
+    val result = updateWithBothPlanners(query)
+
+    //then
+    assertStats(result, nodesCreated = 4)
+    result should not(use("Apply"))
+  }
 }

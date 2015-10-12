@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
-import org.neo4j.cypher.internal.frontend.v3_0.{bottomUp, Rewriter}
+import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
 case object unnestApply extends Rewriter {
 
@@ -34,6 +34,7 @@ case object unnestApply extends Rewriter {
     EXP: Expand
     LOJ: Left Outer Join
     SR : SingleRow - operator that produces single row with no columns
+    CN : CreateNode
    */
 
   private val instance: Rewriter = Rewriter.lift {
@@ -71,6 +72,10 @@ case object unnestApply extends Rewriter {
     // L Ax (Arg LOJ R) => L LOJ R
     case apply@Apply(lhs, join@OuterHashJoin(_, _:Argument, rhs)) =>
       join.copy(left = lhs)(apply.solved)
+
+    // L Ax (CN R) => CN Ax (L R)
+    case apply@Apply(lhs, create@CreateNode(rhs, name, labels, props)) =>
+      CreateNode(Apply(lhs, rhs)(apply.solved), name, labels, props)(apply.solved)
   }
 
   override def apply(input: AnyRef) = bottomUp(instance).apply(input)
