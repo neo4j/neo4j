@@ -21,6 +21,7 @@ package org.neo4j.kernel.lifecycle;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.Iterables;
@@ -318,12 +319,25 @@ public class LifeSupport
             throws LifecycleException
     {
         assert instance != null;
+        assert notAlreadyAdded( instance );
         LifecycleInstance newInstance = new LifecycleInstance( instance );
         List<LifecycleInstance> tmp = new ArrayList<>( instances );
         tmp.add( newInstance );
         instances = tmp;
         bringToState( newInstance );
         return instance;
+    }
+
+    private boolean notAlreadyAdded( Lifecycle instance )
+    {
+        for ( LifecycleInstance candidate : instances )
+        {
+            if ( candidate.instance == instance )
+            {
+                throw new IllegalStateException( instance + " already added", candidate.addedWhere );
+            }
+        }
+        return true;
     }
 
     public synchronized boolean remove( Object instance )
@@ -463,10 +477,18 @@ public class LifeSupport
     {
         Lifecycle instance;
         LifecycleStatus currentStatus = LifecycleStatus.NONE;
+        Exception addedWhere;
 
         private LifecycleInstance( Lifecycle instance )
         {
             this.instance = instance;
+            assert trackInstantiationStackTrace();
+        }
+
+        private boolean trackInstantiationStackTrace()
+        {
+            addedWhere = new Exception();
+            return true;
         }
 
         @Override
