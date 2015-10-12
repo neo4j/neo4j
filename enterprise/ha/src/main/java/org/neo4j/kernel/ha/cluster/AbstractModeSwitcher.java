@@ -74,7 +74,7 @@ public abstract class AbstractModeSwitcher<T> implements ModeSwitcher, Lifecycle
     public void switchToMaster()
     {
         shutdownCurrent();
-        delegate.setDelegate( current = life.add( getMasterImpl() ) );
+        delegate.setDelegate( current = getMasterImpl( life ) );
         life.start();
     }
 
@@ -82,7 +82,7 @@ public abstract class AbstractModeSwitcher<T> implements ModeSwitcher, Lifecycle
     public void switchToSlave()
     {
         shutdownCurrent();
-        delegate.setDelegate( current = life.add( getSlaveImpl() ) );
+        delegate.setDelegate( current = getSlaveImpl( life ) );
         life.start();
     }
 
@@ -101,6 +101,6 @@ public abstract class AbstractModeSwitcher<T> implements ModeSwitcher, Lifecycle
         }
     }
 
-    protected abstract T getSlaveImpl();
-    protected abstract T getMasterImpl();
+    protected abstract T getSlaveImpl( LifeSupport life );
+    protected abstract T getMasterImpl( LifeSupport life );
 }

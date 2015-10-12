@@ -547,7 +547,7 @@ public abstract class InternalAbstractGraphDatabase
 
         diagnosticsManager.prependProvider( config );
 
-        extensions = life.add( createKernelData() );
+        extensions = createKernelData( life );
 
         life.add( kernelExtensions );
 
@@ -731,9 +731,9 @@ public abstract class InternalAbstractGraphDatabase
         return RecoveryVerifier.ALWAYS_VALID;
     }
 
-    protected KernelData createKernelData()
+    protected KernelData createKernelData( LifeSupport life )
     {
-        return new DefaultKernelData( config, this );
+        return life.add( new DefaultKernelData( config, this ) );
     }
 
     protected Caches createCaches()

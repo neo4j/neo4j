@@ -198,7 +198,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     @Override
     protected FileSystemAbstraction createFileSystemAbstraction()
     {
-        return life.add( new EphemeralFileSystemAbstraction() );
+        return new EphemeralFileSystemAbstraction();
     }
 
     private static Map<String, String> withForcedInMemoryConfiguration( Map<String, String> params )

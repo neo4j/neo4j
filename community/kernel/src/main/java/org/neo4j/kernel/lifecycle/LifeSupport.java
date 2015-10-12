@@ -21,6 +21,7 @@ package org.neo4j.kernel.lifecycle;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.Iterables;
@@ -38,16 +39,16 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class LifeSupport
         implements Lifecycle
 {
-    private volatile List<LifecycleInstance> instances = new ArrayList<LifecycleInstance>();
+    private volatile List<LifecycleInstance> instances = new ArrayList<>();
     private volatile LifecycleStatus status = LifecycleStatus.NONE;
-    private final List<LifecycleListener> listeners = new ArrayList<LifecycleListener>();
+    private final List<LifecycleListener> listeners = new ArrayList<>();
     private final StringLogger log;
-    
+
     public LifeSupport()
     {
         this( StringLogger.SYSTEM_ERR );
     }
-    
+
     public LifeSupport( StringLogger log )
     {
         this.log = log;
@@ -310,22 +311,33 @@ public class LifeSupport
      * to the state of this LifeSupport.
      *
      * @param instance the Lifecycle instance to add
-     * @param <T>      type of the instance
+     * @param <T> type of the instance
      * @return the instance itself
      * @throws LifecycleException if the instance could not be transitioned properly
      */
-    public synchronized <T> T add( T instance )
+    public synchronized <T extends Lifecycle> T add( T instance )
             throws LifecycleException
     {
-        if ( instance instanceof Lifecycle )
-        {
-            LifecycleInstance newInstance = new LifecycleInstance( (Lifecycle) instance );
-            List<LifecycleInstance> tmp = new ArrayList<>( instances );
-            tmp.add(newInstance);
-            instances = tmp;
-            bringToState( newInstance );
-        }
+        assert instance != null;
+        assert notAlreadyAdded( instance );
+        LifecycleInstance newInstance = new LifecycleInstance( instance );
+        List<LifecycleInstance> tmp = new ArrayList<>( instances );
+        tmp.add( newInstance );
+        instances = tmp;
+        bringToState( newInstance );
         return instance;
+    }
+
+    private boolean notAlreadyAdded( Lifecycle instance )
+    {
+        for ( LifecycleInstance candidate : instances )
+        {
+            if ( candidate.instance == instance )
+            {
+                throw new IllegalStateException( instance + " already added", candidate.addedWhere );
+            }
+        }
+        return true;
     }
 
     public synchronized boolean remove( Object instance )
@@ -431,7 +443,7 @@ public class LifeSupport
 
         log.error( "Lifecycle exception", exception );
         log.error( "Chained lifecycle exception", chainedLifecycleException );
-        
+
         Throwable current = exception;
         while ( current.getCause() != null )
         {
@@ -465,10 +477,18 @@ public class LifeSupport
     {
         Lifecycle instance;
         LifecycleStatus currentStatus = LifecycleStatus.NONE;
+        Exception addedWhere;
 
         private LifecycleInstance( Lifecycle instance )
         {
             this.instance = instance;
+            assert trackInstantiationStackTrace();
+        }
+
+        private boolean trackInstantiationStackTrace()
+        {
+            addedWhere = new Exception();
+            return true;
         }
 
         @Override

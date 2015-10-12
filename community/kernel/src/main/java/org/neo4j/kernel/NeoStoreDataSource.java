@@ -848,9 +848,9 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                         cacheAccess, lockService, legacyIndexApplierLookup,
                         indexConfigStore, legacyIndexTransactionOrdering ) );
 
-        final PhysicalLogFile logFile = new PhysicalLogFile( fileSystemAbstraction, logFiles,
+        final LogFile logFile = life.add( new PhysicalLogFile( fileSystemAbstraction, logFiles,
                 config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), neoStore,
-                neoStore, physicalLogMonitor, transactionMetadataCache );
+                neoStore, physicalLogMonitor, transactionMetadataCache ) );
 
         final PhysicalLogFileInformation.SPI logInformation = new PhysicalLogFileInformation.SPI()
         {
@@ -887,11 +887,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         final LogRotation logRotation = new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ),
                 logFile, logRotationControl, kernelHealth, logging );
 
-        final LogicalTransactionStore logicalTransactionStore = new PhysicalLogicalTransactionStore( logFile,
-                logRotation, transactionMetadataCache, neoStore, legacyIndexTransactionOrdering, kernelHealth );
-
-        life.add( logFile );
-        life.add( logicalTransactionStore );
+        final LogicalTransactionStore logicalTransactionStore = life.add( new PhysicalLogicalTransactionStore( logFile,
+                logRotation, transactionMetadataCache, neoStore, legacyIndexTransactionOrdering, kernelHealth ) );
 
         return new TransactionLogModule()
         {

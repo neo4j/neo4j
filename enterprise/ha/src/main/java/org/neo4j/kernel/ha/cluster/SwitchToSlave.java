@@ -423,7 +423,6 @@ public class SwitchToSlave
         masterDelegateHandler.setDelegate( master );
 
         haCommunicationLife.add( updatePullerScheduler );
-        haCommunicationLife.add( slaveImpl );
         haCommunicationLife.add( server );
         haCommunicationLife.start();
 
@@ -432,7 +431,7 @@ public class SwitchToSlave
          * Take the opportunity to catch up with master, now that we're alone here, right before we
          * drop the availability guard, so that other transactions might start.
          */
-        if ( !catchUpWithMaster(updatePuller) )
+        if ( !catchUpWithMaster( updatePuller ) )
         {
             return null;
         }

@@ -28,6 +28,7 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 
 public class RelationshipTypeCreatorModeSwitcher extends AbstractModeSwitcher<TokenCreator>
 {
@@ -51,13 +52,13 @@ public class RelationshipTypeCreatorModeSwitcher extends AbstractModeSwitcher<To
     }
 
     @Override
-    protected TokenCreator getMasterImpl()
+    protected TokenCreator getMasterImpl( LifeSupport life )
     {
         return new DefaultRelationshipTypeCreator( kernelProvider, idGeneratorFactory );
     }
 
     @Override
-    protected TokenCreator getSlaveImpl()
+    protected TokenCreator getSlaveImpl( LifeSupport life )
     {
         return new SlaveRelationshipTypeCreator( master.cement(), requestContextFactory );
     }
