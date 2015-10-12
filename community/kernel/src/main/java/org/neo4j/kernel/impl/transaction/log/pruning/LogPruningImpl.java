@@ -47,12 +47,8 @@ public class LogPruningImpl implements LogPruning
         // and it's OK to skip pruning if another one is doing so right now.
         if ( pruneLock.tryLock() )
         {
-            Thread thread = Thread.currentThread();
-            String threadStr = "[" + thread.getId() + ":" + thread.getName() + "]";
             String prefix = "Log Rotation [" + upToVersion + "]: ";
-
-            msgLog.info( prefix + threadStr + " Starting log pruning." );
-
+            msgLog.info( prefix + " Starting log pruning." );
             try
             {
                 pruneStrategy.prune( upToVersion );
@@ -60,7 +56,7 @@ public class LogPruningImpl implements LogPruning
             finally
             {
                 pruneLock.unlock();
-                msgLog.info( prefix + threadStr + " Log pruning complete." );
+                msgLog.info( prefix + " Log pruning complete." );
             }
         }
     }
