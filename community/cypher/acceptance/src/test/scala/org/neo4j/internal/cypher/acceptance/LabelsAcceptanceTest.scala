@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
-import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.cypher.{CypherException, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Node
 import org.scalatest.Assertions
 import org.scalautils.LegacyTripleEquals
@@ -50,11 +50,12 @@ class LabelsAcceptanceTest extends ExecutionEngineFunSuite
   }
 
   test("Recreating_and_labelling_the_same_node_twice_differently_is_forbidden") {
-    assertDoesNotWork("CREATE (n: FOO)-[:test]->b, (n: BAR)-[:test2]->c")
+    assertDoesNotWork("CREATE (n: FOO)-[:test]->(b), (n: BAR)-[:test2]->(c)")
     assertDoesNotWork("CREATE (c)<-[:test2]-(n: FOO), (n: BAR)<-[:test]-(b)")
-    assertDoesNotWork("CREATE n :Foo CREATE (n :Bar)-[:OWNS]->(x:Dog)")
-    assertDoesNotWork("CREATE n {} CREATE (n :Bar)-[:OWNS]->(x:Dog)")
-    assertDoesNotWork("CREATE n :Foo CREATE (n {})-[:OWNS]->(x:Dog)")
+    assertDoesNotWork("CREATE (n :Foo) CREATE (n :Bar)-[:OWNS]->(x:Dog)")
+    assertDoesNotWork("CREATE (n {}) CREATE (n :Bar)-[:OWNS]->(x:Dog)")
+    assertDoesNotWork("CREATE (n :Foo) CREATE (n {})-[:OWNS]->(x:Dog)")
+    assertDoesNotWork("CREATE (n :Foo) CREATE (n {})-[:OWNS]->(x:Dog)")
   }
 
   test("Add_labels_to_nodes_in_a_foreach") {
@@ -131,6 +132,6 @@ class LabelsAcceptanceTest extends ExecutionEngineFunSuite
   }
 
   def assertDoesNotWork(s: String) {
-    intercept[Exception](assertThat(s, List.empty))
+    intercept[CypherException](assertThat(s, List.empty))
   }
 }

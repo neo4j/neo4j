@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.Expressi
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.frontend.v3_0.InternalException
+import org.neo4j.cypher.internal.frontend.v3_0.{SyntaxException, InternalException}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 
 object ClauseConverters {
@@ -115,6 +115,13 @@ object ClauseConverters {
 
           //create nodes that are not already matched or created
           val nodesToCreate = nodes.filterNot(pattern => builder.allSeenPatternNodes(pattern.nodeName))
+
+          //we must check that we are not trying to set a pattern or label on any already created nodes
+          val nodesCreatedBefore = nodes.filter(pattern => builder.allSeenPatternNodes(pattern.nodeName))
+          nodesCreatedBefore.collectFirst {
+            case c if c.labels.nonEmpty || c.properties.nonEmpty =>
+              throw new SyntaxException(s"Can't create node ${c.nodeName.name} with labels or properties here. It already exists in this context")
+          }
 
           builder
             .amendUpdateGraph(ug => ug
