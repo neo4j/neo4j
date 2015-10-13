@@ -1,3 +1,8 @@
+2.3.0-RC1
+---------
+o Fixes an issue where an error during store copy from master might result in instance being
+  forever unable to join cluster until manually restarted.
+
 2.3.0-M03
 ---------
 o Given ongoing transactions a bit of time (10 seconds default) to complete before making a required role switch

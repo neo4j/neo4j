@@ -3,7 +3,19 @@ For Release Notes, see http://neo4j.com/release-notes/neo4j-#{project.version}/
 2.3.0-RC1
 ---------
 
+Browser:
+o New drawer for :config settings
+o :play remote guides
+o Handle 403 responses from server
+o Add config to control outgoing connections
+  (feature only active in Enterprise Edition)
+
+Consistency-checker:
+o Redesign of record access pattern and added parallelization for faster and more scalable
+  consistency checker. The previous behaviour can still be had by adding --experimental=false
+
 Cypher:
+o Fixed a MergeInto bug so that the direction of the relationship is considered when creating relationships
 o Generates a warning when a plan using LOAD CSV uses MATCH or MERGE on a large label without an index
 o Generates a warning when a plan using LOAD CSV also contains an EagerPipe
 o Introduce STARTS WITH, ENDS WITH and CONTAINS
@@ -14,17 +26,32 @@ o CREATE from lists is now deprecated
 o Will now allow literals to be placed on the left-hand side of an inequality predicate also when using an index
 o MergeInto will now properly take direction into account when creating relationships
 
-Browser:
-o New drawer for :config settings
-o :play remote guides
-o Handle 403 responses from server
-
-Packaging:
-o Neo4j console does not fork a subprocess on Linux, enabling easier process management
+Import-tool:
+o Prints help information if no arguments were given to the import tool.
+o Root cause like stack traces are printed for unexpected errors, regardless of the value of
+  --stacktrace that user supplied. That option still controls whether or not stack traces should
+  be printed for common errors, which are usually accompanied a more descriptive explanation.
+o Includes meta data about the store and stored transactions in diagnostics logging during startup.
 
 Kernel:
 o Change the default `dbms.pagecache.memory` setting from 75% to 50% of free system memory after the JVM heap.
 o Fix a bug that caused an incorrect page cache size to be reported when the `dump_configuration` setting was enabled.
+o Store files no longer have trailers in the end. They were an old artifact of how neo4j used to determine
+  version of store and whether or not there was a clean shutdown. Now there are other mechanisms doing both those checks.
+
+Server:
+o Client and transient errors cause transactions to be rolled back immediately,
+  instead of merely be marked as failed with the purpose to fail the upcoming commit.
+  This has a more expected behaviour to the user.
+
+Packaging:
+o Neo4j console does not fork a subprocess on Linux, enabling easier process management
+o Resolved Github Issue #5531: Added aliases for Host and Port.  This stops the
+  java command accidentally have multiple arguments on the command line e.g. -port 1337 -port 1337
+o Resolved Github Issue #5533: Added text in the example to explicitly state that the
+  Windows Service had already been installed
+o Resolved Github Issue #5536: Added link documentation about the NEO4J_HOME variable
+  in the online manual
 
 2.3.0-M03
 ---------

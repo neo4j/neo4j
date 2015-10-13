@@ -2,6 +2,8 @@
 ---------
 o Change the default `dbms.pagecache.memory` setting from 75% to 50% of free system memory after the JVM heap.
 o Fix a bug that caused an incorrect page cache size to be reported when the `dump_configuration` setting was enabled.
+o Store files no longer have trailers in the end. They were an old artifact of how neo4j used to determine
+  version of store and whether or not there was a clean shutdown. Now there are other mechanisms doing both those checks.
 
 2.3.0-M03
 ---------

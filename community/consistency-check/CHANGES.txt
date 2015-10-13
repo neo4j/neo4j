@@ -1,3 +1,8 @@
+2.3.0-RC1
+---------
+o Redesign of record access pattern and added parallelization for faster and more scalable
+  consistency checker. The previous behaviour can still be had by adding --experimental=false
+
 2.3.0-M02
 ---------
 o Consistency Checker now has an additional check for node label id arrays that are not sorted
