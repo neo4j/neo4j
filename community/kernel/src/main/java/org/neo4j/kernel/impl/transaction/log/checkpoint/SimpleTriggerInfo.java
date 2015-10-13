@@ -19,38 +19,33 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-public class CountCommittedTransactionThreshold extends AbstractCheckPointThreshold
+/**
+ * Simple implementation of a trigger info taking in construction the name/description of what triggered the check point
+ * and offering the possibility to be enriched with a single optional extra description.
+ */
+public class SimpleTriggerInfo implements TriggerInfo
 {
-    private final int notificationThreshold;
+    private final String triggerName;
+    private String description;
 
-    private volatile long nextTransactionIdTarget;
-
-    public CountCommittedTransactionThreshold( int notificationThreshold )
+    public SimpleTriggerInfo( String triggerName )
     {
-        this.notificationThreshold = notificationThreshold;
+        assert triggerName != null;
+        this.triggerName = triggerName;
     }
 
     @Override
-    public void initialize( long transactionId )
+    public String describe( long transactionId )
     {
-        nextTransactionIdTarget = transactionId + notificationThreshold;
+        String info = description == null ? triggerName : triggerName + " for " + description;
+        return "Check Pointing triggered by " + info + " [" + transactionId + "]: ";
     }
 
     @Override
-    protected boolean thresholdReached( long lastCommittedTransactionId )
+    public void accept( String description )
     {
-        return lastCommittedTransactionId >= nextTransactionIdTarget;
-    }
-
-    @Override
-    protected String description()
-    {
-        return "tx count threshold";
-    }
-
-    @Override
-    public void checkPointHappened( long transactionId )
-    {
-        nextTransactionIdTarget = transactionId + notificationThreshold;
+        assert description != null;
+        assert this.description == null;
+        this.description = description;
     }
 }

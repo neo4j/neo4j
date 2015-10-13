@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
+import org.neo4j.function.Consumer;
+
 /**
  * A check point threshold provides information if a check point is required or not.
  */
@@ -35,9 +37,10 @@ public interface CheckPointThreshold
      * This method can be used for querying the threshold about the necessity of a check point.
      *
      * @param lastCommittedTransactionId the latest transaction committed id
+     * @param consumer will be called with the description about this threshold only if the return value is true
      * @return true is a check point is needed, false otherwise.
      */
-    boolean isCheckPointingNeeded( long lastCommittedTransactionId );
+    boolean isCheckPointingNeeded( long lastCommittedTransactionId, Consumer<String> consumer );
 
     /**
      * This method notifies the threshold that a check point has happened. This must be called every time a check point

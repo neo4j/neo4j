@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -132,7 +133,9 @@ public class IndexCreationTest
         PhysicalLogFile pLogFile = db.getDependencyResolver().resolveDependency( PhysicalLogFile.class );
         long version = ds.getCurrentLogVersion();
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
-        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint();
+        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
+                new SimpleTriggerInfo( "test" )
+        );
 
         ReadableVersionableLogChannel logChannel = pLogFile.getReader( LogPosition.start( version ) );
 

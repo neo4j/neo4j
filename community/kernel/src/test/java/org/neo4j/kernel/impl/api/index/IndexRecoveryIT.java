@@ -59,6 +59,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.register.Register.DoubleLong;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -138,7 +139,7 @@ public class IndexRecoveryIT
                         any( IndexSamplingConfig.class ) ) )
                 .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         createIndex( myLabel );
-        rotateLogs();
+        rotateLogsAndCheckPoint();
 
         // And Given
         Future<Void> killFuture = killDbInSeparateThread();
@@ -194,7 +195,7 @@ public class IndexRecoveryIT
         ).thenReturn( mockedAccessor );
         createIndexAndAwaitPopulation( myLabel );
         // rotate logs
-        rotateLogs();
+        rotateLogsAndCheckPoint();
         // make updates
         Set<NodePropertyUpdate> expectedUpdates = createSomeBananas( myLabel );
 
@@ -238,7 +239,7 @@ public class IndexRecoveryIT
         ).thenReturn( mock( IndexAccessor.class ) );
         startDb();
         createIndex( myLabel );
-        rotateLogs();
+        rotateLogsAndCheckPoint();
 
         // And Given
         killDb();
@@ -330,10 +331,12 @@ public class IndexRecoveryIT
         }
     }
 
-    private void rotateLogs() throws IOException
+    private void rotateLogsAndCheckPoint() throws IOException
     {
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
-        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint();
+        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
+                new SimpleTriggerInfo( "test" )
+        );
     }
 
     private void createIndexAndAwaitPopulation( Label label )

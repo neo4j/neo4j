@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -308,7 +309,9 @@ public class TestRecoveryScenarios
 
     private void checkPoint() throws IOException
     {
-        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint();
+        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
+                new SimpleTriggerInfo( "test" )
+        );
     }
 
     private void deleteNode( Node node )

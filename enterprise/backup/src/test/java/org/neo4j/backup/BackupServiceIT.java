@@ -67,6 +67,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
@@ -514,7 +515,9 @@ public class BackupServiceIT
     private void rotateAndCheckPoint( GraphDatabaseAPI db ) throws IOException
     {
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
-        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint();
+        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
+                new SimpleTriggerInfo( "test" )
+        );
     }
 
     @Test

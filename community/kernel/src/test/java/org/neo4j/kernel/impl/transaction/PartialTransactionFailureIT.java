@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.test.TargetDirectory;
 
@@ -185,7 +186,9 @@ public class PartialTransactionFailureIT
                     tx.success();
                     latch.await();
                     db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
-                    db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint();
+                    db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
+                            new SimpleTriggerInfo( "test" )
+                    );
                 }
                 catch ( Exception ignore )
                 {

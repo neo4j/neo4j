@@ -76,6 +76,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CountCommittedTransactionThreshold;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
@@ -215,7 +216,7 @@ public class TransactionRepresentationCommitProcessIT
         completionLatch.await();
 
         // do checkpoint to catch up latest updates
-        checkPointer.forceCheckPoint();
+        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "test" ) );
 
         // verify
         assertTrue( "All legacy index commands should be applied", legacyIndexTransactionOrdering.isEmpty() );
@@ -290,7 +291,7 @@ public class TransactionRepresentationCommitProcessIT
             {
                 try
                 {
-                    checkPointer.forceCheckPoint();
+                    checkPointer.forceCheckPoint( new SimpleTriggerInfo( "test" ) );
                     Thread.sleep( 10 );
                 }
                 catch ( Exception e )
