@@ -1,3 +1,11 @@
+2.3.0-RC1
+---------
+o Force elect a demoted node if it is the only option. This happens predominantly in clusters where
+  some members are slave-only.
+o Protocol change: payload length is an int (change from byte) to cope with longer messages.
+o No longer logs heartbeat messages since logging may incur I/O waits, which in extension may
+  have an instance appear unavailable with the consequence that master switch happens.
+
 2.3.0-M03
 ---------
 o Fixes bad assumption about all messages containing instance ID

@@ -1,3 +1,11 @@
+2.3.0-RC1
+---------
+o Prints help information if no arguments were given to the import tool.
+o Root cause like stack traces are printed for unexpected errors, regardless of the value of
+  --stacktrace that user supplied. That option still controls whether or not stack traces should
+  be printed for common errors, which are usually accompanied a more descriptive explanation.
+o Includes meta data about the store and stored transactions in diagnostics logging during startup.
+
 2.3.0-M01
 --------
 o Added ability to skip duplicate nodes, i.e. multiple nodes with the same ID in the same id space.

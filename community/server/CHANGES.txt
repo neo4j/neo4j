@@ -1,3 +1,9 @@
+2.3.0-RC1
+---------
+o Client and transient errors cause transactions to be rolled back immediately,
+  instead of merely be marked as failed with the purpose to fail the upcoming commit.
+  This has a more expected behaviour to the user.
+
 2.3.0-M01
 ---------
 o User has ability to configure jettys max header sizes with added configuration options:

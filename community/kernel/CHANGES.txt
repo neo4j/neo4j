@@ -2,6 +2,8 @@
 ---------
 o Change the default `dbms.pagecache.memory` setting from 75% to 50% of free system memory after the JVM heap.
 o Fix a bug that caused an incorrect page cache size to be reported when the `dump_configuration` setting was enabled.
+o Store files no longer have trailers in the end. They were an old artifact of how neo4j used to determine
+  version of store and whether or not there was a clean shutdown. Now there are other mechanisms doing both those checks.
 
 2.3.0-M03
 ---------
@@ -50,6 +52,9 @@ o ID files will now be properly always marked as unclean on unclean
 o TransactionIdStore tracks highest transaction id instead of highest gap-free transaction id.
   This fixes an issue where a lower transaction id than expected would be seen as last committed.
 o Fixes #5528 - Unique constraint not being respected
+o Awaits uniqueness constraint indexes to be rebuilt, if recovery process decides to do so,
+  before considering the database as started. This mimics the behaviour of creating such a constraint.
+o Greatly lowered memory usage during rebuilding of counts store.
 
 2.2.5
 -----
