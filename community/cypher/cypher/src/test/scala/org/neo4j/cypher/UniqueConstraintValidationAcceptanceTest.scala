@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
 
 class UniqueConstraintValidationAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with  CollectionSupport {
 
-  test("should_enforce_uniqueness_constraint_on_create_node_with_label_and_property") {
+  test("should enforce uniqueness constraint on create node with label and property") {
     // GIVEN
     execute("create constraint on (node:Label1) assert node.key1 is unique")
     execute("create ( node:Label1 { key1:'value1' } )")
@@ -43,7 +43,7 @@ class UniqueConstraintValidationAcceptanceTest extends ExecutionEngineFunSuite w
     }
   }
 
-  test("should_enforce_uniqueness_constraint_on_set_property") {
+  test("should enforce uniqueness constraint on set property") {
     // GIVEN
     execute("create constraint on (node:Label1) assert node.key1 is unique")
     execute("create ( node1:Label1 { seq: 1, key1:'value1' } ), ( node2:Label1 { seq: 2 } )")
@@ -61,14 +61,14 @@ class UniqueConstraintValidationAcceptanceTest extends ExecutionEngineFunSuite w
     }
   }
 
-  test("should_enforce_uniqueness_constraint_on_add_label") {
+  test("should enforce uniqueness constraint on add label") {
     // GIVEN
     execute("create constraint on (node:Label1) assert node.key1 is unique")
     execute("create ( node1:Label1 { seq: 1, key1:'value1' } ), ( node2 { seq: 2, key1:'value1' } )")
 
     // WHEN
     try {
-      execute("match node2 where node2.seq = 2 set node2:Label1")
+      execute("match (node2) where node2.seq = 2 set node2:Label1")
 
       fail("should have thrown exception")
     }
@@ -79,7 +79,7 @@ class UniqueConstraintValidationAcceptanceTest extends ExecutionEngineFunSuite w
     }
   }
 
-  test("should_enforce_uniqueness_constraint_on_conflicting_data_in_same_statement") {
+  test("should enforce uniqueness constraint on conflicting data in same statement") {
     // GIVEN
     execute("create constraint on (node:Label1) assert node.key1 is unique")
 
@@ -96,7 +96,7 @@ class UniqueConstraintValidationAcceptanceTest extends ExecutionEngineFunSuite w
     }
   }
 
-  test("should_allow_remove_and_add_conflicting_data_in_one_statement") {
+  test("should allow remove and add conflicting data in one statement") {
     // GIVEN
     execute("create constraint on (node:Label1) assert node.key1 is unique")
     execute("create ( node:Label1 { seq:1, key1:'value1' } )")
@@ -122,7 +122,7 @@ class UniqueConstraintValidationAcceptanceTest extends ExecutionEngineFunSuite w
     }
   }
 
-  test("should_allow_creation_of_non_conflicting_data") {
+  test("should allow creation of non conflicting data") {
     // GIVEN
     execute("create constraint on (node:Label1) assert node.key1 is unique")
     execute("create ( node:Label1 { key1:'value1' } )")

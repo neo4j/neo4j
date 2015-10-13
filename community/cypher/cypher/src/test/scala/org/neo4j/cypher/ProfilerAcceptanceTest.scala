@@ -55,12 +55,12 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(4)(result)("AllNodesScan")
   }
 
-  test("match n where n-[:FOO]->() return *") {
+  test("match (n) where (n)-[:FOO]->() return *") {
     //GIVEN
     relate( createNode(), createNode(), "FOO")
 
     //WHEN
-    val result = profileWithAllPlanners("match n where n-[:FOO]->() return *")
+    val result = profileWithAllPlanners("match (n) where (n)-[:FOO]->() return *")
 
     //THEN
     assertRows(1)(result)("SemiApply")
@@ -88,18 +88,18 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   test("PROFILE for Cypher 2.3") {
-    val result = eengine.profile("cypher 2.3 match n where n-[:FOO]->() return *")
+    val result = eengine.profile("cypher 2.3 match (n) where (n)-[:FOO]->() return *")
 
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
     result.executionPlanDescription().toString should include("DB Hits")
   }
 
-  test("match n where not n-[:FOO]->() return *") {
+  test("match (n) where not (n)-[:FOO]->() return *") {
     //GIVEN
     relate( createNode(), createNode(), "FOO")
 
     //WHEN
-    val result = profileWithAllPlanners("CYPHER 3.0 match n where not n-[:FOO]->() return *")
+    val result = profileWithAllPlanners("CYPHER 3.0 match (n) where not (n)-[:FOO]->() return *")
 
     //THEN
     assertRows(1)(result)("AntiSemiApply")
@@ -149,7 +149,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("no problem measuring creation") {
     //GIVEN
-    val result = legacyProfile("CREATE n")
+    val result = legacyProfile("CREATE (n)")
 
     //WHEN THEN
     assertDbHits(0)(result)("EmptyResult")
@@ -159,7 +159,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode()
 
     //GIVEN
-    val result = profileWithAllPlannersAndRuntimes("MATCH n RETURN n.foo")
+    val result = profileWithAllPlannersAndRuntimes("MATCH (n) RETURN n.foo")
 
     //WHEN THEN
     assertRows(1)(result)("ProduceResults")
@@ -177,7 +177,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode()
 
     // WHEN
-    val result = profileWithAllPlannersAndRuntimes("MATCH n optional match (n)-->(x) return x")
+    val result = profileWithAllPlannersAndRuntimes("MATCH (n) optional match (n)-->(x) return x")
 
     // THEN
     assertDbHits(0)(result)("ProduceResults")
@@ -198,7 +198,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode()
     createNode()
     createNode()
-    val result = profileWithAllPlannersAndRuntimes("""MATCH n RETURN n LIMIT 1""")
+    val result = profileWithAllPlannersAndRuntimes("""MATCH (n) RETURN n LIMIT 1""")
 
     // WHEN
     result.toList
@@ -278,14 +278,14 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   test("should not have a problem profiling empty results") {
-    val result = profileWithAllPlanners("MATCH n WHERE (n)-->() RETURN n")
+    val result = profileWithAllPlanners("MATCH (n) WHERE (n)-->() RETURN n")
 
     result shouldBe empty
     result.executionPlanDescription().toString should include("AllNodes")
   }
 
   test("reports COST planner when showing plan description") {
-    val result = eengine.execute("CYPHER planner=cost match n return n")
+    val result = eengine.execute("CYPHER planner=cost match (n) return n")
     result.toList
     val executionPlanDescription = result.executionPlanDescription()
     executionPlanDescription.toString should include("Planner COST" + System.lineSeparator())
@@ -299,13 +299,13 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   test("does not use Apply for aggregation and order by") {
-    val a = profileWithAllPlanners("match n return n, count(*) as c order by c")
+    val a = profileWithAllPlanners("match (n) return n, count(*) as c order by c")
 
     a.executionPlanDescription().toString should not include "Apply"
   }
 
   test("should not use eager plans for distinct") {
-    val a = profileWithAllPlanners("match n return distinct n.name")
+    val a = profileWithAllPlanners("match (n) return distinct n.name")
     a.executionPlanDescription().toString should not include "Eager"
   }
 
@@ -339,15 +339,15 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
    }
 
   test("should show expand without types in a simple form") {
-    val a = profileWithAllPlannersAndRuntimes("match n-->() return *")
+    val a = profileWithAllPlannersAndRuntimes("match (n)-->() return *")
 
     a.executionPlanDescription().toString should include("()<--(n)")
   }
 
   test("should show expand with types in a simple form") {
-    val result = profileWithAllPlannersAndRuntimes("match n-[r:T]->() return *")
+    val result = profileWithAllPlannersAndRuntimes("match (n)-[r:T]->() return *")
 
-    result.executionPlanDescription().toString should include("()<-[r:T]-(n)")
+    result.executionPlanDescription().toString should include("(n)-[r:T]->()")
   }
 
   test("should report correct dbhits and rows for label scan") {
@@ -388,7 +388,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode("name" -> "foo")
 
     // when
-    val result = profileWithAllPlannersAndRuntimes("match n return n.name + 3")
+    val result = profileWithAllPlannersAndRuntimes("match (n) return n.name + 3")
 
     // then
     assertDbHits(1)(result)("Projection")
@@ -400,7 +400,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode("name" -> 10)
 
     // when
-    val result = profileWithAllPlannersAndRuntimes("match n return n.name - 3")
+    val result = profileWithAllPlannersAndRuntimes("match (n) return n.name - 3")
 
     // then
     assertDbHits(1)(result)("Projection")
@@ -409,7 +409,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("should throw if accessing profiled results before they have been materialized") {
     createNode()
-    val res = eengine.execute("profile match n return n")
+    val res = eengine.execute("profile match (n) return n")
     intercept[ProfilerStatisticsNotReadyException](res.executionPlanDescription())
     res.close()
   }
@@ -420,7 +420,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode()
     createNode()
 
-    val result = profileWithAllPlannersAndRuntimes("match n, m return n, m")
+    val result = profileWithAllPlannersAndRuntimes("match (n), (m) return n, m")
     assertRows(16)(result)("CartesianProduct")
   }
 

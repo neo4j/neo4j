@@ -26,7 +26,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   test("NOT(p1 AND p2) should return true when p2 is false") {
     createNode("apa")
 
-    val result = executeWithAllPlanners("match n where not(n.name = 'apa' and false) return n")
+    val result = executeWithAllPlanners("match (n)where not(n.name = 'apa' and false) return n")
 
     result should have size 1
   }

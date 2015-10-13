@@ -44,8 +44,8 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
 
   test("badNodeIdentifier") {
     expectError(
-      "match (a) where id(a) = 0 MATCH a-[WORKED_ON]-, return a",
-      "Invalid input ',': expected whitespace, '>' or a node pattern (line 1, column 47 (offset: 46))"
+      "match (a) where id(a) = 0 match (a)-[WORKED_ON]-, return a",
+      "Invalid input ',': expected whitespace, '>' or a node pattern (line 1, column 49 (offset: 48))"
     )
   }
 
@@ -96,7 +96,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
 
   test("noIndexName") {
     expectSyntaxError(
-      "start a = node(name=\"sebastian\") match a-[:WORKED_ON]-b return b",
+      "start a = node(name=\"sebastian\") match (a)-[:WORKED_ON]-b return b",
       "Invalid input 'n': expected whitespace, an unsigned integer, a parameter or '*' (line 1, column 16 (offset: 15))",
       15
     )
@@ -111,14 +111,14 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
 
   test("should not allow introducing aggregation in ORDER BY - must be listed as a return item in associated RETURN") {
     expectError(
-      "match n return n.prop1 order by max(n.prop2)",
-      "Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding RETURN (line 1, column 9 (offset: 8))")
+      "match (n) return n.prop1 order by max(n.prop2)",
+      "Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding RETURN (line 1, column 11 (offset: 10))")
   }
 
   test("should not allow introducing aggregation in ORDER BY - must be listed as a return item in associated WITH") {
     expectError(
-      "match n with n.prop1 as foo order by max(n.prop2) return foo as foo",
-      "Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding WITH (line 1, column 9 (offset: 8))")
+      "match (n) with n.prop1 as foo order by max(n.prop2) return foo as foo",
+      "Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding WITH (line 1, column 11 (offset: 10))")
   }
 
   test("twoIndexQueriesInSameStart") {
@@ -213,15 +213,8 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
 
   test("missing dependency correctly reported") {
     expectError(
-      "match (a) where id(a) = 0 CREATE a-[:KNOWS]->(b {name:missing}) RETURN b",
-      "missing not defined (line 1, column 55 (offset: 54))"
-    )
-  }
-
-  test("missing create dependency correctly reported") {
-    expectError(
-      "match (a) where id(a) = 0 CREATE a-[:KNOWS]->(b {name:missing}) RETURN b",
-      "missing not defined (line 1, column 55 (offset: 54))"
+      "match (a) where id(a) = 0 CREATE (a)-[:KNOWS]->(b {name:missing}) RETURN b",
+      "missing not defined (line 1, column 57 (offset: 56))"
     )
   }
 
@@ -269,8 +262,8 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
 
   test("warn about type error") {
     expectError(
-      "match (p) where id(p) = 0 MATCH p-[r*]->() WHERE r.foo = 'apa' RETURN r",
-      "Type mismatch: expected Map, Node or Relationship but was Collection<Relationship> (line 1, column 50 (offset: 49))"
+      "match (p) where id(p) = 0 MATCH (p)-[r*]->() WHERE r.foo = 'apa' RETURN r",
+      "Type mismatch: expected Map, Node or Relationship but was Collection<Relationship> (line 1, column 52 (offset: 51))"
     )
   }
 
@@ -283,9 +276,9 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
 
   test("unions must have the same columns") {
     expectError(
-      """MATCH a WHERE id(a) = 0 RETURN a
+      """MATCH (a) WHERE id(a) = 0 RETURN a
          UNION
-         MATCH b WHERE id(b) = 0 RETURN b""",
+         MATCH (b) WHERE id(b) = 0 RETURN b""",
       "All sub queries in an UNION must have the same column names"
     )
   }
@@ -303,8 +296,8 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
 
   test("can not use optional pattern as predicate") {
     expectError(
-      "match (a) where id(a) = 1 RETURN a-[?]->()",
-      "Optional relationships cannot be specified in this context (line 1, column 35 (offset: 34))"
+      "match (a) where id(a) = 1 RETURN (a)-[?]->()",
+      "Optional relationships cannot be specified in this context (line 1, column 37 (offset: 36))"
     )
   }
 
@@ -403,8 +396,8 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
 
   test("should not allow binding a path name that is already bound") {
     expectError(
-      "match p = a with p,a match p = a-->b return a",
-      "p already declared (line 1, column 28 (offset: 27))"
+      "match p = (a) with p,a match p = (a)-->(b) return a",
+      "p already declared (line 1, column 30 (offset: 29))"
     )
   }
 

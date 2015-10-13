@@ -43,12 +43,12 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
   val foo1 = "foo1" ->
     """match
       |  (toFrom:Duck{Id:{duckId}}),
-      |  brook-[:precedes|is]->startbrook,
-      |  toFrom-[toFrom_rel:wiggle|quack]->startbrook
+      |  (brook)-[:precedes|is]->(startbrook),
+      |  (toFrom)-[toFrom_rel:wiggle|quack]->(startbrook)
       |with brook
-      |match brook-[:regarding_summary_phrase]->Duck
+      |match (brook)-[:regarding_summary_phrase]->(Duck)
       |with brook, Duck
-      |match checkUnpopularDuck-[:quack]->brook
+      |match (checkUnpopularDuck)-[:quack]->(brook)
       |where ((checkUnpopularDuck.Rank > 0 or checkUnpopularDuck.Rank is null)) and ((Duck.Rank > 0 or Duck.Rank is null)) and (NOT(Duck.Id = {duckId}))
       |RETURN Duck.Id as Id, Duck.Name as Name, Duck.Type as Type, Duck.MentionNames as Mentions, count(distinct brook) as brookCount
       |order by brookCount desc skip 0 limit 51""".stripMargin
@@ -56,10 +56,10 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
   val foo2 = "foo2" ->
     """match
       |  (toFrom:Duck{Id:{duckId}}),
-      |  toFrom-[toFrom_rel:wiggle|quack]->(brook:brook),
-      |  copy-[:of]->bridge-[bridgebrook:containing]->brook,
-      |  brook-[:in_thicket]->(thicket:Thicket),
-      |  (checkUnpopularDuck:Duck)-[:quack]->brook
+      |  (toFrom)-[toFrom_rel:wiggle|quack]->(brook:brook),
+      |  (copy)-[:of]->(bridge)-[bridgebrook:containing]->(brook),
+      |  (brook)-[:in_thicket]->(thicket:Thicket),
+      |  (checkUnpopularDuck:Duck)-[:quack]->(brook)
       |where (checkUnpopularDuck.Rank > 0 or checkUnpopularDuck.Rank is null)
       |return count(distinct thicket) as ThicketCount, count(distinct brook) as brookCount
       |skip 0""".stripMargin

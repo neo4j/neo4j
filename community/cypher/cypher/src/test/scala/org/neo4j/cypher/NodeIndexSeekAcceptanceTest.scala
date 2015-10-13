@@ -112,12 +112,12 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
         |       (trinity:Crew { name:'Trinity' }),
         |       (morpheus:Crew { name:'Morpheus' }),
         |       (neo:Crew { name:'Neo' }),
-        |       smith-[:CODED_BY]->architect,
-        |       cypher-[:KNOWS]->smith,
-        |       morpheus-[:KNOWS]->trinity,
-        |       morpheus-[:KNOWS]->cypher,
-        |       neo-[:KNOWS]->morpheus,
-        |       neo-[:LOVES]->trinity""".stripMargin)
+        |       (smith)-[:CODED_BY]->(architect),
+        |       (cypher)-[:KNOWS]->(smith),
+        |       (morpheus)-[:KNOWS]->(trinity),
+        |       (morpheus)-[:KNOWS]->(cypher),
+        |       (neo)-[:KNOWS]->(morpheus),
+        |       (neo)-[:LOVES]->(trinity)""".stripMargin)
 
     for (i <- 1 to 10) createLabeledNode(Map("name" -> ("Joe" + i)), "Crew")
 

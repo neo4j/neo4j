@@ -40,9 +40,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
   // MATCH (a) WHERE (a)-->()
   val patternExp = PatternExpression(RelationshipsPattern(RelationshipChain(
-    NodePattern(Some(ident("a")), Seq(), None, naked = false)_,
+    NodePattern(Some(ident("a")), Seq(), None)_,
     RelationshipPattern(Some(ident(relName)), optional = false, types, None, None, sdir) _,
-    NodePattern(Some(ident(nodeName)), Seq(), None, naked = false)_
+    NodePattern(Some(ident(nodeName)), Seq(), None)_
   )_)_)
 
   val factory = newMockedMetricsFactory
@@ -219,9 +219,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   test("should introduce let semi apply and select or semi apply for multiple pattern predicates in or") {
     // Given
     val patternExp2 = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(ident("a")), Seq(), None, naked = false)_,
+      NodePattern(Some(ident("a")), Seq(), None)_,
       RelationshipPattern(Some(ident("  UNNAMED3")), optional = false, types, None, None, sdir) _,
-      NodePattern(Some(ident("  UNNAMED4")), Seq(), None, naked = false)_
+      NodePattern(Some(ident("  UNNAMED4")), Seq(), None)_
     )_)_)
 
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
@@ -266,9 +266,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   test("should introduce let semi apply and select or anti semi apply for multiple pattern predicates in or") {
     // Given
     val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(ident("a")), Seq(), None, naked = false)_,
+      NodePattern(Some(ident("a")), Seq(), None)_,
       RelationshipPattern(Some(ident("  UNNAMED3")), optional = false, types, None, None, sdir) _,
-      NodePattern(Some(ident("  UNNAMED4")), Seq(), None, naked = false)_
+      NodePattern(Some(ident("  UNNAMED4")), Seq(), None)_
     )_)_)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
@@ -312,9 +312,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   test("should introduce let anti semi apply and select or semi apply for multiple pattern predicates in or") {
     // Given
     val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(ident("a")), Seq(), None, naked = false)_,
+      NodePattern(Some(ident("a")), Seq(), None)_,
       RelationshipPattern(Some(ident("  UNNAMED3")), optional = false, types, None, None, sdir) _,
-      NodePattern(Some(ident("  UNNAMED4")), Seq(), None, naked = false)_
+      NodePattern(Some(ident("  UNNAMED4")), Seq(), None)_
     )_)_)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
@@ -363,9 +363,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )_
 
     val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(ident("a")), Seq(), None, naked = false)_,
+      NodePattern(Some(ident("a")), Seq(), None)_,
       RelationshipPattern(Some(ident("  UNNAMED3")), optional = false, types, None, None, sdir) _,
-      NodePattern(Some(ident("  UNNAMED4")), Seq(), None, naked = false)_
+      NodePattern(Some(ident("  UNNAMED4")), Seq(), None)_
     )_)_)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
@@ -414,9 +414,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )_
 
     val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(ident("a")), Seq(), None, naked = false)_,
+      NodePattern(Some(ident("a")), Seq(), None)_,
       RelationshipPattern(Some(ident("  UNNAMED3")), optional = false, types, None, None, sdir) _,
-      NodePattern(Some(ident("  UNNAMED4")), Seq(), None, naked = false)_
+      NodePattern(Some(ident("  UNNAMED4")), Seq(), None)_
     )_)_)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 

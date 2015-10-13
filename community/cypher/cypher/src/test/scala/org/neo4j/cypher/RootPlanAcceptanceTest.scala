@@ -24,13 +24,13 @@ import org.neo4j.cypher.internal.compiler.v3_0._
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("cost should be default planner in 3.0") {
-    given("match n return n")
+    given("match (n) return n")
       .withCypherVersion(CypherVersion.v3_0)
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
 
   test("interpreted should be default runtime in 3.0") {
-    given("match n return n")
+    given("match (n) return n")
       .withCypherVersion(CypherVersion.v3_0)
       .shouldHaveRuntime(InterpretedRuntimeName)
   }
@@ -90,7 +90,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("query that does not go through the compiled runtime") {
-    given("MATCH n RETURN n, count(*)")
+    given("MATCH (n) RETURN n, count(*)")
       .withCypherVersion(CypherVersion.v3_0)
       .shouldHaveCypherVersion(CypherVersion.v3_0)
       .shouldHaveRuntime(InterpretedRuntimeName)
@@ -105,7 +105,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("query that should go through the compiled runtime") {
-    given("MATCH a-->b RETURN a")
+    given("MATCH (a)-->(b) RETURN a")
       .withCypherVersion(CypherVersion.v3_0)
       .withRuntime(CompiledRuntimeName)
       .shouldHaveCypherVersion(CypherVersion.v3_0)
@@ -114,7 +114,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("AllNodesScan should be the only child of the plan") {
-    val description = given("match n return n").planDescription
+    val description = given("match (n) return n").planDescription
     var children = description.getChildren
     children should have size 1
     while (children.get(0).getChildren.size() > 0) {
@@ -126,7 +126,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("DbHits should contain proper values in compiled runtime") {
-    val description = given("match n return n")
+    val description = given("match (n) return n")
       .withRuntime(CompiledRuntimeName)
       .planDescription
     val children = description.getChildren
@@ -136,13 +136,13 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("Rows should be properly formatted in compiled runtime") {
-    given("match n return n")
+    given("match (n) return n")
       .withRuntime(CompiledRuntimeName)
       .planDescription.getArguments.get("Rows") should equal(0)
   }
 
   test("DbHits should contain proper values in interpreted runtime") {
-    val description = given("match n return n")
+    val description = given("match (n) return n")
       .withRuntime(InterpretedRuntimeName)
       .planDescription
     val children = description.getChildren
@@ -152,13 +152,13 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("Rows should be properly formatted in interpreted runtime") {
-    given("match n return n")
+    given("match (n) return n")
       .withRuntime(InterpretedRuntimeName)
       .planDescription.getArguments.get("Rows") should equal(0)
   }
 
   test("EstimatedRows should be properly formatted") {
-    given("match n return n").planDescription.getArguments.get("EstimatedRows") should equal(0)
+    given("match (n) return n").planDescription.getArguments.get("EstimatedRows") should equal(0)
   }
 
   for(planner <- Seq(GreedyPlannerName, IDPPlannerName, DPPlannerName, RulePlannerName);
@@ -166,7 +166,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       if !(planner == RulePlannerName && runtime == CompiledRuntimeName)) {
 
     test(s"Should report correct planner and runtime used $planner + $runtime") {
-      given("match n return n")
+      given("match (n) return n")
         .withPlanner(planner)
         .withRuntime(runtime)
         .shouldHaveCypherVersion(CypherVersion.v3_0)

@@ -29,7 +29,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     relate(a, b)
 
     val result = executeWithAllPlannersAndRuntimes(
-      "MATCH a WITH a MATCH a-->b RETURN *"
+      "MATCH (a) WITH a MATCH (a)-->(b) RETURN *"
     )
     result.toList should equal(List(Map("a" -> a, "b" -> b)))
   }
@@ -42,7 +42,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     relate(a,createNode())
 
     val result = executeWithAllPlanners(
-      "MATCH a WITH a ORDER BY a.name LIMIT 1 MATCH a-->b RETURN a"
+      "MATCH (a) WITH a ORDER BY a.name LIMIT 1 MATCH (a)-->(b) RETURN a"
     )
     result.toList should equal(List(Map("a" -> a)))
   }
@@ -52,7 +52,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     val b = createNode()
 
     val result = executeWithAllPlannersAndRuntimes(
-      "MATCH a WITH a MATCH b RETURN *"
+      "MATCH (a) WITH a MATCH (b) RETURN *"
     )
     result.toSet should equal(Set(
       Map("a" -> a, "b" -> b),
@@ -179,7 +179,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
   }
 
   test("nulls passing through WITH") {
-    executeWithAllPlanners("optional match (a:Start) with a match a-->b return *") should be (empty)
+    executeWithAllPlanners("optional match (a:Start) with a match (a)-->(b) return *") should be (empty)
   }
 
   test("WITH {foo: {bar: 'baz'}} AS nestedMap RETURN nestedMap.foo.bar") {

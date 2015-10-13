@@ -122,11 +122,6 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result.notifications should contain(IndexHintUnfulfillableNotification("Animal", "species"))
   }
 
-  test("warn for bare node pattern") {
-    val result = innerExecute("EXPLAIN MATCH n-->(m) RETURN n, m")
-    result.notifications.toSet should equal(Set(BareNodeSyntaxDeprecatedNotification(InputPosition(6, 1, 7))))
-  }
-
   test("should warn when join hint is used with RULE planner with EXPLAIN") {
     val result = innerExecute( """CYPHER planner=rule EXPLAIN MATCH (a)-->(b) USING JOIN ON b RETURN a, b""")
 

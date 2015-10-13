@@ -93,7 +93,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
 
     // when
     val q = """
-match p=a-->b-->c
+match p=(a)-->(b)-->(c)
 where id(a) = 0 and id(c) = 2
 with p
 foreach(n in nodes(p) |

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.{CompilationPhaseTracer, CypherCo
 import org.neo4j.cypher.internal.frontend.v2_3.notification.{InternalNotification => InternalNotification2_3}
 import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition => InputPosition2_3}
 import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_0.notification.{UnboundedShortestPathNotification, IndexLookupUnfulfillableNotification, BareNodeSyntaxDeprecatedNotification, CartesianProductNotification, EagerLoadCsvNotification, IndexHintUnfulfillableNotification, InternalNotification, JoinHintUnfulfillableNotification, JoinHintUnsupportedNotification, LargeLabelWithLoadCsvNotification, LegacyPlannerNotification, LengthOnNonPathNotification, MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification}
+import org.neo4j.cypher.internal.frontend.v3_0.notification.{UnboundedShortestPathNotification, IndexLookupUnfulfillableNotification, CartesianProductNotification, EagerLoadCsvNotification, IndexHintUnfulfillableNotification, InternalNotification, JoinHintUnfulfillableNotification, JoinHintUnsupportedNotification, LargeLabelWithLoadCsvNotification, LegacyPlannerNotification, LengthOnNonPathNotification, MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification}
 import org.neo4j.cypher.internal.frontend.{v2_3 => frontend2_3}
 
 /**
@@ -98,8 +98,6 @@ object wrappersFor2_3 {
       frontend2_3.notification.JoinHintUnsupportedNotification(identifiers)
     case IndexLookupUnfulfillableNotification(labels) =>
       frontend2_3.notification.IndexLookupUnfulfillableNotification(labels)
-    case BareNodeSyntaxDeprecatedNotification(pos) =>
-      frontend2_3.notification.BareNodeSyntaxDeprecatedNotification(as2_3(pos))
     case EagerLoadCsvNotification =>
       frontend2_3.notification.EagerLoadCsvNotification
     case LargeLabelWithLoadCsvNotification =>
@@ -133,8 +131,6 @@ object wrappersFor2_3 {
       JoinHintUnsupportedNotification(identifiers)
     case frontend2_3.notification.IndexLookupUnfulfillableNotification(labels) =>
       IndexLookupUnfulfillableNotification(labels)
-    case frontend2_3.notification.BareNodeSyntaxDeprecatedNotification(pos) =>
-      BareNodeSyntaxDeprecatedNotification(as3_0(pos))
     case frontend2_3.notification.EagerLoadCsvNotification =>
       EagerLoadCsvNotification
     case  frontend2_3.notification.LargeLabelWithLoadCsvNotification =>

@@ -34,15 +34,14 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("define node and treat it as a relationship") {
     executeAndEnsureError(
-      "match (r) where id(r) = 0 match a-[r]->b return r",
-      "Type mismatch: r already defined with conflicting type Node (expected Relationship) (line 1, column 36 (offset: 35))"
+      "match (r) where id(r) = 0 match (a)-[r]-(b) return r",
+      "Type mismatch: r already defined with conflicting type Node (expected Relationship) (line 1, column 38 (offset: 37))"
     )
   }
 
   test("redefine symbol in match") {
     executeAndEnsureError(
-      "match a-[r]->b-->r where id(a) = 0 return r",
-      "Type mismatch: r already defined with conflicting type Relationship (expected Node) (line 1, column 18 (offset: 17))"
+      "match (a)-[r]-(r) return r", "Type mismatch: r already defined with conflicting type Relationship (expected Node) (line 1, column 16 (offset: 15))"
     )
   }
 
@@ -62,8 +61,8 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("cant re-use relationship identifier") {
     executeAndEnsureError(
-      "match a-[r]->b-[r]->a where id(a) = 0 return r",
-      "Cannot use the same relationship identifier 'r' for multiple patterns (line 1, column 17 (offset: 16))"
+      "match (a)-[r]->(b)-[r]->(a) where id(a) = 0 return r",
+      "Cannot use the same relationship identifier 'r' for multiple patterns (line 1, column 21 (offset: 20))"
     )
   }
 
@@ -238,34 +237,34 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should fail when trying to create shortest paths") {
     executeAndEnsureError(
-      "match a, b create shortestPath((a)-[:T]->(b))",
-      "shortestPath(...) cannot be used to CREATE (line 1, column 19 (offset: 18))"
+      "match (a), (b) create shortestPath((a)-[:T]->(b))",
+      "shortestPath(...) cannot be used to CREATE (line 1, column 23 (offset: 22))"
     )
     executeAndEnsureError(
-      "match a, b create allShortestPaths((a)-[:T]->(b))",
-      "allShortestPaths(...) cannot be used to CREATE (line 1, column 19 (offset: 18))"
+      "match (a), (b) create allShortestPaths((a)-[:T]->(b))",
+      "allShortestPaths(...) cannot be used to CREATE (line 1, column 23 (offset: 22))"
     )
   }
 
   test("should fail when trying to merge shortest paths") {
     executeAndEnsureError(
-      "match a, b MERGE shortestPath((a)-[:T]->(b))",
-      "shortestPath(...) cannot be used to MERGE (line 1, column 18 (offset: 17))"
+      "match (a), (b) MERGE shortestPath((a)-[:T]->(b))",
+      "shortestPath(...) cannot be used to MERGE (line 1, column 22 (offset: 21))"
     )
     executeAndEnsureError(
-      "match a, b MERGE allShortestPaths((a)-[:T]->(b))",
-      "allShortestPaths(...) cannot be used to MERGE (line 1, column 18 (offset: 17))"
+      "match (a), (b) MERGE allShortestPaths((a)-[:T]->(b))",
+      "allShortestPaths(...) cannot be used to MERGE (line 1, column 22 (offset: 21))"
     )
   }
 
   test("should fail when trying to uniquely create shortest paths") {
     executeAndEnsureError(
-      "match a, b create unique shortestPath((a)-[:T]->(b))",
-      "shortestPath(...) cannot be used to CREATE (line 1, column 26 (offset: 25))"
+      "match (a), (b) create unique shortestPath((a)-[:T]->(b))",
+      "shortestPath(...) cannot be used to CREATE (line 1, column 30 (offset: 29))"
     )
     executeAndEnsureError(
-      "match a, b create unique allShortestPaths((a)-[:T]->(b))",
-      "allShortestPaths(...) cannot be used to CREATE (line 1, column 26 (offset: 25))"
+      "match (a), (b) create unique allShortestPaths((a)-[:T]->(b))",
+      "allShortestPaths(...) cannot be used to CREATE (line 1, column 30 (offset: 29))"
     )
   }
 
@@ -338,11 +337,11 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("should fail if no parens around node") {
     executeAndEnsureError(
       "match n:Person return n",
-      "Parentheses are required to identify nodes in patterns (line 1, column 7 (offset: 6))"
+      "Parentheses are required to identify nodes in patterns, i.e. (n) (line 1, column 7 (offset: 6))"
     )
     executeAndEnsureError(
       "match n {foo: 'bar'} return n",
-      "Parentheses are required to identify nodes in patterns (line 1, column 7 (offset: 6))"
+      "Parentheses are required to identify nodes in patterns, i.e. (n) (line 1, column 7 (offset: 6))"
     )
   }
 
@@ -430,7 +429,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     createNode("prop"->42)
 
     executeAndEnsureError(
-      "MATCH n WITH n.prop AS n2 RETURN n2.prop",
+      "MATCH (n) WITH n.prop AS n2 RETURN n2.prop",
       "Type mismatch: expected a map but was 42"
     )
   }
@@ -477,74 +476,73 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
     val mess = "Can't use aggregating expressions inside of expressions executing over collections"
     executeAndEnsureError(
-      "MATCH n RETURN [x in [1,2,3,4,5] | count(*)]",
-      s"$mess (line 1, column 22 (offset: 21))")
+      "MATCH (n) RETURN [x in [1,2,3,4,5] | count(*)]",
+      s"$mess (line 1, column 24 (offset: 23))")
 
     executeAndEnsureError(
-      "MATCH n RETURN ALL(x in [1,2,3,4,5] WHERE count(*) = 0)",
-      s"$mess (line 1, column 25 (offset: 24))")
+      "MATCH (n) RETURN ALL(x in [1,2,3,4,5] WHERE count(*) = 0)",
+      s"$mess (line 1, column 27 (offset: 26))")
 
     executeAndEnsureError(
-      "MATCH n RETURN ANY(x in [1,2,3,4,5] WHERE count(*) = 0)",
-      s"$mess (line 1, column 25 (offset: 24))")
+      "MATCH (n) RETURN ANY(x in [1,2,3,4,5] WHERE count(*) = 0)",
+      s"$mess (line 1, column 27 (offset: 26))")
 
     executeAndEnsureError(
-      "MATCH n RETURN NONE(x in [1,2,3,4,5] WHERE count(*) = 0)",
-      s"$mess (line 1, column 26 (offset: 25))")
-
-    executeAndEnsureError(
-      "MATCH n RETURN SINGLE(x in [1,2,3,4,5] WHERE count(*) = 0)",
+      "MATCH (n) RETURN NONE(x in [1,2,3,4,5] WHERE count(*) = 0)",
       s"$mess (line 1, column 28 (offset: 27))")
 
     executeAndEnsureError(
-      "MATCH n RETURN EXTRACT(x in [1,2,3,4,5] | count(*) = 0)",
-      s"$mess (line 1, column 29 (offset: 28))")
+      "MATCH (n) RETURN SINGLE(x in [1,2,3,4,5] WHERE count(*) = 0)",
+      s"$mess (line 1, column 30 (offset: 29))")
 
     executeAndEnsureError(
-      "MATCH n RETURN FILTER(x in [1,2,3,4,5] WHERE count(*) = 0)",
-      s"$mess (line 1, column 28 (offset: 27))")
+      "MATCH (n) RETURN EXTRACT(x in [1,2,3,4,5] | count(*) = 0)",
+      s"$mess (line 1, column 31 (offset: 30))")
 
     executeAndEnsureError(
-      "MATCH n RETURN REDUCE(acc = 0, x in [1,2,3,4,5] | acc + count(*))",
-      s"$mess (line 1, column 55 (offset: 54))")
+      "MATCH (n) RETURN FILTER(x in [1,2,3,4,5] WHERE count(*) = 0)",
+      s"$mess (line 1, column 30 (offset: 29))")
+
+    executeAndEnsureError(
+      "MATCH (n) RETURN REDUCE(acc = 0, x in [1,2,3,4,5] | acc + count(*))",
+      s"$mess (line 1, column 57 (offset: 56))")
   }
 
   test("error message should contain full query") {
-    val query = "EXPLAIN MATCH m, n RETURN m, n, o LIMIT 25"
+    val query = "EXPLAIN MATCH (m), (n) RETURN m, n, o LIMIT 25"
     val error = intercept[QueryExecutionException](graph.execute(query))
 
     val first :: second :: third :: Nil = error.getMessage.lines.toList
-    first should equal("o not defined (line 1, column 33 (offset: 32))")
+    first should equal("o not defined (line 1, column 37 (offset: 36))")
     second should equal(s""""$query"""")
-    third should startWith(" "*33 + "^")
+    third should startWith(" "*37 + "^")
   }
 
   test("positions should not be cached") {
-    executeAndEnsureError("EXPLAIN MATCH m, n RETURN m, n, o LIMIT 25",
-      "o not defined (line 1, column 33 (offset: 32))")
-    executeAndEnsureError("MATCH m, n RETURN m, n, o LIMIT 25",
-      "o not defined (line 1, column 25 (offset: 24))")
-
+    executeAndEnsureError("EXPLAIN MATCH (m), (n) RETURN m, n, o LIMIT 25",
+      "o not defined (line 1, column 37 (offset: 36))")
+    executeAndEnsureError("MATCH (m), (n) RETURN m, n, o LIMIT 25",
+      "o not defined (line 1, column 29 (offset: 28))")
   }
 
   test("not allowed to refer to identifiers in SKIP")(
-    executeAndEnsureError("MATCH n RETURN n SKIP n.count",
-                          "It is not allowed to refer to identifiers in SKIP (line 1, column 23 (offset: 22))")
+    executeAndEnsureError("MATCH (n) RETURN n SKIP n.count",
+                          "It is not allowed to refer to identifiers in SKIP (line 1, column 25 (offset: 24))")
   )
 
   test("only allowed to use positive integer literals in SKIP") (
-    executeAndEnsureError("MATCH n RETURN n SKIP -1",
-                          "Invalid input '-1' is not a valid value, must be a positive integer (line 1, column 23 (offset: 22))")
+    executeAndEnsureError("MATCH (n) RETURN n SKIP -1",
+                          "Invalid input '-1' is not a valid value, must be a positive integer (line 1, column 25 (offset: 24))")
   )
 
   test("not allowed to refer to identifiers in LIMIT")(
-    executeAndEnsureError("MATCH n RETURN n LIMIT n.count",
-                          "It is not allowed to refer to identifiers in LIMIT (line 1, column 24 (offset: 23))")
+    executeAndEnsureError("MATCH (n) RETURN n LIMIT n.count",
+                          "It is not allowed to refer to identifiers in LIMIT (line 1, column 26 (offset: 25))")
   )
 
   test("only allowed to use positive integer literals in LIMIT") (
-    executeAndEnsureError("MATCH n RETURN n LIMIT 1.7",
-                          "Invalid input '1.7' is not a valid value, must be a positive integer (line 1, column 24 (offset: 23))")
+    executeAndEnsureError("MATCH (n) RETURN n LIMIT 1.7",
+                          "Invalid input '1.7' is not a valid value, must be a positive integer (line 1, column 26 (offset: 25))")
   )
 
   def executeAndEnsureError(query: String, expected: String) {

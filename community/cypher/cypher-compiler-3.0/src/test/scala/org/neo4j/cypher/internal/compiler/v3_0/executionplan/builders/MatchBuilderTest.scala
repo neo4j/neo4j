@@ -114,7 +114,7 @@ class MatchBuilderTest extends BuilderTest {
   }
 
   test("should_pass_on_the_whole_list_of_identifier_in_match_to_created_pipe") {
-    // GIVEN MATCH a-[r1]->b-[r2]->c
+    // GIVEN MATCH (a)-[r1]->b-[r2]-(c)
     // a-[r1]->b is already solved
     val inQ = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("a", 0)), Solved(NodeById("b", 0))),

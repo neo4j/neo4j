@@ -26,7 +26,7 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
   test("Scan all nodes") {
     val nodes = Set(createNode("a"), createNode("b"), createNode("c"))
 
-    executeWithAllPlannersAndRuntimes("match n return n").columnAs[Node]("n").toSet should equal(nodes)
+    executeWithAllPlannersAndRuntimes("match (n) return n").columnAs[Node]("n").toSet should equal(nodes)
   }
 
   test("Scan labeled node") {
@@ -41,14 +41,14 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     createNode("a")
     val node = createNode("b")
 
-    executeScalarWithAllPlanners[Node](s"match n where ${node.getId} = id(n) return n") should equal(node)
+    executeScalarWithAllPlanners[Node](s"match (n) where ${node.getId} = id(n) return n") should equal(node)
   }
 
   test("Seek node by id given on the right") {
     createNode("a")
     val node = createNode("b")
 
-    executeScalarWithAllPlanners[Node](s"match n where id(n) = ${node.getId} return n") should equal(node)
+    executeScalarWithAllPlanners[Node](s"match (n) where id(n) = ${node.getId} return n") should equal(node)
   }
 
   test("Seek node by id with multiple values") {
@@ -56,7 +56,7 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     val n1= createNode("b")
     val n2 = createNode("c")
 
-    val result = executeWithAllPlanners(s"match n where id(n) IN [${n1.getId}, ${n2.getId}] return n")
+    val result = executeWithAllPlanners(s"match (n) where id(n) IN [${n1.getId}, ${n2.getId}] return n")
     result.columnAs("n").toList should equal(Seq(n1, n2))
   }
 
@@ -64,20 +64,20 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     createLabeledNode("Person")
     val node = createLabeledNode("Person")
 
-    executeScalarWithAllPlanners[Node](s"match n where n:Person and ${node.getId} = id(n) return n") should equal(node)
+    executeScalarWithAllPlanners[Node](s"match (n) where n:Person and ${node.getId} = id(n) return n") should equal(node)
   }
 
   test("Can use both label scan (right) and node by id (left) when there are no indices") {
     createLabeledNode("Person")
     val node = createLabeledNode("Person")
 
-    executeScalarWithAllPlanners[Node](s"match n where ${node.getId} = id(n) and n:Person return n") should equal(node)
+    executeScalarWithAllPlanners[Node](s"match (n) where ${node.getId} = id(n) and n:Person return n") should equal(node)
   }
 
   test("Can find nodes by id and apply a predicate on it") {
     createNode("prop"->1)
     val n = createNode("prop"->2)
-    executeScalarWithAllPlanners[Node](s"match n where n.prop = 2 return n") should equal(n)
+    executeScalarWithAllPlanners[Node](s"match (n) where n.prop = 2 return n") should equal(n)
   }
 
   test("Seek relationship by id given on the left") {

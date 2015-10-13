@@ -30,6 +30,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongCollections
 import org.neo4j.cypher._
+import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Identifier, Literal}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{GreaterThan, True}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
@@ -38,7 +39,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription.Argument
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CTInteger
 import org.neo4j.cypher.internal.spi.v3_0.MonoDirectionalTraversalMatcher
-import org.neo4j.cypher.internal.{ExecutionPlan, CypherCompiler => Compiler}
 import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -118,7 +118,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     val engine = new ExecutionEngine(graph)
 
     //When:
-    val iter: ExecutionResult = engine.execute("match n-->x where n = {foo} return x", Map("foo" -> monitoredNode))
+    val iter: ExecutionResult = engine.execute("match (n)-->(x) where n = {foo} return x", Map("foo" -> monitoredNode))
 
     //Then:
     assert(limiter.count === 0)
@@ -143,7 +143,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     val engine = new ExecutionEngine(graph)
 
     //When:
-    val iter = engine.execute("match n where n IN {foo} return distinct n.name", Map("foo" -> Seq(a, b, c)))
+    val iter = engine.execute("match (n) where n IN {foo} return distinct n.name", Map("foo" -> Seq(a, b, c)))
 
     //Then, no Runtime exception is thrown
     iter.next()
@@ -163,7 +163,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     val engine = new ExecutionEngine(graph)
 
     //When:
-    val iter = engine.execute("match n where n = {a} return n.name UNION ALL match n where n IN {b} return n.name", Map("a" -> a, "b" -> Seq(b, c)))
+    val iter = engine.execute("match (n) where n = {a} return n.name UNION ALL match (n) where n IN {b} return n.name", Map("a" -> a, "b" -> Seq(b, c)))
 
     //Then, no Runtime exception is thrown
     iter.next()
@@ -178,7 +178,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     val engine = new ExecutionEngine(graph)
 
     //When:
-    val iter: ExecutionResult = engine.execute("start n=node({foo}) match n-->x create n-[:FOO]->x", Map("foo" -> monitoredNode))
+    val iter: ExecutionResult = engine.execute("start n=node({foo}) match (n)-->(x) create n-[:FOO]->x", Map("foo" -> monitoredNode))
 
     //Then:
     assert(touched, "Query should have been executed")
@@ -227,7 +227,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     //When:
     graph.inTx {
       counter.source = GlobalGraphOperations.at(graph).getAllNodes.iterator()
-      engine.execute("match n return n limit 5", Map.empty[String,Any]).toList
+      engine.execute("match (n) return n limit 5", Map.empty[String,Any]).toList
     }
 
     //Then:

@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.Lo
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{CachedMetricsFactory, DefaultQueryPlanner, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{LabelName, NodePattern, Statement}
-import org.neo4j.cypher.internal.frontend.v3_0.notification.{BareNodeSyntaxDeprecatedNotification, InternalNotification}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, SemanticTable, inSequence}
 import org.neo4j.graphdb.GraphDatabaseService
@@ -197,11 +197,8 @@ case class CypherCompiler(parser: CypherParser,
   }
 
   private def syntaxDeprecationNotifications(statement: Statement) =
-    statement.treeFold(Seq.empty[InternalNotification]) {
-      case pat: NodePattern if pat.naked =>
-        (acc, children) =>
-          children(acc :+ BareNodeSyntaxDeprecatedNotification(pat.position))
-    }
+  // We don't have any deprecations in 3.0 yet
+    Seq.empty[InternalNotification]
 
   private def provideCache(cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
                            monitor: CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]],

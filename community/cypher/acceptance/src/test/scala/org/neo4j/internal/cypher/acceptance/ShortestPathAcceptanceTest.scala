@@ -244,14 +244,13 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result should be(empty)
   }
 
-  // todo: broken for rule planner
   test("finds no shortest path due to start node being null") {
     // a-b-c-d
     relate(nodeA, nodeB)
     relate(nodeB, nodeC)
     relate(nodeC, nodeD)
 
-    val result = executeWithAllPlanners("OPTIONAL MATCH (src:Y) WITH src MATCH p = shortestPath(src-[*..1]->dst) RETURN nodes(p) AS nodes").columnAs[List[Node]]("nodes").toList
+    val result = executeWithAllPlanners("OPTIONAL MATCH (src:Y) WITH src MATCH p = shortestPath((src)-[*..1]->(dst)) RETURN nodes(p) AS nodes").columnAs[List[Node]]("nodes").toList
 
     result should equal(List())
   }

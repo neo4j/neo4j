@@ -30,14 +30,14 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
 
   val tests = Seq(
-    "match n return n as n" ->
-    "match n return n as n"
+    "match (n) return n as n" ->
+    "match (n) return n as n"
     ,
-    "match n, x with n as n match x return n as n, x as x" ->
-    "match n, `  x@9` with n as n match `  x@29` return n as n, `  x@29` as x"
+    "match (n), (x) with n as n match (x) return n as n, x as x" ->
+    "match (n), (`  x@12`) with n as n match (`  x@34`) return n as n, `  x@34` as x"
     ,
-    "match n, x where [x in n.prop where x = 2] return x as x" ->
-    "match n, `  x@9` where [`  x@18` in n.prop where `  x@18` = 2] return `  x@9` as x"
+    "match (n), (x) where [x in n.prop where x = 2] return x as x" ->
+    "match (n), (`  x@12`) where [`  x@22` in n.prop where `  x@22` = 2] return `  x@12` as x"
     ,
     "MATCH (a) WITH a.bar as bars WHERE 1 = 2 RETURN *" ->
     "MATCH (a) WITH a.bar as bars WHERE 1 = 2 RETURN *"
@@ -45,8 +45,8 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
     "match (n) where id(n) = 0 WITH collect(n) as coll where length(coll)={id} RETURN coll" ->
     "match (n) where id(n) = 0 WITH collect(n) as coll where length(coll)={id} RETURN coll"
     ,
-    "match me-[r1]->you with 1 AS x match me-[r1]->food<-[r2]-you return r1.times as `r1.times`" ->
-    "match `  me@6`-[`  r1@10`]->`  you@15` with 1 AS x match `  me@37`-[`  r1@41`]->food<-[r2]-`  you@57` return `  r1@41`.times as `r1.times`"
+    "match (me)-[r1]->(you) with 1 AS x match (me)-[r1]->(food)<-[r2]-(you) return r1.times as `r1.times`" ->
+    "match (`  me@7`)-[`  r1@12`]->(`  you@18`) with 1 AS x match (`  me@42`)-[`  r1@47`]->(food)<-[r2]-(`  you@66`) return `  r1@47`.times as `r1.times`"
     ,
     "MATCH (a:A)-[r1:T1]->(b:B)-[r2:T1]->(c:C) RETURN *" ->
     "MATCH (a:A)-[r1:T1]->(b:B)-[r2:T1]->(c:C) RETURN *"
@@ -54,13 +54,13 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
     "match (a:Party) return a as a union match (a:Animal) return a as a" ->
     "match (`  a@7`:Party) return `  a@7` as a union match (`  a@43`:Animal) return `  a@43` as a"
     ,
-    "match p=(a:Start)-->b return *" ->
-    "match p=(a:Start)-->b return *"
+    "match p=(a:Start)-->(b) return *" ->
+    "match p=(a:Start)-->(b) return *"
     ,
-    "match n return n, count(*) as c order by c" ->
-    """match `  n@6`
-      |with `  n@6` as `  FRESHID15`, count(*) as `  FRESHID18` ORDER BY `  FRESHID18`
-      |return `  FRESHID15` as n, `  FRESHID18` as c""".stripMargin
+    "match (n) return n, count(*) as c order by c" ->
+    """match (`  n@7`)
+      |with `  n@7` as `  FRESHID17`, count(*) as `  FRESHID20` ORDER BY `  FRESHID20`
+      |return `  FRESHID17` as n, `  FRESHID20` as c""".stripMargin
     ,
     "START root=node:Person(id='deevian') RETURN id(root) as id UNION START root=node:Person(id='retophy') RETURN id(root) as id" ->
     "START `  root@6`=node:Person(id='deevian') RETURN id(`  root@6`) as id UNION START `  root@71`=node:Person(id='retophy') RETURN id(`  root@71`) as id"

@@ -42,7 +42,8 @@ class LabelsAcceptanceTest extends ExecutionEngineFunSuite
   test("Creating_nodes_with_literal_labels") {
     assertDoesNotWork("CREATE node :FOO:BAR {name: 'Stefan'}")
     assertDoesNotWork("CREATE node :FOO:BAR")
-    assertThat("CREATE node", List())
+    assertDoesNotWork("CREATE node")
+    assertThat("CREATE (node)", List())
     assertThat("CREATE (node :FOO:BAR)", List("FOO", "BAR"))
     assertThat("CREATE (node:FOO:BAR {name: 'Mattias'})", List("FOO", "BAR"))
     assertThat("CREATE (n:Person)-[:OWNS]->(x:Dog) RETURN n AS node", List("Person"))
@@ -57,7 +58,7 @@ class LabelsAcceptanceTest extends ExecutionEngineFunSuite
   }
 
   test("Add_labels_to_nodes_in_a_foreach") {
-    assertThat("CREATE a,b,c WITH [a,b,c] as nodes FOREACH(n in nodes | SET n :FOO:BAR)", List("FOO", "BAR"))
+    assertThat("CREATE (a),(b),(c) WITH [a,b,c] as nodes FOREACH(n in nodes | SET n :FOO:BAR)", List("FOO", "BAR"))
   }
 
   test("Using_labels_in_RETURN_clauses") {

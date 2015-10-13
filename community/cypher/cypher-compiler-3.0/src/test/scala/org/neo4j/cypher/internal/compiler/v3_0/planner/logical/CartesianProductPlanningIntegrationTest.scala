@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 class CartesianProductPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should build plans for simple cartesian product") {
-    planFor("MATCH n, m RETURN n, m").plan should equal(
+    planFor("MATCH (n), (m) RETURN n, m").plan should equal(
       CartesianProduct(
         AllNodesScan(IdName("n"), Set.empty)(solved),
         AllNodesScan(IdName("m"), Set.empty)(solved)
@@ -45,7 +45,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
       cardinality = mapCardinality {
         case PlannerQuery(queryGraph, _,  _, _) if queryGraph.selections.predicates.size == 1 => 10
       }
-    } planFor "MATCH n, m WHERE n.prop = 12 AND m:Label RETURN n, m").plan should beLike {
+    } planFor "MATCH (n), (m) WHERE n.prop = 12 AND m:Label RETURN n, m").plan should beLike {
       case CartesianProduct(_: Selection, _: NodeByLabelScan) => ()
     }
   }
@@ -57,7 +57,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
         "B" -> 20.0,
         "C" -> 10.0
       )
-    } planFor "MATCH a, b, c WHERE a:A AND b:B AND c:C RETURN a, b, c"
+    } planFor "MATCH (a), (b), (c) WHERE a:A AND b:B AND c:C RETURN a, b, c"
 
     plan.plan should equal(
       CartesianProduct(
@@ -76,7 +76,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
         "A" -> 30.0,
         "B" -> 20.0
       )
-    } planFor "MATCH a, b WHERE a:A AND b:B RETURN a, b"
+    } planFor "MATCH (a), (b) WHERE a:A AND b:B RETURN a, b"
 
     // A x B = 30 * 2 + 30 * (20 * 2) => 1260
     // B x A = 20 * 2 + 20 * (30 * 2) => 1240

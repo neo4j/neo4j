@@ -28,16 +28,16 @@ class ComparisonOperatorAcceptanceTest extends ExecutionEngineFunSuite with NewP
     val two = createNode(Map("value" -> 2))
     val three = createNode(Map("value" -> 3))
 
-    executeWithAllPlanners("MATCH n WHERE 1 < n.value < 3 RETURN n").toSet should equal(
+    executeWithAllPlanners("MATCH (n) WHERE 1 < n.value < 3 RETURN n").toSet should equal(
       Set(Map("n" -> two)))
 
-    executeWithAllPlanners("MATCH n WHERE 1 < n.value <= 3 RETURN n").toSet should equal(
+    executeWithAllPlanners("MATCH (n) WHERE 1 < n.value <= 3 RETURN n").toSet should equal(
       Set(Map("n" -> two), Map("n" -> three)))
 
-    executeWithAllPlanners("MATCH n WHERE 1 <= n.value < 3 RETURN n").toSet should equal(
+    executeWithAllPlanners("MATCH (n) WHERE 1 <= n.value < 3 RETURN n").toSet should equal(
       Set(Map("n" -> one), Map("n" -> two)))
 
-    executeWithAllPlanners("MATCH n WHERE 1 <= n.value <= 3 RETURN n").toSet should equal(
+    executeWithAllPlanners("MATCH (n) WHERE 1 <= n.value <= 3 RETURN n").toSet should equal(
       Set(Map("n" -> one), Map("n" -> two), Map("n" -> three)))
   }
 
@@ -46,23 +46,23 @@ class ComparisonOperatorAcceptanceTest extends ExecutionEngineFunSuite with NewP
     val b = createNode(Map("value" -> "b"))
     val c = createNode(Map("value" -> "c"))
 
-    executeWithAllPlanners("MATCH n WHERE 'a' < n.value < 'c' RETURN n").toSet should equal(
+    executeWithAllPlanners("MATCH (n) WHERE 'a' < n.value < 'c' RETURN n").toSet should equal(
       Set(Map("n" -> b)))
 
-    executeWithAllPlanners("MATCH n WHERE 'a' < n.value <= 'c' RETURN n").toSet should equal(
+    executeWithAllPlanners("MATCH (n) WHERE 'a' < n.value <= 'c' RETURN n").toSet should equal(
       Set(Map("n" -> b), Map("n" -> c)))
 
-    executeWithAllPlanners("MATCH n WHERE 'a' <= n.value < 'c' RETURN n").toSet should equal(
+    executeWithAllPlanners("MATCH (n) WHERE 'a' <= n.value < 'c' RETURN n").toSet should equal(
       Set(Map("n" -> a), Map("n" -> b)))
 
-    executeWithAllPlanners("MATCH n WHERE 'a' <= n.value <= 'c' RETURN n").toSet should equal(
+    executeWithAllPlanners("MATCH (n) WHERE 'a' <= n.value <= 'c' RETURN n").toSet should equal(
       Set(Map("n" -> a), Map("n" -> b), Map("n" -> c)))
   }
 
   test("should handle empty ranges") {
     createNode(Map("value" -> 3))
 
-    executeWithAllPlanners("MATCH n WHERE 10 < n.value < 3 RETURN n").toSet shouldBe empty
+    executeWithAllPlanners("MATCH (n) WHERE 10 < n.value < 3 RETURN n").toSet shouldBe empty
   }
 
   test("should handle long chains of operators") {

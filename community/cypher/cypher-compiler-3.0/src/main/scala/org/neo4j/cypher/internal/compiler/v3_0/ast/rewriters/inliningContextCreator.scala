@@ -48,7 +48,7 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
           children(context.spoilIdentifier(sortItem.expression.asInstanceOf[Identifier]))
 
       // Do not inline pattern identifiers, unless they are clean aliases of previous identifiers
-      case NodePattern(Some(identifier), _, _, _) =>
+      case NodePattern(Some(identifier), _, _) =>
         (context, children) =>
           if (context.isAliasedIdentifier(identifier))
             children(context)

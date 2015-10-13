@@ -81,7 +81,7 @@ RETURN n,m###
 Use comparison operators.
 
 ###assertion=returns-three
-MATCH n
+MATCH (n)
 WHERE
 
 exists(n.property)
@@ -133,7 +133,7 @@ RETURN n,m###
 Check if something is `NULL`.
 
 ###assertion=returns-one parameters=aname
-MATCH n
+MATCH (n)
 WHERE
 
 NOT exists(n.property) OR n.property = {value}
@@ -143,7 +143,7 @@ RETURN n###
 Either property does not exist or predicate is +TRUE+.
 
 ###assertion=returns-none parameters=aname
-MATCH n
+MATCH (n)
 WHERE
 
 n.property = {value}
@@ -153,7 +153,7 @@ RETURN n###
 Non-existing property returns `NULL`, which is not equal to anything.
 
 ###assertion=returns-none parameters=aname
-MATCH n
+MATCH (n)
 WHERE
 
 n["property"] = {value}
@@ -163,7 +163,7 @@ RETURN n###
 Properties may also be accessed using a dynamically computed property name.
 
 ###assertion=returns-two
-MATCH n
+MATCH (n)
 WHERE
 
 n.property STARTS WITH "Tob" OR
@@ -175,7 +175,7 @@ RETURN n###
 String matching.
 
 ###assertion=returns-one parameters=regex
-MATCH n
+MATCH (n)
 WHERE EXISTS(n.property) AND
 
 n.property =~ "Tob.*"
@@ -185,7 +185,7 @@ RETURN n###
 String regular expression matching.
 
 ###assertion=returns-four
-MATCH n, m
+MATCH (n), (m)
 WHERE
 
 (n)-[:KNOWS]->(m)
@@ -195,7 +195,7 @@ RETURN n###
 Make sure the pattern has at least one match.
 
 ###assertion=returns-none
-MATCH n, m
+MATCH (n), (m)
 WHERE id(n) = %A% AND id(m) = %B% AND
 
 NOT (n)-[:KNOWS]->(m)
@@ -205,7 +205,7 @@ RETURN n###
 Exclude matches to `(n)-[:KNOWS]->(m)` from the result.
 
 ###assertion=returns-one parameters=names
-MATCH n
+MATCH (n)
 WHERE exists(n.property) AND
 
 n.property IN [{value1}, {value2}]

@@ -29,20 +29,20 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("rewrites * in return") {
     assertRewrite(
-      "match n return *",
-      "match n return n")
+      "match (n) return *",
+      "match (n) return n")
 
     assertRewrite(
-      "match n,c return *",
-      "match n,c return c,n")
+      "match (n),(c) return *",
+      "match (n),(c) return c,n")
 
     assertRewrite(
-      "match n-->c return *",
-      "match n-->c return c,n")
+      "match (n)-->(c) return *",
+      "match (n)-->(c) return c,n")
 
     assertRewrite(
-      "match n-[r]->c return *",
-      "match n-[r]->c return c,n,r")
+      "match (n)-[r]->(c) return *",
+      "match (n)-[r]->(c) return c,n,r")
 
     assertRewrite(
       "create (n) return *",
@@ -53,30 +53,30 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
       "match p = shortestPath((a)-[r*]->(x)) return a,p,r,x")
 
     assertRewrite(
-      "match p=(a:Start)-->b return *",
-      "match p=(a:Start)-->b return a, b, p")
+      "match p=(a:Start)-->(b) return *",
+      "match p=(a:Start)-->(b) return a, b, p")
   }
 
   test("rewrites * in with") {
     assertRewrite(
-      "match n with * return n",
-      "match n with n return n")
+      "match (n) with * return n",
+      "match (n) with n return n")
 
     assertRewrite(
-      "match n,c with * return n",
-      "match n,c with c,n return n")
+      "match (n),(c) with * return n",
+      "match (n),(c) with c,n return n")
 
     assertRewrite(
-      "match n-->c with * return n",
-      "match n-->c with c,n return n")
+      "match (n)-->(c) with * return n",
+      "match (n)-->(c) with c,n return n")
 
     assertRewrite(
-      "match n-[r]->c with * return n",
-      "match n-[r]->c with c,n,r return n")
+      "match (n)-[r]->(c) with * return n",
+      "match (n)-[r]->(c) with c,n,r return n")
 
     assertRewrite(
-      "match n-[r]->c with *, r.pi as x return n",
-      "match n-[r]->c with c, n, r, r.pi as x return n")
+      "match (n)-[r]->(c) with *, r.pi as x return n",
+      "match (n)-[r]->(c) with c, n, r, r.pi as x return n")
 
     assertRewrite(
       "create (n) with * return n",
@@ -89,8 +89,8 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("symbol shadowing should be taken into account") {
     assertRewrite(
-      "match a,x,y with a match b return *",
-      "match a,x,y with a match b return a, b")
+      "match a,x,y with a match (b) return *",
+      "match a,x,y with a match (b) return a, b")
   }
 
   test("expands _PRAGMA WITHOUT") {

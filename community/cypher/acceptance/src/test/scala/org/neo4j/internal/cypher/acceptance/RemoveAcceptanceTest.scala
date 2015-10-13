@@ -25,7 +25,7 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite {
   test("should ignore nulls") {
     val n = createNode("apa" -> 42)
 
-    val result = execute("MATCH n OPTIONAL MATCH n-[r]->() REMOVE r.apa RETURN n")
+    val result = execute("MATCH (n) OPTIONAL MATCH (n)-[r]->() REMOVE r.apa RETURN n")
     result.toList should equal(List(Map("n" -> n)))
   }
 }

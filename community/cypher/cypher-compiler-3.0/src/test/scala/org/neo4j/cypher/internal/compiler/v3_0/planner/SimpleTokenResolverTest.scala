@@ -32,7 +32,7 @@ class SimpleTokenResolverTest extends CypherFunSuite {
   val resolver = new SimpleTokenResolver
 
 
-  parseTest("match n where n.name = 'Resolved' return *") { query =>
+  parseTest("match (n) where n.name = 'Resolved' return *") { query =>
     implicit val semanticTable = SemanticTable()
     val planContext = mock[PlanContext]
     when(planContext.getOptPropertyKeyId("name")).thenReturn(Some(12))
@@ -44,7 +44,7 @@ class SimpleTokenResolverTest extends CypherFunSuite {
         SingleQuery(Seq(
           Match(
             false,
-            Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None, true)))),
+            Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None)))),
             Seq(),
             Some(Where(Equals(Property(Identifier("n"), pkToken), StringLiteral("Resolved"))))
           ),
@@ -55,7 +55,7 @@ class SimpleTokenResolverTest extends CypherFunSuite {
     }
   }
 
-  parseTest("match n where n.name = 'Unresolved' return *") { query =>
+  parseTest("match (n) where n.name = 'Unresolved' return *") { query =>
     implicit val semanticTable = SemanticTable()
     val planContext = mock[PlanContext]
     when(planContext.getOptPropertyKeyId("name")).thenReturn(None)
@@ -67,7 +67,7 @@ class SimpleTokenResolverTest extends CypherFunSuite {
         SingleQuery(Seq(
           Match(
             false,
-            Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None, true)))),
+            Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None)))),
             Seq(),
             Some(Where(Equals(Property(Identifier("n"), pkToken), StringLiteral("Unresolved"))))
           ),
@@ -78,7 +78,7 @@ class SimpleTokenResolverTest extends CypherFunSuite {
     }
   }
 
-  parseTest("match n where n:Resolved return *") { query =>
+  parseTest("match (n) where n:Resolved return *") { query =>
     implicit val semanticTable = SemanticTable()
     val planContext = mock[PlanContext]
     when(planContext.getOptLabelId("Resolved")).thenReturn(Some(12))
@@ -90,7 +90,7 @@ class SimpleTokenResolverTest extends CypherFunSuite {
       SingleQuery(Seq(
         Match(
           false,
-          Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None, true)))),
+          Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None)))),
           Seq(),
           Some(Where(HasLabels(Identifier("n"), Seq(labelToken))))
         ),
@@ -101,7 +101,7 @@ class SimpleTokenResolverTest extends CypherFunSuite {
     }
   }
 
-  parseTest("match n where n:Unresolved return *") { query =>
+  parseTest("match (n) where n:Unresolved return *") { query =>
     implicit val semanticTable = SemanticTable()
     val planContext = mock[PlanContext]
     when(planContext.getOptLabelId("Unresolved")).thenReturn(None)
@@ -113,7 +113,7 @@ class SimpleTokenResolverTest extends CypherFunSuite {
       SingleQuery(Seq(
         Match(
           false,
-          Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None, true)))),
+          Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None)))),
           Seq(),
           Some(Where(HasLabels(Identifier("n"), Seq(labelToken))))
         ),
@@ -137,9 +137,9 @@ class SimpleTokenResolverTest extends CypherFunSuite {
         Match(
           false,
           Pattern(Seq(EveryPath(RelationshipChain(
-            NodePattern(None, Seq(), None, false),
+            NodePattern(None, Seq(), None),
             RelationshipPattern(None, false, Seq(relTypeToken), None, None, SemanticDirection.OUTGOING),
-            NodePattern(None, Seq(), None, false)
+            NodePattern(None, Seq(), None)
           )))),
           Seq(),
           None
@@ -164,9 +164,9 @@ class SimpleTokenResolverTest extends CypherFunSuite {
         Match(
           false,
           Pattern(Seq(EveryPath(RelationshipChain(
-            NodePattern(None, Seq(), None, false),
+            NodePattern(None, Seq(), None),
             RelationshipPattern(None, false, Seq(relTypeToken), None, None, SemanticDirection.OUTGOING),
-            NodePattern(None, Seq(), None, false)
+            NodePattern(None, Seq(), None)
           )))),
           Seq(),
           None

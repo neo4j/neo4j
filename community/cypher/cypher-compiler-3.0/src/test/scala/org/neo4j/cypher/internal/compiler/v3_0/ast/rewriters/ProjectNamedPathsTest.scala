@@ -60,7 +60,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
       Match(optional = false,
         Pattern(List(
           EveryPath(
-            NodePattern(Some(a), List(), None, naked = false)(pos))
+            NodePattern(Some(a), List(), None)(pos))
         ))(pos), List(), None)(pos)
 
     val WITH =
@@ -89,7 +89,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
       Match(optional = false,
         Pattern(List(
           EveryPath(
-            NodePattern(Some(a), List(), None, naked = false)(pos))
+            NodePattern(Some(a), List(), None)(pos))
         ))(pos), List(), None)(pos)
 
     val WITH =
@@ -121,7 +121,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
       Match(optional = false,
         Pattern(List(
           EveryPath(
-            NodePattern(Some(a), List(), None, naked = false)(pos))
+            NodePattern(Some(a), List(), None)(pos))
         ))(pos), List(), None)(pos)
 
     val WITH1 =
@@ -134,7 +134,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
       Match(optional = false,
         Pattern(List(
           EveryPath(
-            NodePattern(Some(b), List(), None, naked = false)(pos))
+            NodePattern(Some(b), List(), None)(pos))
         ))(pos), List(), None)(pos)
 
     val WITH2 =
@@ -212,8 +212,8 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         Pattern(List(
           EveryPath(
             RelationshipChain(
-              NodePattern(Some(aId), List(), None, naked = false)(pos),
-              RelationshipPattern(Some(rId), optional = false, List(), None, None, SemanticDirection.OUTGOING)(pos), NodePattern(Some(bId), List(), None, naked = false)(pos)
+              NodePattern(Some(aId), List(), None)(pos),
+              RelationshipPattern(Some(rId), optional = false, List(), None, None, SemanticDirection.OUTGOING)(pos), NodePattern(Some(bId), List(), None)(pos)
             )(pos))
         ))(pos), List(), None)(pos)
 
@@ -262,8 +262,8 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         Pattern(List(
           EveryPath(
             RelationshipChain(
-              NodePattern(Some(aId), List(), None, naked = false)(pos),
-              RelationshipPattern(Some(rId), optional = false, List(), None, None, SemanticDirection.OUTGOING)(pos), NodePattern(Some(bId), List(), None, naked = false)(pos)
+              NodePattern(Some(aId), List(), None)(pos),
+              RelationshipPattern(Some(rId), optional = false, List(), None, None, SemanticDirection.OUTGOING)(pos), NodePattern(Some(bId), List(), None)(pos)
             )(pos))
         ))(pos), List(), Some(WHERE))(pos)
 
@@ -290,7 +290,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
       Match(optional = false,
         Pattern(List(
           EveryPath(
-            NodePattern(Some(a), List(), None, naked = false)(pos))
+            NodePattern(Some(a), List(), None)(pos))
         ))(pos), List(), None)(pos)
 
     val pathExpression = PathExpression(NodePathStep(a, NilPathStep))(pos)

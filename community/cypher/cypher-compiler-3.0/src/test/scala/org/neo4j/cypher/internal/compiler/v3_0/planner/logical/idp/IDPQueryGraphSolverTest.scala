@@ -629,7 +629,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
     new given {
       queryGraphSolver = IDPQueryGraphSolver(monitor = monitor)
-      qg = QueryGraph(// MATCH a OPTIONAL MATCH a-[r]->b
+      qg = QueryGraph(// MATCH a OPTIONAL MATCH (a)-[r]-(b)
         patternNodes = Set("a"),
         optionalMatches = Seq(QueryGraph(
           patternNodes = Set("a", "b"),
@@ -701,7 +701,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       }
 
       queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq.empty)
-      qg = QueryGraph(// MATCH a, b OPTIONAL MATCH a-[r]->b
+      qg = QueryGraph(// MATCH a, b OPTIONAL MATCH (a)-[r]-(b)
         patternNodes = Set("a", "b"),
         optionalMatches = Seq(QueryGraph(
           patternNodes = Set("a", "b"),

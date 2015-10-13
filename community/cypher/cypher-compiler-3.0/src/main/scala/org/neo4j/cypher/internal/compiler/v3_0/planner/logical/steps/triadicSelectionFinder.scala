@@ -96,7 +96,7 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
       Seq.empty
 
   private def leftPredicatesAcceptable(leftId: IdName, leftPredicates: Seq[Expression]) = leftPredicates.forall {
-    case HasLabels(Identifier(id),List(_)) if(id == leftId.name) => true
+    case HasLabels(Identifier(id),List(_)) if id == leftId.name => true
     case a => false
   }
 
@@ -115,9 +115,9 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
     case p@PatternExpression(
       RelationshipsPattern(
         RelationshipChain(
-          NodePattern(Some(Identifier(predicateFrom)), List(), None, false),
+          NodePattern(Some(Identifier(predicateFrom)), List(), None),
           RelationshipPattern(None, false, predicateTypes, None, None, predicateDir),
-          NodePattern(Some(Identifier(predicateTo)), List(), None, false))))
+          NodePattern(Some(Identifier(predicateTo)), List(), None))))
       if predicateFrom == from && predicateTo == to && predicateTypes == types && predicateDir == dir => true
     case _ => false
   }

@@ -42,7 +42,7 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
   }
 
   test("optional nodes with labels in match clause should return null when there is no match") {
-    val result = executeWithAllPlanners("match (n:Single) optional match n-[r]-(m:NonExistent) return r")
+    val result = executeWithAllPlanners("match (n:Single) optional match (n)-[r]-(m:NonExistent) return r")
     assert(result.toList === List(Map("r" -> null)))
   }
 
@@ -52,12 +52,12 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
   }
 
   test("predicates on optional matches should be respected") {
-    val result = executeWithAllPlannersAndRuntimes("match (n:Single) optional match n-[r]-(m) where m.prop = 42 return m")
+    val result = executeWithAllPlannersAndRuntimes("match (n:Single) optional match (n)-[r]-(m) where m.prop = 42 return m")
     assert(result.toList === List(Map("m" -> nodeA)))
   }
 
   test("has label on null should evaluate to null") {
-    val result = executeWithAllPlannersAndRuntimes("match (n:Single) optional match n-[r:TYPE]-(m) return m:TYPE")
+    val result = executeWithAllPlannersAndRuntimes("match (n:Single) optional match (n)-[r:TYPE]-(m) return m:TYPE")
     assert(result.toList === List(Map("m:TYPE" -> null)))
   }
 
@@ -78,7 +78,7 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
   }
 
   test("should support named paths inside of optional matches") {
-    val result = executeWithAllPlanners("match (a:A) optional match p = a-[:X]->b return p")
+    val result = executeWithAllPlanners("match (a:A) optional match p = (a)-[:X]->(b) return p")
 
     assert(result.toList === List(Map("p" -> null)))
   }
@@ -108,7 +108,7 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
   }
 
   test("should support names paths inside of option matches with node predicates") {
-    val result = executeWithAllPlanners("match (a:A), (b:B) optional match p = a-[:X]->b return p")
+    val result = executeWithAllPlanners("match (a:A), (b:B) optional match p = (a)-[:X]->(b) return p")
 
     assert(result.toList === List(Map("p" -> null)))
   }
@@ -124,13 +124,13 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
   }
 
   test("should support varlength optional relationships that is longer than the existing longest") {
-    val result = executeWithAllPlanners("match (a:Single) optional match a-[*3..]->b return b")
+    val result = executeWithAllPlanners("match (a:Single) optional match (a)-[*3..]-(b) return b")
 
     assert(result.toSet === Set(Map("b" -> null)))
   }
 
   test("should support optional match to find self loops") {
-    val result = executeWithAllPlannersAndRuntimes("match (a:B) optional match a-[r]->a return r")
+    val result = executeWithAllPlannersAndRuntimes("match (a:B) optional match (a)-[r]-(a) return r")
 
     assert(result.toSet === Set(Map("r" -> selfRel)))
   }

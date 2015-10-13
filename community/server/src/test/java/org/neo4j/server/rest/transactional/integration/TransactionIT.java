@@ -84,7 +84,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         // execute
         Response execute =
-                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
         assertThat( execute.status(), equalTo( 200 ) );
         assertThat( execute.get( "transaction" ).get( "expires" ).asText(), isValidRFCTimestamp() );
 
@@ -107,7 +107,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertHasTxLocation( begin );
 
         // execute
-        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
 
         // rollback
         Response commit = http.DELETE( begin.location() );
@@ -131,7 +131,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertThat( commitResource, equalTo( begin.location() + "/commit" ) );
 
         // execute and commit
-        Response commit = http.POST( commitResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }"
+        Response commit = http.POST( commitResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"
         ) );
 
         assertThat( commit, containsNoErrors() );
@@ -145,7 +145,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin and execute
-        Response begin = http.POST( "/db/data/transaction", quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' " +
+        Response begin = http.POST( "/db/data/transaction", quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' " +
                                                                         "} ] }" ) );
 
         String commitResource = begin.stringFromContent( "commit" );
@@ -191,13 +191,13 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         String commitResource = begin.stringFromContent( "commit" );
 
         // execute
-        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
 
         // commit
         http.POST( commitResource );
 
         // execute
-        Response execute2 = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ]" +
+        Response execute2 = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ]" +
                                                                      " }" ) );
 
         assertThat( execute2.status(), equalTo( 404 ) );
@@ -211,7 +211,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         // begin and execute and commit
         Response begin = http.POST( "/db/data/transaction/commit", quotedJson( "{ 'statements': [ { 'statement': " +
-                                                                               "'CREATE n' } ] }" ) );
+                                                                               "'CREATE (n)' } ] }" ) );
 
         assertThat( begin.status(), equalTo( 200 ) );
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
@@ -447,8 +447,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         String commitResource = begin.stringFromContent( "commit" );
 
         // execute
-        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' }, " +
-                                                 "{ 'statement': 'CREATE n' } ] }" ) );
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' }, " +
+                                                 "{ 'statement': 'CREATE (n)' } ] }" ) );
 
         // commit
         Response commit = http.POST( commitResource );
@@ -467,11 +467,11 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         String commitResource = begin.stringFromContent( "commit" );
 
         // execute
-        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ]" +
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ]" +
                                                  " }" ) );
 
         // execute
-        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ]" +
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ]" +
                                                  " }" ) );
 
         // commit
@@ -509,7 +509,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         long id = result.get( "data" ).get( 0 ).get( "row" ).get( 0 ).getLongValue();
 
         // WHEN
-        http.POST( "/db/data/cypher", rawPayload( "{\"query\":\"match n where id(n) = " + id + " delete n\"}" ) );
+        http.POST( "/db/data/cypher", rawPayload( "{\"query\":\"match (n) where id(n) = " + id + " delete n\"}" ) );
 
         // THEN
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
@@ -550,7 +550,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         // execute
         Response execute =
-                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
 
         assertThat( execute.status(), equalTo( 404 ) );
     }
@@ -610,7 +610,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertThat( execute, hasErrors( Status.Statement.ExecutionFailure ) );
 
         Response execute2 =
-                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
         assertThat( execute2.status(), equalTo( 404 ) );
         assertThat( execute2, hasErrors( Status.Transaction.UnknownId ) );
     }

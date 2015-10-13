@@ -44,8 +44,6 @@ case class JoinHintUnsupportedNotification(identified: Seq[String]) extends Inte
 
 case class IndexLookupUnfulfillableNotification(labels: Set[String]) extends InternalNotification
 
-case class BareNodeSyntaxDeprecatedNotification(position: InputPosition) extends InternalNotification
-
 case object EagerLoadCsvNotification extends InternalNotification
 
 case object LargeLabelWithLoadCsvNotification extends InternalNotification

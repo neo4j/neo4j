@@ -41,13 +41,13 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
       "MATCH (n:A) MATCH (m:B)"
         -> A * B,
 
-      "MATCH a, b" ->
+      "MATCH (a), (b)" ->
         N * N,
 
       ""
         -> 1.0,
 
-      "MATCH a, (b:B)"
+      "MATCH (a), (b:B)"
         -> N * B,
 
       "MATCH (a:A:B)"
@@ -223,7 +223,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
   }
 
   test("empty graph") {
-    givenPattern("MATCH a WHERE a.prop = 10").
+    givenPattern("MATCH (a) WHERE a.prop = 10").
       withGraphNodes(0).
       withKnownProperty('prop).
       shouldHaveQueryGraphCardinality(0)

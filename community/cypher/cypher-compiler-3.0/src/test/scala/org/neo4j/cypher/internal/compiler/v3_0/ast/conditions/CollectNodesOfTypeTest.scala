@@ -29,13 +29,13 @@ class CollectNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupp
     test("collect all identifiers") {
       val idA = ident("a")
       val idB = ident("b")
-      val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(idA), Seq(), Some(idB), naked = true)_)))_, Seq(), None)_
+      val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(idA), Seq(), Some(idB))_)))_, Seq(), None)_
 
       collector(ast) should equal(Seq(idA, idB))
     }
 
     test("collect no identifiers") {
-      val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(None, Seq(), None, naked = true)_)))_, Seq(), None)_
+      val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(None, Seq(), None)_)))_, Seq(), None)_
 
       collector(ast) shouldBe empty
     }

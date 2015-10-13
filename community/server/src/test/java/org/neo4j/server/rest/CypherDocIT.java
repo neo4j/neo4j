@@ -357,7 +357,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         setProperty("I", "array1", new int[] { 1, 2, 3 } );
         setProperty("I", "array2", new String[] { "a", "b", "c" } );
 
-        String script = "MATCH n WHERE id(n) = %I% RETURN n.array1, n.array2";
+        String script = "MATCH (n) WHERE id(n) = %I% RETURN n.array1, n.array2";
         String response = cypherRestCall( script, Status.OK );
 
         assertThat( response, anyOf( containsString( "[ 1, 2, 3 ]" ), containsString( "[1,2,3]" )) );

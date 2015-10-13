@@ -85,9 +85,9 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     // extract(x IN (n)-->(k) | head(nodes(x)) )
     val pat: RelationshipsPattern = RelationshipsPattern(
       RelationshipChain(
-        NodePattern(Some(ident("n")), Seq.empty, None, naked = false)_,
+        NodePattern(Some(ident("n")), Seq.empty, None)_,
         RelationshipPattern(None, optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
-        NodePattern(Some(ident("k")), Seq.empty, None, naked = false)_
+        NodePattern(Some(ident("k")), Seq.empty, None)_
       )_
     )_
     val expr: Expression = ExtractExpression(
@@ -121,9 +121,9 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     // given
     val pat = PatternExpression(RelationshipsPattern(
       RelationshipChain(
-        NodePattern(Some(ident("n")), Seq.empty, None, naked = false)_,
+        NodePattern(Some(ident("n")), Seq.empty, None)_,
         RelationshipPattern(None, optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
-        NodePattern(Some(ident("k")), Seq.empty, None, naked = false)_
+        NodePattern(Some(ident("k")), Seq.empty, None)_
       )_
     )_)
 

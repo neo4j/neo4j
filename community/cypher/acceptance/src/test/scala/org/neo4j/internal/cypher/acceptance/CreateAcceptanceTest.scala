@@ -67,7 +67,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("should not see updates created by itself") {
     createNode()
 
-    val result = updateWithBothPlanners("match n create ()")
+    val result = updateWithBothPlanners("match (n) create ()")
     assertStats(result, nodesCreated = 1)
   }
 

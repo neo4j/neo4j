@@ -153,7 +153,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
   // TESTS FOR MATCH AND CREATE
 
   test("should not introduce eagerness for MATCH nodes and CREATE relationships") {
-    val query = "MATCH a, b CREATE (a)-[:KNOWS]->(b)"
+    val query = "MATCH (a), (b) CREATE (a)-[:KNOWS]->(b)"
 
     assertNumberOfEagerness(query, 0)
   }
@@ -232,13 +232,13 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
   }
 
   test("should not add eagerness when not writing to nodes") {
-    val query = "MATCH a, b CREATE (a)-[r:KNOWS]->(b) SET r = { key: 42 }"
+    val query = "MATCH (a), (b) CREATE (a)-[r:KNOWS]->(b) SET r = { key: 42 }"
 
     assertNumberOfEagerness(query, 0)
   }
 
   test("matching using a pattern predicate and creating relationship should not be eager") {
-    val query = "MATCH n WHERE n-->() CREATE n-[:T]->()"
+    val query = "MATCH (n) WHERE (n)-->() CREATE (n)-[:T]->()"
 
     assertNumberOfEagerness(query, 0)
   }
@@ -452,13 +452,13 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
   // TESTS FOR MATCH AND MERGE
 
   test("should not introduce eagerness for MATCH nodes and CREATE UNIQUE relationships") {
-    val query = "MATCH a, b CREATE UNIQUE (a)-[r:KNOWS]->(b)"
+    val query = "MATCH (a), (b) CREATE UNIQUE (a)-[r:KNOWS]->(b)"
 
     assertNumberOfEagerness(query, 0)
   }
 
   test("should not introduce eagerness for MATCH nodes and MERGE relationships") {
-    val query = "MATCH a, b MERGE (a)-[r:KNOWS]->(b)"
+    val query = "MATCH (a), (b) MERGE (a)-[r:KNOWS]->(b)"
 
     assertNumberOfEagerness(query, 0)
   }
@@ -691,12 +691,12 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
   }
 
   test("match property on right-side followed by property write on left-side match needs eager") {
-    val query = "MATCH a,(b {id: 0}) SET a.id = 0"
+    val query = "MATCH (a),(b {id: 0}) SET a.id = 0"
     assertNumberOfEagerness(query, 1)
   }
 
   test("match property on right-side followed by property write on right-side match needs eager") {
-    val query = "MATCH a,(b {id: 0}) SET b.id = 1"
+    val query = "MATCH (a),(b {id: 0}) SET b.id = 1"
     assertNumberOfEagerness(query, 1)
   }
 
@@ -706,37 +706,37 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
   }
 
   test("matching property using RegEx and writing should be eager") {
-    val query = "MATCH n WHERE n.prop =~ 'Foo*' SET n.prop = 'bar'"
+    val query = "MATCH (n) WHERE n.prop =~ 'Foo*' SET n.prop = 'bar'"
 
     assertNumberOfEagerness(query, 0)
   }
 
   test("matching property using REPLACE and writing should be eager") {
-    val query = "MATCH n WHERE replace(n.prop, 'foo', 'bar') = 'baz' SET n.prop = 'qux'"
+    val query = "MATCH (n) WHERE replace(n.prop, 'foo', 'bar') = 'baz' SET n.prop = 'qux'"
 
     assertNumberOfEagerness(query, 0)
   }
 
   test("matching property using SUBSTRING and writing should be eager") {
-    val query = "MATCH n WHERE substring(n.prop, 3, 5) = 'foo' SET n.prop = 'bar'"
+    val query = "MATCH (n) WHERE substring(n.prop, 3, 5) = 'foo' SET n.prop = 'bar'"
 
     assertNumberOfEagerness(query, 0)
   }
 
   test("matching property using LEFT and writing should be eager") {
-    val query = "MATCH n WHERE left(n.prop, 5) = 'foo' SET n.prop = 'bar'"
+    val query = "MATCH (n) WHERE left(n.prop, 5) = 'foo' SET n.prop = 'bar'"
 
     assertNumberOfEagerness(query, 0)
   }
 
   test("matching property using RIGHT and writing should be eager") {
-    val query = "MATCH n WHERE right(n.prop, 5) = 'foo' SET n.prop = 'bar'"
+    val query = "MATCH (n) WHERE right(n.prop, 5) = 'foo' SET n.prop = 'bar'"
 
     assertNumberOfEagerness(query, 0)
   }
 
   test("matching property using SPLIT and writing should be eager") {
-    val query = "MATCH n WHERE split(n.prop, ',') = ['foo', 'bar'] SET n.prop = 'baz,qux'"
+    val query = "MATCH (n) WHERE split(n.prop, ',') = ['foo', 'bar'] SET n.prop = 'baz,qux'"
 
     assertNumberOfEagerness(query, 0)
   }

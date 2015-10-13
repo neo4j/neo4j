@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescr
 class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
   test("normal query is marked as such") {
     createNode()
-    val result = execute("match n return n")
+    val result = execute("match (n) return n")
 
     result.planDescriptionRequested should equal(false)
     result shouldNot be(empty)
@@ -32,14 +32,14 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("explain query is marked as such") {
     createNode()
-    val result = execute("explain match n return n")
+    val result = execute("explain match (n) return n")
 
     result.planDescriptionRequested should equal(true)
     result should be(empty)
   }
 
   test("EXPLAIN for Cypher 3.0") {
-    val result = eengine.execute("explain match n return n")
+    val result = eengine.execute("explain match (n) return n")
     result.toList
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
     result.executionPlanDescription().toString should include("Estimated Rows")

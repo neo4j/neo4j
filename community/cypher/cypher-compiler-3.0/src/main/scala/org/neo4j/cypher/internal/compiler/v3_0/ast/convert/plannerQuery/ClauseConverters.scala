@@ -103,7 +103,7 @@ object ClauseConverters {
   implicit class CreateConverter(val clause: Create) extends AnyVal {
     def addCreateToLogicalPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = {
       clause.pattern.patternParts.foldLeft(acc) {
-        case (builder, EveryPath(pattern@NodePattern(Some(id), _, _, _))) =>
+        case (builder, EveryPath(pattern@NodePattern(Some(id), _, _))) =>
           builder
             .amendUpdateGraph(ug => ug.copy(nodePatterns = ug.nodePatterns :+ pattern))
         case _ => throw new CantHandleQueryException(s"$clause is not yet supported")

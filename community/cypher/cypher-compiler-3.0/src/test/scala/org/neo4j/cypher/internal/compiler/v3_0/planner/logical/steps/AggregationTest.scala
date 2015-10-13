@@ -52,7 +52,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should introduce identifiers when needed") {
-    //match n return n.y, sum(n.x)
+    //match (n) return n.y, sum(n.x)
     val projectionPlan = AggregatingQueryProjection(
       groupingKeys = groupingMap,
       aggregationExpressions = aggregatingMap2

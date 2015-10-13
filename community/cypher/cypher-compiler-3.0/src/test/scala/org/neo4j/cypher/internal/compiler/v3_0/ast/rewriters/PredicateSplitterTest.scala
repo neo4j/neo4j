@@ -36,7 +36,7 @@ class PredicateSplitterTest extends CypherFunSuite with AstConstructionTestSuppo
   import PredicateSplitterTest._
 
   test("Does not change MATCH without named paths") {
-    val MATCH: Clause = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(ident("a")), Seq.empty, None, naked = false) _)))_, Seq.empty, Some(Where(True()_)_))_
+    val MATCH: Clause = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(ident("a")), Seq.empty, None) _)))_, Seq.empty, Some(Where(True()_)_))_
     val statement: Statement = query(MATCH, RETURN_ALL)
     val lookup = (clause: Clause) => clause match {
       case MATCH => Set(ident("b"))
@@ -51,7 +51,7 @@ class PredicateSplitterTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("Moves one predicate over named paths to newly introduced WITH") {
     val pred: Expression = pathPred(0)
-    val MATCH: Clause = Match(optional = false, Pattern(Seq(NamedPatternPart(ident("p"), EveryPath(NodePattern(Some(ident("a")), Seq.empty, None, naked = false)_))_))_, Seq.empty, Some(Where(pred)_))_
+    val MATCH: Clause = Match(optional = false, Pattern(Seq(NamedPatternPart(ident("p"), EveryPath(NodePattern(Some(ident("a")), Seq.empty, None)_))_))_, Seq.empty, Some(Where(pred)_))_
     val statement: Statement = query(MATCH, RETURN_ALL)
     val lookup = (clause: Clause) => clause match {
       case MATCH => Set(ident("a"), ident("b"))
@@ -61,7 +61,7 @@ class PredicateSplitterTest extends CypherFunSuite with AstConstructionTestSuppo
     val splitter = PredicateSplitter(lookup, statement)
     val rewritten = splitter.statementRewriter(statement)
 
-    val EXPECTED_MATCH: Clause = Match(optional = false, Pattern(Seq(NamedPatternPart(ident("p"), EveryPath(NodePattern(Some(ident("a")), Seq.empty, None, naked = false)_))_))_, Seq.empty, None)_
+    val EXPECTED_MATCH: Clause = Match(optional = false, Pattern(Seq(NamedPatternPart(ident("p"), EveryPath(NodePattern(Some(ident("a")), Seq.empty, None)_))_))_, Seq.empty, None)_
     val EXPECTED_WITH: Clause = With(distinct = false, items("a", "b", "p"), None, None, None, Some(Where(pred)_))_
     val expectation = query(EXPECTED_MATCH, EXPECTED_WITH, RETURN_ALL)
 
@@ -70,7 +70,7 @@ class PredicateSplitterTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("Moves two predicates over named paths to newly introduced WITH") {
     val pred: Expression = And(pathPred(0), pathPred(1))_
-    val MATCH: Clause = Match(optional = false, Pattern(Seq(NamedPatternPart(ident("p"), EveryPath(NodePattern(Some(ident("a")), Seq.empty, None, naked = false)_))_))_, Seq.empty, Some(Where(pred)_))_
+    val MATCH: Clause = Match(optional = false, Pattern(Seq(NamedPatternPart(ident("p"), EveryPath(NodePattern(Some(ident("a")), Seq.empty, None)_))_))_, Seq.empty, Some(Where(pred)_))_
     val statement: Statement = query(MATCH, RETURN_ALL)
     val lookup = (clause: Clause) => clause match {
       case MATCH => Set(ident("a"), ident("b"))
@@ -80,7 +80,7 @@ class PredicateSplitterTest extends CypherFunSuite with AstConstructionTestSuppo
     val splitter = PredicateSplitter(lookup, statement)
     val rewritten = splitter.statementRewriter(statement)
 
-    val EXPECTED_MATCH: Clause = Match(optional = false, Pattern(Seq(NamedPatternPart(ident("p"), EveryPath(NodePattern(Some(ident("a")), Seq.empty, None, naked = false)_))_))_, Seq.empty, None)_
+    val EXPECTED_MATCH: Clause = Match(optional = false, Pattern(Seq(NamedPatternPart(ident("p"), EveryPath(NodePattern(Some(ident("a")), Seq.empty, None)_))_))_, Seq.empty, None)_
     val EXPECTED_WITH: Clause = With(distinct = false, items("a", "b", "p"), None, None, None, Some(Where(pred)_))_
     val expectation = query(EXPECTED_MATCH, EXPECTED_WITH, RETURN_ALL)
 
@@ -91,7 +91,7 @@ class PredicateSplitterTest extends CypherFunSuite with AstConstructionTestSuppo
     val pred1: Expression = Equals(ident("a"), ident("b"))_
     val pred2: Expression = pathPred(1)
     val pred: Expression = Ands(Set(pred1, pred2))_
-    val MATCH: Clause = Match(optional = false, Pattern(Seq(NamedPatternPart(ident("p"), EveryPath(NodePattern(Some(ident("a")), Seq.empty, None, naked = false)_))_))_, Seq.empty, Some(Where(pred)_))_
+    val MATCH: Clause = Match(optional = false, Pattern(Seq(NamedPatternPart(ident("p"), EveryPath(NodePattern(Some(ident("a")), Seq.empty, None)_))_))_, Seq.empty, Some(Where(pred)_))_
     val statement: Statement = query(MATCH, RETURN_ALL)
     val lookup = (clause: Clause) => clause match {
       case MATCH => Set(ident("a"), ident("b"))
@@ -101,7 +101,7 @@ class PredicateSplitterTest extends CypherFunSuite with AstConstructionTestSuppo
     val splitter = PredicateSplitter(lookup, statement)
     val rewritten = splitter.statementRewriter(statement)
 
-    val EXPECTED_MATCH: Clause = Match(optional = false, Pattern(Seq(NamedPatternPart(ident("p"), EveryPath(NodePattern(Some(ident("a")), Seq.empty, None, naked = false)_))_))_, Seq.empty, Some(Where(pred1)_))_
+    val EXPECTED_MATCH: Clause = Match(optional = false, Pattern(Seq(NamedPatternPart(ident("p"), EveryPath(NodePattern(Some(ident("a")), Seq.empty, None)_))_))_, Seq.empty, Some(Where(pred1)_))_
     val EXPECTED_WITH: Clause = With(distinct = false, items("a", "b", "p"), None, None, None, Some(Where(pred2)_))_
     val expectation = query(EXPECTED_MATCH, EXPECTED_WITH, RETURN_ALL)
 
@@ -110,7 +110,7 @@ class PredicateSplitterTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("Does not move predicate over named paths to newly introduced WITH from OPTIONAL MATCH") {
     val pred: Expression = pathPred(0)
-    val OPTIONAL_MATCH: Clause = Match(optional = true, Pattern(Seq(NamedPatternPart(ident("p"), EveryPath(NodePattern(Some(ident("a")), Seq.empty, None, naked = false)_))_))_, Seq.empty, Some(Where(pred)_))_
+    val OPTIONAL_MATCH: Clause = Match(optional = true, Pattern(Seq(NamedPatternPart(ident("p"), EveryPath(NodePattern(Some(ident("a")), Seq.empty, None)_))_))_, Seq.empty, Some(Where(pred)_))_
     val statement: Statement = query(OPTIONAL_MATCH, RETURN_ALL)
     val lookup = (clause: Clause) => clause match {
       case OPTIONAL_MATCH => Set(ident("a"), ident("b"))

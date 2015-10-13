@@ -29,13 +29,13 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
 
   test("should inline: MATCH a, b, c WITH c AS c, b AS a RETURN c") {
     val result = projectionInlinedAst(
-      """MATCH a, b, c
+      """MATCH (a), (b), (c)
         |WITH c AS c, b AS d
         |RETURN c
       """.stripMargin)
 
     result should equal(ast(
-      """MATCH a, b, c
+      """MATCH (a), (b), (c)
         |WITH c AS c, b AS b
         |RETURN c AS c
       """.stripMargin))
@@ -118,16 +118,16 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
 
   test("should inline pattern identifiers when possible") {
     val result = projectionInlinedAst(
-      """MATCH n
+      """MATCH (n)
         |WITH n
-        |MATCH n-->x
+        |MATCH (n)-->(x)
         |RETURN x
       """.stripMargin)
 
     result should equal(ast(
-      """MATCH n
+      """MATCH (n)
         |WITH n
-        |MATCH n-->x
+        |MATCH (n)-->(x)
         |RETURN x""".stripMargin))
   }
 
@@ -299,16 +299,16 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
     } should produce[CantHandleQueryException]
   }
 
-  test("MATCH n WITH n.prop AS x WITH x LIMIT 10 RETURN x") {
+  test("MATCH (n) WITH n.prop AS x WITH x LIMIT 10 RETURN x") {
     val result = projectionInlinedAst(
-      """MATCH n
+      """MATCH (n)
         |WITH n.prop AS x
         |WITH x LIMIT 10
         |RETURN x
       """.stripMargin)
 
     result should equal(ast(
-      """MATCH n
+      """MATCH (n)
         |WITH n AS n
         |WITH n AS n LIMIT 10
         |RETURN n.prop AS x
@@ -364,18 +364,18 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       """.stripMargin))
   }
 
-  test("match n where id(n) IN [0,1,2,3] with n.division AS `n.division`, max(n.age) AS `max(n.age)` with `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` RETURN `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` order by `max(n.age)`") {
+  test("match (n) where id(n) IN [0,1,2,3] with n.division AS `n.division`, max(n.age) AS `max(n.age)` with `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` RETURN `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` order by `max(n.age)`") {
     val result = projectionInlinedAst(
-      """match n where id(n) IN [0,1,2,3]
+      """match (n) where id(n) IN [0,1,2,3]
         |with n.division AS `n.division`, max(n.age) AS `max(n.age)`
         |with `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)`
         |RETURN `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` order by `max(n.age)`
       """.stripMargin)
 
     // TODO: this is a temporary solution we should rethink how to generated fresh ids on windows
-    val freshIdName = if (SystemUtils.IS_OS_WINDOWS) "`  FRESHID197`" else "`  FRESHID194`"
+    val freshIdName = if (SystemUtils.IS_OS_WINDOWS) "`  FRESHID199`" else "`  FRESHID196`"
     result should equal(ast(
-      s"""match n where id(n) IN [0,1,2,3]
+      s"""match (n) where id(n) IN [0,1,2,3]
         |with n.division AS `n.division`, max(n.age) AS `max(n.age)`
         |with `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)`
         |with `n.division` AS `n.division`, `max(n.age)` AS $freshIdName order by $freshIdName

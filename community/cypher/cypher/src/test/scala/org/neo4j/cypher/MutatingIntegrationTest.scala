@@ -33,7 +33,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   test("create a single node") {
     val before = graph.inTx(GlobalGraphOperations.at(graph).getAllNodes.asScala.size)
 
-    val result = updateWithBothPlanners("create a")
+    val result = updateWithBothPlanners("create (a)")
 
     assertStats(result, nodesCreated = 1)
     graph.inTx {
@@ -66,7 +66,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   }
 
   test("create two nodes and a relationship between them") {
-    val result = executeWithRulePlanner("create a, b, a-[r:REL]->b")
+    val result = executeWithRulePlanner("create (a), (b), (a)-[r:REL]->(b)")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
@@ -109,7 +109,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     relate(a, c)
     relate(a, d)
 
-    val result = executeWithRulePlanner("match (a) where id(a) = 0 match a-[r]->() delete r")
+    val result = executeWithRulePlanner("match (a) where id(a) = 0 match (a)-[r]->() delete r")
     assertStats( result, relationshipsDeleted = 3  )
 
     graph.inTx {
@@ -122,7 +122,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     val b = createNode()
     val c = createNode()
 
-    val result = executeWithRulePlanner("create n with n MATCH x WHERE id(x) IN [0, 1, 2] create n-[:REL]->x")
+    val result = executeWithRulePlanner("create (n) with n MATCH (x) WHERE id(x) IN [0, 1, 2] create (n)-[:REL]->(x)")
     assertStats(result,
       nodesCreated = 1,
       relationshipsCreated = 3
@@ -140,7 +140,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     createNode("Michael")
     createNode("Peter")
 
-    val result = updateWithBothPlanners("MATCH n with collect(n.name) as names create (m {name : names}) RETURN m.name")
+    val result = updateWithBothPlanners("MATCH (n) with collect(n.name) as names create (m {name : names}) RETURN m.name")
     assertStats(result,
       propertiesSet = 1,
       nodesCreated = 1
@@ -169,7 +169,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     createNode()
     createNode()
 
-    val r = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) = 1 create a-[r:REL {param}]->b return r", "param" -> Map("name" -> "Andres", "age" -> 66)).
+    val r = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) = 1 create (a)-[r:REL {param}]->(b) return r", "param" -> Map("name" -> "Andres", "age" -> 66)).
       toList.head("r").asInstanceOf[Relationship]
     graph.inTx {
       r.getProperty("name") should equal("Andres")
@@ -184,7 +184,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     relate(a, b, "HATES")
     relate(a, b, "LOVES")
 
-    intercept[NodeStillHasRelationshipsException](executeWithRulePlanner("match (n) where id(n) = 0 match n-[r:HATES]->() delete n,r"))
+    intercept[NodeStillHasRelationshipsException](executeWithRulePlanner("match (n) where id(n) = 0 match (n)-[r:HATES]->() delete n,r"))
   }
 
   test("delete and return") {
@@ -250,17 +250,17 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     relate(root, b)
     relate(root, c)
 
-    executeWithRulePlanner("match (root) where id(root) = 0 match root-->other create (new {name:other.name}), root-[:REL]->new")
+    executeWithRulePlanner("match (root) where id(root) = 0 match (root)-->(other) create (new {name:other.name}), (root)-[:REL]->(new)")
 
-    val result = executeWithAllPlanners("match (root) where id(root) = 0 match root-->other return other.name order by other.name").columnAs[String]("other.name").toList
+    val result = executeWithAllPlanners("match (root) where id(root) = 0 match (root)-->(other) return other.name order by other.name").columnAs[String]("other.name").toList
     result should equal(List("Alfa", "Alfa", "Beta", "Beta", "Gamma", "Gamma"))
   }
 
   test("create node and rel in foreach") {
     executeWithRulePlanner("""
-create center
+create (center)
 foreach(x in range(1,10) |
-  create (leaf1 {number : x}) , center-[:X]->leaf1
+  create (leaf1 {number : x}) , (center)-[:X]->(leaf1)
 )
 return distinct center""")
   }
@@ -271,7 +271,7 @@ return distinct center""")
     val b = createNode()
     relate(a,b)
 
-    executeWithRulePlanner("""start n=node(*) optional match n-[r]-() delete n,r""")
+    executeWithRulePlanner("""start n=node(*) optional match (n)-[r]-() delete n,r""")
 
     graph.inTx {
       GlobalGraphOperations.at(graph).getAllNodes.asScala shouldBe empty
@@ -283,7 +283,7 @@ return distinct center""")
     val b = createNode()
     relate(a,b)
 
-    executeWithRulePlanner("""match (n) where id(n) = 0 match p=n-->() delete p""")
+    executeWithRulePlanner("""match (n) where id(n) = 0 match p=(n)-->() delete p""")
 
     graph.inTx {
       GlobalGraphOperations.at(graph).getAllNodes.asScala shouldBe empty
@@ -327,8 +327,8 @@ return distinct center""")
     val map2 = new util.HashMap[String, Any]()
     map2.put("name", "Anders")
 
-    val r1 = executeScalar[Relationship]("match (a), (b) where id(a) = 0 AND id(b) = 1 create unique a-[r:FOO {param}]->b return r", "param" -> map1)
-    val r2 = executeScalar[Relationship]("match (a), (b) where id(a) = 0 AND id(b) = 1 create unique a-[r:FOO {param}]->b return r", "param" -> map2)
+    val r1 = executeScalar[Relationship]("match (a), (b) where id(a) = 0 AND id(b) = 1 create unique (a)-[r:FOO {param}]->(b) return r", "param" -> map1)
+    val r2 = executeScalar[Relationship]("match (a), (b) where id(a) = 0 AND id(b) = 1 create unique (a)-[r:FOO {param}]->(b) return r", "param" -> map2)
 
     r1 should equal(r2)
   }
@@ -336,7 +336,7 @@ return distinct center""")
     createNode()
     createNode()
 
-    val r1 = executeScalar[Relationship]("match (a), (b) where id(a) = 0 AND id(b) = 1 create unique a-[r:FOO]->b set r.foo = 'bar' return r")
+    val r1 = executeScalar[Relationship]("match (a), (b) where id(a) = 0 AND id(b) = 1 create unique (a)-[r:FOO]->(b) set r.foo = 'bar' return r")
 
     graph.inTx {
       r1.getProperty("foo") should equal("bar")
@@ -347,8 +347,8 @@ return distinct center""")
     createNode()
     createNode()
 
-    eengine.execute("match (a) where id(a) = 0 create unique a-[:X]->({foo:[1,2,3]})")
-    val result = eengine.execute("match (a) where id(a) = 0 create unique a-[:X]->({foo:[1,2,3]})")
+    eengine.execute("match (a) where id(a) = 0 create unique (a)-[:X]->({foo:[1,2,3]})")
+    val result = eengine.execute("match (a) where id(a) = 0 create unique (a)-[:X]->({foo:[1,2,3]})")
 
     result.queryStatistics().containsUpdates should be(false)
   }
@@ -356,7 +356,7 @@ return distinct center""")
   test("full path in one create") {
     createNode()
     createNode()
-    val result = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) = 1 create a-[:KNOWS]->()-[:LOVES]->b")
+    val result = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) = 1 create (a)-[:KNOWS]->()-[:LOVES]->(b)")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 2)
   }
@@ -371,7 +371,7 @@ return distinct center""")
   test("created paths honor directions") {
     val a = createNode()
     val b = createNode()
-    val result = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) = 1 create p = a<-[:X]-b return p").toList.head("p").asInstanceOf[Path]
+    val result = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) = 1 create p = (a)<-[:X]-(b) return p").toList.head("p").asInstanceOf[Path]
 
     result.startNode() should equal(a)
     result.endNode() should equal(b)
@@ -380,7 +380,7 @@ return distinct center""")
   test("create unique paths honor directions") {
     val a = createNode()
     val b = createNode()
-    val result = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) = 1 create unique p = a<-[:X]-b return p").toList.head("p").asInstanceOf[Path]
+    val result = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) = 1 create unique p = (a)<-[:X]-(b) return p").toList.head("p").asInstanceOf[Path]
 
     result.startNode() should equal(a)
     result.endNode() should equal(b)
@@ -393,7 +393,7 @@ return distinct center""")
   test("failure_only_fails_inner_transaction") {
     val tx = graph.beginTx()
     try {
-      executeWithRulePlanner("match a where id(a) = {id} set a.foo = 'bar' return a","id"->"0")
+      executeWithRulePlanner("match (a) where id(a) = {id} set a.foo = 'bar' return a","id"->"0")
     } catch {
       case _: Throwable => tx.failure()
     }
@@ -401,7 +401,7 @@ return distinct center""")
   }
 
   test("create two rels in one command should work") {
-    val result = executeWithRulePlanner("create (a{name:'a'})-[:test]->b, a-[:test2]->c")
+    val result = executeWithRulePlanner("create (a{name:'a'})-[:test]->(b), (a)-[:test2]->(c)")
 
     assertStats(result, nodesCreated = 3, relationshipsCreated = 2, propertiesSet = 1)
   }
@@ -416,14 +416,14 @@ return distinct center""")
 
   test("can create anonymous nodes inside foreach") {
     createNode()
-    val result = executeWithRulePlanner("match (me) where id(me) = 0 foreach (i in range(1,10) | create me-[:FRIEND]->())")
+    val result = executeWithRulePlanner("match (me) where id(me) = 0 foreach (i in range(1,10) | create (me)-[:FRIEND]->())")
 
     result.toList shouldBe empty
   }
 
   test("should be able to use external identifiers inside foreach") {
     createNode()
-    val result = executeWithRulePlanner("match a, b where id(a) = 0 AND id(b) = 0 foreach(x in [b] | create x-[:FOO]->a) ")
+    val result = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) = 0 foreach(x in [b] | create (x)-[:FOO]->(a)) ")
 
     result.toList shouldBe empty
   }

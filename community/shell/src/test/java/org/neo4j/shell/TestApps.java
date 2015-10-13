@@ -345,17 +345,17 @@ public class TestApps extends AbstractShellTest
         finishTx();
 
         executeCommand( "cd -a " + node.getId() );
-        executeCommand( "MATCH n WHERE n = {self} RETURN n.name;", nodeOneName );
+        executeCommand( "MATCH (n) WHERE n = {self} RETURN n.name;", nodeOneName );
         executeCommand( "cd -r " + relationship.getId() );
         executeCommand( "MATCH ()-[r]->() WHERE r = {self} RETURN r.name;", relationshipName );
         executeCommand( "cd " + otherNode.getId() );
-        executeCommand( "MATCH n WHERE n = {self} RETURN n.name;", nodeTwoName );
+        executeCommand( "MATCH (n) WHERE n = {self} RETURN n.name;", nodeTwoName );
 
         executeCommand( "cd -a " + strayNode.getId() );
         beginTx();
         strayNode.delete();
         finishTx();
-        executeCommand( "MATCH n WHERE id(n) = " + node.getId() + " RETURN n.name;", nodeOneName );
+        executeCommand( "MATCH (n) WHERE id(n) = " + node.getId() + " RETURN n.name;", nodeOneName );
     }
 
     @Test
@@ -513,7 +513,7 @@ public class TestApps extends AbstractShellTest
     public void cypherNodeStillHasRelationshipsException() throws Exception
     {
         // Given
-        executeCommand( "create a,b,a-[:x]->b;" );
+        executeCommand( "create (a),(b),(a)-[:x]->(b);" );
 
         String stackTrace = "";
         // When
@@ -619,7 +619,7 @@ public class TestApps extends AbstractShellTest
             db.createNode();
             tx.success();
         }
-        executeCommand( client, "match n where id(n) = {id} return n;", "1 row" );
+        executeCommand( client, "match (n) where id(n) = {id} return n;", "1 row" );
     }
 
     @Test
@@ -629,11 +629,11 @@ public class TestApps extends AbstractShellTest
         beginTx();
         createRelationshipChain( db.createNode(), type, 1 );
         finishTx();
-        executeCommand( "dump match n-[r]->m where id(n) = 0 return n,r,m;",
+        executeCommand( "dump match (n)-[r]->(m) where id(n) = 0 return n,r,m;",
                 "begin",
-                "create _0",
+                "create (_0)",
                 "create \\(_1\\)",
-                "_0-\\[:`KNOWS`\\]->_1",
+                "(_0)-\\[:`KNOWS`\\]->(_1)",
                 "commit" );
     }
 

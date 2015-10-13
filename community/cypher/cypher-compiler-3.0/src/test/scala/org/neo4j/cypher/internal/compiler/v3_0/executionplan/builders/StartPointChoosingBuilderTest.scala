@@ -492,7 +492,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
   test("should_find_start_items_for_all_patterns") {
     // Given
 
-    // START a=node(0) MATCH a-[x]->b, c-[x]->d
+    // START a=node(0) MATCH (a)-[x]->b, c-[x]-(d)
     val query = newQuery(
       start = Seq(NodeById("a", 0)),
       patterns = Seq(

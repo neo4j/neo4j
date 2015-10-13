@@ -228,7 +228,7 @@ with QueryStatisticsTestSupport with CreateTempFileTestSupport with NewPlannerTe
     relate("A" -> "KNOWS" -> "B")
     relate("A" -> "HATES" -> "C")
 
-    val result = executeWithAllPlanners("match n-[r]->x where id(n) = 0 return type(r)")
+    val result = executeWithAllPlanners("match (n)-[r]->(x) where id(n) = 0 return type(r)")
 
     result.columnAs[String]("type(r)").toList should equal(List("HATES", "KNOWS"))
   }
@@ -237,7 +237,7 @@ with QueryStatisticsTestSupport with CreateTempFileTestSupport with NewPlannerTe
     createNodes("A", "B")
     relate("A" -> "KNOWS" -> "B")
 
-    val result = executeWithAllPlanners("match p = n-->x where id(n) = 0 return length(p)")
+    val result = executeWithAllPlanners("match p = (n)-->(x) where id(n) = 0 return length(p)")
 
     result.columnAs[Int]("length(p)").toList should equal(List(1))
   }
@@ -248,7 +248,7 @@ with QueryStatisticsTestSupport with CreateTempFileTestSupport with NewPlannerTe
     relate("B" -> "FRIEND" -> "C")
 
 
-    val result = executeWithAllPlanners("match a-[:CONTAINS*0..1]->b-[:FRIEND*0..1]->c where id(a) = 0 return a,b,c")
+    val result = executeWithAllPlanners("match (a)-[:CONTAINS*0..1]->(b)-[:FRIEND*0..1]->(c) where id(a) = 0 return a,b,c")
 
     result.toSet should equal(
       Set(
@@ -312,7 +312,7 @@ with QueryStatisticsTestSupport with CreateTempFileTestSupport with NewPlannerTe
     val b = createNode(Map("name" -> "you"))
     relate(a, b, "KNOW")
 
-    val result = executeWithAllPlanners("match x-[r]-friend where x = {startId} and friend.name = {name} return TYPE(r)", "startId" -> a, "name" -> "you")
+    val result = executeWithAllPlanners("match (x)-[r]-(friend) where x = {startId} and friend.name = {name} return TYPE(r)", "startId" -> a, "name" -> "you")
 
     result.toList should equal(List(Map("TYPE(r)" -> "KNOW")))
   }
@@ -328,7 +328,7 @@ with QueryStatisticsTestSupport with CreateTempFileTestSupport with NewPlannerTe
     val a = createNode(Map("name" -> "Andreas"))
 
     val result = executeWithAllPlanners( """
-match a
+match (a)
 where id(a) = 0 AND a.name =~ 'And.*' AND a.name =~ 'And.*'
 return a""")
 
@@ -343,7 +343,7 @@ return a""")
     val r2 = relate(b, c)
 
     val result = executeWithAllPlanners( """
-match a-[r*2]->c
+match (a)-[r*2]->(c)
 where id(a) = 0
 return r""")
 
@@ -362,7 +362,7 @@ return r""")
     createNode("COL1" -> "B", "COL2" -> "B", "num" -> 2)
 
     val result = executeWithAllPlanners( """
-match a
+match (a)
 where id(a) IN [0, 1]
 return a.COL1, a.COL2, avg(a.num)
 order by a.COL1""")
@@ -423,8 +423,8 @@ order by a.COL1""")
 
     relate(refNode, a, "X")
 
-    executeWithAllPlannersAndRuntimes("match a-->b where a = {a} return b", "a" -> a) should have size 1
-    executeWithAllPlannersAndRuntimes("match a-->b where a = {a} return b", "a" -> b) shouldBe empty
+    executeWithAllPlannersAndRuntimes("match (a)-->(b) where a = {a} return b", "a" -> a) should have size 1
+    executeWithAllPlannersAndRuntimes("match (a)-->(b) where a = {a} return b", "a" -> b) shouldBe empty
   }
 
   test("shouldHandleParametersNamedAsIdentifiers") {
@@ -509,7 +509,7 @@ order by a.COL1""")
     relate(a, c, "age" -> 38)
     relate(a, d, "age" -> 12)
 
-    val q = "match n-[f]->() where id(n)= 0 with n, max(f.age) as age match n-[f]->m where f.age = age return m"
+    val q = "match (n)-[f]->() where id(n)= 0 with n, max(f.age) as age match (n)-[f]->(m) where f.age = age return m"
 
     executeWithAllPlanners(q).toList should equal(List(Map("m" -> c)))
   }
@@ -519,7 +519,7 @@ order by a.COL1""")
     val b = createNode()
     relate(a, b)
 
-    val q = "match p = n-[*1..]->m where id(n)= 0 return p, last(nodes(p)) order by length(nodes(p)) asc"
+    val q = "match p = (n)-[*1..]->(m) where id(n)= 0 return p, last(nodes(p)) order by length(nodes(p)) asc"
 
     executeWithAllPlanners(q).toList should have size 1
   }
@@ -587,7 +587,7 @@ order by a.COL1""")
     relate(a,r)
     relate(r,b)
 
-    val result = executeWithAllPlanners("MATCH a-->r-->b WHERE id(a) = 0 AND r.foo = 'bar' RETURN b")
+    val result = executeWithAllPlanners("MATCH (a)-->(r)-->(b) WHERE id(a) = 0 AND r.foo = 'bar' RETURN b")
 
     result.toList should equal(List(Map("b" -> b)))
   }
@@ -617,7 +617,7 @@ order by a.COL1""")
   test("filtering_in_match_should_not_fail") {
     val n = createNode()
     relate(n, createNode("name" -> "Neo"))
-    val result = executeWithAllPlanners("MATCH n-->me WHERE id(n) = 0 AND me.name IN ['Neo'] RETURN me.name")
+    val result = executeWithAllPlanners("MATCH (n)-->(me) WHERE id(n) = 0 AND me.name IN ['Neo'] RETURN me.name")
 
     result.toList should equal(List(Map("me.name"->"Neo")))
   }
@@ -630,7 +630,7 @@ order by a.COL1""")
     relate(a, b)
     relate(b, c)
 
-    val result = executeWithAllPlannersAndRuntimes("MATCH n-[r]->m WHERE n = {a} AND m = {b} RETURN *", "a"->a, "b"->c)
+    val result = executeWithAllPlannersAndRuntimes("MATCH (n)-[r]->(m) WHERE n = {a} AND m = {b} RETURN *", "a"->a, "b"->c)
 
     result.toList shouldBe empty
   }
@@ -781,7 +781,7 @@ order by a.COL1""")
 
     //WHEN
     val result = executeWithAllPlanners("""
-       MATCH (advertiser) -[:adv_has_product] ->(out) -[:ap_has_value] -> red <-[:aa_has_value]- (a)
+       MATCH (advertiser) -[:adv_has_product] ->(out) -[:ap_has_value] ->(red)<-[:aa_has_value]- (a)
        WHERE red.name = 'red' AND out.name = 'product1'
        AND id(advertiser) = {1} AND id(a) = {2}
        RETURN out.name""", "1" -> advertiser.getId, "2" -> thing.getId)
@@ -817,7 +817,7 @@ order by a.COL1""")
       """MATCH (p) WHERE id(p) = 0
         WITH p
         MATCH (a) WHERE id(a) = 0
-        MATCH a-->b
+        MATCH (a)-->(b)
         RETURN *""")
 
     //THEN DOESN'T THROW EXCEPTION
@@ -828,7 +828,7 @@ order by a.COL1""")
     val n = createNode("n")
     val m = createNode("m")
     relate(n,m,"link")
-    val result = executeWithAllPlanners("match (n) where id(n) = 0 with coalesce(n,n) as n match n--() return n")
+    val result = executeWithAllPlanners("match (n) where id(n) = 0 with coalesce(n,n) as n match (n)--() return n")
 
     result.toList should equal(List(Map("n" -> n)))
   }
@@ -876,7 +876,7 @@ order by a.COL1""")
     val nodeIds = s"[${nodes.map(_.getId).mkString(",")}]"
 
     // when
-    val result = executeWithAllPlanners(s"MATCH src-[r:EDGE]-dst WHERE id(src) IN $nodeIds AND id(dst) IN $nodeIds RETURN r")
+    val result = executeWithAllPlanners(s"MATCH (src)-[r:EDGE]-(dst) WHERE id(src) IN $nodeIds AND id(dst) IN $nodeIds RETURN r")
 
     // then
     val relationships: List[Relationship] = result.columnAs[Relationship]("r").toList
@@ -904,7 +904,7 @@ order by a.COL1""")
     // when
     timeOutIn(2, TimeUnit.SECONDS) {
       executeWithAllPlanners(
-        "MATCH x-->a, x-->b " +
+        "MATCH (x)-->(a), (x)-->(b) " +
         "WHERE x.foo > 2 AND x.prop IN ['val'] " +
         "AND id(a) = 0 AND id(b) = 1 " +
         "RETURN x")
