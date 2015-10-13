@@ -858,8 +858,8 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         final StoreFlusher storeFlusher = new StoreFlusher(
                 neoStores, indexingService, labelScanStore, indexProviders );
 
-        final LogRotation logRotation = new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ),
-                logFile, kernelHealth, logProvider );
+        final LogRotation logRotation =
+                new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ), logFile, kernelHealth );
 
         final TransactionAppender appender = life.add( new BatchingTransactionAppender(
                 logFile, logRotation, transactionMetadataCache, metaDataStore, legacyIndexTransactionOrdering,
