@@ -97,6 +97,8 @@ abstract class LogicalPlan
     }
 
   def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan
+
+  def isLeaf: Boolean = lhs.isEmpty && rhs.isEmpty
 }
 
 trait LogicalPlanWithoutExpressions {

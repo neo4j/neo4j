@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.SingleRowPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{InternalPlanDescription, SingleRowPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 import org.scalatest.mock.MockitoSugar
@@ -36,7 +36,7 @@ class FakePipe(val data: Iterator[Map[String, Any]], newIdentifiers: (String, Cy
 
   def internalCreateResults(state: QueryState) = data.map(m => ExecutionContext(collection.mutable.Map(m.toSeq: _*)))
 
-  def planDescription = SingleRowPlanDescription(this.id, identifiers = identifiers)
+  def planDescription: InternalPlanDescription = SingleRowPlanDescription(this.id, identifiers = identifiers)
 
   def exists(pred: Pipe => Boolean) = ???
 

@@ -149,6 +149,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     )
 
     result should not be empty
+    result should not(use("Projection"))
   }
 
   test("Can use WHERE on distinct columns") {

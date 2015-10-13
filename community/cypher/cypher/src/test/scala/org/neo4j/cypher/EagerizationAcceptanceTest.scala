@@ -178,7 +178,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val result = updateWithBothPlanners(query)
     assertNumberOfEagerness(query, 2)
-    result should use("RepeatableRead")
+    result should use("RepeatableRead", "EagerApply")
     assertStats(result, nodesCreated = 10)
   }
 

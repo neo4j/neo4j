@@ -126,9 +126,9 @@ object ClauseConverters {
     }
 
     private def allCreatePatterns(element: PatternElement): (Vector[CreateNodePattern], Vector[CreateRelationshipPattern]) = element match {
-      case NodePattern(None, _, _, _) => throw new InternalException("All nodes must be named at this instance")
+      case NodePattern(None, _, _) => throw new InternalException("All nodes must be named at this instance")
       //CREATE ()
-      case NodePattern(Some(identifier), labels, props, _) =>
+      case NodePattern(Some(identifier), labels, props) =>
         (Vector(CreateNodePattern(IdName.fromIdentifier(identifier), labels, props)), Vector.empty)
 
       //CREATE ()-[:R]->()
