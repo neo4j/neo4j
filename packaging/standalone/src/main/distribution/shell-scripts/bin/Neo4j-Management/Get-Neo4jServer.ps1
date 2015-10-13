@@ -100,7 +100,7 @@ Function Get-Neo4jServer
       
       # Get the server version from the name of the neo4j-server-<version>.jar file
       if ($matches -ne $null) { $matches.Clear() }
-      if ($_.Name -match '^neo4j-server-([\d.\-MRC]+)\.jar$') { $serverProperties.ServerVersion = $matches[1] }
+      if ($_.Name -match '^neo4j-server-(.+)\.jar$') { $serverProperties.ServerVersion = $matches[1] }
     }
 
     $serverObject = New-Object -TypeName PSCustomObject -Property $serverProperties
