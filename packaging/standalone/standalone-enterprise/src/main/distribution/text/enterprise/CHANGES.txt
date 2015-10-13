@@ -21,7 +21,9 @@ o ID files will now be properly always marked as unclean on unclean
 o TransactionIdStore tracks highest transaction id instead of highest gap-free transaction id.
   This fixes an issue where a lower transaction id than expected would be seen as last committed.
 o Fixes #5528 - Unique constraint not being respected
-
+o Awaits uniqueness constraint indexes to be rebuilt, if recovery process decides to do so,
+  before considering the database as started. This mimics the behaviour of creating such a constraint.
+o Greatly lowered memory usage during rebuilding of counts store.
 
 IO:
 o File lock deletion is retried on failure, fixing an issue with file lock
