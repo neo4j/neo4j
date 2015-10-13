@@ -32,6 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 
 import static org.neo4j.com.RequestContext.anonymous;
 import static org.neo4j.io.fs.FileUtils.getMostCanonicalFile;
@@ -136,7 +137,7 @@ public class StoreCopyServer
         try
         {
             monitor.startTryCheckPoint();
-            long lastAppliedTransaction = checkPointer.tryCheckPoint();
+            long lastAppliedTransaction = checkPointer.tryCheckPoint( new SimpleTriggerInfo( "store copy" ) );
             monitor.finishTryCheckPoint();
             ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( (int) ByteUnit.mebiBytes( 1 ) );
 

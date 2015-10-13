@@ -19,38 +19,32 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-public class CountCommittedTransactionThreshold extends AbstractCheckPointThreshold
+import org.neo4j.function.Consumer;
+
+/**
+ * Abstract class that implement common logic for making the consumer to consume the {@link #description()} of this
+ * threshold if {@link #thresholdReached(long)} is true.
+ */
+abstract class AbstractCheckPointThreshold implements CheckPointThreshold
 {
-    private final int notificationThreshold;
-
-    private volatile long nextTransactionIdTarget;
-
-    public CountCommittedTransactionThreshold( int notificationThreshold )
-    {
-        this.notificationThreshold = notificationThreshold;
-    }
-
     @Override
-    public void initialize( long transactionId )
+    public final boolean isCheckPointingNeeded( long lastCommittedTransactionId, Consumer<String> consumer )
     {
-        nextTransactionIdTarget = transactionId + notificationThreshold;
+        boolean result = thresholdReached( lastCommittedTransactionId );
+        try
+        {
+            return result;
+        }
+        finally
+        {
+            if ( result )
+            {
+                consumer.accept( description() );
+            }
+        }
     }
 
-    @Override
-    protected boolean thresholdReached( long lastCommittedTransactionId )
-    {
-        return lastCommittedTransactionId >= nextTransactionIdTarget;
-    }
+    protected abstract boolean thresholdReached( long lastCommittedTransactionId );
 
-    @Override
-    protected String description()
-    {
-        return "tx count threshold";
-    }
-
-    @Override
-    public void checkPointHappened( long transactionId )
-    {
-        nextTransactionIdTarget = transactionId + notificationThreshold;
-    }
+    protected abstract String description();
 }

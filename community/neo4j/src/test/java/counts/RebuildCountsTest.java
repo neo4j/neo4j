@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -171,7 +172,7 @@ public class RebuildCountsTest
     private void rotateLog() throws IOException
     {
         ((GraphDatabaseAPI) db).getDependencyResolver()
-                               .resolveDependency( CheckPointer.class ).forceCheckPoint();
+                               .resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
     }
 
     private FileSystemAbstraction crash()

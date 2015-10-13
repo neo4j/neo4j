@@ -89,8 +89,7 @@ public class HaSettings
             TxPushStrategy.class ), "fixed" );
 
     @Description( "Size of batches of transactions applied on slaves when pulling from master" )
-    public static final Setting<Integer> pull_apply_batch_size = setting( "ha.pull_apply_batch_size",
-            INTEGER, "100" );
+    public static final Setting<Integer> pull_apply_batch_size = setting( "ha.pull_apply_batch_size", INTEGER, "100" );
 
     public enum TxPushStrategy
     {

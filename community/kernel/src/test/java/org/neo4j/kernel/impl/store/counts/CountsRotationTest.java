@@ -45,6 +45,8 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -182,7 +184,8 @@ public class CountsRotationTest
 
     private void checkPoint( GraphDatabaseAPI db ) throws IOException
     {
-        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint();
+        TriggerInfo triggerInfo = new SimpleTriggerInfo( "test" );
+        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( triggerInfo );
     }
 
     private final Label A = DynamicLabel.label( "A" );

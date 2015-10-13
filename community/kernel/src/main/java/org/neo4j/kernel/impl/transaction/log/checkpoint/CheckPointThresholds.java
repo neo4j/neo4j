@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
+import org.neo4j.function.Consumer;
+
 public class CheckPointThresholds
 {
     public static CheckPointThreshold or( final CheckPointThreshold... thresholds )
@@ -35,11 +37,11 @@ public class CheckPointThresholds
             }
 
             @Override
-            public boolean isCheckPointingNeeded( long transactionId )
+            public boolean isCheckPointingNeeded( long transactionId, Consumer<String> consumer )
             {
                 for ( CheckPointThreshold threshold : thresholds )
                 {
-                    if ( threshold.isCheckPointingNeeded( transactionId ) )
+                    if ( threshold.isCheckPointingNeeded( transactionId, consumer ) )
                     {
                         return true;
                     }
