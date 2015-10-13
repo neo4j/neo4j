@@ -63,11 +63,11 @@ For example, if a write lock is taken on a common node or relationship, then all
 
 === Lost Updates in Cypher ===
 
-In cypher it is possible to acquire write locks to simulate improved isolation in some cases.
-Consider, for example, the case where multiple concurrent cypher queries increment the value of a property.
-Due to the read-committed isolation level, the increments will not results in a deterministic final solution.
+In Cypher it is possible to acquire write locks to simulate improved isolation in some cases.
+Consider the case where multiple concurrent Cypher queries increment the value of a property.
+Due to the limitations of the read-committed isolation level, the increments will not result in a deterministic final value.
 
-For example, the following query, if run by one hundred concurrent clients, will not increment the property `n.prop` to 100, but some value lower than 100.
+For example, the following query, if run by one hundred concurrent clients, will very likely not increment the property `n.prop` to 100, but some value lower than 100.
 
 [source,cypher]
 ----
@@ -76,10 +76,11 @@ SET n.prop = n.prop + 1
 ----
 
 This is because all queries will read the value of `n.prop` within their own transaction.
-They will not see the incremented value from other transactions.
+They will not see the incremented value from any other transaction that has not yet committed.
+In the worst case scenario the final value could be as low as 1, if all threads perform the read before any has committed their transaction.
 
 To ensure deterministic behavior, it is necessary to grab a write lock on the node in question.
-In Cypher there is no explicit support for this, but we can workaround this limitation by writing to a temporary property.
+In Cypher there is no explicit support for this, but we can work around this limitation by writing to a temporary property.
 
 [source,cypher]
 ----
@@ -89,7 +90,7 @@ SET n.prop = n.prop + 1
 REMOVE n._LOCK_
 ----
 
-The existence of the first `SET` before the `n.prop` read ensures the lock is acquired before the read action, and no updates will be lost due to enforced serialization of all concurrent queries on that specific node.
+The existence of the first `SET n._LOCK_` statement before the read of the `n.prop` read ensures the lock is acquired before the read action, and no updates will be lost due to enforced serialization of all concurrent queries on that specific node.
 
 [[transactions-locking]]
 == Default locking behavior ==
