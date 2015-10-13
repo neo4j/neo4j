@@ -19,7 +19,9 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,6 +45,8 @@ import static org.neo4j.bolt.v1.messaging.example.Support.labels;
 
 public class Neo4jPackTest
 {
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     private byte[] packed( Object object ) throws IOException
     {
@@ -101,6 +105,25 @@ public class Neo4jPackTest
         assertThat( unpacked, instanceOf( Map.class ) );
         Map<String, Object> unpackedMap = (Map<String, Object>) unpacked;
         assertThat( unpackedMap, equalTo( ALICE.getAllProperties() ) );
+    }
+
+    @Test
+    public void shouldErrorOnUnpackingMapWithDuplicateKeys() throws IOException
+    {
+        // Given
+        PackedOutputArray output = new PackedOutputArray();
+        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        packer.packMapHeader( 2 );
+        packer.pack( "key" );
+        packer.pack( 1 );
+        packer.pack( "key" );
+        packer.pack( 2 );
+
+        // Expect
+        exception.expect( BoltIOException.class );
+
+        // When
+        unpacked( output.bytes() );
     }
 
     @Test
