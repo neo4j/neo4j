@@ -101,7 +101,6 @@ public enum HeartbeatState
                                 break;
                             }
 
-                            context.getInternalLog( HeartbeatState.class ).debug( "Received " + state );
 
                             if ( state.getServer() == null )
                             {
