@@ -29,6 +29,7 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 
 public class LabelTokenCreatorModeSwitcher extends AbstractModeSwitcher<TokenCreator>
 {
@@ -51,13 +52,13 @@ public class LabelTokenCreatorModeSwitcher extends AbstractModeSwitcher<TokenCre
     }
 
     @Override
-    protected TokenCreator getMasterImpl()
+    protected TokenCreator getMasterImpl( LifeSupport life )
     {
         return new DefaultLabelIdCreator( kernelSupplier, idGeneratorFactory );
     }
 
     @Override
-    protected TokenCreator getSlaveImpl()
+    protected TokenCreator getSlaveImpl( LifeSupport life )
     {
         return new SlaveLabelTokenCreator( master.cement(), requestContextFactory );
     }

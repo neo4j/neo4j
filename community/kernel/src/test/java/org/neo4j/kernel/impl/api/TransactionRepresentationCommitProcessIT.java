@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,6 +32,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.function.Functions;
 import org.neo4j.graphdb.Node;
@@ -97,7 +97,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 
@@ -177,8 +176,8 @@ public class TransactionRepresentationCommitProcessIT
         final TransactionRepresentationStoreApplier storeApplier = createStoreApplier(
                 indexStore, legacyIndexApplierLookup, legacyIndexTransactionOrdering, kernelHealth );
 
-        final TransactionAppender appender = createTransactionAppender( metaDataStore, transactionMetadataCache,
-                legacyIndexTransactionOrdering, logFile, kernelHealth );
+        final BatchingTransactionAppender appender = createTransactionAppender( metaDataStore, transactionMetadataCache,
+                        legacyIndexTransactionOrdering, logFile, kernelHealth );
 
         final CheckPointerImpl checkPointer = createCheckPointer( metaDataStore, kernelHealth, appender );
 

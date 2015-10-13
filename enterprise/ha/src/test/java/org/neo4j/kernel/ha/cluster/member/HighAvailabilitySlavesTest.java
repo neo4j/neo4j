@@ -27,8 +27,6 @@ import java.util.concurrent.Executors;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.cluster.Cluster;
@@ -36,16 +34,18 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
+import org.neo4j.kernel.ha.com.master.DefaultSlaveFactory;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.ReflectionUtil;
 
 import static java.net.URI.create;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.sameInstance;
@@ -57,8 +57,6 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
-
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
 
@@ -134,7 +132,8 @@ public class HighAvailabilitySlavesTest
                 new ClusterMember( INSTANCE_ID ).availableAs( SLAVE, HA_URI, StoreId.DEFAULT ) ) );
 
         SlaveFactory slaveFactory = mock( SlaveFactory.class );
-        when( slaveFactory.newSlave( (ClusterMember) any() ) ).thenReturn( mock( Slave.class ) );
+        when( slaveFactory.newSlave( any( LifeSupport.class ), any( ClusterMember.class ) ) )
+                .thenReturn( mock( Slave.class ) );
 
         HighAvailabilitySlaves slaves = new HighAvailabilitySlaves( clusterMembers, cluster, slaveFactory );
         slaves.init();
@@ -156,7 +155,8 @@ public class HighAvailabilitySlavesTest
                 new ClusterMember( INSTANCE_ID ).availableAs( SLAVE, HA_URI, StoreId.DEFAULT ) ) );
 
         SlaveFactory slaveFactory = mock( SlaveFactory.class );
-        when( slaveFactory.newSlave( (ClusterMember) any() ) ).thenReturn( mock( Slave.class ), mock( Slave.class ) );
+        when( slaveFactory.newSlave( any( LifeSupport.class ), any( ClusterMember.class ) ) )
+                .thenReturn( mock( Slave.class ), mock( Slave.class ) );
 
         HighAvailabilitySlaves slaves = new HighAvailabilitySlaves( clusterMembers, cluster, slaveFactory );
         slaves.init();
@@ -179,8 +179,8 @@ public class HighAvailabilitySlavesTest
     public void shouldSupportConcurrentConsumptionOfSlaves() throws Exception
     {
         // Given
-        HighAvailabilitySlaves haSlaves = new HighAvailabilitySlaves(
-                clusterMembersOfSize( 1000 ), mock( Cluster.class ), slaveFactoryMock() );
+        HighAvailabilitySlaves haSlaves = new HighAvailabilitySlaves( clusterMembersOfSize( 1000 ),
+                mock( Cluster.class ), new DefaultSlaveFactory( NullLogProvider.getInstance(), new Monitors(), 42 ) );
 
         // When
         ExecutorService executor = Executors.newFixedThreadPool( 5 );
@@ -222,23 +222,10 @@ public class HighAvailabilitySlavesTest
     private static ClusterMember mockClusterMemberWithRole( String role )
     {
         ClusterMember member = mock( ClusterMember.class );
+        when( member.getHAUri() ).thenReturn( URI.create( "http://localhost:7474" ) );
         when( member.isAlive() ).thenReturn( true );
         when( member.hasRole( eq( role ) ) ).thenReturn( true );
         return member;
-    }
-
-    private static SlaveFactory slaveFactoryMock()
-    {
-        SlaveFactory slaveFactory = mock( SlaveFactory.class );
-        when( slaveFactory.newSlave( any( ClusterMember.class ) ) ).then( new Answer<Slave>()
-        {
-            @Override
-            public Slave answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return mock( Slave.class, withSettings().extraInterfaces( Lifecycle.class ) );
-            }
-        } );
-        return slaveFactory;
     }
 
     private static Runnable slavesConsumingRunnable( final HighAvailabilitySlaves haSlaves )

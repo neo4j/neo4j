@@ -64,6 +64,8 @@ public class BackupServiceStressTesting
         int brokenStores = callable.call();
 
         assertEquals( 0, brokenStores );
+
+        FileUtils.deleteRecursively( new File( directory ) );
     }
 
     private static File ensureExists( File directory ) throws IOException

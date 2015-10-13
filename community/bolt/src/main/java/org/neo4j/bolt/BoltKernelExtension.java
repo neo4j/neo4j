@@ -59,24 +59,24 @@ import static org.neo4j.kernel.impl.util.JobScheduler.Groups.boltNetworkIO;
 /**
  * Wraps Bolt and exposes it as a Kernel Extension.
  */
-@Service.Implementation(KernelExtensionFactory.class)
+@Service.Implementation( KernelExtensionFactory.class )
 public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtension.Dependencies>
 {
     public static class Settings
     {
-        @Description("Enable Neo4j Bolt")
+        @Description( "Enable Neo4j Bolt" )
         public static final Setting<Boolean> enabled =
                 setting( "dbms.bolt.enabled", BOOLEAN, "false" );
 
-        @Description("Enable Neo4j encryption for Bolt protocol ports")
+        @Description( "Enable Neo4j encryption for Bolt protocol ports" )
         public static final Setting<Boolean> tls_enabled =
                 setting( "dbms.bolt.tls.enabled", BOOLEAN, "false" );
 
-        @Description("Host and port for the Neo4j Bolt Protocol")
+        @Description( "Host and port for the Neo4j Bolt Protocol" )
         public static final Setting<HostnamePort> socket_address =
                 setting( "dbms.bolt.socket.address", HOSTNAME_PORT, "localhost:7687" );
 
-        @Description("Host and port for the Neo4j Bolt Protocol Websocket")
+        @Description( "Host and port for the Neo4j Bolt Protocol Websocket" )
         public static final Setting<HostnamePort> websocket_address =
                 setting( "dbms.bolt.websocket.address", HOSTNAME_PORT, "localhost:7688" );
     }
@@ -117,13 +117,13 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         {
             final JobScheduler scheduler = dependencies.scheduler();
 
-            final Sessions sessions = life.add( new ThreadedSessions(
+            final Sessions sessions = new ThreadedSessions(
                     life.add( new StandardSessions( api, dependencies.usageData(), logging ) ),
-                    scheduler, logging ) );
+                    scheduler, logging );
 
 
             SslContext sslCtx = null;
-            if( config.get( Settings.tls_enabled ) )
+            if ( config.get( Settings.tls_enabled ) )
             {
                 SelfSignedCertificate ssc = new SelfSignedCertificate();
                 sslCtx = SslContextBuilder.forServer( ssc.certificate(), ssc.privateKey() ).build();

@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -37,6 +32,11 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.junit.Test;
+import org.mockito.Matchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -93,12 +93,12 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcherTest.storeSupplierMock;
@@ -629,7 +629,7 @@ public class HighAvailabilityMemberStateMachineTest
                 mock( HaIdGeneratorFactory.class ),
                 handler,
                 mock( ClusterMemberAvailability.class ), mock( RequestContextFactory.class ),
-                mock( PullerFactory.class ),
+                mock( PullerFactory.class, RETURNS_MOCKS ),
                 Iterables.<KernelExtensionFactory<?>>empty(), masterClientResolver,
                 monitor,
                 new StoreCopyClient.Monitor.Adapter(),
@@ -662,7 +662,7 @@ public class HighAvailabilityMemberStateMachineTest
                 DelegateInvocationHandler.class ) )
         {
             @Override
-            protected Object getSlaveImpl()
+            protected Object getSlaveImpl( LifeSupport life )
             {
                 Master master = handler.cement();
                 ref.set( master );
@@ -671,7 +671,7 @@ public class HighAvailabilityMemberStateMachineTest
             }
 
             @Override
-            protected Object getMasterImpl()
+            protected Object getMasterImpl( LifeSupport life )
             {
                 return null;
             }

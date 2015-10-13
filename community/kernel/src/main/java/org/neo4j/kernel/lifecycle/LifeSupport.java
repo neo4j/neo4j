@@ -298,22 +298,33 @@ public class LifeSupport
      * to the state of this LifeSupport.
      *
      * @param instance the Lifecycle instance to add
-     * @param <T>      type of the instance
+     * @param <T> type of the instance
      * @return the instance itself
      * @throws LifecycleException if the instance could not be transitioned properly
      */
-    public synchronized <T> T add( T instance )
+    public synchronized <T extends Lifecycle> T add( T instance )
             throws LifecycleException
     {
-        if ( instance instanceof Lifecycle )
-        {
-            LifecycleInstance newInstance = new LifecycleInstance( (Lifecycle) instance );
-            List<LifecycleInstance> tmp = new ArrayList<>( instances );
-            tmp.add(newInstance);
-            instances = tmp;
-            bringToState( newInstance );
-        }
+        assert instance != null;
+        assert notAlreadyAdded( instance );
+        LifecycleInstance newInstance = new LifecycleInstance( instance );
+        List<LifecycleInstance> tmp = new ArrayList<>( instances );
+        tmp.add( newInstance );
+        instances = tmp;
+        bringToState( newInstance );
         return instance;
+    }
+
+    private boolean notAlreadyAdded( Lifecycle instance )
+    {
+        for ( LifecycleInstance candidate : instances )
+        {
+            if ( candidate.instance == instance )
+            {
+                throw new IllegalStateException( instance + " already added", candidate.addedWhere );
+            }
+        }
+        return true;
     }
 
     public synchronized boolean remove( Object instance )
@@ -463,10 +474,18 @@ public class LifeSupport
     {
         Lifecycle instance;
         LifecycleStatus currentStatus = LifecycleStatus.NONE;
+        Exception addedWhere;
 
         private LifecycleInstance( Lifecycle instance )
         {
             this.instance = instance;
+            assert trackInstantiationStackTrace();
+        }
+
+        private boolean trackInstantiationStackTrace()
+        {
+            addedWhere = new Exception();
+            return true;
         }
 
         @Override

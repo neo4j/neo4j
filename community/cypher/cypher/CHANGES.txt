@@ -11,6 +11,9 @@ o Introduce STARTS WITH, ENDS WITH and CONTAINS
 o ShortestPath no longer has a max limit of 15 steps
 o Generates a warning when using shortestPath without supplying an upper limit
 o Removes eagerness from query execution plans in cases where it is not necessary
+o CREATE from lists is now deprecated
+o Will now allow literals to be placed on the left-hand side of an inequality predicate also when using an index
+o MergeInto will now properly take direction into account when creating relationships
 
 2.3.0-M03
 -------
@@ -62,6 +65,7 @@ o Fixes #5195 - USING INDEX hints breaks some queries
 o Fixes #5545 - ExecutionFailure on combination of ORDER BY and LIMIT 0
 o MERGE now prints its start point in the plan description
 o Cypher queries will no longer be logged in messages.log
+o The Cypher compiler will now by default require more updates to relevant statistics in order to replan a cached plan
 
 2.2.5
 -----

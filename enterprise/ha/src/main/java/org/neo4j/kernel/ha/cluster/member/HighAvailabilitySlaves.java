@@ -74,7 +74,7 @@ public class HighAvailabilitySlaves implements Lifecycle, Slaves
                     Slave presentSlave = slaves.get( from );
                     if ( presentSlave == null )
                     {
-                        presentSlave = life.add( slaveFactory.newSlave( from ) );
+                        presentSlave = slaveFactory.newSlave( life, from );
                         slaves.put( from, presentSlave );
                     }
                     return presentSlave;

@@ -28,6 +28,7 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 
 public class PropertyKeyCreatorModeSwitcher extends AbstractModeSwitcher<TokenCreator>
 {
@@ -50,13 +51,13 @@ public class PropertyKeyCreatorModeSwitcher extends AbstractModeSwitcher<TokenCr
     }
 
     @Override
-    protected TokenCreator getMasterImpl()
+    protected TokenCreator getMasterImpl( LifeSupport life )
     {
         return new DefaultPropertyTokenCreator( kernelSupplier, idGeneratorFactory );
     }
 
     @Override
-    protected TokenCreator getSlaveImpl()
+    protected TokenCreator getSlaveImpl( LifeSupport life )
     {
         return new SlavePropertyTokenCreator( master.cement(), requestContextFactory );
     }

@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel;
 
+import java.io.File;
+import java.util.Collections;
+import java.util.Map;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
-import java.io.File;
-import java.util.Collections;
-import java.util.Map;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Exceptions;
@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -116,7 +117,7 @@ public class GraphDatabaseFacadeFactoryTest
                     {
                         return invocationOnMock.getArguments()[0];
                     }
-                } ).when( lifeMock ).add( any() );
+                } ).when( lifeMock ).add( any( Lifecycle.class ) );
 
 
                 return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
