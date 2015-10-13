@@ -54,10 +54,12 @@ public class BackupServiceStressTesting
         String backupHostname = fromEnv( "BACKUP_SERVICE_STRESS_BACKUP_HOSTNAME", DEFAULT_HOSTNAME );
         int backupPort = parseInt( fromEnv( "BACKUP_SERVICE_STRESS_BACKUP_PORT", DEFAULT_PORT ) );
 
+        File storeDirectory = new File( directory, "store" );
+        File workDirectory = new File( directory, "work" );
         Callable<Integer> callable = new BackupServiceStressTestingBuilder()
                 .until( untilTimeExpired( durationInMinutes, MINUTES ) )
-                .withStore( ensureExists( new File( directory, "store" ) ) )
-                .withBackupDirectory( ensureExists( new File( directory, "work" ) ) )
+                .withStore( ensureExists( storeDirectory ) )
+                .withBackupDirectory( ensureExists( workDirectory ) )
                 .withBackupAddress( backupHostname, backupPort )
                 .build();
 
@@ -65,7 +67,8 @@ public class BackupServiceStressTesting
 
         assertEquals( 0, brokenStores );
 
-        FileUtils.deleteRecursively( new File( directory ) );
+        FileUtils.deleteRecursively( storeDirectory );
+        FileUtils.deleteRecursively( workDirectory );
     }
 
     private static File ensureExists( File directory ) throws IOException
