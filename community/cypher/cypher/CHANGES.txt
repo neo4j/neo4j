@@ -5,6 +5,7 @@ o Fixes #5195 - USING INDEX hints breaks some queries
 o Fixes #5545 - ExecutionFailure on combination of ORDER BY and LIMIT 0
 o MERGE now prints its start point in the plan description
 o Cypher queries will no longer be logged in messages.log
+o The Cypher compiler will now by default require more updates to relevant statistics in order to replan a cached plan
 
 2.2.5
 -----
