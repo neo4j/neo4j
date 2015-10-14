@@ -376,4 +376,12 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     res.notifications should contain (UnboundedShortestPathNotification(InputPosition(26, 1, 27)))
   }
+
+  test("2.3 can warn about bare nodes") {
+    val res = eengine.execute("EXPLAIN CYPHER 2.3 MATCH n RETURN n")
+
+    res.notifications should not be empty
+  }
+
+
 }
