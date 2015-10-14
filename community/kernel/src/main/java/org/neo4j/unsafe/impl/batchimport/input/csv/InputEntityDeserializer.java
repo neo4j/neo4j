@@ -20,12 +20,14 @@
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
 import org.neo4j.function.Function;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
@@ -49,6 +51,8 @@ public class InputEntityDeserializer<ENTITY extends InputEntity>
     private final Function<ENTITY,ENTITY> decorator;
     private final Deserialization<ENTITY> deserialization;
     private final Validator<ENTITY> validator;
+    private final ArrayList<Pair<Long,String>> ignoredRowsSample = new ArrayList<>();
+    private final Extractors.StringExtractor stringExtractor = new Extractors.StringExtractor( false );
 
     InputEntityDeserializer( Header header, CharSeeker data, int delimiter,
             Deserialization<ENTITY> deserialization, Function<ENTITY,ENTITY> decorator,
@@ -81,15 +85,26 @@ public class InputEntityDeserializer<ENTITY extends InputEntity>
             // When we have everything, create an input entity out of it
             ENTITY entity = deserialization.materialize();
 
-            // If there are more values on this line, ignore them
-            // TODO perhaps log about them?
+            // Ignore additional values on this, but log it in case user doesn't realise that the header specifies
+            // less columns than the data. Prints in close() so it only happens once per file.
+            int ignoredValues = 0;
+            StringBuilder restOfLine = new StringBuilder();
             while ( !mark.isEndOfLine() )
             {
                 data.seek( mark, delimiter );
+                data.extract( mark, stringExtractor );
+                restOfLine.append( String.valueOf( Character.toChars( delimiter ) ) ).append( stringExtractor.value() );
+                ignoredValues++;
             }
 
             entity = decorator.apply( entity );
             validator.validate( entity );
+
+            if ( ignoredValues > 0 && ignoredRowsSample.size() < 9 )
+            {
+                ignoredRowsSample.add( Pair.of( data.lineNumber(), restOfLine.toString() ) );
+            }
+
             return entity;
         }
         catch ( IOException e )
@@ -176,6 +191,18 @@ public class InputEntityDeserializer<ENTITY extends InputEntity>
     @Override
     public void close()
     {
+        if ( ignoredRowsSample.size() > 0 )
+        {
+            System.out.println( "\nWarning: ignored columns which were not present in header for" );
+            System.out.println( String.format( "    %s", data.sourceDescription() ) );
+
+            for ( Pair<Long,String> x : ignoredRowsSample )
+            {
+                System.out.println( String.format( "Row %d: %s", x.first(), x.other() ) );
+            }
+            System.out.println( "...\n" );
+        }
+
         try
         {
             data.close();
