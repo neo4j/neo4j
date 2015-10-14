@@ -143,10 +143,7 @@ detectrunning() {
       ## SmartOS has a different lsof command line arguments
       newpid=$(lsof -o $NEO4J_SERVER_PORT | grep '::' | head -n1 | cut -d ' ' -f 1)
   else
-      ## This could be achieved with filtering using -sTCP:LISTEN but this option is not available
-      ## on lsof v4.78 which is the one bundled with some distros. So we have to do this grep below
-      newpid=$(lsof -i :$NEO4J_SERVER_PORT -F T -Ts | grep -i "TST=LISTEN" -B1 | head -n1)
-      newpid=${newpid:1}
+      newpid=$(lsof -i :$NEO4J_SERVER_PORT | awk 'NR!=1 { print $2 }')
   fi
 }
 
