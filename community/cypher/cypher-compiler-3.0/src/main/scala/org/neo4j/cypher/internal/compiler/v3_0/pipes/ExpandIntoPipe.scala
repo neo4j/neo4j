@@ -50,9 +50,8 @@ case class ExpandIntoPipe(source: Pipe,
                           dir: SemanticDirection,
                           lazyTypes: LazyTypes)(val estimatedCardinality: Option[Double] = None)
                          (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+  extends PipeWithSource(source, pipeMonitor) with RonjaPipe with CachingExpandInto {
   self =>
-
   private final val CACHE_SIZE = 100000
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
@@ -68,8 +67,8 @@ case class ExpandIntoPipe(source: Pipe,
 
             if (toNode == null) Iterator.empty
             else {
-              val relationships = relCache.get(fromNode, toNode)
-                .getOrElse(findRelationships(state.query, fromNode, toNode, relCache))
+              val relationships = relCache.get(fromNode, toNode, dir)
+                .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, lazyTypes.types(state.query)))
 
               if (relationships.isEmpty) Iterator.empty
               else relationships.map(row.newWith2(relName, _, toName, toNode))
@@ -79,83 +78,7 @@ case class ExpandIntoPipe(source: Pipe,
             Iterator.empty
         }
     }
-  }
 
-  /**
-   * Finds all relationships connecting fromNode and toNode.
-   */
-  private def findRelationships(query: QueryContext, fromNode: Node, toNode: Node,
-                                relCache: RelationshipsCache): Iterator[Relationship] = {
-    val relTypes = lazyTypes.types(query)
-
-    val fromNodeIsDense = query.nodeIsDense(fromNode.getId)
-    val toNodeIsDense = query.nodeIsDense(toNode.getId)
-
-    //if both nodes are dense, start from the one with the lesser degree
-    if (fromNodeIsDense && toNodeIsDense) {
-      //check degree and iterate from the node with smaller degree
-      val fromDegree = getDegree(fromNode, relTypes, dir, query)
-      if (fromDegree == 0) {
-        return Iterator.empty
-      }
-
-      val toDegree = getDegree(toNode, relTypes, dir.reversed, query)
-      if (toDegree == 0) {
-        return Iterator.empty
-      }
-
-      relIterator(query, fromNode, toNode, fromDegree < toDegree, relTypes, relCache)
-    }
-    // iterate from a non-dense node
-    else if (toNodeIsDense)
-      relIterator(query, fromNode, toNode, preserveDirection = true, relTypes, relCache)
-    else if (fromNodeIsDense)
-      relIterator(query, fromNode, toNode, preserveDirection = false, relTypes, relCache)
-    //both nodes are non-dense, choose a random starting point
-    else
-      relIterator(query, fromNode, toNode, ThreadLocalRandom.current().nextBoolean(), relTypes, relCache)
-  }
-
-  private def relIterator(query: QueryContext, fromNode: Node,  toNode: Node, preserveDirection: Boolean,
-                          relTypes: Option[Seq[Int]], relCache: RelationshipsCache) = {
-    val (start, localDirection, end) = if(preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reversed, fromNode)
-    val relationships = query.getRelationshipsForIds(start, localDirection, relTypes)
-    new PrefetchingIterator[Relationship] {
-      //we do not expect two nodes to have many connecting relationships
-      val connectedRelationships = new ArrayBuffer[Relationship](2)
-
-      override def fetchNextOrNull(): Relationship = {
-        while (relationships.hasNext) {
-          val rel = relationships.next()
-          val other = rel.getOtherNode(start)
-          if (end == other) {
-            connectedRelationships.append(rel)
-            return rel
-          }
-        }
-        relCache.put(fromNode, toNode, connectedRelationships)
-        null
-      }
-    }.asScala
-  }
-
-  private def getDegree(node: Node, relTypes: Option[Seq[Int]], direction: SemanticDirection, query: QueryContext) = {
-    relTypes.map {
-      case rels if rels.isEmpty   => query.nodeGetDegree(node.getId, direction)
-      case rels if rels.size == 1 => query.nodeGetDegree(node.getId, direction, rels.head)
-      case rels                   => rels.foldLeft(0)(
-        (acc, rel)                => acc + query.nodeGetDegree(node.getId, direction, rel)
-      )
-    }.getOrElse(query.nodeGetDegree(node.getId, direction))
-  }
-
-  @inline
-  private def getRowNode(row: ExecutionContext, col: String): Node = {
-    row.getOrElse(col, throw new InternalException(s"Expected to find a node at $col but found nothing")) match {
-      case n: Node => n
-      case null    => null
-      case value   => throw new InternalException(s"Expected to find a node at $col but found $value instead")
-    }
   }
 
   def planDescriptionWithoutCardinality =
@@ -172,29 +95,6 @@ case class ExpandIntoPipe(source: Pipe,
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
-  private final class RelationshipsCache(capacity: Int) {
-
-    val table = new mutable.OpenHashMap[(Long, Long), Seq[Relationship]]()
-
-    def get(start: Node, end: Node): Option[Seq[Relationship]] = table.get(key(start, end))
-
-    def put(start: Node, end: Node, rels: Seq[Relationship]) = {
-      if (table.size < capacity) {
-        table.put(key(start, end), rels)
-      }
-    }
-
-    @inline
-    private def key(start: Node, end: Node) = {
-      // if direction is BOTH than we keep the key sorted, otherwise direction is important and we keep key as is
-      if (dir != SemanticDirection.BOTH) (start.getId, end.getId)
-      else {
-        if (start.getId < end.getId)
-          (start.getId, end.getId)
-        else
-          (end.getId, start.getId)
-      }
-    }
-  }
-
 }
+
+
