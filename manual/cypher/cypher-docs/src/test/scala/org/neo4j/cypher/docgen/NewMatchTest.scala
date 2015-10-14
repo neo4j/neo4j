@@ -46,7 +46,7 @@ class NewMatchTest extends DocumentingTest {
         |       (michael)-[:ACTED_IN {role: "President Andrew Shepherd"}]->(thePresident),
         |       (rob)-[:DIRECTED]->(thePresident)"""
     )
-    abstr("The `MATCH` clause is used to search for the pattern described in it.")
+    synopsis("The `MATCH` clause is used to search for the pattern described in it.")
     section("Introduction") {
       p( """The `MATCH` clause allows you to specify the patterns Neo4j will search for in the database.
            |This is the primary way of getting data into the current set of bindings.

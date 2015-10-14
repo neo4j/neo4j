@@ -68,9 +68,9 @@ case class ContentChain(a: Content, b: Content) extends Content {
 case class Abstract(s: String) extends Content with NoQueries {
   override def asciiDoc(level: Int) =
     s"""[abstract]
-       |====
+       |--
        |$s
-       |====
+       |--
        |
        |""".stripMargin
 }

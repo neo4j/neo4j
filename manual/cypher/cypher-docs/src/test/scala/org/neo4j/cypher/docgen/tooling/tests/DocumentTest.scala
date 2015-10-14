@@ -57,9 +57,9 @@ class DocumentAsciiDocTest extends CypherFunSuite {
         |= title
         |
         |[abstract]
-        |====
+        |--
         |abstract intro
-        |====
+        |--
         |
         |""".stripMargin)
   }

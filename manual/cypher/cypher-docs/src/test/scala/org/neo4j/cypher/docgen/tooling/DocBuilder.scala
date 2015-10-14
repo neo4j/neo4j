@@ -53,7 +53,7 @@ trait DocBuilder {
   def resultTable() = current.addContent(QueryResultTablePlaceholder)
   def graphViz() = current.addContent(new GraphVizPlaceHolder())
 
-  def abstr(text: String) = current.addContent(Abstract(text))
+  def synopsis(text: String) = current.addContent(Abstract(text))
 
   // Scopes
   private def inScope(newScope: Scope, f: => Unit) = {

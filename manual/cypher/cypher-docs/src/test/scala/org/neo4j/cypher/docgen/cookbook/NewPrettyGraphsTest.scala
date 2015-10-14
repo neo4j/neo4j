@@ -25,7 +25,7 @@ import org.neo4j.cypher.docgen.tooling.{DocBuilder, DocumentingTest, ResultAsser
 class NewPrettyGraphsTest extends DocumentingTest with QueryStatisticsTestSupport {
   override def doc = new DocBuilder {
     doc("Pretty graphs", "cypher-cookbook-pretty-graphs")
-    abstr("This section is showing how to create some of the http://en.wikipedia.org/wiki/Gallery_of_named_graphs[named pretty graphs on Wikipedia].")
+    synopsis("This section is showing how to create some of the http://en.wikipedia.org/wiki/Gallery_of_named_graphs[named pretty graphs on Wikipedia].")
     section("Star Graph") {
       p("The graph is created by first creating a center node, and then once per element in the range, creates a leaf node and connects it to the center.")
       query( """CREATE (center)
