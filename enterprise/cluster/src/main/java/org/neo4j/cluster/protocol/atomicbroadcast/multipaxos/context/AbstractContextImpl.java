@@ -91,9 +91,15 @@ class AbstractContextImpl
     }
 
     @Override
-    public void cancelTimeout( Object key )
+    public long getTimeoutFor( Message<? extends MessageType> timeoutMessage )
     {
-        timeouts.cancelTimeout( key );
+        return timeouts.getTimeoutFor( timeoutMessage );
+    }
+
+    @Override
+    public Message<? extends MessageType> cancelTimeout( Object key )
+    {
+        return timeouts.cancelTimeout( key );
     }
 
     // ConfigurationContext

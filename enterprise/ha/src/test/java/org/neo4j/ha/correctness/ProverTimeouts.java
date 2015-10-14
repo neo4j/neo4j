@@ -69,9 +69,14 @@ class ProverTimeouts extends Timeouts
     }
 
     @Override
-    public void cancelTimeout( Object key )
+    public Message<? extends MessageType> cancelTimeout( Object key )
     {
-        timeouts.remove( key );
+        Pair<ProverTimeout,Long> timeout = timeouts.remove( key );
+        if ( timeout != null )
+        {
+            return timeout.first().getTimeoutMessage();
+        }
+        return null;
     }
 
     @Override

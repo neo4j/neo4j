@@ -26,5 +26,7 @@ public interface TimeoutsContext
 {
     void setTimeout( Object key, Message<? extends MessageType> timeoutMessage );
 
-    void cancelTimeout( Object key );
+    Message<? extends MessageType> cancelTimeout( Object key );
+
+    long getTimeoutFor( Message<? extends MessageType> timeoutMessage );
 }
