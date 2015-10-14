@@ -90,7 +90,7 @@ SET n.prop = n.prop + 1
 REMOVE n._LOCK_
 ----
 
-The existence of the first `SET n._LOCK_` statement before the read of the `n.prop` read ensures the lock is acquired before the read action, and no updates will be lost due to enforced serialization of all concurrent queries on that specific node.
+The existence of the `SET n._LOCK_` statement before the read of the `n.prop` read ensures the lock is acquired before the read action, and no updates will be lost due to enforced serialization of all concurrent queries on that specific node.
 
 [[transactions-locking]]
 == Default locking behavior ==
