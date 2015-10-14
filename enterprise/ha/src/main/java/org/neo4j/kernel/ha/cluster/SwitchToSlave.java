@@ -36,7 +36,6 @@ import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.function.Function;
-import org.neo4j.function.Predicate;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.CancellationRequest;
@@ -91,10 +90,9 @@ import org.neo4j.logging.Log;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.Iterables.first;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
 import static org.neo4j.kernel.ha.cluster.member.ClusterMembers.hasInstanceId;
 import static org.neo4j.kernel.impl.store.NeoStores.isStorePresent;
@@ -460,14 +458,14 @@ public class SwitchToSlave
         if ( !masterIsOld )
         {
             ClusterMembers clusterMembers = resolver.resolveDependency( ClusterMembers.class );
-
             InstanceId serverId = HighAvailabilityModeSwitcher.getServerId( masterUri );
-            Predicate<ClusterMember> specification = hasInstanceId( serverId );
             Iterable<ClusterMember> members = clusterMembers.getMembers();
-            Iterable<ClusterMember> filter = filter( specification,
-                    members );
-            ClusterMember master = single(
-                    filter );
+            ClusterMember master = first( filter( hasInstanceId( serverId ), members ) );
+            if ( master == null )
+            {
+                throw new IllegalStateException( "Cannot find the maser among " + members +
+                                                 " with master serverId=" + serverId + " and uri="+masterUri  );
+            }
 
             StoreId masterStoreId = master.getStoreId();
 
