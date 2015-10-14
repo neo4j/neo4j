@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.AggregationNameGenerator
-import org.neo4j.cypher.internal.compiler.v2_2.{replace, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.compiler.v2_2.{replace, Rewriter, topDown}
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
 /**
@@ -83,7 +83,7 @@ case object isolateAggregation extends Rewriter {
           val pos = clause.position
           val withClause = With(distinct = false, ReturnItems(includeExisting = false, withReturnItems.toSeq)(pos), None, None, None, None)(pos)
 
-          val resultClause = clause.endoRewrite(bottomUp(Rewriter.lift {
+          val resultClause = clause.endoRewrite(topDown(Rewriter.lift {
             case e: Expression =>
               withReturnItems.collectFirst {
                 case AliasedReturnItem(expression, identifier) if e == expression => identifier.copyId
