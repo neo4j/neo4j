@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_0.{SyntaxException, InternalException}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import collection.mutable
+import scala.collection.mutable.ListBuffer
 
 object ClauseConverters {
 
@@ -112,12 +114,14 @@ object ClauseConverters {
         case (builder, EveryPath(pattern:RelationshipChain)) =>
 
           val (nodes, rels) = allCreatePatterns(pattern)
+          //remove duplicates from loops, (a:L)-[:ER1]->(a)
+          val dedupedNodes = dedup(nodes)
 
           //create nodes that are not already matched or created
-          val nodesToCreate = nodes.filterNot(pattern => builder.allSeenPatternNodes(pattern.nodeName))
+          val nodesToCreate = dedupedNodes.filterNot(pattern => builder.allSeenPatternNodes(pattern.nodeName))
 
           //we must check that we are not trying to set a pattern or label on any already created nodes
-          val nodesCreatedBefore = nodes.filter(pattern => builder.allSeenPatternNodes(pattern.nodeName))
+          val nodesCreatedBefore = dedupedNodes.filter(pattern => builder.allSeenPatternNodes(pattern.nodeName))
           nodesCreatedBefore.collectFirst {
             case c if c.labels.nonEmpty || c.properties.nonEmpty =>
               throw new SyntaxException(s"Can't create node ${c.nodeName.name} with labels or properties here. It already exists in this context")
@@ -130,6 +134,20 @@ object ClauseConverters {
 
         case _ => throw new CantHandleQueryException(s"$clause is not yet supported")
       }
+    }
+
+    private def dedup(nodePatterns: Vector[CreateNodePattern]) = {
+      val seen = mutable.Set.empty[IdName]
+      val result = mutable.ListBuffer.empty[CreateNodePattern]
+      nodePatterns.foreach { pattern =>
+        if (!seen(pattern.nodeName)) result.append(pattern)
+        else if (pattern.labels.nonEmpty || pattern.properties.nonEmpty) {
+          //reused patterns must be pure identifier
+          throw new SyntaxException(s"Can't create node ${pattern.nodeName.name} with labels or properties here. It already exists in this context")
+        }
+        seen.add(pattern.nodeName)
+      }
+      result.toVector
     }
 
     private def allCreatePatterns(element: PatternElement): (Vector[CreateNodePattern], Vector[CreateRelationshipPattern]) = element match {

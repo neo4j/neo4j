@@ -106,6 +106,19 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
 
+  test("create simple loop") {
+    val result = updateWithBothPlanners("CREATE (root: R)-[:LINK]->(root)")
+
+    assertStats(result, nodesCreated = 1, relationshipsCreated = 1, labelsAdded = 1)
+  }
+
+  test("create simple loop from match") {
+    createLabeledNode("R")
+    val result = updateWithBothPlanners("MATCH (root:R) CREATE (root)-[:LINK]->(root)")
+
+    assertStats(result, relationshipsCreated = 1)
+  }
+
   test("create both nodes and relationships") {
     val result = updateWithBothPlanners("CREATE (a), (b), (a)-[r:R]->(b)")
 
