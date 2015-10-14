@@ -27,11 +27,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
+import org.neo4j.concurrent.AsyncEventSender;
 import org.neo4j.function.Consumer;
 import org.neo4j.function.Consumers;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.Listener;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.Lifecycles;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogProvider;
@@ -40,6 +44,10 @@ import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
+/**
+ * {@link LogService} for a neo4j store, where internal log messages are directed to a {@code messages.log}
+ * file and user log can be externally provided.
+ */
 public class StoreLogService extends AbstractLogService implements Lifecycle
 {
     public static final String INTERNAL_LOG_NAME = "messages.log";
@@ -52,8 +60,10 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         private int internalLogRotationDelay = 0;
         private int maxInternalLogArchives = 0;
         private Consumer<LogProvider> rotationListener = Consumers.noop();
-        private Map<String, Level> logLevels = new HashMap<>();
+        private final Map<String, Level> logLevels = new HashMap<>();
         private Level defaultLevel = Level.INFO;
+        private Executor asyncExecutor;
+        private Listener<Throwable> asyncErrorHandler = AsyncEventLogging.DEFAULT_ASYNC_ERROR_HANDLER;
 
         private Builder()
         {
@@ -100,6 +110,32 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
             return this;
         }
 
+        /**
+         * {@link LogProvider log providers} will be made asynchronous and will therefore let logging be unaffected
+         * by I/O waits from flushing underlying buffer to disk.
+         */
+        public Builder withAsyncronousLogging( JobScheduler executor )
+        {
+            return withAsyncronousLogging( executor.executor( JobScheduler.Groups.logging ) );
+        }
+
+        /**
+         * {@link LogProvider log providers} will be made asynchronous and will therefore let logging be unaffected
+         * by I/O waits from flushing underlying buffer to disk.
+         */
+        public Builder withAsyncronousLogging( Executor executor )
+        {
+            this.asyncExecutor = executor;
+            return this;
+        }
+
+        Builder withAsyncronousLogging( Executor executor, Listener<Throwable> errorHandler )
+        {
+            this.asyncExecutor = executor;
+            this.asyncErrorHandler = errorHandler;
+            return this;
+        }
+
         public StoreLogService inStoreDirectory( FileSystemAbstraction fileSystem, File storeDir ) throws IOException
         {
             return toFile( fileSystem, new File( storeDir, INTERNAL_LOG_NAME ) );
@@ -107,10 +143,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
 
         public StoreLogService toFile( FileSystemAbstraction fileSystem, File internalLogPath ) throws IOException
         {
-            return new StoreLogService(
-                    userLogProvider,
-                    fileSystem, internalLogPath, logLevels, defaultLevel,
-                    internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives, rotationExecutor, rotationListener );
+            return new StoreLogService( fileSystem, internalLogPath, this );
         }
     }
 
@@ -129,19 +162,14 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         return new Builder().inStoreDirectory( fileSystem, storeDir );
     }
 
-    private final Closeable closeable;
+    private final LifeSupport internalLife = new LifeSupport();
     private final SimpleLogService logService;
 
-    private StoreLogService( LogProvider userLogProvider,
+    @SuppressWarnings( "resource" )
+    private StoreLogService(
             FileSystemAbstraction fileSystem,
             File internalLog,
-            Map<String, Level> logLevels,
-            Level defaultLevel,
-            long internalLogRotationThreshold,
-            int internalLogRotationDelay,
-            int maxInternalLogArchives,
-            Executor rotationExecutor,
-            final Consumer<LogProvider> rotationListener ) throws IOException
+            final Builder builder ) throws IOException
     {
         if ( !internalLog.getParentFile().exists() )
         {
@@ -149,56 +177,81 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         }
 
         final FormattedLogProvider.Builder internalLogBuilder = FormattedLogProvider.withUTCTimeZone()
-                .withDefaultLogLevel( defaultLevel ).withLogLevels( logLevels );
+                .withDefaultLogLevel( builder.defaultLevel ).withLogLevels( builder.logLevels );
 
-        FormattedLogProvider internalLogProvider;
-        if ( internalLogRotationThreshold == 0 )
+        LogProvider internalLogProvider;
+        Closeable closeInShutdown;
+        if ( builder.internalLogRotationThreshold == 0 )
         {
             OutputStream outputStream = createOrOpenAsOuputStream( fileSystem, internalLog, true );
             internalLogProvider = internalLogBuilder.toOutputStream( outputStream );
-            rotationListener.accept( internalLogProvider );
-            this.closeable = outputStream;
+            builder.rotationListener.accept( internalLogProvider );
+
+            // We manage closing of the internal log since we create it in here. The user log is provided
+            // to us (no pun intended) so we'll let the provider take care of closing that.
+            closeInShutdown = outputStream;
         }
         else
         {
-            RotatingFileOutputStreamSupplier rotatingSupplier = new RotatingFileOutputStreamSupplier( fileSystem, internalLog,
-                    internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives,
-                    rotationExecutor, new RotatingFileOutputStreamSupplier.RotationListener()
+            RotatingFileOutputStreamSupplier rotatingSupplier = new RotatingFileOutputStreamSupplier(
+                    fileSystem,
+                    internalLog,
+                    builder.internalLogRotationThreshold,
+                    builder.internalLogRotationDelay,
+                    builder.maxInternalLogArchives,
+                    builder.rotationExecutor,
+                    new RotatingFileOutputStreamSupplier.RotationListener()
             {
                 @Override
                 public void outputFileCreated( OutputStream newStream, OutputStream oldStream )
                 {
                     FormattedLogProvider logProvider = internalLogBuilder.toOutputStream( newStream );
                     logProvider.getLog( StoreLogService.class ).info( "Opened new internal log file" );
-                    rotationListener.accept( logProvider );
+                    builder.rotationListener.accept( logProvider );
                     logProvider.getLog( StoreLogService.class ).info( "Rotated internal log file" );
                 }
             } );
             internalLogProvider = internalLogBuilder.toOutputStream( rotatingSupplier );
-            this.closeable = rotatingSupplier;
+            closeInShutdown = rotatingSupplier;
         }
+        internalLife.add( Lifecycles.close( closeInShutdown ) );
+
+        // Configure the log providers to be asynchronous, if user wanted that behavior.
+        LogProvider userLogProvider = builder.userLogProvider;
+        if ( builder.asyncExecutor != null )
+        {
+            AsyncEventSender<AsyncLogEvent> events = internalLife.add(
+                    new AsyncEventLogging( builder.asyncErrorHandler, builder.asyncExecutor ) );
+
+            userLogProvider = new AsyncLogProvider( userLogProvider, events );
+            internalLogProvider = new AsyncLogProvider( internalLogProvider, events );
+        }
+
         this.logService = new SimpleLogService( userLogProvider, internalLogProvider );
     }
 
     @Override
     public void init() throws Throwable
     {
+        internalLife.init();
     }
 
     @Override
     public void start() throws Throwable
     {
+        internalLife.start();
     }
 
     @Override
     public void stop() throws Throwable
     {
+        internalLife.stop();
     }
 
     @Override
     public void shutdown() throws Throwable
     {
-        closeable.close();
+        internalLife.shutdown();
     }
 
     @Override

@@ -19,33 +19,37 @@
  */
 package org.neo4j.kernel.impl.logging;
 
-import org.neo4j.logging.DuplicatingLogProvider;
+import org.neo4j.concurrent.AsyncEventSender;
+import org.neo4j.concurrent.AsyncEvents;
+import org.neo4j.logging.AbstractLogProvider;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 /**
- * Simplest form of a {@link LogService} where already constructed {@link LogProvider} instances
- * are handed into the constructor.
+ * Wraps a {@link LogProvider}, making its {@link Log logs} asynchronous by letting their log statements be
+ * treated as events fed into a {@link AsyncEvents} to be processed by a dedicated logging thread instead
+ * of in the thread making the log statement call.
  */
-public class SimpleLogService extends AbstractLogService
+class AsyncLogProvider extends AbstractLogProvider<Log>
 {
-    private final LogProvider userLogProvider;
-    private final LogProvider internalLogProvider;
+    private final LogProvider actual;
+    private final AsyncEventSender<AsyncLogEvent> sender;
 
-    public SimpleLogService( LogProvider userLogProvider, LogProvider internalLogProvider )
+    AsyncLogProvider( LogProvider actual, AsyncEventSender<AsyncLogEvent> sender )
     {
-        this.userLogProvider = new DuplicatingLogProvider( userLogProvider, internalLogProvider );
-        this.internalLogProvider = internalLogProvider;
+        this.actual = actual;
+        this.sender = sender;
     }
 
     @Override
-    public LogProvider getUserLogProvider()
+    protected Log buildLog( Class loggingClass )
     {
-        return this.userLogProvider;
+        return new AsyncLog( sender, actual.getLog( loggingClass ) );
     }
 
     @Override
-    public LogProvider getInternalLogProvider()
+    protected Log buildLog( String name )
     {
-        return this.internalLogProvider;
+        return new AsyncLog( sender, actual.getLog( name ) );
     }
 }
