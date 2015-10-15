@@ -29,9 +29,9 @@ import org.neo4j.cypher.internal.helpers.GraphIcing
  * textual output of ExecutionResultDumper
  */
 class QueryResultContentBuilder(valueFormatter: Any => String)
-  extends ((InternalExecutionResult, Content) => Content) with GraphIcing {
+  extends (InternalExecutionResult => Content) with GraphIcing {
 
-  override def apply(result: InternalExecutionResult, content: Content): Content = {
+  override def apply(result: InternalExecutionResult): Content = {
 
     val columns = result.columns
     var rowCount = 0
@@ -55,10 +55,6 @@ class QueryResultContentBuilder(valueFormatter: Any => String)
     else
       footerRows
 
-    val table = QueryResultTable(result.columns, rows, footer)
-
-    val rewriter = replaceSingleObject(QueryResultTablePlaceholder, table)
-
-    content.endoRewrite(rewriter)
+    QueryResultTable(result.columns, rows, footer)
   }
 }

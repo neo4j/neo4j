@@ -45,23 +45,6 @@ class QueryRunnerTest extends CypherFunSuite {
     result should haveATestFailureOfClass(query -> classOf[TestFailedException])
   }
 
-  test("expected exception does not cause a failure") {
-    val query = "match n return x"
-    val result = runQuery(query, ExpectedFailure[SyntaxException](_ => {}))
-
-    result.queryResults should have size 1
-    result shouldNot haveFailureFor(query)
-  }
-
-  test("when expecting an exception, not throwing is an error") {
-    val query = "match n return n"
-    val expectation = ExpectedFailure[SyntaxException](_ => {})
-    val result = runQuery(query, expectation)
-
-    result.queryResults should have size 1
-    result should haveATestFailureOfClass(query -> classOf[ExpectedExceptionNotFound])
-  }
-
   test("init query failing is reported as such") {
     val failingQuery = "YOU SHALL NOT PASS"
     val result = run(Seq(failingQuery), new GraphVizPlaceHolder())
@@ -70,11 +53,11 @@ class QueryRunnerTest extends CypherFunSuite {
     result should haveATestFailureOfClass(failingQuery -> classOf[SyntaxException])
   }
 
-  private def runQuery(query: String, assertions: QueryAssertions = NoAssertions, content: Content = NoContent): TestRunResult =
-    run(Seq.empty, Query(query, assertions, Seq.empty, content))
+  private def runQuery(query: String, assertions: QueryAssertions = NoAssertions): TestRunResult =
+    run(Seq(query), new TablePlaceHolder(assertions))
 
-  private def run(initQueries: Seq[String], content: Content): TestRunResult = {
-    val formatter = (_: GraphDatabaseService, _: Transaction) => (_: InternalExecutionResult, content: Content) => content
+  private def run(initQueries: Seq[String], content: QueryResultPlaceHolder): TestRunResult = {
+    val formatter = (_: GraphDatabaseService, _: Transaction) => (_: InternalExecutionResult) => NoContent
     val runner = new QueryRunner(formatter)
     runner.runQueries(contentsWithInit = Seq(ContentWithInit(initQueries, content)), "title")
   }

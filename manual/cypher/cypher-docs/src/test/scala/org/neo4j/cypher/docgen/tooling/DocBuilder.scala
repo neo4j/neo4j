@@ -43,14 +43,20 @@ trait DocBuilder {
   private def current = scope.top
 
   def doc(name: String, id: String) {
-    scope.push(new DocScope(name, id))
+    scope.push(DocScope(name, id))
   }
 
   def initQueries(queries: String*) = current.setInitQueries(queries.map(_.stripMargin))
 
   def p(text: String) = current.addContent(Paragraph(text.stripMargin))
 
-  def resultTable() = current.addContent(QueryResultTablePlaceholder)
+  def resultTable() = {
+    val queryScope = scope.collectFirst {
+      case q: QueryScope => q
+    }.get
+    queryScope.addContent(new TablePlaceHolder(queryScope.assertions))
+  }
+
   def graphViz() = current.addContent(new GraphVizPlaceHolder())
 
   def synopsis(text: String) = current.addContent(Abstract(text))
@@ -63,12 +69,12 @@ trait DocBuilder {
     current.addContent(pop.toContent)
   }
 
-  def section(title: String)(f: => Unit) = inScope(new SectionScope(title), f)
+  def section(title: String)(f: => Unit) = inScope(SectionScope(title), f)
 
-  def tip(f: => Unit) = inScope(new AdmonitionScope(Tip.apply), f)
-  def note(f: => Unit) = inScope(new AdmonitionScope(Note.apply), f)
+  def tip(f: => Unit) = inScope(AdmonitionScope(Tip.apply), f)
+  def note(f: => Unit) = inScope(AdmonitionScope(Note.apply), f)
 
-  def query(q: String, assertions: QueryAssertions)(f: => Unit) = inScope(new QueryScope(q.stripMargin, assertions), f)
+  def query(q: String, assertions: QueryAssertions)(f: => Unit) = inScope(QueryScope(q.stripMargin, assertions), f)
 
 }
 
@@ -94,21 +100,21 @@ object DocBuilder {
     def toContent: Content
   }
 
-  class DocScope(val title: String, val id: String) extends Scope {
+  case class DocScope(val title: String, val id: String) extends Scope {
     override def toContent = throw new LiskovSubstitutionPrincipleException
   }
 
-  class SectionScope(name: String) extends Scope {
+  case class SectionScope(name: String) extends Scope {
     override def toContent = Section(name, initQueries, content)
   }
 
-  class AdmonitionScope(f: Content => Content) extends Scope {
+  case class AdmonitionScope(f: Content => Content) extends Scope {
     override def initQueries = throw new LiskovSubstitutionPrincipleException
 
     override def toContent = f(content)
   }
 
-  class QueryScope(queryText: String, assertions: QueryAssertions) extends Scope {
+  case class QueryScope(queryText: String, assertions: QueryAssertions) extends Scope {
     override def toContent = Query(queryText, assertions, initQueries, content)
   }
 }

@@ -37,34 +37,39 @@ import scala.util.{Failure, Success, Try}
  * we drop the database and create a new one. This way we can make sure that two queries don't affect each other more than
  * necessary.
  */
-class QueryRunner(formatter: (GraphDatabaseService, Transaction) => (InternalExecutionResult, Content) => Content) extends GraphIcing {
+class QueryRunner(formatter: (GraphDatabaseService, Transaction) => InternalExecutionResult => Content) extends GraphIcing {
 
   def runQueries(contentsWithInit: Seq[ContentWithInit], title: String): TestRunResult = {
 
-      val groupedByInits: Map[Seq[String], Seq[Content]] = contentsWithInit.groupBy(_.init).mapValues(_.map(_.query))
-      var graphVizCounter = 0
+    val groupedByInits: Map[Seq[String], Seq[(String, QueryResultPlaceHolder)]] =
+      contentsWithInit.groupBy(_.initKey).mapValues(_.map(init => (init.lastInit -> init.queryResultPlaceHolder)))
+    var graphVizCounter = 0
 
     val results: Iterable[RunResult] = groupedByInits.flatMap {
-      case (init, queries) =>
+      case (init, placeHolders) =>
 
         val db = new RestartableDatabase(init)
         try {
           if (db.failures.nonEmpty) db.failures
           else {
-            queries.map {
-              case q: Query =>
-                val result = runSingleQuery(db, q.queryText, q.assertions, q)
-                db.nowIsASafePointToRestartDatabase()
+            val result = placeHolders.map {
+              case (queryText: String, tb: TablePlaceHolder) =>
+                runSingleQuery(db, queryText, tb.assertions, tb)
 
-                result
-
-              case gv: GraphVizPlaceHolder =>
+              case (queryText: String, gv: GraphVizPlaceHolder) =>
                 graphVizCounter = graphVizCounter + 1
-                GraphVizRunResult(gv, captureStateAsGraphViz(db.getInnerDb, title, graphVizCounter))
+                Try(db.execute(queryText)) match {
+                  case Success(inner) =>
+                    GraphVizRunResult(gv, captureStateAsGraphViz(db.getInnerDb, title, graphVizCounter))
+                  case Failure(error) =>
+                    QueryRunResult(queryText, gv, Left(error))
+                }
 
               case _ =>
                 ???
             }
+            db.nowIsASafePointToRestartDatabase()
+            result
           }
         } finally db.shutdown()
     }
@@ -72,17 +77,14 @@ class QueryRunner(formatter: (GraphDatabaseService, Transaction) => (InternalExe
     TestRunResult(results.toSeq)
   }
 
-  private def runSingleQuery(database: RestartableDatabase, queryText: String, assertions: QueryAssertions, content: Content): QueryRunResult = {
-    val format: (Transaction) => (InternalExecutionResult) => Content = (tx: Transaction) => formatter(database.getInnerDb, tx)(_, content)
+  private def runSingleQuery(database: RestartableDatabase, queryText: String, assertions: QueryAssertions, content: TablePlaceHolder): QueryRunResult = {
+    val format: (Transaction) => (InternalExecutionResult) => Content = (tx: Transaction) => formatter(database.getInnerDb, tx)(_)
 
       val result: Either[Throwable, Transaction => Content] =
         try {
           val resultTry = Try(database.execute(queryText))
           (assertions, resultTry) match {
             // *** Success conditions
-            case (expectation: ExpectedFailure[_], Failure(exception: Exception)) =>
-              expectation.handle(exception)
-              Right(_ => content)
 
             case (ResultAssertions(f), Success(inner)) =>
               val result = RewindableExecutionResult(inner)
@@ -99,9 +101,6 @@ class QueryRunner(formatter: (GraphDatabaseService, Transaction) => (InternalExe
               Right(format(_)(result))
 
             // *** Error conditions
-            case (e: ExpectedFailure[_], _: Success[_]) =>
-              Left(new ExpectedExceptionNotFound(s"Expected exception of type ${e.getExceptionClass}"))
-
             case (_, Failure(exception: Throwable)) =>
               Left(exception)
 
@@ -125,12 +124,12 @@ class QueryRunner(formatter: (GraphDatabaseService, Transaction) => (InternalExe
 
 sealed trait RunResult {
   def success: Boolean
-  def original: Content
+  def original: QueryResultPlaceHolder
   def newContent: Option[Content]
   def newFailure: Option[Throwable]
 }
 
-case class QueryRunResult(queryText: String, original: Content, testResult: Either[Throwable, Content]) extends RunResult {
+case class QueryRunResult(queryText: String, original: QueryResultPlaceHolder, testResult: Either[Throwable, Content]) extends RunResult {
   override def success = testResult.isRight
 
   override def newContent: Option[Content] = testResult.right.toOption

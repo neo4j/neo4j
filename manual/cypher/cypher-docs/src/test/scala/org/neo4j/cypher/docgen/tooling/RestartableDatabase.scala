@@ -41,7 +41,7 @@ class RestartableDatabase(init: Seq[String], factory: TestGraphDatabaseFactory =
     if (_db == null) {
       _db = factory.newImpermanentDatabase()
       _engine = new ExecutionEngine(_db)
-      _failures = initialize(_engine, init, NoContent)
+      _failures = initialize(_engine, init)
     }
   }
 
@@ -77,10 +77,10 @@ class RestartableDatabase(init: Seq[String], factory: TestGraphDatabaseFactory =
     _markedForRestart = false
   }
 
-  private def initialize(engine: ExecutionEngine, init: Seq[String], failContent: Content): Seq[QueryRunResult] =
+  private def initialize(engine: ExecutionEngine, init: Seq[String]): Seq[QueryRunResult] =
     init.flatMap { q =>
       val result = Try(engine.execute(q))
-      result.failed.toOption.map((e: Throwable) => QueryRunResult(q, failContent, Left(e)))
+      result.failed.toOption.map((e: Throwable) => QueryRunResult(q, new ErrorPlaceHolder(), Left(e)))
     }
 
 }

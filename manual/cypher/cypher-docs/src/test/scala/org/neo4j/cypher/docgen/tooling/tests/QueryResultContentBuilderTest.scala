@@ -26,45 +26,28 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.test.TestGraphDatabaseFactory
 
 class QueryResultContentBuilderTest extends CypherFunSuite {
-  test("should handle no content being required back from the query") {
-    val result = runQuery("match (n) return n", NoContent)
-
-    result should equal(NoContent)
-  }
 
   test("should handle query with result table output and empty results") {
-    val result = runQuery("match (n) return n", QueryResultTablePlaceholder)
+    val result = runQuery("match (n) return n")
 
     result should equal(QueryResultTable(Seq("n"), Seq.empty, footer = "0 rows"))
   }
 
   test("should handle query with result table output and non-empty results") {
-    val result = runQuery("match (x) return x", QueryResultTablePlaceholder, init = "CREATE ()").asInstanceOf[QueryResultTable]
+    val result = runQuery("match (x) return x", init = "CREATE ()").asInstanceOf[QueryResultTable]
 
     result.columns should equal(Seq("x"))
     result.footer should equal("1 row")
     result.rows should have size 1
   }
 
-  test("should handle simple query with result table output") {
-    val result = runQuery("match (n) return n", Paragraph("hello world") ~ QueryResultTablePlaceholder)
-
-    result should equal(Paragraph("hello world") ~ QueryResultTable(Seq("n"), Seq.empty, footer = "0 rows"))
-  }
-
-  test("updating query should report changes") {
-    val result = runQuery("create ()-[:T]->()", Paragraph("start") ~ QueryResultTablePlaceholder ~ Paragraph("end"))
-
-    result should equal(Paragraph("start") ~ QueryResultTable(Seq(), Seq.empty, footer = "0 rows\nNodes created: 2\nRelationships created: 1\n") ~ Paragraph("end"))
-  }
-
-  def runQuery(query: String, content: Content, init: String = ""): Content = {
+  def runQuery(query: String, init: String = ""): Content = {
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     if (init != "") db.execute(init)
     val engine = new ExecutionEngine(db)
     val builder = new QueryResultContentBuilder(x => x.toString)
     val queryResult = RewindableExecutionResult(engine.execute(query))
 
-    builder.apply(queryResult, content)
+    builder.apply(queryResult)
   }
 }

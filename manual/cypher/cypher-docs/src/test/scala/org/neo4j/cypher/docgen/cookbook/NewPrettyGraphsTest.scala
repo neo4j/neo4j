@@ -32,6 +32,7 @@ class NewPrettyGraphsTest extends DocumentingTest with QueryStatisticsTestSuppor
                |FOREACH (x IN range(1,6)| CREATE (leaf),(center)-[:X]->(leaf))
                |RETURN id(center) AS id""", assertAStarIsBorn) {
         p("The query returns the id of the center node.")
+        resultTable()
         graphViz()
       }
     }

@@ -37,21 +37,20 @@ object contentAndResultMerger {
     val replacer = new ContentReplacer(rewritesToDo.toMap)
     originalContent.endoRewrite(replacer)
   }
+  /*
 
-  private class ContentReplacer(rewrites: Map[Content, Content]) extends Rewriter {
+  A(B(Query("", Section(table(), graphVizResult())))
+
+  GraphVizPlaceHolder -> GraphVizResult
+  Query(_,_, originalContent) -> Query(_, _, newContent)
+  Query(_,_, originalContent) -> newContent
+   */
+
+  private class ContentReplacer(rewrites: Map[QueryResultPlaceHolder, Content]) extends Rewriter {
     override def apply(value: AnyRef): AnyRef = instance(value)
 
     val instance: Rewriter = bottomUp(Rewriter.lift {
-      // Here we are not rewriting away the Query object, we want to replace the inner content, inside of the Query
-      case q: Query =>
-        val resultTable = rewrites.collectFirst {
-          case (p: Query, x) if q.queryText == p.queryText => x
-        }
-        val innerRewriter = replaceSingleObject(QueryResultTablePlaceholder, resultTable.get)
-        q.copy(content = q.content.endoRewrite(innerRewriter))
-
-      case q: GraphVizPlaceHolder =>
-        rewrites(q)
+      case q: QueryResultPlaceHolder => rewrites(q)
     })
   }
 
