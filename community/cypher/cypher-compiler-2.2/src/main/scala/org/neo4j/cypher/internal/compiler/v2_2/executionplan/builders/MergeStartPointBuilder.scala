@@ -93,10 +93,7 @@ class MergeStartPointBuilder extends PlanBuilder {
               Equals(Property(Identifier(identifier), key), props(key)),
               Equals(props(key), Property(Identifier(identifier), key))
             )
-            val hasLabelPredicates = labels.map {
-              HasLabel(Identifier(identifier), _)
-            }
-            val predicates = equalsPredicates ++ hasLabelPredicates
+            val predicates = equalsPredicates :+ HasLabel(Identifier(identifier), label)
             (label, key, RatedStartItem(SchemaIndex(identifier, label.name, key.name, UniqueIndex, Some(SingleQueryExpression(props(key)))), NodeFetchStrategy.IndexEquality, predicates))
         }
 
