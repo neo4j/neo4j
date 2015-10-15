@@ -28,14 +28,16 @@ import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.AvailabilityGuard.AvailabilityRequirement;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
+
 import static org.neo4j.cluster.util.Quorums.isQuorum;
-import static org.neo4j.kernel.AvailabilityGuard.AvailabilityRequirement;
 import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;
 
 /**
@@ -55,7 +57,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     private final HighAvailabilityMemberContext context;
     private final AvailabilityGuard availabilityGuard;
     private final ClusterMemberEvents events;
-    private Log log;
+    private final Log log;
     private Iterable<HighAvailabilityMemberListener> memberListeners = Listeners.newListeners();
     private volatile HighAvailabilityMemberState state;
     private StateMachineClusterEventListener eventsListener;
@@ -168,13 +170,20 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                     availabilityGuard.require( AVAILABILITY_REQUIREMENT );
                 }
 
-                log.debug( "Got masterIsElected(" + coordinatorId + "), moved to " + state + " from " + oldState
-                        + ". Previous elected master is " + previousElected );
+                log.debug( stateChangeLogMessage( "masterIsElected", coordinatorId, oldState, state,
+                        "Previous elected master is " + previousElected ) );
             }
             catch ( Throwable t )
             {
                 throw new RuntimeException( t );
             }
+        }
+
+        private String stateChangeLogMessage( String event, InstanceId coordinatorId,
+                HighAvailabilityMemberState oldState, HighAvailabilityMemberState state, String additional )
+        {
+            return format( "Got %s(%s), changed state %s --> %s. %s",
+                    event, coordinatorId, oldState, state, additional );
         }
 
         @Override
@@ -190,8 +199,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                     HighAvailabilityMemberState oldState = state;
                     context.setAvailableHaMasterId( roleUri );
                     state = state.masterIsAvailable( context, instanceId, roleUri );
-                    log.debug( "Got masterIsAvailable(" + instanceId + "), moved to " + state + " from " +
-                            oldState );
+                    log.debug( stateChangeLogMessage( "masterIsAvailable", instanceId, oldState, state, "" ) );
                     final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState,
                             state, instanceId, roleUri );
                     Listeners.notifyListeners( memberListeners,
@@ -214,8 +222,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                 {
                     HighAvailabilityMemberState oldState = state;
                     state = state.slaveIsAvailable( context, instanceId, roleUri );
-                    log.debug( "Got slaveIsAvailable(" + instanceId + "), " +
-                            "moved to " + state + " from " + oldState );
+                    log.debug( stateChangeLogMessage( "slaveIsAvailable", instanceId, oldState, state, "" ) );
                     final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState,
                             state, instanceId, roleUri );
                     Listeners.notifyListeners( memberListeners,
@@ -250,7 +257,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
             {
                 HighAvailabilityMemberState oldState = state;
                 changeStateToPending();
-                log.debug( "Got memberIsUnavailable(" + unavailableId + "), moved to " + state + " from " + oldState );
+                log.debug( stateChangeLogMessage( "memberIsUnavailable", unavailableId, oldState, state, "" ) );
             }
             else
             {
@@ -266,8 +273,8 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
             {
                 HighAvailabilityMemberState oldState = state;
                 changeStateToPending();
-                log.debug( "Got memberIsFailed(" + instanceId + ") and cluster lost quorum to continue, moved to "
-                        + state + " from " + oldState );
+                log.debug( stateChangeLogMessage( "memberIsFailed", instanceId, oldState, state,
+                        "and cluster lost quorum to continue" ) );
             }
             else
             {
