@@ -21,172 +21,38 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 
 /**
  * Implementation of the relationship store.
  */
-public class RelationshipStore extends CommonAbstractStore<RelationshipRecord>
+public class RelationshipStore extends ComposableRecordStore<RelationshipRecord,NoStoreHeader>
 {
     public static final String TYPE_DESCRIPTOR = "RelationshipStore";
-
-    // record header size
-    // directed|in_use(byte)+first_node(int)+second_node(int)+rel_type(int)+
-    // first_prev_rel_id(int)+first_next_rel_id+second_prev_rel_id(int)+
-    // second_next_rel_id+next_prop_id(int)+first-in-chain-markers(1)
-    public static final int RECORD_SIZE = 34;
 
     public RelationshipStore(
             File fileName,
             Config configuration,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            LogProvider logProvider )
+            LogProvider logProvider,
+            RecordFormat<RelationshipRecord> recordFormat )
     {
         super( fileName, configuration, IdType.RELATIONSHIP, idGeneratorFactory,
-                pageCache, logProvider, TYPE_DESCRIPTOR );
+                pageCache, logProvider, TYPE_DESCRIPTOR, recordFormat, NO_STORE_HEADER_FORMAT );
     }
 
     @Override
-    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, RelationshipRecord record ) throws FAILURE
+    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, RelationshipRecord record )
+            throws FAILURE
     {
         processor.processRelationship( this, record );
-    }
-
-    @Override
-    public int getRecordSize()
-    {
-        return RECORD_SIZE;
-    }
-
-    @Override
-    public RelationshipRecord newRecord()
-    {
-        return new RelationshipRecord( -1 );
-    }
-
-    @Override
-    protected void writeRecord( PageCursor cursor, RelationshipRecord record )
-    {
-        if ( record.inUse() )
-        {
-            long firstNode = record.getFirstNode();
-            short firstNodeMod = (short)((firstNode & 0x700000000L) >> 31);
-
-            long secondNode = record.getSecondNode();
-            long secondNodeMod = (secondNode & 0x700000000L) >> 4;
-
-            long firstPrevRel = record.getFirstPrevRel();
-            long firstPrevRelMod = firstPrevRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (firstPrevRel & 0x700000000L) >> 7;
-
-            long firstNextRel = record.getFirstNextRel();
-            long firstNextRelMod = firstNextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (firstNextRel & 0x700000000L) >> 10;
-
-            long secondPrevRel = record.getSecondPrevRel();
-            long secondPrevRelMod = secondPrevRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (secondPrevRel & 0x700000000L) >> 13;
-
-            long secondNextRel = record.getSecondNextRel();
-            long secondNextRelMod = secondNextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (secondNextRel & 0x700000000L) >> 16;
-
-            long nextProp = record.getNextProp();
-            long nextPropMod = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (nextProp & 0xF00000000L) >> 28;
-
-            // [    ,   x] in use flag
-            // [    ,xxx ] first node high order bits
-            // [xxxx,    ] next prop high order bits
-            short inUseUnsignedByte = (short)((record.inUse() ? Record.IN_USE : Record.NOT_IN_USE).byteValue() | firstNodeMod | nextPropMod);
-
-            // [ xxx,    ][    ,    ][    ,    ][    ,    ] second node high order bits,     0x70000000
-            // [    ,xxx ][    ,    ][    ,    ][    ,    ] first prev rel high order bits,  0xE000000
-            // [    ,   x][xx  ,    ][    ,    ][    ,    ] first next rel high order bits,  0x1C00000
-            // [    ,    ][  xx,x   ][    ,    ][    ,    ] second prev rel high order bits, 0x380000
-            // [    ,    ][    , xxx][    ,    ][    ,    ] second next rel high order bits, 0x70000
-            // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
-            int typeInt = (int)(record.getType() | secondNodeMod | firstPrevRelMod | firstNextRelMod | secondPrevRelMod | secondNextRelMod);
-
-            // [    ,   x] 1:st in start node chain, 0x1
-            // [    ,  x ] 1:st in end node chain,   0x2
-            long firstInStartNodeChain = record.isFirstInFirstChain() ? 0x1 : 0;
-            long firstInEndNodeChain = record.isFirstInSecondChain() ? 0x2 : 0;
-            byte extraByte = (byte) (firstInEndNodeChain | firstInStartNodeChain);
-
-            cursor.putByte( (byte)inUseUnsignedByte );
-            cursor.putInt( (int) firstNode );
-            cursor.putInt( (int) secondNode );
-            cursor.putInt( typeInt );
-            cursor.putInt( (int) firstPrevRel );
-            cursor.putInt( (int) firstNextRel );
-            cursor.putInt( (int) secondPrevRel );
-            cursor.putInt( (int) secondNextRel );
-            cursor.putInt( (int) nextProp );
-            cursor.putByte( extraByte );
-        }
-        else
-        {
-            cursor.putByte( Record.NOT_IN_USE.byteValue() );
-        }
-    }
-
-    @Override
-    protected void readRecord( PageCursor cursor, RelationshipRecord record, RecordLoad mode )
-    {
-        // [    ,   x] in use flag
-        // [    ,xxx ] first node high order bits
-        // [xxxx,    ] next prop high order bits
-        long inUseByte = cursor.getByte();
-        boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
-        if ( mode.shouldLoad( inUse ) )
-        {
-            long firstNode = cursor.getUnsignedInt();
-            long firstNodeMod = (inUseByte & 0xEL) << 31;
-
-            long secondNode = cursor.getUnsignedInt();
-
-            // [ xxx,    ][    ,    ][    ,    ][    ,    ] second node high order bits,     0x70000000
-            // [    ,xxx ][    ,    ][    ,    ][    ,    ] first prev rel high order bits,  0xE000000
-            // [    ,   x][xx  ,    ][    ,    ][    ,    ] first next rel high order bits,  0x1C00000
-            // [    ,    ][  xx,x   ][    ,    ][    ,    ] second prev rel high order bits, 0x380000
-            // [    ,    ][    , xxx][    ,    ][    ,    ] second next rel high order bits, 0x70000
-            // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
-            long typeInt = cursor.getInt();
-            long secondNodeMod = (typeInt & 0x70000000L) << 4;
-            int type = (int)(typeInt & 0xFFFF);
-
-            long firstPrevRel = cursor.getUnsignedInt();
-            long firstPrevRelMod = (typeInt & 0xE000000L) << 7;
-
-            long firstNextRel = cursor.getUnsignedInt();
-            long firstNextRelMod = (typeInt & 0x1C00000L) << 10;
-
-            long secondPrevRel = cursor.getUnsignedInt();
-            long secondPrevRelMod = (typeInt & 0x380000L) << 13;
-
-            long secondNextRel = cursor.getUnsignedInt();
-            long secondNextRelMod = (typeInt & 0x70000L) << 16;
-
-            long nextProp = cursor.getUnsignedInt();
-            long nextPropMod = (inUseByte & 0xF0L) << 28;
-
-            byte extraByte = cursor.getByte();
-
-            record.initialize( inUse,
-                    longFromIntAndMod( nextProp, nextPropMod ),
-                    longFromIntAndMod( firstNode, firstNodeMod ),
-                    longFromIntAndMod( secondNode, secondNodeMod ),
-                    type,
-                    longFromIntAndMod( firstPrevRel, firstPrevRelMod ),
-                    longFromIntAndMod( firstNextRel, firstNextRelMod ),
-                    longFromIntAndMod( secondPrevRel, secondPrevRelMod ),
-                    longFromIntAndMod( secondNextRel, secondNextRelMod ),
-                    (extraByte & 0x1) != 0,
-                    (extraByte & 0x2) != 0 );
-        }
     }
 }

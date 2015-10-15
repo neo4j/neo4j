@@ -61,6 +61,6 @@ public class ReadRelationshipRecordsBackwardsStep extends IoProducerStep
     @Override
     protected long position()
     {
-        return (highId-id) * RelationshipStore.RECORD_SIZE;
+        return (highId-id) * store.getRecordSize();
     }
 }

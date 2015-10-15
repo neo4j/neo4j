@@ -72,6 +72,6 @@ public class ReadRelationshipCountsDataStep extends IoProducerStep
     @Override
     protected long position()
     {
-        return doneBatches.get()*batchSize*RelationshipStore.RECORD_SIZE;
+        return doneBatches.get()*batchSize*store.getRecordSize();
     }
 }

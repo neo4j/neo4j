@@ -57,6 +57,9 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.format.current.Current;
+import org.neo4j.kernel.impl.store.format.current.NodeRecordFormat;
+import org.neo4j.kernel.impl.store.format.current.RelationshipRecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -104,11 +107,11 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+
 import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
-import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
@@ -638,7 +641,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
                         RelationshipRecord record = source.next();
                         InputRelationship result = new InputRelationship(
-                                "legacy store", record.getId(), record.getId() * RelationshipStore.RECORD_SIZE,
+                                "legacy store", record.getId(), record.getId() * RelationshipRecordFormat.RECORD_SIZE,
                                 InputEntity.NO_PROPERTIES, record.getNextProp(),
                                 record.getFirstNode(), record.getSecondNode(), null, record.getType() );
                         result.setSpecificId( record.getId() );
@@ -700,7 +703,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                         NodeRecord record = source.next();
                         traceability.atId( record.getId() );
                         return new InputNode(
-                                "legacy store", record.getId(), record.getId() * NodeStore.RECORD_SIZE,
+                                "legacy store", record.getId(), record.getId() * NodeRecordFormat.RECORD_SIZE,
                                 record.getId(), InputEntity.NO_PROPERTIES, record.getNextProp(),
                                 InputNode.NO_LABELS, record.getLabelField() );
                     }
@@ -872,7 +875,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
         // Upgrade version in NeoStore
         MetaDataStore.setRecord( pageCache, storeDirNeoStore, Position.STORE_VERSION,
-                MetaDataStore.versionStringToLong( ALL_STORES_VERSION ) );
+                MetaDataStore.versionStringToLong( Current.STORE_VERSION ) );
     }
 
     @Override

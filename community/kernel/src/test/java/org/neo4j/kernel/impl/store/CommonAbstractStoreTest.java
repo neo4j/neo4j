@@ -95,12 +95,6 @@ public class CommonAbstractStoreTest
         }
 
         @Override
-        protected boolean isInUse( byte inUseByte )
-        {
-            return false;
-        }
-
-        @Override
         public int getRecordSize()
         {
             return 10;
@@ -131,6 +125,12 @@ public class CommonAbstractStoreTest
         @Override
         protected void writeRecord( PageCursor cursor, AbstractBaseRecord record )
         {
+        }
+
+        @Override
+        protected boolean isInUse( PageCursor cursor )
+        {
+            return false;
         }
     }
 }

@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.util.List;
-
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.store.LongerShortString;
-import org.neo4j.kernel.impl.store.PropertyStore;
+import java.util.List;
+
 import org.neo4j.kernel.impl.store.TestShortString.Charset;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.kernel.impl.store.format.current.PropertyRecordFormat.DEFAULT_PAYLOAD_SIZE;
 
 public class TestLongerShortString
 {
@@ -74,7 +74,7 @@ public class TestLongerShortString
                 for ( String string : list )
                 {
                     PropertyBlock record = new PropertyBlock();
-                    if ( LongerShortString.encode( 10, string, record, PropertyStore.DEFAULT_PAYLOAD_SIZE ) )
+                    if ( LongerShortString.encode( 10, string, record, DEFAULT_PAYLOAD_SIZE ) )
                     {
                         assertEquals( string, LongerShortString.decode( record ) );
                     }
@@ -133,7 +133,7 @@ public class TestLongerShortString
 
     private void assertCanEncodeAndDecodeToSame( String string )
     {
-        assertCanEncodeAndDecodeToSame( string, PropertyStore.DEFAULT_PAYLOAD_SIZE );
+        assertCanEncodeAndDecodeToSame( string, DEFAULT_PAYLOAD_SIZE );
     }
 
     private void assertCanEncodeAndDecodeToSame( String string, int payloadSize )
@@ -145,12 +145,11 @@ public class TestLongerShortString
 
     private void assertCannotEncode( String string )
     {
-        assertCannotEncode( string, PropertyStore.DEFAULT_PAYLOAD_SIZE );
+        assertCannotEncode( string, DEFAULT_PAYLOAD_SIZE );
     }
 
     private void assertCannotEncode( String string, int payloadSize )
     {
-        assertFalse( LongerShortString.encode( 0, string, new PropertyBlock(),
-                payloadSize ) );
+        assertFalse( LongerShortString.encode( 0, string, new PropertyBlock(), payloadSize ) );
     }
 }

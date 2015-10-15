@@ -35,12 +35,12 @@ import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
-import org.neo4j.kernel.impl.store.AbstractDynamicStore;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.format.current.DynamicRecordFormat;
+import org.neo4j.kernel.impl.store.format.current.NodeRecordFormat;
+import org.neo4j.kernel.impl.store.format.current.PropertyRecordFormat;
+import org.neo4j.kernel.impl.store.format.current.RelationshipGroupRecordFormat;
+import org.neo4j.kernel.impl.store.format.current.RelationshipRecordFormat;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
 
@@ -109,37 +109,42 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
         return open( fileName, "rw" );
     }
 
+    public static int getRecordSize( int dataSize )
+    {
+        return dataSize + DynamicRecordFormat.RECORD_HEADER_SIZE;
+    }
+
     private int recordSizeFor( File fileName )
     {
         if ( fileName.getName().endsWith( "nodestore.db" ) )
         {
-            return NodeStore.RECORD_SIZE;
+            return NodeRecordFormat.RECORD_SIZE;
         }
         else if ( fileName.getName().endsWith( "relationshipstore.db" ) )
         {
-            return RelationshipStore.RECORD_SIZE;
+            return RelationshipRecordFormat.RECORD_SIZE;
         }
         else if ( fileName.getName().endsWith( "propertystore.db.strings" ) ||
                 fileName.getName().endsWith( "propertystore.db.arrays" ) )
         {
-            return AbstractDynamicStore.getRecordSize( PropertyStore.DEFAULT_DATA_BLOCK_SIZE );
+            return getRecordSize( PropertyRecordFormat.DEFAULT_DATA_BLOCK_SIZE );
         }
         else if ( fileName.getName().endsWith( "propertystore.db" ) )
         {
-            return PropertyStore.RECORD_SIZE;
+            return PropertyRecordFormat.RECORD_SIZE;
         }
         else if ( fileName.getName().endsWith( "nodestore.db.labels" ) )
         {
             return Integer.parseInt( GraphDatabaseSettings.label_block_size.getDefaultValue() ) +
-                    AbstractDynamicStore.RECORD_HEADER_SIZE;
+                    DynamicRecordFormat.RECORD_HEADER_SIZE;
         }
         else if ( fileName.getName().endsWith( "schemastore.db" ) )
         {
-            return AbstractDynamicStore.getRecordSize( SchemaStore.BLOCK_SIZE );
+            return getRecordSize( SchemaStore.BLOCK_SIZE );
         }
         else if ( fileName.getName().endsWith( "relationshipgroupstore.db" ) )
         {
-            return AbstractDynamicStore.getRecordSize( RelationshipGroupStore.RECORD_SIZE );
+            return getRecordSize( RelationshipGroupRecordFormat.RECORD_SIZE );
         }
         throw new IllegalArgumentException( fileName.getPath() );
     }

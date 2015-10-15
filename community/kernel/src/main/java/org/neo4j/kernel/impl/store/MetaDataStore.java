@@ -31,6 +31,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.current.Current;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.record.NeoStoreActualRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -162,7 +163,7 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
         setCurrentLogVersion( 0 );
         setLastCommittedAndClosedTransactionId(
                 BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
-        setStoreVersion( MetaDataStore.versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
+        setStoreVersion( MetaDataStore.versionStringToLong( Current.STORE_VERSION ) );
         setGraphNextProp( -1 );
         setLatestConstraintIntroducingTx( 0 );
 
@@ -199,35 +200,6 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
         lastCommittingTxField.set( transactionId );
         lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset} );
         highestCommittedTransaction.set( transactionId, checksum );
-//=======
-//        long record;
-//        try
-//        {
-//            record = getRecord( pageCache, storageFileName, Position.STORE_VERSION );
-//        }
-//        catch ( IOException e )
-//        {
-//            throw new UnderlyingStorageException( e );
-//        }
-//
-//        if ( record == FIELD_NOT_PRESENT )
-//        {
-//            // if the record cannot be read, let's assume the neo store has not been create yet
-//            // we'll check again when the store is gonna set to "store ok"
-//            return;
-//        }
-//
-//        String foundVersion = versionLongToString( record );
-//        if ( !ALL_STORES_VERSION.equals( foundVersion ) )
-//        {
-//            throw new IllegalStateException(
-//                    format( "Mismatching store version found (%s while expecting %s). The store cannot be " +
-//                            "automatically upgraded since it isn't cleanly shutdown."
-//                            + " Recover by starting the database using the previous Neo4j version, " +
-//                            "followed by a clean shutdown. Then start with this version again.",
-//                            foundVersion, ALL_STORES_VERSION ) );
-//        }
-//>>>>>>> Simplified store classes
     }
 
     @Override
@@ -869,5 +841,11 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
     protected void readRecord( PageCursor cursor, NeoStoreActualRecord record, RecordLoad mode )
     {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected boolean isInUse( PageCursor cursor )
+    {
+        return cursor.getByte() == Record.IN_USE.byteValue();
     }
 }

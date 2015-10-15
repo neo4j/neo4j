@@ -33,6 +33,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.JumpingIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.format.current.Current;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -81,7 +82,8 @@ public class PropertyStoreTest
 
         final PropertyStore store = new PropertyStore( path, config, new JumpingIdGeneratorFactory( 1 ), pageCache,
                 NullLogProvider.getInstance(), stringPropertyStore,
-                mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class )  );
+                mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
+                Current.RECORD_FORMATS.property() );
         store.initialise( true );
 
         try

@@ -545,7 +545,7 @@ public class StorePropertyPayloadCursorTest
         long id;
 
         @Override
-        public int dataSize()
+        public int getRecordDataSize()
         {
             return 120;
         }

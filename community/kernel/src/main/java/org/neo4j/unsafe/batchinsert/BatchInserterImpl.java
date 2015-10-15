@@ -112,6 +112,7 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.format.current.Current;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
@@ -269,7 +270,7 @@ public class BatchInserterImpl implements BatchInserter
         this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
 
         StoreFactory sf = new StoreFactory( this.storeDir, config, idGeneratorFactory, pageCache, fileSystem,
-                logService.getInternalLogProvider() );
+                logService.getInternalLogProvider(), Current.RECORD_FORMATS );
 
         if ( dump )
         {

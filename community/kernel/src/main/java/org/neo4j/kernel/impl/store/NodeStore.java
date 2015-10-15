@@ -27,23 +27,23 @@ import java.util.Iterator;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
+import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 
 /**
  * Implementation of the node store.
  */
-public class NodeStore extends CommonAbstractStore<NodeRecord>
+public class NodeStore extends ComposableRecordStore<NodeRecord,NoStoreHeader>
 {
     public static Long readOwnerFromDynamicLabelsRecord( DynamicRecord record )
     {
@@ -67,9 +67,6 @@ public class NodeStore extends CommonAbstractStore<NodeRecord>
 
     public static final String TYPE_DESCRIPTOR = "NodeStore";
 
-    // in_use(byte)+next_rel_id(int)+next_prop_id(int)+labels(5)+extra(byte)
-    public static final int RECORD_SIZE = 15;
-
     private final DynamicArrayStore dynamicLabelStore;
 
     public NodeStore(
@@ -78,9 +75,11 @@ public class NodeStore extends CommonAbstractStore<NodeRecord>
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            DynamicArrayStore dynamicLabelStore )
+            DynamicArrayStore dynamicLabelStore,
+            RecordFormat<NodeRecord> recordFormat )
     {
-        super( fileName, config, IdType.NODE, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR );
+        super( fileName, config, IdType.NODE, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
+                recordFormat, NO_STORE_HEADER_FORMAT );
         this.dynamicLabelStore = dynamicLabelStore;
     }
 
@@ -88,12 +87,6 @@ public class NodeStore extends CommonAbstractStore<NodeRecord>
     public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, NodeRecord record ) throws FAILURE
     {
         processor.processNode( this, record );
-    }
-
-    @Override
-    public int getRecordSize()
-    {
-        return RECORD_SIZE;
     }
 
     @Override
@@ -117,79 +110,10 @@ public class NodeStore extends CommonAbstractStore<NodeRecord>
     }
 
     @Override
-    public NodeRecord newRecord()
-    {
-        return new NodeRecord( -1 );
-    }
-
-    @Override
     public void updateRecord( NodeRecord record )
     {
         super.updateRecord( record );
         updateDynamicLabelRecords( record.getDynamicLabelRecords() );
-    }
-
-    @Override
-    protected void writeRecord( PageCursor cursor, NodeRecord record )
-    {
-        int offset = offsetForId( record.getId() );
-        cursor.setOffset( offset );
-        if ( record.inUse() )
-        {
-            long nextRel = record.getNextRel();
-            long nextProp = record.getNextProp();
-
-            short relModifier = nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((nextRel & 0x700000000L) >> 31);
-            short propModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short)((nextProp & 0xF00000000L) >> 28);
-
-            // [    ,   x] in use bit
-            // [    ,xxx ] higher bits for rel id
-            // [xxxx,    ] higher bits for prop id
-            short inUseUnsignedByte = ( record.inUse() ? Record.IN_USE : Record.NOT_IN_USE ).byteValue();
-            inUseUnsignedByte = (short) ( inUseUnsignedByte | relModifier | propModifier );
-
-            cursor.putByte( (byte) inUseUnsignedByte );
-            cursor.putInt( (int) nextRel );
-            cursor.putInt( (int) nextProp );
-
-            // lsb of labels
-            long labelField = record.getLabelField();
-            cursor.putInt( (int) labelField );
-            // msb of labels
-            cursor.putByte( (byte) ((labelField & 0xFF00000000L) >> 32) );
-
-            byte extra = record.isDense() ? (byte)1 : (byte)0;
-            cursor.putByte( extra );
-        }
-        else
-        {
-            cursor.putByte( Record.NOT_IN_USE.byteValue() );
-        }
-    }
-
-    @Override
-    protected void readRecord( PageCursor cursor, NodeRecord record, RecordLoad mode )
-    {
-        byte inUseByte = cursor.getByte();
-        boolean isInUse = isInUse( inUseByte );
-        if ( mode.shouldLoad( isInUse ) )
-        {
-            long nextRel = cursor.getUnsignedInt();
-            long nextProp = cursor.getUnsignedInt();
-
-            long relModifier = (inUseByte & 0xEL) << 31;
-            long propModifier = (inUseByte & 0xF0L) << 28;
-
-            long lsbLabels = cursor.getUnsignedInt();
-            long hsbLabels = cursor.getByte() & 0xFF; // so that a negative byte won't fill the "extended" bits with ones.
-            long labels = lsbLabels | (hsbLabels << 32);
-            byte extra = cursor.getByte();
-            boolean dense = (extra & 0x1) > 0;
-
-            record.initialize( isInUse,
-                    longFromIntAndMod( nextProp, propModifier ), dense,
-                    longFromIntAndMod( nextRel, relModifier ), labels );
-        }
     }
 
     public DynamicArrayStore getDynamicLabelStore()

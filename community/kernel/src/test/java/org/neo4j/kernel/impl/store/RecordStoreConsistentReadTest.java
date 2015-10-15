@@ -436,7 +436,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
             DynamicRecordAllocator stringAllocator = new DynamicRecordAllocator()
             {
                 @Override
-                public int dataSize()
+                public int getRecordDataSize()
                 {
                     return 64;
                 }

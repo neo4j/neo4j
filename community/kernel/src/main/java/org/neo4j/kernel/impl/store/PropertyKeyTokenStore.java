@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.store;
 import java.io.File;
 
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.Token;
@@ -38,18 +38,17 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord, To
     // Historical type descriptor, should be called PropertyKeyTokenStore
     public static final String TYPE_DESCRIPTOR = "PropertyIndexStore";
 
-    public static final int RECORD_SIZE = 1/*inUse*/ + 4/*prop count*/ + 4/*nameId*/;
-
     public PropertyKeyTokenStore(
             File fileName,
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            DynamicStringStore nameStore )
+            DynamicStringStore nameStore,
+            RecordFormat<PropertyKeyTokenRecord> recordFormat )
     {
         super( fileName, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
-                TYPE_DESCRIPTOR, new Token.Factory() );
+                TYPE_DESCRIPTOR, new Token.Factory(), recordFormat );
     }
 
     @Override
@@ -57,32 +56,5 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord, To
             PropertyKeyTokenRecord record ) throws FAILURE
     {
         processor.processPropertyKeyToken( this, record );
-    }
-
-    @Override
-    public PropertyKeyTokenRecord newRecord()
-    {
-        return new PropertyKeyTokenRecord( -1 );
-    }
-
-    @Override
-    protected void readRecord( PageCursor cursor, PropertyKeyTokenRecord record, boolean inUse )
-    {
-        int propertyCount = cursor.getInt();
-        int nameId = cursor.getInt();
-        record.initialize( inUse, nameId, propertyCount );
-    }
-
-    @Override
-    protected void writeRecord( PropertyKeyTokenRecord record, PageCursor cursor )
-    {
-        cursor.putInt( record.getPropertyCount() );
-        cursor.putInt( record.getNameId() );
-    }
-
-    @Override
-    public int getRecordSize()
-    {
-        return RECORD_SIZE;
     }
 }

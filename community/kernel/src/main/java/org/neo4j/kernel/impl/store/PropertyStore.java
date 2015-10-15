@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.api.store.PropertyRecordCursor;
+import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -51,28 +52,20 @@ import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
+import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 /**
  * Implementation of the property store. This implementation has two dynamic
  * stores. One used to store keys and another for string property values.
  */
-public class PropertyStore extends CommonAbstractStore<PropertyRecord>
+public class PropertyStore extends ComposableRecordStore<PropertyRecord,NoStoreHeader>
 {
     public static abstract class Configuration extends CommonAbstractStore.Configuration
     {
     }
 
-    public static final int DEFAULT_DATA_BLOCK_SIZE = 120;
-    public static final int DEFAULT_PAYLOAD_SIZE = 32;
-
     public static final String TYPE_DESCRIPTOR = "PropertyStore";
-
-    public static final int RECORD_SIZE = 1/*next and prev high bits*/
-            + 4/*next*/
-            + 4/*prev*/
-            + DEFAULT_PAYLOAD_SIZE /*property blocks*/;
-    // = 41
 
     private final DynamicStringStore stringStore;
     private final PropertyKeyTokenStore propertyKeyTokenStore;
@@ -87,9 +80,11 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord>
             LogProvider logProvider,
             DynamicStringStore stringPropertyStore,
             PropertyKeyTokenStore propertyKeyTokenStore,
-            DynamicArrayStore arrayPropertyStore )
+            DynamicArrayStore arrayPropertyStore,
+            RecordFormat<PropertyRecord> recordFormat )
     {
-        super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR );
+        super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
+                recordFormat, NO_STORE_HEADER_FORMAT );
         this.stringStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayStore = arrayPropertyStore;
@@ -113,66 +108,9 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord>
         return arrayStore;
     }
 
-    @Override
-    public int getRecordSize()
-    {
-        return RECORD_SIZE;
-    }
-
-    @Override
-    public int getRecordHeaderSize()
-    {
-        return RECORD_SIZE - DEFAULT_PAYLOAD_SIZE;
-    }
-
     public PropertyKeyTokenStore getPropertyKeyTokenStore()
     {
         return propertyKeyTokenStore;
-    }
-
-    @Override
-    protected void writeRecord( PageCursor cursor, PropertyRecord record )
-    {
-        long id = record.getId();
-        cursor.setOffset( (int) (id * RECORD_SIZE % storeFile.pageSize()) );
-        if ( record.inUse() )
-        {
-            // Set up the record header
-            short prevModifier = record.getPrevProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0
-                    : (short) ((record.getPrevProp() & 0xF00000000L) >> 28);
-            short nextModifier = record.getNextProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0
-                    : (short) ((record.getNextProp() & 0xF00000000L) >> 32);
-            byte modifiers = (byte) (prevModifier | nextModifier);
-            /*
-             * [pppp,nnnn] previous, next high bits
-             */
-            cursor.putByte( modifiers );
-            cursor.putInt( (int) record.getPrevProp() );
-            cursor.putInt( (int) record.getNextProp() );
-
-            // Then go through the blocks
-            int longsAppended = 0; // For marking the end of blocks
-            for ( PropertyBlock block : record )
-            {
-                long[] propBlockValues = block.getValueBlocks();
-                for ( long propBlockValue : propBlockValues )
-                {
-                    cursor.putLong( propBlockValue );
-                }
-
-                longsAppended += propBlockValues.length;
-            }
-            if ( longsAppended < PropertyType.getPayloadSizeLongs() )
-            {
-                cursor.putLong( 0 );
-            }
-        }
-        else
-        {
-            // skip over the record header, nothing useful there
-            cursor.setOffset( cursor.getOffset() + 9 );
-            cursor.putLong( 0 );
-        }
     }
 
     @Override
@@ -286,77 +224,9 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord>
         return cursor;
     }
 
-    @Override
-    protected void readRecord( PageCursor cursor, PropertyRecord record, RecordLoad mode )
-    {
-        record.clearPropertyBlocks();
-
-        int offsetAtBeginning = cursor.getOffset();
-
-        /*
-         * [pppp,nnnn] previous, next high bits
-         */
-        byte modifiers = cursor.getByte();
-        long prevMod = (modifiers & 0xF0L) << 28;
-        long nextMod = (modifiers & 0x0FL) << 32;
-        long prevProp = cursor.getUnsignedInt();
-        long nextProp = cursor.getUnsignedInt();
-        record.setPrevProp( longFromIntAndMod( prevProp, prevMod ) );
-        record.setNextProp( longFromIntAndMod( nextProp, nextMod ) );
-
-        record.setInUse( false );
-        while ( cursor.getOffset() - offsetAtBeginning < RECORD_SIZE )
-        {
-            PropertyBlock newBlock = getPropertyBlock( cursor );
-            if ( newBlock != null )
-            {
-                record.addPropertyBlock( newBlock );
-                record.setInUse( true );
-            }
-            else
-            {
-                // We assume that storage is defragged
-                break;
-            }
-        }
-    }
-
-    /*
-     * It is assumed that the argument does hold a property block - all zeros is
-     * a valid (not in use) block, so even if the Bits object has been exhausted a
-     * result is returned, that has inUse() return false. Also, the argument is not
-     * touched.
-     */
-    private PropertyBlock getPropertyBlock( PageCursor cursor )
-    {
-        long header = cursor.getLong();
-        PropertyType type = PropertyType.getPropertyType( header, true );
-        if ( type == null )
-        {
-            return null;
-        }
-        PropertyBlock toReturn = new PropertyBlock();
-        // toReturn.setInUse( true );
-        int numBlocks = type.calculateNumberOfBlocksUsed( header );
-        long[] blockData = new long[numBlocks];
-        blockData[0] = header; // we already have that
-        for ( int i = 1; i < numBlocks; i++ )
-        {
-            blockData[i] = cursor.getLong();
-        }
-        toReturn.setValueBlocks( blockData );
-        return toReturn;
-    }
-
     public Object getValue( PropertyBlock propertyBlock )
     {
         return propertyBlock.getType().getValue( propertyBlock, this );
-    }
-
-    @Override
-    public long getNextRecordReference( PropertyRecord record )
-    {
-        return record.getNextProp();
     }
 
     public static void allocateStringRecords( Collection<DynamicRecord> target, byte[] chars,
@@ -575,7 +445,8 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord>
     {
         int offsetAtBeginning = cursor.getOffset();
         cursor.setOffset( offsetAtBeginning + 1/*mod*/ + 4/*prev*/ + 4/*next*/ );
-        while ( cursor.getOffset() - offsetAtBeginning < RECORD_SIZE )
+        int recordSize = getRecordSize();
+        while ( cursor.getOffset() - offsetAtBeginning < recordSize )
         {
             long block = cursor.getLong();
             if ( PropertyType.getPropertyType( block, true ) != null )

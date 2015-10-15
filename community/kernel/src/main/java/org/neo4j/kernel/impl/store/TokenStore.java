@@ -27,8 +27,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -39,10 +39,12 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.TokenFactory;
 
+import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 import static org.neo4j.kernel.impl.store.PropertyStore.decodeString;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
-public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token> extends CommonAbstractStore<RECORD>
+public abstract class TokenStore<RECORD extends TokenRecord,TOKEN extends Token>
+        extends ComposableRecordStore<RECORD,NoStoreHeader>
 {
     public static final int NAME_STORE_BLOCK_SIZE = 30;
 
@@ -58,9 +60,11 @@ public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token
             LogProvider logProvider,
             DynamicStringStore nameStore,
             String typeDescriptor,
-            TokenFactory<TOKEN> tokenFactory )
+            TokenFactory<TOKEN> tokenFactory,
+            RecordFormat<RECORD> recordFormat )
     {
-        super( file, configuration, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor );
+        super( file, configuration, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
+                recordFormat, NO_STORE_HEADER_FORMAT );
         this.nameStore = nameStore;
         this.tokenFactory = tokenFactory;
     }
@@ -123,41 +127,6 @@ public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token
                 nameStore.updateRecord( keyRecord );
             }
         }
-    }
-
-    @Override
-    protected void readRecord( PageCursor cursor, RECORD record, RecordLoad mode )
-    {
-        byte inUseByte = cursor.getByte();
-        boolean inUse = (inUseByte == Record.IN_USE.byteValue());
-        if ( mode.shouldLoad( inUse ) )
-        {
-            readRecord( cursor, record, inUse );
-        }
-    }
-
-    protected void readRecord( PageCursor cursor, RECORD record, boolean inUse )
-    {
-        record.initialize( inUse, cursor.getInt() );
-    }
-
-    @Override
-    protected void writeRecord( PageCursor cursor, RECORD record )
-    {
-        if ( record.inUse() )
-        {
-            cursor.putByte( Record.IN_USE.byteValue() );
-            writeRecord( record, cursor );
-        }
-        else
-        {
-            cursor.putByte( Record.NOT_IN_USE.byteValue() );
-        }
-    }
-
-    protected void writeRecord( RECORD record, PageCursor cursor )
-    {
-        cursor.putInt( record.getNameId() );
     }
 
     @Override

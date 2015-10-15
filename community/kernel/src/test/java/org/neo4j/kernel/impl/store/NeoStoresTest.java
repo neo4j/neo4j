@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
+import org.neo4j.kernel.impl.store.format.current.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -467,9 +468,9 @@ public class NeoStoresTest
     {
         File storeDir = dir.directory( "small_store" );
         initializeStores( storeDir, stringMap( "string_block_size", "62", "array_block_size", "302" ) );
-        assertEquals( 62 + AbstractDynamicStore.RECORD_HEADER_SIZE,
+        assertEquals( 62 + DynamicRecordFormat.RECORD_HEADER_SIZE,
                 pStore.getStringStore().getRecordSize() );
-        assertEquals( 302 + AbstractDynamicStore.RECORD_HEADER_SIZE,
+        assertEquals( 302 + DynamicRecordFormat.RECORD_HEADER_SIZE,
                 pStore.getArrayStore().getRecordSize() );
         ds.stop();
     }

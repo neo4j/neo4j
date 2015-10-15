@@ -37,6 +37,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.current.Current;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -62,6 +63,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
 {
     public static final String ALL_STORES_VERSION = "v0.A.7";
     public static final String UNKNOWN_VERSION = "Unknown";
+
     protected final Config configuration;
     protected final PageCache pageCache;
     protected final File storageFileName;
@@ -190,8 +192,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
 
     protected void initialiseNewStoreFile( PagedFile file ) throws IOException
     {
-        ByteBuffer headerRecord = createHeaderRecord();
-        if ( headerRecord != null )
+        if ( getNumberOfReservedLowIds() > 0 )
         {
             try ( PageCursor pageCursor = file.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
@@ -200,7 +201,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
                     do
                     {
                         pageCursor.setOffset( 0 );
-                        pageCursor.putBytes( headerRecord.array() );
+                        createHeaderRecord( pageCursor );
                     }
                     while ( pageCursor.shouldRetry() );
                 }
@@ -222,9 +223,9 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
         }
     }
 
-    protected ByteBuffer createHeaderRecord()
+    protected void createHeaderRecord( PageCursor cursor )
     {
-        return null;
+        assert getNumberOfReservedLowIds() == 0;
     }
 
     /**
@@ -239,22 +240,41 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
     {
         try
         {
-            readAndVerifyHeaderRecord();
-            try
-            {
-                int filePageSize = pageCache.pageSize() - pageCache.pageSize() % getRecordSize();
-                storeFile = pageCache.map( getStorageFileName(), filePageSize );
-            }
-            catch ( IOException e )
-            {
-                // TODO: Just throw IOException, add proper handling further up
-                throw new UnderlyingStorageException( e );
-            }
-            loadIdGenerator();
+            extractHeaderRecord();
+            int filePageSize = pageCache.pageSize() - pageCache.pageSize() % getRecordSize();
+            storeFile = pageCache.map( getStorageFileName(), filePageSize );
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( "Unable to load storage " + getStorageFileName(), e );
+            // TODO: Just throw IOException, add proper handling further up
+            throw new UnderlyingStorageException( e );
+        }
+        loadIdGenerator();
+    }
+
+    private void extractHeaderRecord() throws IOException
+    {
+        if ( getNumberOfReservedLowIds() > 0 )
+        {
+            try ( PagedFile pagedFile = pageCache.map( getStorageFileName(), pageCache.pageSize() ) )
+            {
+                try ( PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
+                {
+                    if ( pageCursor.next() )
+                    {
+                        do
+                        {
+                            pageCursor.setOffset( 0 );
+                            readHeaderAndInitializeRecordFormat( pageCursor );
+                        }
+                        while ( pageCursor.shouldRetry() );
+                    }
+                }
+            }
+        }
+        else
+        {
+            readHeaderAndInitializeRecordFormat( null );
         }
     }
 
@@ -294,12 +314,17 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
 
 
     /**
-     * Note: This method runs before the file has been mapped by the page cache, and therefore needs to
-     * operate on the store files directly. This method is called by constructors.
+     * This method is called when opening the store to extract header data and determine things like
+     * record size of the specific record format for this store. Some formats rely on information
+     * in the store header, that's why it happens at this stage.
+     *
+     * @param cursor {@link PageCursor} initialized at the start of the store header where header information
+     * can be read if need be. This can be {@code null} if this store has no store header. The initialization
+     * of the record format still happens in here.
+     * @throws IOException if there were problems reading header information.
      */
-    protected void readAndVerifyHeaderRecord() throws IOException
+    protected void readHeaderAndInitializeRecordFormat( PageCursor cursor ) throws IOException
     {
-        // record size is fixed for non-dynamic stores, so nothing to do here
     }
 
     private void loadIdGenerator()
@@ -374,11 +399,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
         {
             throw new UnderlyingStorageException( e );
         }
-    }
-
-    protected boolean isInUse( byte inUseByte )
-    {
-        return (inUseByte & 0x1) == Record.IN_USE.intValue();
     }
 
     /**
@@ -689,15 +709,12 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
     public abstract int getRecordSize();
 
     @Override
-    public int getRecordHeaderSize()
+    public int getRecordDataSize()
     {
         return getRecordSize();
     }
 
-    protected boolean isInUse( PageCursor cursor )
-    {
-        return isInUse( cursor.getByte() );
-    }
+    protected abstract boolean isInUse( PageCursor cursor );
 
     protected boolean isRecordReserved( PageCursor cursor )
     {
@@ -839,7 +856,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
 
     public void logVersions( Logger logger )
     {
-        logger.log( "  " + getTypeDescriptor() + " " + ALL_STORES_VERSION );
+        logger.log( "  " + getTypeDescriptor() + " " + Current.STORE_VERSION );
     }
 
     public void logIdUsage( Logger logger )

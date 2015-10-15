@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -59,10 +60,19 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
  */
 public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequence
 {
+    /**
+     * @return the {@link File} that backs this store.
+     */
     File getStorageFileName();
 
+    /**
+     * @return high id of this store, i.e an id higher than any in use record.
+     */
     long getHighId();
 
+    /**
+     * @return highest id in use in this store.
+     */
     long getHighestPossibleIdInUse();
 
     /**
@@ -108,26 +118,99 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      */
     Collection<RECORD> getRecords( long firstId, RecordLoad mode ) throws InvalidRecordException;
 
+    /**
+     * Instantiates a new record cursor capable of iterating over records in this store. A {@link RecordCursor}
+     * gets created with one record and will use every time it reads records.
+     *
+     * This method relates to {@link #placeRecordCursor(long, RecordCursor, RecordLoad)} just like
+     * {@link #newRecord()} relates to {@link #getRecord(long, AbstractBaseRecord, RecordLoad)} in that
+     * instantiation of object is separate from reading record data.
+     *
+     * @param record instance to use when reading record data.
+     * @return a new {@link RecordCursor} instance capable of reading records in this store.
+     */
     RecordCursor<RECORD> newRecordCursor( RECORD record );
 
+    /**
+     * Places a {@link #newRecordCursor(AbstractBaseRecord) previously instantiated} {@link RecordCursor}
+     * at the given {@code id}. So that the next call to {@link RecordCursor#next()} reads that record.
+     *
+     * @param id record id to place the cursor at.
+     * @param cursor the {@link RecordCursor} to place.
+     * @param mode {@link RecordLoad} mode to use when reading records.
+     * @return the {@link RecordCursor} that was passed in.
+     */
     RecordCursor<RECORD> placeRecordCursor( long id, RecordCursor<RECORD> cursor, RecordLoad mode );
 
+    /**
+     * Returns another record id which the given {@code record} references and which a {@link RecordCursor}
+     * would follow and read next.
+     *
+     * @param record to read the "next" reference from.
+     * @return record id of "next" record that the given {@code record} references, or {@link Record#NULL_REFERENCE}
+     * if the record doesn't reference a next record.
+     */
     long getNextRecordReference( RECORD record );
 
+    /**
+     * Updates this store with the contents of {@code record} at the record id
+     * {@link AbstractBaseRecord#getId() specified} by the record. The whole record will be written if
+     * the given record is {@link AbstractBaseRecord#inUse() in use}, not necessarily so if it's not in use.
+     *
+     * @param record containing data to write to this store at the {@link AbstractBaseRecord#getId() id}
+     * specified by the record.
+     */
     void updateRecord( RECORD record );
 
+    /**
+     * Lets {@code record} be processed by {@link Processor}.
+     *
+     * @param processor {@link Processor} of records.
+     * @param record to process.
+     * @throws FAILURE if the processor fails.
+     */
     <FAILURE extends Exception> void accept( Processor<FAILURE> processor, RECORD record ) throws FAILURE;
 
+    /**
+     * @return number of bytes each record in this store occupies. All records in a store is of the same size.
+     */
     int getRecordSize();
 
-    int getRecordHeaderSize();
+    /**
+     * @deprecated since it's exposed through the generic {@link RecordStore} interface although only
+     * applicable to one particular type of of implementation of it.
+     * @return record "data" size, only applicable to dynamic record stores where record size may be specified
+     * at creation time and later used every time the store is opened. Data size refers to number of bytes
+     * of a record without header information, such as "inUse" and "next".
+     */
+    @Deprecated
+    int getRecordDataSize();
 
+    /**
+     * @return underlying storage is assumed to work with pages. This method returns number of records that
+     * will fit into each page.
+     */
     int getRecordsPerPage();
 
+    /**
+     * Closes this store and releases any resource attached to it.
+     */
     void close();
 
+    /**
+     * Flushes all pending {@link #updateRecord(AbstractBaseRecord) updates} to underlying storage.
+     * This call is blocking and will ensure all updates since last call to this method are durable
+     * once the call returns.
+     */
     void flush();
 
+    /**
+     * Some stores may have meta data stored in the header of the store file. Since all records in a store
+     * are of the same size the means of storing that meta data is to occupy one or more records at the
+     * beginning of the store (0...).
+     *
+     * @return the number of records in the beginning of the file that are reserved for header meta data.
+     */
     int getNumberOfReservedLowIds();
 
     Predicate<AbstractBaseRecord> IN_USE = AbstractBaseRecord::inUse;
@@ -220,9 +303,9 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         }
 
         @Override
-        public int getRecordHeaderSize()
+        public int getRecordDataSize()
         {
-            return actual.getRecordHeaderSize();
+            return actual.getRecordDataSize();
         }
 
         @Override
@@ -365,7 +448,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
                     scan:
                     while ( ids.hasNext() )
                     {
-                        if ( store.getRecord( ids.next(), record, RecordLoad.FORCE ).inUse() )
+                        if ( store.getRecord( ids.next(), record, RecordLoad.CHECK ).inUse() )
                         {
                             for ( Predicate<? super R> filter : filters )
                             {

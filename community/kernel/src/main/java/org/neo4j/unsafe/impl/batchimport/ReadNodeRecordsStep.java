@@ -64,6 +64,6 @@ public class ReadNodeRecordsStep extends IoProducerStep
     @Override
     protected long position()
     {
-        return id * NodeStore.RECORD_SIZE;
+        return id * nodeStore.getRecordSize();
     }
 }

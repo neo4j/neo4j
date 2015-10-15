@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.format.current.Current;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -62,11 +63,11 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
+
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find20FormatStoreDirectory;
-import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
 public class StoreMigratorFrom20IT
 {
@@ -187,7 +188,7 @@ public class StoreMigratorFrom20IT
         assertEquals( 1317392957120L, metaDataStore.getCreationTime() );
         assertEquals( -472309512128245482l, metaDataStore.getRandomNumber() );
         assertEquals( 5l, metaDataStore.getCurrentLogVersion() );
-        assertEquals( ALL_STORES_VERSION, MetaDataStore.versionLongToString(
+        assertEquals( Current.STORE_VERSION, MetaDataStore.versionLongToString(
                 metaDataStore.getStoreVersion() ) );
         assertEquals( 1042l, metaDataStore.getLastCommittedTransactionId() );
     }

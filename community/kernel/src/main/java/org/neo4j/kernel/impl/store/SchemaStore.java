@@ -28,10 +28,11 @@ import java.util.List;
 
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
@@ -53,9 +54,11 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            LogProvider logProvider )
+            LogProvider logProvider,
+            RecordFormat<DynamicRecord> recordFormat )
     {
-        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, BLOCK_SIZE );
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, BLOCK_SIZE,
+                recordFormat );
     }
 
     @Override

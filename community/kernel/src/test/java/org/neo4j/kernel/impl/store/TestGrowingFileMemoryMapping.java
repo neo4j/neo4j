@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.current.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
@@ -59,7 +60,8 @@ public class TestGrowingFileMemoryMapping
 
         File storeDir = testDirectory.graphDbDir();
         Config config = new Config( stringMap(
-                pagecache_memory.name(), mmapSize( NUMBER_OF_RECORDS, NodeStore.RECORD_SIZE ) ), NodeStore.Configuration.class );
+                pagecache_memory.name(), mmapSize( NUMBER_OF_RECORDS, NodeRecordFormat.RECORD_SIZE ) ),
+                NodeStore.Configuration.class );
         DefaultFileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystemAbstraction );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction, config );

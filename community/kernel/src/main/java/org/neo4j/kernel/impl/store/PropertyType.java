@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.store.format.current.PropertyRecordFormat;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 
 /**
@@ -294,7 +295,7 @@ public enum PropertyType
     private final int type;
 
     // TODO In wait of a better place
-    private static int payloadSize = PropertyStore.DEFAULT_PAYLOAD_SIZE;
+    private static int payloadSize = PropertyRecordFormat.DEFAULT_PAYLOAD_SIZE;
 
     PropertyType( int type )
     {

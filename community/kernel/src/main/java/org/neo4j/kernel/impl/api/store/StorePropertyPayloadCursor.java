@@ -30,10 +30,10 @@ import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.LongerShortString;
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.ShortArray;
+import org.neo4j.kernel.impl.store.format.current.PropertyRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.util.Bits;
@@ -66,7 +66,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
  */
 class StorePropertyPayloadCursor
 {
-    static final int MAX_NUMBER_OF_PAYLOAD_LONG_ARRAY = PropertyStore.DEFAULT_PAYLOAD_SIZE / 8;
+    static final int MAX_NUMBER_OF_PAYLOAD_LONG_ARRAY = PropertyRecordFormat.DEFAULT_PAYLOAD_SIZE / 8;
 
     private static final long PROPERTY_KEY_ID_BITMASK = 0xFFFFFFL;
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;

@@ -35,6 +35,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.store.format.current.Current;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
@@ -78,7 +79,8 @@ public class TestIdGeneratorRebuilding
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
         NodeStore store = new NodeStore( storeFile, config, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore );
+                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore,
+                Current.RECORD_FORMATS.node() );
         store.initialise( true );
         store.makeStoreOk();
 
@@ -182,7 +184,8 @@ public class TestIdGeneratorRebuilding
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
         NodeStore store = new NodeStore( storeFile, config, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore );
+                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore,
+                Current.RECORD_FORMATS.node() );
         store.initialise( true );
         store.makeStoreOk();
 

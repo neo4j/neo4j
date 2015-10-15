@@ -46,6 +46,8 @@ import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.current.Current;
+import org.neo4j.kernel.impl.store.format.current.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -328,7 +330,7 @@ public class UpgradeStoreIT
     {
         FileChannel channel = new RandomAccessFile( file, "rw" ).getChannel();
         ByteBuffer buffer = ByteBuffer.wrap( new byte[4] );
-        buffer.putInt( blockSize + AbstractDynamicStore.RECORD_HEADER_SIZE );
+        buffer.putInt( blockSize + DynamicRecordFormat.RECORD_HEADER_SIZE );
         buffer.flip();
         channel.write( buffer );
 
@@ -347,7 +349,7 @@ public class UpgradeStoreIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         DynamicStringStore stringStore = new DynamicStringStore( new File( fileName.getPath() + ".names" ), config,
                 IdType.RELATIONSHIP_TYPE_TOKEN_NAME, new DefaultIdGeneratorFactory( fs ), pageCache,
-                NullLogProvider.getInstance(), TokenStore.NAME_STORE_BLOCK_SIZE );
+                NullLogProvider.getInstance(), TokenStore.NAME_STORE_BLOCK_SIZE, Current.RECORD_FORMATS.dynamic() );
         RelationshipTypeTokenStore store =
                 new RelationshipTypeTokenStoreWithOneOlderVersion( fileName, stringStore, fs, pageCache );
         for ( int i = 0; i < numberOfTypes; i++ )
@@ -377,7 +379,7 @@ public class UpgradeStoreIT
                 PageCache pageCache )
         {
             super( fileName, config, new NoLimitIdGeneratorFactory( fs ), pageCache, NullLogProvider.getInstance(),
-                    stringStore );
+                    stringStore, Current.RECORD_FORMATS.relationshipTypeToken() );
         }
 
         @Override
