@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import org.junit.Test;
+import org.mockito.Matchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -32,11 +37,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -119,6 +119,243 @@ public class HighAvailabilityMemberStateMachineTest
 
         // Then
         assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
+    }
+
+    @Test
+    public void shouldMoveToPendingElectionIfPendingAndMasterAvailableWasItself() throws Throwable
+    {
+        // Given
+        InstanceId me = new InstanceId( 1 );
+        HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
+        AvailabilityGuard guard = mock( AvailabilityGuard.class );
+        ClusterMembers members = mock( ClusterMembers.class );
+        ClusterMemberEvents events = mock( ClusterMemberEvents.class );
+
+        final Set<ClusterMemberListener> listener = new HashSet<>();
+
+        doAnswer( new Answer()
+        {
+            @Override
+            public Object answer( InvocationOnMock invocation ) throws Throwable
+            {
+                listener.add( (ClusterMemberListener) invocation.getArguments()[0] );
+                return null;
+            }
+
+        } ).when( events ).addClusterMemberListener( Matchers.<ClusterMemberListener>any() );
+
+        Election election = mock( Election.class );
+        HighAvailabilityMemberStateMachine toTest = new HighAvailabilityMemberStateMachine( context, guard, members,
+                events, election, NullLogProvider.getInstance() );
+        toTest.init();
+        ClusterMemberListener theListener = listener.iterator().next();
+
+        assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
+
+        // When
+        theListener.memberIsAvailable( MASTER, new InstanceId( me.toIntegerIndex() ), URI.create( "ha://whatever" ),
+                StoreId.DEFAULT );
+
+        // Then
+        assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING_ELECTION ) );
+    }
+
+    @Test
+    public void shouldMoveToPendingElectionIfPendingAndSlaveAvailableWasItself() throws Throwable
+    {
+        // Given
+        InstanceId me = new InstanceId( 1 );
+        HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
+        AvailabilityGuard guard = mock( AvailabilityGuard.class );
+        ClusterMembers members = mock( ClusterMembers.class );
+        ClusterMemberEvents events = mock( ClusterMemberEvents.class );
+
+        final Set<ClusterMemberListener> listener = new HashSet<>();
+
+        doAnswer( new Answer()
+        {
+            @Override
+            public Object answer( InvocationOnMock invocation ) throws Throwable
+            {
+                listener.add( (ClusterMemberListener) invocation.getArguments()[0] );
+                return null;
+            }
+
+        } ).when( events ).addClusterMemberListener( Matchers.<ClusterMemberListener>any() );
+
+        Election election = mock( Election.class );
+        HighAvailabilityMemberStateMachine toTest = new HighAvailabilityMemberStateMachine( context, guard, members,
+                events, election, NullLogProvider.getInstance() );
+        toTest.init();
+        ClusterMemberListener theListener = listener.iterator().next();
+
+        assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
+
+        // When
+        theListener.memberIsAvailable( SLAVE, new InstanceId( me.toIntegerIndex() ), URI.create( "ha://whatever" ),
+                StoreId.DEFAULT );
+
+        // Then
+        assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING_ELECTION ) );
+    }
+
+    @Test
+    public void shouldMoveToPendingElectionIfToSlaveAndMasterAvailableWasItself() throws Throwable
+    {
+        // Given
+        InstanceId me = new InstanceId( 1 );
+        HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
+        AvailabilityGuard guard = mock( AvailabilityGuard.class );
+        ClusterMembers members = mock( ClusterMembers.class );
+        ClusterMemberEvents events = mock( ClusterMemberEvents.class );
+
+        final Set<ClusterMemberListener> listener = new HashSet<>();
+
+        doAnswer( new Answer()
+        {
+            @Override
+            public Object answer( InvocationOnMock invocation ) throws Throwable
+            {
+                listener.add( (ClusterMemberListener) invocation.getArguments()[0] );
+                return null;
+            }
+
+        } ).when( events ).addClusterMemberListener( Matchers.<ClusterMemberListener>any() );
+
+        Election election = mock( Election.class );
+        HighAvailabilityMemberStateMachine toTest = new HighAvailabilityMemberStateMachine( context, guard, members,
+                events, election, NullLogProvider.getInstance() );
+        toTest.init();
+        ClusterMemberListener theListener = listener.iterator().next();
+        theListener.memberIsAvailable( MASTER, new InstanceId( 2 ), URI.create( "ha://whatever" ), StoreId.DEFAULT );
+
+        assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.TO_SLAVE ) );
+
+        // When
+        theListener.memberIsAvailable( MASTER, new InstanceId( me.toIntegerIndex() ), URI.create( "ha://whatever" ),
+                StoreId.DEFAULT );
+
+        // Then
+        assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING_ELECTION ) );
+    }
+
+    @Test
+    public void shouldMoveToPendingElectionIfToSlaveAndMasterAvailableWasUnexpected() throws Throwable
+    {
+        // Given
+        InstanceId me = new InstanceId( 1 );
+        HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
+        AvailabilityGuard guard = mock( AvailabilityGuard.class );
+        ClusterMembers members = mock( ClusterMembers.class );
+        ClusterMemberEvents events = mock( ClusterMemberEvents.class );
+
+        final Set<ClusterMemberListener> listener = new HashSet<>();
+
+        doAnswer( new Answer()
+        {
+            @Override
+            public Object answer( InvocationOnMock invocation ) throws Throwable
+            {
+                listener.add( (ClusterMemberListener) invocation.getArguments()[0] );
+                return null;
+            }
+
+        } ).when( events ).addClusterMemberListener( Matchers.<ClusterMemberListener>any() );
+
+        Election election = mock( Election.class );
+        HighAvailabilityMemberStateMachine toTest = new HighAvailabilityMemberStateMachine( context, guard, members,
+                events, election, NullLogProvider.getInstance() );
+        toTest.init();
+        ClusterMemberListener theListener = listener.iterator().next();
+
+        theListener.memberIsAvailable( MASTER, new InstanceId( 2 ), URI.create( "ha://whatever" ), StoreId.DEFAULT );
+
+        assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.TO_SLAVE ) );
+
+        // When
+        theListener.memberIsAvailable( MASTER, new InstanceId( 3 ), URI.create( "ha://whatever" ), StoreId.DEFAULT );
+
+        // Then
+        assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING_ELECTION ) );
+    }
+
+    @Test
+    public void shouldMoveToPendingElectionIfToMasterAndOtherMasterAvailable() throws Throwable
+    {
+        // Given
+        InstanceId me = new InstanceId( 1 );
+        HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
+        AvailabilityGuard guard = mock( AvailabilityGuard.class );
+        ClusterMembers members = mock( ClusterMembers.class );
+        ClusterMemberEvents events = mock( ClusterMemberEvents.class );
+
+        final Set<ClusterMemberListener> listener = new HashSet<>();
+
+        doAnswer( new Answer()
+        {
+            @Override
+            public Object answer( InvocationOnMock invocation ) throws Throwable
+            {
+                listener.add( (ClusterMemberListener) invocation.getArguments()[0] );
+                return null;
+            }
+
+        } ).when( events ).addClusterMemberListener( Matchers.<ClusterMemberListener>any() );
+
+        Election election = mock( Election.class );
+        HighAvailabilityMemberStateMachine toTest = new HighAvailabilityMemberStateMachine( context, guard, members,
+                events, election, NullLogProvider.getInstance() );
+        toTest.init();
+        ClusterMemberListener theListener = listener.iterator().next();
+        theListener.coordinatorIsElected( me );
+
+        assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.TO_MASTER ) );
+
+        // When
+        theListener.memberIsAvailable( MASTER, new InstanceId( 2 ), URI.create( "ha://whatever" ), StoreId.DEFAULT );
+
+        // Then
+        assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING_ELECTION ) );
+    }
+
+    @Test
+    public void shouldMoveToPendingElectionIfMasterAndSlaveAvailableIsMe() throws Throwable
+    {
+        // Given
+        InstanceId me = new InstanceId( 1 );
+        HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
+        AvailabilityGuard guard = mock( AvailabilityGuard.class );
+        ClusterMembers members = mock( ClusterMembers.class );
+        ClusterMemberEvents events = mock( ClusterMemberEvents.class );
+
+        final Set<ClusterMemberListener> listener = new HashSet<>();
+
+        doAnswer( new Answer()
+        {
+            @Override
+            public Object answer( InvocationOnMock invocation ) throws Throwable
+            {
+                listener.add( (ClusterMemberListener) invocation.getArguments()[0] );
+                return null;
+            }
+
+        } ).when( events ).addClusterMemberListener( Matchers.<ClusterMemberListener>any() );
+
+        Election election = mock( Election.class );
+        HighAvailabilityMemberStateMachine toTest = new HighAvailabilityMemberStateMachine( context, guard, members,
+                events, election, NullLogProvider.getInstance() );
+        toTest.init();
+        ClusterMemberListener theListener = listener.iterator().next();
+        theListener.coordinatorIsElected( me );
+        theListener.memberIsAvailable( MASTER, me, URI.create( "ha://whatever" ), StoreId.DEFAULT );
+
+        assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.MASTER ) );
+
+        // When
+        theListener.memberIsAvailable( SLAVE, me, URI.create( "ha://whatever" ), StoreId.DEFAULT );
+
+        // Then
+        assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING_ELECTION ) );
     }
 
     @Test
