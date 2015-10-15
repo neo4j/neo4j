@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.neo4j.kernel.impl.util.Charsets;
-import org.neo4j.kernel.impl.util.Codecs;
-
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
+
+import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.impl.util.Codecs;
 
 public class Credential
 {
@@ -99,7 +99,7 @@ public class Credential
     {
         try
         {
-            byte[] passwordBytes = password.getBytes( Charsets.UTF_8 );
+            byte[] passwordBytes = UTF8.encode( password );
             MessageDigest m = MessageDigest.getInstance( DIGEST_ALGO );
             m.update( salt, 0, salt.length );
             m.update( passwordBytes, 0, passwordBytes.length );

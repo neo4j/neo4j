@@ -19,14 +19,15 @@
  */
 package org.neo4j.perftest.enterprise.ccheck;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
-import java.util.TreeMap;
-
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.util.DefaultPrettyPrinter;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.TreeMap;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.perftest.enterprise.generator.DataGenerator;
@@ -34,7 +35,6 @@ import org.neo4j.perftest.enterprise.util.Configuration;
 import org.neo4j.perftest.enterprise.util.Setting;
 
 import static org.neo4j.io.fs.FileUtils.newFilePrintWriter;
-import static org.neo4j.kernel.impl.util.Charsets.UTF_8;
 import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
 
 class JsonReportWriter implements TimingProgress.Visitor
@@ -57,7 +57,7 @@ class JsonReportWriter implements TimingProgress.Visitor
     {
         ensureOpen( false );
         json = new JsonFactory().configure( JsonGenerator.Feature.AUTO_CLOSE_TARGET, true )
-                                .createJsonGenerator( newFilePrintWriter( target, UTF_8 ) );
+                                .createJsonGenerator( newFilePrintWriter( target, StandardCharsets.UTF_8 ) );
         json.setPrettyPrinter( new DefaultPrettyPrinter() );
         json.writeStartObject();
         {

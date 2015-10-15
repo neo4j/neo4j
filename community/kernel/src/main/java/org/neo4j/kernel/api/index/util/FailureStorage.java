@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 
@@ -117,7 +118,7 @@ public class FailureStorage
         File failureFile = failureFile( indexId );
         try ( StoreChannel channel = fs.open( failureFile, "rw" ) )
         {
-            byte[] data = failure.getBytes( "utf-8" );
+            byte[] data = UTF8.encode( failure );
             channel.write( ByteBuffer.wrap( data, 0, Math.min( data.length, MAX_FAILURE_SIZE ) ) );
 
             channel.force( true );
@@ -139,7 +140,7 @@ public class FailureStorage
             int readData = channel.read( ByteBuffer.wrap( data ) );
             channel.close();
 
-            return readData <= 0 ? "" : new String( withoutZeros( data ), "utf-8" );
+            return readData <= 0 ? "" : UTF8.decode( withoutZeros( data ) );
         }
     }
 

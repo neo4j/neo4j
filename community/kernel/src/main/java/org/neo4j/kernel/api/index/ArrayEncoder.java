@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Array;
 
-import org.neo4j.kernel.impl.util.Charsets;
+import org.neo4j.helpers.UTF8;
 
 public class ArrayEncoder
 {
@@ -83,7 +83,7 @@ public class ArrayEncoder
             {
                 type = "L";
                 String str = o.toString();
-                builder.append( base64Encoder.encode( str.getBytes( Charsets.UTF_8 ) ) );
+                builder.append( base64Encoder.encode( UTF8.encode( str ) ) );
             }
             builder.append( "|" );
         }

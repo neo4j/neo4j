@@ -19,21 +19,21 @@
  */
 package org.neo4j.logging;
 
-import org.neo4j.function.Consumer;
-import org.neo4j.function.Function;
-import org.neo4j.function.Supplier;
-import org.neo4j.function.Suppliers;
-
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Writer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.neo4j.function.Consumer;
+import org.neo4j.function.Function;
+import org.neo4j.function.Supplier;
+import org.neo4j.function.Suppliers;
 
 /**
  * A {@link Log} implementation that applies a simple formatting to each log message.
@@ -53,11 +53,10 @@ public class FormattedLog extends AbstractLog
         @Override
         public PrintWriter apply( OutputStream outputStream )
         {
-            return new PrintWriter( new OutputStreamWriter( outputStream, UTF_8 ) );
+            return new PrintWriter( new OutputStreamWriter( outputStream, StandardCharsets.UTF_8 ) );
         }
     };
     static final TimeZone UTC = TimeZone.getTimeZone( "UTC" );
-    static final Charset UTF_8 = Charset.forName( "UTF-8" );
 
     /**
      * A Builder for a {@link FormattedLog}

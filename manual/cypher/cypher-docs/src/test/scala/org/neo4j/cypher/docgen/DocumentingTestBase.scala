@@ -20,6 +20,7 @@
 package org.neo4j.cypher.docgen
 
 import java.io.{ByteArrayOutputStream, File, PrintWriter, StringWriter}
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 
 import org.junit.{After, Before}
@@ -72,7 +73,7 @@ trait DocumentationHelper extends GraphIcing {
   }
 
   def createWriter(title: String, dir: File): PrintWriter = {
-    new PrintWriter(new File(dir, niceify(title) + ".asciidoc"), "UTF-8")
+    new PrintWriter(new File(dir, niceify(title) + ".asciidoc"), StandardCharsets.UTF_8.name())
   }
 
   def createCypherSnippet(query: String) = {

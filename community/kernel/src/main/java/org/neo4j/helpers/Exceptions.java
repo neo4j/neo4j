@@ -28,6 +28,8 @@ import java.lang.reflect.InvocationTargetException;
 
 import org.neo4j.kernel.impl.locking.Locks.Client;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 public class Exceptions
 {
     private static final String UNEXPECTED_MESSAGE = "Unexpected Exception";
@@ -212,12 +214,12 @@ public class Exceptions
         try
         {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            PrintStream target = new PrintStream( bytes, true, "UTF-8" );
+            PrintStream target = new PrintStream( bytes, true,  UTF_8.name() );
             cause.printStackTrace( target );
             target.flush();
-            return bytes.toString("UTF-8");
+            return bytes.toString( UTF_8.name());
         }
-        catch(UnsupportedEncodingException e)
+        catch ( UnsupportedEncodingException e )
         {
             cause.printStackTrace(System.err);
             return "[ERROR: Unable to serialize stacktrace, UTF-8 not supported.]";

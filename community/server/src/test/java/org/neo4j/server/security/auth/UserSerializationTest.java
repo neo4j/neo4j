@@ -23,12 +23,11 @@ import org.junit.Test;
 
 import java.util.List;
 
-import org.neo4j.kernel.impl.util.Charsets;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import org.neo4j.helpers.UTF8;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 public class UserSerializationTest
 {
@@ -64,9 +63,9 @@ public class UserSerializationTest
         byte[] hash2 = new byte[] { (byte) 0x0e, (byte) 0x1f, (byte) 0xff, (byte) 0xc2, (byte) 0x3e };
 
         // When
-        List<User> deserialized = serialization.deserializeUsers(
+        List<User> deserialized = serialization.deserializeUsers( UTF8.encode(
                 ("Steve:SHA-256,FE0056C37E,A543:\n" +
-                 "Bob:SHA-256,0E1FFFC23E,34A4:password_change_required\n") .getBytes( Charsets.UTF_8 ) );
+                 "Bob:SHA-256,0E1FFFC23E,34A4:password_change_required\n") ) );
 
         // Then
         assertThat( deserialized, equalTo( asList(

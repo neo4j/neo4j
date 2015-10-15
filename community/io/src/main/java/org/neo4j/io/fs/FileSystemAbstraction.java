@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.charset.Charset;
 import java.util.zip.ZipOutputStream;
 
 import org.neo4j.function.Function;
@@ -38,9 +39,9 @@ public interface FileSystemAbstraction
 
     InputStream openAsInputStream( File fileName ) throws IOException;
 
-    Reader openAsReader( File fileName, String encoding ) throws IOException;
+    Reader openAsReader( File fileName, Charset charset ) throws IOException;
 
-    Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException;
+    Writer openAsWriter( File fileName, Charset charset, boolean append ) throws IOException;
 
     StoreChannel create( File fileName ) throws IOException;
 

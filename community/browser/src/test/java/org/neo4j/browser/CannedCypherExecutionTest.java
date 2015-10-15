@@ -19,8 +19,15 @@
  */
 package org.neo4j.browser;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,23 +40,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.collections4.CollectionUtils;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.impl.util.Charsets;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.format;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -87,7 +86,7 @@ public class CannedCypherExecutionTest
                 String fileName = file.getFileName().toString();
                 if ( fileName.endsWith( ".html" ) )
                 {
-                    String content = FileUtils.readTextFile( file.toFile(), Charsets.UTF_8 );
+                    String content = FileUtils.readTextFile( file.toFile(), StandardCharsets.UTF_8 );
                     Elements cypherElements = Jsoup.parse( content ).select( "pre.runnable" )
                             .not( ".standalone-example" );
                     for ( Element cypherElement : cypherElements )

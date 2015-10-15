@@ -27,6 +27,7 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.Serializable;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.rmi.ConnectException;
 import java.rmi.RemoteException;
 import java.util.HashMap;
@@ -42,7 +43,6 @@ import org.neo4j.shell.impl.SimpleAppServer;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 import static org.neo4j.io.fs.FileUtils.newBufferedFileReader;
-import static org.neo4j.kernel.impl.util.Charsets.UTF_8;
 
 /**
  * Can start clients, either remotely to another JVM running a server
@@ -358,7 +358,7 @@ public class StartClient
             {
                 if ( fileName.equals( ARG_FILE_STDIN ) )
                 {
-                    reader = new BufferedReader( new InputStreamReader( System.in, UTF_8 ) );
+                    reader = new BufferedReader( new InputStreamReader( System.in, StandardCharsets.UTF_8 ) );
                 }
                 else
                 {
@@ -367,7 +367,7 @@ public class StartClient
                     {
                         throw new ShellException( "File to execute " + "does not exist: " + fileName );
                     }
-                    reader = newBufferedFileReader( file, UTF_8 );
+                    reader = newBufferedFileReader( file, StandardCharsets.UTF_8 );
                 }
                 executeCommandStream( client, reader );
             }

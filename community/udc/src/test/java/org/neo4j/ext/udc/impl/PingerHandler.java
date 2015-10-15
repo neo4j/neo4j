@@ -21,6 +21,7 @@ package org.neo4j.ext.udc.impl;
 
 import java.io.IOException;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,8 +50,8 @@ public class PingerHandler implements HttpRequestHandler
                 for ( String param : params )
                 {
                     String[] pair = param.split( "=" );
-                    String key = URLDecoder.decode( pair[0], "UTF-8" );
-                    String value = URLDecoder.decode( pair[1], "UTF-8" );
+                    String key = URLDecoder.decode( pair[0], StandardCharsets.UTF_8.name() );
+                    String value = URLDecoder.decode( pair[1], StandardCharsets.UTF_8.name() );
                     queryMap.put( key, value );
                 }
             }

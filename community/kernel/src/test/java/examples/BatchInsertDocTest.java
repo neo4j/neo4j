@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -130,7 +131,8 @@ public class BatchInsertDocTest
     @Test
     public void insertWithConfigFile() throws IOException
     {
-        try ( Writer fw = fileSystem.openAsWriter( new File( "target/docs/batchinsert-config" ).getAbsoluteFile(), "utf-8", false ) )
+        try ( Writer fw = fileSystem.openAsWriter( new File( "target/docs/batchinsert-config" ).getAbsoluteFile(),
+                StandardCharsets.UTF_8, false ) )
         {
             fw.append( "dbms.pagecache.memory=8m" );
         }

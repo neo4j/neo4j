@@ -24,9 +24,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -76,7 +76,7 @@ public class ConfigurationParser
                     try
                     {
                         method = type.getMethod( name, String.class );
-                        args = new String[] { parts[1] };
+                        args = new String[]{parts[1]};
                     }
                     catch ( NoSuchMethodException nsm )
                     {
@@ -126,7 +126,10 @@ public class ConfigurationParser
 
     public final StyleParameter[] styles( StyleParameter... params )
     {
-        if ( params == null ) params = new StyleParameter[0];
+        if ( params == null )
+        {
+            params = new StyleParameter[0];
+        }
         StyleParameter[] result = styles.toArray( new StyleParameter[styles.size() + params.length] );
         System.arraycopy( params, 0, result, styles.size(), params.length );
         return result;
@@ -159,11 +162,13 @@ public class ConfigurationParser
     public void nodePropertyFilter( String nodeProperties )
     {
         final String nodePropertiesString = nodeProperties;
-        styles.add( new StyleParameter.NodePropertyFilter() {
-          public boolean acceptProperty(String key) {
-            return Arrays.asList(nodePropertiesString.split(",")).contains(key);
-          }
-        });
+        styles.add( new StyleParameter.NodePropertyFilter()
+        {
+            public boolean acceptProperty( String key )
+            {
+                return Arrays.asList( nodePropertiesString.split( "," ) ).contains( key );
+            }
+        } );
     }
 
     public void reverseOrder( String... typeNames )
@@ -242,18 +247,18 @@ public class ConfigurationParser
             {
                 if ( container instanceof Node )
                 {
-                    return "" + ( (Node) container ).getId();
+                    return "" + ((Node) container).getId();
                 }
                 else if ( container instanceof Relationship )
                 {
-                    return "" + ( (Relationship) container ).getId();
+                    return "" + ((Relationship) container).getId();
                 }
             }
             else if ( attribute.equals( "type" ) )
             {
                 if ( container instanceof Relationship )
                 {
-                    return ( (Relationship) container ).getType().name();
+                    return ((Relationship) container).getType().name();
                 }
             }
             return "@" + attribute;
@@ -278,15 +283,12 @@ public class ConfigurationParser
         {
             try
             {
-                return new BufferedReader( new InputStreamReader( new FileInputStream( file ), "UTF-8" ) );
+                return new BufferedReader(
+                        new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) );
             }
             catch ( FileNotFoundException e )
             {
                 return null;
-            }
-            catch ( UnsupportedEncodingException e )
-            {
-                throw new RuntimeException( e );
             }
         }
 

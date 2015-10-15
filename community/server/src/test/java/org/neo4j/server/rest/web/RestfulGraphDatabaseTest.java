@@ -44,6 +44,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.FakeClock;
+import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
@@ -164,14 +165,7 @@ public class RestfulGraphDatabaseTest
     private static String entityAsString( Response response )
     {
         byte[] bytes = (byte[]) response.getEntity();
-        try
-        {
-            return new String( bytes, "UTF-8" );
-        }
-        catch ( UnsupportedEncodingException e )
-        {
-            throw new RuntimeException( "Could not decode UTF-8", e );
-        }
+        return UTF8.decode( bytes );
     }
 
     @SuppressWarnings("unchecked")

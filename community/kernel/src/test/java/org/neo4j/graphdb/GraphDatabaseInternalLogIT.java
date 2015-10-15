@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -55,7 +56,7 @@ public class GraphDatabaseInternalLogIT
         assertThat( internalLog.isFile(), is( true ) );
         assertThat( internalLog.length(), greaterThan( 0L ) );
 
-        assertThat( IteratorUtil.count( asIterable( internalLog, "UTF-8" ), new Predicate<String>()
+        assertThat( IteratorUtil.count( asIterable( internalLog, StandardCharsets.UTF_8 ), new Predicate<String>()
         {
             @Override
             public boolean test( String line )
@@ -64,7 +65,7 @@ public class GraphDatabaseInternalLogIT
             }
         } ), is( 1 ) );
 
-        assertThat( IteratorUtil.count( asIterable( internalLog, "UTF-8" ), new Predicate<String>()
+        assertThat( IteratorUtil.count( asIterable( internalLog, StandardCharsets.UTF_8 ), new Predicate<String>()
         {
             @Override
             public boolean test( String line )
@@ -91,7 +92,7 @@ public class GraphDatabaseInternalLogIT
         assertThat( internalLog.isFile(), is( true ) );
         assertThat( internalLog.length(), greaterThan( 0L ) );
 
-        assertThat( IteratorUtil.count( asIterable( internalLog, "UTF-8" ), new Predicate<String>()
+        assertThat( IteratorUtil.count( asIterable( internalLog, StandardCharsets.UTF_8 ), new Predicate<String>()
         {
             @Override
             public boolean test( String line )
@@ -122,7 +123,7 @@ public class GraphDatabaseInternalLogIT
         assertThat( internalLog.isFile(), is( true ) );
         assertThat( internalLog.length(), greaterThan( 0L ) );
 
-        assertThat( IteratorUtil.count( asIterable( internalLog, "UTF-8" ), new Predicate<String>()
+        assertThat( IteratorUtil.count( asIterable( internalLog, StandardCharsets.UTF_8 ), new Predicate<String>()
         {
             @Override
             public boolean test( String line )
@@ -131,7 +132,7 @@ public class GraphDatabaseInternalLogIT
             }
         } ), is( 1 ) );
 
-        assertThat( IteratorUtil.count( asIterable( internalLog, "UTF-8" ), new Predicate<String>()
+        assertThat( IteratorUtil.count( asIterable( internalLog, StandardCharsets.UTF_8 ), new Predicate<String>()
         {
             @Override
             public boolean test( String line )
@@ -140,7 +141,7 @@ public class GraphDatabaseInternalLogIT
             }
         } ), is( 0 ) );
 
-        assertThat( IteratorUtil.count( asIterable( internalLog, "UTF-8" ), new Predicate<String>()
+        assertThat( IteratorUtil.count( asIterable( internalLog, StandardCharsets.UTF_8 ), new Predicate<String>()
         {
             @Override
             public boolean test( String line )

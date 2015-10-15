@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -151,8 +152,7 @@ public abstract class AsciiDocGenerator
                 throw new RuntimeException( "File exists: "
                                             + out.getAbsolutePath() );
             }
-            return new OutputStreamWriter( new FileOutputStream( out, false ),
-                    "UTF-8" );
+            return new OutputStreamWriter( new FileOutputStream( out, false ), StandardCharsets.UTF_8 );
         }
         catch ( Exception e )
         {
@@ -166,12 +166,10 @@ public abstract class AsciiDocGenerator
     {
         if ( content == null || content.isEmpty() )
         {
-            throw new IllegalArgumentException( "The content can not be empty("
-                                                + content + ")." );
+            throw new IllegalArgumentException( "The content can not be empty(" + content + ")." );
         }
         String filename = testId + ".asciidoc";
-        Writer writer = AsciiDocGenerator.getFW( new File( dir, "includes" ),
-                filename );
+        Writer writer = AsciiDocGenerator.getFW( new File( dir, "includes" ), filename );
         String title = "";
         char firstChar = content.charAt( 0 );
         if ( firstChar == '.' || firstChar == '_' )

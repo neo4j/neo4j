@@ -38,6 +38,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.Property;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 
 import static org.junit.Assert.assertEquals;
@@ -200,7 +201,7 @@ public class GraphExtractionWriterTest
             json.writeEndObject();
             json.flush();
         }
-        return JsonHelper.jsonNode( out.toString( "UTF-8" ) );
+        return JsonHelper.jsonNode( out.toString( UTF_8.name() ) );
     }
 
     // The expected format of the result

@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 
 import org.neo4j.helpers.Function;
 
@@ -50,7 +51,7 @@ public class Template
 
     public void write( File file ) throws Exception
     {
-        try ( BufferedReader reader = new BufferedReader( new InputStreamReader( templateFile, "UTF-8" ) );
+        try ( BufferedReader reader = new BufferedReader( new InputStreamReader( templateFile, StandardCharsets.UTF_8 ) );
               PrintWriter writer = new PrintWriter( file ))
         {
             String input = reader.readLine();

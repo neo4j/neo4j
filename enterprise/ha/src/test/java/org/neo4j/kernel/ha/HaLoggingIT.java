@@ -25,6 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -32,7 +33,6 @@ import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.test.ha.ClusterRule;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsJoined;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterWithAdditionalClients;
@@ -82,9 +82,14 @@ public class HaLoggingIT
     private int findLoggingLines( HighlyAvailableGraphDatabase db, String toLookFor )
     {
         int count = 0;
-        for ( String line : asIterable( new File( cluster.getStoreDir( db ), StoreLogService.INTERNAL_LOG_NAME ), "UTF-8" ) )
+        for ( String line : asIterable( new File( cluster.getStoreDir( db ), StoreLogService.INTERNAL_LOG_NAME ),
+                StandardCharsets.UTF_8 ) )
+        {
             if ( line.endsWith( toLookFor ) )
+            {
                 count++;
+            }
+        }
         return count;
     }
 }

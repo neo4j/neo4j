@@ -41,6 +41,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
@@ -340,7 +341,7 @@ public class FileUtils
             target.createNewFile();
         }
 
-        try ( Writer out = new OutputStreamWriter( new FileOutputStream( target, append ), "UTF-8" ) )
+        try ( Writer out = new OutputStreamWriter( new FileOutputStream( target, append ), StandardCharsets.UTF_8 ) )
         {
             out.write( text );
         }

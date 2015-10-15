@@ -23,6 +23,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import javax.ws.rs.core.MediaType;
@@ -81,7 +82,7 @@ public class RestRequest {
     public static String encode( Object value ) {
         if ( value == null ) return "";
         try {
-            return URLEncoder.encode( value.toString(), "utf-8" ).replaceAll( "\\+", "%20" );
+            return URLEncoder.encode( value.toString(), StandardCharsets.UTF_8.name() ).replaceAll( "\\+", "%20" );
         } catch ( UnsupportedEncodingException e ) {
             throw new RuntimeException( e );
         }

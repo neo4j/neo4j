@@ -28,9 +28,9 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import javax.ws.rs.core.HttpHeaders;
 
+import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
@@ -343,7 +343,6 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
 
     private String base64(String value)
     {
-        return new String( Base64.encode( value ), Charset
-                .forName( "UTF-8" ));
+        return UTF8.decode( Base64.encode( value ) );
     }
 }

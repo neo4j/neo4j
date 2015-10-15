@@ -23,7 +23,6 @@ import org.apache.commons.codec.binary.Base64;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.kernel.impl.util.Charsets;
 import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.security.auth.AuthenticationResult;
 
@@ -36,6 +35,7 @@ import javax.ws.rs.core.HttpHeaders;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
@@ -132,8 +132,8 @@ public class AuthorizationFilterTest
         verify( servletResponse ).setStatus( 401 );
         verify( servletResponse ).addHeader( HttpHeaders.WWW_AUTHENTICATE, "None" );
         verify( servletResponse ).addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
-        assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"code\" : \"Neo.ClientError.Security.AuthorizationFailed\"" ) );
-        assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"message\" : \"No authorization header supplied.\"" ) );
+        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ), containsString( "\"code\" : \"Neo.ClientError" +".Security.AuthorizationFailed\"" ) );
+        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ), containsString( "\"message\" : \"No authorization header supplied.\"" ) );
     }
 
     @Test
@@ -152,8 +152,8 @@ public class AuthorizationFilterTest
         verifyNoMoreInteractions( filterChain );
         verify( servletResponse ).setStatus( 400 );
         verify( servletResponse ).addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
-        assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"code\" : \"Neo.ClientError.Request.InvalidFormat\"" ) );
-        assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"message\" : \"Invalid Authorization header.\"" ) );
+        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ), containsString( "\"code\" : \"Neo.ClientError.Request.InvalidFormat\"" ) );
+        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ), containsString( "\"message\" : \"Invalid Authorization header.\"" ) );
     }
 
     @Test
@@ -161,7 +161,7 @@ public class AuthorizationFilterTest
     {
         // Given
         final AuthorizationFilter filter = new AuthorizationFilter( authManager, logProvider );
-        String credentials = Base64.encodeBase64String( "foo:bar".getBytes( Charsets.UTF_8 ) );
+        String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
@@ -178,8 +178,8 @@ public class AuthorizationFilterTest
         );
         verify( servletResponse ).setStatus( 401 );
         verify( servletResponse ).addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
-        assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"code\" : \"Neo.ClientError.Security.AuthorizationFailed\"" ) );
-        assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"message\" : \"Invalid username or password.\"" ) );
+        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ), containsString( "\"code\" : \"Neo.ClientError.Security.AuthorizationFailed\"" ) );
+        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ), containsString( "\"message\" : \"Invalid username or password.\"" ) );
     }
 
     @Test
@@ -187,7 +187,7 @@ public class AuthorizationFilterTest
     {
         // Given
         final AuthorizationFilter filter = new AuthorizationFilter( authManager, logProvider );
-        String credentials = Base64.encodeBase64String( "foo:bar".getBytes( Charsets.UTF_8 ) );
+        String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/user/foo" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
@@ -205,7 +205,7 @@ public class AuthorizationFilterTest
     {
         // Given
         final AuthorizationFilter filter = new AuthorizationFilter( authManager, logProvider );
-        String credentials = Base64.encodeBase64String( "foo:bar".getBytes( Charsets.UTF_8 ) );
+        String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getRequestURL() ).thenReturn( new StringBuffer( "http://bar.baz:7474/db/data/" ) );
@@ -220,9 +220,9 @@ public class AuthorizationFilterTest
         verifyNoMoreInteractions( filterChain );
         verify( servletResponse ).setStatus( 403 );
         verify( servletResponse ).addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
-        assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"password_change\" : \"http://bar.baz:7474/user/foo/password\"" ) );
-        assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"code\" : \"Neo.ClientError.Security.AuthorizationFailed\"" ) );
-        assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"message\" : \"User is required to change their password.\"" ) );
+        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ), containsString( "\"password_change\" : \"http://bar.baz:7474/user/foo/password\"" ) );
+        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ), containsString( "\"code\" : \"Neo.ClientError.Security.AuthorizationFailed\"" ) );
+        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ), containsString( "\"message\" : \"User is required to change their password.\"" ) );
     }
 
     @Test
@@ -230,7 +230,7 @@ public class AuthorizationFilterTest
     {
         // Given
         final AuthorizationFilter filter = new AuthorizationFilter( authManager, logProvider );
-        String credentials = Base64.encodeBase64String( "foo:bar".getBytes( Charsets.UTF_8 ) );
+        String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
@@ -243,8 +243,8 @@ public class AuthorizationFilterTest
         verifyNoMoreInteractions( filterChain );
         verify( servletResponse ).setStatus( 429 );
         verify( servletResponse ).addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
-        assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"code\" : \"Neo.ClientError.Security.AuthenticationRateLimit\"" ) );
-        assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"message\" : \"Too many failed authentication requests. Please wait 5 seconds and try again.\"" ) );
+        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ), containsString( "\"code\" : \"Neo.ClientError.Security.AuthenticationRateLimit\"" ) );
+        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ), containsString( "\"message\" : \"Too many failed authentication requests. Please wait 5 seconds and try again.\"" ) );
     }
 
     @Test
@@ -252,7 +252,7 @@ public class AuthorizationFilterTest
     {
         // Given
         final AuthorizationFilter filter = new AuthorizationFilter( authManager, logProvider );
-        String credentials = Base64.encodeBase64String( "foo:bar".getBytes( Charsets.UTF_8 ) );
+        String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );

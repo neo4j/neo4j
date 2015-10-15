@@ -22,7 +22,7 @@ package org.neo4j.harness.internal;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -68,7 +68,7 @@ public class Fixtures
                 }
                 return;
             }
-            add( FileUtils.readTextFile( fixturePath, Charset.forName( "UTF-8" ) ) );
+            add( FileUtils.readTextFile( fixturePath, StandardCharsets.UTF_8 ) );
         }
         catch ( IOException e )
         {

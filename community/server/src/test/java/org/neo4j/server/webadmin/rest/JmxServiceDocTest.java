@@ -19,21 +19,21 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
-
-import javax.ws.rs.core.Response;
-
 import org.junit.Before;
 import org.junit.Test;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import javax.ws.rs.core.Response;
+
+import org.neo4j.helpers.UTF8;
 import org.neo4j.server.rest.management.JmxService;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
 
 public class JmxServiceDocTest
 {
@@ -41,13 +41,13 @@ public class JmxServiceDocTest
     private final URI uri = URI.create( "http://peteriscool.com:6666/" );
 
     @Test
-    public void correctRepresentation() throws URISyntaxException, UnsupportedEncodingException
+    public void correctRepresentation() throws URISyntaxException
     {
         Response resp = jmxService.getServiceDefinition();
 
         assertEquals( 200, resp.getStatus() );
 
-        String json = new String( (byte[]) resp.getEntity(), "UTF-8" );
+        String json = UTF8.decode( (byte[]) resp.getEntity() );
         assertThat( json, containsString( "resources" ) );
         assertThat( json, containsString( uri.toString() ) );
         assertThat( json, containsString( "jmx/domain/{domain}/{objectName}" ) );

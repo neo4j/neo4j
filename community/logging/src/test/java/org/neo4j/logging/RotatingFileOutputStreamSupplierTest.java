@@ -530,6 +530,7 @@ public class RotatingFileOutputStreamSupplierTest
             };
         }
 
+        @Override
         public boolean fileExists( File fileName )
         {
             // Default adversarial might throw a java.lang.SecurityException here, which is an exception

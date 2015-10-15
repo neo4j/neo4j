@@ -27,6 +27,7 @@ import org.junit.Test;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -142,7 +143,8 @@ public class QueryLoggerIT
     private List<String> readAllLines( File logFilename ) throws IOException
     {
         List<String> logLines = new ArrayList<>();
-        try ( BufferedReader reader = new BufferedReader( fileSystem.get().openAsReader( logFilename, "UTF-8" ) ) )
+        try ( BufferedReader reader = new BufferedReader(
+                fileSystem.get().openAsReader( logFilename, StandardCharsets.UTF_8 ) ) )
         {
             for ( String line; (line = reader.readLine()) != null; )
             {

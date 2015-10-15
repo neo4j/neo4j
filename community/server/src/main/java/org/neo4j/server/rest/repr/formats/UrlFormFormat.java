@@ -22,6 +22,7 @@ package org.neo4j.server.rest.repr.formats;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -95,8 +96,9 @@ public class UrlFormFormat extends RepresentationFormat
 
             try
             {
-                key = ensureThatKeyDoesNotHavePhPStyleParenthesesAtTheEnd( URLDecoder.decode( fields[0], "UTF-8" ) );
-                value = URLDecoder.decode( fields[1], "UTF-8" );
+                String charset = StandardCharsets.UTF_8.name();
+                key = ensureThatKeyDoesNotHavePhPStyleParenthesesAtTheEnd( URLDecoder.decode( fields[0], charset ) );
+                value = URLDecoder.decode( fields[1], charset );
             }
             catch ( UnsupportedEncodingException e )
             {

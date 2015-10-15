@@ -39,6 +39,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -234,15 +235,15 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public Reader openAsReader( File fileName, String encoding ) throws IOException
+    public Reader openAsReader( File fileName, Charset charset ) throws IOException
     {
-        return new InputStreamReader( openAsInputStream( fileName ), encoding );
+        return new InputStreamReader( openAsInputStream( fileName ), charset );
     }
 
     @Override
-    public Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException
+    public Writer openAsWriter( File fileName, Charset charset, boolean append ) throws IOException
     {
-        return new OutputStreamWriter( openAsOutputStream( fileName, append ), encoding );
+        return new OutputStreamWriter( openAsOutputStream( fileName, append ), charset );
     }
 
     @Override

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.docgen
 
 import java.io.{PrintWriter, File}
+import java.nio.charset.StandardCharsets
 
 object CsvFile {
   def urify(file: File): String =
@@ -37,7 +38,7 @@ class CsvFile(fileName: String, delimiter: Char = ',')(implicit csvFilesDir: Fil
 
   def withContentsF(lines: Seq[String]*): File = {
     val csvFile = new File(csvFilesDir, fileName)
-    val writer = new PrintWriter(csvFile, "UTF-8")
+    val writer = new PrintWriter(csvFile, StandardCharsets.UTF_8.name())
     lines.foreach(line => {
       writer.println(line.map(s => '"' + s + '"').mkString(delimiter.toString))
     })
