@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.AggregationNameGenerator
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.Converge.iterateUntilConverged
-import org.neo4j.cypher.internal.frontend.v3_0.{replace, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_0.{topDown, replace, Rewriter, bottomUp}
 
 /**
  * This rewriter makes sure that aggregations are on their own in RETURN/WITH clauses, so
@@ -83,7 +83,7 @@ case object isolateAggregation extends Rewriter {
           val pos = clause.position
           val withClause = With(distinct = false, ReturnItems(includeExisting = false, withReturnItems.toSeq)(pos), None, None, None, None)(pos)
 
-          val resultClause = clause.endoRewrite(bottomUp(Rewriter.lift {
+          val resultClause = clause.endoRewrite(topDown(Rewriter.lift {
             case e: Expression =>
               withReturnItems.collectFirst {
                 case AliasedReturnItem(expression, identifier) if e == expression => identifier.copyId

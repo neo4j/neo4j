@@ -225,4 +225,22 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     result.toList should equal(Seq(Map("name" -> "a", "others" -> Seq("c", "b"), "len" -> 1 )))
   }
 
+  test("should handle subexpression in aggregation also occuring as standalone expression with nested aggregation in a literal map") {
+    // There was a bug in the isolateAggregation AST rewriter that was triggered by this somewhat unusual case
+    val a = createLabeledNode("A")
+    val b = createLabeledNode(Map("prop" -> 42), "B")
+
+    val query =
+      """|MATCH (a:A), (b:B)
+         |RETURN
+         |coalesce(a.prop, b.prop) AS foo,
+         |b.prop AS bar,
+         |{
+         |    y: count(b)
+         |} AS baz""".stripMargin
+
+    val result = executeWithCostPlannerOnly(query)
+
+    result.toList should equal(List(Map("foo" -> 42, "bar" -> 42, "baz" -> Map("y" -> 1))))
+  }
 }
