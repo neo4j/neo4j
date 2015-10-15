@@ -146,12 +146,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-bolt-transport-socket</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-browser</artifactId>
       <version>${project.version}</version>
@@ -198,6 +192,12 @@
     <dependency>
       <groupId>commons-configuration</groupId>
       <artifactId>commons-configuration</artifactId>
+    </dependency>
+
+    <dependency>
+      <!-- Used for X.509 certificate generation -->
+      <groupId>io.netty</groupId>
+      <artifactId>netty-all</artifactId>
     </dependency>
 
     <!-- Added directly to avoid version clash in commons-configuration. -->
@@ -313,14 +313,6 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-io</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-bolt-transport-socket</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
