@@ -85,7 +85,8 @@ public interface ServerSettings
     Setting<Long> webserver_limit_execution_time = setting(
             "org.neo4j.server.webserver.limit.executiontime", DURATION, NO_DEFAULT );
 
-    @Description( "Path to the statistics database file." )
+    @Deprecated
+    @Description( "Path to the statistics database file. RRDB has been deprecate, please use the Metrics plugin instead." )
     Setting<File> rrdb_location = setting( "org.neo4j.server.webadmin.rrdb.location", PATH, NO_DEFAULT );
 
     @Description( "Console engines for the legacy webadmin administration" )

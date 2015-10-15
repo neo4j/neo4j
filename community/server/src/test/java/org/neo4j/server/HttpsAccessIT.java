@@ -34,7 +34,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
@@ -60,7 +59,7 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
     @Before
     public void startServer() throws NoSuchAlgorithmException, KeyManagementException, IOException
     {
-        server = server().withHttpsEnabled().withProperty( ServerInternalSettings.webadmin_enabled.name(), "true" )
+        server = server().withHttpsEnabled()
                 .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         httpsUri = server.httpsUri().toASCIIString();

@@ -36,7 +36,6 @@ import org.neo4j.server.helpers.Transactor;
 import org.neo4j.server.helpers.UnitOfWork;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -65,8 +64,7 @@ public class NeoServerJAXRSDocIT extends ExclusiveServerTestBase
     @Test
     public void shouldMakeJAXRSClassesAvailableViaHTTP() throws Exception
     {
-        CommunityServerBuilder builder = CommunityServerBuilder.server()
-                .withProperty( ServerInternalSettings.webadmin_enabled.name(), "true" );
+        CommunityServerBuilder builder = CommunityServerBuilder.server();
         server = ServerHelper.createNonPersistentServer( builder );
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
 

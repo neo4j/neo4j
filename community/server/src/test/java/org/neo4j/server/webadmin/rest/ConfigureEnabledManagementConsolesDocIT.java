@@ -26,7 +26,6 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.is;
@@ -48,7 +47,6 @@ public class ConfigureEnabledManagementConsolesDocIT extends ExclusiveServerTest
     public void shouldBeAbleToExplicitlySetConsolesToEnabled() throws Exception
     {
         server = server().withProperty( Configurator.MANAGEMENT_CONSOLE_ENGINES, "" )
-                .withProperty( ServerInternalSettings.webadmin_enabled.name(), "true" )
                 .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
@@ -59,10 +57,7 @@ public class ConfigureEnabledManagementConsolesDocIT extends ExclusiveServerTest
     @Test
     public void shellConsoleShouldBeEnabledByDefault() throws Exception
     {
-        server = server()
-                .withProperty( ServerInternalSettings.webadmin_enabled.name(), "true" )
-                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
-                .build();
+        server = server().usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() ).build();
         server.start();
 
         assertThat( exec( "ls", "shell" ).getStatus(), is( 200 ) );
