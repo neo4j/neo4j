@@ -95,8 +95,6 @@ SCRIPT_NAME="${NEO4J_HOME}/bin/neo4j"
 SERVICE_NAME=${wrapper_ntservice_name:=neo4j-service}
 LAUNCHD_DIR=~/Library/LaunchAgents/
 
-TIMEOUT=120
-
 PID_FILE=${NEO4J_PIDFILE}
 buildclasspath() {
   # confirm library jars
@@ -161,8 +159,8 @@ startit() {
 
   detectrunning
   if [ $newpid ] ; then
-	     echo "Another server-process is running with [$newpid], cannot start a new one. Exiting."
-	     exit 2;
+      echo "Another server-process is running with [$newpid], cannot start a new one. Exiting."
+      exit 2;
   fi
 
   if [ $DIST_OS = "macosx" ] ; then
@@ -215,38 +213,38 @@ startit() {
 
     echo -n "process [$STARTED_PID]"
 
-	  if [ $WAIT = "true" ] ; then
-	    echo -n "... waiting for server to be ready."
-	    while kill -0 $STARTED_PID 2> /dev/null ; do
-	      ## wait for start, pick up the server listening on the port
-	      detectrunning
-	      if [ $newpid ] ; then
-	         break
-	      fi
-
-	      printf "."
-	      sleep 1
-	    done
-
-	    if kill -0 $STARTED_PID 2>/dev/null ; then
-	      if [ "$newpid" != "$STARTED_PID" ] ; then
-		    rm "$PID_FILE"
+    if [ $WAIT = "true" ] ; then
+	echo -n "... waiting for server to be ready."
+	while kill -0 $STARTED_PID 2> /dev/null ; do
+	    ## wait for start, pick up the server listening on the port
+	    detectrunning
+	    if [ $newpid ] ; then
+	        break
+	    fi
+	    
+	    printf "."
+	    sleep 1
+	done
+	
+	if kill -0 $STARTED_PID 2>/dev/null ; then
+	    if [ "$newpid" != "$STARTED_PID" ] ; then
+		rm "$PID_FILE"
 	        kill -9 $STARTED_PID
-	        echo " Failed to start within $TIMEOUT seconds."
+	        echo " Failed to start."
 	        echo "$FRIENDLY_NAME failed to start, please check the logs for details."
 	        echo "If startup is blocked on a long recovery, use '$0 start-no-wait' to give the startup more time."
 	        exit 2
-	      fi
-
-	      echo " OK."
-        echo "http://localhost:$NEO4J_SERVER_PORT/ is ready."
-	      exit 0
 	    fi
-
-	    echo " Failed to start within $TIMEOUT seconds."
-	    echo "$FRIENDLY_NAME may have failed to start, please check the logs."
-	    rm "$PID_FILE"
-	    exit 1
+	    
+	    echo " OK."
+            echo "http://localhost:$NEO4J_SERVER_PORT/ is ready."
+	    exit 0
+	fi
+	
+	echo " Failed to start."
+	echo "$FRIENDLY_NAME may have failed to start, please check the logs."
+	rm "$PID_FILE"
+	exit 1
     else
         echo "...Started the server in the background, returning..."
     fi
