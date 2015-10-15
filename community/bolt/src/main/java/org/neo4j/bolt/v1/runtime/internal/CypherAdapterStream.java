@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
@@ -76,7 +77,9 @@ public class CypherAdapterStream implements RecordStream
         }
         if ( qt.requestedExecutionPlanDescription() )
         {
-            visitor.addMetadata( "plan", ExecutionPlanConverter.convert( delegate.getExecutionPlanDescription() ) );
+            ExecutionPlanDescription rootPlanTreeNode = delegate.getExecutionPlanDescription();
+            String metadataFieldName = rootPlanTreeNode.hasProfilerStatistics() ? "profile" : "plan";
+            visitor.addMetadata( metadataFieldName, ExecutionPlanConverter.convert( rootPlanTreeNode ) );
         }
     }
 

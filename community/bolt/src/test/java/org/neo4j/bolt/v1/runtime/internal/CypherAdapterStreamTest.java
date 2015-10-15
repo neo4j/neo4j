@@ -109,19 +109,29 @@ public class CypherAdapterStreamTest
         Map<String,Object> meta = metadataOf( stream );
 
         // Then
-        assertThat( meta.get( "plan" ).toString(), equalTo( (Object) map(
-            "args", map( "arg1", 1 ),
-            "children", asList(
-                map(
-                    "args", map( "arg2", 1 ),
-                    "children", asList(),
-                    "identifiers", asList( "id2" ),
-                    "operatorType", "Scan"
-                )
-            ),
-            "identifiers", asList( "id1" ),
-            "operatorType", "Join"
-        ).toString() ));
+        assertThat( meta.get( "plan" ).toString(), equalTo( "{args={arg1=1}, children=[{args={arg2=1}, children=[], identifiers=[id2], operatorType=Scan}], identifiers=[id1], operatorType=Join}" ) );
+    }
+
+    @Test
+    public void shouldIncludeProfileIfPresent() throws Throwable
+    {
+        // Given
+        QueryStatistics queryStatistics = mock( QueryStatistics.class );
+        when( queryStatistics.containsUpdates() ).thenReturn( false );
+        Result result = mock( Result.class );
+        when( result.getQueryExecutionType() ).thenReturn( explained( READ_ONLY ) );
+        when( result.getQueryStatistics() ).thenReturn( queryStatistics );
+        when( result.getExecutionPlanDescription() ).thenReturn(
+                plan("Join", map( "arg1", 1 ), 2, 1, asList( "id1" ),
+                        plan("Scan", map( "arg2", 1 ), 2, 1, asList("id2")) ) );
+
+        CypherAdapterStream stream = new CypherAdapterStream( result );
+
+        // When
+        Map<String,Object> meta = metadataOf( stream );
+
+        // Then
+        assertThat( meta.get( "profile" ).toString(), equalTo( "{args={arg1=1}, children=[{args={arg2=1}, children=[], dbHits=2, identifiers=[id2], operatorType=Scan, rows=1}], dbHits=2, identifiers=[id1], operatorType=Join, rows=1}" ));
     }
 
     private Map<String,Object> metadataOf( CypherAdapterStream stream ) throws Exception
