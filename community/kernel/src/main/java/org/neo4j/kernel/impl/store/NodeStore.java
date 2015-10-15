@@ -220,6 +220,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord>
         {
             freeId( record.getId() );
         }
+        updateDynamicLabelRecords( record.getDynamicLabelRecords() );
     }
 
     private void writeRecord( NodeRecord record, boolean force )
@@ -408,7 +409,6 @@ public class NodeStore extends AbstractRecordStore<NodeRecord>
                 DynamicArrayStore.getRightArray( dynamicLabelStore.readFullByteArray( records, PropertyType.ARRAY ) );
         return Pair.of(storedLongs[0], LabelIdArray.stripNodeId( storedLongs ));
     }
-
 
     public void updateDynamicLabelRecords( Iterable<DynamicRecord> dynamicLabelRecords )
     {
