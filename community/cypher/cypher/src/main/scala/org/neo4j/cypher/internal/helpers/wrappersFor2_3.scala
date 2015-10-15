@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.{CompilationPhaseTracer, CypherCo
 import org.neo4j.cypher.internal.frontend.v2_3.notification.{InternalNotification => InternalNotification2_3}
 import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition => InputPosition2_3}
 import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_0.notification.{UnboundedShortestPathNotification, IndexLookupUnfulfillableNotification, CartesianProductNotification, EagerLoadCsvNotification, IndexHintUnfulfillableNotification, InternalNotification, JoinHintUnfulfillableNotification, JoinHintUnsupportedNotification, LargeLabelWithLoadCsvNotification, LegacyPlannerNotification, LengthOnNonPathNotification, MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification}
+import org.neo4j.cypher.internal.frontend.v3_0.notification.{CartesianProductNotification, EagerLoadCsvNotification, IndexHintUnfulfillableNotification, IndexLookupUnfulfillableNotification, InternalNotification, JoinHintUnfulfillableNotification, JoinHintUnsupportedNotification, LargeLabelWithLoadCsvNotification, LegacyPlannerNotification, LengthOnNonPathNotification, MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, UnboundedShortestPathNotification}
 import org.neo4j.cypher.internal.frontend.{v2_3 => frontend2_3}
 
 /**
@@ -143,6 +143,9 @@ object wrappersFor2_3 {
       MissingPropertyNameNotification(as3_0(pos), name)
     case frontend2_3.notification.UnboundedShortestPathNotification(pos) =>
       UnboundedShortestPathNotification(as3_0(pos))
+    case frontend2_3.notification.BareNodeSyntaxDeprecatedNotification(pos) =>
+      throw new InternalException("Warnings for bare nodes are no longer supported, query should have already failed")
+
   }
 
   def as2_3(pos: InputPosition): InputPosition2_3 = InputPosition2_3(pos.offset, pos.line, pos.column)
