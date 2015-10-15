@@ -80,6 +80,7 @@ import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
+import static org.neo4j.tooling.GlobalGraphOperations.at;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 
 public class ImportToolTest
@@ -148,6 +149,49 @@ public class ImportToolTest
 
         // THEN
         verifyData();
+    }
+
+    @Test
+    public void import4097Labels() throws Exception
+    {
+        // GIVEN
+        File header = file( fileName( "4097labels-header.csv" ) );
+        try ( PrintStream writer = new PrintStream( header )  )
+        {
+            writer.println( ":LABEL" );
+        }
+        File data = file( fileName( "4097labels.csv" ) );
+        try ( PrintStream writer = new PrintStream( data ) )
+        {
+            // Need to have unique names in order to get unique ids for labels. Want 4096 unique label ids present.
+            for ( int i = 0; i < 4096; i++ )
+            {
+                writer.println( "SIMPLE" + i );
+            }
+            // Then insert one with 3 array entries which will get ids greater than 4096. These cannot be inlined
+            // due 36 bits being divided into 3 parts of 12 bits each and 4097 > 2^12, thus these labels will be
+            // need to be dynamic records.
+            writer.println( "FIRST 4096|SECOND 4096|" );
+        }
+
+        // WHEN
+        importTool( "--into", dbRule.getStoreDirAbsolutePath(),
+                "--delimiter", "TAB",
+                "--array-delimiter", "|",
+                "--nodes", header.getAbsolutePath() + MULTI_FILE_DELIMITER + data.getAbsolutePath() );
+
+        // THEN
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            int nodeCount = count( at( dbRule ).getAllNodes() );
+            assertEquals( 4097, nodeCount );
+
+            tx.success();
+            ResourceIterator<Node> nodes = dbRule.findNodes( DynamicLabel.label( "FIRST 4096" ) );
+            assertEquals (1, IteratorUtil.asList(nodes).size() );
+            nodes = dbRule.findNodes( DynamicLabel.label( "SECOND 4096" ) );
+            assertEquals( 1, IteratorUtil.asList( nodes ).size() );
+        }
     }
 
     @Test
@@ -251,7 +295,7 @@ public class ImportToolTest
         try ( Transaction tx = db.beginTx() )
         {
             int nodeCount = 0;
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : at( db ).getAllNodes() )
             {
                 assertTrue( node.hasProperty( "name" ) );
                 nodeCount++;
@@ -291,7 +335,7 @@ public class ImportToolTest
         try ( Transaction tx = db.beginTx() )
         {
             int nodeCount = 0;
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : at( db ).getAllNodes() )
             {
                 assertTrue( node.hasProperty( "name" ) );
                 nodeCount++;
@@ -397,7 +441,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
         try ( Transaction tx = db.beginTx() )
         {
-            Iterator<Node> nodes = GlobalGraphOperations.at( db ).getAllNodes().iterator();
+            Iterator<Node> nodes = at( db ).getAllNodes().iterator();
             Iterator<String> expectedIds = FilteringIterator.noDuplicates( nodeIds.iterator() );
             while ( expectedIds.hasNext() )
             {
@@ -609,7 +653,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
         try ( Transaction tx = db.beginTx() )
         {
-            Iterable<Node> allNodes = GlobalGraphOperations.at( db ).getAllNodes();
+            Iterable<Node> allNodes = at( db ).getAllNodes();
             int anonymousCount = 0;
             for ( final String id : nodeIds )
             {
@@ -663,7 +707,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            ResourceIterator<Node> allNodes = GlobalGraphOperations.at( db ).getAllNodes().iterator();
+            ResourceIterator<Node> allNodes = at( db ).getAllNodes().iterator();
             Node node = IteratorUtil.single( allNodes );
             allNodes.close();
 
@@ -687,7 +731,7 @@ public class ImportToolTest
         GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseService();
         try ( Transaction tx = graphDatabaseService.beginTx() )
         {
-            ResourceIterator<Node> allNodes = GlobalGraphOperations.at( graphDatabaseService ).getAllNodes().iterator();
+            ResourceIterator<Node> allNodes = at( graphDatabaseService ).getAllNodes().iterator();
             assertFalse( "Expected database to be empty", allNodes.hasNext() );
             tx.success();
         }
@@ -711,7 +755,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = single( GlobalGraphOperations.at( db ).getAllNodes() );
+            Node node = single( at( db ).getAllNodes() );
             assertEquals( "three", single( node.getPropertyKeys() ) );
             tx.success();
         }
@@ -764,14 +808,14 @@ public class ImportToolTest
         try ( Transaction tx = db.beginTx() )
         {
             int nodeCount = 0, relationshipCount = 0;
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : at( db ).getAllNodes() )
             {
                 assertTrue( node.hasProperty( "name" ) );
                 nodeAdditionalValidation.validate( node );
                 nodeCount++;
             }
             assertEquals( NODE_COUNT, nodeCount );
-            for ( Relationship relationship : GlobalGraphOperations.at( db ).getAllRelationships() )
+            for ( Relationship relationship : at( db ).getAllRelationships() )
             {
                 assertTrue( relationship.hasProperty( "created" ) );
                 relationshipAdditionalValidation.validate( relationship );
@@ -820,7 +864,7 @@ public class ImportToolTest
         try ( Transaction tx = db.beginTx() )
         {
             Map<String,Node> nodes = new HashMap<>();
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : at( db ).getAllNodes() )
             {
                 nodes.put( idOf( node ), node );
             }
