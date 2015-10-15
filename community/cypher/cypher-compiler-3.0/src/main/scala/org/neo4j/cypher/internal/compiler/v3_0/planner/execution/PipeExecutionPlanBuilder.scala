@@ -136,7 +136,6 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors, pipeBuilderFact
           populate(left)
       }
 
-      inlineRewrite(pipeStack)
       comingFrom = current
 
     }
@@ -145,29 +144,6 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors, pipeBuilderFact
     assert(pipeStack.isEmpty, "Should have emptied the stack of pipes by now!")
 
     result.withEstimatedCardinality(plan.solved.estimatedCardinality.amount)
-  }
-
-  /*
-   * By constructing the pipe bottom up we miss out on some optimizations.
-   *
-   * This function remedies that by doing inline rewriting in the stack.
-   */
-  private def inlineRewrite(pipeStack: mutable.Stack[RonjaPipe]) = {
-    def replaceTop(pipe: RonjaPipe) = {
-      pipeStack.pop()
-      pipeStack.push(pipe)
-    }
-
-    pipeStack.top match {
-      case a@ApplyPipe(EagerPipe(lhs), rhs) =>
-        replaceTop(EagerApplyPipe(lhs, rhs)(a.estimatedCardinality)(a.monitor))
-
-      case d@DistinctPipe(ProjectionPipe(inner, expressions), groupingExpressions) if (expressions == groupingExpressions) =>
-        replaceTop(DistinctPipe(inner, groupingExpressions)(d.estimatedCardinality)(d.monitor))
-
-      case _ => ()
-
-    }
   }
 }
 
@@ -300,7 +276,13 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
       TopNPipe(source, sortItems.map(_.asCommandSortItem).toList, toCommandExpression(exp))()
 
     case Aggregation(_, groupingExpressions, aggregatingExpressions) if aggregatingExpressions.isEmpty =>
-      DistinctPipe(source, Eagerly.immutableMapValues(groupingExpressions, buildExpression))()
+      val commandExpressions = Eagerly.immutableMapValues(groupingExpressions, buildExpression)
+      source match {
+        case ProjectionPipe(inner, es) if es == commandExpressions =>
+          DistinctPipe(inner, commandExpressions)()
+        case _ =>
+          DistinctPipe(source, commandExpressions)()
+      }
 
     case Aggregation(_, groupingExpressions, aggregatingExpressions) =>
       EagerAggregationPipe(
@@ -347,7 +329,11 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
       NodeOuterHashJoinPipe(nodes.map(_.name), lhs, rhs, (r.availableSymbols -- l.availableSymbols).map(_.name))()
 
     case Apply(_, _) =>
-      ApplyPipe(lhs, rhs)()
+      lhs match {
+        case EagerPipe(inner) =>
+          EagerApplyPipe(inner, rhs)()
+        case _ => ApplyPipe(lhs, rhs)()
+      }
 
     case SemiApply(_, _) =>
       SemiApplyPipe(lhs, rhs, negated = false)()
