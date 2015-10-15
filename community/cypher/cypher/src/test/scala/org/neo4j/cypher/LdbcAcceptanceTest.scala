@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.RonjaPipe
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription._
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.RonjaPipe
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.EstimatedRows
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription._
 
 /**
  * Runs the 14 LDBC queries and checks so that the result is what is expected.
@@ -43,8 +44,8 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
   }
 
   test("LDBC query 12 should not get a bad plan because of lost precision in selectivity calculation") {
-    executeWithRulePlannerOnly(LdbcQueries.Query12.createQuery, LdbcQueries.Query12.createParams.toSeq: _*)
-    LdbcQueries.Query12.constraintQueries.foreach(executeWithRulePlannerOnly(_))
+    executeWithRulePlanner(LdbcQueries.Query12.createQuery, LdbcQueries.Query12.createParams.toSeq: _*)
+    LdbcQueries.Query12.constraintQueries.foreach(executeWithRulePlanner(_))
 
     val updatedLdbc12 =
       """MATCH (:Person {id:{1}})-[:KNOWS]-(friend:Person)
@@ -65,8 +66,9 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
   }
 
   private def collectEstimations(plan: InternalPlanDescription): Seq[Double] = {
-    (plan.pipe match {
-      case r: RonjaPipe => r.estimatedCardinality.get
-    }) +: plan.children.toSeq.flatMap(collectEstimations)
+    plan.arguments.collectFirst {
+      case EstimatedRows(estimate) => estimate
+    }.get +:
+      plan.children.toSeq.flatMap(collectEstimations)
   }
 }
