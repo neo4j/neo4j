@@ -157,10 +157,6 @@ public class PackStream
 
     public static final Charset UTF_8 = Charset.forName( "UTF-8" );
 
-    private static final int DEFAULT_BUFFER_CAPACITY = 8192;
-
-    public static final byte MINUS_SIGN = (byte) '-';
-
     private PackStream()
     {
     }
@@ -177,11 +173,6 @@ public class PackStream
         public void flush() throws IOException
         {
             out.flush();
-        }
-
-        private void packRaw( byte datum ) throws IOException
-        {
-            out.writeByte( datum );
         }
 
         private void packRaw( byte[] data ) throws IOException
@@ -256,116 +247,6 @@ public class PackStream
             {
                 packTextHeader( utf8.length );
                 packRaw( utf8 );
-            }
-        }
-
-        private int packedTextSize( byte[] data )
-        {
-            return data.length;
-        }
-
-        private int packedTextSize( int i )
-        {
-            if ( i > 0 )
-            {
-                return ((int) Math.floor( Math.log10( i ) )) + 1;
-            }
-            else if ( i < 0 )
-            {
-                return ((int) Math.floor( Math.log10( -i ) )) + 2;
-            }
-            else // i == 0
-            {
-                return 1;
-            }
-        }
-
-        private int packedTextSize( long i )
-        {
-            if ( i > 0 )
-            {
-                return ((int) Math.floor( Math.log10( i ) )) + 1;
-            }
-            else if ( i < 0 )
-            {
-                return ((int) Math.floor( Math.log10( -i ) )) + 2;
-            }
-            else // i == 0
-            {
-                return 1;
-            }
-        }
-
-        private void packTextPart( byte[] data ) throws IOException
-        {
-            packRaw( data );
-        }
-
-        private void packTextPart( long z ) throws IOException
-        {
-            if ( z == 0 )
-            {
-                packRaw((byte)48);
-            }
-            else if ( z < 0 )
-            {
-                packRaw( MINUS_SIGN );
-                z = -z;
-            }
-            for ( int i = (int) Math.floor( Math.log10( z ) ); i >= 0; i-- )
-            {
-                long digit = (long) Math.floor(z / Math.pow( 10, i )) % 10;
-                packRaw( (byte) (48 + digit) );
-            }
-        }
-
-        public void packText( Object... parts ) throws IOException
-        {
-            int length = 0;
-            for ( int i = 0; i < parts.length; i ++ )
-            {
-                Object part = parts[i];
-                if ( part instanceof byte[] )
-                {
-                    length += packedTextSize( (byte[]) part );
-                }
-                else if ( part instanceof Integer )
-                {
-                    length += packedTextSize( (int) part );
-                }
-                else if ( part instanceof Long )
-                {
-                    length += packedTextSize( (long) part );
-                }
-                else if (part instanceof String)
-                {
-                    byte[] utf8 = ((String) part).getBytes( UTF_8 );
-                    length += utf8.length;
-                    parts[i] = utf8;
-                }
-                else if ( part != null )
-                {
-                    byte[] utf8 = part.toString().getBytes( UTF_8 );
-                    length += utf8.length;
-                    parts[i] = utf8;
-                }
-            }
-            packTextHeader( length );
-            for ( Object part : parts )
-            {
-                if ( part instanceof byte[] )
-                {
-                    packTextPart( (byte[]) part );
-                }
-                else if ( part instanceof Integer || part instanceof Long )
-                {
-                    packTextPart( (long) part );
-                }
-                else
-                {
-                    // Should never happen but here's an error message just in case
-                    throw new PackStreamException( "Cannot write " + part.getClass().getName() + " as text part" );
-                }
             }
         }
 
@@ -662,30 +543,6 @@ public class PackStream
             return unpackRawBytes( size );
         }
 
-        /**
-         * Unpack up to length bytes into the buffer provided and discard the rest.
-         *
-         * @param buffer the byte array to unpack into
-         * @param offset the position to start unpacking to
-         * @param length the total number of bytes to unpack into the byte array
-         * @return the total number of bytes that were available
-         * @throws IOException
-         */
-        public int unpackBytesInto( byte[] buffer, int offset, int length ) throws IOException
-        {
-            int size = unpackBytesHeader();
-            if ( length >= size )
-            {
-                unpackRawBytesInto( buffer, offset, size );
-            }
-            else
-            {
-                unpackRawBytesInto( buffer, offset, length );
-                discardRawBytes( size - length );
-            }
-            return size;
-        }
-
         public int unpackTextHeader() throws IOException
         {
             final byte markerByte = in.readByte();
@@ -733,30 +590,6 @@ public class PackStream
         {
             int size = unpackTextHeader();
             return unpackRawBytes( size );
-        }
-
-        /**
-         * Unpack up to length UTF-8 encoded bytes into the buffer provided and discard the rest.
-         *
-         * @param buffer the byte array to unpack into
-         * @param offset the position to start unpacking to
-         * @param length the total number of bytes to unpack into the byte array
-         * @return the total number of bytes that were available
-         * @throws IOException
-         */
-        public int unpackUTF8Into( byte[] buffer, int offset, int length ) throws IOException
-        {
-            int size = unpackTextHeader();
-            if ( length >= size )
-            {
-                unpackRawBytesInto( buffer, offset, size );
-            }
-            else
-            {
-                unpackRawBytesInto( buffer, offset, length );
-                discardRawBytes( size - length );
-            }
-            return size;
         }
 
         public boolean unpackBoolean() throws IOException

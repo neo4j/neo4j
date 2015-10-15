@@ -22,12 +22,14 @@ package org.neo4j.bolt.v1.messaging.infrastructure;
 import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.bolt.v1.messaging.BoltIOException;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.api.exceptions.Status;
 
 public class ValueRelationship extends ValuePropertyContainer implements Relationship
 {
@@ -37,9 +39,9 @@ public class ValueRelationship extends ValuePropertyContainer implements Relatio
             throws IOException
     {
         packer.packStructHeader( STRUCT_FIELD_COUNT, Neo4jPack.RELATIONSHIP );
-        packer.packRelationshipIdentity( rel.getId() );
-        packer.packNodeIdentity( rel.getStartNode().getId() );
-        packer.packNodeIdentity( rel.getEndNode().getId() );
+        packer.pack( rel.getId() );
+        packer.pack( rel.getStartNode().getId() );
+        packer.pack( rel.getEndNode().getId() );
         packer.pack( rel.getType().name() );
         packer.packProperties( rel );
     }
@@ -47,17 +49,24 @@ public class ValueRelationship extends ValuePropertyContainer implements Relatio
     public static ValueRelationship unpack( Neo4jPack.Unpacker unpacker )
             throws IOException
     {
-        assert unpacker.unpackStructHeader() == STRUCT_FIELD_COUNT;
-        assert unpacker.unpackStructSignature() == Neo4jPack.RELATIONSHIP;
+        long numFields = unpacker.unpackStructHeader();
+        char signature = unpacker.unpackStructSignature();
+        if( signature != Neo4jPack.RELATIONSHIP ) {
+            throw new BoltIOException( Status.Request.InvalidFormat, "Expected a relationship structure, recieved 0x" + Integer.toHexString( signature ) );
+        }
+        if( numFields != STRUCT_FIELD_COUNT ) {
+            throw new BoltIOException( Status.Request.InvalidFormat, "Relationship structures should have " + STRUCT_FIELD_COUNT
+                                                                     + " fields, structure sent contained " + numFields );
+        }
         return unpackFields( unpacker );
     }
 
     public static ValueRelationship unpackFields( Neo4jPack.Unpacker unpacker )
             throws IOException
     {
-        long relId = unpacker.unpackRelationshipIdentity();
-        long startNodeId = unpacker.unpackNodeIdentity();
-        long endNodeId = unpacker.unpackNodeIdentity();
+        long relId = unpacker.unpackLong();
+        long startNodeId = unpacker.unpackLong();
+        long endNodeId = unpacker.unpackLong();
         String relTypeName = unpacker.unpackText();
 
         Map<String, Object> props = unpacker.unpackMap();

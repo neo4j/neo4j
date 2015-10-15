@@ -382,7 +382,7 @@ A Node represents a node from a Neo4j graph and consists of a unique identifier 
 [source,bolt_value_struct]
 ----
 Node (signature=0x4E) {
-    Text              nodeIdentity
+    Integer           nodeIdentity
     List<Text>        labels
     Map<Text, Value>  properties
 }
@@ -395,9 +395,9 @@ A Relationship represents a relationship from a Neo4j graph and consists of a un
 [source,bolt_value_struct]
 ----
 Relationship (signature=0x52) {
-    Text              relIdentity
-    Text              startNodeIdentity
-    Text              endNodeIdentity
+    Integer           relIdentity
+    Integer           startNodeIdentity
+    Integer           endNodeIdentity
     Text              type
     Map<Text, Value>  properties
 }
@@ -426,7 +426,7 @@ The general serialised structure is as follows:
 [source,bolt_value_struct]
 ----
 UnboundRelationship (signature=0x72) {
-    Text              relIdentity
+    Integer           relIdentity
     Text              type          // e.g. "KNOWS"
     Map<Text, Value>  properties    // e.g. {since:1999}
 }

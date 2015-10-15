@@ -385,24 +385,6 @@ public class PackStreamTest
     }
 
     @Test
-    public void testCanPackAndUnpackTextInParts() throws Throwable
-    {
-        // Given
-        Machine machine = new Machine();
-        byte[] part1 = "node/".getBytes( UTF_8 );
-        long part2 = 12345;
-
-        // When
-        PackStream.Packer packer = machine.packer();
-        packer.packText( part1, part2 );
-        packer.flush();
-
-        // Then
-        String value = newUnpacker( machine.output() ).unpackText();
-        assertThat( value, equalTo( "node/12345" ) );
-    }
-
-    @Test
     public void testCanPackAndUnpackListInOneCall() throws Throwable
     {
         // Given
