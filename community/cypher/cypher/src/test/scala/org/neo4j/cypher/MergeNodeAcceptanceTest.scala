@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.graphdb.Node
+import org.neo4j.kernel.api.exceptions.schema.UniqueConstraintViolationKernelException
 
 class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
 
@@ -505,5 +506,34 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
         |ON CREATE SET r.p3 = 42;""".stripMargin)
 
     result.executionPlanDescription().toString should not include "Eager"
+  }
+
+  test("merge must properly handle multiple labels") {
+    createLabeledNode(Map("prop" -> 42), "L", "A")
+
+    val result = execute("merge (test:L:B {prop : 42}) return labels(test) as labels")
+
+    assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 2)
+    result.toList should equal(List(Map("labels" -> List("L", "B"))))
+  }
+
+  test("merge with an index must properly handle multiple labels") {
+    graph.createIndex("L", "prop")
+    createLabeledNode(Map("prop" -> 42), "L", "A")
+
+    val result = execute("merge (test:L:B {prop : 42}) return labels(test) as labels")
+
+    assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 2)
+    result.toList should equal(List(Map("labels" -> List("L", "B"))))
+  }
+
+  test("merge with uniqueness constraints must properly handle multiple labels") {
+    graph.createConstraint("L", "prop")
+    val node = createLabeledNode(Map("prop" -> 42), "L", "A")
+
+    val result = intercept[CypherExecutionException](execute("merge (test:L:B {prop : 42}) return labels(test) as labels"))
+
+    result.getCause shouldBe a [UniqueConstraintViolationKernelException]
+    result.getMessage should equal(s"""Node ${node.getId} already exists with label L and property "prop"=[42]""")
   }
 }
