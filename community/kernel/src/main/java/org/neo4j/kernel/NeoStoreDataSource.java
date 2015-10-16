@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.function.Factory;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
@@ -85,6 +86,7 @@ import org.neo4j.kernel.impl.api.store.DiskLayer;
 import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -177,7 +179,11 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
+import static org.neo4j.helpers.Settings.BOOLEAN;
+import static org.neo4j.helpers.Settings.TRUE;
+import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.toList;
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
@@ -335,6 +341,14 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     }
 
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
+
+    /**
+     * This setting is hidden to the user and is here merely for making it easier to back out of
+     * a change where reading property chains incurs read locks on {@link LockService}.
+     */
+    private static final Setting<Boolean> use_read_locks_on_property_reads =
+            setting( "experimental.use_read_locks_on_property_reads", BOOLEAN, TRUE );
+
     private final Monitors monitors;
     private final Tracers tracers;
 
@@ -784,7 +798,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     {
         SchemaStorage schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
         DiskLayer diskLayer = new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, schemaStorage,
-                neoStores, indexingService );
+                neoStores, indexingService, storeStatementFactory( neoStores ) );
         final StoreReadLayer storeLayer = new CacheLayer( diskLayer, schemaCache, procedureCache );
 
         return new StoreLayerModule()
@@ -793,6 +807,20 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             public StoreReadLayer storeLayer()
             {
                 return storeLayer;
+            }
+        };
+    }
+
+    private Factory<StoreStatement> storeStatementFactory( final NeoStores neoStores )
+    {
+        final LockService lockService =
+                config.get( use_read_locks_on_property_reads ) ? this.lockService : NO_LOCK_SERVICE;
+        return new Factory<StoreStatement>()
+        {
+            @Override
+            public StoreStatement newInstance()
+            {
+                return new StoreStatement( neoStores, lockService );
             }
         };
     }

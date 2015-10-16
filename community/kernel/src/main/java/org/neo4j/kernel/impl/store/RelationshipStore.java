@@ -106,6 +106,15 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord>
         return fillRecord( id, record, RecordLoad.CHECK ) ? record : null;
     }
 
+    /**
+     * @return {@code true} if record successfully loaded and in use.
+     * If not in use the return value depends on the {@code loadMode}:
+     * <ol>
+     * <li>NORMAL: throws {@link InvalidRecordException}</li>
+     * <li>CHECK: returns {@code false}</li>
+     * <li>FORCE: return {@code true}</li>
+     * </ol>
+     */
     public boolean fillRecord( long id, RelationshipRecord target, RecordLoad loadMode )
     {
         try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )

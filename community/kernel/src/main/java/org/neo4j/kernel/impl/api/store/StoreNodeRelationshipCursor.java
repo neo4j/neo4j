@@ -21,8 +21,10 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -35,8 +37,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
  */
 public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
 {
-    private final RelationshipGroupRecord groupRecordInstance;
-
+    private final RelationshipGroupRecord groupRecord;
     private final Consumer<StoreNodeRelationshipCursor> instanceCache;
 
     private boolean isDense;
@@ -44,19 +45,22 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
     private long fromNodeId;
     private Direction direction;
     private int[] relTypes;
-    private RelationshipGroupRecord groupRecord;
     private int groupChainIndex;
+    private boolean end;
+    private final RelationshipGroupStore groupStore;
 
     public StoreNodeRelationshipCursor( RelationshipRecord relationshipRecord,
             NeoStores neoStores,
             RelationshipGroupRecord groupRecord,
             StoreStatement storeStatement,
-            Consumer<StoreNodeRelationshipCursor> instanceCache )
+            Consumer<StoreNodeRelationshipCursor> instanceCache,
+            LockService lockService )
     {
-        super( relationshipRecord, neoStores, storeStatement );
+        super( relationshipRecord, neoStores, storeStatement, lockService );
 
-        this.groupRecordInstance = groupRecord;
+        this.groupRecord = groupRecord;
         this.instanceCache = instanceCache;
+        this.groupStore = neoStores.getRelationshipGroupStore();
     }
 
     public StoreNodeRelationshipCursor init( boolean isDense,
@@ -74,24 +78,16 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
             int... relTypes )
     {
         this.isDense = isDense;
-        relationshipId = firstRelId;
-
+        this.relationshipId = firstRelId;
         this.fromNodeId = fromNodeId;
         this.direction = direction;
         this.relTypes = relTypes;
+        this.end = false;
 
-        if ( isDense && firstRelId != Record.NO_NEXT_RELATIONSHIP.intValue())
+        if ( isDense )
         {
-            try
-            {
-                groupRecord = relationshipGroupStore.getRecord( firstRelId, groupRecordInstance );
-                relationshipId = nextChainStart();
-            }
-            catch ( InvalidRecordException e )
-            {
-                relationshipId = Record.NO_NEXT_RELATIONSHIP.intValue();
-            }
-
+            groupStore.forceGetRecord( relationshipId, groupRecord );
+            relationshipId = nextChainStart();
         }
         else
         {
@@ -108,53 +104,48 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
         {
             relationshipRecord.setId( relationshipId );
 
-            try
-            {
-                if ( !relationshipStore.fillRecord( relationshipId, relationshipRecord, RecordLoad.CHECK ) )
-                {
-                    return false;
-                }
-            }
-            catch ( InvalidRecordException e )
-            {
-                relationshipId = Record.NO_NEXT_RELATIONSHIP.intValue();
-                return false;
-            }
+            relationshipStore.fillRecord( relationshipId, relationshipRecord, RecordLoad.FORCE );
 
+            // If we end up on a relationship record that isn't in use there's a good chance there
+            // have been a concurrent transaction deleting this record under or feet. Since we don't
+            // reuse relationship ids we can still trust the pointers in this unused record and try
+            // to chase a used record down the line.
             try
             {
                 // Direction check
-                if ( direction != Direction.BOTH )
+                if ( relationshipRecord.inUse() )
                 {
-                    switch ( direction )
+                    if ( direction != Direction.BOTH )
                     {
-                        case INCOMING:
+                        switch ( direction )
                         {
-                            if ( relationshipRecord.getSecondNode() != fromNodeId )
+                            case INCOMING:
                             {
-                                continue;
+                                if ( relationshipRecord.getSecondNode() != fromNodeId )
+                                {
+                                    continue;
+                                }
+                                break;
                             }
-                            break;
-                        }
 
-                        case OUTGOING:
-                        {
-                            if ( relationshipRecord.getFirstNode() != fromNodeId )
+                            case OUTGOING:
                             {
-                                continue;
+                                if ( relationshipRecord.getFirstNode() != fromNodeId )
+                                {
+                                    continue;
+                                }
+                                break;
                             }
-                            break;
                         }
                     }
-                }
 
-                // Type check
-                if ( !checkType( relationshipRecord.getType() ) )
-                {
-                    continue;
+                    // Type check
+                    if ( !checkType( relationshipRecord.getType() ) )
+                    {
+                        continue;
+                    }
+                    return true;
                 }
-
-                return true;
             }
             finally
             {
@@ -198,9 +189,11 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
     {
         try
         {
-            while ( groupRecord != null )
+            while ( !end )
             {
-                if ( checkType( groupRecord.getType() ) )
+                // We check inUse flag here since we can actually follow pointers in unused records
+                // to guard for and overcome concurrent deletes in the relationship group chain
+                if ( groupRecord.inUse() && checkType( groupRecord.getType() ) )
                 {
                     // Go to the next chain (direction) within this group
                     while ( groupChainIndex < GROUP_CHAINS.length )
@@ -216,8 +209,14 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
                 }
 
                 // Go to the next group
-                groupRecord = groupRecord.getNext() != Record.NO_NEXT_RELATIONSHIP.intValue() ?
-                        relationshipGroupStore.getRecord( groupRecord.getNext() ) : null;
+                if ( !Record.NULL_REFERENCE.is( groupRecord.getNext() ) )
+                {
+                    groupStore.forceGetRecord( groupRecord.getNext(), groupRecord );
+                }
+                else
+                {
+                    end = true;
+                }
                 groupChainIndex = 0;
             }
         }

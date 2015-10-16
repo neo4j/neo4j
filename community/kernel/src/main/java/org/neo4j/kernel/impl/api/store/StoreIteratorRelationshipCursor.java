@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
@@ -33,13 +34,14 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 public class StoreIteratorRelationshipCursor extends StoreAbstractRelationshipCursor
 {
     private PrimitiveLongIterator iterator;
-    private InstanceCache<StoreIteratorRelationshipCursor> instanceCache;
+    private final InstanceCache<StoreIteratorRelationshipCursor> instanceCache;
 
     public StoreIteratorRelationshipCursor( RelationshipRecord relationshipRecord,
             NeoStores neoStores,
-            StoreStatement storeStatement, InstanceCache<StoreIteratorRelationshipCursor> instanceCache )
+            StoreStatement storeStatement, InstanceCache<StoreIteratorRelationshipCursor> instanceCache,
+            LockService lockService )
     {
-        super( relationshipRecord, neoStores, storeStatement );
+        super( relationshipRecord, neoStores, storeStatement, lockService );
         this.instanceCache = instanceCache;
     }
 
