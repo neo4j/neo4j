@@ -67,8 +67,6 @@ public class NeoStoreTransactionApplier extends CommandHandler.Adapter
         // update store
         NodeStore nodeStore = neoStores.getNodeStore();
         nodeStore.updateRecord( command.getAfter() );
-        // getDynamicLabelRecords will contain even deleted records
-        nodeStore.updateDynamicLabelRecords( command.getAfter().getDynamicLabelRecords() );
 
         return false;
     }
