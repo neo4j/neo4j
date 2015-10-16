@@ -50,13 +50,13 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class ConsistencyCheckTool
 {
     // This to easily change this behaviour before/after releases
-    public static final boolean EXPERIMENTAL_BY_DEFAULT = true;
+    public static final boolean USE_LEGACY_BY_DEFAULT = false;
 
     static final String RECOVERY = "recovery";
     static final String CONFIG = "config";
     static final String PROP_OWNER = "propowner";
     static final String VERBOSE = "v";
-    static final String EXPERIMENTAL = "experimental";
+    static final String USE_LEGACY_CHECKER = "use-legacy-checker";
 
     // Use the ExitHandle from consistency-check-legacy so that ConsistencyCheckToolTest can properly
     // test everything with -experimental and w/o it.
@@ -91,8 +91,8 @@ public class ConsistencyCheckTool
 
     void run( String... args ) throws ToolFailureException, IOException
     {
-        Args arguments = Args.withFlags( RECOVERY, PROP_OWNER, VERBOSE, EXPERIMENTAL ).parse( args );
-        if ( !isExperimental( arguments ) )
+        Args arguments = Args.withFlags( RECOVERY, PROP_OWNER, VERBOSE, USE_LEGACY_CHECKER ).parse( args );
+        if ( useLegacyChecker( arguments ) )
         {
             // We want to actually use the legacy checker, so just go ahead and invoke that main instead,
             // this component depends on the old checker (w/ changed top-level package to not let all
@@ -152,9 +152,9 @@ public class ConsistencyCheckTool
         return arguments.getBoolean( VERBOSE, false, true );
     }
 
-    private boolean isExperimental( Args arguments )
+    private boolean useLegacyChecker( Args arguments )
     {
-        return arguments.getBoolean( EXPERIMENTAL, EXPERIMENTAL_BY_DEFAULT, true );
+        return arguments.getBoolean( USE_LEGACY_CHECKER, USE_LEGACY_BY_DEFAULT, true );
     }
 
     private void attemptRecoveryOrCheckStateOfLogicalLogs( Args arguments, File storeDir, Config tuningConfiguration )
@@ -225,15 +225,14 @@ public class ConsistencyCheckTool
     private String usage()
     {
         return joinAsLines(
-                jarUsage( getClass(), "[-propowner] [-recovery] [-config <neo4j.properties>] [-v] [-experimental] <storedir>" ),
-                "WHERE:   -propowner         also check property owner consistency (more time consuming)",
-                "         -recovery          to perform recovery on the store before checking",
-                "         -config <filename> is the location of an optional properties file",
-                "                            containing tuning parameters for the consistency check",
-                "         -v                 produce execution output",
-                "         -experimental      (ADVANCED) runs the new, experimental and potentially much faster",
-                "                            consistency checker (" + EXPERIMENTAL_BY_DEFAULT + " by default)",
-                "         <storedir>         is the path to the store to check"
+                jarUsage( getClass(), "[-propowner] [-recovery] [-config <neo4j.properties>] [-v] [-" + USE_LEGACY_CHECKER + "] <storedir>" ),
+                "WHERE:   -propowner          also check property owner consistency (more time consuming)",
+                "         -recovery           to perform recovery on the store before checking",
+                "         -config <filename>  is the location of an optional properties file",
+                "                             containing tuning parameters for the consistency check",
+                "         -v                  produce execution output",
+                "         -use-legacy-checker (ADVANCED) runs the legacyconsistency checker (" + USE_LEGACY_BY_DEFAULT + " by default)",
+                "         <storedir>          is the path to the store to check"
         );
     }
 

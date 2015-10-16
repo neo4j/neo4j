@@ -49,7 +49,7 @@ enum ConsistencyCheck
                         FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose )
                         throws ConsistencyCheckFailedException
                 {
-                    ConsistencyCheck checker = ConsistencyCheckTool.EXPERIMENTAL_BY_DEFAULT ? EXPERIMENTAL : LEGACY;
+                    ConsistencyCheck checker = ConsistencyCheckTool.USE_LEGACY_BY_DEFAULT ? LEGACY : EXPERIMENTAL;
                     return checker.runFull( storeDir, tuningConfiguration, progressFactory, logProvider,
                             fileSystem, pageCache, verbose );
                 }
