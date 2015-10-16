@@ -44,7 +44,7 @@ public class GetAll extends ServerPlugin
         ArrayList<Node> nodes = new ArrayList<>();
         try (Transaction tx = graphDb.beginTx())
         {
-            for ( Node node : GlobalGraphOperations.at( graphDb ).getAllNodes() )
+            for ( Node node : graphDb.getAllNodes() )
             {
                 nodes.add( node );
             }
@@ -60,7 +60,7 @@ public class GetAll extends ServerPlugin
         List<Relationship> rels = new ArrayList<>();
         try (Transaction tx = graphDb.beginTx())
         {
-            for ( Relationship rel : GlobalGraphOperations.at( graphDb ).getAllRelationships() )
+            for ( Relationship rel : graphDb.getAllRelationships() )
             {
                 rels.add( rel );
             }

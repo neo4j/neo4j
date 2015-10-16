@@ -19,11 +19,11 @@
  */
 package recovery;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.Runtime.getRuntime;
 import static java.lang.System.exit;
@@ -68,8 +67,7 @@ public class TestRecoveryMultipleDataSources
         // Then
         try ( Transaction ignored = db.beginTx() )
         {
-            assertEquals( MyRelTypes.TEST.name(),
-                    GlobalGraphOperations.at( db ).getAllRelationshipTypes().iterator().next().name() );
+            assertEquals( MyRelTypes.TEST.name(), db.getRelationshipTypes().iterator().next().name() );
         }
         finally
         {

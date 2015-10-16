@@ -19,11 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -38,6 +33,11 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -60,7 +60,6 @@ import org.neo4j.test.RandomRule;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
@@ -74,7 +73,6 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
@@ -325,8 +323,6 @@ public class ParallelBatchImporterTest
     protected void verifyData( int nodeCount, int relationshipCount, GraphDatabaseService db, IdGroupDistribution groups,
             long nodeRandomSeed, long relationshipRandomSeed )
     {
-        GlobalGraphOperations globalOps = GlobalGraphOperations.at( db );
-
         // Read all nodes, relationships and properties ad verify against the input data.
         try ( InputIterator<InputNode> nodes = nodes( nodeRandomSeed, nodeCount, inputIdGenerator, groups ).iterator();
               InputIterator<InputRelationship> relationships = relationships( relationshipRandomSeed, relationshipCount,
@@ -334,7 +330,7 @@ public class ParallelBatchImporterTest
         {
             // Nodes
             Map<String,Node> nodeByInputId = new HashMap<>( nodeCount );
-            Iterator<Node> dbNodes = globalOps.getAllNodes().iterator();
+            Iterator<Node> dbNodes = db.getAllNodes().iterator();
             int verifiedNodes = 0;
             while ( nodes.hasNext() )
             {
@@ -349,7 +345,7 @@ public class ParallelBatchImporterTest
 
             // Relationships
             Map<String,Relationship> relationshipByName = new HashMap<>();
-            for ( Relationship relationship : globalOps.getAllRelationships() )
+            for ( Relationship relationship : db.getAllRelationships() )
             {
                 relationshipByName.put( (String) relationship.getProperty( "id" ), relationship );
             }

@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -32,6 +26,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import org.neo4j.com.ComException;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -49,14 +49,11 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.test.ha.ClusterRule;
-import org.neo4j.tooling.GlobalGraphOperations;
 
+import static java.lang.String.format;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
-
-import static java.lang.String.format;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
@@ -539,7 +536,7 @@ public class PropertyConstraintsStressIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                for ( Relationship relationship : GlobalGraphOperations.at( db ).getAllRelationships() )
+                for ( Relationship relationship : db.getAllRelationships() )
                 {
                     if ( relationship.getType().name().equals( type ) )
                     {

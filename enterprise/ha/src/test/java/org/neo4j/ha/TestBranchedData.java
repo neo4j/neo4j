@@ -19,14 +19,14 @@
  */
 package org.neo4j.ha;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -49,7 +49,6 @@ import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertFalse;
@@ -227,7 +226,7 @@ public class TestBranchedData
     {
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 if ( nodeName.equals( node.getProperty( "name", null ) ) )
                 {

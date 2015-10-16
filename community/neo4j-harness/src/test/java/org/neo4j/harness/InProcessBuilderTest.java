@@ -19,11 +19,6 @@
  */
 package org.neo4j.harness;
 
-import org.apache.commons.io.FileUtils;
-import org.codehaus.jackson.JsonNode;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -40,12 +35,18 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import org.apache.commons.io.FileUtils;
+import org.codehaus.jackson.JsonNode;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerSettings;
@@ -54,7 +55,6 @@ import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.HTTP;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
@@ -181,8 +181,7 @@ public class InProcessBuilderTest
                 // Then
                 try ( Transaction tx = server.graph().beginTx() )
                 {
-                    ResourceIterable<Node> allNodes = GlobalGraphOperations.at(
-                            server.graph() ).getAllNodes();
+                    ResourceIterable<Node> allNodes = Iterables.asResourceIterable( server.graph().getAllNodes() );
 
                     assertTrue( IteratorUtil.count( allNodes ) > 0 );
 
@@ -198,7 +197,7 @@ public class InProcessBuilderTest
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    assertEquals( 1, IteratorUtil.count( GlobalGraphOperations.at( db ).getAllNodes() ) );
+                    assertEquals( 1, IteratorUtil.count( db.getAllNodes() ) );
                     tx.success();
                 }
             }

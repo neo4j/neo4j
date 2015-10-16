@@ -29,12 +29,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent;
 
 public class TestImpermanentGraphDatabase
@@ -98,7 +96,7 @@ public class TestImpermanentGraphDatabase
     private int nodeCount()
     {
         Transaction transaction = db.beginTx();
-        int count = IteratorUtil.count( GlobalGraphOperations.at( db ).getAllNodes() );
+        int count = IteratorUtil.count( db.getAllNodes() );
         transaction.close();
         return count;
     }

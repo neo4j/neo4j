@@ -19,11 +19,6 @@
  */
 package org.neo4j.backup;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,6 +26,11 @@ import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
@@ -160,7 +159,7 @@ public class RebuildFromLogsTest
                     @Override
                     void applyTx( GraphDatabaseService graphDb )
                     {
-                        for ( Node node : GlobalGraphOperations.at( graphDb ).getAllNodes() )
+                        for ( Node node : graphDb.getAllNodes() )
                         {
                             if ( "value".equals( node.getProperty( CREATE_NODE_WITH_PROPERTY.name(), null ) ) )
                             {
@@ -182,7 +181,7 @@ public class RebuildFromLogsTest
 
         private static Node firstNode( GraphDatabaseService graphDb )
         {
-            return Iterables.first( GlobalGraphOperations.at( graphDb ).getAllNodes() );
+            return Iterables.first( graphDb.getAllNodes() );
         }
 
         private final Transaction[] dependencies;

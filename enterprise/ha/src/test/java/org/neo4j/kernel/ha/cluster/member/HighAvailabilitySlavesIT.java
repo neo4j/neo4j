@@ -29,11 +29,9 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
@@ -74,7 +72,7 @@ public class HighAvailabilitySlavesIT
 
     private long getNodeByName( HighlyAvailableGraphDatabase db, String name )
     {
-        for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+        for ( Node node : db.getAllNodes() )
             if ( name.equals( node.getProperty( "name", null ) ) )
                 return node.getId();
         fail( "No node '" + name + "' found in " + db );

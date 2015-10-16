@@ -19,9 +19,6 @@
  */
 package org.neo4j.tooling;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -32,6 +29,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+
+import org.apache.commons.lang3.StringUtils;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -47,6 +48,8 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.ImportTool.Options;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.ArrayUtil.join;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -54,10 +57,6 @@ import static org.neo4j.io.fs.FileUtils.readTextFile;
 import static org.neo4j.io.fs.FileUtils.writeToFile;
 import static org.neo4j.tooling.GlobalGraphOperations.at;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
-
-import org.apache.commons.lang3.StringUtils;
-import org.junit.Rule;
-import org.junit.Test;
 
 public class ImportToolDocIT
 {
@@ -623,7 +622,7 @@ public class ImportToolDocIT
             int nodeCount = count( at( db ).getAllNodes() ), relationshipCount = 0;
             assertEquals( 2, nodeCount );
 
-            for ( Relationship relationship : GlobalGraphOperations.at( db ).getAllRelationships() )
+            for ( Relationship relationship : db.getAllRelationships() )
             {
                 assertTrue( relationship.hasProperty( "roles" ) );
 
@@ -659,7 +658,7 @@ public class ImportToolDocIT
         {
             int nodeCount = count( at( db ).getAllNodes() ), relationshipCount = 0, sequelCount = 0;
             assertEquals( NODE_COUNT, nodeCount );
-            for ( Relationship relationship : GlobalGraphOperations.at( db ).getAllRelationships() )
+            for ( Relationship relationship : db.getAllRelationships() )
             {
                 assertTrue( relationship.hasProperty( "role" ) );
                 relationshipCount++;

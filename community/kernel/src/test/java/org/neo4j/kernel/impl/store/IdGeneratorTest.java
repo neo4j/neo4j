@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -33,6 +28,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -48,7 +48,6 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -56,7 +55,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
@@ -676,7 +674,7 @@ public class IdGeneratorTest
 
         // Verify by loading everything from scratch
         tx = db.beginTx();
-        for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+        for ( Node node : db.getAllNodes() )
         {
             lastOrNull( node.getRelationships() );
         }

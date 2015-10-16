@@ -19,13 +19,12 @@
  */
 package org.neo4j.server.rest.repr;
 
+import java.util.Collection;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.tooling.GlobalGraphOperations;
-
-import java.util.Collection;
 
 import static org.neo4j.helpers.collection.MapUtil.map;
 
@@ -163,7 +162,7 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
         if ( writer.isInteractive() )
         {
             serializer.putList( "relationship_types", ListRepresentation.relationshipTypes(
-                    GlobalGraphOperations.at( node.getGraphDatabase() ).getAllRelationshipTypes() ) );
+                    node.getGraphDatabase().getRelationshipTypes() ) );
         }
         properties.done();
     }

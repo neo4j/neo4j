@@ -19,9 +19,6 @@
  */
 package org.neo4j.tooling;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -33,6 +30,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
 import org.neo4j.function.IntPredicate;
@@ -59,6 +59,9 @@ import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -66,11 +69,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
-import static java.util.Arrays.asList;
-
 import static org.neo4j.function.IntPredicates.alwaysTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
@@ -255,7 +253,7 @@ public class ImportToolTest
         try ( Transaction tx = db.beginTx() )
         {
             int nodeCount = 0;
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 assertTrue( node.hasProperty( "name" ) );
                 nodeCount++;
@@ -295,7 +293,7 @@ public class ImportToolTest
         try ( Transaction tx = db.beginTx() )
         {
             int nodeCount = 0;
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 assertTrue( node.hasProperty( "name" ) );
                 nodeCount++;
@@ -401,7 +399,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
         try ( Transaction tx = db.beginTx() )
         {
-            Iterator<Node> nodes = GlobalGraphOperations.at( db ).getAllNodes().iterator();
+            Iterator<Node> nodes = db.getAllNodes().iterator();
             Iterator<String> expectedIds = FilteringIterator.noDuplicates( nodeIds.iterator() );
             while ( expectedIds.hasNext() )
             {
@@ -614,7 +612,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
         try ( Transaction tx = db.beginTx() )
         {
-            Iterable<Node> allNodes = GlobalGraphOperations.at( db ).getAllNodes();
+            Iterable<Node> allNodes = db.getAllNodes();
             int anonymousCount = 0;
             for ( final String id : nodeIds )
             {
@@ -714,7 +712,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            ResourceIterator<Node> allNodes = GlobalGraphOperations.at( db ).getAllNodes().iterator();
+            ResourceIterator<Node> allNodes = IteratorUtil.asResourceIterator( db.getAllNodes().iterator() );
             Node node = IteratorUtil.single( allNodes );
             allNodes.close();
 
@@ -738,7 +736,8 @@ public class ImportToolTest
         GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseService();
         try ( Transaction tx = graphDatabaseService.beginTx() )
         {
-            ResourceIterator<Node> allNodes = GlobalGraphOperations.at( graphDatabaseService ).getAllNodes().iterator();
+            ResourceIterator<Node> allNodes = IteratorUtil.asResourceIterator(
+                    graphDatabaseService.getAllNodes().iterator() );
             assertFalse( "Expected database to be empty", allNodes.hasNext() );
             tx.success();
         }
@@ -762,7 +761,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = single( GlobalGraphOperations.at( db ).getAllNodes() );
+            Node node = single( db.getAllNodes() );
             assertEquals( "three", single( node.getPropertyKeys() ) );
             tx.success();
         }
@@ -815,14 +814,14 @@ public class ImportToolTest
         try ( Transaction tx = db.beginTx() )
         {
             int nodeCount = 0, relationshipCount = 0;
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 assertTrue( node.hasProperty( "name" ) );
                 nodeAdditionalValidation.validate( node );
                 nodeCount++;
             }
             assertEquals( NODE_COUNT, nodeCount );
-            for ( Relationship relationship : GlobalGraphOperations.at( db ).getAllRelationships() )
+            for ( Relationship relationship : db.getAllRelationships() )
             {
                 assertTrue( relationship.hasProperty( "created" ) );
                 relationshipAdditionalValidation.validate( relationship );
@@ -871,7 +870,7 @@ public class ImportToolTest
         try ( Transaction tx = db.beginTx() )
         {
             Map<String,Node> nodes = new HashMap<>();
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 nodes.put( idOf( node ), node );
             }

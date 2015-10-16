@@ -57,6 +57,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
@@ -153,6 +154,57 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     public Iterable<RelationshipType> getRelationshipTypes()
     {
         return actual.getRelationshipTypes();
+    }
+
+    @Override
+    public ResourceIterable<Relationship> getAllRelationships()
+    {
+        return new ResourceIterable<Relationship>()
+        {
+            @Override
+            public ResourceIterator<Relationship> iterator()
+            {
+                final ResourceIterator<Relationship> iterator = actual.getAllRelationships().iterator();
+                return new PrefetchingResourceIterator<Relationship>()
+                {
+                    @Override
+                    protected Relationship fetchNextOrNull()
+                    {
+                        return new ReadOnlyRelationshipProxy( iterator.next() );
+                    }
+
+                    @Override
+                    public void close()
+                    {
+                        iterator.close();
+                    }
+                };
+            }
+        };
+    }
+
+    @Override
+    public ResourceIterable<RelationshipType> getAllRelationshipTypesInUse()
+    {
+        return actual.getAllRelationshipTypesInUse();
+    }
+
+    @Override
+    public ResourceIterable<Label> getAllLabels()
+    {
+        return actual.getAllLabels();
+    }
+
+    @Override
+    public ResourceIterable<Label> getAllLabelsInUse()
+    {
+        return actual.getAllLabelsInUse();
+    }
+
+    @Override
+    public ResourceIterable<String> getAllPropertyKeys()
+    {
+        return actual.getAllPropertyKeys();
     }
 
     @Override

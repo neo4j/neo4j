@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
@@ -30,6 +26,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.hamcrest.Matchers;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -51,14 +51,12 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -172,7 +170,7 @@ public class TestCrashWithRebuildSlow
             // Verify that the data we didn't delete is still around
             int nameCount = 0;
             int relCount = 0;
-            for ( Node node : GlobalGraphOperations.at( newDb ).getAllNodes() )
+            for ( Node node : newDb.getAllNodes() )
             {
                 nameCount++;
                 assertThat( node, inTx( newDb, hasProperty( "name" ), true ) );

@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.tooling.GlobalGraphOperations
 
 import scala.collection.JavaConverters._
 import scala.collection.{Iterator, mutable}
@@ -182,7 +181,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
     }
 
-    def all: Iterator[Node] = GlobalGraphOperations.at(graph).getAllNodes.iterator().asScala
+    def all: Iterator[Node] = graph.getAllNodes.iterator().asScala
 
     def indexGet(name: String, key: String, value: Any): Iterator[Node] =
       graph.index.forNodes(name).get(key, value).iterator().asScala
@@ -223,7 +222,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     }
 
     def all: Iterator[Relationship] =
-      GlobalGraphOperations.at(graph).getAllRelationships.iterator().asScala
+      graph.getAllRelationships.iterator().asScala
 
     def indexGet(name: String, key: String, value: Any): Iterator[Relationship] =
       graph.index.forRelationships(name).get(key, value).iterator().asScala

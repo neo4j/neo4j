@@ -39,11 +39,9 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.AutoIndexer;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOfRange;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.test.GraphDescription.PropType.ERROR;
 import static org.neo4j.test.GraphDescription.PropType.STRING;
@@ -307,7 +305,7 @@ public class GraphDescription implements GraphDefinition
         GraphDatabaseService db = nodes.values().iterator().next().getGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 for ( Relationship rel : node.getRelationships() )
                     rel.delete();

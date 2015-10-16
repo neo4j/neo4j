@@ -617,14 +617,18 @@ public final class Iterables
         return list.toArray( (T[]) Array.newInstance( componentType, list.size() ) );
     }
 
-    public static <T> ResourceIterable<T> asResourceIterable( final Iterable<T> labels )
+    public static <T> ResourceIterable<T> asResourceIterable( final Iterable<T> iterable )
     {
+        if ( iterable instanceof ResourceIterable<?> )
+        {
+            return (ResourceIterable<T>) iterable;
+        }
         return new ResourceIterable<T>()
         {
             @Override
             public ResourceIterator<T> iterator()
             {
-                return asResourceIterator( labels.iterator() );
+                return asResourceIterator( iterable.iterator() );
             }
         };
     }
