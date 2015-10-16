@@ -54,6 +54,4 @@ public class MapConfigurator implements ConfigurationBuilder
                 ConfiguratorWrappingConfigurationBuilder.toStringForThirdPartyPackageProperty( extensions ) );
         return new Config( serverConfigParams );
     }
-
-
 }

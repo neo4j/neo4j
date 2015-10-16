@@ -25,7 +25,6 @@ import org.junit.Test;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.CommunityServerBuilder;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
@@ -54,10 +53,7 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
     public void shouldWhitelistWebadmin() throws Exception
     {
         // Given
-        server = CommunityServerBuilder.server()
-                .withProperty( ServerSettings.auth_enabled.name(), "true" )
-                .withProperty( ServerInternalSettings.webadmin_enabled.name(), "true" )
-                .build();
+        server = CommunityServerBuilder.server().withProperty( ServerSettings.auth_enabled.name(), "true" ).build();
 
         // When
         server.start();

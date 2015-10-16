@@ -31,6 +31,7 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.Migrator;
+import org.neo4j.kernel.configuration.Obsoleted;
 
 import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
@@ -84,7 +85,9 @@ public interface ServerSettings
     Setting<Long> webserver_limit_execution_time = setting(
             "org.neo4j.server.webserver.limit.executiontime", DURATION, NO_DEFAULT );
 
-    @Description( "Path to the statistics database file." )
+    @Deprecated
+    @Obsoleted( "RRDB was removed in 3.0" )
+    @Description( "Path to the statistics database file. RRDB has been deprecate, please use the Metrics plugin instead." )
     Setting<File> rrdb_location = setting( "org.neo4j.server.webadmin.rrdb.location", PATH, NO_DEFAULT );
 
     @Description( "Console engines for the legacy webadmin administration" )

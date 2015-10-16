@@ -58,6 +58,11 @@ o Added new warning mechanism. The first supported warning is generated for quer
   unintended cartesian product
 o Cypher may now use full index scans to solve queries containing has(n.prop) if appropriate
 
+2.2.7
+-----
+o Fixes #5631 - MERGE with multiple labels with uniqueness constraints
+o Fixed issue around aggregation and literal maps
+
 2.2.6
 -----
 o Fixes #5336 - Properly handle matching on multiple labels

@@ -58,8 +58,7 @@ public class RootServiceDocTest
         Response serviceDefinition = svc.getServiceDefinition( uriInfo, output );
 
         assertEquals( 200, serviceDefinition.getStatus() );
-        Map<String, Object> result = (Map<String, Object>) output.getResultAsMap()
-                .get( "services" );
+        Map<String, Object> result = (Map<String, Object>) output.getResultAsMap().get( "services" );
 
         assertThat( result.get( "console" )
                 .toString(), containsString( String.format( "%sserver/console", uri.toString() ) ) );
