@@ -70,8 +70,6 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
         // update store
         NodeStore nodeStore = neoStore.getNodeStore();
         nodeStore.updateRecord( command.getAfter() );
-        // getDynamicLabelRecords will contain even deleted records
-        nodeStore.updateDynamicLabelRecords( command.getAfter().getDynamicLabelRecords() );
 
         // Ideally we don't any cache invalidation in this "normal" transaction case, but upgraded dense
         // nodes must me evicted here as well.

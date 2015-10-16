@@ -142,7 +142,6 @@ public class NeoTransactionStoreApplierTest
 
         verify( lockService, times( 1 ) ).acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK );
         verify( nodeStore, times( 1 ) ).updateRecord( after );
-        verify( nodeStore, times( 1 ) ).updateDynamicLabelRecords( Arrays.asList( one, two, three ) );
         verify( cacheAccess, never() ).removeNodeFromCache( command.getKey() );
     }
 
@@ -178,7 +177,6 @@ public class NeoTransactionStoreApplierTest
 
         verify( lockService, times( 1 ) ).acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK );
         verify( nodeStore, times( 1 ) ).updateRecord( after );
-        verify( nodeStore, times( 1 ) ).updateDynamicLabelRecords( Arrays.asList( one, two, three ) );
     }
 
     @Test
@@ -204,7 +202,6 @@ public class NeoTransactionStoreApplierTest
         verify( nodeStore, times( 1 ) ).setHighestPossibleIdInUse( after.getId() );
         verify( nodeStore, times( 1 ) ).updateRecord( after );
         verify( dynamicLabelStore, times( 1 ) ).setHighestPossibleIdInUse( three.getId() );
-        verify( nodeStore, times( 1 ) ).updateDynamicLabelRecords( Arrays.asList( one, two, three ) );
         verify( cacheAccess, times( 1 ) ).removeNodeFromCache( command.getKey() );
     }
 
@@ -231,7 +228,6 @@ public class NeoTransactionStoreApplierTest
 
         verify( lockService, times( 1 ) ).acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK );
         verify( nodeStore, times( 1 ) ).updateRecord( after );
-        verify( nodeStore, times( 1 ) ).updateDynamicLabelRecords( Arrays.asList( one, two, three ) );
         verify( cacheAccess, times( 1 ) ).removeNodeFromCache( command.getKey() );
     }
 
