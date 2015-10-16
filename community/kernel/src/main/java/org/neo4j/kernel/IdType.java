@@ -39,7 +39,7 @@ public enum IdType
     NEOSTORE_BLOCK( false ),
     SCHEMA( 35, false ),
     NODE_LABELS( 35, true ),
-    RELATIONSHIP_GROUP( 35, true );
+    RELATIONSHIP_GROUP( 35, false );
 
     private final long max;
     private final boolean allowAggressiveReuse;
@@ -64,7 +64,7 @@ public enum IdType
     {
         return allowAggressiveReuse;
     }
-    
+
     public int getGrabSize()
     {
         return allowAggressiveReuse ? 50000 : 1024;

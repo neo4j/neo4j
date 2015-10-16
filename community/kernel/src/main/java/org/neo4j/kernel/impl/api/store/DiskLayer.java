@@ -24,6 +24,7 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
@@ -61,7 +62,6 @@ import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -128,15 +128,16 @@ public class DiskLayer implements StoreReadLayer
     private final NeoStores neoStores;
     private final IndexingService indexService;
     private final NodeStore nodeStore;
-    private final RelationshipGroupStore relationshipGroupStore;
     private final RelationshipStore relationshipStore;
     private final SchemaStorage schemaStorage;
     private final CountsAccessor counts;
     private final PropertyLoader propertyLoader;
 
+    private final Factory<StoreStatement> statementProvider;
+
     public DiskLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
             RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage, NeoStores neoStores,
-            IndexingService indexService )
+            IndexingService indexService, Factory<StoreStatement> statementProvider )
     {
         this.relationshipTokenHolder = relationshipTokenHolder;
         this.schemaStorage = schemaStorage;
@@ -144,18 +145,17 @@ public class DiskLayer implements StoreReadLayer
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
         this.neoStores = neoStores;
+        this.statementProvider = statementProvider;
         this.nodeStore = this.neoStores.getNodeStore();
         this.relationshipStore = this.neoStores.getRelationshipStore();
-        this.relationshipGroupStore = this.neoStores.getRelationshipGroupStore();
         this.counts = neoStores.getCounts();
         this.propertyLoader = new PropertyLoader( neoStores );
-
     }
 
     @Override
     public StoreStatement acquireStatement()
     {
-        return neoStores.acquireStatement();
+        return statementProvider.newInstance();
     }
 
     @Override

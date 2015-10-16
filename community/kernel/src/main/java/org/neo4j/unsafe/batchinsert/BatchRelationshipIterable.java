@@ -32,6 +32,8 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
+
 abstract class BatchRelationshipIterable<T> implements Iterable<T>
 {
     private final StoreNodeRelationshipCursor relationshipCursor;
@@ -43,7 +45,7 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>
         this.relationshipCursor = new StoreNodeRelationshipCursor(
                 relationshipRecord, neoStores,
                 relationshipGroupRecord, null,
-                Consumers.<StoreNodeRelationshipCursor>noop() );
+                Consumers.<StoreNodeRelationshipCursor>noop(), NO_LOCK_SERVICE );
 
         // TODO There's an opportunity to reuse lots of instances created here, but this isn't a
         // critical path instance so perhaps not necessary a.t.m.

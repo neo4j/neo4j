@@ -26,9 +26,9 @@ import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 /**
@@ -76,6 +76,8 @@ public class NeoStoreTransactionApplier extends CommandHandler.Adapter
     @Override
     public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
     {
+        lockGroup.add( lockService.acquireRelationshipLock( command.getKey(), LockService.LockType.WRITE_LOCK ) );
+
         RelationshipRecord record = command.getRecord();
         neoStores.getRelationshipStore().updateRecord( record );
         return false;
@@ -85,10 +87,13 @@ public class NeoStoreTransactionApplier extends CommandHandler.Adapter
     public boolean visitPropertyCommand( Command.PropertyCommand command ) throws IOException
     {
         // acquire lock
-        long nodeId = command.getNodeId();
-        if ( nodeId != -1 )
+        if ( command.getNodeId() != -1 )
         {
-            lockGroup.add( lockService.acquireNodeLock( nodeId, LockService.LockType.WRITE_LOCK ) );
+            lockGroup.add( lockService.acquireNodeLock( command.getNodeId(), LockService.LockType.WRITE_LOCK ) );
+        }
+        else if ( command.getRelId() != -1 )
+        {
+            lockGroup.add( lockService.acquireRelationshipLock( command.getRelId(), LockService.LockType.WRITE_LOCK ) );
         }
 
         // track the dynamic value record high ids
