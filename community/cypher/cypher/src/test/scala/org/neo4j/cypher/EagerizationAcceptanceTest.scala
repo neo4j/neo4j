@@ -26,6 +26,11 @@ import scala.util.matching.Regex
 class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrivenPropertyChecks {
   val EagerRegEx: Regex = "Eager(?!A)".r
 
+  test("github issue ##5653") {
+    assertNumberOfEagerness(
+      "MATCH (p1:Person {name:'Michal'})-[r:FRIEND_OF {since:2007}]->(p2:Person {name:'Daniela'}) DELETE r, p1, p2", 1)
+  }
+
   test("should introduce eagerness between DELETE and MERGE for node") {
     val query =
       """
