@@ -32,8 +32,7 @@ public final class MemoryManager
     /**
      * The amount of memory, in bytes, to grab in each Slab.
      */
-    private static final long GRAB_SIZE = Integer.getInteger(
-            MemoryManager.class.getName() + ".GRAB_SIZE", 512 * 1024 ); // 512 KiB
+    private static final long GRAB_SIZE = FeatureToggles.getInteger( MemoryManager.class, "GRAB_SIZE", 512 * 1024 ); // 512 KiB
 
     /**
      * The amount of memory that this memory manager can still allocate.

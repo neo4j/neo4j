@@ -32,6 +32,8 @@ import java.nio.ByteOrder;
 import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
 
+import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+
 /**
  * Always check that the Unsafe utilities are available with the {@link UnsafeUtil#assertHasUnsafe} method, before
  * calling any of the other methods.
@@ -48,7 +50,7 @@ public final class UnsafeUtil
      * Enabling this feature will make sure that the allocated memory is full of random data, such that we can test
      * and verify that our code does not assume that memory is clean when allocated.
      */
-    private static final boolean DIRTY_MEMORY = Boolean.getBoolean( UnsafeUtil.class.getName() + ".DIRTY_MEMORY" );
+    private static final boolean DIRTY_MEMORY = flag( UnsafeUtil.class, "DIRTY_MEMORY", false );
 
     private static final Unsafe unsafe;
     private static final MethodHandle getAndAddInt;

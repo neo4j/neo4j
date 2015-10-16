@@ -19,10 +19,11 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+
 final class CursorPool
 {
-    private static boolean disableCursorPooling = Boolean.getBoolean(
-            "org.neo4j.io.pagecache.impl.muninn.CursorPool.disableCursorPooling" );
+    private static boolean disableCursorPooling = flag( CursorPool.class, "disableCursorPooling", false );
 
     private final ThreadLocal<MuninnReadPageCursor> readCursorCache = new MuninnReadPageCursorThreadLocal();
     private final ThreadLocal<MuninnWritePageCursor> writeCursorCache = new MuninnWritePageCursorThreadLocal();

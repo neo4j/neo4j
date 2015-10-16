@@ -29,6 +29,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
+import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+
 class KeyValueWriter implements Closeable
 {
     private final MetadataCollector metadata;
@@ -245,7 +247,7 @@ class KeyValueWriter implements Closeable
     static abstract class Writer
     {
         private static final boolean WRITE_TO_PAGE_CACHE =
-                Boolean.getBoolean( KeyValueWriter.class.getName() + ".WRITE_TO_PAGE_CACHE" );
+                flag( KeyValueWriter.class, "WRITE_TO_PAGE_CACHE", false );
 
         abstract void write( byte[] data ) throws IOException;
 
