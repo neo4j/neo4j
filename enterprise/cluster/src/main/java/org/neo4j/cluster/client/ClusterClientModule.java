@@ -36,6 +36,7 @@ import org.neo4j.cluster.ProtocolServer;
 import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.cluster.com.NetworkSender;
+import org.neo4j.cluster.logging.AsyncLogging;
 import org.neo4j.cluster.logging.NettyLoggerFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
@@ -88,7 +89,7 @@ public class ClusterClientModule
     public ClusterClientModule( LifeSupport life, Dependencies dependencies, final Monitors monitors,
             final Config config, LogService logService, ElectionCredentialsProvider electionCredentialsProvider )
     {
-        final LogProvider logging = logService.getInternalLogProvider();
+        final LogProvider logging = AsyncLogging.provider( life, logService.getInternalLogProvider() );
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging ) );
 
         TimeoutStrategy timeoutStrategy = new MessageTimeoutStrategy(
