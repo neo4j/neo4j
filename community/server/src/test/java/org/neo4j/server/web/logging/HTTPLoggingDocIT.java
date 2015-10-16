@@ -43,7 +43,6 @@ import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
 import org.neo4j.server.preflight.HTTPLoggingPreparednessRuleTest;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
@@ -77,7 +76,6 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
                 .withProperty( Configurator.HTTP_LOGGING, "false" )
                 .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
-                .withProperty( ServerInternalSettings.webadmin_enabled.name(), "true" )
                 .usingDatabaseDir( testDirectory.directory(
                         "givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses-dbdir"
                 ).getAbsolutePath() )
@@ -122,7 +120,6 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
                 .withProperty( Configurator.HTTP_LOGGING, "true" )
                 .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
-                .withProperty( ServerInternalSettings.webadmin_enabled.name(), "true" )
                 .usingDatabaseDir( testDirectory.directory(
                         "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-dbdir"
                 ).getAbsolutePath() )

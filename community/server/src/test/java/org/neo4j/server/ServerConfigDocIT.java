@@ -131,16 +131,15 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldEnableWebadminWhenAskedTo() throws IOException
+    public void shouldEnableWebadminByDefault() throws IOException
     {
         // Given
-        server = server().withProperty( ServerInternalSettings.webadmin_enabled.name(), "true" )
-                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
-                .build();
+        server = server().usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() ).build();
         server.start();
 
         // When & then
         assertEquals( 200, new RestRequest().get( "http://localhost:7474/webadmin" ).getStatus() );
+        assertEquals( 200, new RestRequest().get( "http://localhost:7474/db/manage/server/console" ).getStatus() );
     }
 
     @Test
@@ -154,6 +153,31 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
 
         // When & then
         assertEquals( 404, new RestRequest().get( "http://localhost:7474/webadmin" ).getStatus() );
+        assertEquals( 404, new RestRequest().get( "http://localhost:7474/db/manage/server/console" ).getStatus() );
+    }
+
+    @Test
+    public void shouldEnableRRDbWhenAskedTo() throws IOException
+    {
+        // Given
+        server = server().withProperty( ServerInternalSettings.rrdb_enabled.name(), "true" )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .build();
+        server.start();
+
+        // When & then
+        assertEquals( 200, new RestRequest().get( "http://localhost:7474/db/manage/server/monitor" ).getStatus() );
+    }
+
+    @Test
+    public void shouldDisableRRDBByDefault() throws IOException
+    {
+        // Given
+        server = server().usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() ).build();
+        server.start();
+
+        // When & then
+        assertEquals( 404, new RestRequest().get( "http://localhost:7474/db/manage/server/monitor" ).getStatus() );
     }
 
     @Test

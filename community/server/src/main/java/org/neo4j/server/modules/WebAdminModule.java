@@ -20,6 +20,7 @@
 package org.neo4j.server.modules;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.kernel.configuration.Config;
@@ -27,8 +28,6 @@ import org.neo4j.server.rest.management.MonitorService;
 import org.neo4j.server.rest.management.console.ConsoleService;
 import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.WebServer;
-
-import static java.util.Arrays.asList;
 
 public class WebAdminModule implements ServerModule
 {
@@ -57,9 +56,14 @@ public class WebAdminModule implements ServerModule
 
     private List<String> getClassNames()
     {
-        return asList(
-                MonitorService.class.getName(),
-                ConsoleService.class.getName() );
+        List<String> classNames = new ArrayList<>();
+        if ( config.get( ServerInternalSettings.webadmin_enabled ) &&
+             config.get( ServerInternalSettings.rrdb_enabled ) )
+        {
+            classNames.add( MonitorService.class.getName() );
+        }
+        classNames.add( ConsoleService.class.getName() );
+        return classNames;
     }
 
     private URI managementApiUri()
