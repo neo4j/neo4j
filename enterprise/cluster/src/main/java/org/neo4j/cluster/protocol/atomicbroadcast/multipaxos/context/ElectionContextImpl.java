@@ -19,11 +19,6 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
-import static org.neo4j.cluster.util.Quorums.isQuorum;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.Iterables.toList;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,6 +43,11 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.kernel.impl.logging.LogService;
+
+import static org.neo4j.cluster.util.Quorums.isQuorum;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.Iterables.toList;
 
 public class ElectionContextImpl
         extends AbstractContextImpl
@@ -156,7 +156,7 @@ public class ElectionContextImpl
     @Override
     public void startElectionProcess( String role )
     {
-        clusterContext.getInternalLog( getClass() ).info( "Doing elections for role " + role );
+        clusterContext.getLog( getClass() ).info( "Doing elections for role " + role );
         if ( !clusterContext.getMyId().equals( clusterContext.getLastElector() ) )
         {
             clusterContext.setLastElector( clusterContext.getMyId() );
@@ -174,7 +174,7 @@ public class ElectionContextImpl
                 Collections.sort( filteredVoteList );
                 Collections.reverse( filteredVoteList );
 
-                clusterContext.getInternalLog( getClass() ).debug( "Election started with " + voteList +
+                clusterContext.getLog( getClass() ).debug( "Election started with " + voteList +
                         ", ended up with " + filteredVoteList );
 
                 // Elect this highest voted instance

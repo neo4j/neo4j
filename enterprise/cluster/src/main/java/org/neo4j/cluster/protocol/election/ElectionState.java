@@ -78,7 +78,7 @@ public enum ElectionState
                 )
                         throws Throwable
                 {
-                    Log log = context.getInternalLog( ElectionState.class );
+                    Log log = context.getLog( ElectionState.class );
                     switch ( message.getMessageType() )
                     {
                         case demote:
@@ -160,7 +160,7 @@ public enum ElectionState
                                         String roleName = role.getName();
                                         if ( !context.isElectionProcessInProgress( roleName ) )
                                         {
-                                            context.getInternalLog(ElectionState.class).debug(
+                                            context.getLog( ElectionState.class ).debug(
                                                     "Starting election process for role " + roleName );
 
                                             context.startElectionProcess( roleName );

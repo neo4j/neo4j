@@ -62,7 +62,7 @@ public class ProposerStateTest
     public void ifProposingWithClosedInstanceThenRetryWithNextInstance() throws Throwable
     {
         ProposerContext context = Mockito.mock(ProposerContext.class);
-        when(context.getInternalLog( any( Class.class ) )).thenReturn( NullLog.getInstance() );
+        when(context.getLog( any( Class.class ) )).thenReturn( NullLog.getInstance() );
 
         org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId = new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 42 );
         PaxosInstanceStore paxosInstanceStore = new PaxosInstanceStore();
@@ -176,7 +176,7 @@ public class ProposerStateTest
         instance.ready( payload, true );
         instance.pending();
         ProposerContext context = mock( ProposerContext.class );
-        when( context.getInternalLog( any(Class.class) ) ).thenReturn( NullLog.getInstance() );
+        when( context.getLog( any( Class.class ) ) ).thenReturn( NullLog.getInstance() );
         when( context.getPaxosInstance( any( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.class ) ) ).thenReturn( instance );
         when( context.getMyId() ).thenReturn( new org.neo4j.cluster.InstanceId( parseInt( instanceId ) ) );
         TrackingMessageHolder outgoing = new TrackingMessageHolder();

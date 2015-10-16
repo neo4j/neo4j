@@ -97,7 +97,7 @@ class HeartbeatContextImpl
 
         if ( !isFailed( node ) && failed.remove( node ) )
         {
-            getInternalLog( HeartbeatContext.class ).info( "Notifying listeners that instance " + node + " is alive" );
+            getLog( HeartbeatContext.class ).info( "Notifying listeners that instance " + node + " is alive" );
             Listeners.notifyListeners( heartBeatListeners, executor, new Listeners.Notification<HeartbeatListener>()
             {
                 @Override
@@ -120,12 +120,12 @@ class HeartbeatContextImpl
         {
             serverSuspicions.add( node );
 
-            getInternalLog( HeartbeatContext.class ).info( getMyId() + "(me) is now suspecting " + node );
+            getLog( HeartbeatContext.class ).info( getMyId() + "(me) is now suspecting " + node );
         }
 
         if ( isFailed( node ) && !failed.contains( node ) )
         {
-            getInternalLog( HeartbeatContext.class ).info( "Notifying listeners that instance " + node + " is failed" );
+            getLog( HeartbeatContext.class ).info( "Notifying listeners that instance " + node + " is failed" );
             failed.add( node );
             Listeners.notifyListeners( heartBeatListeners, executor, new Listeners.Notification<HeartbeatListener>()
             {
@@ -144,7 +144,7 @@ class HeartbeatContextImpl
         // A failed instance might suspect instances which are alive so ignore it
         if ( isFailed( from ) )
         {
-            getInternalLog( HeartbeatContext.class ).info(
+            getLog( HeartbeatContext.class ).info(
                     "Ignoring suspicions from failed instance " + from + ": " + Iterables.toString( suspicions, "," ) );
             return;
         }
@@ -158,7 +158,7 @@ class HeartbeatContextImpl
             InstanceId currentSuspicion = suspicionsIterator.next();
             if ( !suspicions.contains( currentSuspicion ) )
             {
-                getInternalLog( HeartbeatContext.class ).info( from + " is no longer suspecting " + currentSuspicion );
+                getLog( HeartbeatContext.class ).info( from + " is no longer suspecting " + currentSuspicion );
                 suspicionsIterator.remove();
             }
         }
@@ -168,7 +168,7 @@ class HeartbeatContextImpl
         {
             if ( !serverSuspicions.contains( suspicion ) )
             {
-                getInternalLog( HeartbeatContext.class ).info( from + " is now suspecting " + suspicion );
+                getLog( HeartbeatContext.class ).info( from + " is now suspecting " + suspicion );
                 serverSuspicions.add( suspicion );
             }
         }

@@ -274,7 +274,7 @@ class ClusterContextImpl
         {
             if ( electorId.equals( getMyId() ) )
             {
-                getInternalLog( getClass() ).debug( "I elected instance " + instanceId + " for role "
+                getLog( getClass() ).debug( "I elected instance " + instanceId + " for role "
                         + roleName + " at version " + version );
                 if ( version < electorVersion )
                 {
@@ -283,14 +283,14 @@ class ClusterContextImpl
             }
             else if ( electorId.equals( lastElector ) && ( version < electorVersion && version > 1 ) )
             {
-                getInternalLog( getClass() ).warn( "Election result for role " + roleName +
+                getLog( getClass() ).warn( "Election result for role " + roleName +
                         " received from elector instance " + electorId + " with version " + version +
                         ". I had version " + electorVersion + " for elector " + lastElector );
                 return;
             }
             else
             {
-                getInternalLog( getClass() ).debug( "Setting elector to " + electorId + " and its version to " + version );
+                getLog( getClass() ).debug( "Setting elector to " + electorId + " and its version to " + version );
             }
 
             this.electorVersion = version;

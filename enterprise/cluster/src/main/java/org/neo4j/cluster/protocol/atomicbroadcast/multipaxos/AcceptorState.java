@@ -85,7 +85,7 @@ public enum AcceptorState
                             else
                             {
                                 // Optimization - explicit reject
-                                context.getInternalLog( AcceptorState.class ).debug("Rejecting prepare from "
+                                context.getLog( AcceptorState.class ).debug("Rejecting prepare from "
                                         + message.getHeader( Message.FROM ) + " for instance "
                                         + message.getHeader( InstanceId.INSTANCE ) + " and ballot "
                                         + incomingState.getBallot() + " (i had a prepare state ballot = "
@@ -116,7 +116,7 @@ public enum AcceptorState
                             }
                             else
                             {
-                                context.getInternalLog( AcceptorState.class ).debug( "Reject " + instanceId
+                                context.getLog( AcceptorState.class ).debug( "Reject " + instanceId
                                         + " accept ballot:" + acceptState.getBallot() + " actual ballot:" +
                                         instance.getBallot() );
                                 outgoing.offer( message.copyHeadersTo( Message.respond( ProposerMessage

@@ -153,7 +153,7 @@ public enum HeartbeatState
                         {
 
                             InstanceId server = message.getPayload();
-                            context.getInternalLog( HeartbeatState.class )
+                            context.getLog( HeartbeatState.class )
                                     .debug( "Received timed out for server " + server );
                             // Check if this node is no longer a part of the cluster
                             if ( context.getMembers().containsKey( server ) )
@@ -227,7 +227,7 @@ public enum HeartbeatState
                         case suspicions:
                         {
                             HeartbeatMessage.SuspicionsState suspicions = message.getPayload();
-                            context.getInternalLog( HeartbeatState.class )
+                            context.getLog( HeartbeatState.class )
                                     .debug( "Received suspicions as " + suspicions );
 
                             InstanceId fromId = new InstanceId(Integer.parseInt(message.getHeader( Message.INSTANCE_ID )));
@@ -245,7 +245,7 @@ public enum HeartbeatState
 
                         case leave:
                         {
-                            context.getInternalLog( HeartbeatState.class ).debug( "Received leave" );
+                            context.getLog( HeartbeatState.class ).debug( "Received leave" );
                             return start;
                         }
 
@@ -276,7 +276,7 @@ public enum HeartbeatState
                         if ( timeoutCount > 0 )
                         {
                             long timeout = context.getTimeoutFor( oldTimeout );
-                            context.getInternalLog( HeartbeatState.class ).debug(
+                            context.getLog( HeartbeatState.class ).debug(
                                     "Received " + state + " after missing " + timeoutCount +
                                     " (" + timeout * timeoutCount + "ms)" );
                         }

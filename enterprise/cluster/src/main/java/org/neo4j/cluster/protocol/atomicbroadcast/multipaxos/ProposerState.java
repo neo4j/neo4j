@@ -79,7 +79,7 @@ public enum ProposerState
                             ProposerMessage.RejectPrepare rejectPropose = message.getPayload();
                             org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId = new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( message );
                             PaxosInstance instance = context.getPaxosInstance( instanceId );
-                            context.getInternalLog( ProposerState.class ).debug( "Propose for instance " + instance
+                            context.getLog( ProposerState.class ).debug( "Propose for instance " + instance
                                     + " rejected from " + message.getHeader( Message.FROM ) + " with ballot "
                                     + rejectPropose.getBallot() );
 
@@ -93,7 +93,7 @@ public enum ProposerState
                                 }
 
                                 instance.phase1Timeout( ballot );
-                                context.getInternalLog( ProposerState.class ).debug(
+                                context.getLog( ProposerState.class ).debug(
                                         "Reproposing instance " + instance + " at ballot " + instance.ballot
                                                 + " after rejectPrepare" );
                                 for ( URI acceptor : instance.getAcceptors() )
@@ -122,7 +122,7 @@ public enum ProposerState
                             {
                                 if ( instance.ballot > 10000 )
                                 {
-                                    context.getInternalLog( ProposerState.class ).warn( "Propose failed due to phase 1 " +
+                                    context.getLog( ProposerState.class ).warn( "Propose failed due to phase 1 " +
                                             "timeout" );
 
                                     // Fail this propose
@@ -155,7 +155,7 @@ public enum ProposerState
                             {
                                 // Retry
                                 Message oldMessage = context.unbookInstance( instance.id );
-                                context.getInternalLog( getClass() ).debug( "Retrying instance " + instance.id +
+                                context.getLog( getClass() ).debug( "Retrying instance " + instance.id +
                                         " with message " + message.getPayload() +
                                         ". Previous instance was " + oldMessage );
                                 outgoing.offer( Message.internal( ProposerMessage.propose, message.getPayload() ) );
@@ -257,7 +257,7 @@ public enum ProposerState
                                 {
                                     context.cancelTimeout( instanceId );
 
-                                    context.getInternalLog( ProposerState.class ).warn( "Accept rejected:" +
+                                    context.getLog( ProposerState.class ).warn( "Accept rejected:" +
                                             instance.state );
 
                                     if ( instance.clientValue )
@@ -375,7 +375,7 @@ public enum ProposerState
                                     if ( context.hasPendingValues() && context.canBookInstance() )
                                     {
                                         Message proposeMessage = context.popPendingValue();
-                                        context.getInternalLog( ProposerState.class ).debug( "Restarting "
+                                        context.getLog( ProposerState.class ).debug( "Restarting "
                                                 + proposeMessage + " booked:"
                                                 + context.nrOfBookedInstances() );
                                         outgoing.offer( proposeMessage );
@@ -383,7 +383,7 @@ public enum ProposerState
                                 }
                             } else
                             {
-                                context.getInternalLog( ProposerState.class ).debug( "Instance receiving an accepted is in the wrong state:"+instance );
+                                context.getLog( ProposerState.class ).debug( "Instance receiving an accepted is in the wrong state:"+instance );
                             }
                             break;
                         }

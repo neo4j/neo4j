@@ -180,7 +180,7 @@ class ProposerContextImpl
                 {
                     instance.getAcceptors().remove( commonState.configuration().getMembers().get( value.getJoin()));
 
-                    getInternalLog( ProposerContext.class ).debug( "For booked instance " + instance +
+                    getLog( ProposerContext.class ).debug( "For booked instance " + instance +
                             " removed gone member "
                             + commonState.configuration().getMembers().get( value.getJoin() )
                             + " added joining member " +
@@ -200,7 +200,7 @@ class ProposerContextImpl
                 PaxosInstance instance = paxosInstances.getPaxosInstance( instanceId );
                 if ( instance.getAcceptors() != null )
                 {
-                    getInternalLog( ProposerContext.class ).debug( "For booked instance " + instance +
+                    getLog( ProposerContext.class ).debug( "For booked instance " + instance +
                             " removed leaving member "
                             + value.getLeave() + " (at URI " +
                             commonState.configuration().getMembers().get( value.getLeave() )
