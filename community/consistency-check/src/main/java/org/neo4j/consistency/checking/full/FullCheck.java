@@ -130,7 +130,7 @@ public class FullCheck
         final ConsistencyReporter reporter = new ConsistencyReporter( recordAccess, report, reportMonitor );
         StoreProcessor processEverything = new StoreProcessor( decorator, reporter, Stage.SEQUENTIAL_FORWARD, cacheAccess );
         ProgressMonitorFactory.MultiPartBuilder progress = progressFactory.multipleParts(
-                "Full Consistency Check (experimental version)" );
+                "Full Consistency Check" );
         final StoreAccess nativeStores = directStoreAccess.nativeStores();
         try ( IndexAccessors indexes =
                       new IndexAccessors( directStoreAccess.indexes(), nativeStores.getSchemaStore(), samplingConfig ) )

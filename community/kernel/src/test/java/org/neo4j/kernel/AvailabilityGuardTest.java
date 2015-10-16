@@ -19,17 +19,15 @@
  */
 package org.neo4j.kernel;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.junit.Test;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.neo4j.helpers.TickingClock;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
-
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
@@ -37,6 +35,7 @@ import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+
 import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;
 
 public class AvailabilityGuardTest

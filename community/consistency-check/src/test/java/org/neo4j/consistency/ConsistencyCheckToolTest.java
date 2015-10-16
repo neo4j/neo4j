@@ -59,7 +59,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.eq;
@@ -67,7 +67,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-import static org.neo4j.consistency.ConsistencyCheckTool.EXPERIMENTAL;
+import static org.neo4j.consistency.ConsistencyCheckTool.USE_LEGACY_CHECKER;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.ArrayUtil.concat;
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
@@ -75,28 +75,28 @@ import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 @RunWith( Parameterized.class )
 public class ConsistencyCheckToolTest
 {
-    private final boolean experimental;
+    private final boolean useLegacyChecker;
 
     @Parameters( name = "Experimental:{0}" )
     public static Collection<Object[]> data()
     {
         Collection<Object[]> data = new ArrayList<>();
-        data.add( new Object[] { Boolean.TRUE } );
         data.add( new Object[] { Boolean.FALSE } );
+        data.add( new Object[] { Boolean.TRUE } );
         return data;
     }
 
-    public ConsistencyCheckToolTest( boolean experimental )
+    public ConsistencyCheckToolTest( boolean useLegacyChecker )
     {
-        this.experimental = experimental;
+        this.useLegacyChecker = useLegacyChecker;
     }
 
     @Test
     public void runsConsistencyCheck() throws Exception
     {
         // given
-        assumeTrue( "This test runs with mocked ConsistencyCheckService, doesn't work with the legacy checker " +
-                "since it creates its own", experimental );
+        assumeFalse( "This test runs with mocked ConsistencyCheckService, doesn't work with the legacy checker " +
+                "since it creates its own", useLegacyChecker );
         File storeDir = storeDirectory.directory();
         String[] args = {storeDir.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
@@ -115,8 +115,8 @@ public class ConsistencyCheckToolTest
     public void appliesDefaultTuningConfigurationForConsistencyChecker() throws Exception
     {
         // given
-        assumeTrue( "This test runs with mocked ConsistencyCheckService, doesn't work with the legacy checker " +
-                "since it creates its own", experimental );
+        assumeFalse( "This test runs with mocked ConsistencyCheckService, doesn't work with the legacy checker " +
+                "since it creates its own", useLegacyChecker );
         File storeDir = storeDirectory.directory();
         String[] args = {storeDir.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
@@ -137,8 +137,8 @@ public class ConsistencyCheckToolTest
     public void passesOnConfigurationIfProvided() throws Exception
     {
         // given
-        assumeTrue( "This test runs with mocked ConsistencyCheckService, doesn't work with the legacy checker " +
-                "since it creates its own", experimental );
+        assumeFalse( "This test runs with mocked ConsistencyCheckService, doesn't work with the legacy checker " +
+                "since it creates its own", useLegacyChecker );
         File storeDir = storeDirectory.directory();
         File propertyFile = storeDirectory.file( "neo4j.properties" );
         Properties properties = new Properties();
@@ -300,7 +300,7 @@ public class ConsistencyCheckToolTest
 
     private String[] augment( String[] args )
     {
-        return concat( "-" + EXPERIMENTAL + "=" + experimental, args );
+        return concat( "-" + USE_LEGACY_CHECKER + "=" + useLegacyChecker, args );
     }
 
     private void runConsistencyCheckToolWith ( ConsistencyCheckService

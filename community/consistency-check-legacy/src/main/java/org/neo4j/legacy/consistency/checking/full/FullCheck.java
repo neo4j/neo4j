@@ -117,7 +117,8 @@ public class FullCheck
         final ConsistencyReporter reporter = new ConsistencyReporter( recordAccess, report );
         StoreProcessor processEverything = new StoreProcessor( decorator, reporter );
 
-        ProgressMonitorFactory.MultiPartBuilder progress = progressFactory.multipleParts( "Full consistency check" );
+        ProgressMonitorFactory.MultiPartBuilder progress = progressFactory.multipleParts(
+                "Full consistency check (legacy version)" );
 
         final StoreAccess nativeStores = directStoreAccess.nativeStores();
         try ( IndexAccessors indexes =
