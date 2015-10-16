@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{CreateNodePattern, CreateRelationshipPattern, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{MutatingPattern, CantHandleQueryException, DeleteExpression, CreateNodePattern, CreateRelationshipPattern, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{RelationshipPattern, NodePattern}
+import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{PathExpression, Identifier, RelationshipPattern, NodePattern}
 
 /*
  * This coordinates PlannerQuery planning of updates.
@@ -29,16 +30,25 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.{RelationshipPattern, NodePat
 case object PlanUpdates
   extends LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] {
 
-  override def apply(query: PlannerQuery, plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    if (query.updateGraph.nonEmpty) {
+  override def apply(query: PlannerQuery, plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
+    query.updateGraph.mutatingPatterns.foldLeft(plan)((plan, pattern) => planUpdate(plan, pattern))
 
-      val createNodesPlan = query.updateGraph.nodePatterns.foldLeft(plan) {
-        case (acc, pattern: CreateNodePattern) => context.logicalPlanProducer.planCreateNode(acc, pattern)
-      }
-      query.updateGraph.relPatterns.foldLeft(createNodesPlan) {
-        case (acc, pattern: CreateRelationshipPattern) => context.logicalPlanProducer.planCreateRelationship(acc, pattern)
-      }
+  private def planUpdate(inner: LogicalPlan, pattern: MutatingPattern)(implicit context: LogicalPlanningContext) = pattern match {
+    //CREATE ()
+    case p: CreateNodePattern => context.logicalPlanProducer.planCreateNode(inner, p)
+    //CREATE (a)-[:R]->(b)
+    case p: CreateRelationshipPattern => context.logicalPlanProducer.planCreateRelationship(inner, p)
+    //DELETE a
+    case p: DeleteExpression =>
+      p.expression match {
+        case Identifier(n) if context.semanticTable.isNode(n) =>
+          context.logicalPlanProducer.planDeleteNode(inner, p)
+        case Identifier(r) if context.semanticTable.isRelationship(r) =>
+          context.logicalPlanProducer.planDeleteRelationship(inner, p)
+        case PathExpression(e)  =>
+          context.logicalPlanProducer.planDeletePath(inner, p)
 
-    } else plan
+        case e => throw new CypherTypeException(s"Don't know how to delete a $e")
+      }
   }
 }

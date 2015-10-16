@@ -76,6 +76,7 @@ object ClauseConverters {
       case c: Unwind => c.addUnwindToLogicalPlanInput(acc)
       case c: Start => c.addStartToLogicalPlanInput(acc)
       case c: Create => c.addCreateToLogicalPlanInput(acc)
+      case c: Delete => c.addDeleteToLogicalPlanInput(acc)
       case x         => throw new CantHandleQueryException(s"$x is not supported by the new runtime yet")
     }
   }
@@ -176,6 +177,12 @@ object ClauseConverters {
           CreateNodePattern(rightIdName, rightNode.labels, rightNode.properties)
         , rels :+
           CreateRelationshipPattern(IdName.fromIdentifier(rel.identifier.get), nodes.last.nodeName, rel.types.head, rightIdName, rel.properties, rel.direction))
+    }
+  }
+
+  implicit class DeleteConverter(val clause: Delete) extends AnyVal {
+    def addDeleteToLogicalPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = {
+      acc.amendUpdateGraph(ug => ug.addDeleteExpression(clause.expressions.map(DeleteExpression(_, clause.forced)):_*))
     }
   }
 

@@ -456,6 +456,30 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
       pattern.endNode, pattern.properties)(solved)
   }
 
+  def planDeleteNode(inner: LogicalPlan, delete: DeleteExpression)
+                            (implicit context: LogicalPlanningContext): LogicalPlan = {
+
+    val solved = inner.solved.amendUpdateGraph(_.addDeleteExpression(delete))
+    if (delete.forced) DetachDeleteNode(inner, delete.expression)(solved)
+    else DeleteNode(inner, delete.expression)(solved)
+  }
+
+  def planDeleteRelationship(inner: LogicalPlan, delete: DeleteExpression)
+                    (implicit context: LogicalPlanningContext): LogicalPlan = {
+
+    val solved = inner.solved.amendUpdateGraph(_.addDeleteExpression(delete))
+    DeleteRelationship(inner, delete.expression)(solved)
+  }
+
+  def planDeletePath(inner: LogicalPlan, delete: DeleteExpression)
+                            (implicit context: LogicalPlanningContext): LogicalPlan = {
+
+    val solved = inner.solved.amendUpdateGraph(_.addDeleteExpression(delete))
+    if (delete.forced) DetachDeletePath(inner, delete.expression)(solved)
+    else DeletePath(inner, delete.expression)(solved)
+  }
+
+
   def planRepeatableRead(inner: LogicalPlan)
                      (implicit context: LogicalPlanningContext): LogicalPlan = {
 

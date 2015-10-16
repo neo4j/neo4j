@@ -64,7 +64,8 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
       }
       relationshipOverlap(plannerQuery) ||
         //1 leaf is always ok, second one is not stable though
-        leaves.size > 1 && leaves.drop(1).exists(overlaps(_, plannerQuery) || relationshipOverlap(plannerQuery))
+        leaves.size > 1 && leaves.drop(1).exists(overlaps(_, plannerQuery))
+
     }
   }
 

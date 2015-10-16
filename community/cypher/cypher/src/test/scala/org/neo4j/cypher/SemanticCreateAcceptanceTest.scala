@@ -46,7 +46,7 @@ class SemanticCreateAcceptanceTest extends ExecutionEngineFunSuite with PatternG
         result.toList should have size 1
 
         //clean up
-        eengine.execute(s"MATCH (n) DETACH DELETE n")
+        updateWithBothPlanners(s"MATCH (n) DETACH DELETE n")
       }
     }
   }

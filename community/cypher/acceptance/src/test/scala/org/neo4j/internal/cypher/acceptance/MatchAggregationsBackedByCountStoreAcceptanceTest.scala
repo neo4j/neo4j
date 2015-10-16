@@ -583,7 +583,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
       """.stripMargin)
 
     graph.inTx {
-      executeWithRulePlanner("MATCH (m:X)-[r]->() DELETE m, r")
+      executeWithCostPlannerOnly("MATCH (m:X)-[r]->() DELETE m, r")
       executeWithCostPlannerOnly(
         s"""
            |MATCH (p:$label1 {name: 'Petra'})

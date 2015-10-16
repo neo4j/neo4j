@@ -21,16 +21,27 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, RelTypeName, RelationshipPattern, LabelName, NodePattern}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Delete, Expression, RelTypeName, RelationshipPattern, LabelName, NodePattern}
 
-case class UpdateGraph(nodePatterns: Seq[CreateNodePattern] = Seq.empty,
-                       relPatterns: Seq[CreateRelationshipPattern] = Seq.empty) {
+case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
 
-  def ++(other: UpdateGraph) = copy(nodePatterns = nodePatterns ++ other.nodePatterns)
+  def ++(other: UpdateGraph) = copy(mutatingPatterns = mutatingPatterns ++ other.mutatingPatterns)
 
   def isEmpty = this == UpdateGraph.empty
 
   def nonEmpty = !isEmpty
+
+  def nodePatterns = mutatingPatterns.collect {
+    case p: CreateNodePattern => p
+  }
+
+  def relPatterns: Seq[CreateRelationshipPattern] = mutatingPatterns.collect {
+    case p: CreateRelationshipPattern => p
+  }
+
+  def deleteExpressions = mutatingPatterns.collect {
+    case p: DeleteExpression => p
+  }
 
   def patternNodeLabels: Map[IdName, Set[LabelName]] =
     nodePatterns.map(p => p.nodeName -> p.labels.toSet).toMap
@@ -66,21 +77,26 @@ case class UpdateGraph(nodePatterns: Seq[CreateNodePattern] = Seq.empty,
 
   def addNodePatterns(nodePatterns: CreateNodePattern*): UpdateGraph = {
 
-    copy(nodePatterns = (this.nodePatterns ++ nodePatterns).distinct)
+    copy(mutatingPatterns = (this.mutatingPatterns ++ nodePatterns).distinct)
   }
 
   def addRelPatterns(relationships: CreateRelationshipPattern*): UpdateGraph =
-    copy(relPatterns = (this.relPatterns ++ relationships).distinct)
+    copy(mutatingPatterns = (this.mutatingPatterns ++ relationships).distinct)
+
+  def addDeleteExpression(deleteExpressions: DeleteExpression*) =
+    copy(mutatingPatterns = this.mutatingPatterns ++ deleteExpressions)
 }
 
 object UpdateGraph {
   val empty = UpdateGraph()
 }
 
-case class CreateNodePattern(nodeName: IdName, labels: Seq[LabelName], properties: Option[Expression])
+trait MutatingPattern
+
+case class CreateNodePattern(nodeName: IdName, labels: Seq[LabelName], properties: Option[Expression]) extends MutatingPattern
 
 case class CreateRelationshipPattern(relName: IdName, leftNode: IdName, relType: RelTypeName, rightNode: IdName,
-                                     properties: Option[Expression], direction: SemanticDirection) {
+                                     properties: Option[Expression], direction: SemanticDirection) extends  MutatingPattern {
   assert(direction != SemanticDirection.BOTH)
 
   def startNode = inOrder._1
@@ -89,3 +105,5 @@ case class CreateRelationshipPattern(relName: IdName, leftNode: IdName, relType:
 
   def inOrder =  if (direction == SemanticDirection.OUTGOING) (leftNode, rightNode) else (rightNode, leftNode)
 }
+
+case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern

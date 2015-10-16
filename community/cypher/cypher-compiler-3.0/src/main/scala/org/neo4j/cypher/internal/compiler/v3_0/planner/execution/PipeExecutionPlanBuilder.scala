@@ -307,6 +307,21 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
     case CreateRelationship(_, idName, startNode, typ, endNode, props) =>
       CreateRelationshipPipe(source, idName.name, startNode.name, typ, endNode.name, props.map(toCommandExpression))()
 
+    case DeleteNode(_, expression) =>
+      DeleteNodePipe(source, toCommandExpression(expression))()
+
+    case DetachDeleteNode(_, expression) =>
+      DetachDeleteNodePipe(source, toCommandExpression(expression))()
+
+    case DeleteRelationship(_, expression) =>
+      DeleteRelationshipPipe(source, toCommandExpression(expression))()
+
+    case DeletePath(_, expression) =>
+      DeletePathPipe(source, toCommandExpression(expression), forced = false)()
+
+    case DetachDeletePath(_, expression) =>
+      DeletePathPipe(source, toCommandExpression(expression), forced = true)()
+
     case Eager(_) =>
       EagerPipe(source)()
 

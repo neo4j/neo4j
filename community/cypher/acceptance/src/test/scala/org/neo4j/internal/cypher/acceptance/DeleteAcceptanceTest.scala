@@ -19,44 +19,67 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.cypher.{NodeStillHasRelationshipsException, NewPlannerTestSupport, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 
-class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
+class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
   test("should be able to delete nodes") {
     createNode()
 
-    val result = execute(
+    val result = updateWithBothPlanners(
       s"match (n) delete n"
     )
 
     assertStats(result, nodesDeleted = 1)
   }
 
-  test("should be able to delete nodes with relationships still there") {
+  test("should be able to delete relationships") {
+    relate(createNode(), createNode())
+    relate(createNode(), createNode())
+    relate(createNode(), createNode())
+
+    val result = updateWithBothPlanners(
+      s"match ()-[r]-() delete r"
+    )
+
+    assertStats(result, relationshipsDeleted = 3)
+  }
+
+  test("should be able to detach delete node") {
     createNode("foo" -> "bar")
 
-    val result = execute(
+    val result = updateWithBothPlanners(
       s"match (n) detach delete n"
     )
 
     assertStats(result, nodesDeleted = 1)
   }
 
-  test("should be able to hard delete nodes and their relationships") {
+  test("should not be able to delete nodes when connected") {
     val x = createLabeledNode("X")
 
     relate(x, createNode())
     relate(x, createNode())
     relate(x, createNode())
 
-    val result = execute(
+    a [NodeStillHasRelationshipsException] should be thrownBy
+      executeWithCostPlannerOnly(s"match (n:X) delete n")
+  }
+
+  test("should be able to detach delete nodes and their relationships") {
+    val x = createLabeledNode("X")
+
+    relate(x, createNode())
+    relate(x, createNode())
+    relate(x, createNode())
+
+    val result = updateWithBothPlanners(
       s"match (n:X) detach delete n"
     )
 
     assertStats(result, nodesDeleted = 1, relationshipsDeleted = 3)
   }
 
-  test("should handle force deleting paths") {
+  test("should handle detach delete paths") {
     val x = createLabeledNode("X")
     val n1 = createNode()
     val n2 = createNode()
@@ -65,7 +88,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     relate(n1, n2)
     relate(n2, n3)
 
-    val result = execute(
+    val result = updateWithBothPlanners(
       s"match p = (:X)-->()-->()-->() detach delete p"
     )
 
