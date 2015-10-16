@@ -56,8 +56,6 @@ import org.neo4j.kernel.ha.StoreUnableToParticipateInClusterException;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.UpdatePullerScheduler;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
-import org.neo4j.kernel.ha.cluster.member.ClusterMemberVersionCheck;
-import org.neo4j.kernel.ha.cluster.member.ClusterMemberVersionCheck.Outcome;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
@@ -69,9 +67,7 @@ import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.ha.store.ForeignStoreException;
-import org.neo4j.kernel.ha.store.InconsistentlyUpgradedClusterException;
 import org.neo4j.kernel.ha.store.UnableToCopyStoreFromOldMasterException;
-import org.neo4j.kernel.ha.store.UnavailableMembersException;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -87,9 +83,6 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
@@ -121,8 +114,6 @@ public class SwitchToSlave
         void catchupStarted();
         void catchupCompleted();
     }
-
-    private static final int VERSION_CHECK_TIMEOUT = 10;
 
     private final Logging logging;
     private final StringLogger msgLog;
@@ -222,8 +213,8 @@ public class SwitchToSlave
             neoDataSource.afterModeSwitch();
             StoreId myStoreId = neoDataSource.getStoreId();
 
-            boolean consistencyChecksExecutedSuccessfully = executeConsistencyChecks(
-                    myId, masterUri, neoDataSource, cancellationRequest );
+            boolean consistencyChecksExecutedSuccessfully = executeConsistencyChecks( masterUri, neoDataSource,
+                    cancellationRequest );
 
             if ( !consistencyChecksExecutedSuccessfully )
             {
@@ -288,7 +279,7 @@ public class SwitchToSlave
         }
     }
 
-    private boolean executeConsistencyChecks( InstanceId myId, URI masterUri, NeoStoreDataSource neoDataSource,
+    private boolean executeConsistencyChecks( URI masterUri, NeoStoreDataSource neoDataSource,
                                               CancellationRequest cancellationRequest ) throws Throwable
     {
         LifeSupport consistencyCheckLife = new LifeSupport();
@@ -299,32 +290,12 @@ public class SwitchToSlave
             MasterClient masterClient = newMasterClient( masterUri, myStoreId, consistencyCheckLife );
             consistencyCheckLife.start();
 
-            boolean masterIsOld = MasterClient.CURRENT.compareTo( masterClient.getProtocolVersion() ) > 0;
-
-            if ( masterIsOld )
-            {
-                ClusterMembers members = resolver.resolveDependency( ClusterMembers.class );
-                ClusterMemberVersionCheck checker = new ClusterMemberVersionCheck( members, myId, SYSTEM_CLOCK );
-
-                Outcome outcome = checker.doVersionCheck( myStoreId, VERSION_CHECK_TIMEOUT, SECONDS );
-                msgLog.info( "Cluster members version  checked: " + outcome );
-
-                if ( outcome.hasUnavailable() )
-                {
-                    throw new UnavailableMembersException( outcome.getUnavailable() );
-                }
-                if ( outcome.hasMismatched() )
-                {
-                    throw new InconsistentlyUpgradedClusterException( myStoreId, outcome.getMismatched() );
-                }
-            }
-
             if ( cancellationRequest.cancellationRequested() )
             {
                 return false;
             }
 
-            checkDataConsistency( masterClient, neoDataSource, masterUri, masterIsOld );
+            checkDataConsistency( masterClient, neoDataSource, masterUri );
         }
         finally
         {
@@ -333,14 +304,14 @@ public class SwitchToSlave
         return true;
     }
 
-    void checkDataConsistency( MasterClient masterClient, NeoStoreDataSource neoDataSource, URI masterUri,
-            boolean masterIsOld ) throws Throwable
+    void checkDataConsistency( MasterClient masterClient, NeoStoreDataSource neoDataSource, URI masterUri )
+            throws Throwable
     {
         TransactionIdStore txIdStore = neoDataSource.getDependencyResolver().resolveDependency( TransactionIdStore.class );
         try
         {
             console.log( "Checking store consistency with master" );
-            checkMyStoreIdAndMastersStoreId( neoDataSource, masterIsOld, masterUri );
+            checkMyStoreIdAndMastersStoreId( neoDataSource, masterUri );
             checkDataConsistencyWithMaster( masterUri, masterClient, neoDataSource, txIdStore );
             console.log( "Store is consistent" );
         }
@@ -374,29 +345,26 @@ public class SwitchToSlave
         }
     }
 
-    private void checkMyStoreIdAndMastersStoreId( NeoStoreDataSource neoDataSource, boolean masterIsOld, URI masterUri )
+    private void checkMyStoreIdAndMastersStoreId( NeoStoreDataSource neoDataSource, URI masterUri )
     {
-        if ( !masterIsOld )
+        StoreId myStoreId = neoDataSource.getStoreId();
+
+        ClusterMembers clusterMembers = resolver.resolveDependency( ClusterMembers.class );
+
+        ClusterMember master = single(
+                filter( hasInstanceId( HighAvailabilityModeSwitcher.getServerId( masterUri ) ),
+                        clusterMembers.getMembers() ) );
+
+        StoreId masterStoreId = master.getStoreId();
+
+        if ( !myStoreId.equals( masterStoreId ) )
         {
-            StoreId myStoreId = neoDataSource.getStoreId();
-
-            ClusterMembers clusterMembers = resolver.resolveDependency( ClusterMembers.class );
-
-            ClusterMember master = single(
-                    filter( hasInstanceId( HighAvailabilityModeSwitcher.getServerId( masterUri ) ),
-                            clusterMembers.getMembers() ) );
-
-            StoreId masterStoreId = master.getStoreId();
-
-            if ( !myStoreId.equals( masterStoreId ) )
-            {
-                throw new MismatchingStoreIdException( myStoreId, master.getStoreId() );
-            }
-            else if ( !myStoreId.equalsByUpgradeId( master.getStoreId() ) )
-            {
-                throw new BranchedDataException( "My store with " + myStoreId + " was updated independently from " +
-                        "master's store " + masterStoreId );
-            }
+            throw new MismatchingStoreIdException( myStoreId, master.getStoreId() );
+        }
+        else if ( !myStoreId.equalsByUpgradeId( master.getStoreId() ) )
+        {
+            throw new BranchedDataException( "My store with " + myStoreId + " was updated independently from " +
+                                             "master's store " + masterStoreId );
         }
     }
 

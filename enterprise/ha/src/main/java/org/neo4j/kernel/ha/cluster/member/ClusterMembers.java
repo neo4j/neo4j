@@ -132,7 +132,7 @@ public class ClusterMembers
             Map<InstanceId, ClusterMember> newMembers = new HashMap<>();
             for ( InstanceId memberClusterId : configuration.getMemberIds() )
             {
-                newMembers.put( memberClusterId, new ClusterMember( memberClusterId, true ) );
+                newMembers.put( memberClusterId, new ClusterMember( memberClusterId ) );
             }
             members.clear();
             members.putAll( newMembers );

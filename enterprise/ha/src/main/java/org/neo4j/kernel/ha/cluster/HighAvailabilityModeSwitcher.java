@@ -36,9 +36,7 @@ import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.ha.store.HighAvailabilityStoreFailureException;
-import org.neo4j.kernel.ha.store.InconsistentlyUpgradedClusterException;
 import org.neo4j.kernel.ha.store.UnableToCopyStoreFromOldMasterException;
-import org.neo4j.kernel.ha.store.UnavailableMembersException;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -477,8 +475,7 @@ public class HighAvailabilityModeSwitcher
             {
                 modeSwitcherFuture.get();
             }
-            catch ( UnableToCopyStoreFromOldMasterException | InconsistentlyUpgradedClusterException |
-                    UnavailableMembersException e )
+            catch ( UnableToCopyStoreFromOldMasterException e )
             {
                 throw e;
             }
