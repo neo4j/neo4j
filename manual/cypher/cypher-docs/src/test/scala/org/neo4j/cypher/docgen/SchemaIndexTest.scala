@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.docgen
 
-import java.util.concurrent.TimeUnit
-
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.junit.Test
@@ -28,11 +26,8 @@ import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.IndexSeekByRange
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.Planner
-import org.neo4j.cypher.internal.compiler.v2_3.{DPPlannerName, IDPPlannerName, GreedyPlannerName, RulePlannerName}
+import org.neo4j.cypher.internal.compiler.v2_3.{DPPlannerName, GreedyPlannerName, IDPPlannerName, RulePlannerName}
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.kernel.impl.api.index.IndexingService
-import org.neo4j.kernel.impl.api.index.sampling.{IndexSamplingMode, IndexSamplingController}
 
 class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSupport with GraphIcing {
 
@@ -154,7 +149,9 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
     profileQuery(
       title = "Use index with STARTS WITH",
       text =
-        "The `STARTS WITH` predicate on `person.name` in the following query will use the `Person(name)` index, if it exists. ",
+        """The `STARTS WITH` predicate on `person.name` in the following query will use the `Person(name)` index, if it exists.
+          |
+          |NOTE: The similar operators `ENDS WITH` and `CONTAINS` cannot currently be solved using indexes.""".stripMargin,
       queryText = "MATCH (person:Person) WHERE person.name STARTS WITH 'And' return person",
       assertions = {
         (p) =>
