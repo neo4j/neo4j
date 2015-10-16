@@ -23,73 +23,42 @@ import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, ReadsAllNodes, ReadsAllRelationships}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.ExpandExpression
+import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
-import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection}
 import org.neo4j.graphdb.Node
-import org.neo4j.helpers.collection.PrefetchingIterator
-
-import scala.collection.JavaConverters._
 
 case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: String, toName: String,
                                   dir: SemanticDirection, types: LazyTypes, predicate: Predicate)
                                 (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+  extends PipeWithSource(source, pipeMonitor) with RonjaPipe with CachingExpandInto {
+  private final val CACHE_SIZE = 100000
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
-
-    implicit val s = state
+    //cache of known connected nodes
+    val relCache = new RelationshipsCache(CACHE_SIZE)
 
     input.flatMap {
       row =>
         val fromNode = getRowNode(row, fromName)
         fromNode match {
-          case n: Node =>
-            val relationships = state.query.getRelationshipsForIds(n, dir, types.types(state.query))
-            val toNode: Node = getRowNode(row, toName)
+          case fromNode: Node =>
+            val toNode = getRowNode(row, toName)
 
-            if (toNode == null) {
-              Iterator(row.newWith1(relName, null))
-            }
+            if (toNode == null) Iterator.single(row.newWith1(relName, null))
             else {
-              val matchIterator = new PrefetchingIterator[ExecutionContext] {
-                override def fetchNextOrNull(): ExecutionContext = {
-                  while (relationships.hasNext) {
-                    val rel = relationships.next()
-                    val other = rel.getOtherNode(fromNode)
-                    if (toNode == other) {
-                      val candidateRow = row.newWith2(relName, rel, toName, toNode)
-                      if (predicate.isTrue(candidateRow)) {
-                        return candidateRow
-                      }
-                    }
-                  }
-                  null
-                }
-              }.asScala
+              val relationships = relCache.get(fromNode, toNode, dir)
+                .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, types.types(state.query)))
 
-              if (matchIterator.isEmpty)
-                Iterator(row.newWith2(relName, null, toName, toNode))
-              else
-                matchIterator
+              if (relationships.isEmpty) Iterator.single(row.newWith2(relName, null, toName, toNode))
+              else relationships.map { rel =>
+                val candidateRow = row.newWith2(relName, rel, toName, toNode)
+                if (predicate.isTrue(candidateRow)(state)) candidateRow
+                else row.newWith1(relName, null)
+              }
             }
 
-          case value if value == null =>
-            Iterator(row.newWith1(relName, null))
-
-          case value =>
-            throw new InternalException(s"Expected to find a node at $fromName but found $value instead")
+          case null => Iterator(row.newWith1(relName, null))
         }
-    }
-  }
-
-  @inline
-  private def getRowNode(row: ExecutionContext, col: String): Node = {
-    row.getOrElse(col, throw new InternalException(s"Expected to find a node at $col but found nothing")) match {
-      case n: Node => n
-      case null    => null
-      case value   => throw new InternalException(s"Expected to find a node at $col but found $value instead")
     }
   }
 
