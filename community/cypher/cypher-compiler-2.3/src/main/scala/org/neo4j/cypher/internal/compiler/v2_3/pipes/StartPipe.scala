@@ -49,8 +49,7 @@ sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,
 case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProducer[Node], itemEffects: Effects = Effects(ReadsAllNodes))(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Node](source, name, createSource, pipeMonitor) {
   def identifierType = CTNode
-
-  override def localEffects = if (isLeaf) itemEffects.asLeafEffects else itemEffects
+  override def localEffects = itemEffects
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
@@ -58,14 +57,12 @@ case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProduce
     val (head :: Nil) = sources
     copy(source = head)(estimatedCardinality)
   }
-
-
 }
 
 case class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Relationship](source, name, createSource, pipeMonitor) {
   def identifierType = CTRelationship
-  override def localEffects = Effects(ReadsAllRelationships)
+  override def localEffects = Effects(ReadsRelationships)
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 

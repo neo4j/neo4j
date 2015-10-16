@@ -321,7 +321,7 @@ public class StateHandlingStatementOperations implements
     public long nodeCreate( KernelStatement state )
     {
         long nodeId = storeLayer.reserveNode();
-        state.txState().nodeDoCreate(nodeId);
+        state.txState().nodeDoCreate( nodeId );
         return nodeId;
     }
 
