@@ -19,6 +19,10 @@
  */
 package org.neo4j.cluster.protocol.election;
 
+import org.junit.Test;
+import org.mockito.Matchers;
+import org.mockito.Mockito;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,18 +30,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.Mockito;
-
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageType;
-import org.neo4j.cluster.protocol.MessageArgumentMatcher;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastMessage;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
+import org.neo4j.cluster.protocol.MessageArgumentMatcher;
 import org.neo4j.logging.NullLog;
 
 import static org.junit.Assert.assertEquals;

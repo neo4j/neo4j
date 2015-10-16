@@ -31,8 +31,8 @@ import org.neo4j.cluster.protocol.LoggingContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.Iterables.limit;
 import static org.neo4j.helpers.collection.Iterables.toList;
@@ -46,15 +46,15 @@ class AbstractContextImpl
 {
     protected final org.neo4j.cluster.InstanceId me;
     protected final CommonContextState commonState;
-    protected final LogService logService;
+    protected final LogProvider logProvider;
     protected final Timeouts timeouts;
 
     AbstractContextImpl( InstanceId me, CommonContextState commonState,
-            LogService logService, Timeouts timeouts )
+            LogProvider logProvider, Timeouts timeouts )
     {
         this.me = me;
         this.commonState = commonState;
-        this.logService = logService;
+        this.logProvider = logProvider;
         this.timeouts = timeouts;
     }
 
@@ -62,7 +62,7 @@ class AbstractContextImpl
     @Override
     public Log getLog( Class loggingClass )
     {
-        return logService.getInternalLog( loggingClass );
+        return logProvider.getLog( loggingClass );
     }
 
     // TimeoutsContext

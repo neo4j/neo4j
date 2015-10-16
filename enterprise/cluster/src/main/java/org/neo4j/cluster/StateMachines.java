@@ -151,17 +151,12 @@ public class StateMachines
                             return; // No StateMachine registered for this MessageType type - Ignore this
                         }
 
-                        stateMachine.handle( message, temporaryOutgoing );
-                        Message<? extends MessageType> tempMessage;
-                        while ( (tempMessage = temporaryOutgoing.nextOutgoingMessage()) != null )
-                        {
-                            outgoing.offer( tempMessage );
-                        }
+                        handleMessage( stateMachine, message );
 
                         // Process and send messages
                         // Allow state machines to send messages to each other as well in this loop
                         Message<? extends MessageType> outgoingMessage;
-                        List<Message<? extends MessageType>> toSend = new LinkedList<Message<? extends MessageType>>();
+                        List<Message<? extends MessageType>> toSend = new LinkedList<>();
                         try
                         {
                             while ( (outgoingMessage = outgoing.nextOutgoingMessage()) != null )
@@ -190,19 +185,13 @@ public class StateMachines
                                 }
                                 else
                                 {
-//                                    message.copyHeadersTo( outgoingMessage, Message.INSTANCE_ID );
-
                                     // Deliver internally if possible
                                     StateMachine internalStatemachine = stateMachines.get( outgoingMessage
                                             .getMessageType()
                                             .getClass() );
                                     if ( internalStatemachine != null )
                                     {
-                                        internalStatemachine.handle( (Message) outgoingMessage, temporaryOutgoing );
-                                        while ( (tempMessage = temporaryOutgoing.nextOutgoingMessage()) != null )
-                                        {
-                                            outgoing.offer( tempMessage );
-                                        }
+                                        handleMessage( internalStatemachine, outgoingMessage );
                                     }
                                 }
                             }
@@ -226,6 +215,15 @@ public class StateMachines
                 // This will effectively trigger all notifications created by contexts
                 executor.drain();
                 monitor.finishedProcessing( message );
+            }
+
+            private void handleMessage( StateMachine stateMachine, Message<? extends MessageType> message )
+            {
+                stateMachine.handle( message, temporaryOutgoing );
+                for ( Message<? extends MessageType> next; (next = temporaryOutgoing.nextOutgoingMessage()) != null; )
+                {
+                    outgoing.offer( next );
+                }
             }
         } );
         return true;

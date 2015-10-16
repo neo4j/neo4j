@@ -44,8 +44,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.logging.NullLogProvider;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -64,6 +62,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.LoggerRule;
 
 import static org.junit.Assert.assertEquals;
@@ -172,7 +171,7 @@ public class ClusterNetworkTest
             Monitors monitors = new Monitors();
             NetworkedServerFactory factory = new NetworkedServerFactory( life,
                     new MultiPaxosServerFactory( new ClusterConfiguration( "default", NullLogProvider.getInstance() ),
-                            NullLogService.getInstance(), monitors.newMonitor( StateMachines.Monitor.class )
+                            NullLogProvider.getInstance(), monitors.newMonitor( StateMachines.Monitor.class )
                     ),
                     new FixedTimeoutStrategy( 1000 ), NullLogProvider.getInstance(), new ObjectStreamFactory(), new ObjectStreamFactory(),
                     monitors.newMonitor( NetworkReceiver.Monitor.class ), monitors.newMonitor( NetworkSender.Monitor.class ), monitors.newMonitor( NamedThreadFactory.Monitor.class )

@@ -41,7 +41,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.logging.NullLogProvider;
 
 import static junit.framework.Assert.assertNull;
 import static org.junit.Assert.assertEquals;
@@ -96,7 +96,7 @@ public class ElectionContextTest
 
         MultiPaxosContext context = new MultiPaxosContext( new InstanceId( 1 ),
                 Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( "coordinator" ) ),
-                clusterConfiguration, mock( Executor.class ), NullLogService.getInstance(),
+                clusterConfiguration, mock( Executor.class ), NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class) );
@@ -129,7 +129,7 @@ public class ElectionContextTest
 
         MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), Iterables.<ElectionRole, ElectionRole>iterable(
                 new ElectionRole( "coordinator" ) ), clusterConfiguration,
-                mock( Executor.class ), NullLogService.getInstance(),
+                mock( Executor.class ), NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class) );
@@ -164,7 +164,7 @@ public class ElectionContextTest
 
         MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), Iterables.<ElectionRole, ElectionRole>iterable(
                 new ElectionRole( "coordinator" ) ), clusterConfiguration,
-                mock( Executor.class ), NullLogService.getInstance(),
+                mock( Executor.class ), NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class) );
@@ -197,7 +197,7 @@ public class ElectionContextTest
 
         MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), Iterables.<ElectionRole, ElectionRole>iterable(
                         new ElectionRole( coordinatorRole ) ), clusterConfiguration,
-                        mock( Executor.class ), NullLogService.getInstance(),
+                        mock( Executor.class ), NullLogProvider.getInstance(),
                         mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class) );
@@ -225,7 +225,7 @@ public class ElectionContextTest
 
         ElectionContext context = new MultiPaxosContext( new InstanceId(1), Iterables.<ElectionRole, ElectionRole>iterable(
                 new ElectionRole( coordinatorRole ) ),  mock( ClusterConfiguration.class ),
-                mock( Executor.class ),  NullLogService.getInstance(),
+                mock( Executor.class ),  NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ), mock( ElectionCredentialsProvider.class ) ).getElectionContext();
 
@@ -245,7 +245,7 @@ public class ElectionContextTest
 
         ElectionContext context = new MultiPaxosContext( new InstanceId(1), Iterables.<ElectionRole, ElectionRole>iterable(
                 new ElectionRole( coordinatorRole ) ),  mock( ClusterConfiguration.class ),
-                mock( Executor.class ), NullLogService.getInstance(),
+                mock( Executor.class ), NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ), mock( ElectionCredentialsProvider.class ) ).getElectionContext();
 
@@ -283,7 +283,7 @@ public class ElectionContextTest
                     {
                         command.run();
                     }
-                }, NullLogService.getInstance(),
+                }, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ), mock( ElectionCredentialsProvider.class ) );
 
@@ -331,7 +331,7 @@ public class ElectionContextTest
                     {
                         command.run();
                     }
-                }, NullLogService.getInstance(),
+                }, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ), mock( ElectionCredentialsProvider.class ) );
 
@@ -387,7 +387,7 @@ public class ElectionContextTest
                         command.run();
                     }
                 },
-                NullLogService.getInstance(), mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
+                NullLogProvider.getInstance(), mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ), mock( ElectionCredentialsProvider.class ) );
 
         HeartbeatContext heartbeatContext = context.getHeartbeatContext();
@@ -427,7 +427,7 @@ public class ElectionContextTest
 
         MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), Iterables.<ElectionRole, ElectionRole>iterable(
                         new ElectionRole( "coordinator" ) ), clusterConfiguration,
-                        mock( Executor.class ), NullLogService.getInstance(),
+                        mock( Executor.class ), NullLogProvider.getInstance(),
                         mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class) );

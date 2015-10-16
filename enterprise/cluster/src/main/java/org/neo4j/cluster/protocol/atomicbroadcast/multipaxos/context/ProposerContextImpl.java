@@ -34,7 +34,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.LogProvider;
 
 class ProposerContextImpl
         extends AbstractContextImpl
@@ -49,20 +49,20 @@ class ProposerContextImpl
     private final PaxosInstanceStore paxosInstances;
 
     ProposerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
-                         LogService logService,
+                         LogProvider logging,
                          Timeouts timeouts, PaxosInstanceStore paxosInstances )
     {
-        super( me, commonState, logService, timeouts );
+        super( me, commonState, logging, timeouts );
         this.paxosInstances = paxosInstances;
         pendingValues = new LinkedList<>(  );
         bookedInstances = new HashMap<>();
     }
 
-    private ProposerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState, LogService logService,
+    private ProposerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState, LogProvider logging,
                                  Timeouts timeouts, Deque<Message> pendingValues,
                                  Map<InstanceId, Message> bookedInstances, PaxosInstanceStore paxosInstances )
     {
-        super( me, commonState, logService, timeouts );
+        super( me, commonState, logging, timeouts );
         this.pendingValues = pendingValues;
         this.bookedInstances = bookedInstances;
         this.paxosInstances = paxosInstances;
@@ -211,10 +211,10 @@ class ProposerContextImpl
         }
     }
 
-    public ProposerContextImpl snapshot( CommonContextState commonStateSnapshot, LogService logService, Timeouts timeouts,
+    public ProposerContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging, Timeouts timeouts,
                                          PaxosInstanceStore paxosInstancesSnapshot )
     {
-        return new ProposerContextImpl( me, commonStateSnapshot, logService, timeouts, new LinkedList<>( pendingValues ),
+        return new ProposerContextImpl( me, commonStateSnapshot, logging, timeouts, new LinkedList<>( pendingValues ),
                 new HashMap<>(bookedInstances), paxosInstancesSnapshot );
     }
 

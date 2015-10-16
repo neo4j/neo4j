@@ -19,8 +19,6 @@
  */
 package org.neo4j.cluster.client;
 
-import org.jboss.netty.logging.InternalLoggerFactory;
-
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -28,6 +26,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
+import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ExecutorLifecycleAdapter;
@@ -88,9 +88,8 @@ public class ClusterClientModule
     public ClusterClientModule( LifeSupport life, Dependencies dependencies, final Monitors monitors,
             final Config config, LogService logService, ElectionCredentialsProvider electionCredentialsProvider )
     {
-        final LogProvider internalLogProvider = logService.getInternalLogProvider();
-
-        InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( internalLogProvider ) );
+        final LogProvider logging = logService.getInternalLogProvider();
+        InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging ) );
 
         TimeoutStrategy timeoutStrategy = new MessageTimeoutStrategy(
                 new FixedTimeoutStrategy( config.get( ClusterSettings.default_timeout ) ) )
@@ -105,8 +104,9 @@ public class ClusterClientModule
                 .timeout( ClusterMessage.leaveTimedout, config.get( ClusterSettings.leave_timeout ) )
                 .timeout( ElectionMessage.electionTimeout, config.get( ClusterSettings.election_timeout ) );
 
-        MultiPaxosServerFactory protocolServerFactory = new MultiPaxosServerFactory( new ClusterConfiguration( config.get( ClusterSettings.cluster_name ),
-                internalLogProvider ), logService, monitors.newMonitor( StateMachines.Monitor.class ));
+        MultiPaxosServerFactory protocolServerFactory = new MultiPaxosServerFactory(
+                new ClusterConfiguration( config.get( ClusterSettings.cluster_name ), logging ),
+                logging, monitors.newMonitor( StateMachines.Monitor.class ) );
 
         NetworkReceiver receiver = dependencies.satisfyDependency( new NetworkReceiver( monitors.newMonitor( NetworkReceiver.Monitor.class ),
                 new NetworkReceiver.Configuration()
@@ -128,7 +128,7 @@ public class ClusterClientModule
             {
                 return config.get( ClusterSettings.instance_name );
             }
-        }, internalLogProvider ));
+        }, logging ));
 
         final ObjectInputStreamFactory objectInputStreamFactory = new ObjectStreamFactory();
         final ObjectOutputStreamFactory objectOutputStreamFactory = new ObjectStreamFactory();
@@ -143,7 +143,7 @@ public class ClusterClientModule
                 server.listeningAt( me );
                 if ( logger == null )
                 {
-                    logger = new StateTransitionLogger( internalLogProvider,
+                    logger = new StateTransitionLogger( logging,
                             new AtomicBroadcastSerializer( objectInputStreamFactory, objectOutputStreamFactory ) );
                     server.addStateTransitionListener( logger );
                 }
@@ -152,13 +152,13 @@ public class ClusterClientModule
             @Override
             public void channelOpened( URI to )
             {
-                internalLogProvider.getLog( NetworkReceiver.class ).info( to + " connected to me at " + server.boundAt() );
+                logging.getLog( NetworkReceiver.class ).info( to + " connected to me at " + server.boundAt() );
             }
 
             @Override
             public void channelClosed( URI to )
             {
-                internalLogProvider.getLog( NetworkReceiver.class ).info( to + " disconnected from me at " + server
+                logging.getLog( NetworkReceiver.class ).info( to + " disconnected from me at " + server
                         .boundAt() );
             }
         } );
@@ -177,7 +177,7 @@ public class ClusterClientModule
             {
                 return config.get( ClusterSettings.cluster_server ).getPort();
             }
-        }, receiver, internalLogProvider ));
+        }, receiver, logging ));
 
         ExecutorLifecycleAdapter stateMachineExecutor = new ExecutorLifecycleAdapter( new Factory<ExecutorService>()
         {
@@ -250,13 +250,13 @@ public class ClusterClientModule
         }
 
         @Override
-        public void init() throws Throwable
+        public void init()
         {
             server.getTimeouts().tick( System.currentTimeMillis() );
         }
 
         @Override
-        public void start() throws Throwable
+        public void start()
         {
             scheduler = Executors.newSingleThreadScheduledExecutor(
                     daemon( "timeout-clusterClient", monitors.newMonitor( NamedThreadFactory.Monitor.class ) ) );
@@ -274,16 +274,15 @@ public class ClusterClientModule
         }
 
         @Override
-        public void stop() throws Throwable
+        public void stop()
         {
             tickFuture.cancel( true );
             scheduler.shutdownNow();
         }
 
         @Override
-        public void shutdown() throws Throwable
+        public void shutdown()
         {
         }
     }
-
 }

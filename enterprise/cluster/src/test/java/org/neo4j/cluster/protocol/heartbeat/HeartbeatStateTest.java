@@ -46,11 +46,7 @@ import org.neo4j.cluster.statemachine.StateMachine;
 import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -78,7 +74,7 @@ public class HeartbeatStateTest
 
         MultiPaxosContext context = new MultiPaxosContext( instanceId, Iterables.<ElectionRole, ElectionRole>iterable(
                         new ElectionRole( "coordinator" ) ), configuration,
-                        Mockito.mock( Executor.class ), NullLogService.getInstance(),
+                        Mockito.mock( Executor.class ), NullLogProvider.getInstance(),
                         Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
                         Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class),
                         mock( ElectionCredentialsProvider.class) );
@@ -109,7 +105,7 @@ public class HeartbeatStateTest
 
         MultiPaxosContext context = new MultiPaxosContext( myId, Iterables.<ElectionRole, ElectionRole>iterable(
                         new ElectionRole( "coordinator" ) ), configuration,
-                        Mockito.mock( Executor.class ),  NullLogService.getInstance(),
+                        Mockito.mock( Executor.class ),  NullLogProvider.getInstance(),
                         Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
                         Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class),
                         mock( ElectionCredentialsProvider.class) );
@@ -139,15 +135,12 @@ public class HeartbeatStateTest
         InstanceId otherInstance = new InstanceId( 2 );
         configuration.joined( otherInstance, URI.create("cluster://2" ));
 
-        LogService logging = mock( LogService.class );
-        when( logging.getInternalLog( Matchers.<Class>any() ) ).thenReturn( mock( Log.class ) );
-
         MultiPaxosContext context = new MultiPaxosContext(
                 instanceId,
                 Iterables.<ElectionRole,ElectionRole>iterable( new ElectionRole( "coordinator" ) ),
                 configuration,
                 Mockito.mock( Executor.class ),
-                logging,
+                NullLogProvider.getInstance(),
                 Mockito.mock( ObjectInputStreamFactory.class),
                 Mockito.mock( ObjectOutputStreamFactory.class),
                 Mockito.mock( AcceptorInstanceStore.class),
@@ -182,9 +175,7 @@ public class HeartbeatStateTest
         ClusterConfiguration configuration = new ClusterConfiguration( "whatever", NullLogProvider.getInstance(),
                 "cluster://1", "cluster://2" );
         configuration.getMembers().put( otherInstance, URI.create( "cluster://2" ) );
-        AssertableLogProvider userLog = new AssertableLogProvider( true );
         AssertableLogProvider internalLog = new AssertableLogProvider( true );
-        LogService logging = new SimpleLogService( userLog, internalLog );
         TimeoutStrategy timeoutStrategy = mock( TimeoutStrategy.class );
         Timeouts timeouts = new Timeouts( timeoutStrategy );
 
@@ -193,7 +184,7 @@ public class HeartbeatStateTest
                 Iterables.<ElectionRole,ElectionRole>iterable( new ElectionRole( "coordinator" ) ),
                 configuration,
                 mock( Executor.class ),
-                logging,
+                internalLog,
                 mock( ObjectInputStreamFactory.class ),
                 mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ),
@@ -201,7 +192,7 @@ public class HeartbeatStateTest
                 mock( ElectionCredentialsProvider.class ) );
 
         StateMachines stateMachines = new StateMachines(
-                logging.getInternalLogProvider(),
+                internalLog,
                 mock( StateMachines.Monitor.class ),
                 mock( MessageSource.class ),
                 mock( MessageSender.class ),
@@ -218,7 +209,7 @@ public class HeartbeatStateTest
                 instanceId );
         stateMachines.addStateMachine(
                 new StateMachine( context.getHeartbeatContext(), HeartbeatMessage.class, HeartbeatState.start,
-                        logging.getInternalLogProvider() ) );
+                        internalLog ) );
 
         timeouts.tick( 0 );
         when( timeoutStrategy.timeoutFor( any( Message.class ) ) ).thenReturn( 5l );

@@ -19,17 +19,12 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.net.URI;
 import java.util.concurrent.Executor;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
@@ -39,7 +34,13 @@ import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.logging.NullLogProvider;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class ClusterContextImplTest
 {
@@ -60,7 +61,7 @@ public class ClusterContextImplTest
         CommonContextState commonContextState = mock( CommonContextState.class );
         when( commonContextState.configuration() ).thenReturn( clusterConfiguration );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogService.getInstance(),
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 mock( Timeouts.class ), mock ( Executor.class ), mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), mock( HeartbeatContext.class ) );
 
@@ -94,7 +95,7 @@ public class ClusterContextImplTest
         CommonContextState commonContextState = mock( CommonContextState.class );
         when( commonContextState.configuration() ).thenReturn( clusterConfiguration );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogService.getInstance(),
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 mock( Timeouts.class ), mock ( Executor.class ), mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), mock( HeartbeatContext.class ) );
 
@@ -124,7 +125,7 @@ public class ClusterContextImplTest
 
         CommonContextState commonContextState = mock( CommonContextState.class, RETURNS_MOCKS );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogService.getInstance(),
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 mock( Timeouts.class ), mock ( Executor.class ), mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), mock( HeartbeatContext.class ) );
 
@@ -154,7 +155,7 @@ public class ClusterContextImplTest
 
         CommonContextState commonContextState = mock( CommonContextState.class, RETURNS_MOCKS );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogService.getInstance(),
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 mock( Timeouts.class ), mock ( Executor.class ), mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), mock( HeartbeatContext.class ) );
 
@@ -189,7 +190,7 @@ public class ClusterContextImplTest
 
         ArgumentCaptor<HeartbeatListener> listenerCaptor = ArgumentCaptor.forClass( HeartbeatListener.class );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogService.getInstance(),
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 timeouts, executor, mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext );
 
@@ -228,7 +229,7 @@ public class ClusterContextImplTest
 
         ArgumentCaptor<HeartbeatListener> listenerCaptor = ArgumentCaptor.forClass( HeartbeatListener.class );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogService.getInstance(),
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 timeouts, executor, mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext );
 

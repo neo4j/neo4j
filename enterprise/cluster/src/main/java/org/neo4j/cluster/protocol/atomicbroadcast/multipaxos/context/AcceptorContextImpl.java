@@ -25,7 +25,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceSto
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorState;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Context for the {@link AcceptorState} distributed state machine.
@@ -39,10 +39,10 @@ class AcceptorContextImpl
     private final AcceptorInstanceStore instanceStore;
 
     AcceptorContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
-            LogService logService,
+            LogProvider logging,
             Timeouts timeouts, AcceptorInstanceStore instanceStore)
     {
-        super( me, commonState, logService, timeouts );
+        super( me, commonState, logging, timeouts );
         this.instanceStore = instanceStore;
     }
 
@@ -70,10 +70,10 @@ class AcceptorContextImpl
         instanceStore.clear();
     }
 
-    public AcceptorContextImpl snapshot( CommonContextState commonStateSnapshot, LogService logService, Timeouts timeouts,
+    public AcceptorContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging, Timeouts timeouts,
                                          AcceptorInstanceStore instanceStore )
     {
-        return new AcceptorContextImpl( me, commonStateSnapshot, logService, timeouts, instanceStore );
+        return new AcceptorContextImpl( me, commonStateSnapshot, logging, timeouts, instanceStore );
     }
 
     @Override

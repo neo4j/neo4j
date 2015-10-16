@@ -42,7 +42,7 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
-import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.cluster.util.Quorums.isQuorum;
 import static org.neo4j.helpers.collection.Iterables.filter;
@@ -61,11 +61,11 @@ public class ElectionContextImpl
     private final ElectionCredentialsProvider electionCredentialsProvider;
 
     ElectionContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
-                         LogService logService,
+                         LogProvider logging,
                          Timeouts timeouts, Iterable<ElectionRole> roles, ClusterContext clusterContext,
                          HeartbeatContext heartbeatContext, ElectionCredentialsProvider electionCredentialsProvider )
     {
-        super( me, commonState, logService, timeouts );
+        super( me, commonState, logging, timeouts );
         this.electionCredentialsProvider = electionCredentialsProvider;
         this.roles = new ArrayList<>(toList(roles));
         this.elections = new HashMap<>();
@@ -75,11 +75,11 @@ public class ElectionContextImpl
         heartbeatContext.addHeartbeatListener( this );
     }
 
-    ElectionContextImpl( InstanceId me, CommonContextState commonState, LogService logService, Timeouts timeouts,
+    ElectionContextImpl( InstanceId me, CommonContextState commonState, LogProvider logging, Timeouts timeouts,
                          ClusterContext clusterContext, HeartbeatContext heartbeatContext, List<ElectionRole> roles,
                          Map<String, Election> elections, ElectionCredentialsProvider electionCredentialsProvider )
     {
-        super( me, commonState, logService, timeouts );
+        super( me, commonState, logging, timeouts );
         this.clusterContext = clusterContext;
         this.heartbeatContext = heartbeatContext;
         this.roles = roles;
@@ -342,7 +342,7 @@ public class ElectionContextImpl
         return heartbeatContext.getFailed();
     }
 
-    public ElectionContextImpl snapshot( CommonContextState commonStateSnapshot, LogService logService, Timeouts timeouts,
+    public ElectionContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging, Timeouts timeouts,
                                          ClusterContextImpl snapshotClusterContext,
                                          HeartbeatContextImpl snapshotHeartbeatContext,
                                          ElectionCredentialsProvider credentialsProvider )
@@ -354,7 +354,7 @@ public class ElectionContextImpl
             electionsSnapshot.put( election.getKey(), election.getValue().snapshot() );
         }
 
-        return new ElectionContextImpl( me, commonStateSnapshot, logService, timeouts, snapshotClusterContext,
+        return new ElectionContextImpl( me, commonStateSnapshot, logging, timeouts, snapshotClusterContext,
                 snapshotHeartbeatContext, new ArrayList<>(roles), electionsSnapshot, credentialsProvider );
     }
 

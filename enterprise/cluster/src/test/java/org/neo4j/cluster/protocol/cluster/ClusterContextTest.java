@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.concurrent.Executor;
 
 import org.junit.Test;
+
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
@@ -34,10 +35,14 @@ import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.logging.NullLogProvider;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class ClusterContextTest
 {
@@ -60,7 +65,7 @@ public class ClusterContextTest
                     {
                         command.run();
                     }
-                }, NullLogService.getInstance(),
+                }, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class )
@@ -107,7 +112,7 @@ public class ClusterContextTest
                     {
                         command.run();
                     }
-                }, NullLogService.getInstance(),
+                }, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class )
@@ -147,7 +152,7 @@ public class ClusterContextTest
                     {
                         command.run();
                     }
-                }, NullLogService.getInstance(),
+                }, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class )
@@ -194,7 +199,7 @@ public class ClusterContextTest
                     {
                         command.run();
                     }
-                }, NullLogService.getInstance(),
+                }, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class )

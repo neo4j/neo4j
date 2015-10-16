@@ -37,7 +37,7 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.function.Predicate;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.Iterables.toList;
 
@@ -56,18 +56,18 @@ class HeartbeatContextImpl
     private ClusterContext clusterContext;
     private LearnerContext learnerContext;
 
-    HeartbeatContextImpl( InstanceId me, CommonContextState commonState, LogService logService,
+    HeartbeatContextImpl( InstanceId me, CommonContextState commonState, LogProvider logging,
                           Timeouts timeouts, Executor executor )
     {
-        super( me, commonState, logService, timeouts );
+        super( me, commonState, logging, timeouts );
         this.executor = executor;
     }
 
-    private HeartbeatContextImpl( InstanceId me, CommonContextState commonState, LogService logService, Timeouts timeouts,
+    private HeartbeatContextImpl( InstanceId me, CommonContextState commonState, LogProvider logging, Timeouts timeouts,
                           Set<InstanceId> failed, Map<InstanceId, Set<InstanceId>> nodeSuspicions,
                           Iterable<HeartbeatListener> heartBeatListeners, Executor executor)
     {
-        super( me, commonState, logService, timeouts );
+        super( me, commonState, logging, timeouts );
         this.failed = failed;
         this.nodeSuspicions = nodeSuspicions;
         this.heartBeatListeners = heartBeatListeners;
@@ -317,10 +317,10 @@ class HeartbeatContextImpl
         return learnerContext.getLastLearnedInstanceId();
     }
 
-    public HeartbeatContextImpl snapshot( CommonContextState commonStateSnapshot, LogService logService, Timeouts timeouts,
+    public HeartbeatContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging, Timeouts timeouts,
                                           Executor executor )
     {
-        return new HeartbeatContextImpl( me, commonStateSnapshot, logService, timeouts, new HashSet<>(failed),
+        return new HeartbeatContextImpl( me, commonStateSnapshot, logging, timeouts, new HashSet<>(failed),
                 new HashMap<>(nodeSuspicions), new ArrayList<>(toList(heartBeatListeners)), executor );
     }
 
