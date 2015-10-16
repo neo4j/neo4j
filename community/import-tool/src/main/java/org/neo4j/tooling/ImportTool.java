@@ -97,7 +97,8 @@ public class ImportTool
                         + "The first line must contain the header. "
                         + "Multiple data sources like these can be specified in one import, "
                         + "where each data source has its own header. "
-                        + "Note that file groups must be enclosed in quotation marks." ),
+                        + "Note that file groups must be enclosed in quotation marks.",
+                        true ),
         RELATIONSHIP_DATA( "relationships", null,
                 "[:RELATIONSHIP_TYPE] \"<file1>" + MULTI_FILE_DELIMITER + "<file2>" +
                 MULTI_FILE_DELIMITER + "...\"",
@@ -106,7 +107,8 @@ public class ImportTool
                         + "The first line must contain the header. "
                         + "Multiple data sources like these can be specified in one import, "
                         + "where each data source has its own header. "
-                        + "Note that file groups must be enclosed in quotation marks." ),
+                        + "Note that file groups must be enclosed in quotation marks.",
+                        true ),
         DELIMITER( "delimiter", null,
                 "<delimiter-character>",
                 "Delimiter character, or 'TAB', between values in CSV data. The default option is `" + COMMAS.delimiter() + "`." ),
@@ -176,13 +178,20 @@ public class ImportTool
         private final Object defaultValue;
         private final String usage;
         private final String description;
+        private final boolean keyAndUsageGoTogether;
 
         Options( String key, Object defaultValue, String usage, String description )
+        {
+            this( key, defaultValue, usage, description, false );
+        }
+
+        Options( String key, Object defaultValue, String usage, String description, boolean keyAndUsageGoTogether )
         {
             this.key = key;
             this.defaultValue = defaultValue;
             this.usage = usage;
             this.description = description;
+            this.keyAndUsageGoTogether = keyAndUsageGoTogether;
         }
 
         String key()
@@ -197,11 +206,16 @@ public class ImportTool
 
         void printUsage( PrintStream out )
         {
-            out.println( argument() + " " + usage );
+            out.println( argument() + spaceInBetweenArgumentAndUsage() + usage );
             for ( String line : Args.splitLongLine( descriptionWithDefaultValue().replace( "`", "" ), 80 ) )
             {
                 out.println( "\t" + line );
             }
+        }
+
+        private String spaceInBetweenArgumentAndUsage()
+        {
+            return keyAndUsageGoTogether ? "" : " ";
         }
 
         String descriptionWithDefaultValue()
@@ -221,7 +235,7 @@ public class ImportTool
         String manPageEntry()
         {
             String filteredDescription = descriptionWithDefaultValue().replace( availableProcessorsHint(), "" );
-            String usageString = (usage.length() > 0) ? " " + usage : "";
+            String usageString = (usage.length() > 0) ? spaceInBetweenArgumentAndUsage() + usage : "";
             return "*" + argument() + usageString + "*::\n" + filteredDescription + "\n\n";
         }
 
