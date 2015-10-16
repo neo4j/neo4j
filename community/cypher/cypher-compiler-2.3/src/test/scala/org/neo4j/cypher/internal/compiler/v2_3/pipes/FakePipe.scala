@@ -44,7 +44,7 @@ class FakePipe(val data: Iterator[Map[String, Any]], newIdentifiers: (String, Cy
 
   def dup(sources: List[Pipe]): Pipe = ???
 
-  override def localEffects = Effects()
+  def sources: Seq[Pipe] = ???
 
-  override def sources: Seq[Pipe] = Seq.empty
+  override def localEffects = Effects()
 }

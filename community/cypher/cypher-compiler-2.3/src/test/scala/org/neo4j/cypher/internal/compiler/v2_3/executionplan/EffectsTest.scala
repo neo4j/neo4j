@@ -23,56 +23,81 @@ import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
 class EffectsTest extends CypherFunSuite {
 
-  test("testAsLeafEffects") {
-    val actual: Effects = Effects(CreatesAnyNode, ReadsAllRelationships).asLeafEffects
-    val expected: Effects = Effects(LeafEffect(CreatesAnyNode), LeafEffect(ReadsAllRelationships))
+  test("logical AND works") {
+    val first = Effects(WritesRelationships, ReadsGivenNodeProperty("2"))
+    val second = Effects(WritesRelationships, WritesGivenNodeProperty("2"))
 
-    actual should equal(expected)
+    (first & second) should be(Effects(WritesRelationships))
   }
 
-  test("testLeafEffectsAsOptional") {
-    val actual: Effects = Effects(LeafEffect(CreatesAnyNode), LeafEffect(ReadsAllRelationships)).leafEffectsAsOptional
-    val expected: Effects = Effects(OptionalLeafEffect(CreatesAnyNode), OptionalLeafEffect(ReadsAllRelationships))
+  test("logical AND works for write effects") {
+    val first = AllWriteEffects
+    val second = Effects(WritesRelationships, ReadsRelationships, WritesNodesWithLabels("foo"), WritesAnyNode)
 
-    actual should equal(expected)
+    (first & second) should be(Effects(WritesRelationships, WritesAnyNode))
   }
 
-  test("testWriteEffects") {
-    val actual: Effects = Effects(CreatesAnyNode, ReadsAllRelationships).writeEffects
-    val expected: Effects = Effects(CreatesAnyNode)
+  test("logical AND works for read effects") {
+    val first = AllReadEffects
+    val second = Effects(ReadsAllNodes, ReadsAnyNodeProperty, WritesGivenNodeProperty("bar"))
 
-    actual should equal(expected)
+    (first & second) should be(Effects(ReadsAllNodes, ReadsAnyNodeProperty))
   }
 
-  test("testContainsWrites") {
-    Effects(CreatesAnyNode, ReadsAllRelationships).containsWrites should be(right = true)
-    Effects().containsWrites should be(right = false)
-    Effects(ReadsNodesWithLabels("foo", "bar")).containsWrites should be(right = false)
+  test("logical AND considers equal property names") {
+    val first = Effects(WritesRelationships, ReadsGivenNodeProperty("foo"))
+    val second = Effects(ReadsGivenNodeProperty("foo"))
+
+    (first & second).effectsSet should contain only ReadsGivenNodeProperty("foo")
   }
 
-  test("testRegardlessOfOptionalEffects") {
-    val actual = Effects(CreatesAnyNode, LeafEffect(DeletesNode), OptionalLeafEffect(SetLabel("Label"))).regardlessOfOptionalEffects
-    val expected = Effects(CreatesAnyNode, LeafEffect(DeletesNode), SetLabel("Label"))
+  test("logical AND considers equal label names") {
+    val first = Effects(ReadsAllNodes, ReadsNodesWithLabels("bar"))
+    val second = Effects(ReadsNodesWithLabels("bar"))
 
-    actual should equal(expected)
+    (first & second).effectsSet should contain only ReadsNodesWithLabels("bar")
   }
 
-  test("testContains") {
-    Effects().contains(DeletesRelationship) should be(right = false)
-    Effects(CreatesNodesWithLabels("foo")).contains(CreatesNodesWithLabels("bar")) should be(right = false)
-    Effects(CreatesAnyNode, DeletesRelationship).contains(CreatesAnyNode) should be(right = true)
+  test("logical OR works") {
+    val first = Effects(WritesRelationships, WritesAnyNode, ReadsNodesWithLabels("foo"))
+    val second = Effects(ReadsNodesWithLabels("foo"), WritesGivenNodeProperty("bar"))
+
+    (first | second) should be(Effects(WritesRelationships, WritesAnyNode, ReadsNodesWithLabels("foo"), WritesGivenNodeProperty("bar")))
   }
 
-  test("testRegardlessOfLeafEffects") {
-    val expected: Effects = Effects(CreatesAnyNode, DeletesRelationship, OptionalLeafEffect(ReadsNodesWithLabels("foo")))
-    val actual: Effects = Effects(CreatesAnyNode, LeafEffect(DeletesRelationship), OptionalLeafEffect(ReadsNodesWithLabels("foo"))).regardlessOfLeafEffects
+  test("logical OR works for write effects") {
+    val first = AllWriteEffects
+    val second = Effects(WritesRelationships, ReadsRelationships, ReadsAllNodes)
 
-    actual should equal(expected)
+    val expected = Effects(
+      WritesAnyNode, WritesRelationships, WritesAnyNode, WritesAnyNodeProperty, WritesAnyRelationshipProperty, ReadsRelationships, ReadsAllNodes
+    )
+
+    (first | second) should be(expected)
   }
 
-  test("test$plus$plus") {
-    Effects() ++ Effects() should equal(Effects())
-    Effects(CreatesRelationshipBoundNodes) ++ Effects(CreatesRelationshipBoundNodes, DeletesNode) should equal(Effects(CreatesRelationshipBoundNodes, DeletesNode))
+  test("logical OR works for read effects") {
+    val first = AllReadEffects
+    val second = Effects(ReadsGivenNodeProperty("foo"), WritesGivenNodeProperty("bar"))
+
+    val expected = Effects(
+      ReadsAllNodes, ReadsRelationships, ReadsAnyNodeProperty, ReadsAnyRelationshipProperty, ReadsAllNodes, ReadsGivenNodeProperty("foo"), WritesGivenNodeProperty("bar")
+    )
+
+    (first | second) should be(expected)
   }
 
+  test("logical OR considers equal property names") {
+    val first = Effects(WritesAnyNode, ReadsGivenNodeProperty("foo"))
+    val second = Effects(ReadsGivenNodeProperty("foo"))
+
+    (first | second) should be(Effects(WritesAnyNode, ReadsGivenNodeProperty("foo")))
+  }
+
+  test("logical OR considers equal label names") {
+    val first = Effects(WritesAnyNode, ReadsNodesWithLabels("bar"))
+    val second = Effects(ReadsNodesWithLabels("bar"))
+
+    (first | second) should be(Effects(WritesAnyNode, ReadsNodesWithLabels("bar")))
+  }
 }
