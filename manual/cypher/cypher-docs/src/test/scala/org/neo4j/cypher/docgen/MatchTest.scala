@@ -23,7 +23,6 @@ import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.junit.Test
 import org.neo4j.graphdb._
-import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 
@@ -38,8 +37,7 @@ class MatchTest extends DocumentingTestBase {
     "Martin:Person ACTED_IN TheAmericanPresident:Movie",
     "Michael:Person ACTED_IN TheAmericanPresident:Movie",
     "Oliver:Person DIRECTED WallStreet:Movie",
-    "Rob:Person DIRECTED TheAmericanPresident:Movie",
-    "Charlie:Person FATHER Martin:Person")
+    "Rob:Person DIRECTED TheAmericanPresident:Movie")
 
   override val properties = Map(
     "Charlie" -> Map("name" -> "Charlie Sheen"),
