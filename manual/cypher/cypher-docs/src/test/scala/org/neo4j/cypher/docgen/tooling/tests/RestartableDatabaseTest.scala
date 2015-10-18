@@ -43,9 +43,9 @@ class RestartableDatabaseTest extends CypherFunSuite {
     val db = new RestartableDatabase(Seq.empty, databaseFactory)
 
     // when
-    db.execute("MATCH n RETURN n")
+    db.execute("MATCH (n) RETURN n")
     db.nowIsASafePointToRestartDatabase()
-    db.execute("MATCH n RETURN n")
+    db.execute("MATCH (n) RETURN n")
 
     // then
     verify(databaseFactory, times(1)).newImpermanentDatabase()

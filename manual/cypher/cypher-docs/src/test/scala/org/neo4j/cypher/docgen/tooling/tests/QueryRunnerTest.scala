@@ -38,7 +38,7 @@ class QueryRunnerTest extends CypherFunSuite {
   }
 
   test("assertion failure comes through nicely") {
-    val query = "match n return n"
+    val query = "match (n) return n"
     val result = runQuery(query, ResultAssertions(p => 1 should equal(2)))
 
     result.queryResults should have size 1
