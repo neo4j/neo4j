@@ -193,10 +193,7 @@ public class TestPullUpdates
             slave.shutdown();
 
             // Make sure that the slave has left, because shutdown() may return before the master knows
-            if (!slaveLeftLatch.await(60, TimeUnit.SECONDS))
-            {
-                throw new IllegalStateException( "Timeout waiting for slave to leave" );
-            }
+            assertTrue( "Timeout waiting for slave to leave", slaveLeftLatch.await( 60, TimeUnit.SECONDS ) );
 
             long nodeId;
             try ( Transaction tx = master.beginTx() )

@@ -65,7 +65,7 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
         otherThread.execute( writeToFirstAndSecond() );
 
         // and I wait for those locks to be pending
-        secondNodeLocked.await(10, TimeUnit.SECONDS);
+        assertTrue( secondNodeLocked.await( 10, TimeUnit.SECONDS ) );
         Thread.sleep( 1000 );
 
         // and I then try and lock node:Second in the first transaction

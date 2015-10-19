@@ -48,6 +48,7 @@ import org.neo4j.test.StreamConsumer;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * This test case ensures that updates in HA are first written out to the log
@@ -120,10 +121,7 @@ public class TestPullUpdatesApplied
 
         dbToKill.shutdown();
 
-        if ( !latch1.await( 60, TimeUnit.SECONDS ) )
-        {
-            throw new IllegalStateException( "Timeout waiting for instance to leave cluster" );
-        }
+        assertTrue( "Timeout waiting for instance to leave cluster", latch1.await( 60, TimeUnit.SECONDS ) );
 
         addNode( master ); // this will be pulled by tne next start up, applied
         // but not written to log.
@@ -147,10 +145,7 @@ public class TestPullUpdatesApplied
 
         runInOtherJvmToGetExitCode( targetDirectory.getAbsolutePath(), "" + toKill );
 
-        if ( !latch2.await( 60, TimeUnit.SECONDS ) )
-        {
-            throw new IllegalStateException( "Timeout waiting for instance to fail" );
-        }
+        assertTrue( "Timeout waiting for instance to fail", latch2.await( 60, TimeUnit.SECONDS ) );
 
         // This is to allow other instances to mark the dead instance as failed, otherwise on startup it will be denied.
         // TODO This is to demonstrate shortcomings in our design. Fix this, you ugly, ugly hacker

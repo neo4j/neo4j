@@ -322,8 +322,7 @@ public class RWLockTest
         executor.execute( readerLockNode1 );
 
         // Deadlock should occur
-        deadLockDetector.await( 1000, TimeUnit.MILLISECONDS );
-        Assert.assertTrue( "Deadlock was detected as expected.", true );
+        Assert.assertTrue( "Deadlock was detected as expected.", deadLockDetector.await( 1000, TimeUnit.MILLISECONDS ) );
     }
 
     @Test( timeout = 1000 )

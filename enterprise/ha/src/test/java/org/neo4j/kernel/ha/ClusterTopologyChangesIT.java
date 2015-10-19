@@ -65,6 +65,7 @@ import static org.junit.Assert.assertNotNull;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.cluster.protocol.cluster.ClusterConfiguration.COORDINATOR;
 import static org.neo4j.function.Predicates.not;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
@@ -155,11 +156,11 @@ public class ClusterTopologyChangesIT
 
         // fail slave1 and await master to spot the failure
         RepairKit slave1RepairKit = cluster.fail( slave1 );
-        slave1Left.await(60, SECONDS);
+        assertTrue( slave1Left.await( 60, SECONDS ) );
 
         // fail slave2 and await master to spot the failure
         RepairKit slave2RepairKit = cluster.fail( slave2 );
-        slave2Left.await(60, SECONDS);
+        assertTrue( slave2Left.await( 60, SECONDS ) );
 
         // master loses quorum and goes to PENDING, cluster is unavailable
         cluster.await( not( masterAvailable() ) );
@@ -199,8 +200,9 @@ public class ClusterTopologyChangesIT
 
         // attempt to perform transactions on both slaves throws, election is triggered
         attemptTransactions( newSlave1, newSlave2 );
-        slave1Unavailable.await( 60, TimeUnit.SECONDS ); // set a timeout in case the instance does not have stale epoch
-        slave2Unavailable.await( 60, TimeUnit.SECONDS );
+        // set a timeout in case the instance does not have stale epoch
+        assertTrue( slave1Unavailable.await( 60, TimeUnit.SECONDS ) );
+        assertTrue( slave2Unavailable.await( 60, TimeUnit.SECONDS ) );
 
         // THEN: done with election, cluster feels good and able to serve transactions
         cluster.info( "Waiting for cluster to stabilize" );
@@ -245,7 +247,7 @@ public class ClusterTopologyChangesIT
         clusterClient.life.start();
 
         // Then
-        latch.await( 20, SECONDS );
+        assertTrue( latch.await( 20, SECONDS ) );
         assertEquals( new InstanceId( 2 ), coordinatorIdWhenReJoined.get() );
     }
 

@@ -43,6 +43,7 @@ import org.neo4j.test.TargetDirectory;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.fromXml;
 
@@ -69,7 +70,7 @@ public class TestSlaveOnlyCluster
 
             final ClusterManager.RepairKit repairKit = cluster.fail( master );
 
-            masterFailedLatch.await( 60, TimeUnit.SECONDS );
+            assertTrue( masterFailedLatch.await( 60, TimeUnit.SECONDS ) );
 
             repairKit.repair();
 

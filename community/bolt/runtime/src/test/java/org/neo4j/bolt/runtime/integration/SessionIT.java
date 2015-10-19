@@ -38,6 +38,7 @@ import org.neo4j.bolt.runtime.spi.RecordStream;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.bolt.runtime.integration.SessionMatchers.failedWith;
 import static org.neo4j.bolt.runtime.integration.SessionMatchers.streamContaining;
 import static org.neo4j.bolt.runtime.integration.SessionMatchers.success;
@@ -273,7 +274,7 @@ public class SessionIT
         } );
 
         // Then
-        pullAllCallbackCalled.await( 30, TimeUnit.SECONDS );
+        assertTrue( pullAllCallbackCalled.await( 30, TimeUnit.SECONDS ) );
         final Neo4jError err = error.get();
         assertThat( err.status(), equalTo( (Status)Status.General.UnknownFailure ) );
         assertThat( err.message(), containsString( "Ooopsies!" ) );

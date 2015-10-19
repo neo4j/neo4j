@@ -88,7 +88,7 @@ public class NetworkSenderReceiverTest
 
         // then
 
-        latch.await( 5, TimeUnit.SECONDS );
+        assertTrue( latch.await( 5, TimeUnit.SECONDS ) );
 
         assertTrue( "server1 should have processed the message", server1.processedMessage() );
         assertTrue( "server2 should have processed the message", server2.processedMessage() );
