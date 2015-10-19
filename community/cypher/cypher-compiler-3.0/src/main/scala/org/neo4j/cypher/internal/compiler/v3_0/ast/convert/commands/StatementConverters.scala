@@ -260,7 +260,7 @@ object StatementConverters {
         mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name),
           toCommandExpression(setItem.expression), removeOtherProps = false)
       case setItem: ast.SetLabelItem =>
-        commands.LabelAction(toCommandExpression(setItem.expression), commands.LabelSetOp, setItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
+        commands.LabelAction(toCommandExpression(setItem.identifier), commands.LabelSetOp, setItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
 
       case e => throw new InternalException(s"MERGE cannot contain ${e.getClass.getSimpleName}")
     }
@@ -319,7 +319,7 @@ object StatementConverters {
           case setItem: ast.SetPropertyItem =>
             mutation.PropertySetAction(toCommandProperty(setItem.property), toCommandExpression(setItem.expression))
           case setItem: ast.SetLabelItem =>
-            commands.LabelAction(toCommandExpression(setItem.expression), commands.LabelSetOp, setItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
+            commands.LabelAction(toCommandExpression(setItem.identifier), commands.LabelSetOp, setItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
           case setItem: ast.SetExactPropertiesFromMapItem =>
             mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name), toCommandExpression(setItem.expression), removeOtherProps = true)
           case setItem: ast.SetIncludingPropertiesFromMapItem =>

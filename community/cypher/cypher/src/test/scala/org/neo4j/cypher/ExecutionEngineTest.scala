@@ -450,7 +450,7 @@ order by a.COL1""")
     result.toList shouldBe empty
   }
 
-  test("start_with_node_and_relationship") {
+  test("start with node and relationship") {
     val a = createNode()
     val b = createNode()
     val r = relate(a, b)
@@ -459,7 +459,7 @@ order by a.COL1""")
     result.toList should equal(List(Map("a" -> a, "r" -> r)))
   }
 
-  test("first_piped_query_woot") {
+  test("first piped query woot") {
     val a = createNode("foo" -> 42)
     createNode("foo" -> 49)
 
@@ -469,7 +469,7 @@ order by a.COL1""")
     result.toList should equal(List(Map("x" -> a)))
   }
 
-  test("second_piped_query_woot") {
+  test("second piped query woot") {
     createNode()
     val q = "match (x) where id(x) = 0 with count(*) as apa WHERE apa = 1 RETURN apa"
     val result = executeWithAllPlanners(q)
@@ -500,7 +500,7 @@ order by a.COL1""")
   }
 
 
-  test("issue_446") {
+  test("issue 446") {
     val a = createNode()
     val b = createNode()
     val c = createNode()
@@ -514,7 +514,7 @@ order by a.COL1""")
     executeWithAllPlanners(q).toList should equal(List(Map("m" -> c)))
   }
 
-  test("issue_432") {
+  test("issue 432") {
     val a = createNode()
     val b = createNode()
     relate(a, b)
@@ -524,18 +524,18 @@ order by a.COL1""")
     executeWithAllPlanners(q).toList should have size 1
   }
 
-  test("zero_matching_subgraphs_yield_correct_count_star") {
+  test("zero matching subgraphs yield correct count star") {
     val result = executeWithAllPlanners("match (n) where 1 = 0 return count(*)")
     result.toList should equal(List(Map("count(*)" -> 0)))
   }
 
-  test("with_should_not_forget_original_type") {
+  test("with should not forget original type") {
     val result = updateWithBothPlanners("create (a{x:8}) with a.x as foo return sum(foo)")
 
     result.toList should equal(List(Map("sum(foo)" -> 8)))
   }
 
-  test("with_should_not_forget_parameters") {
+  test("with should not forget parameters") {
     graph.inTx(graph.index().forNodes("test"))
     val id = "bar"
     val result = updateWithBothPlanners("start n=node:test(name={id}) with count(*) as c where c=0 create (x{name:{id}}) return c, x.name as name", "id" -> id).toList
@@ -545,9 +545,8 @@ order by a.COL1""")
     result.head("name").asInstanceOf[String] should equal(id)
   }
 
-  test("with_should_not_forget_parameters2") {
-    val a = createNode()
-    val id = a.getId
+  test("with should not forget parameters2") {
+    val id = createNode().getId
     val result = executeWithRulePlanner("match (n) where id(n) = {id} with n set n.foo={id} return n", "id" -> id).toList
 
     result should have size 1
@@ -572,14 +571,14 @@ order by a.COL1""")
     result.toList should equal(List(Map("n" -> node)))
   }
 
-  test("params_should_survive_with") {
+  test("params should survive with") {
     val n = createNode()
     val result = executeWithAllPlanners("match (n) where id(n) = 0 WITH collect(n) as coll where length(coll)={id} RETURN coll", "id"->1)
 
     result.toList should equal(List(Map("coll" -> List(n))))
   }
 
-  test("nodes_named_r_should_not_pose_a_problem") {
+  test("nodes named r should not pose a problem") {
     val a = createNode()
     val r = createNode("foo"->"bar")
     val b = createNode()
@@ -592,21 +591,21 @@ order by a.COL1""")
     result.toList should equal(List(Map("b" -> b)))
   }
 
-  test("can_use_identifiers_created_inside_the_foreach") {
+  test("can use identifiers created inside the foreach") {
     createNode()
     val result = executeWithRulePlanner("match (n) where id(n) = 0 foreach (x in [1,2,3] | create (a { name: 'foo'})  set a.id = x)")
 
     result.toList shouldBe empty
   }
 
-  test("can_alias_and_aggregate") {
+  test("can alias and aggregate") {
     val a = createNode()
     val result = executeWithAllPlanners("match (n) where id(n) = 0 return sum(ID(n)), n as m")
 
     result.toList should equal(List(Map("sum(ID(n))"->0, "m"->a)))
   }
 
-  test("extract_string_from_node_collection") {
+  test("extract string from node collection") {
     createNode("name"->"a")
 
     val result = executeWithAllPlanners("""match (n) where id(n) = 0 with collect(n) as nodes return head(extract(x in nodes | x.name)) + "test" as test """)
@@ -614,7 +613,7 @@ order by a.COL1""")
     result.toList should equal(List(Map("test" -> "atest")))
   }
 
-  test("filtering_in_match_should_not_fail") {
+  test("filtering in match should not fail") {
     val n = createNode()
     relate(n, createNode("name" -> "Neo"))
     val result = executeWithAllPlanners("MATCH (n)-->(me) WHERE id(n) = 0 AND me.name IN ['Neo'] RETURN me.name")
@@ -622,7 +621,7 @@ order by a.COL1""")
     result.toList should equal(List(Map("me.name"->"Neo")))
   }
 
-  test("unexpected_traversal_state_should_never_be_hit") {
+  test("unexpected traversal state should never be hit") {
     val a = createNode()
     val b = createNode()
     val c = createNode()
@@ -635,7 +634,7 @@ order by a.COL1""")
     result.toList shouldBe empty
   }
 
-  test("syntax_errors_should_not_leave_dangling_transactions") {
+  test("syntax errors should not leave dangling transactions") {
 
     val engine = new ExecutionEngine(graph)
 
@@ -647,38 +646,38 @@ order by a.COL1""")
     val isTopLevelTx = tx.getClass === classOf[TopLevelTransaction]
     tx.close()
 
-    isTopLevelTx should be(true)
+    isTopLevelTx shouldBe true
   }
 
-  test("should_add_label_to_node") {
+  test("should add label to node") {
     val a = createNode()
-    val result = executeWithRulePlanner("""match (a) where id(a) = 0 SET a :foo RETURN a""")
+    val result = updateWithBothPlanners("match (a) where id(a) = 0 SET a :foo RETURN a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
 
-  test("should_add_multiple_labels_to_node") {
+  test("should add multiple labels to node") {
     val a = createNode()
-    val result = executeWithRulePlanner("""match (a) where id(a) = 0 SET a :foo:bar RETURN a""")
+    val result = updateWithBothPlanners("match (a) where id(a) = 0 SET a :foo:bar RETURN a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
 
-  test("should_set_label_on_node") {
+  test("should set label on node") {
     val a = createNode()
-    val result = executeWithRulePlanner("""match (a) SET a:foo RETURN a""")
+    val result = updateWithBothPlanners("match (a) SET a:foo RETURN a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
 
-  test("should_set_multiple_labels_on_node") {
+  test("should set multiple labels on node") {
     val a = createNode()
-    val result = executeWithRulePlanner("""match (a) where id(a) = 0 SET a:foo:bar RETURN a""")
+    val result = updateWithBothPlanners("match (a) where id(a) = 0 SET a:foo:bar RETURN a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
 
-  test("should_filter_nodes_by_single_label") {
+  test("should filter nodes by single label") {
     // GIVEN
     val a = createLabeledNode("foo")
     val b = createLabeledNode("foo", "bar")
@@ -691,7 +690,7 @@ order by a.COL1""")
     result.toList should equal(List(Map("n" -> a), Map("n" -> b)))
   }
 
-  test("should_filter_nodes_by_single_negated_label") {
+  test("should filter nodes by single negated label") {
     // GIVEN
     createLabeledNode("foo")
     createLabeledNode("foo", "bar")
@@ -704,7 +703,7 @@ order by a.COL1""")
     result.toList should equal(List(Map("n" -> c)))
   }
 
-  test("should_filter_nodes_by_multiple_labels") {
+  test("should filter nodes by multiple labels") {
     // GIVEN
     createLabeledNode("foo")
     val b = createLabeledNode("foo", "bar")
@@ -717,7 +716,7 @@ order by a.COL1""")
     result.toList should equal(List(Map("n" -> b)))
   }
 
-  test("should_create_index") {
+  test("should create index") {
     // GIVEN
     val labelName = "Person"
     val propertyKeys = Seq("name")
@@ -735,7 +734,7 @@ order by a.COL1""")
     }
   }
 
-  test("union_ftw") {
+  test("union ftw") {
     createNode()
 
     // WHEN
@@ -745,7 +744,7 @@ order by a.COL1""")
     result.toList should equal(List(Map("x" -> 1), Map("x" -> 2)))
   }
 
-  test("union_distinct") {
+  test("union distinct") {
     createNode()
 
     // WHEN
@@ -755,7 +754,7 @@ order by a.COL1""")
     result.toList should equal(List(Map("x" -> 1)))
   }
 
-  test("read_only_database_can_process_has_label_predicates") {
+  test("read only database can process has label predicates") {
     //GIVEN
     val engine = createReadOnlyEngine()
 
@@ -766,7 +765,7 @@ order by a.COL1""")
     result.toList shouldBe empty
   }
 
-  test("should_use_predicates_in_the_correct_place") {
+  test("should use predicates in the correct place") {
     val advertiser = createNode(Map("name" -> "advertiser1"))
     val thing = createNode(Map("name" -> "Color"))
     val red = createNode(Map("name" -> "red"))
@@ -790,7 +789,7 @@ order by a.COL1""")
     result.toList should equal(List(Map("out.name" -> "product1")))
   }
 
-  test("should_not_create_when_match_exists") {
+  test("should not create when match exists") {
     //GIVEN
     val a = createNode()
     val b = createNode()
@@ -824,7 +823,7 @@ order by a.COL1""")
     result.toList shouldBe empty
   }
 
-  test("should_be_able_to_coalesce_nodes") {
+  test("should be able to coalesce nodes") {
     val n = createNode("n")
     val m = createNode("m")
     relate(n,m,"link")
@@ -833,7 +832,7 @@ order by a.COL1""")
     result.toList should equal(List(Map("n" -> n)))
   }
 
-  test("multiple_start_points_should_still_honor_predicates") {
+  test("multiple start points should still honor predicates") {
     val e = createNode()
     val p1 = createNode("value"->567)
     val p2 = createNode("value"->0)
@@ -847,13 +846,13 @@ order by a.COL1""")
     result.toList shouldBe empty
   }
 
-  test("should_be_able_to_prettify_queries") {
+  test("should be able to prettify queries") {
     val query = "match (n)-->(x) return n"
 
     eengine.prettify(query) should equal(String.format("MATCH (n)-->(x)%nRETURN n"))
   }
 
-  test("doctest_gone_wild") {
+  test("doctest gone wild") {
     // given
     updateWithBothPlanners("CREATE (n:Actor {name:'Tom Hanks'})")
 
@@ -867,7 +866,7 @@ order by a.COL1""")
     assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1, relationshipsCreated = 1)
   }
 
-  test("should_iterate_all_node_id_sets_from_start_during_matching") {
+  test("should iterate all node id sets from start during matching") {
     // given
     val nodes: List[Node] =
       executeWithCostPlannerOnly("CREATE (a)-[:EDGE]->(b), (b)<-[:EDGE]-(c), (a)-[:EDGE]->(c) RETURN [a, b, c] AS nodes")
@@ -884,7 +883,7 @@ order by a.COL1""")
     relationships should have size 6
   }
 
-  test("merge_should_support_single_parameter") {
+  test("merge should support single parameter") {
     //WHEN
     val result = executeWithRulePlanner("MERGE (n:User {foo: {single_param}})", ("single_param", 42))
 
@@ -892,11 +891,11 @@ order by a.COL1""")
     result.toList shouldBe empty
   }
 
-  test("merge_should_not_support_map_parameters_for_defining_properties") {
+  test("merge should not support map parameters for defining properties") {
     intercept[SyntaxException](executeWithRulePlanner("MERGE (n:User {merge_map})", ("merge_map", Map("email" -> "test"))))
   }
 
-  test("should_not_hang") {
+  test("should not hang") {
     // given
     createNode()
     createNode()
@@ -912,7 +911,7 @@ order by a.COL1""")
     // then
   }
 
-  test("should_return_null_on_all_comparisons_against_null") {
+  test("should return null on all comparisons against null") {
     // given
 
     // when
@@ -922,7 +921,7 @@ order by a.COL1""")
     result.toList should equal(List(Map("A" -> null, "B" -> null, "C" -> null, "D" -> null, "E" -> null, "F" -> null)))
   }
 
-  test("should_be_able_to_coerce_collections_to_predicates") {
+  test("should be able to coerce collections to predicates") {
     val n = createLabeledNode(Map("coll" -> Array(1, 2, 3), "bool" -> true), "LABEL")
     createLabeledNode(Map("coll" -> Array[Int](), "bool" -> true), "LABEL")
     createLabeledNode(Map("coll" -> Array(1, 2, 3), "bool" -> false), "LABEL")
@@ -934,7 +933,7 @@ order by a.COL1""")
     foundNode should equal(n)
   }
 
-  test("should_be_able_to_coerce_literal_collections_to_predicates") {
+  test("should be able to coerce literal collections to predicates") {
     val n = createLabeledNode(Map("coll" -> Array(1, 2, 3), "bool" -> true), "LABEL")
 
     val foundNode = executeWithAllPlanners("match (n:LABEL) where [1,2,3] and n.bool return n").columnAs[Node]("n").next()
@@ -942,11 +941,11 @@ order by a.COL1""")
     foundNode should equal(n)
   }
 
-  test("query_should_work") {
+  test("query should work") {
     assert(executeScalar[Int]("WITH 1 AS x RETURN 1 + x") === 2)
   }
 
-  test("should_be_able_to_mix_key_expressions_with_aggregate_expressions") {
+  test("should be able to mix key expressions with aggregate expressions") {
     // Given
     createNode("Foo")
 
@@ -958,12 +957,12 @@ order by a.COL1""")
     result("count") should equal(1)
   }
 
-  test("should_not_mind_rewriting_NOT_queries") {
+  test("should not mind rewriting NOT queries") {
     val result = updateWithBothPlanners(" create (a {x: 1}) return a.x is not null as A, a.y is null as B, a.x is not null as C, a.y is not null as D")
     result.toList should equal(List(Map("A" -> true, "B" -> true, "C" -> true, "D" -> false)))
   }
 
-  test("should_handle_cypher_version_and_periodic_commit") {
+  test("should handle cypher version and periodic commit") {
     val url = createTempFileURL("foo", ".csv") { writer: PrintWriter =>
       writer.println("1,2,3")
       writer.println("4,5,6")

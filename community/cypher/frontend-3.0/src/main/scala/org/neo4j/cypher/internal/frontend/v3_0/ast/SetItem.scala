@@ -24,10 +24,10 @@ import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, SemanticCheckable
 
 sealed trait SetItem extends ASTNode with ASTPhrase with SemanticCheckable
 
-case class SetLabelItem(expression: Expression, labels: Seq[LabelName])(val position: InputPosition) extends SetItem {
+case class SetLabelItem(identifier: Identifier, labels: Seq[LabelName])(val position: InputPosition) extends SetItem {
   def semanticCheck =
-    expression.semanticCheck(Expression.SemanticContext.Simple) chain
-    expression.expectType(CTNode.covariant)
+    identifier.semanticCheck(Expression.SemanticContext.Simple) chain
+    identifier.expectType(CTNode.covariant)
 }
 
 sealed trait SetProperty extends SetItem

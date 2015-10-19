@@ -19,16 +19,17 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.cypher.{NewPlannerTestSupport, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Node
 
-class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
+class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+
   test("set node property to null will remove existing property") {
     // given
     val node = createNode("property" -> 12)
 
     // when
-    val result = execute("MATCH (n) SET n.property = null")
+    val result = updateWithBothPlanners("MATCH (n) SET n.property = null")
 
     // then
     assertStats(result, propertiesSet = 1)
@@ -40,7 +41,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val relationship = relate(createNode(), createNode(), "property" -> 12)
 
     // when
-    val result = execute("MATCH ()-[r]->() SET r.property = null")
+    val result = updateWithBothPlanners("MATCH ()-[r]->() SET r.property = null")
 
     // then
     assertStats(result, propertiesSet = 1)
@@ -52,7 +53,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val a = createNode("name" -> "Andres")
 
     // when
-    val result = execute("match (n) where n.name = 'Andres' set n.name = 'Michael'")
+    val result = updateWithBothPlanners("match (n) where n.name = 'Andres' set n.name = 'Michael'")
 
     // then
     assertStats(result, propertiesSet = 1)
@@ -64,7 +65,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val a = createNode("name" -> "Andres")
 
     // when
-    val result = execute("match (n) where n.name = 'Andres' set n.name = n.name + ' was here'")
+    val result = updateWithBothPlanners("match (n) where n.name = 'Andres' set n.name = n.name + ' was here'")
 
     // then
     assertStats(result, propertiesSet = 1)
@@ -76,7 +77,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val n = createNode("name" -> "Michael")
 
     // when
-    val result = execute("match (n) where n.name = 'Michael' set n.name = null return n")
+    val result = updateWithBothPlanners("match (n) where n.name = 'Michael' set n.name = null return n")
 
     // then
     assertStats(result, propertiesSet = 1)
@@ -92,16 +93,9 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     relate(b, c)
 
     // when
-    val q = """
-match p=(a)-->(b)-->(c)
-where id(a) = 0 and id(c) = 2
-with p
-foreach(n in nodes(p) |
-  set n.marked = true
-)
-            """
+    val q = "MATCH p=(a)-->(b)-->(c) WHERE id(a) = 0 AND id(c) = 2 WITH p FOREACH(n in nodes(p) | SET n.marked = true)"
 
-    execute(q)
+    updateWithBothPlanners(q)
 
     // then
     a should haveProperty("marked").withValue(true)
@@ -114,7 +108,7 @@ foreach(n in nodes(p) |
     createNode()
 
     // when
-    val result = execute("match (n) where id(n) = 0 set n:FOO return n")
+    val result = updateWithBothPlanners("match (n) where id(n) = 0 set n:FOO return n")
 
     // then
     val createdNode = result.columnAs[Node]("n").next()
@@ -127,7 +121,7 @@ foreach(n in nodes(p) |
     createNode()
 
     // when
-    val result = execute( "match (n) where id(n) = 0 set n.x=[1,2,3] return extract (i in n.x | i/2.0) as x")
+    val result = updateWithBothPlanners( "match (n) where id(n) = 0 set n.x=[1,2,3] return extract (i in n.x | i/2.0) as x")
 
     // then
     result.toList should equal(List(Map("x" -> List(0.5, 1.0, 1.5))))
@@ -158,7 +152,7 @@ foreach(n in nodes(p) |
     val a = createNode("foo"->"A", "bar"->"B")
 
     // when
-    val result = execute("MATCH (n {foo:'A'}) SET n += {bar:'C'}")
+    val result = updateWithBothPlanners("MATCH (n {foo:'A'}) SET n += {bar:'C'}")
 
     // then
     a should haveProperty("foo").withValue("A")
@@ -170,7 +164,7 @@ foreach(n in nodes(p) |
     val a = createNode("foo"->"A")
 
     // when
-    val result = execute("MATCH (n {foo:'A'}) SET n += {bar:'B'}")
+    val result = updateWithBothPlanners("MATCH (n {foo:'A'}) SET n += {bar:'B'}")
 
     // then
     a should haveProperty("foo").withValue("A")
@@ -182,7 +176,7 @@ foreach(n in nodes(p) |
     val a = createNode("foo"->"A", "bar"->"B")
 
     // when
-    val result = execute("MATCH (n {foo:'A'}) SET n += {foo:null}")
+    val result = updateWithBothPlanners("MATCH (n {foo:'A'}) SET n += {foo:null}")
 
     // then
     a should not(haveProperty("foo"))
@@ -196,7 +190,7 @@ foreach(n in nodes(p) |
     val c = createNode("c"->"C")
 
     // when
-    val result = execute("MATCH (n) WITH collect(n) as nodes FOREACH(x IN nodes | SET x += {x:'X'})")
+    val result = updateWithBothPlanners("MATCH (n) WITH collect(n) as nodes FOREACH(x IN nodes | SET x += {x:'X'})")
 
     // then
     a should haveProperty("a").withValue("A")
