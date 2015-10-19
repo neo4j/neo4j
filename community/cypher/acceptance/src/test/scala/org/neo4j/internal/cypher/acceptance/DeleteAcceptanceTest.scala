@@ -98,7 +98,8 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("undirected expand followed by delete and count") {
     relate(createNode(), createNode())
 
-    val result = execute(s"MATCH (a)-[r]-(b) DELETE r,a,b RETURN count(*) AS c")
+    val result = updateWithBothPlanners(s"MATCH (a)-[r]-(b) DELETE r,a,b RETURN count(*) AS c")
+
     assertStats(result, nodesDeleted = 2, relationshipsDeleted = 1)
 
     result.toList should equal(List(Map("c" -> 2)))
@@ -111,10 +112,19 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     relate(node1, node2)
     relate(node2, node3)
 
-    val result = execute(s"MATCH (a)-[*]-(b) DETACH DELETE a,b RETURN count(*) AS c")
+    val result = executeWithCostPlannerOnly(s"MATCH (a)-[*]-(b) DETACH DELETE a,b RETURN count(*) AS c")
     assertStats(result, nodesDeleted = 3, relationshipsDeleted = 2)
 
     //(1)-->(2), (2)<--(1), (2)-->(3), (3)<--(2), (1)-*->(3), (3)<-*-(1)
     result.toList should equal(List(Map("c" -> 6)))
   }
+
+  test("should be possible to create and delete in one statement") {
+    createNode()
+
+    val result = updateWithBothPlanners("MATCH () CREATE (n) DELETE n")
+
+    assertStats(result, nodesCreated = 1, nodesDeleted = 1)
+  }
+
 }

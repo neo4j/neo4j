@@ -110,6 +110,9 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
   def allPatternNodes: Set[IdName] =
     patternNodes ++ optionalMatches.flatMap(_.allPatternNodes)
 
+  def allPatternRelationships: Set[PatternRelationship] =
+    patternRelationships ++ optionalMatches.flatMap(_.allPatternRelationships)
+
   def coveredIds: Set[IdName] = {
     val patternIds = QueryGraph.coveredIdsForPatterns(patternNodes, patternRelationships)
     patternIds ++ argumentIds ++ selections.predicates.flatMap(_.dependencies)

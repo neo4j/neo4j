@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Delete, Expression, RelTypeName, RelationshipPattern, LabelName, NodePattern}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{PathExpression, Identifier, Delete, Expression, RelTypeName, RelationshipPattern, LabelName, NodePattern}
 
 case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
 
@@ -43,6 +43,11 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
     case p: DeleteExpression => p
   }
 
+  def deleteIdentifiers = (deleteExpressions flatMap {
+    case DeleteExpression(identifier:Identifier, _) => Seq(IdName.fromIdentifier(identifier))
+    case DeleteExpression(PathExpression(e), _) => e.dependencies.map(IdName.fromIdentifier)
+  }).toSet
+
   def patternNodeLabels: Map[IdName, Set[LabelName]] =
     nodePatterns.map(p => p.nodeName -> p.labels.toSet).toMap
 
@@ -53,11 +58,10 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
   def overlaps(qg: QueryGraph) =
     qg.patternNodes.nonEmpty &&
       nonEmpty &&
-      (nodeOverlap(qg) || relationshipOverlap(qg))
+      (nodeOverlap(qg) || relationshipOverlap(qg) || deleteOverlap(qg))
 
   def nodeOverlap(qg: QueryGraph) = {
     qg.patternNodes.exists(p => qg.allKnownLabelsOnNode(p).isEmpty) || //MATCH ()?
-      nodePatterns.exists(p => p.labels.isEmpty) || //CREATE()?
       (qg.patternNodeLabels.values.flatten.toSet intersect labels).nonEmpty // CREATE(:A:B) MATCH(:B:C)?
   }
 
@@ -74,6 +78,11 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
       )
   }
 
+  def deleteOverlap(qg: QueryGraph): Boolean = {
+    val identifiersToDelete = deleteIdentifiers
+    val identifiersToRead = qg.patternNodes ++ qg.patternRelationships.map(_.name)
+    (identifiersToRead intersect identifiersToDelete).nonEmpty
+  }
 
   def addNodePatterns(nodePatterns: CreateNodePattern*): UpdateGraph = {
 

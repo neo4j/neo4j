@@ -63,7 +63,10 @@ case class DeletePathPipe(src: Pipe, expression: Expression, forced: Boolean)(va
       // Entity is already deleted. No need to do anything
     }
   }
-  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "DeleteRelationship", identifiers)
+
+  private def name = if (forced) "DetachDeletePath" else "DeletePath"
+
+  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, name, identifiers)
 
   def symbols = src.symbols
 
