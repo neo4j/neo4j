@@ -34,9 +34,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.api.store.PropertyRecordCursor;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -47,7 +45,6 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
@@ -70,7 +67,6 @@ public class PropertyStore extends ComposableRecordStore<PropertyRecord,NoStoreH
     private final DynamicStringStore stringStore;
     private final PropertyKeyTokenStore propertyKeyTokenStore;
     private final DynamicArrayStore arrayStore;
-    private final PropertyPhysicalToLogicalConverter physicalToLogicalConverter;
 
     public PropertyStore(
             File fileName,
@@ -88,7 +84,6 @@ public class PropertyStore extends ComposableRecordStore<PropertyRecord,NoStoreH
         this.stringStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayStore = arrayPropertyStore;
-        this.physicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( this );
     }
 
     @Override
@@ -426,35 +421,6 @@ public class PropertyStore extends ComposableRecordStore<PropertyRecord,NoStoreH
             nextProp = propRecord.getNextProp();
         }
         return toReturn;
-    }
-
-    public void toLogicalUpdates( Collection<NodePropertyUpdate> target,
-            Iterable<PropertyRecordChange> changes,
-            long[] nodeLabelsBefore,
-            long[] nodeLabelsAfter )
-    {
-        physicalToLogicalConverter.apply( target, changes, nodeLabelsBefore, nodeLabelsAfter );
-    }
-
-    /**
-     * For property records there's no "inUse" byte and we need to read the whole record to
-     * see if there are any PropertyBlocks in use in it.
-     */
-    @Override
-    protected boolean isInUse( PageCursor cursor )
-    {
-        int offsetAtBeginning = cursor.getOffset();
-        cursor.setOffset( offsetAtBeginning + 1/*mod*/ + 4/*prev*/ + 4/*next*/ );
-        int recordSize = getRecordSize();
-        while ( cursor.getOffset() - offsetAtBeginning < recordSize )
-        {
-            long block = cursor.getLong();
-            if ( PropertyType.getPropertyType( block, true ) != null )
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override

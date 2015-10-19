@@ -112,6 +112,12 @@ public class ComposableRecordStore<RECORD extends AbstractBaseRecord, HEADER ext
     }
 
     @Override
+    public int getStoreHeaderInt()
+    {
+        return ((IntStoreHeader) storeHeader).value();
+    }
+
+    @Override
     public <FAILURE extends Exception> void
             accept( org.neo4j.kernel.impl.store.RecordStore.Processor<FAILURE> processor, RECORD record ) throws FAILURE
     {

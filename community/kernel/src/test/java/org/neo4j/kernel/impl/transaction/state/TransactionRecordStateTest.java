@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.NodePropertyCommandsExtractor;
+import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -51,7 +52,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageComma
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -1107,7 +1108,7 @@ public class TransactionRecordStateTest
         List<RelationshipGroupRecord> seen = new ArrayList<>();
         while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            RelationshipGroupStore relationshipGroupStore = neoStores.getRelationshipGroupStore();
+            RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
             RelationshipGroupRecord group = relationshipGroupStore.getRecord( groupId,
                     relationshipGroupStore.newRecord(), NORMAL );
             seen.add( group );
@@ -1130,7 +1131,8 @@ public class TransactionRecordStateTest
         transaction.accept( extractor );
 
         OnlineIndexUpdates lazyIndexUpdates = new OnlineIndexUpdates( neoStores.getNodeStore(),
-                neoStores.getPropertyStore(), new PropertyLoader( neoStores ) );
+                neoStores.getPropertyStore(), new PropertyLoader( neoStores ),
+                new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() ) );
         lazyIndexUpdates.feed( extractor.propertyCommandsByNodeIds(), extractor.nodeCommandsById() );
         return lazyIndexUpdates;
     }
@@ -1232,7 +1234,7 @@ public class TransactionRecordStateTest
         return new TransactionRecordState( neoStores, integrityValidator, recordChangeSet, 0,
                 new NoOpClient(),
                 new RelationshipCreator( relationshipGroupGetter,
-                        neoStores.getRelationshipGroupStore().getDenseNodeThreshold() ),
+                        neoStores.getRelationshipGroupStore().getStoreHeaderInt() ),
                 new RelationshipDeleter( relationshipGroupGetter, propertyDeleter ),
                 new PropertyCreator( neoStores.getPropertyStore(), propertyTraverser ),
                 propertyDeleter );

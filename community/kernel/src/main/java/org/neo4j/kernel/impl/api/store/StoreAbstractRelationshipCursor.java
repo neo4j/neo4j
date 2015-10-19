@@ -24,9 +24,10 @@ import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -43,7 +44,7 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
 {
     protected final RelationshipRecord relationshipRecord;
     protected final RelationshipStore relationshipStore;
-    protected final RelationshipGroupStore relationshipGroupStore;
+    protected final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
     private final LockService lockService;
     protected StoreStatement storeStatement;
 

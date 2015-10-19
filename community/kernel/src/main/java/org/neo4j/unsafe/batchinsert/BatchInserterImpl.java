@@ -105,7 +105,7 @@ import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -127,6 +127,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
@@ -204,7 +205,7 @@ public class BatchInserterImpl implements BatchInserter
     private final RelationshipTypeTokenStore relationshipTypeTokenStore;
     private final PropertyKeyTokenStore propertyKeyTokenStore;
     private final PropertyStore propertyStore;
-    private final RelationshipGroupStore relationshipGroupStore;
+    private final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
     private final SchemaStore schemaStore;
     private final NeoStoreIndexStoreView indexStoreView;
 
@@ -316,7 +317,7 @@ public class BatchInserterImpl implements BatchInserter
         // Record access
         recordAccess = new DirectRecordAccessSet( neoStores );
         relationshipCreator = new RelationshipCreator(
-                new RelationshipGroupGetter( relationshipGroupStore ), relationshipGroupStore.getDenseNodeThreshold() );
+                new RelationshipGroupGetter( relationshipGroupStore ), relationshipGroupStore.getStoreHeaderInt() );
         propertyTraverser = new PropertyTraverser();
         propertyCreator = new PropertyCreator( propertyStore, propertyTraverser );
         propertyDeletor = new PropertyDeleter( propertyStore, propertyTraverser );

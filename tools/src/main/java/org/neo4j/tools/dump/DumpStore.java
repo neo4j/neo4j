@@ -31,6 +31,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -54,7 +55,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
  * @param <RECORD> type of record to dump
  * @param <STORE> type of store to dump
  */
-public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAbstractStore<RECORD>>
+public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordStore<RECORD>>
 {
 
     public static void main( String... args ) throws Exception
@@ -151,7 +152,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         return Boolean.getBoolean( "logger" ) ? FormattedLogProvider.toOutputStream( System.out ) : NullLogProvider.getInstance();
     }
 
-    private static <R extends AbstractBaseRecord, S extends CommonAbstractStore<R>> void dump(
+    private static <R extends AbstractBaseRecord, S extends RecordStore<R>> void dump(
             long[] ids, S store ) throws Exception
     {
         new DumpStore<R,S>( System.out ).dump( store, ids );
@@ -302,7 +303,8 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         else
         {
             out.print( record );
-            byte[] rawRecord = store.getRawRecordData( id );
+            // TODO Hmm, please don't do this
+            byte[] rawRecord = ((CommonAbstractStore)store).getRawRecordData( id );
             dumpHex( record, ByteBuffer.wrap( rawRecord ), id, size );
         }
         return record.inUse();

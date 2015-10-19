@@ -141,18 +141,18 @@ public class RelationshipGroupStoreTest
         int expectedThreshold = customThreshold != null ? customThreshold : defaultThreshold;
         StoreFactory factory = factory( customThreshold );
         NeoStores neoStores = factory.openAllNeoStores( true );
-        assertEquals( expectedThreshold, neoStores.getRelationshipGroupStore().getDenseNodeThreshold() );
+        assertEquals( expectedThreshold, neoStores.getRelationshipGroupStore().getStoreHeaderInt() );
         neoStores.close();
 
         // Next time we open it it should be the same
         neoStores = factory.openAllNeoStores();
-        assertEquals( expectedThreshold, neoStores.getRelationshipGroupStore().getDenseNodeThreshold() );
+        assertEquals( expectedThreshold, neoStores.getRelationshipGroupStore().getStoreHeaderInt() );
         neoStores.close();
 
         // Even if we open with a different config setting it should just ignore it
         factory = factory( 999999 );
         neoStores = factory.openAllNeoStores();
-        assertEquals( expectedThreshold, neoStores.getRelationshipGroupStore().getDenseNodeThreshold() );
+        assertEquals( expectedThreshold, neoStores.getRelationshipGroupStore().getStoreHeaderInt() );
         neoStores.close();
     }
 
@@ -226,7 +226,7 @@ public class RelationshipGroupStoreTest
         NodeStore nodeStore = neoStores.getNodeStore();
         NodeRecord nodeRecord = getRecord( nodeStore, node.getId() );
         long group = nodeRecord.getNextRel();
-        RelationshipGroupStore groupStore = neoStores.getRelationshipGroupStore();
+        RecordStore<RelationshipGroupRecord> groupStore = neoStores.getRelationshipGroupStore();
         RelationshipGroupRecord groupRecord = getRecord( groupStore, group );
         assertEquals( -1, groupRecord.getNext() );
         assertEquals( -1, groupRecord.getPrev() );
@@ -261,7 +261,7 @@ public class RelationshipGroupStoreTest
         NodeRecord nodeRecord = getRecord( nodeStore, node.getId() );
         long group = nodeRecord.getNextRel();
 
-        RelationshipGroupStore groupStore = neoStores.getRelationshipGroupStore();
+        RecordStore<RelationshipGroupRecord> groupStore = neoStores.getRelationshipGroupStore();
         RelationshipGroupRecord groupRecord = getRecord( groupStore, group );
         assertFalse( groupRecord.getNext() == -1 );
         assertRelationshipChain( neoStores.getRelationshipStore(), node, groupRecord.getFirstOut(), rel1.getId(), rel2.getId(), rel3.getId() );
@@ -294,7 +294,7 @@ public class RelationshipGroupStoreTest
         NodeRecord nodeRecord = getRecord( nodeStore, node.getId() );
         long group = nodeRecord.getNextRel();
 
-        RelationshipGroupStore groupStore = neoStores.getRelationshipGroupStore();
+        RecordStore<RelationshipGroupRecord> groupStore = neoStores.getRelationshipGroupStore();
         RelationshipGroupRecord groupRecord = getRecord( groupStore, group );
         assertFalse( groupRecord.getNext() == -1 );
         RelationshipGroupRecord otherGroupRecord = groupStore.getRecord( groupRecord.getNext(), groupStore.newRecord(),
@@ -314,7 +314,7 @@ public class RelationshipGroupStoreTest
 
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
         {
-            RelationshipGroupStore relationshipGroupStore = neoStores.getRelationshipGroupStore();
+            RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
             RelationshipGroupRecord record = new RelationshipGroupRecord( 1 ).initialize( true, 2, 3, 4, 5, 6,
                     Record.NO_NEXT_RELATIONSHIP.intValue() );
             relationshipGroupStore.updateRecord( record );

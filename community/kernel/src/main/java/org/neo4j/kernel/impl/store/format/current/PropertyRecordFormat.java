@@ -159,4 +159,24 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
     {
         return record.getNextProp();
     }
+
+    /**
+     * For property records there's no "inUse" byte and we need to read the whole record to
+     * see if there are any PropertyBlocks in use in it.
+     */
+    @Override
+    public boolean isInUse( PageCursor cursor )
+    {
+        cursor.setOffset( cursor.getOffset() /*skip...*/ + 1/*mod*/ + 4/*prev*/ + 4/*next*/ );
+        int blocks = PropertyType.getPayloadSizeLongs();
+        for ( int i = 0; i < blocks; i++ )
+        {
+            long block = cursor.getLong();
+            if ( PropertyType.getPropertyType( block, true ) != null )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 }

@@ -1178,6 +1178,12 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
         return getClass().getSimpleName();
     }
 
+    @Override
+    public int getStoreHeaderInt()
+    {
+        throw new UnsupportedOperationException( "No header" );
+    }
+
     public static abstract class Configuration
     {
         public static final Setting<Boolean> rebuild_idgenerators_fast =

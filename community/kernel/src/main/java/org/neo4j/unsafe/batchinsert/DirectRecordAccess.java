@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.kernel.impl.store.CommonAbstractStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
@@ -39,13 +39,13 @@ import org.neo4j.kernel.impl.util.statistics.IntCounter;
 public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends AbstractBaseRecord,ADDITIONAL>
         implements RecordAccess<KEY,RECORD,ADDITIONAL>
 {
-    private final CommonAbstractStore<RECORD> store;
+    private final RecordStore<RECORD> store;
     private final Loader<KEY, RECORD, ADDITIONAL> loader;
     private final Map<KEY,DirectRecordProxy> batch = new HashMap<>();
 
     private final IntCounter changeCounter = new IntCounter();
 
-    public DirectRecordAccess( CommonAbstractStore<RECORD> store, Loader<KEY, RECORD, ADDITIONAL> loader )
+    public DirectRecordAccess( RecordStore<RECORD> store, Loader<KEY, RECORD, ADDITIONAL> loader )
     {
         this.store = store;
         this.loader = loader;
@@ -114,9 +114,9 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
 
     private class DirectRecordProxy implements RecordProxy<KEY,RECORD,ADDITIONAL>
     {
-        private KEY key;
-        private RECORD record;
-        private ADDITIONAL additionalData;
+        private final KEY key;
+        private final RECORD record;
+        private final ADDITIONAL additionalData;
         private boolean changed = false;
 
         public DirectRecordProxy( KEY key, RECORD record, ADDITIONAL additionalData, boolean created )

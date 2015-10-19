@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplierFacade;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
+import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.store.CacheLayer;
@@ -150,6 +151,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync;
     private final NeoStoreIndexStoreView indexStoreView;
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
+    private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
 
     // Immutable state for creating/applying commands
     private final Loaders loaders;
@@ -199,6 +201,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
         try
         {
+            indexUpdatesConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
             schemaCache = new SchemaCache( constraintSemantics, Collections.<SchemaRule>emptyList() );
             schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
 
@@ -358,7 +361,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
         // Schema index application
         appliers.add( new IndexBatchTransactionApplier( indexingService, labelScanStoreSync, indexUpdatesSync,
-                neoStores.getNodeStore(), neoStores.getPropertyStore(), new PropertyLoader( neoStores ), mode ) );
+                neoStores.getNodeStore(), neoStores.getPropertyStore(), new PropertyLoader( neoStores ),
+                indexUpdatesConverter, mode ) );
 
         // Legacy index application
         appliers.add(

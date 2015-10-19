@@ -53,9 +53,4 @@ public class RelationshipGroupStore extends ComposableRecordStore<RelationshipGr
     {
         processor.processRelationshipGroup( this, record );
     }
-
-    public int getDenseNodeThreshold()
-    {
-        return storeHeader.value();
-    }
 }

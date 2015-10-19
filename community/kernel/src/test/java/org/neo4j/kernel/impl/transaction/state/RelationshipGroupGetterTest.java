@@ -26,7 +26,7 @@ import org.mockito.InOrder;
 import java.io.File;
 
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -63,7 +63,7 @@ public class RelationshipGroupGetterTest
                 NullLogProvider.getInstance() );
         try ( NeoStores stores = storeFactory.openNeoStores( true, StoreType.RELATIONSHIP_GROUP ) )
         {
-            RelationshipGroupStore store = spy( stores.getRelationshipGroupStore() );
+            RecordStore<RelationshipGroupRecord> store = spy( stores.getRelationshipGroupStore() );
 
             RelationshipGroupRecord group_2 = group( 0, 2 );
             RelationshipGroupRecord group_4 = group( 1, 4 );

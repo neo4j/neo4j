@@ -24,12 +24,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.api.TransactionApplier;
-import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
@@ -50,7 +49,7 @@ import org.neo4j.storageengine.api.Token;
 public class HighIdTransactionApplier extends TransactionApplier.Adapter
 {
     private final NeoStores neoStores;
-    private final Map<CommonAbstractStore,HighId> highIds = new HashMap<>();
+    private final Map<RecordStore<?>,HighId> highIds = new HashMap<>();
 
     public HighIdTransactionApplier( NeoStores neoStores )
     {
@@ -140,13 +139,13 @@ public class HighIdTransactionApplier extends TransactionApplier.Adapter
     {
         // Notifies the stores about the recovered ids and will bump those high ids atomically if
         // they surpass the current high ids
-        for ( Map.Entry<CommonAbstractStore,HighId> highId : highIds.entrySet() )
+        for ( Map.Entry<RecordStore<?>,HighId> highId : highIds.entrySet() )
         {
             highId.getKey().setHighestPossibleIdInUse( highId.getValue().id );
         }
     }
 
-    private void track( CommonAbstractStore store, long id )
+    private void track( RecordStore<?> store, long id )
     {
         HighId highId = highIds.get( store );
         if ( highId == null )
@@ -159,12 +158,12 @@ public class HighIdTransactionApplier extends TransactionApplier.Adapter
         }
     }
 
-    private void track( CommonAbstractStore store, Command command )
+    private void track( RecordStore<?> store, Command command )
     {
         track( store, command.getKey() );
     }
 
-    private void track( CommonAbstractStore store, Collection<? extends Abstract64BitRecord> records )
+    private void track( RecordStore<?> store, Collection<? extends Abstract64BitRecord> records )
     {
         for ( Abstract64BitRecord record : records )
         {

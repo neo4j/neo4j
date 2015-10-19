@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -49,6 +50,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
@@ -96,7 +98,7 @@ public class NeoStoreTransactionApplierTest
     private final NodeStore nodeStore = mock( NodeStore.class );
     private final RelationshipStore relationshipStore = mock( RelationshipStore.class );
     private final PropertyStore propertyStore = mock( PropertyStore.class );
-    private final RelationshipGroupStore relationshipGroupStore = mock( RelationshipGroupStore.class );
+    private final RecordStore<RelationshipGroupRecord> relationshipGroupStore = mock( RelationshipGroupStore.class );
     private final RelationshipTypeTokenStore relationshipTypeTokenStore = mock( RelationshipTypeTokenStore.class );
     private final LabelTokenStore labelTokenStore = mock( LabelTokenStore.class );
     private final PropertyKeyTokenStore propertyKeyTokenStore = mock( PropertyKeyTokenStore.class );
@@ -929,6 +931,7 @@ public class NeoStoreTransactionApplierTest
     private BatchTransactionApplier newIndexApplier()
     {
         return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer,
-                indexUpdatesSync, nodeStore, propertyStore, new PropertyLoader( neoStores ), INTERNAL );
+                indexUpdatesSync, nodeStore, propertyStore, new PropertyLoader( neoStores ),
+                new PropertyPhysicalToLogicalConverter( propertyStore ), INTERNAL );
     }
 }

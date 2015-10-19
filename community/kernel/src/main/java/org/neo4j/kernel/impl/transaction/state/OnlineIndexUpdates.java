@@ -35,6 +35,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -65,16 +66,19 @@ public class OnlineIndexUpdates implements IndexUpdates
     private final NodeStore nodeStore;
     private final PropertyStore propertyStore;
     private final PropertyLoader propertyLoader;
+    private final PropertyPhysicalToLogicalConverter converter;
     private final Collection<NodePropertyUpdate> updates = new ArrayList<>();
     private NodeRecord nodeRecord;
 
     public OnlineIndexUpdates( NodeStore nodeStore,
                              PropertyStore propertyStore,
-                             PropertyLoader propertyLoader )
+                             PropertyLoader propertyLoader,
+                             PropertyPhysicalToLogicalConverter converter )
     {
         this.nodeStore = nodeStore;
         this.propertyStore = propertyStore;
         this.propertyLoader = propertyLoader;
+        this.converter = converter;
     }
 
     @Override
@@ -160,7 +164,7 @@ public class OnlineIndexUpdates implements IndexUpdates
             nodeLabelsBefore = nodeLabelsAfter = parseLabelsField( nodeRecord ).get( nodeStore );
         }
 
-        propertyStore.toLogicalUpdates( updates,
+        converter.apply( updates,
                 Iterables.<PropertyRecordChange,PropertyCommand>cast( propertyCommandsForNode ),
                 nodeLabelsBefore, nodeLabelsAfter );
     }

@@ -76,6 +76,16 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     long getHighestPossibleIdInUse();
 
     /**
+     * Sets highest id in use for this store. This is for when records are applied to this store where
+     * the ids have been generated through some other means. Having an up to date highest possible id
+     * makes sure that closing this store truncates at the right place and that "all record scans" can
+     * see all records.
+     *
+     * @param highestIdInUse highest id that is now in use in this store.
+     */
+    void setHighestPossibleIdInUse( long highestIdInUse );
+
+    /**
      * @return a new record instance for receiving data by {@link #getRecord(long, AbstractBaseRecord, RecordLoad)}
      * and {@link #newRecordCursor(AbstractBaseRecord)}.
      */
@@ -213,11 +223,25 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      */
     int getNumberOfReservedLowIds();
 
+    /**
+     * Returns store header (see {@link #getNumberOfReservedLowIds()}) as {@code int}. Exposed like this
+     * for convenience since all known store headers are ints.
+     *
+     * @return store header as an int value, e.g the first 4 bytes of the first (reserved) record in this store.
+     */
+    int getStoreHeaderInt();
+
     Predicate<AbstractBaseRecord> IN_USE = AbstractBaseRecord::inUse;
 
     class Delegator<R extends AbstractBaseRecord> implements RecordStore<R>
     {
         private final RecordStore<R> actual;
+
+        @Override
+        public void setHighestPossibleIdInUse( long highestIdInUse )
+        {
+            actual.setHighestPossibleIdInUse( highestIdInUse );
+        }
 
         @Override
         public R newRecord()
@@ -312,6 +336,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         public int getRecordsPerPage()
         {
             return actual.getRecordsPerPage();
+        }
+
+        @Override
+        public int getStoreHeaderInt()
+        {
+            return actual.getStoreHeaderInt();
         }
 
         @Override

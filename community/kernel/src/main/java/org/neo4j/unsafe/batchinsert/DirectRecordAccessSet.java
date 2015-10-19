@@ -24,6 +24,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
@@ -58,7 +59,7 @@ public class DirectRecordAccessSet implements RecordAccessSet
         NodeStore nodeStore = neoStores.getNodeStore();
         PropertyStore propertyStore = neoStores.getPropertyStore();
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        RelationshipGroupStore relationshipGroupStore = neoStores.getRelationshipGroupStore();
+        RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
         PropertyKeyTokenStore propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
         RelationshipTypeTokenStore relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
         LabelTokenStore labelTokenStore = neoStores.getLabelTokenStore();
