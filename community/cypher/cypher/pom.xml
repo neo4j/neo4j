@@ -189,7 +189,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-compiler-2.3</artifactId>
-      <version>2.3-SNAPSHOT</version>
+      <version>2.3.0-RC1</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
