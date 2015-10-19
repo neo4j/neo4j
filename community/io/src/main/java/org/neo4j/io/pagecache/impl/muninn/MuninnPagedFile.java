@@ -119,8 +119,6 @@ final class MuninnPagedFile implements PagedFile
     @Override
     public PageCursor io( long pageId, int pf_flags )
     {
-        assertStillMapped();
-
         int lockMask = PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK;
         if ( (pf_flags & lockMask) == 0 )
         {

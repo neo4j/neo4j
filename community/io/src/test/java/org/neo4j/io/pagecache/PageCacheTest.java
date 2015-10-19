@@ -2576,7 +2576,11 @@ public abstract class PageCacheTest<T extends PageCache>
         PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
         pagedFile.close();
 
-        pagedFile.io( 0, PF_EXCLUSIVE_LOCK );
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            cursor.next(); // This should throw
+            fail( "cursor.next() on unmapped file did not throw" );
+        }
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IllegalStateException.class )
