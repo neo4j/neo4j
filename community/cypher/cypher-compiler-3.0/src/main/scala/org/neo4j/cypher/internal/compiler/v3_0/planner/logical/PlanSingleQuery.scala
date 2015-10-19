@@ -62,8 +62,9 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
       val leaves = plan.leaves.collect {
         case n: NodeLogicalLeafPlan => n.idName
       }
-      //1 leaf is always ok, second one is not stable though
-      leaves.size > 1 && leaves.drop(1).exists(overlaps(_, plannerQuery) || relationshipOverlap(plannerQuery))
+      relationshipOverlap(plannerQuery) ||
+        //1 leaf is always ok, second one is not stable though
+        leaves.size > 1 && leaves.drop(1).exists(overlaps(_, plannerQuery) || relationshipOverlap(plannerQuery))
     }
   }
 

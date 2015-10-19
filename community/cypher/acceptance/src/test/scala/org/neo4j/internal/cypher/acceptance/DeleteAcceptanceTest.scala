@@ -71,4 +71,27 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     assertStats(result, nodesDeleted = 4, relationshipsDeleted = 3)
   }
+
+  test("expand, delete and count") {
+    relate(createNode(), createNode())
+
+    val result = execute(s"MATCH (a)-[r]-(b) DELETE r,a,b RETURN count(*) AS c")
+    assertStats(result, nodesDeleted = 2, relationshipsDeleted = 1)
+
+    result.toList should equal(List(Map("c" -> 2)))
+  }
+
+  test("variable length expand, delete, and count") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val node3 = createNode()
+    relate(node1, node2)
+    relate(node2, node3)
+
+    val result = execute(s"MATCH (a)-[*]-(b) DELETE a,b RETURN count(*) AS c")
+    assertStats(result, nodesDeleted = 3, relationshipsDeleted = 2)
+
+    //(1)-->(2), (2)<--(1), (2)-->(3), (3)<--(2), (1)-*->(3), (3)<-*-(1)
+    result.toList should equal(List(Map("c" -> 6)))
+  }
 }
