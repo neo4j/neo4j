@@ -17,33 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
+package org.neo4j.cypher
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.greedy.{GreedyQueryGraphSolver, expandsOrJoins}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan, NodeHashJoin}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{LogicalPlanningTestSupport2, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection.{OUTGOING, INCOMING, BOTH}
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.scalacheck.Gen._
 import org.scalacheck.{Gen, Shrink}
 import org.scalatest.prop.PropertyChecks
-import org.neo4j.cypher.internal.frontend.v3_0.Foldable.FoldableAny
 
-import scala.util.Random
-
-class JoinHintPlanningIntegrationTest extends CypherFunSuite with PropertyChecks with LogicalPlanningTestSupport2 {
-
-  val MinPatternLength = 2
-  val MaxPatternLength = 8
-  val NumberOfTestRuns = 100
-  val MaxDiscardedInputs = 500
+trait PatternGen extends  PropertyChecks {
+  protected def minPatternLength = 2
+  protected def maxPatternLength = 8
+  protected def numberOfTestRuns = 100
+  protected def maxDiscardedInputs = 500
+  protected def maxSize = 10
 
   override implicit val generatorDrivenConfig = PropertyCheckConfig(
-    minSuccessful = NumberOfTestRuns, maxDiscarded = MaxDiscardedInputs
+    minSuccessful = numberOfTestRuns, maxDiscarded = maxDiscardedInputs, maxSize = maxSize
   )
 
   val nameSeq = new AtomicInteger
@@ -59,86 +51,13 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PropertyChecks
       if (standaloneNode.isDefined) {
         // either move it to the end of pattern
         shrink.filter(_ != standaloneNode.get) :+ standaloneNode.get
-      } else {
+      } else  if (shrink.nonEmpty) {
         // or strip trailing relationship
         shrink.dropRight(1) :+ shrink.last.asInstanceOf[NodeWithRelationship].node
+      } else {
+        shrink
       }
     }
-  }
-
-  test("NodeHashJoin is planned in greedy planner") {
-    val solver = new GreedyQueryGraphSolver(expandsOrJoins)
-
-    testPlanner(solver)
-  }
-
-  test("NodeHashJoin is planned in IDP planner") {
-    val solver = IDPQueryGraphSolver(mock[IDPQueryGraphSolverMonitor])
-
-    testPlanner(solver)
-  }
-
-  def testPlanner(solver: QueryGraphSolver) = {
-    forAll(patterns) { pattern =>
-
-      // reset naming sequence number
-      nameSeq.set(0)
-
-      val patternString = pattern.map(_.string).mkString
-
-      val joinNode = findJoinNode(pattern)
-
-      whenever(joinNode.isDefined) {
-        val query =
-          s"""MATCH $patternString
-              |USING JOIN ON ${joinNode.get}
-              |RETURN count(*)""".stripMargin
-
-        val plan = logicalPlan(query, solver)
-        joinSymbolsIn(plan) should contain(Set(IdName(joinNode.get)))
-      }
-    }
-  }
-
-  def logicalPlan(cypherQuery: String, solver: QueryGraphSolver) = {
-    val semanticPlan = new given {
-      cardinality = mapCardinality {
-        // expand - cheap
-        case PlannerQuery(queryGraph, _,  _, _) if queryGraph.patternRelationships.size == 1 => 100.0
-        // everything else - expensive
-        case _ => Double.MaxValue
-      }
-
-      queryGraphSolver = solver
-    }.planFor(cypherQuery)
-
-    semanticPlan.plan
-  }
-
-  def joinSymbolsIn(plan: LogicalPlan) = {
-    val flattenedPlan = plan.treeFold(Seq.empty[LogicalPlan]) {
-      case plan: LogicalPlan => (acc, r) => r(acc :+ plan)
-    }
-
-    flattenedPlan.collect {
-      case nhj: NodeHashJoin => nhj.nodes
-    }
-  }
-
-  def findJoinNode(elements: List[Element]): Option[String] = {
-    if (numberOfNamedNodes(elements) < 3) {
-      return None
-    }
-
-    val firstNodeName = findFirstNodeName(elements).getOrElse(return None)
-    val lastNodeName = findFirstNodeName(elements.reverse).getOrElse(return None)
-
-    var joinNodeName: String = null
-    do {
-      joinNodeName = findFirstNodeName(Random.shuffle(elements)).get
-    } while (joinNodeName == firstNodeName || joinNodeName == lastNodeName)
-
-    Some(joinNodeName)
   }
 
   def numberOfNamedNodes(elements: List[Element]): Int = elements.count {
@@ -184,8 +103,16 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PropertyChecks
     val string = s"(:$label)"
   }
 
+  case class LabeledNodeWithProperties(label: Seq[String], property: Seq[String]) extends Node {
+    val string = s"(${label.map(":" + _).mkString("")} {${property.mkString(",")}})"
+  }
+
   case class NamedLabeledNode(name: String, label: String) extends Node {
     val string = s"($name:$label)"
+  }
+
+  case class NamedLabeledNodeWithProperties(name: String, label: Seq[String], property: Seq[String]) extends Node {
+    val string = s"($name ${label.map(":" + _).mkString("")} {${property.mkString(",")}})"
   }
 
   case class EmptyRelationship(direction: SemanticDirection) extends Relationship {
@@ -208,12 +135,20 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PropertyChecks
     val string = formatRelationship(s"[:$relType]", direction)
   }
 
+  case class TypedWithPropertiesRelationship(relType: String, direction: SemanticDirection, properties: Seq[String]) extends Relationship {
+    val string = formatRelationship(s"[:$relType {${properties.mkString(",")}}]", direction)
+  }
+
   case class TypedRelationshipWithLength(relType: String, length: String, direction: SemanticDirection) extends Relationship {
     val string = formatRelationship(s"[:$relType $length]", direction)
   }
 
   case class NamedTypedRelationship(name: String, relType: String, direction: SemanticDirection) extends Relationship {
     val string = formatRelationship(s"[$name:$relType]", direction)
+  }
+
+  case class NamedTypedWithPropertiesRelationship(name: String, relType: String, direction: SemanticDirection, properties: Seq[String]) extends Relationship {
+    val string = formatRelationship(s"[$name :$relType {${properties.mkString(",")}}]", direction)
   }
 
   case class NamedTypedRelationshipWithLength(name: String, relType: String, length: String, direction: SemanticDirection) extends Relationship {
@@ -226,7 +161,7 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PropertyChecks
     case OUTGOING => s"-$definition->"
   }
 
-  def patterns = Gen.choose(MinPatternLength, MaxPatternLength).flatMap(patternGen)
+  def patterns = Gen.choose(minPatternLength, maxPatternLength).flatMap(patternGen)
 
   def patternGen(maxLength: Int): Gen[List[Element]] =
     if (maxLength == 0)
@@ -238,8 +173,7 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PropertyChecks
         other <- patternGen(maxLength - 1)
       } yield NodeWithRelationship(node, rel) :: other
 
-  def relGen = Gen.oneOf(emptyRelGen, emptyRelWithLengthGen, namedRelGen, namedRelWithLengthGen, typedRelGen,
-    typedRelWithLengthGen, namedTypedRelGen, namedTypedRelWithLengthGen)
+  def relGen: Gen[Relationship]
 
   def emptyRelGen = relDirection.map(EmptyRelationship)
 
@@ -268,6 +202,13 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PropertyChecks
       direction <- relDirection
     } yield TypedRelationship(relType, direction)
 
+  def typedWithPropertiesRelGen =
+    for {
+      relType <- relTypeName
+      direction <- relDirection
+      properties <- Gen.listOf(property)
+    } yield TypedWithPropertiesRelationship(relType, direction, properties)
+
   def typedRelWithLengthGen =
     for {
       relType <- relTypeName
@@ -282,6 +223,14 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PropertyChecks
       direction <- relDirection
     } yield NamedTypedRelationship(name, relType, direction)
 
+  def namedTypedWithPropertiesRelGen =
+    for {
+      name <- relName
+      relType <- relTypeName
+      direction <- relDirection
+      properties <- Gen.listOf(property)
+    } yield NamedTypedWithPropertiesRelationship(name, relType, direction, properties)
+
   def namedTypedRelWithLengthGen =
     for {
       name <- relName
@@ -291,13 +240,26 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PropertyChecks
     } yield NamedTypedRelationshipWithLength(name, relType, length, direction)
 
 
-  def nodeGen = Gen.oneOf(emptyNodeGen, namedNodeGen, labeledNodeGen, namedLabeledNodeGen)
+  def nodeGen: Gen[Node]
 
   def emptyNodeGen = Gen.const(EmptyNode())
 
   def namedNodeGen = nodeName.map(NamedNode)
 
   def labeledNodeGen = labelName.map(LabeledNode)
+
+  def labeledWithPropertiesNodeGen =
+    for {
+      label <- Gen.listOf(labelName)
+      prop <- Gen.listOf(property)
+    } yield LabeledNodeWithProperties(label, prop)
+
+  def namedLabeledWithPropertiesNodeGen =
+    for {
+      name <- nodeName
+      label <- Gen.listOf(labelName)
+      prop <- Gen.listOf(property)
+    } yield NamedLabeledNodeWithProperties(name, label, prop)
 
   def namedLabeledNodeGen =
     for {
@@ -308,6 +270,8 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PropertyChecks
   def nodeName = alphaLowerChar.map(c => s"n${nameSeq.getAndIncrement()}")
 
   def labelName = alphaUpperChar.map(c => s"L${nameSeq.getAndIncrement()}")
+
+  def property = alphaUpperChar.map(c => s"prop${nameSeq.getAndIncrement()}:${nameSeq.getAndIncrement()}")
 
   def relName = alphaLowerChar.map(c => s"r${nameSeq.getAndIncrement()}")
 

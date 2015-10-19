@@ -19,29 +19,29 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.RelTypeName
 import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
-import org.neo4j.cypher.internal.frontend.v3_0.{RelTypeId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_0.ast.RelTypeName
 
-case class LazyTypes(names:Seq[String]) {
-  private var ids = Seq.empty[Int]
+case class LazyType(name: String) {
 
-  def types(context: QueryContext): Option[Seq[Int]] = names match {
-      case Seq() => None
-      case _     => {
-        if (ids.size != names.size) {
-          ids = names.flatMap(context.getOptRelTypeId)
-        }
-        Some(ids)
-      }
+  private var id = LazyType.UNINITIALIZED
+
+  def typ(context: QueryContext): Option[Int] = {
+    if (id == -1) {
+      id = context.getOptRelTypeId(name).getOrElse(LazyType.UNINITIALIZED)
     }
+
+    Some(id)
+  }
 }
 
-object LazyTypes {
-  def apply(names: Seq[RelTypeName])(implicit table:SemanticTable): LazyTypes = {
-    val types = LazyTypes(names.map(_.name))
-    types.ids = names.flatMap(_.id).map(_.id)
-    types
+object LazyType {
+  val UNINITIALIZED = -1
+
+  def apply(relTypeName: RelTypeName)(implicit table: SemanticTable): LazyType = {
+    val typ = LazyType(relTypeName.name)
+    typ.id = relTypeName.id
+    typ
   }
-  val empty = LazyTypes(Seq.empty[String])
 }

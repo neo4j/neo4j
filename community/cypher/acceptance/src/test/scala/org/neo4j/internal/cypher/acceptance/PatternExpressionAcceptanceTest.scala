@@ -35,8 +35,7 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWithAllPlanners("match (n) return (n)-->() as p").toList
-      .toList.head("p").asInstanceOf[Seq[_]]
+    val result = executeWithAllPlanners("match (n) return (n)-->() as p").toList.head("p").asInstanceOf[Seq[_]]
 
     result should have size 2
   }

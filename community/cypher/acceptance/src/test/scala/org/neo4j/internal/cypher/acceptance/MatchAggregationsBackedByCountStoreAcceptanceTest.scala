@@ -545,7 +545,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
                 type1: String = "KNOWS",
                 expectedLogicalPlan: String = "NodeCountFromCountStore",
                 query: String, f: InternalExecutionResult => Unit): Unit = {
-    executeWithRulePlanner(
+    updateWithBothPlanners(
       s"""
          |CREATE (p:$label1 {name: 'Petra'})
          |CREATE (s:$label2 {name: 'Steve'})
@@ -573,7 +573,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
                 type3: String = "KNOWS",
                 expectedLogicalPlan: String = "NodeCountFromCountStore",
                 query: String, f: InternalExecutionResult => Unit): Unit = {
-    executeWithRulePlanner(
+    updateWithBothPlanners(
       s"""
          |CREATE (m:X {name: 'Mats'})
          |CREATE (p:$label1 {name: 'Petra'})
@@ -584,7 +584,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
 
     graph.inTx {
       executeWithRulePlanner("MATCH (m:X)-[r]->() DELETE m, r")
-      executeWithRulePlanner(
+      executeWithCostPlannerOnly(
         s"""
            |MATCH (p:$label1 {name: 'Petra'})
            |MATCH (s:$label2 {name: 'Steve'})

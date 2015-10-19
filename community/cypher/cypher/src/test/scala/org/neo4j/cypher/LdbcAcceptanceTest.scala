@@ -31,7 +31,7 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
   LDBC_QUERIES.foreach { ldbcQuery =>
     test(ldbcQuery.name) {
       //given
-      executeWithRulePlanner(ldbcQuery.createQuery, ldbcQuery.createParams.toSeq: _*)
+      eengine.execute(ldbcQuery.createQuery, ldbcQuery.createParams)
       ldbcQuery.constraintQueries.foreach(executeWithRulePlanner(_))
 
       //when
@@ -43,7 +43,7 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
   }
 
   test("LDBC query 12 should not get a bad plan because of lost precision in selectivity calculation") {
-    executeWithRulePlanner(LdbcQueries.Query12.createQuery, LdbcQueries.Query12.createParams.toSeq: _*)
+    updateWithBothPlanners(LdbcQueries.Query12.createQuery, LdbcQueries.Query12.createParams.toSeq: _*)
     LdbcQueries.Query12.constraintQueries.foreach(executeWithRulePlanner(_))
 
     val updatedLdbc12 =

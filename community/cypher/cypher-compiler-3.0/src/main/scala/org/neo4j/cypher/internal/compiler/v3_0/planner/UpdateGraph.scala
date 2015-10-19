@@ -20,9 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{LabelName, NodePattern}
+import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, RelTypeName, RelationshipPattern, LabelName, NodePattern}
 
-case class UpdateGraph(nodePatterns: Seq[NodePattern] = Seq.empty) {
+case class UpdateGraph(nodePatterns: Seq[CreateNodePattern] = Seq.empty,
+                       relPatterns: Seq[CreateRelationshipPattern] = Seq.empty) {
 
   def ++(other: UpdateGraph) = copy(nodePatterns = nodePatterns ++ other.nodePatterns)
 
@@ -31,21 +33,53 @@ case class UpdateGraph(nodePatterns: Seq[NodePattern] = Seq.empty) {
   def nonEmpty = !isEmpty
 
   def patternNodeLabels: Map[IdName, Set[LabelName]] =
-    nodePatterns.map(p => IdName.fromIdentifier(p.identifier.get) -> p.labels.toSet).toMap
+    nodePatterns.map(p => p.nodeName -> p.labels.toSet).toMap
 
   def labels: Set[LabelName] = nodePatterns.flatMap(_.labels).toSet
 
+  def relTypes: Set[RelTypeName] = relPatterns.map(_.relType).toSet
+
   def overlaps(qg: QueryGraph) =
     qg.patternNodes.nonEmpty &&
-      nonEmpty && (
-      qg.patternNodes.exists(p => qg.allKnownLabelsOnNode(p).isEmpty) || //MATCH ()?
-        nodePatterns.exists(p => p.labels.isEmpty) || //CREATE()?
-        (qg.patternNodeLabels.values.flatten.toSet intersect labels).nonEmpty // CREATE(:A:B) MATCH(:B:C)?
-      )
+      nonEmpty &&
+      (nodeOverlap(qg) || relationshipOverlap(qg))
 
-  def withNodePattern(nodePattern: NodePattern): UpdateGraph = copy(nodePatterns = nodePatterns :+ nodePattern)
+  def nodeOverlap(qg: QueryGraph) = {
+    qg.patternNodes.exists(p => qg.allKnownLabelsOnNode(p).isEmpty) || //MATCH ()?
+      nodePatterns.exists(p => p.labels.isEmpty) || //CREATE()?
+      (qg.patternNodeLabels.values.flatten.toSet intersect labels).nonEmpty // CREATE(:A:B) MATCH(:B:C)?
+  }
+
+  def relationshipOverlap(qg: QueryGraph) = {
+    //MATCH ()-[]->()?
+    qg.patternRelationships.exists(_.types.nonEmpty) ||
+      // CREATE ()-[:R]->() MATCH ()-[:R]-()?
+      (qg.patternRelationships.flatMap(_.types.toSet) intersect relTypes).nonEmpty
+  }
+
+
+  def addNodePatterns(nodePatterns: CreateNodePattern*): UpdateGraph = {
+
+    copy(nodePatterns = (this.nodePatterns ++ nodePatterns).distinct)
+  }
+
+  def addRelPatterns(relationships: CreateRelationshipPattern*): UpdateGraph =
+    copy(relPatterns = (this.relPatterns ++ relationships).distinct)
 }
 
 object UpdateGraph {
   val empty = UpdateGraph()
+}
+
+case class CreateNodePattern(nodeName: IdName, labels: Seq[LabelName], properties: Option[Expression])
+
+case class CreateRelationshipPattern(relName: IdName, leftNode: IdName, relType: RelTypeName, rightNode: IdName,
+                                     properties: Option[Expression], direction: SemanticDirection) {
+  assert(direction != SemanticDirection.BOTH)
+
+  def startNode = inOrder._1
+
+  def endNode = inOrder._2
+
+  def inOrder =  if (direction == SemanticDirection.OUTGOING) (leftNode, rightNode) else (rightNode, leftNode)
 }

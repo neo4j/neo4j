@@ -63,16 +63,20 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
         case n: NodeLogicalLeafPlan => n.idName
       }
       //1 leaf is always ok, second one is not stable though
-      leaves.size > 1 && leaves.drop(1).exists(overlaps(_, plannerQuery))
+      leaves.size > 1 && leaves.drop(1).exists(overlaps(_, plannerQuery) || relationshipOverlap(plannerQuery))
     }
   }
 
   private def overlaps(start: IdName, plannerQuery: PlannerQuery): Boolean = {
     val startLabels = plannerQuery.queryGraph.allKnownLabelsOnNode(start).toSet
     val writeLabels = plannerQuery.updateGraph.labels
+    plannerQuery.writesNodes && (
     startLabels.isEmpty || //MATCH ()?
       writeLabels.isEmpty || //CREATE()?
       (startLabels intersect writeLabels).nonEmpty//MATCH (:A) CREATE (:A)?
+     )
   }
+
+  private def relationshipOverlap(pq: PlannerQuery): Boolean = pq.updateGraph.relationshipOverlap(pq.queryGraph)
 }
 

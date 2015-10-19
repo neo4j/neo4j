@@ -85,7 +85,7 @@ class GreedyLeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanni
         selections = Selections.from(hasLabels1, hasLabels2)
       )
       val solvedA = PlannerQuery.empty.withQueryGraph(QueryGraph(patternNodes = Set("a"), selections = Selections.from(hasLabels2)))
-      val solvedAWithLabels1 = solvedA.updateQueryGraph(_.addPredicates(hasLabels1))
+      val solvedAWithLabels1 = solvedA.amendQueryGraph(_.addPredicates(hasLabels1))
       val solvedB = PlannerQuery.empty.withQueryGraph(QueryGraph(patternNodes = Set("b")))
 
       knownLabels = Set("Label1", "Label2")

@@ -23,8 +23,10 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.Expressi
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.frontend.v3_0.InternalException
+import org.neo4j.cypher.internal.frontend.v3_0.{SyntaxException, InternalException}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import collection.mutable
+import scala.collection.mutable.ListBuffer
 
 object ClauseConverters {
 
@@ -103,11 +105,77 @@ object ClauseConverters {
   implicit class CreateConverter(val clause: Create) extends AnyVal {
     def addCreateToLogicalPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = {
       clause.pattern.patternParts.foldLeft(acc) {
-        case (builder, EveryPath(pattern@NodePattern(Some(id), _, _))) =>
+        //CREATE (n :L1:L2 {prop: 42})
+        case (builder, EveryPath(NodePattern(Some(id), labels, props))) =>
           builder
-            .amendUpdateGraph(ug => ug.copy(nodePatterns = ug.nodePatterns :+ pattern))
+            .amendUpdateGraph(ug => ug.addNodePatterns(CreateNodePattern(IdName.fromIdentifier(id), labels, props)))
+
+        //CREATE (n)-[r: R]->(m)
+        case (builder, EveryPath(pattern:RelationshipChain)) =>
+
+          val (nodes, rels) = allCreatePatterns(pattern)
+          //remove duplicates from loops, (a:L)-[:ER1]->(a)
+          val dedupedNodes = dedup(nodes)
+
+          //create nodes that are not already matched or created
+          val nodesToCreate = dedupedNodes.filterNot(pattern => builder.allSeenPatternNodes(pattern.nodeName))
+
+          //we must check that we are not trying to set a pattern or label on any already created nodes
+          val nodesCreatedBefore = dedupedNodes.filter(pattern => builder.allSeenPatternNodes(pattern.nodeName))
+          nodesCreatedBefore.collectFirst {
+            case c if c.labels.nonEmpty || c.properties.nonEmpty =>
+              throw new SyntaxException(s"Can't create node ${c.nodeName.name} with labels or properties here. It already exists in this context")
+          }
+
+          builder
+            .amendUpdateGraph(ug => ug
+              .addNodePatterns(nodesToCreate:_*)
+              .addRelPatterns(rels:_*))
+
         case _ => throw new CantHandleQueryException(s"$clause is not yet supported")
       }
+    }
+
+    private def dedup(nodePatterns: Vector[CreateNodePattern]) = {
+      val seen = mutable.Set.empty[IdName]
+      val result = mutable.ListBuffer.empty[CreateNodePattern]
+      nodePatterns.foreach { pattern =>
+        if (!seen(pattern.nodeName)) result.append(pattern)
+        else if (pattern.labels.nonEmpty || pattern.properties.nonEmpty) {
+          //reused patterns must be pure identifier
+          throw new SyntaxException(s"Can't create node ${pattern.nodeName.name} with labels or properties here. It already exists in this context")
+        }
+        seen.add(pattern.nodeName)
+      }
+      result.toVector
+    }
+
+    private def allCreatePatterns(element: PatternElement): (Vector[CreateNodePattern], Vector[CreateRelationshipPattern]) = element match {
+      case NodePattern(None, _, _) => throw new InternalException("All nodes must be named at this instance")
+      //CREATE ()
+      case NodePattern(Some(identifier), labels, props) =>
+        (Vector(CreateNodePattern(IdName.fromIdentifier(identifier), labels, props)), Vector.empty)
+
+      //CREATE ()-[:R]->()
+      case RelationshipChain(leftNode: NodePattern, rel, rightNode) =>
+        val leftIdName = IdName.fromIdentifier(leftNode.identifier.get)
+        val rightIdName = IdName.fromIdentifier(rightNode.identifier.get)
+
+        (Vector(
+          CreateNodePattern(leftIdName, leftNode.labels, leftNode.properties),
+          CreateNodePattern(rightIdName, rightNode.labels, rightNode.properties)
+        ), Vector(CreateRelationshipPattern(IdName.fromIdentifier(rel.identifier.get),
+          leftIdName, rel.types.head, rightIdName, rel.properties, rel.direction)))
+
+      //CREATE ()->[:R]->()-[:R]->...->()
+      case RelationshipChain(left, rel, rightNode) =>
+        val (nodes, rels) = allCreatePatterns(left)
+        val rightIdName = IdName.fromIdentifier(rightNode.identifier.get)
+
+        (nodes :+
+          CreateNodePattern(rightIdName, rightNode.labels, rightNode.properties)
+        , rels :+
+          CreateRelationshipPattern(IdName.fromIdentifier(rel.identifier.get), nodes.last.nodeName, rel.types.head, rightIdName, rel.properties, rel.direction))
     }
   }
 

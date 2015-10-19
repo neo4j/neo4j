@@ -66,7 +66,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   }
 
   test("create two nodes and a relationship between them") {
-    val result = executeWithRulePlanner("create (a), (b), (a)-[r:REL]->(b)")
+    val result = updateWithBothPlanners("create (a), (b), (a)-[r:REL]->(b)")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
@@ -122,7 +122,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     val b = createNode()
     val c = createNode()
 
-    val result = executeWithRulePlanner("create (n) with n MATCH (x) WHERE id(x) IN [0, 1, 2] create (n)-[:REL]->(x)")
+    val result = executeWithCostPlannerOnly("create (n) with n MATCH (x) WHERE id(x) IN [0, 1, 2] create (n)-[:REL]->(x)")
     assertStats(result,
       nodesCreated = 1,
       relationshipsCreated = 3
@@ -169,12 +169,10 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     createNode()
     createNode()
 
-    val r = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) = 1 create (a)-[r:REL {param}]->(b) return r", "param" -> Map("name" -> "Andres", "age" -> 66)).
-      toList.head("r").asInstanceOf[Relationship]
-    graph.inTx {
-      r.getProperty("name") should equal("Andres")
-      r.getProperty("age") should equal(66)
-    }
+
+    val result = updateWithBothPlanners("match (a), (b) where id(a) = 0 AND id(b) = 1 create (a)-[r:REL {param}]->(b) return r.name, r.age", "param" -> Map("name" -> "Andres", "age" -> 66))
+
+    result.toList should equal(List(Map("r.name" -> "Andres", "r.age" -> 66)))
   }
 
   test("match and delete") {
@@ -250,7 +248,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     relate(root, b)
     relate(root, c)
 
-    executeWithRulePlanner("match (root) where id(root) = 0 match (root)-->(other) create (new {name:other.name}), (root)-[:REL]->(new)")
+    updateWithBothPlanners("match (root) where id(root) = 0 match (root)-->(other) create (new {name:other.name}), (root)-[:REL]->(new)")
 
     val result = executeWithAllPlanners("match (root) where id(root) = 0 match (root)-->(other) return other.name order by other.name").columnAs[String]("other.name").toList
     result should equal(List("Alfa", "Alfa", "Beta", "Beta", "Gamma", "Gamma"))
@@ -356,7 +354,7 @@ return distinct center""")
   test("full path in one create") {
     createNode()
     createNode()
-    val result = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) = 1 create (a)-[:KNOWS]->()-[:LOVES]->(b)")
+    val result = updateWithBothPlanners("match (a), (b) where id(a) = 0 AND id(b) = 1 create (a)-[:KNOWS]->()-[:LOVES]->(b)")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 2)
   }
@@ -371,7 +369,7 @@ return distinct center""")
   test("created paths honor directions") {
     val a = createNode()
     val b = createNode()
-    val result = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) = 1 create p = (a)<-[:X]-(b) return p").toList.head("p").asInstanceOf[Path]
+    val result = executeWithCostPlannerOnly("match (a), (b) where id(a) = 0 AND id(b) = 1 create p = (a)<-[:X]-(b) return p").toList.head("p").asInstanceOf[Path]
 
     result.startNode() should equal(a)
     result.endNode() should equal(b)
@@ -401,17 +399,17 @@ return distinct center""")
   }
 
   test("create two rels in one command should work") {
-    val result = executeWithRulePlanner("create (a{name:'a'})-[:test]->(b), (a)-[:test2]->(c)")
+    val result = updateWithBothPlanners("create (a{name:'a'})-[:test]->(b), (a)-[:test2]->(c)")
 
     assertStats(result, nodesCreated = 3, relationshipsCreated = 2, propertiesSet = 1)
   }
 
   test("cant set properties after node is already created") {
-    intercept[SyntaxException](executeWithRulePlanner("create a-[:test]->b, (a {name:'a'})-[:test2]->c"))
+    intercept[SyntaxException](updateWithBothPlanners("create (a)-[:test]->(b), (a {name:'a'})-[:test2]->c"))
   }
 
   test("cant set properties after node is already created2") {
-    intercept[SyntaxException](executeWithRulePlanner("create a-[:test]->b create unique (a {name:'a'})-[:test2]->c"))
+    intercept[SyntaxException](executeWithRulePlanner("create (a)-[:test]->(b) create unique (a {name:'a'})-[:test2]->c"))
   }
 
   test("can create anonymous nodes inside foreach") {

@@ -178,7 +178,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val result = updateWithBothPlanners(query)
     assertNumberOfEagerness(query, 2)
-    result should use("RepeatableRead")
+    result should use("RepeatableRead", "EagerApply")
     assertStats(result, nodesCreated = 10)
   }
 
@@ -238,6 +238,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
   }
 
   test("matching using a pattern predicate and creating relationship should not be eager") {
+    createNode()
     val query = "MATCH (n) WHERE (n)-->() CREATE (n)-[:T]->()"
 
     assertNumberOfEagerness(query, 0)
@@ -316,6 +317,15 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertStats(updateWithBothPlanners(query), relationshipsCreated = 2)
   }
 
+  test("should introduce handle conflicts with create after WITH") {
+    relate(createNode(), createNode(), "TYPE")
+    relate(createNode(), createNode(), "TYPE")
+    val query = "MATCH ()-[:TYPE]->() CREATE (a)-[:TYPE]->(b) WITH * MATCH ()-[:TYPE]->() CREATE (c)-[:TYPE]->(d) "
+
+    assertNumberOfEagerness(query, 2)
+    assertStats(updateWithBothPlanners(query), nodesCreated = 20, relationshipsCreated = 10)
+  }
+
   test("should introduce an eager pipe between a non-leaf relationship read and a relationship create") {
     relate(createLabeledNode("LabelOne"), createLabeledNode("LabelTwo"), "TYPE")
     relate(createLabeledNode("LabelOne"), createLabeledNode("LabelTwo"), "TYPE")
@@ -351,7 +361,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     relate(createNode(), createNode(), "T1")
     val query = "MATCH ()-[:T1]->() CREATE ()-[:T2]->()"
 
-    assertStats(executeWithRulePlanner(query), nodesCreated = 4, relationshipsCreated = 2)
+    assertStats(updateWithBothPlanners(query), nodesCreated = 4, relationshipsCreated = 2)
     assertNumberOfEagerness(query, 0)
   }
 
