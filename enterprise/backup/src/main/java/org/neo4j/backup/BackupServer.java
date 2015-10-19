@@ -19,9 +19,11 @@
  */
 package org.neo4j.backup;
 
+import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 
 import org.neo4j.backup.BackupClient.BackupRequestType;
+import org.neo4j.com.ChunkingChannelBuffer;
 import org.neo4j.com.Client;
 import org.neo4j.com.Protocol;
 import org.neo4j.com.ProtocolVersion;
@@ -36,50 +38,23 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 
-class BackupServer extends Server<TheBackupInterface, Object>
+class BackupServer extends Server<TheBackupInterface,Object>
 {
+    private static final long DEFAULT_OLD_CHANNEL_THRESHOLD = Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS * 1000;
+    private static final int DEFAULT_MAX_CONCURRENT_TX = 3;
+
+    private static final BackupRequestType[] contexts = BackupRequestType.values();
+
     static final byte PROTOCOL_VERSION = 1;
-    private final BackupRequestType[] contexts = BackupRequestType.values();
-    static int DEFAULT_PORT = 6362;
+    static final int DEFAULT_PORT = 6362;
     static final int FRAME_LENGTH = Protocol.MEGA * 4;
 
-    public BackupServer( TheBackupInterface requestTarget, final HostnamePort server,
-                         Logging logging, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
+    BackupServer( TheBackupInterface requestTarget, HostnamePort server, Logging logging,
+            ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
-        super( requestTarget, new Configuration()
-        {
-            @Override
-            public long getOldChannelThreshold()
-            {
-                return Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS * 1000;
-            }
-
-            @Override
-            public int getMaxConcurrentTransactions()
-            {
-                return 3;
-            }
-
-            @Override
-            public int getChunkSize()
-            {
-                return FRAME_LENGTH;
-            }
-
-            @Override
-            public HostnamePort getServerAddress()
-            {
-                return server;
-            }
-        }, logging, FRAME_LENGTH, new ProtocolVersion( PROTOCOL_VERSION,
-                ProtocolVersion.INTERNAL_PROTOCOL_VERSION ),
-        TxChecksumVerifier.ALWAYS_MATCH, SYSTEM_CLOCK, byteCounterMonitor, requestMonitor );
-    }
-
-    @Override
-    protected void responseWritten( RequestType<TheBackupInterface> type, Channel channel,
-                                    RequestContext context )
-    {
+        super( requestTarget, newBackupConfig( FRAME_LENGTH, server ), logging, FRAME_LENGTH,
+                new ProtocolVersion( PROTOCOL_VERSION, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ),
+                TxChecksumVerifier.ALWAYS_MATCH, SYSTEM_CLOCK, byteCounterMonitor, requestMonitor );
     }
 
     @Override
@@ -91,5 +66,43 @@ class BackupServer extends Server<TheBackupInterface, Object>
     @Override
     protected void finishOffChannel( Channel channel, RequestContext context )
     {
+    }
+
+    @Override
+    protected ChunkingChannelBuffer newChunkingBuffer( ChannelBuffer bufferToWriteTo, Channel channel, int capacity,
+            byte internalProtocolVersion, byte applicationProtocolVersion )
+    {
+        return new BufferReusingChunkingChannelBuffer( bufferToWriteTo, channel, capacity, internalProtocolVersion,
+                applicationProtocolVersion );
+    }
+
+    private static Configuration newBackupConfig( final int chunkSize, final HostnamePort server )
+    {
+        return new Configuration()
+        {
+            @Override
+            public long getOldChannelThreshold()
+            {
+                return DEFAULT_OLD_CHANNEL_THRESHOLD;
+            }
+
+            @Override
+            public int getMaxConcurrentTransactions()
+            {
+                return DEFAULT_MAX_CONCURRENT_TX;
+            }
+
+            @Override
+            public int getChunkSize()
+            {
+                return chunkSize;
+            }
+
+            @Override
+            public HostnamePort getServerAddress()
+            {
+                return server;
+            }
+        };
     }
 }
