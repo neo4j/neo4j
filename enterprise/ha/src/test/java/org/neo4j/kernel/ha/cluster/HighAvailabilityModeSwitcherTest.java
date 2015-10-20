@@ -434,7 +434,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldPerformForcedElections()
+    public void shouldPostMemberUnavailableEvent()
     {
         // Given
         ClusterMemberAvailability memberAvailability = mock( ClusterMemberAvailability.class );
@@ -445,40 +445,16 @@ public class HighAvailabilityModeSwitcherTest
                 mock( InstanceId.class ), new DevNullLoggingService() );
 
         // When
-        modeSwitcher.forceElections();
+        modeSwitcher.postMemberUnavailable();
 
         // Then
         InOrder inOrder = inOrder( memberAvailability, election );
         inOrder.verify( memberAvailability ).memberIsUnavailable( HighAvailabilityModeSwitcher.SLAVE );
-        inOrder.verify( election ).performRoleElections();
         inOrder.verifyNoMoreInteractions();
     }
 
     @Test
-    public void shouldPerformForcedElectionsOnlyOnce()
-    {
-        // Given: HAMS
-        ClusterMemberAvailability memberAvailability = mock( ClusterMemberAvailability.class );
-        Election election = mock( Election.class );
-
-        HighAvailabilityModeSwitcher modeSwitcher = new HighAvailabilityModeSwitcher( mock( SwitchToSlave.class ),
-                mock( SwitchToMaster.class ), election, memberAvailability, dependencyResolverMock(),
-                mock( InstanceId.class ), new DevNullLoggingService() );
-
-        // When: reelections are forced multiple times
-        modeSwitcher.forceElections();
-        modeSwitcher.forceElections();
-        modeSwitcher.forceElections();
-
-        // Then: instance sens out memberIsUnavailable and asks for elections and does this only once
-        InOrder inOrder = inOrder( memberAvailability, election );
-        inOrder.verify( memberAvailability ).memberIsUnavailable( HighAvailabilityModeSwitcher.SLAVE );
-        inOrder.verify( election ).performRoleElections();
-        inOrder.verifyNoMoreInteractions();
-    }
-
-    @Test
-    public void shouldAllowForcedElectionsAfterModeSwitch() throws Throwable
+    public void shouldPostMemberNotAvailableEventAfterModeSwitch() throws Throwable
     {
         // Given
         SwitchToSlave switchToSlave = mock( SwitchToSlave.class );
@@ -516,7 +492,7 @@ public class HighAvailabilityModeSwitcherTest
         modeSwitcher.init();
         modeSwitcher.start();
 
-        modeSwitcher.forceElections();
+        modeSwitcher.postMemberUnavailable();
         reset( memberAvailability, election );
 
         // When
@@ -524,12 +500,11 @@ public class HighAvailabilityModeSwitcherTest
                 .class ),
                 URI.create( "http://localhost:9090?serverId=42" ) ) );
         modeSwitchHappened.await();
-        modeSwitcher.forceElections();
+        modeSwitcher.postMemberUnavailable();
 
         // Then
         InOrder inOrder = inOrder( memberAvailability, election );
         inOrder.verify( memberAvailability ).memberIsUnavailable( HighAvailabilityModeSwitcher.SLAVE );
-        inOrder.verify( election ).performRoleElections();
         inOrder.verifyNoMoreInteractions();
     }
 

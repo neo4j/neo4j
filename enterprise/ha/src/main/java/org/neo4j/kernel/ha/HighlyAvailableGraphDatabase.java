@@ -483,7 +483,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             @Override
             public void handle()
             {
-                highAvailabilityModeSwitcher.forceElections();
+                highAvailabilityModeSwitcher.postMemberUnavailable();
             }
         };
 

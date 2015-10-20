@@ -235,16 +235,49 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
             }
         }
 
+
+        /**
+         * As soon as we receive an unavailability message and the instanceId belongs to us, depending on the current
+         * state we do the following:
+         * <ul>
+         * <li>if current state is <b>not</b> {@link HighAvailabilityMemberState#PENDING} we trigger switch to
+         * {@link
+         * HighAvailabilityMemberState#PENDING} and force new elections.</li>
+         * <li>if current state is {@link HighAvailabilityMemberState#PENDING}
+         * we only log debug message</li>
+         * </ul>
+         * The assumption here is: as soon as we receive unavailability event about us - then something went wrong
+         * in a cluster and we need to perform new elections.
+         * Elections should be triggered for all states except {@link HighAvailabilityMemberState#PENDING}, since
+         * first of all there is nothing or we already made a switch and waiting election to start, so no reason to
+         * start them again.
+         * <p>
+         * Listener invoked from sync block in {@link org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents} so we
+         * should not have any racing here.
+         *</p>
+         * @param role The role for which the member is unavailable
+         * @param unavailableId The id of the member which became unavailable for that role
+         */
         @Override
         public void memberIsUnavailable( String role, InstanceId unavailableId )
         {
-            if ( context.getMyId().equals( unavailableId ) &&
-                 HighAvailabilityModeSwitcher.SLAVE.equals( role ) &&
-                 state == HighAvailabilityMemberState.SLAVE )
+            if ( context.getMyId().equals( unavailableId ) )
             {
-                HighAvailabilityMemberState oldState = state;
-                changeStateToPending();
-                logger.debug( "Got memberIsUnavailable(" + unavailableId + "), moved to " + state + " from " + oldState );
+                if ( HighAvailabilityMemberState.PENDING != state )
+                {
+                    HighAvailabilityMemberState oldState = state;
+                    changeStateToPending();
+                    logger.debug( "Got memberIsUnavailable(" + unavailableId + "), moved to " + state + " from " +
+                                  oldState );
+                    logger.debug( "Forcing new round of elections." );
+                    election.performRoleElections();
+                }
+                else
+                {
+                    logger.debug( "Got memberIsUnavailable(" + unavailableId + "), but already in " +
+                                  HighAvailabilityMemberState.PENDING + " state, will skip state change and " +
+                                  "new election.");
+                }
             }
             else
             {
