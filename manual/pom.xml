@@ -22,6 +22,7 @@
     <module>cypher</module>
     <module>manual</module>
     <module>neo4j-harness-test</module>
+    <module>neo4j-harness-enterprise-test</module>
   </modules>
 
   <scm>
