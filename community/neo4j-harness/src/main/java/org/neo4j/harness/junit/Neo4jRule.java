@@ -19,12 +19,12 @@
  */
 package org.neo4j.harness.junit;
 
-import java.io.File;
-import java.net.URI;
-
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+
+import java.io.File;
+import java.net.URI;
 
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -43,17 +43,22 @@ import org.neo4j.harness.TestServerBuilders;
  */
 public class Neo4jRule implements TestRule, TestServerBuilder
 {
-    private ServerControls controls;
     private TestServerBuilder builder;
+    private ServerControls controls;
+
+    Neo4jRule( TestServerBuilder builder )
+    {
+        this.builder = builder;
+    }
 
     public Neo4jRule()
     {
-        builder = TestServerBuilders.newInProcessBuilder();
+        this( TestServerBuilders.newInProcessBuilder() );
     }
 
-    public Neo4jRule(File workingDirectory)
+    public Neo4jRule( File workingDirectory )
     {
-        builder = TestServerBuilders.newInProcessBuilder( workingDirectory );
+        this( TestServerBuilders.newInProcessBuilder( workingDirectory ) );
     }
 
     @Override
