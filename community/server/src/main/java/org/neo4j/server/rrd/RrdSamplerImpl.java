@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.rrd;
 
-import java.io.IOException;
-
 import org.rrd4j.core.RrdDb;
 import org.rrd4j.core.Sample;
 import org.rrd4j.core.Util;
+
+import java.io.IOException;
 
 /**
  * Manages sampling the state of the database and storing the samples in a round
@@ -60,10 +60,6 @@ public class RrdSamplerImpl implements RrdSampler {
             }
 
             sample.update();
-        }
-        catch ( UnableToSampleException e )
-        {
-            e.printStackTrace();
         }
         catch ( IOException e )
         {
