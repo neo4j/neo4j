@@ -88,7 +88,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     relate(node1, node2)
     relate(node2, node3)
 
-    val result = execute(s"MATCH (a)-[*]-(b) DELETE a,b RETURN count(*) AS c")
+    val result = execute(s"MATCH (a)-[*]-(b) DETACH DELETE a,b RETURN count(*) AS c")
     assertStats(result, nodesDeleted = 3, relationshipsDeleted = 2)
 
     //(1)-->(2), (2)<--(1), (2)-->(3), (3)<--(2), (1)-*->(3), (3)<-*-(1)
