@@ -25,14 +25,17 @@ import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 
 public class CypherStatementRunner implements StatementRunner
 {
     private final GraphDatabaseService db;
+    private final QueryExecutionEngine queryExecutionEngine;
 
-    public CypherStatementRunner( GraphDatabaseService db )
+    public CypherStatementRunner( GraphDatabaseService db, QueryExecutionEngine queryExecutionEngine )
     {
         this.db = db;
+        this.queryExecutionEngine = queryExecutionEngine;
     }
 
     @Override
@@ -61,11 +64,15 @@ public class CypherStatementRunner implements StatementRunner
         }
         else
         {
-            if ( !ctx.hasTransaction() )
+            if ( ctx.hasTransaction() || queryExecutionEngine.isPeriodicCommit( statement ) )
+            {
+                return new CypherAdapterStream( db.execute( statement, params ) );
+            }
+            else
             {
                 ctx.beginImplicitTransaction();
+                return new CypherAdapterStream( db.execute( statement, params ) );
             }
-            return new CypherAdapterStream( db.execute( statement, params ) );
         }
     }
 }
