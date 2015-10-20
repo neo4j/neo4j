@@ -99,8 +99,8 @@ public class TopLevelTransaction implements Transaction
         }
         catch ( TransientFailureException e )
         {
-            // We let deadlock exceptions pass through unchanged since they aren't really transaction failures
-            // in the same sense as unexpected failures are. A deadlock exception signals that the transaction
+            // We let transient exceptions pass through unchanged since they aren't really transaction failures
+            // in the same sense as unexpected failures are. Such exception signals that the transaction
             // can be retried and might be successful the next time.
             throw e;
         }
