@@ -38,7 +38,7 @@ case class PlanEventHorizon(config: QueryPlannerConfiguration = QueryPlannerConf
         val aggregationPlan = plan match {
           case n: NodeCountFromCountStore => projection(selectedPlan, aggregatingProjection.projections)
           case r: RelationshipCountFromCountStore => projection(selectedPlan, aggregatingProjection.projections)
-          case _ => aggregation(plan, aggregatingProjection)
+          case _ => aggregation(selectedPlan, aggregatingProjection)
         }
         sortSkipAndLimit(aggregationPlan, query)
 

@@ -191,4 +191,43 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     result.toSet should equal(Set(Map("nestedMap.foo.bar" -> "baz")))
   }
 
+
+  test("WITH with predicate and aggregation should be handled by all planners") {
+    // GIVEN
+    createNode(Map("prop" -> 43))
+    createNode(Map("prop" -> 42))
+
+    // WHEN
+    val query = "MATCH (n) WITH n WHERE n.prop = 42 RETURN count(*)"
+    val result = executeScalarWithAllPlanners[Long](query)
+
+    // THEN
+    result should equal(1)
+  }
+
+  test("multiple WITHs with predicates and aggregation should be handled by all planners") {
+    // GIVEN
+    val david = createNode("name" -> "David")
+    val other = createNode("name" -> "Other")
+    val notOther = createNode("name" -> "NotOther")
+    val notOther2 = createNode("name" -> "NotOther2")
+    relate(david, other)
+    relate(david, notOther)
+    relate(david, notOther2)
+    relate(other, createNode())
+    relate(other, createNode())
+    relate(notOther, createNode())
+    relate(notOther, createNode())
+    relate(notOther2, createNode())
+
+    // WHEN
+    val query = """MATCH (david { name: "David" })--(otherPerson)-->()
+      |WITH otherPerson, count(*) AS foaf WHERE foaf > 1
+      |WITH otherPerson WHERE otherPerson.name <> 'NotOther'
+      |RETURN count(*)""".stripMargin
+    val result = executeScalarWithAllPlanners[Long](query)
+
+    //THEN
+    result should equal(1)
+  }
 }
