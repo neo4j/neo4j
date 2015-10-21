@@ -23,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -467,7 +468,7 @@ enum BlockType
         StringBuilder output = new StringBuilder( 512 );
         try
         {
-            String dot = out.toString( "UTF-8" );
+            String dot = out.toString( StandardCharsets.UTF_8.name() );
             output.append( "[\"dot\", \"cypherdoc-" )
                     .append( id )
                     .append( '-' )

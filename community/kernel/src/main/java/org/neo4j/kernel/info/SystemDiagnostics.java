@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.info;
 
-import static java.net.NetworkInterface.getNetworkInterfaces;
-import static org.neo4j.helpers.Format.bytes;
-import static org.neo4j.kernel.impl.util.Charsets.UTF_8;
-import static org.neo4j.io.fs.FileUtils.newBufferedFileReader;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -40,6 +35,7 @@ import java.net.SocketException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -51,6 +47,10 @@ import java.util.Map;
 import java.util.TimeZone;
 
 import org.neo4j.logging.Logger;
+
+import static java.net.NetworkInterface.getNetworkInterfaces;
+import static org.neo4j.helpers.Format.bytes;
+import static org.neo4j.io.fs.FileUtils.newBufferedFileReader;
 
 enum SystemDiagnostics implements DiagnosticsProvider
 {
@@ -265,7 +265,7 @@ enum SystemDiagnostics implements DiagnosticsProvider
                 {
                     try
                     {
-                        BufferedReader reader = newBufferedFileReader( scheduler, UTF_8 );
+                        BufferedReader reader = newBufferedFileReader( scheduler, StandardCharsets.UTF_8 );
                         try
                         {
                             for ( String line; null != ( line = reader.readLine() ); )

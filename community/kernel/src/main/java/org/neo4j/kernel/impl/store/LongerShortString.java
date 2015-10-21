@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
@@ -844,27 +845,19 @@ public enum LongerShortString
         return true;
     }
 
-    private static boolean encodeUTF8( int keyId, String string,
-            PropertyBlock target, int payloadSize )
+    private static boolean encodeUTF8( int keyId, String string, PropertyBlock target, int payloadSize )
     {
-        try
+        byte[] bytes = string.getBytes( StandardCharsets.UTF_8 );
+        final int length = bytes.length;
+        if ( length > payloadSize-3/*key*/-2/*enc+len*/ ) return false;
+        Bits bits = newBitsForStep8(length);
+        writeHeader( bits, keyId, ENCODING_UTF8, length); // In this case it isn't the string length, but the number of bytes
+        for ( byte value : bytes )
         {
-            byte[] bytes = string.getBytes( "UTF-8" );
-            final int length = bytes.length;
-            if ( length > payloadSize-3/*key*/-2/*enc+len*/ ) return false;
-            Bits bits = newBitsForStep8(length);
-            writeHeader( bits, keyId, ENCODING_UTF8, length); // In this case it isn't the string length, but the number of bytes
-            for ( byte value : bytes )
-            {
-                bits.put( value );
-            }
-            target.setValueBlocks( bits.getLongs() );
-            return true;
+            bits.put( value );
         }
-        catch ( UnsupportedEncodingException e )
-        {
-            throw new IllegalStateException( "All JVMs must support UTF-8", e );
-        }
+        target.setValueBlocks( bits.getLongs() );
+        return true;
     }
 
     private boolean doEncode(int keyId, byte[] data, PropertyBlock target,
@@ -903,14 +896,7 @@ public enum LongerShortString
         {
             result[i] = bits.getByte();
         }
-        try
-        {
-            return new String( result, "UTF-8" );
-        }
-        catch ( UnsupportedEncodingException e )
-        {
-            throw new IllegalStateException( "All JVMs must support UTF-8", e );
-        }
+        return UTF8.decode( result );
     }
 
     public static int calculateNumberOfBlocksUsed( long firstBlock )

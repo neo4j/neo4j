@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.docgen
 
+import java.nio.charset.StandardCharsets
+
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.prettifier.Prettifier
@@ -219,7 +221,8 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
   @Before
   def init() {
     dir = createDir(section)
-    allQueriesWriter = new OutputStreamWriter(new FileOutputStream(new File("target/all-queries.asciidoc"), true), "UTF-8")
+    allQueriesWriter = new OutputStreamWriter(new FileOutputStream(new File("target/all-queries.asciidoc"), true),
+      StandardCharsets.UTF_8)
     db = newTestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
 
     GraphDatabaseServiceCleaner.cleanDatabaseContent(db)

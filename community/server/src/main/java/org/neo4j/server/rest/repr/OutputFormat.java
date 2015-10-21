@@ -32,6 +32,7 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.StreamingOutput;
 
+import org.neo4j.helpers.UTF8;
 import org.neo4j.server.rest.web.NodeNotFoundException;
 import org.neo4j.server.rest.web.RelationshipNotFoundException;
 import org.neo4j.server.web.HttpHeaderUtils;
@@ -41,7 +42,6 @@ import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 
 public class OutputFormat
 {
-    private static final String UTF8 = "UTF-8";
     private final RepresentationFormat format;
     private final ExtensionInjector extensions;
     private final URI baseUri;
@@ -218,20 +218,12 @@ public class OutputFormat
 
     private byte[] toBytes( String entity, boolean mustFail )
     {
-        byte[] entityAsBytes;
-        try
+        byte[] entityAsBytes = UTF8.encode( entity );
+        if ( !mustFail )
         {
-            entityAsBytes = entity.getBytes( UTF8 );
-            if (! mustFail) representationWriteHandler.onRepresentationWritten();
+            representationWriteHandler.onRepresentationWritten();
         }
-        catch ( UnsupportedEncodingException e )
-        {
-            throw new RuntimeException( "Could not encode string as UTF-8", e );
-        }
-        finally
-        {
-            representationWriteHandler.onRepresentationFinal();
-        }
+        representationWriteHandler.onRepresentationFinal();
         return entityAsBytes;
     }
 

@@ -32,19 +32,19 @@ import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.neo4j.test.TestDirectory;
 
+import static java.util.Arrays.copyOfRange;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
-import static java.util.Arrays.copyOfRange;
 
 public class ReadablesTest
 {
@@ -148,13 +148,13 @@ public class ReadablesTest
     @Test
     public void shouldComplyWithUtf8CharsetForExample() throws Exception
     {
-        shouldComplyWithSpecifiedCharset( Charset.forName( "utf-8" ) );
+        shouldComplyWithSpecifiedCharset( StandardCharsets.UTF_8 );
     }
 
     @Test
     public void shouldComplyWithIso88591CharsetForExample() throws Exception
     {
-        shouldComplyWithSpecifiedCharset( Charset.forName( "iso-8859-1" ) );
+        shouldComplyWithSpecifiedCharset( StandardCharsets.ISO_8859_1 );
     }
 
     @Test

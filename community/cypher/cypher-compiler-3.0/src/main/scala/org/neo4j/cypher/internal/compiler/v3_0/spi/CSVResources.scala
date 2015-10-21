@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.spi
 
 import java.io._
 import java.net.{CookieHandler, CookieManager, CookiePolicy, URL}
-import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 import java.util.zip.{GZIPInputStream, InflaterInputStream}
 
@@ -55,10 +55,10 @@ class CSVResources(cleaner: TaskCloser) extends ExternalResource {
     val inputStream = openStream(url)
 
     val reader = if (url.getProtocol == "file") {
-      Readables.files(Charset.forName("UTF-8"), Paths.get(url.toURI).toFile)
+      Readables.files(StandardCharsets.UTF_8, Paths.get(url.toURI).toFile)
     }
     else
-      Readables.wrap(inputStream, url.toString, Charset.forName("UTF-8"))
+      Readables.wrap(inputStream, url.toString, StandardCharsets.UTF_8)
     val delimiter: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)
     val seeker = CharSeekers.charSeeker(reader, CSVResources.defaultConfig, true)
     val extractor = new Extractors(delimiter).string()

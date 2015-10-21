@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.neo4j.kernel.impl.util.Charsets;
+import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.util.Codecs;
 
 import static java.lang.String.format;
@@ -51,14 +51,14 @@ public class UserSerialization
         {
             sb.append( serialize(user) ).append( "\n" );
         }
-        return sb.toString().getBytes( Charsets.UTF_8 );
+        return UTF8.encode( sb.toString() );
     }
 
     public List<User> deserializeUsers( byte[] bytes ) throws FormatException
     {
         List<User> out = new ArrayList<>();
         int lineNumber = 1;
-        for ( String line : new String( bytes, Charsets.UTF_8 ).split( "\n" ) )
+        for ( String line : UTF8.decode( bytes ).split( "\n" ) )
         {
             if (line.trim().length() > 0)
             {

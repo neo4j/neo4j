@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import javax.servlet.ServletException;
@@ -109,7 +110,7 @@ public class StreamingBatchOperations extends BatchOperations
 
         @Override
         public PrintWriter getWriter() throws IOException {
-            return new PrintWriter( new OutputStreamWriter( output, "UTF-8") );
+            return new PrintWriter( new OutputStreamWriter( output, StandardCharsets.UTF_8 ) );
         }
     }
 }

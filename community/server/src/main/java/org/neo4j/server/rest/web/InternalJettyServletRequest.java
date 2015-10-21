@@ -29,6 +29,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -42,6 +43,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.MediaType;
 
+import org.neo4j.helpers.UTF8;
+
 public class InternalJettyServletRequest extends Request
 {
     private class Input extends ServletInputStream
@@ -53,14 +56,7 @@ public class InternalJettyServletRequest extends Request
 
         public Input( String data )
         {
-            try
-            {
-                bytes = data.getBytes("UTF-8");
-            }
-            catch ( UnsupportedEncodingException e )
-            {
-                throw new RuntimeException( e );
-            }
+            bytes = UTF8.encode( data );
         }
 
         public int read() throws IOException
@@ -141,12 +137,12 @@ public class InternalJettyServletRequest extends Request
 
     public InternalJettyServletRequest( String method, String uri, String body, InternalJettyServletResponse res ) throws UnsupportedEncodingException
     {
-        this( method, new HttpURI( uri ), body, new Cookie[] {}, MediaType.APPLICATION_JSON, "UTF-8", res );
+        this( method, new HttpURI( uri ), body, new Cookie[] {}, MediaType.APPLICATION_JSON, StandardCharsets.UTF_8.name(), res );
     }
 
     public InternalJettyServletRequest( String method, String uri, String body, InternalJettyServletResponse res, HttpServletRequest outerReq ) throws UnsupportedEncodingException
     {
-        this( method, new HttpURI( uri ), body, new Cookie[] {}, MediaType.APPLICATION_JSON, "UTF-8", res);
+        this( method, new HttpURI( uri ), body, new Cookie[] {}, MediaType.APPLICATION_JSON, StandardCharsets.UTF_8.name(), res);
         this.outerRequest = outerReq;
     }
 

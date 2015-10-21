@@ -19,22 +19,22 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import javax.ws.rs.core.Response;
-
 import org.junit.Test;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Collections;
+import javax.ws.rs.core.Response;
+
+import org.neo4j.helpers.UTF8;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.rest.management.console.ConsoleService;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
 import org.neo4j.server.webadmin.console.ScriptSession;
-import org.neo4j.server.rest.management.console.ConsoleService;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -46,7 +46,7 @@ public class ConsoleServiceDocTest
     private final URI uri = URI.create( "http://peteriscool.com:6666/" );
 
     @Test
-    public void correctRepresentation() throws URISyntaxException, UnsupportedEncodingException
+    public void correctRepresentation() throws URISyntaxException
     {
         ConsoleService consoleService = new ConsoleService( new ShellOnlyConsoleSessionFactory(), mock( Database.class ),
                 NullLogProvider.getInstance(), new OutputFormat( new JsonFormat(), uri, null ) );
@@ -60,7 +60,7 @@ public class ConsoleServiceDocTest
     }
 
     @Test
-    public void advertisesAvailableConsoleEngines() throws URISyntaxException, UnsupportedEncodingException
+    public void advertisesAvailableConsoleEngines() throws URISyntaxException
     {
         ConsoleService consoleServiceWithJustShellEngine = new ConsoleService( new ShellOnlyConsoleSessionFactory(),
                 mock( Database.class ), NullLogProvider.getInstance(), new OutputFormat( new JsonFormat(), uri, null ) );
@@ -71,9 +71,9 @@ public class ConsoleServiceDocTest
 
     }
 
-    private String decode( final Response response ) throws UnsupportedEncodingException
+    private String decode( final Response response )
     {
-        return new String( (byte[]) response.getEntity(), "UTF-8" );
+        return UTF8.decode( (byte[]) response.getEntity() );
     }
 
     private static class ShellOnlyConsoleSessionFactory implements ConsoleSessionFactory
@@ -87,9 +87,7 @@ public class ConsoleServiceDocTest
         @Override
         public Iterable<String> supportedEngines()
         {
-            return new ArrayList<String>(){{
-                add("shell");
-            }};
+            return Collections.singletonList( "shell" );
         }
     }
 }

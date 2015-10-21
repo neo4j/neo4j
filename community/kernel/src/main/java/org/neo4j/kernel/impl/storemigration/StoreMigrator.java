@@ -74,7 +74,6 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.Charsets;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
@@ -94,6 +93,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionM
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
@@ -119,8 +119,6 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.wit
  */
 public class StoreMigrator implements StoreMigrationParticipant
 {
-    private static final String UTF8 = Charsets.UTF_8.name();
-
     // Developers: There is a benchmark, storemigrate-benchmark, that generates large stores and benchmarks
     // the upgrade process. Please utilize that when writing upgrade code to ensure the code is fast enough to
     // complete upgrades in a reasonable time period.
@@ -193,7 +191,7 @@ public class StoreMigrator implements StoreMigrationParticipant
 
     private void writeLastTxChecksum( File migrationDir, long lastTxChecksum ) throws IOException
     {
-        try ( Writer writer = fileSystem.openAsWriter( lastTxChecksumFile( migrationDir ), UTF8, false ) )
+        try ( Writer writer = fileSystem.openAsWriter( lastTxChecksumFile( migrationDir ), UTF_8, false ) )
         {
             writer.write( String.valueOf( lastTxChecksum ) );
         }
@@ -201,7 +199,7 @@ public class StoreMigrator implements StoreMigrationParticipant
 
     private void writeLastTxLogPosition( File migrationDir, LogPosition lastTxLogPosition ) throws IOException
     {
-        try ( Writer writer = fileSystem.openAsWriter( lastTxLogPositionFile( migrationDir ), UTF8, false ) )
+        try ( Writer writer = fileSystem.openAsWriter( lastTxLogPositionFile( migrationDir ), UTF_8, false ) )
         {
             writer.write( lastTxLogPosition.getLogVersion() + "A" + lastTxLogPosition.getByteOffset() );
         }
@@ -209,7 +207,7 @@ public class StoreMigrator implements StoreMigrationParticipant
 
     private long readLastTxChecksum( File migrationDir ) throws IOException
     {
-        try ( Reader reader = fileSystem.openAsReader( lastTxChecksumFile( migrationDir ), UTF8 ) )
+        try ( Reader reader = fileSystem.openAsReader( lastTxChecksumFile( migrationDir ), UTF_8 ) )
         {
             char[] buffer = new char[100];
             int chars = reader.read( buffer );
@@ -219,7 +217,7 @@ public class StoreMigrator implements StoreMigrationParticipant
 
     private LogPosition readLastTxLogPosition( File migrationDir ) throws IOException
     {
-        try ( Reader reader = fileSystem.openAsReader( lastTxLogPositionFile( migrationDir ), UTF8 ) )
+        try ( Reader reader = fileSystem.openAsReader( lastTxLogPositionFile( migrationDir ), UTF_8 ) )
         {
             char[] buffer = new char[4096];
             int chars = reader.read( buffer );

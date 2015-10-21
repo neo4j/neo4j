@@ -20,13 +20,14 @@
 package org.neo4j.server.web;
 
 import javax.ws.rs.core.MediaType;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 public class HttpHeaderUtils {
-    private static final String UTF8 = "UTF-8";
-    public static final Map<String, String> CHARSET = Collections.singletonMap("charset", UTF8);
+
+    public static final Map<String, String> CHARSET = Collections.singletonMap("charset", StandardCharsets.UTF_8.name());
 
     public static MediaType mediaTypeWithCharsetUtf8(String mediaType)
     {

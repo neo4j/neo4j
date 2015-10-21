@@ -20,6 +20,7 @@ package org.neo4j.examples;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -97,7 +98,7 @@ public class Neo4jShell
             throws Exception
     {
         System.out.print( textToSystemOut );
-        return new BufferedReader( new InputStreamReader( System.in, "UTF-8" ) )
+        return new BufferedReader( new InputStreamReader( System.in, StandardCharsets.UTF_8 ) )
                 .readLine();
     }
 

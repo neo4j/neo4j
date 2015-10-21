@@ -19,12 +19,13 @@
  */
 package org.neo4j.server.rest.dbms;
 
-import java.nio.charset.Charset;
-
 import com.sun.jersey.core.util.Base64;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import org.neo4j.helpers.UTF8;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.neo4j.server.rest.dbms.AuthorizationHeaders.decode;
 
 public class AuthorizationHeadersTest
@@ -57,7 +58,6 @@ public class AuthorizationHeadersTest
 
     private String base64( String value )
     {
-        return new String( Base64.encode( value ), Charset
-                .forName( "UTF-8" ) );
+        return UTF8.decode( Base64.encode( value ) );
     }
 }

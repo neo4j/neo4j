@@ -26,6 +26,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
@@ -37,12 +38,12 @@ public abstract class IoPrimitiveUtils
         assert length >= 0 : "invalid array length " + length;
         byte[] chars = new byte[length];
         channel.get( chars, length );
-        return new String(chars, "UTF-8");
+        return UTF8.decode( chars );
     }
 
     public static void write3bLengthAndString( WritableLogChannel channel, String string ) throws IOException
     {
-        byte[] chars = string.getBytes( "UTF-8" );
+        byte[] chars = UTF8.encode( string );
         // 3 bytes to represent the length (4 is a bit overkill)... maybe
         // this space optimization is a bit overkill also :)
         channel.putShort( (short)chars.length );
@@ -57,12 +58,12 @@ public abstract class IoPrimitiveUtils
         int length = (lengthByte << 16) | lengthShort;
         byte[] chars = new byte[length];
         channel.get( chars, length );
-        return new String(chars, "UTF-8");
+        return UTF8.decode( chars );
     }
 
     public static void write2bLengthAndString( WritableLogChannel channel, String string ) throws IOException
     {
-        byte[] chars = string.getBytes( "UTF-8" );
+        byte[] chars = UTF8.encode( string );
         channel.putShort( (short)chars.length );
         channel.put(chars, chars.length);
     }

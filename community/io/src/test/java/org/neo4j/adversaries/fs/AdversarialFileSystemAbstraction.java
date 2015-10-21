@@ -31,6 +31,7 @@ import java.io.Writer;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -102,18 +103,18 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
         return delegate.listFiles( directory, filter );
     }
 
-    public Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException
+    public Writer openAsWriter( File fileName, Charset charset, boolean append ) throws IOException
     {
         adversary.injectFailure(
                 UnsupportedEncodingException.class, FileNotFoundException.class, SecurityException.class );
-        return new AdversarialWriter( delegate.openAsWriter( fileName, encoding, append ), adversary );
+        return new AdversarialWriter( delegate.openAsWriter( fileName, charset, append ), adversary );
     }
 
-    public Reader openAsReader( File fileName, String encoding ) throws IOException
+    public Reader openAsReader( File fileName, Charset charset ) throws IOException
     {
         adversary.injectFailure(
                 UnsupportedEncodingException.class, FileNotFoundException.class, SecurityException.class );
-        return new AdversarialReader( delegate.openAsReader( fileName, encoding ), adversary );
+        return new AdversarialReader( delegate.openAsReader( fileName, charset ), adversary );
     }
 
     public long getFileSize( File fileName )
@@ -181,7 +182,6 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     private final Map<Class<? extends ThirdPartyFileSystem>, ThirdPartyFileSystem> thirdPartyFileSystems =
             new HashMap<>();
 
-    @Override
     public synchronized <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
             Class<K> clazz,
             Function<Class<K>, K> creator )
@@ -196,7 +196,6 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
         return (K) fileSystem;
     }
 
-    @Override
     public void truncate( File path, long size ) throws IOException
     {
         adversary.injectFailure( FileNotFoundException.class, IOException.class, IllegalArgumentException.class,

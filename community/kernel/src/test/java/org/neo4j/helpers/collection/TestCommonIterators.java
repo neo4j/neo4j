@@ -28,6 +28,7 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -334,7 +335,7 @@ public class TestCommonIterators
         File file = createTextFileWithLines( lines );
         try
         {
-            Iterable<String> iterable = IteratorUtil.asIterable( file, "UTF-8" );
+            Iterable<String> iterable = IteratorUtil.asIterable( file, StandardCharsets.UTF_8 );
             assertEquals( Arrays.asList( lines ), IteratorUtil.asCollection( iterable ) );
         }
         finally

@@ -25,17 +25,18 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 
 public class LinesOfFileIterator extends PrefetchingIterator<String> implements ClosableIterator<String>
 {
     private final BufferedReader reader;
     private boolean closed;
     
-    public LinesOfFileIterator( File file, String encoding ) throws IOException
+    public LinesOfFileIterator( File file, Charset charset ) throws IOException
     {
         try
         {
-            reader = new BufferedReader( new InputStreamReader(new FileInputStream(file), encoding) );
+            reader = new BufferedReader( new InputStreamReader(new FileInputStream(file), charset) );
         }
         catch ( FileNotFoundException e )
         {

@@ -21,8 +21,8 @@ package org.neo4j.server.rest.dbms;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -35,7 +35,6 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriBuilder;
 
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.util.Charsets;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -148,7 +147,7 @@ public class AuthorizationFilter implements Filter
             response.setStatus( statusCode );
             response.addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
             addHeaders( response );
-            response.getOutputStream().write( JsonHelper.createJsonFrom( body() ).getBytes( Charsets.UTF_8 ) );
+            response.getOutputStream().write( JsonHelper.createJsonFrom( body() ).getBytes( StandardCharsets.UTF_8 ) );
         }
     }
 

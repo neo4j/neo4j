@@ -23,11 +23,11 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
@@ -40,7 +40,6 @@ import javax.tools.Diagnostic.Kind;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 
-import static org.neo4j.kernel.impl.util.Charsets.UTF_8;
 import static org.neo4j.io.fs.FileUtils.newFilePrintWriter;
 
 public abstract class AnnotationProcessor extends AbstractProcessor
@@ -174,7 +173,7 @@ public abstract class AnnotationProcessor extends AbstractProcessor
             file.getParentFile().mkdirs();
         }
 
-        newFilePrintWriter( file, UTF_8 ).append( line ).append( "\n" ).close();
+        newFilePrintWriter( file, StandardCharsets.UTF_8 ).append( line ).append( "\n" ).close();
     }
 
     private String path( String[] path )

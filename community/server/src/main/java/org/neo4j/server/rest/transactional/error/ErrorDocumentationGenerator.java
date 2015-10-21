@@ -21,6 +21,7 @@ package org.neo4j.server.rest.transactional.error;
 
 import java.io.File;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
@@ -86,7 +87,7 @@ public class ErrorDocumentationGenerator
     {
         System.out.printf( "Saving %s docs in '%s'.%n", description, file.getAbsolutePath() );
         file.getParentFile().mkdirs();
-        try ( PrintStream out = new PrintStream( file, "UTF-8" ) )
+        try ( PrintStream out = new PrintStream( file, StandardCharsets.UTF_8.name() ) )
         {
             table.print( out );
         }

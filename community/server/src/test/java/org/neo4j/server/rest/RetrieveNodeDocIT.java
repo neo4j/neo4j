@@ -26,6 +26,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
@@ -78,7 +79,7 @@ public class RetrieveNodeDocIT extends AbstractRestFunctionalDocTestBase
             HttpResponse response = httpclient.execute( httpget );
             HttpEntity entity = response.getEntity();
 
-            String entityBody = IOUtils.toString( entity.getContent(), "UTF-8" );
+            String entityBody = IOUtils.toString( entity.getContent(), StandardCharsets.UTF_8 );
 
             assertThat( entityBody, containsString( "http://dummy.neo4j.org/db/data/node/" ) );
 
@@ -100,7 +101,7 @@ public class RetrieveNodeDocIT extends AbstractRestFunctionalDocTestBase
             HttpResponse response = httpclient.execute( httpget );
             HttpEntity entity = response.getEntity();
 
-            String entityBody = IOUtils.toString( entity.getContent(), "UTF-8" );
+            String entityBody = IOUtils.toString( entity.getContent(), StandardCharsets.UTF_8 );
 
             assertThat( entityBody, containsString( nodeUri.toString() ) );
         } finally

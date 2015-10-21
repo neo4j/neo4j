@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -170,7 +171,7 @@ public class CsvInputBatchImportIT
     private File relationshipDataAsFile( List<InputRelationship> relationshipData ) throws IOException
     {
         File file = directory.file( "relationships.csv" );
-        try ( Writer writer = fs.openAsWriter( file, "utf-8", false ) )
+        try ( Writer writer = fs.openAsWriter( file, StandardCharsets.UTF_8, false ) )
         {
             // Header
             println( writer, ":start_id,:end_id,:type" );
@@ -187,7 +188,7 @@ public class CsvInputBatchImportIT
     private File nodeDataAsFile( List<InputNode> nodeData ) throws IOException
     {
         File file = directory.file( "nodes.csv" );
-        try ( Writer writer = fs.openAsWriter( file, "utf-8", false ) )
+        try ( Writer writer = fs.openAsWriter( file, StandardCharsets.UTF_8, false ) )
         {
             // Header
             println( writer, "id:ID,name,some-labels:LABEL" );

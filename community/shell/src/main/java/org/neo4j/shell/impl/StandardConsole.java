@@ -22,6 +22,7 @@ package org.neo4j.shell.impl;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 import org.neo4j.shell.Console;
 
@@ -52,9 +53,8 @@ public class StandardConsole implements Console
 	        format( prompt );
 	        if ( consoleReader == null )
 	        {
-	            consoleReader = new BufferedReader( new InputStreamReader(
-	                System.in, "UTF-8" ) );
-	        }
+				consoleReader = new BufferedReader( new InputStreamReader( System.in, StandardCharsets.UTF_8 ) );
+			}
 	        return consoleReader.readLine();
 	    }
 	    catch ( IOException e )

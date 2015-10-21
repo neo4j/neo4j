@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -64,7 +65,7 @@ enum MigrationStatus
 
     private static Pair<String, String> readFromFile( FileSystemAbstraction fs, File file, MigrationStatus expectedSate )
     {
-        try ( BufferedReader reader = new BufferedReader( fs.openAsReader( file, "utf-8" ) ) )
+        try ( BufferedReader reader = new BufferedReader( fs.openAsReader( file, StandardCharsets.UTF_8 ) ) )
         {
             String state = reader.readLine().trim();
             if ( expectedSate != null && !expectedSate.name().equals( state ) )
@@ -99,7 +100,7 @@ enum MigrationStatus
             }
         }
 
-        try ( Writer writer = fs.openAsWriter( stateFile, "utf-8", false ) )
+        try ( Writer writer = fs.openAsWriter( stateFile, StandardCharsets.UTF_8, false ) )
         {
             writer.write( name() );
             writer.write( '\n' );

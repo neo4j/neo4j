@@ -21,6 +21,7 @@ package org.neo4j.helpers.collection;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -810,10 +811,10 @@ public abstract class IteratorUtil
     /**
      * Creates an {@link Iterable} for iterating over the lines of a text file.
      * @param file the file to get the lines for.
-     * @param encoding the encoding of the file
+     * @param charset file charset
      * @return an {@link Iterable} for iterating over the lines of a text file.
      */
-    public static ClosableIterable<String> asIterable( final File file, final String encoding )
+    public static ClosableIterable<String> asIterable( final File file, final Charset charset )
     {
         return new ClosableIterable<String>()
         {
@@ -828,7 +829,7 @@ public abstract class IteratorUtil
                     {
                         mostRecentIterator.close();
                     }
-                    mostRecentIterator = asIterator( file, encoding );
+                    mostRecentIterator = asIterator( file, charset );
                     return mostRecentIterator;
                 }
                 catch ( IOException e )
@@ -853,13 +854,13 @@ public abstract class IteratorUtil
      * The opened file is closed if an exception occurs during reading or when
      * the files has been read through all the way.
      * @param file the file to get the lines for.
-     * @param encoding to be used for reading the file
+     * @param charset to be used for reading the file
      * @return an {@link Iterator} for iterating over the lines of a text file.
      * @throws IOException from underlying I/O operations
      */
-    public static ClosableIterator<String> asIterator( File file, String encoding ) throws IOException
+    public static ClosableIterator<String> asIterator( File file, Charset charset ) throws IOException
     {
-        return new LinesOfFileIterator( file, encoding );
+        return new LinesOfFileIterator( file, charset );
     }
 
     public static Iterable<Long> asIterable( final long... array )

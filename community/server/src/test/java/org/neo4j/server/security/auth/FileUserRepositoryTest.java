@@ -22,6 +22,9 @@ package org.neo4j.server.security.auth;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.IOException;
 import java.nio.file.CopyOption;
@@ -32,13 +35,10 @@ import java.nio.file.spi.FileSystemProvider;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.DelegatingFileSystem;
 import org.neo4j.io.fs.DelegatingFileSystemProvider;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.kernel.impl.util.Charsets;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
@@ -233,8 +233,8 @@ public class FileUserRepositoryTest
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Files.createDirectories( authFile.getParent() );
-        Files.write( authFile,
-                "neo4j:fc4c600b43ffe4d5857b4439c35df88f:SHA-256,A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n".getBytes( Charsets.UTF_8 ) );
+        Files.write( authFile, UTF8.encode(
+                "neo4j:fc4c600b43ffe4d5857b4439c35df88f:SHA-256,A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n" ) );
 
         // When
         FileUserRepository users = new FileUserRepository( authFile, logProvider );

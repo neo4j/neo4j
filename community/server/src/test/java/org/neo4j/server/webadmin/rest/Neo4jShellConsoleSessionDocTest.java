@@ -19,17 +19,17 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import java.io.UnsupportedEncodingException;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import javax.ws.rs.core.Response;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import org.neo4j.helpers.Settings;
+import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -103,9 +103,9 @@ public class Neo4jShellConsoleSessionDocTest implements ConsoleSessionFactory
         assertThat( result, containsString( expected ) );
     }
 
-    private List<String> decode( final Response response ) throws UnsupportedEncodingException, JsonParseException
+    private List<String> decode( final Response response ) throws JsonParseException
     {
-        return (List<String>) JsonHelper.readJson( new String( (byte[]) response.getEntity(), "UTF-8" ) );
+        return (List<String>) JsonHelper.readJson( UTF8.decode( (byte[]) response.getEntity() ) );
     }
 
     @Override

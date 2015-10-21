@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Rule;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -264,7 +265,8 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
 
     public String getNodesWithLabelAndPropertyUri( String label, String property, Object value ) throws UnsupportedEncodingException
     {
-        return format( "%slabel/%s/nodes?%s=%s", getDataUri(), label, property, encode( createJsonFrom( value ), "UTF-8" ) );
+        return format( "%slabel/%s/nodes?%s=%s", getDataUri(), label, property,
+                encode( createJsonFrom( value ), StandardCharsets.UTF_8.name() ) );
     }
 
     public String getSchemaIndexUri()

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -85,7 +86,7 @@ public class ResourcesService
         Reader reader = null;
         try
         {
-            reader = new InputStreamReader( input, "UTF-8" );
+            reader = new InputStreamReader( input, StandardCharsets.UTF_8 );
             int read;
             do
             {

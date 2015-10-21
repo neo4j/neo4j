@@ -27,6 +27,7 @@ import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -34,7 +35,6 @@ import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.Charsets;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.helpers.CommunityServerBuilder;
@@ -215,12 +215,12 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
 
     private ThrowingSupplier<String, IOException> fileContentSupplier( final File file )
     {
-        return new ThrowingSupplier<String, IOException>()
+        return new ThrowingSupplier<String,IOException>()
         {
             @Override
             public String get() throws IOException
             {
-                return readTextFile( file, Charsets.UTF_8 );
+                return readTextFile( file, StandardCharsets.UTF_8 );
             }
         };
     }

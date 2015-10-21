@@ -22,8 +22,7 @@ package org.neo4j.shell.impl;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Serializable;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.neo4j.shell.Output;
 
@@ -36,13 +35,8 @@ public class SystemOutput implements Output
 	private PrintWriter out;
 
     public SystemOutput() {
-        try {
-            out = new PrintWriter(new OutputStreamWriter(System.out,"UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            System.err.println("Unsupported encoding UTF-8, using "+Charset.defaultCharset()+", error: "+e.getMessage());
-            out = new PrintWriter(new OutputStreamWriter(System.out, Charset.defaultCharset()));
-        }
-    }
+		out = new PrintWriter( new OutputStreamWriter( System.out, StandardCharsets.UTF_8 ) );
+	}
 
     public void print( Serializable object )
 	{

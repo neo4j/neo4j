@@ -20,7 +20,7 @@
 package org.neo4j.bolt.v1.packstream;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * PackStream is a messaging serialisation format heavily inspired by MessagePack.
@@ -155,8 +155,6 @@ public class PackStream
     private static final long MINUS_2_TO_THE_15 = -32768L;
     private static final long MINUS_2_TO_THE_31 = -2147483648L;
 
-    public static final Charset UTF_8 = Charset.forName( "UTF-8" );
-
     private PackStream()
     {
     }
@@ -234,7 +232,7 @@ public class PackStream
             if ( value == null ) { packNull(); }
             else
             {
-                byte[] utf8 = value.getBytes( UTF_8 );
+                byte[] utf8 = value.getBytes( StandardCharsets.UTF_8 );
                 packTextHeader( utf8.length );
                 packRaw( utf8 );
             }
@@ -500,7 +498,7 @@ public class PackStream
 
         public String unpackText() throws IOException
         {
-            return new String( unpackUTF8(), UTF_8 );
+            return new String( unpackUTF8(), StandardCharsets.UTF_8 );
         }
 
         private int unpackBytesHeader() throws IOException

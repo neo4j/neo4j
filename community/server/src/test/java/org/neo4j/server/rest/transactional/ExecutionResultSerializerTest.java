@@ -19,6 +19,12 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.codehaus.jackson.JsonNode;
+import org.junit.Test;
+import org.mockito.internal.stubbing.answers.ThrowsException;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -35,12 +41,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
-import org.codehaus.jackson.JsonNode;
-import org.junit.Test;
-import org.mockito.internal.stubbing.answers.ThrowsException;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
@@ -60,8 +60,8 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.test.mocking.GraphMock;
 import org.neo4j.test.mocking.Link;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
@@ -71,7 +71,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
@@ -97,7 +96,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
         assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[],\"errors\":[]}", result );
     }
 
@@ -118,7 +117,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
         assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
                       "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}],\"errors\":[]}", result );
     }
@@ -139,7 +138,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
                       "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}],\"errors\":[]}", result );
     }
@@ -162,7 +161,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
         assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
                       "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}]," +
                       "\"errors\":[{\"code\":\"Neo.ClientError.Request.InvalidFormat\",\"message\":\"cause1\"}]}",
@@ -186,7 +185,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
                       "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}]," +
                       "\"errors\":[{\"code\":\"Neo.ClientError.Request.InvalidFormat\",\"message\":\"cause1\"}]}",
@@ -206,7 +205,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
         assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[],\"errors\":[{\"code\":\"Neo.ClientError.Request.InvalidFormat\"," +
                       "\"message\":\"cause1\"}]}", result );
     }
@@ -223,7 +222,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
         assertEquals(
                 "{\"results\":[],\"errors\":[{\"code\":\"Neo.ClientError.Request.InvalidFormat\",\"message\":\"cause1\"}]}",
                 result );
@@ -240,7 +239,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[],\"errors\":[]}", result );
     }
 
@@ -262,7 +261,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
                       "\"data\":[{\"row\":[\"value1\",\"value2\"]},{\"row\":[\"value3\",\"value4\"]}]}]," +
                       "\"errors\":[]}", result );
@@ -288,7 +287,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[" +
                       "{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"]}]}," +
                       "{\"columns\":[\"column3\",\"column4\"],\"data\":[{\"row\":[\"value3\",\"value4\"]}]}]," +
@@ -315,7 +314,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[{\"columns\":[\"node\"]," +
                       "\"data\":[{\"row\":[{\"a\":12,\"b\":true,\"c\":[1,0,1,2],\"d\":[1,0,1,2],\"e\":[\"a\",\"b\",\"ääö\"]}]}]}]," +
                       "\"errors\":[]}", result );
@@ -343,7 +342,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[{\"columns\":[\"nested\"]," +
                       "\"data\":[{\"row\":[{\"edge\":{\"baz\":\"quux\"},\"node\":{\"foo\":12},\"path\":[{\"foo\":12},{\"baz\":\"quux\"},{\"bar\":false}]}]}]}]," +
                       "\"errors\":[]}", result );
@@ -364,7 +363,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[{\"columns\":[\"path\"]," +
                       "\"data\":[{\"row\":[[{\"key1\":\"value1\"},{\"key2\":\"value2\"},{\"key3\":\"value3\"}]]}]}]," +
                       "\"errors\":[]}", result );
@@ -399,7 +398,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
         assertEquals(
                 "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"]}]}]," +
                 "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailure\",\"message\":\"Stuff went wrong!\",\"stackTrace\":***}]}",
@@ -436,7 +435,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
         assertEquals(
                 "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"]}]}]," +
                 "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailure\",\"message\":\"Stuff went wrong!\"," +
@@ -467,7 +466,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
 
         // Nodes and relationships form sets, so we cannot test for a fixed string, since we don't know the order.
         String node0 = "{\"id\":\"0\",\"labels\":[\"Node\"],\"properties\":{\"name\":\"node0\"}}";
@@ -520,7 +519,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
         JsonNode json = jsonNode( result );
         Map<String, Integer> columns = new HashMap<>();
         int col = 0;
@@ -559,7 +558,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
         JsonNode json = jsonNode(result);
         Map<String, Integer> columns = new HashMap<>();
         int col = 0;
@@ -598,7 +597,7 @@ public class ExecutionResultSerializerTest
         ExecutionPlanDescription planDescription = mockedPlanDescription( operatorType, NO_IDS, args, NO_PLANS );
         serializer.statementResult( mockExecutionResult( planDescription ), false, ResultDataContent.rest );
         serializer.finish();
-        String resultString = output.toString( "UTF-8" );
+        String resultString = output.toString( UTF_8.name() );
 
         // then
         assertIsPlanRoot( resultString );
@@ -636,7 +635,7 @@ public class ExecutionResultSerializerTest
                 mockedPlanDescription( operatorType, asSet( id1, id2, id3 ), NO_ARGS, NO_PLANS );
         serializer.statementResult( mockExecutionResult( planDescription ), false, ResultDataContent.rest );
         serializer.finish();
-        String resultString = output.toString( "UTF-8" );
+        String resultString = output.toString( UTF_8.name() );
 
         // then
         assertIsPlanRoot( resultString );
@@ -670,7 +669,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
         JsonNode root = assertIsPlanRoot( result );
 
         assertEquals( "parent", root.get( "operatorType" ).getTextValue() );
@@ -795,7 +794,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
 
         assertEquals(
                 "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
@@ -829,7 +828,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
 
         assertEquals(
                 "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
@@ -857,7 +856,7 @@ public class ExecutionResultSerializerTest
         serializer.finish();
 
         // then
-        String result = output.toString( "UTF-8" );
+        String result = output.toString( UTF_8.name() );
 
         assertEquals(
                 "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
