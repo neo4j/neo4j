@@ -28,8 +28,10 @@ class CypherParser extends Parser
 
 
   @throws(classOf[SyntaxException])
-  def parse(queryText: String, offset: Option[InputPosition] = None): ast.Statement =
-    parseOrThrow(queryText, offset, CypherParser.Statements)
+  def parse(queryText: String, offset: Option[InputPosition] = None): ast.Statement = {
+    val r = parseOrThrow(queryText, offset, CypherParser.Statements)
+    r
+  }
 }
 
 object CypherParser extends Parser with Statement with Expressions {
