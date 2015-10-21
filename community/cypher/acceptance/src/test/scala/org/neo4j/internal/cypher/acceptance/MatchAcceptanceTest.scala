@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.PathImpl
 import org.neo4j.cypher._
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.PathImpl
 import org.neo4j.graphdb._
 
 import scala.collection.JavaConverters._
@@ -73,7 +73,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     val query = "MATCH (:Root {name:'x'})-->(i:Child) WHERE i.id > 'te' RETURN i"
 
-    a [IncomparableValuesException] should be thrownBy executeWithAllPlanners(query)
+    an [IncomparableValuesException] should be thrownBy executeWithAllPlanners(query)
   }
 
   test("exceptions should be thrown if rows are kept through OR'd predicates") {
@@ -83,7 +83,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     val query = "MATCH (:Root {name:'x'})-->(i) WHERE NOT has(i.id) OR i.id > 'te' RETURN i"
 
-    a [IncomparableValuesException] should be thrownBy executeWithAllPlanners(query)
+    an [IncomparableValuesException] should be thrownBy executeWithAllPlanners(query)
   }
 
   test("combines aggregation and named path") {
