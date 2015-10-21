@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.frontend.v3_0.symbols
 
 object MapType {
-  val instance = new MapType() {
-    val parentType = CTAny
-    override val toString = "Map"
-  }
+  val instance = new MapType()
 }
 
-sealed abstract class MapType extends CypherType
+sealed class MapType extends CypherType  {
+  val parentType = CTAny
+  override val toString = "Map"
+}

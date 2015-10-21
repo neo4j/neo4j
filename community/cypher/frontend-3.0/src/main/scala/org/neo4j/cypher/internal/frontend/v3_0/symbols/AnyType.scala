@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.frontend.v3_0.symbols
 
 object AnyType {
-  val instance = new AnyType() {
-    val parentType = this
-    override val isAbstract = true
-
-    override def isAssignableFrom(other: CypherType): Boolean = true
-
-    override val toString = "Any"
-  }
+  val instance = new AnyType()
 }
 
-sealed abstract class AnyType extends CypherType
+sealed class AnyType extends CypherType  {
+  val parentType = this
+  override val isAbstract = true
+
+  override def isAssignableFrom(other: CypherType): Boolean = true
+
+  override val toString = "Any"
+}

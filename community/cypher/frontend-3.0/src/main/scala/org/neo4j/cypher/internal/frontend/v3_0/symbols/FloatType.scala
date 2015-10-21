@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.frontend.v3_0.symbols
 
 object FloatType {
-  val instance = new FloatType() {
-    val parentType = CTNumber
-    override val toString = "Float"
-  }
+  val instance = new FloatType()
 }
 
-sealed abstract class FloatType extends CypherType
+sealed class FloatType extends CypherType {
+  val parentType = CTNumber
+  override val toString = "Float"
+}

@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.frontend.v3_0.symbols
 
 object StringType {
-  val instance = new StringType() {
-    val parentType = CTAny
-    override val toString = "String"
-  }
+  val instance = new StringType()
 }
 
-sealed trait StringType extends CypherType
+sealed class StringType extends CypherType  {
+  val parentType = CTAny
+  override val toString = "String"
+}
