@@ -31,7 +31,4 @@ case class NodeIndexSeek(idName: IdName,
                         (val solved: PlannerQuery with CardinalityEstimation) extends IndexLeafPlan {
 
   def availableSymbols = argumentIds + idName
-
-  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
-    copy(valueExpr = valueExpr.map(f(argumentIds, _)))(solved)
 }

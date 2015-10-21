@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
 
 case class UndirectedRelationshipByIdSeek(idName: IdName,
@@ -30,7 +29,4 @@ case class UndirectedRelationshipByIdSeek(idName: IdName,
   extends LogicalLeafPlan {
 
   def availableSymbols = argumentIds ++ Set(idName, leftNode, rightNode)
-
-  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
-    copy(relIds = relIds.mapValues(f(argumentIds, _)))(solved)
 }

@@ -36,8 +36,5 @@ case class LoadCSV(source: LogicalPlan,
 
   override def rhs = None
 
-  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
-    copy(url = f(source.availableSymbols, url))(solved)
-
   override def strictness: StrictnessMode = source.strictness
 }

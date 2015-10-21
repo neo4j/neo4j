@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, P
 
 
 case class CartesianProduct(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
+  extends LogicalPlan with LazyLogicalPlan {
 
   val lhs = Some(left)
   val rhs = Some(right)

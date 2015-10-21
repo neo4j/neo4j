@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
 
 case class AntiConditionalApply(left: LogicalPlan, right: LogicalPlan, items: Seq[IdName])(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
+  extends LogicalPlan with LazyLogicalPlan {
 
-  val lhs = Some(left)
-  val rhs = Some(right)
+  override val lhs = Some(left)
+  override val rhs = Some(right)
 
-  def availableSymbols = left.availableSymbols ++ right.availableSymbols ++ items
+  override def availableSymbols = left.availableSymbols ++ right.availableSymbols ++ items
 }

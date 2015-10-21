@@ -30,15 +30,29 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
 
   LDBC_QUERIES.foreach { ldbcQuery =>
     test(ldbcQuery.name) {
-      //given
-      eengine.execute(ldbcQuery.createQuery, ldbcQuery.createParams)
-      ldbcQuery.constraintQueries.foreach(updateWithBothPlannersAndCompatibilityMode(_))
+      try {
+        //given
+        eengine.execute(ldbcQuery.createQuery, ldbcQuery.createParams)
+        ldbcQuery.constraintQueries.foreach(updateWithBothPlannersAndCompatibilityMode(_))
 
-      //when
-      val result = executeWithAllPlannersAndCompatibilityMode(ldbcQuery.query, ldbcQuery.params.toSeq: _*).toComparableResult
+        //when
+        val result = executeWithAllPlannersAndCompatibilityMode(ldbcQuery.query, ldbcQuery.params.toSeq: _*).toComparableResult
 
-      //then
-      result should equal(ldbcQuery.expectedResult)
+        //then
+        result should equal(ldbcQuery.expectedResult)
+
+      } catch {
+        case e: Throwable =>
+          System.err.println(
+            s"""|QUERY *************
+                |${ldbcQuery.query}
+                |
+                |PREPARE QUERY *************
+                |${ldbcQuery.createQuery}
+                |
+                |""".stripMargin)
+          throw e
+      }
     }
   }
 

@@ -41,7 +41,7 @@ case class LogicalPlanningContext(planContext: PlanContext,
 
   def recurse(plan: LogicalPlan) = copy(input = input.recurse(plan))
 
-  def forExpressionPlanning(nodes: Iterable[Variable], rels: Iterable[Variable]) = {
+  def forExpressionPlanning(nodes: Iterable[Variable], rels: Iterable[Variable]): LogicalPlanningContext = {
     val tableWithNodes = nodes.foldLeft(semanticTable) { case (table, node) => table.addNode(node) }
     val tableWithRels = rels.foldLeft(tableWithNodes) { case (table, rel) => table.addRelationship(rel) }
     copy(

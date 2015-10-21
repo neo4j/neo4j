@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
 
 case class ErrorPlan(inner: LogicalPlan, exception: Exception)(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions {
+  extends LogicalPlan {
 
   override val lhs: Option[LogicalPlan] = Some(inner)
 

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 
 case class FindShortestPaths(left: LogicalPlan, shortestPath: ShortestPathPattern, predicates: Seq[Expression] = Seq.empty)
                             (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
+  extends LogicalPlan with LazyLogicalPlan {
 
   val lhs = Some(left)
   def rhs = None
