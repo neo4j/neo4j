@@ -31,11 +31,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
-import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
-import org.neo4j.bolt.v1.packstream.PackStream;
-import org.neo4j.bolt.v1.packstream.PackType;
-
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;

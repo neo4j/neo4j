@@ -357,7 +357,10 @@ public class Neo4jPack
                         case TEXT:
                             String key = unpackText();
                             Object val = unpack();
-                            map.put( key, val );
+                            if( map.put( key, val ) != null )
+                            {
+                                throw new BoltIOException( Status.Request.Invalid, "Duplicate map key `" + key + "`." );
+                            }
                             break;
                         default:
                             throw new PackStream.PackStreamException( "Bad key type" );
@@ -371,7 +374,10 @@ public class Neo4jPack
                 {
                     String key = unpackText();
                     Object val = unpack();
-                    map.put( key, val );
+                    if( map.put( key, val ) != null )
+                    {
+                        throw new BoltIOException( Status.Request.Invalid, "Duplicate map key `" + key + "`." );
+                    }
                 }
             }
             return map;

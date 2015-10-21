@@ -270,6 +270,8 @@ D4 14 01 02  03 04 05 06  07 08 09 00  01 02 03 04
 === Maps
 Maps are sized sequences of pairs of values and permit a mixture of types within the same map.
 The size of a map denotes the number of pairs within that map, not the total packed byte size.
+Keys are unique within a map, however the serialization format notably technically allows duplicate keys to be sent.
+Though if duplicate keys are sent, this is a violation of the bolt protocol and an error will occur.
 The markers used to denote a map are described in the table below:
 
 .Map markers
