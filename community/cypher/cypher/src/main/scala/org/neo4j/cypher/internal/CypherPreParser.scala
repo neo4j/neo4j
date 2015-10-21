@@ -45,7 +45,7 @@ case object CypherPreParser extends Parser with Base {
   }
 
   def PlannerOption: Rule1[PreParserOption] = rule("planner option") (
-      option("planner", "cost") ~ push(GreedyPlannerOption)
+      option("planner", "cost") ~ push(CostPlannerOption)
     | option("planner", "greedy") ~ push(GreedyPlannerOption)
     | option("planner", "rule") ~ push(RulePlannerOption)
     | option("planner", "idp") ~ push(IDPPlannerOption)
@@ -59,7 +59,7 @@ case object CypherPreParser extends Parser with Base {
 
   @deprecated
   def PlannerDeprecated = rule("PLANNER") (
-      keyword("PLANNER COST") ~ push(GreedyPlannerOption)
+      keyword("PLANNER COST") ~ push(CostPlannerOption)
     | keyword("PLANNER GREEDY") ~ push(GreedyPlannerOption)
     | keyword("PLANNER IDP") ~ push(IDPPlannerOption)
     | keyword("PLANNER DP") ~ push(DPPlannerOption)
