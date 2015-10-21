@@ -20,6 +20,7 @@
 package org.neo4j.backup;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -28,6 +29,7 @@ import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.neo4j.com.ChunkingChannelBuffer;
+import org.neo4j.function.Factory;
 
 /**
  * {@linkplain ChunkingChannelBuffer Chunking buffer} that is able to reuse up to {@link #MAX_WRITE_AHEAD_CHUNKS}
@@ -43,19 +45,37 @@ import org.neo4j.com.ChunkingChannelBuffer;
  */
 class BufferReusingChunkingChannelBuffer extends ChunkingChannelBuffer
 {
+    private static final Factory<ChannelBuffer> DEFAULT_CHANNEL_BUFFER_FACTORY = new Factory<ChannelBuffer>()
+    {
+        @Override
+        public ChannelBuffer newInstance()
+        {
+            return ChannelBuffers.dynamicBuffer();
+        }
+    };
+
+    private final Factory<ChannelBuffer> bufferFactory;
     private final Queue<ChannelBuffer> freeBuffers = new LinkedBlockingQueue<>( MAX_WRITE_AHEAD_CHUNKS );
 
     BufferReusingChunkingChannelBuffer( ChannelBuffer initialBuffer, Channel channel, int capacity,
             byte internalProtocolVersion, byte applicationProtocolVersion )
     {
+        this( initialBuffer, DEFAULT_CHANNEL_BUFFER_FACTORY, channel, capacity, internalProtocolVersion,
+                applicationProtocolVersion );
+    }
+
+    BufferReusingChunkingChannelBuffer( ChannelBuffer initialBuffer, Factory<ChannelBuffer> bufferFactory,
+            Channel channel, int capacity, byte internalProtocolVersion, byte applicationProtocolVersion )
+    {
         super( initialBuffer, channel, capacity, internalProtocolVersion, applicationProtocolVersion );
+        this.bufferFactory = bufferFactory;
     }
 
     @Override
     protected ChannelBuffer newChannelBuffer()
     {
         ChannelBuffer buffer = freeBuffers.poll();
-        return (buffer == null) ? createNewChannelBuffer() : buffer;
+        return (buffer == null) ? bufferFactory.newInstance() : buffer;
     }
 
     @Override
@@ -71,10 +91,5 @@ class BufferReusingChunkingChannelBuffer extends ChunkingChannelBuffer
                 BufferReusingChunkingChannelBuffer.super.operationComplete( future );
             }
         };
-    }
-
-    ChannelBuffer createNewChannelBuffer()
-    {
-        return super.newChannelBuffer();
     }
 }

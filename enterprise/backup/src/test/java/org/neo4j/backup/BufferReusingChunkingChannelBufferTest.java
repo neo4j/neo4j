@@ -25,31 +25,37 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.junit.Test;
 
+import org.neo4j.function.Factory;
+
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class BufferReusingChunkingChannelBufferTest
 {
     @Test
+    @SuppressWarnings( "unchecked" )
     public void newBuffersAreCreatedIfNoFreeBuffersAreAvailable()
     {
-        BufferReusingChunkingChannelBuffer buffer = newBufferReusingChunkingChannelBufferSpy( 10 );
+        CountingChannelBufferFactory bufferFactory = new CountingChannelBufferFactory();
+        BufferReusingChunkingChannelBuffer buffer = newBufferReusingChunkingChannelBuffer( 10, bufferFactory );
 
         buffer.writeLong( 1 );
         buffer.writeLong( 2 );
         buffer.writeLong( 3 );
 
-        verify( buffer, times( 3 ) ).createNewChannelBuffer();
+        assertEquals( 3, bufferFactory.instancesCreated );
     }
 
     @Test
+    @SuppressWarnings( "unchecked" )
     public void freeBuffersAreReused() throws Exception
     {
-        BufferReusingChunkingChannelBuffer buffer = newBufferReusingChunkingChannelBufferSpy( 10 );
+        CountingChannelBufferFactory bufferFactory = new CountingChannelBufferFactory();
+        BufferReusingChunkingChannelBuffer buffer = newBufferReusingChunkingChannelBuffer( 10, bufferFactory );
 
         buffer.writeLong( 1 );
         buffer.writeLong( 2 );
@@ -62,16 +68,17 @@ public class BufferReusingChunkingChannelBufferTest
         buffer.writeLong( 4 );
 
         // 2 buffers were created
-        verify( buffer, times( 2 ) ).createNewChannelBuffer();
+        assertEquals( 2, bufferFactory.instancesCreated );
 
         // and 2 buffers were reused
         verify( reusedBuffer1 ).writeLong( 3 );
         verify( reusedBuffer2 ).writeLong( 4 );
     }
 
-    private static BufferReusingChunkingChannelBuffer newBufferReusingChunkingChannelBufferSpy( int capacity )
+    private static BufferReusingChunkingChannelBuffer newBufferReusingChunkingChannelBuffer( int capacity,
+            CountingChannelBufferFactory bufferFactory )
     {
-        ChannelBuffer initialBuffer = ChannelBuffers.dynamicBuffer();
+        ChannelBuffer buffer = ChannelBuffers.dynamicBuffer();
 
         Channel channel = mock( Channel.class );
         ChannelFuture channelFuture = mock( ChannelFuture.class );
@@ -80,7 +87,7 @@ public class BufferReusingChunkingChannelBufferTest
         when( channel.isBound() ).thenReturn( true );
         when( channel.write( anyObject() ) ).thenReturn( channelFuture );
 
-        return spy( new BufferReusingChunkingChannelBuffer( initialBuffer, channel, capacity, (byte) 1, (byte) 1 ) );
+        return new BufferReusingChunkingChannelBuffer( buffer, bufferFactory, channel, capacity, (byte) 1, (byte) 1 );
     }
 
     private static ChannelBuffer triggerOperationCompleteCallback( BufferReusingChunkingChannelBuffer buffer )
@@ -94,5 +101,17 @@ public class BufferReusingChunkingChannelBufferTest
 
         buffer.newChannelFutureListener( reusedBuffer ).operationComplete( channelFuture );
         return reusedBuffer;
+    }
+
+    private static class CountingChannelBufferFactory implements Factory<ChannelBuffer>
+    {
+        int instancesCreated;
+
+        @Override
+        public ChannelBuffer newInstance()
+        {
+            instancesCreated++;
+            return ChannelBuffers.dynamicBuffer();
+        }
     }
 }
