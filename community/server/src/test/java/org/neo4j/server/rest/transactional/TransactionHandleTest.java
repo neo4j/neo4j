@@ -19,12 +19,6 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import java.net.URI;
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -33,14 +27,20 @@ import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.net.URI;
+import java.util.HashSet;
+import java.util.Set;
+import javax.servlet.http.HttpServletRequest;
+
 import org.neo4j.cypher.SyntaxException;
-import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Notification;
+import org.neo4j.graphdb.Result;
+import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -49,7 +49,9 @@ import org.neo4j.server.rest.web.QuerySessionProvider;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 
 import static java.util.Arrays.asList;
-
+import static org.mockito.Matchers.anyCollectionOf;
+import static org.mockito.Matchers.anyMap;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.argThat;
@@ -63,8 +65,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-import static org.mockito.Matchers.anyCollectionOf;
-
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.transactional.StubStatementDeserializer.statements;
 
@@ -494,6 +494,29 @@ public class TransactionHandleTest
 
         // then
         verify( tx, times( 1 ) ).terminate();
+    }
+
+    @Test
+    @SuppressWarnings( "unchecked" )
+    public void deadlockExceptionHasCorrectStatus() throws Exception
+    {
+        // given
+        QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
+        when( executionEngine.executeQuery( anyString(), anyMap(), any( QuerySession.class ) ) )
+                .thenThrow( new DeadlockDetectedException( "deadlock" ) );
+
+        TransactionHandle handle = new TransactionHandle( mockKernel(), executionEngine,
+                mock( TransactionRegistry.class ), uriScheme, NullLogProvider.getInstance(),
+                mock( QuerySessionProvider.class ) );
+
+        ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
+
+        // when
+        handle.execute( statements( new Statement( "query", map(), false, (ResultDataContent[]) null ) ), output,
+                mock( HttpServletRequest.class ) );
+
+        // then
+        verify( output ).errors( argThat( hasErrors( Status.Transaction.DeadlockDetected ) ) );
     }
 
     private static final TransactionUriScheme uriScheme = new TransactionUriScheme()

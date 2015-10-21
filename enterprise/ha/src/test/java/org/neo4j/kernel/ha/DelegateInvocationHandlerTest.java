@@ -21,10 +21,12 @@ package org.neo4j.kernel.ha;
 
 import org.junit.Test;
 
-import org.neo4j.graphdb.TransientFailureException;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransientDatabaseFailureException;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class DelegateInvocationHandlerTest
@@ -42,8 +44,26 @@ public class DelegateInvocationHandlerTest
             value.get();
             fail( "Should fail" );
         }
-        catch ( TransientFailureException e )
-        {   // THEN
+        catch ( Exception e )
+        {
+            // THEN
+            assertThat( e, instanceOf( TransientDatabaseFailureException.class ) );
+        }
+    }
+
+    @Test
+    public void throwsWhenDelegateIsNotSet()
+    {
+        DelegateInvocationHandler<Value> handler = newDelegateInvocationHandler();
+
+        try
+        {
+            handler.invoke( new Object(), Value.class.getDeclaredMethod( "get" ), new Object[0] );
+            fail( "Exception expected" );
+        }
+        catch ( Throwable t )
+        {
+            assertThat( t, instanceOf( TransactionFailureException.class ) );
         }
     }
 
@@ -100,6 +120,22 @@ public class DelegateInvocationHandlerTest
         assertEquals( 20, cementedValue.get() );
     }
 
+    @Test
+    public void setDelegateDoesNotAcceptNullArgument()
+    {
+        DelegateInvocationHandler<Value> handler = newDelegateInvocationHandler();
+
+        try
+        {
+            handler.setDelegate( null );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( NullPointerException.class ) );
+        }
+    }
+
     private Value value( final int i )
     {
         return new Value()
@@ -114,7 +150,7 @@ public class DelegateInvocationHandlerTest
 
     private static DelegateInvocationHandler<Value> newDelegateInvocationHandler()
     {
-        return new DelegateInvocationHandler<>( Value.class, NullLogProvider.getInstance() );
+        return new DelegateInvocationHandler<>( Value.class );
     }
 
     private interface Value
