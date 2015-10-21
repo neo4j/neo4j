@@ -73,8 +73,7 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
       if (fromWithoutLeafInfo.containsRelationshipReads) fromWithoutLeafInfo else from,
       if (toWithoutLeafInfo.containsRelationshipReads) toWithoutLeafInfo else to)
 
-    //val relNonLeafReadCreateConflict = relsReadCreateConflict(from, to) //TODO: Maybe we can use with leaf info here
-    val relNonLeafReadCreateConflict = relsReadCreateConflict(fromWithoutLeafInfo, toWithoutLeafInfo)
+    val relReadCreateConflict = relsReadCreateConflict(fromWithoutLeafInfo, toWithoutLeafInfo)
     val relReadDeleteConflict = relsReadDeleteConflict(fromWithoutLeafInfo, toWithoutLeafInfo)
     val relReadDeleteNodeConflict = relsReadDeleteNodeConflict(fromWithoutLeafInfo, toWithoutLeafInfo)
     val relCreateReadConflict = relsCreateReadConflict(from, toWithoutLeafInfo)
@@ -85,7 +84,7 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
       nodeCreateReadConflict ||
       nodeDeleteMergeConflict ||
       nodePropConflict ||
-      relNonLeafReadCreateConflict ||
+      relReadCreateConflict ||
       relReadDeleteConflict ||
       relReadDeleteNodeConflict ||
       relCreateReadConflict ||

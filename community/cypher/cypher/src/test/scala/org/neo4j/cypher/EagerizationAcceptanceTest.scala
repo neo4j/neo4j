@@ -127,7 +127,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
         |RETURN t2
       """.stripMargin
 
-    //TODO: We should not need eager between MATCH and DELETE?
+    //TODO: We should not need eager between MATCH and DELETE when directed pattern
     val result = executeWithRulePlanner(query)
     assertStats(result, relationshipsDeleted = 2, relationshipsCreated = 1)
 
@@ -137,7 +137,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 2)
   }
 
-  test("should not introduce eagerness between DELETE and MERGE for relationships when there is no read matching the merge") {
+  test("should introduce eagerness between DELETE and MERGE for relationships when there is no read matching the merge") {
     val a = createNode()
     val b = createNode()
     relate(a, b, "T")
@@ -152,7 +152,6 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     assertStats(executeWithRulePlanner(query), relationshipsDeleted = 2, relationshipsCreated = 1)
     //TODO this might be safe without eager, given that the match is directed and probably need to check the direction
-    //TODO: We should not need eager between MATCH and DELETE?
     assertNumberOfEagerness(query, 2)
   }
 
@@ -170,7 +169,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
       """.stripMargin
 
     assertStats(executeWithRulePlanner(query), relationshipsDeleted = 2, relationshipsCreated = 1)
-    //TODO: We should not need eager between MATCH and DELETE?
+    //TODO: We should not need eager between MATCH and DELETE, when directed pattern
     assertNumberOfEagerness(query, 2)
   }
 
@@ -366,7 +365,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 1)
   }
 
-  test("should not introduce an eager pipe between a non-directional leaf relationship read and a relationship create") {
+  test("should introduce an eager pipe between a non-directional leaf relationship read and a relationship create") {
     relate(createNode(), createNode(), "TYPE")
     relate(createNode(), createNode(), "TYPE")
     val query = "MATCH (a)-[:TYPE]-(b) CREATE (a)-[:TYPE]->(b) RETURN count(*) as count"
@@ -580,6 +579,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val query = "MATCH (a:Person) OPTIONAL MATCH (a)-[r1]-() DELETE a, r1"
 
+    assertStats(executeWithRulePlanner(query), nodesDeleted = 2, relationshipsDeleted = 7)
     assertNumberOfEagerness(query, 1)
   }
 
