@@ -46,6 +46,14 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result should equal(42)
   }
 
+  test("toInt should handle mixed number types") {
+    // When
+    val result = executeWithAllPlanners("WITH [2, 2.9] AS numbers RETURN [n in numbers | toInt(n)] AS int_numbers")
+
+    // Then
+    result.toList should equal(List(Map("int_numbers" -> List(2, 2))))
+  }
+
   test("toFloat should work as expected") {
     // Given
     createLabeledNode(Map("rating" -> 4), "Movie")
@@ -57,6 +65,14 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
 
     // Then
     result should equal(4.0)
+  }
+
+  test("toFloat should handle mixed number types") {
+    // When
+    val result = executeWithAllPlanners("WITH [3.4, 3] AS numbers RETURN [n in numbers | toFloat(n)] AS float_numbers")
+
+    // Then
+    result.toList should equal(List(Map("float_numbers" -> List(3.4, 3.0))))
   }
 
   test("toString should work as expected") {
