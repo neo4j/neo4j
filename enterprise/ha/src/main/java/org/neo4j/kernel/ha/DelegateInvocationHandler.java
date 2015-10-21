@@ -99,6 +99,7 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
     {
         if ( delegate == null )
         {
+            log( "delegate is null" );
             throw new TransactionFailureException( "Instance state changed after this transaction started." );
         }
         return proxyInvoke( delegate, method, args );
@@ -137,7 +138,7 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
     {
         if ( log.isDebugEnabled() )
         {
-            log.debug( "[" + componentName + "]" + format, arguments );
+            log.debug( "[" + componentName + ", " + hashCode() + "] " + format, arguments );
         }
     }
 
