@@ -23,6 +23,10 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.URL;
 import java.util.LinkedList;
 
 import org.neo4j.bolt.v1.runtime.Session;
@@ -92,5 +96,16 @@ public class TestSessions implements TestRule, Sessions
         Session session = actual.newSession();
         startedSessions.add( session );
         return session;
+    }
+
+    public URL putTmpFile( String prefix, String suffix, String contents ) throws IOException
+    {
+        File tmpFile = File.createTempFile( prefix, suffix, null );
+        tmpFile.deleteOnExit();
+        try ( PrintWriter out = new PrintWriter( tmpFile ) )
+        {
+            out.println( contents);
+        }
+        return tmpFile.toURI().toURL();
     }
 }

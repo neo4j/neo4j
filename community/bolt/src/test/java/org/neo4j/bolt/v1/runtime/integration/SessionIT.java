@@ -23,7 +23,9 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +41,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.failedWith;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.streamContaining;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.success;
@@ -301,7 +305,66 @@ public class SessionIT
         // Then the two should not have interfered with each other
         stream = runAndPull( secondSession, "MATCH (a:Person) WHERE id(a) = " + id + " RETURN COUNT(*)" );
         assertThat( ((Record) stream[0]).fields()[0], equalTo( (Object) 1L ) );
+    }
 
+    @Test
+    public void shouldSupportUsingPeriodicCommitInSession() throws InterruptedException, IOException
+    {
+        // Given
+        Session session = env.newSession();
+        session.init( "TestClient/1.0", null, null );
+        Map<String, Object> params = new HashMap<>();
+        params.put( "csvFileUrl", createLocalIrisData( session ) );
+
+        // When
+        Object[] result = runAndPull(
+            session,
+            "USING PERIODIC COMMIT 40\n" +
+            "LOAD CSV WITH HEADERS FROM {csvFileUrl} AS l\n" +
+            "MATCH (c:Class {name: l.class_name})\n" +
+            "CREATE (s:Sample {sepal_length: l.sepal_length, sepal_width: l.sepal_width, petal_length: l.petal_length, petal_width: l.petal_width})\n" +
+            "CREATE (c)<-[:HAS_CLASS]-(s)\n" +
+            "RETURN count(*) AS c",
+            params
+        );
+
+        // Then
+        assertThat( result.length, equalTo( 1 ) );
+        Record record = (Record) result[0];
+
+        Object[] fields = record.fields();
+        assertThat( fields.length, equalTo( 1) );
+        assertThat( fields[0], equalTo( 150L ) );
+    }
+
+    @Test
+    public void shouldNotSupportUsingPeriodicCommitInTransaction() throws InterruptedException, IOException
+    {
+        // Given
+        Session session = env.newSession();
+        session.init( "TestClient/1.0", null, null );
+        Map<String, Object> params = new HashMap<>();
+        params.put( "csvFileUrl", createLocalIrisData( session ) );
+        runAndPull( session, "BEGIN" );
+
+        // When
+        session.run(
+            "USING PERIODIC COMMIT 40\n" +
+            "LOAD CSV WITH HEADERS FROM {csvFileUrl} AS l\n" +
+            "MATCH (c:Class {name: l.class_name})\n" +
+            "CREATE (s:Sample {sepal_length: l.sepal_length, sepal_width: l.sepal_width, petal_length: l" +
+            ".petal_length, petal_width: l.petal_width})\n" +
+            "CREATE (c)<-[:HAS_CLASS]-(s)\n" +
+            "RETURN count(*) AS c",
+            params,
+            null,
+            responses
+        );
+
+        // Then
+        Neo4jError error = responses.next().error();
+        assertThat( error.status(), equalTo( Status.Statement.InvalidSemantics ) );
+        assertThat( error.message(), equalTo( "Executing queries that use periodic commit in an open transaction is not possible." ) );
     }
 
     @Test
@@ -325,13 +388,189 @@ public class SessionIT
 
     }
 
+    private String createLocalIrisData( Session session ) throws IOException, InterruptedException
+    {
+        for ( String className : IRIS_CLASS_NAMES )
+        {
+            Map<String, Object> params = new HashMap<>();
+            params.put( "className", className );
+            runAndPull( session, "CREATE (c:Class {name: {className}}) RETURN c", params );
+        }
+
+        return env.putTmpFile( "iris", ".csv", IRIS_DATA ).toExternalForm();
+    }
+
     private Object[] runAndPull( Session session, String statement ) throws InterruptedException
     {
+        return runAndPull( session, statement, EMPTY_PARAMS );
+    }
+
+    private Object[] runAndPull( Session session, String statement, Map<String, Object> params ) throws InterruptedException
+    {
         RecordingCallback<RecordStream, ?> cb = new RecordingCallback<>();
-        session.run( statement, EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata,Object>noop() );
+        session.run( statement, params, null, Session.Callbacks.<StatementMetadata,Object>noop() );
         session.pullAll( null, cb );
         return ((RecordingCallback.Result) cb.next()).records();
     }
 
+    public static String[] IRIS_CLASS_NAMES =
+        new String[] {
+                "Iris-setosa",
+                "Iris-versicolor",
+                "Iris-virginica"
+        };
 
+    public static String IRIS_DATA =
+        "sepal_length,sepal_width,petal_length,petal_width,class_name\n" +
+        "5.1,3.5,1.4,0.2,Iris-setosa\n" +
+        "4.9,3.0,1.4,0.2,Iris-setosa\n" +
+        "4.7,3.2,1.3,0.2,Iris-setosa\n" +
+        "4.6,3.1,1.5,0.2,Iris-setosa\n" +
+        "5.0,3.6,1.4,0.2,Iris-setosa\n" +
+        "5.4,3.9,1.7,0.4,Iris-setosa\n" +
+        "4.6,3.4,1.4,0.3,Iris-setosa\n" +
+        "5.0,3.4,1.5,0.2,Iris-setosa\n" +
+        "4.4,2.9,1.4,0.2,Iris-setosa\n" +
+        "4.9,3.1,1.5,0.1,Iris-setosa\n" +
+        "5.4,3.7,1.5,0.2,Iris-setosa\n" +
+        "4.8,3.4,1.6,0.2,Iris-setosa\n" +
+        "4.8,3.0,1.4,0.1,Iris-setosa\n" +
+        "4.3,3.0,1.1,0.1,Iris-setosa\n" +
+        "5.8,4.0,1.2,0.2,Iris-setosa\n" +
+        "5.7,4.4,1.5,0.4,Iris-setosa\n" +
+        "5.4,3.9,1.3,0.4,Iris-setosa\n" +
+        "5.1,3.5,1.4,0.3,Iris-setosa\n" +
+        "5.7,3.8,1.7,0.3,Iris-setosa\n" +
+        "5.1,3.8,1.5,0.3,Iris-setosa\n" +
+        "5.4,3.4,1.7,0.2,Iris-setosa\n" +
+        "5.1,3.7,1.5,0.4,Iris-setosa\n" +
+        "4.6,3.6,1.0,0.2,Iris-setosa\n" +
+        "5.1,3.3,1.7,0.5,Iris-setosa\n" +
+        "4.8,3.4,1.9,0.2,Iris-setosa\n" +
+        "5.0,3.0,1.6,0.2,Iris-setosa\n" +
+        "5.0,3.4,1.6,0.4,Iris-setosa\n" +
+        "5.2,3.5,1.5,0.2,Iris-setosa\n" +
+        "5.2,3.4,1.4,0.2,Iris-setosa\n" +
+        "4.7,3.2,1.6,0.2,Iris-setosa\n" +
+        "4.8,3.1,1.6,0.2,Iris-setosa\n" +
+        "5.4,3.4,1.5,0.4,Iris-setosa\n" +
+        "5.2,4.1,1.5,0.1,Iris-setosa\n" +
+        "5.5,4.2,1.4,0.2,Iris-setosa\n" +
+        "4.9,3.1,1.5,0.2,Iris-setosa\n" +
+        "5.0,3.2,1.2,0.2,Iris-setosa\n" +
+        "5.5,3.5,1.3,0.2,Iris-setosa\n" +
+        "4.9,3.6,1.4,0.1,Iris-setosa\n" +
+        "4.4,3.0,1.3,0.2,Iris-setosa\n" +
+        "5.1,3.4,1.5,0.2,Iris-setosa\n" +
+        "5.0,3.5,1.3,0.3,Iris-setosa\n" +
+        "4.5,2.3,1.3,0.3,Iris-setosa\n" +
+        "4.4,3.2,1.3,0.2,Iris-setosa\n" +
+        "5.0,3.5,1.6,0.6,Iris-setosa\n" +
+        "5.1,3.8,1.9,0.4,Iris-setosa\n" +
+        "4.8,3.0,1.4,0.3,Iris-setosa\n" +
+        "5.1,3.8,1.6,0.2,Iris-setosa\n" +
+        "4.6,3.2,1.4,0.2,Iris-setosa\n" +
+        "5.3,3.7,1.5,0.2,Iris-setosa\n" +
+        "5.0,3.3,1.4,0.2,Iris-setosa\n" +
+        "7.0,3.2,4.7,1.4,Iris-versicolor\n" +
+        "6.4,3.2,4.5,1.5,Iris-versicolor\n" +
+        "6.9,3.1,4.9,1.5,Iris-versicolor\n" +
+        "5.5,2.3,4.0,1.3,Iris-versicolor\n" +
+        "6.5,2.8,4.6,1.5,Iris-versicolor\n" +
+        "5.7,2.8,4.5,1.3,Iris-versicolor\n" +
+        "6.3,3.3,4.7,1.6,Iris-versicolor\n" +
+        "4.9,2.4,3.3,1.0,Iris-versicolor\n" +
+        "6.6,2.9,4.6,1.3,Iris-versicolor\n" +
+        "5.2,2.7,3.9,1.4,Iris-versicolor\n" +
+        "5.0,2.0,3.5,1.0,Iris-versicolor\n" +
+        "5.9,3.0,4.2,1.5,Iris-versicolor\n" +
+        "6.0,2.2,4.0,1.0,Iris-versicolor\n" +
+        "6.1,2.9,4.7,1.4,Iris-versicolor\n" +
+        "5.6,2.9,3.6,1.3,Iris-versicolor\n" +
+        "6.7,3.1,4.4,1.4,Iris-versicolor\n" +
+        "5.6,3.0,4.5,1.5,Iris-versicolor\n" +
+        "5.8,2.7,4.1,1.0,Iris-versicolor\n" +
+        "6.2,2.2,4.5,1.5,Iris-versicolor\n" +
+        "5.6,2.5,3.9,1.1,Iris-versicolor\n" +
+        "5.9,3.2,4.8,1.8,Iris-versicolor\n" +
+        "6.1,2.8,4.0,1.3,Iris-versicolor\n" +
+        "6.3,2.5,4.9,1.5,Iris-versicolor\n" +
+        "6.1,2.8,4.7,1.2,Iris-versicolor\n" +
+        "6.4,2.9,4.3,1.3,Iris-versicolor\n" +
+        "6.6,3.0,4.4,1.4,Iris-versicolor\n" +
+        "6.8,2.8,4.8,1.4,Iris-versicolor\n" +
+        "6.7,3.0,5.0,1.7,Iris-versicolor\n" +
+        "6.0,2.9,4.5,1.5,Iris-versicolor\n" +
+        "5.7,2.6,3.5,1.0,Iris-versicolor\n" +
+        "5.5,2.4,3.8,1.1,Iris-versicolor\n" +
+        "5.5,2.4,3.7,1.0,Iris-versicolor\n" +
+        "5.8,2.7,3.9,1.2,Iris-versicolor\n" +
+        "6.0,2.7,5.1,1.6,Iris-versicolor\n" +
+        "5.4,3.0,4.5,1.5,Iris-versicolor\n" +
+        "6.0,3.4,4.5,1.6,Iris-versicolor\n" +
+        "6.7,3.1,4.7,1.5,Iris-versicolor\n" +
+        "6.3,2.3,4.4,1.3,Iris-versicolor\n" +
+        "5.6,3.0,4.1,1.3,Iris-versicolor\n" +
+        "5.5,2.5,4.0,1.3,Iris-versicolor\n" +
+        "5.5,2.6,4.4,1.2,Iris-versicolor\n" +
+        "6.1,3.0,4.6,1.4,Iris-versicolor\n" +
+        "5.8,2.6,4.0,1.2,Iris-versicolor\n" +
+        "5.0,2.3,3.3,1.0,Iris-versicolor\n" +
+        "5.6,2.7,4.2,1.3,Iris-versicolor\n" +
+        "5.7,3.0,4.2,1.2,Iris-versicolor\n" +
+        "5.7,2.9,4.2,1.3,Iris-versicolor\n" +
+        "6.2,2.9,4.3,1.3,Iris-versicolor\n" +
+        "5.1,2.5,3.0,1.1,Iris-versicolor\n" +
+        "5.7,2.8,4.1,1.3,Iris-versicolor\n" +
+        "6.3,3.3,6.0,2.5,Iris-virginica\n" +
+        "5.8,2.7,5.1,1.9,Iris-virginica\n" +
+        "7.1,3.0,5.9,2.1,Iris-virginica\n" +
+        "6.3,2.9,5.6,1.8,Iris-virginica\n" +
+        "6.5,3.0,5.8,2.2,Iris-virginica\n" +
+        "7.6,3.0,6.6,2.1,Iris-virginica\n" +
+        "4.9,2.5,4.5,1.7,Iris-virginica\n" +
+        "7.3,2.9,6.3,1.8,Iris-virginica\n" +
+        "6.7,2.5,5.8,1.8,Iris-virginica\n" +
+        "7.2,3.6,6.1,2.5,Iris-virginica\n" +
+        "6.5,3.2,5.1,2.0,Iris-virginica\n" +
+        "6.4,2.7,5.3,1.9,Iris-virginica\n" +
+        "6.8,3.0,5.5,2.1,Iris-virginica\n" +
+        "5.7,2.5,5.0,2.0,Iris-virginica\n" +
+        "5.8,2.8,5.1,2.4,Iris-virginica\n" +
+        "6.4,3.2,5.3,2.3,Iris-virginica\n" +
+        "6.5,3.0,5.5,1.8,Iris-virginica\n" +
+        "7.7,3.8,6.7,2.2,Iris-virginica\n" +
+        "7.7,2.6,6.9,2.3,Iris-virginica\n" +
+        "6.0,2.2,5.0,1.5,Iris-virginica\n" +
+        "6.9,3.2,5.7,2.3,Iris-virginica\n" +
+        "5.6,2.8,4.9,2.0,Iris-virginica\n" +
+        "7.7,2.8,6.7,2.0,Iris-virginica\n" +
+        "6.3,2.7,4.9,1.8,Iris-virginica\n" +
+        "6.7,3.3,5.7,2.1,Iris-virginica\n" +
+        "7.2,3.2,6.0,1.8,Iris-virginica\n" +
+        "6.2,2.8,4.8,1.8,Iris-virginica\n" +
+        "6.1,3.0,4.9,1.8,Iris-virginica\n" +
+        "6.4,2.8,5.6,2.1,Iris-virginica\n" +
+        "7.2,3.0,5.8,1.6,Iris-virginica\n" +
+        "7.4,2.8,6.1,1.9,Iris-virginica\n" +
+        "7.9,3.8,6.4,2.0,Iris-virginica\n" +
+        "6.4,2.8,5.6,2.2,Iris-virginica\n" +
+        "6.3,2.8,5.1,1.5,Iris-virginica\n" +
+        "6.1,2.6,5.6,1.4,Iris-virginica\n" +
+        "7.7,3.0,6.1,2.3,Iris-virginica\n" +
+        "6.3,3.4,5.6,2.4,Iris-virginica\n" +
+        "6.4,3.1,5.5,1.8,Iris-virginica\n" +
+        "6.0,3.0,4.8,1.8,Iris-virginica\n" +
+        "6.9,3.1,5.4,2.1,Iris-virginica\n" +
+        "6.7,3.1,5.6,2.4,Iris-virginica\n" +
+        "6.9,3.1,5.1,2.3,Iris-virginica\n" +
+        "5.8,2.7,5.1,1.9,Iris-virginica\n" +
+        "6.8,3.2,5.9,2.3,Iris-virginica\n" +
+        "6.7,3.3,5.7,2.5,Iris-virginica\n" +
+        "6.7,3.0,5.2,2.3,Iris-virginica\n" +
+        "6.3,2.5,5.0,1.9,Iris-virginica\n" +
+        "6.5,3.0,5.2,2.0,Iris-virginica\n" +
+        "6.2,3.4,5.4,2.3,Iris-virginica\n" +
+        "5.9,3.0,5.1,1.8,Iris-virginica\n" +
+        "\n";
 }
