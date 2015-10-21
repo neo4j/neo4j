@@ -1,4 +1,11 @@
 For Release Notes, see http://neo4j.com/release-notes/neo4j-${project.version}/
+2.2.7
+-----
+Cypher:
+o Setting dbms.cypher.statistics_divergence_threshold=1.0 disables replanning
+  for all non-schema changing updates.
+o Fixes #5631 - MERGE with multiple labels with uniqueness constraints
+o Fixed issue around aggregation and literal maps
 
 2.2.6
 -----
