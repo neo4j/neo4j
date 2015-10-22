@@ -249,7 +249,7 @@ trait PatternGen extends  PropertyChecks {
     for {
       relType <- relTypeName
       direction <- relDirection
-      properties <- Gen.listOf(property)
+      properties <- Gen.nonEmptyListOf(property)
     } yield TypedWithPropertiesRelationship(relType, direction, properties)
 
   def typedRelWithLengthGen =

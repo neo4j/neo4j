@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{AggregatingFunction, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Parameter, AggregatingFunction, DoubleLiteral, FunctionInvocation, Literal, SimpleTypedFunction}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
+import org.neo4j.cypher.internal.frontend.v3_0.{SemanticCheck, SemanticCheckResult, SemanticError}
 
 case object PercentileDisc extends AggregatingFunction with SimpleTypedFunction {
   def name = "percentileDisc"
@@ -29,4 +31,7 @@ case object PercentileDisc extends AggregatingFunction with SimpleTypedFunction 
     Signature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTInteger),
     Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
+
+  override def semanticCheck(ctx: SemanticContext, invocation: FunctionInvocation) =
+    super.semanticCheck(ctx, invocation) ifOkChain  checkPercentileRange(invocation.args(1))
 }

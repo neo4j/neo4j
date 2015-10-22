@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.frontend.v3_0.ast
 
 import org.neo4j.cypher.internal.frontend.v3_0._
-import org.neo4j.cypher.internal.frontend.v3_0.symbols.{TypeSpec, CypherType}
+import org.neo4j.cypher.internal.frontend.v3_0.symbols.{CypherType, TypeSpec}
 
 object Function {
   private val knownFunctions: Seq[Function] = Vector(
@@ -182,4 +182,29 @@ abstract class AggregatingFunction extends Function {
     when(ctx == ast.Expression.SemanticContext.Simple) {
       SemanticError(s"Invalid use of aggregating function $name(...) in this context", invocation.position)
     } chain invocation.arguments.semanticCheck(ctx) chain semanticCheck(ctx, invocation)
+
+
+  /*
+   * Checks so that the expression is in the range [min, max]
+   */
+  protected def checkPercentileRange(expression: Expression): SemanticCheck = {
+    expression match {
+      case d: DoubleLiteral if d.value >= 0.0 && d.value <= 1.0 =>
+        SemanticCheckResult.success
+      case i: IntegerLiteral if i.value == 0L || i.value == 1L =>
+        SemanticCheckResult.success
+      case d: DoubleLiteral =>
+        SemanticError(s"Invalid input '${d.value}' is not a valid argument, must be a number in the range 0.0 to 1.0",
+          d.position)
+
+      case l: Literal =>
+        SemanticError(s"Invalid input '${
+          l.asCanonicalStringVal
+        }' is not a valid argument, must be a number in the range 0.0 to 1.0", l.position)
+
+      //for other types we'll have to wait until runtime to fail
+      case _ => SemanticCheckResult.success
+
+    }
+  }
 }
