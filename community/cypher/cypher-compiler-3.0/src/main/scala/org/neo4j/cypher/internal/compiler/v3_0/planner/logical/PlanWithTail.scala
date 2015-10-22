@@ -72,7 +72,7 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
 
         //If reads interfere with writes, make it a RepeatableRead
         val planWithEffects =
-          if (query.updateGraph.overlaps(query.queryGraph))
+          if (query.updateGraph overlaps query.queryGraph)
             context.logicalPlanProducer.planRepeatableRead(partPlan)
           else partPlan
 

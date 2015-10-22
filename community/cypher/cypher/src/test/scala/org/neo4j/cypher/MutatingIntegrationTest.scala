@@ -83,7 +83,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   test("deletes single node") {
     val a = createNode().getId
 
-    val result = executeWithRulePlanner("match (a) where id(a) = 0 delete a")
+    val result = updateWithBothPlanners("match (a) where id(a) = 0 delete a")
     assertStats(result, nodesDeleted = 1)
 
     result.toList shouldBe empty
@@ -93,7 +93,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   test("multiple deletes should not break anything") {
     (1 to 4).foreach(i => createNode())
 
-    val result = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) IN [1, 2, 3] delete a")
+    val result = updateWithBothPlanners("match (a), (b) where id(a) = 0 AND id(b) IN [1, 2, 3] delete a")
     assertStats(result, nodesDeleted = 1)
 
     result.toList shouldBe empty
@@ -109,7 +109,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     relate(a, c)
     relate(a, d)
 
-    val result = executeWithRulePlanner("match (a) where id(a) = 0 match (a)-[r]->() delete r")
+    val result = updateWithBothPlanners("match (a) where id(a) = 0 match (a)-[r]->() delete r")
     assertStats( result, relationshipsDeleted = 3  )
 
     graph.inTx {
@@ -188,9 +188,9 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   test("delete and return") {
     val a = createNode()
 
-    val result = executeWithRulePlanner("match (n) where id(n) = 0 delete n return n").toList
+    val result = executeWithCostPlannerOnly("match (n) where id(n) = 0 delete n return n")
 
-    result should equal(List(Map("n" -> a)))
+    result.toList should equal(List(Map("n" -> a)))
   }
 
   test("create multiple nodes") {
@@ -281,7 +281,7 @@ return distinct center""")
     val b = createNode()
     relate(a,b)
 
-    executeWithRulePlanner("""match (n) where id(n) = 0 match p=(n)-->() delete p""")
+    updateWithBothPlanners("""match (n) where id(n) = 0 match p=(n)-->() delete p""")
 
     graph.inTx {
       GlobalGraphOperations.at(graph).getAllNodes.asScala shouldBe empty
@@ -461,7 +461,7 @@ return distinct center""")
   }
 
   test("should be possible to remove nodes created in the same query") {
-    val result = executeWithRulePlanner(
+    val result = updateWithBothPlanners(
       """CREATE (a)-[:FOO]->(b)
          WITH *
          MATCH (x)-[r]-(y)

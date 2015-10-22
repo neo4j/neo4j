@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_0.planner.PlannerQuery
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan, NodeLogicalLeafPlan}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.{countStorePlanner, verifyBestPlan}
-import org.neo4j.cypher.internal.frontend.v3_0.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, Rewriter}
 
 /*
 This coordinates PlannerQuery planning and delegates work to the classes that do the actual planning of
@@ -62,22 +62,57 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
       val leaves = plan.leaves.collect {
         case n: NodeLogicalLeafPlan => n.idName
       }
-      relationshipOverlap(plannerQuery) ||
-        //1 leaf is always ok, second one is not stable though
-        leaves.size > 1 && leaves.drop(1).exists(overlaps(_, plannerQuery) || relationshipOverlap(plannerQuery))
+
+
+      //if we have unsafe rels we need to check relation overlap and delete
+      //overlap immediately
+      (hasUnsafeRelationships(plannerQuery) &&
+        (relationshipOverlap(plannerQuery) || deleteOverlap(plannerQuery))) ||
+        //otherwise only do checks if we have more that one leaf
+          leaves.size > 1 && leaves.drop(1).exists(
+            nodeOverlap(_, plannerQuery) ||
+              relationshipOverlap(plannerQuery) ||
+              deleteOverlap(plannerQuery))
     }
   }
 
-  private def overlaps(start: IdName, plannerQuery: PlannerQuery): Boolean = {
+  /*
+   * Check if the labels of the node with the provided IdName overlaps
+   * with the labels updated in this query. This may cause the read to affected
+   * by the writes.
+   */
+  private def nodeOverlap(start: IdName, plannerQuery: PlannerQuery): Boolean = {
     val startLabels = plannerQuery.queryGraph.allKnownLabelsOnNode(start).toSet
     val writeLabels = plannerQuery.updateGraph.labels
     plannerQuery.writesNodes && (
     startLabels.isEmpty || //MATCH ()?
-      writeLabels.isEmpty || //CREATE()?
       (startLabels intersect writeLabels).nonEmpty//MATCH (:A) CREATE (:A)?
      )
   }
 
-  private def relationshipOverlap(pq: PlannerQuery): Boolean = pq.updateGraph.relationshipOverlap(pq.queryGraph)
+  /*
+   * Unsafe relationships are whatever that may cause unstable
+   * iterators when expanding. The unsafe cases are:
+   * - (a)-[r]-(b) (undirected)
+   * - (a)-[r1]->(b)-[r2]->(c) (multi step)
+   * - (a)-[r*]->(b) (variable length)
+   */
+  private def hasUnsafeRelationships(pq: PlannerQuery) = {
+    val allPatterns = pq.queryGraph.allPatternRelationships
+    allPatterns.size > 1 ||
+      allPatterns.exists(r => r.dir == SemanticDirection.BOTH || !r.length.isSimple)
+  }
+
+  /*
+   * This will check for overlaps regardless of directions
+   */
+  private def relationshipOverlap(pq: PlannerQuery): Boolean =
+    pq.updateGraph.relationshipOverlap(pq.queryGraph)
+
+  /*
+   * This will check for overlaps for both nodes and relationships.
+   */
+  private def deleteOverlap(pq: PlannerQuery): Boolean =
+    pq.updateGraph.deleteOverlap(pq.queryGraph)
 }
 
