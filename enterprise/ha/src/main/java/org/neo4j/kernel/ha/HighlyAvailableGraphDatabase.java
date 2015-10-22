@@ -64,7 +64,12 @@ public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
 
     public HighlyAvailableGraphDatabase( File storeDir, Map<String,String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        new HighlyAvailableFacadeFactory().newFacade( storeDir, params, dependencies, this );
+        newHighlyAvailableFacadeFactory().newFacade( storeDir, params, dependencies, this );
+    }
+
+    protected HighlyAvailableFacadeFactory newHighlyAvailableFacadeFactory()
+    {
+        return new HighlyAvailableFacadeFactory();
     }
 
     @Override
