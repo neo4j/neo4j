@@ -66,4 +66,16 @@ class AvgFunctionTest extends CypherFunSuite with AggregateTest {
 
      result should equal(4.5)
   }
+
+  test("noOverflowOnLongListOfLargeNumbers") {
+    val result = aggregateOn(Long.MaxValue / 2, Long.MaxValue / 2, Long.MaxValue / 2)
+
+      result should equal(Long.MaxValue / 2)
+  }
+
+  test("onEmpty") {
+    val result = aggregateOn()
+
+      Option(result) should be (None)
+  }
 }

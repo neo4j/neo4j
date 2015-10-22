@@ -31,11 +31,13 @@ class SumFunction(val value: Expression)
 
   def name = "SUM"
 
-  var result: Any = 0
+  private val sum = new OverflowAwareSum
+
+  def result = sum.value
 
   def apply(data: ExecutionContext)(implicit state: QueryState) {
     actOnNumber(value(data), (number) => {
-      result = plus(result, number)
+      sum.add(number)
     })
   }
 }
