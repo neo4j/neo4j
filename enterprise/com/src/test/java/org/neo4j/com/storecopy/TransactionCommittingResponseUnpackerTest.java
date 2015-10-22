@@ -31,20 +31,25 @@ import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.function.Function;
+import org.neo4j.function.Functions;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
@@ -79,7 +84,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_TX_HANDLER;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
@@ -248,7 +252,7 @@ public class TransactionCommittingResponseUnpackerTest
     }
 
     @Test
-    public void shouldIssueKernelPanicInCaseOfFailureToAppendOrApply() throws Throwable
+    public void shouldIssueKernelPanicInCaseOfFailureToAppend() throws Throwable
     {
         // GIVEN
         DependencyResolver dependencyResolver = mock( DependencyResolver.class );
@@ -288,6 +292,75 @@ public class TransactionCommittingResponseUnpackerTest
             fail( "Should have failed" );
         }
         catch ( IOException e )
+        {
+            assertThat( e.getMessage(), containsString( failure.getMessage() ) );
+            verify( kernelHealth ).panic( failure );
+        }
+    }
+
+    @Test
+    public void shouldIssueKernelPanicInCaseOfFailureToApply() throws Throwable
+    {
+        // GIVEN
+        DependencyResolver dependencyResolver = mock( DependencyResolver.class );
+
+        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
+        when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
+
+        TransactionAppender appender = mock( TransactionAppender.class );
+        when( appender.append( any( TransactionRepresentation.class ), anyLong() ) ).thenReturn(
+                new Commitment()
+                {
+                    @Override
+                    public void publishAsCommitted()
+                    {
+                    }
+
+                    @Override
+                    public boolean markedAsCommitted()
+                    {
+                        return true;
+                    }
+                } );
+        LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
+        when( logicalTransactionStore.getAppender() ).thenReturn( appender );
+        when( dependencyResolver.resolveDependency( LogicalTransactionStore.class ) )
+                .thenReturn( logicalTransactionStore );
+        addMockedNeoStore( dependencyResolver );
+
+        when( dependencyResolver.resolveDependency( TransactionRepresentationStoreApplier.class ) )
+                .thenReturn( mock( TransactionRepresentationStoreApplier.class ) );
+        TransactionObligationFulfiller obligationFulfiller = mock( TransactionObligationFulfiller.class );
+        when( dependencyResolver.resolveDependency( TransactionObligationFulfiller.class ) )
+                .thenReturn( obligationFulfiller );
+        LogFile logFile = mock( LogFile.class );
+        when( dependencyResolver.resolveDependency( LogFile.class ) ).thenReturn( logFile );
+        KernelHealth kernelHealth = mock( KernelHealth.class );
+        when( dependencyResolver.resolveDependency( KernelHealth.class ) ).thenReturn( kernelHealth );
+        LogRotation logRotation = mock(LogRotation.class);
+        when( dependencyResolver.resolveDependency( LogRotation.class ) ).thenReturn( logRotation );
+        Function<DependencyResolver,IndexUpdatesValidator> indexUpdatesValidatorFunction =
+                Functions.constant( mock( IndexUpdatesValidator.class ) );
+        BatchingTransactionRepresentationStoreApplier applier =
+                mock( BatchingTransactionRepresentationStoreApplier.class );
+        Function<DependencyResolver,BatchingTransactionRepresentationStoreApplier> transactionStoreApplierFunction =
+                Functions.constant( applier );
+        final TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
+                dependencyResolver, 100, indexUpdatesValidatorFunction, transactionStoreApplierFunction );
+        unpacker.start();
+
+        // WHEN failing to append one or more transactions from a transaction stream response
+        UnderlyingStorageException failure = new UnderlyingStorageException( "Expected failure" );
+        doThrow( failure ).when( applier ).apply( any( TransactionRepresentation.class ),
+                any( ValidatedIndexUpdates.class ), any( LockGroup.class ), anyLong(),
+                any( TransactionApplicationMode.class ) );
+        try
+        {
+            unpacker.unpackResponse(
+                    new DummyTransactionResponse( BASE_TX_ID+1, 1, appender, 10 ), NO_OP_TX_HANDLER );
+            fail( "Should have failed" );
+        }
+        catch ( UnderlyingStorageException e )
         {
             assertThat( e.getMessage(), containsString( failure.getMessage() ) );
             verify( kernelHealth ).panic( failure );

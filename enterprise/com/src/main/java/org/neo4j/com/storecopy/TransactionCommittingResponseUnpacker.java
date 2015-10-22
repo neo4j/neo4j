@@ -219,7 +219,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
                     }
                 }
             }
-            catch ( IOException e )
+            catch ( Throwable e )
             {
                 // Kernel panic is done on this level, i.e. append and apply doesn't do that themselves.
                 kernelHealth.panic( e );
