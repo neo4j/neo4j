@@ -138,7 +138,7 @@ public class AvailabilityGuard
         {
             if ( requirementCount.getAndIncrement() == 0 && !isShutdown.get() )
             {
-                log.debug( DATABASE_UNAVAILABLE_MSG + requirement.description() );
+                log.info( DATABASE_UNAVAILABLE_MSG + requirement.description() );
                 notifyListeners( listeners, new Listeners.Notification<AvailabilityListener>()
                 {
                     @Override
@@ -167,7 +167,7 @@ public class AvailabilityGuard
         {
             if ( requirementCount.getAndDecrement() == 1 && !isShutdown.get() )
             {
-                log.debug( DATABASE_AVAILABLE_MSG + requirement.description() );
+                log.info( DATABASE_AVAILABLE_MSG + requirement.description() );
                 notifyListeners( listeners, new Listeners.Notification<AvailabilityListener>()
                 {
                     @Override
