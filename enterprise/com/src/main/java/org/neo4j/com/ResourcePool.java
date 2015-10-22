@@ -104,7 +104,8 @@ public abstract class ResourcePool<R>
 
     public static final int DEFAULT_CHECK_INTERVAL = 60 * 1000;
 
-    private final LinkedList<R> unused = new LinkedList<>();
+    // protected for testing
+    protected final LinkedList<R> unused = new LinkedList<>();
     private final Map<Thread,R> current = new ConcurrentHashMap<>();
     private final Monitor<R> monitor;
     private final int minSize;
