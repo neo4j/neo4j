@@ -58,33 +58,33 @@ public class AvailabilityGuardTest
         availabilityGuard.require( REQUIREMENT_1 );
 
         // Then log should have been called
-        verify( log, atLeastOnce() ).debug( anyString() );
+        verify( log, atLeastOnce() ).info( anyString() );
 
         // When requirement fulfilled
         availabilityGuard.fulfill( REQUIREMENT_1 );
 
         // Then log should have been called
-        verify( log, atLeast( 2 ) ).debug( anyString() );
+        verify( log, atLeast( 2 ) ).info( anyString() );
 
         // When requirement is added
         availabilityGuard.require( REQUIREMENT_1 );
         availabilityGuard.require( REQUIREMENT_2 );
 
         // Then log should have been called
-        verify( log, atLeast( 3 ) ).debug( anyString() );
+        verify( log, atLeast( 3 ) ).info( anyString() );
 
         // When requirement fulfilled
         availabilityGuard.fulfill( REQUIREMENT_1 );
 
         // Then log should not have been called
-        verify( log, atMost( 3 ) ).debug( anyString() );
+        verify( log, atMost( 3 ) ).info( anyString() );
 
         // When requirement fulfilled
         availabilityGuard.fulfill( REQUIREMENT_2 );
 
         // Then log should have been called
-        verify( log, atLeast( 4 ) ).debug( anyString() );
-        verify( log, atMost( 4 ) ).debug( anyString() );
+        verify( log, atLeast( 4 ) ).info( anyString() );
+        verify( log, atMost( 4 ) ).info( anyString() );
     }
 
     @Test
