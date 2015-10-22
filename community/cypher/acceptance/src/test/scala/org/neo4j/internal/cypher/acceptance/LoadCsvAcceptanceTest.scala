@@ -105,7 +105,7 @@ class LoadCsvAcceptanceTest
     val urls = csvUrls({
       writer =>
         writer.println("id,name,x")
-        writer.println("1,'Aadvark',0")
+        writer.println("1,'Aardvark',0")
         writer.println("2,'Babs'")
         writer.println("3,'Cash',1")
         writer.println("4,'Dice',\"\"")
@@ -119,6 +119,26 @@ class LoadCsvAcceptanceTest
         Map("line.x" -> "1"),
         Map("line.x" -> ""),
         Map("line.x" -> null))
+      )
+    }
+  }
+
+  test("import three rows with headers messy data with predicate") {
+    val urls = csvUrls({
+      writer =>
+        writer.println("id,name,x")
+        writer.println("1,'Aardvark',0")
+        writer.println("2,'Babs'")
+        writer.println("3,'Cash',1")
+        writer.println("4,'Dice',\"\"")
+        writer.println("5,'Emerald',")
+    })
+    for (url <- urls) {
+      val result = execute(s"LOAD CSV WITH HEADERS FROM '$url' AS line WITH line WHERE line.x IS NOT NULL RETURN line.name")
+      assert(result.toList === List(
+        Map("line.name" -> "'Aardvark'"),
+        Map("line.name" -> "'Cash'"),
+        Map("line.name" -> "'Dice'"))
       )
     }
   }

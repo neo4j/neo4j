@@ -24,12 +24,13 @@ import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ReadsNodesWithLabels, Effects}
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CastSupport, CollectionSupport, IsCollection}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{IsMap, CastSupport, CollectionSupport, IsCollection}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
+
 import org.neo4j.graphdb._
 
 import scala.util.{Failure, Success, Try}
@@ -153,6 +154,7 @@ case class PropertyExists(identifier: Expression, propertyKey: KeyToken) extends
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = identifier(m) match {
     case pc: Node         => Some(propertyKey.getOptId(state.query).exists(state.query.nodeOps.hasProperty(pc.getId, _)))
     case pc: Relationship => Some(propertyKey.getOptId(state.query).exists(state.query.relationshipOps.hasProperty(pc.getId, _)))
+    case IsMap(map)       => Some(map(state.query).get(propertyKey.name).orNull != null)
     case null             => None
     case _                => throw new CypherTypeException("Expected " + identifier + " to be a property container.")
   }

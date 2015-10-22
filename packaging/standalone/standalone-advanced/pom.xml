@@ -5,6 +5,7 @@
     <groupId>org.neo4j.assembly</groupId>
     <artifactId>neo4j-standalone</artifactId>
     <version>3.0.0-SNAPSHOT</version>
+
     <relativePath>..</relativePath>
   </parent>
 

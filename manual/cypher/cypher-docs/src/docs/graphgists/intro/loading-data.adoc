@@ -53,6 +53,8 @@ Then you can use whatever Cypher operations you want to apply to either create n
 
 As CSV files usually represent either node- or relationship-lists, you run multiple passes to create nodes and relationships separately.
 
+For more details, see <<query-load-csv>>.
+
 .movies.csv
 [source]
 ----

@@ -60,6 +60,8 @@ o Cypher may now use full index scans to solve queries containing has(n.prop) if
 
 2.2.7
 -----
+o Setting dbms.cypher.statistics_divergence_threshold=1.0 disables replanning
+  for all non-schema changing updates.
 o Fixes #5631 - MERGE with multiple labels with uniqueness constraints
 o Fixed issue around aggregation and literal maps
 
