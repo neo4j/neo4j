@@ -625,6 +625,8 @@ public class HighlyAvailableEditionModule
                     return new ReadOnlyTransactionCommitProcess();
                 }
 
+                removeOldCommitSwitcher();
+
                 TransactionCommitProcess inner = new TransactionRepresentationCommitProcess( appender, storeApplier,
                         indexUpdatesValidator );
 
@@ -636,6 +638,17 @@ public class HighlyAvailableEditionModule
 
                 return (TransactionCommitProcess) newProxyInstance( TransactionCommitProcess.class.getClassLoader(),
                         new Class[]{TransactionCommitProcess.class}, commitProcessDelegate );
+            }
+
+            private void removeOldCommitSwitcher()
+            {
+                for ( Lifecycle instance : modeSwitchersLife.getLifecycleInstances() )
+                {
+                    if ( instance instanceof CommitProcessSwitcher )
+                    {
+                        modeSwitchersLife.remove( instance );
+                    }
+                }
             }
         };
     }
