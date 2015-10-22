@@ -71,9 +71,9 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.logging.SystemOutLogging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DatabaseRule;
@@ -142,7 +142,7 @@ public class BackupServiceIT
 
     private BackupService backupService()
     {
-        return new BackupService( fileSystem, StringLogger.SYSTEM, new Monitors() );
+        return new BackupService( fileSystem, new SystemOutLogging(), new Monitors() );
     }
 
     @Test

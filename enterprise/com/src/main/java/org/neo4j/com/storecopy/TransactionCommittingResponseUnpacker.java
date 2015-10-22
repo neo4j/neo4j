@@ -28,6 +28,7 @@ import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
@@ -43,7 +44,9 @@ import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.util.Access;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 
@@ -53,15 +56,12 @@ import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
  * {@link TransactionStream transaction streams} are {@link TransactionRepresentationStoreApplier applied to the
  * store},
  * in batches.
- * <p>
+ * <p/>
  * It is assumed that any {@link TransactionStreamResponse response carrying transaction data} comes from the one
  * and same thread.
  */
 public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, Lifecycle
 {
-    private final DependencyResolver resolver;
-    private final Function<DependencyResolver,IndexUpdatesValidator> validatorFunction;
-    private final TransactionQueue transactionQueue;
     // Visits all queued transactions, committing them
     private final TransactionVisitor batchCommitter = new TransactionVisitor()
     {
@@ -106,6 +106,15 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
             }
         }
     };
+
+    static final String msg = "Kernel panic detected: pulled transactions cannot be applied to a non-healthy database. "
+                              + "In order to resolve this issue a manual restart of this instance is required.";
+
+    private final DependencyResolver resolver;
+    private final Function<DependencyResolver,IndexUpdatesValidator> validatorFunction;
+    private final Function<DependencyResolver,BatchingTransactionRepresentationStoreApplier> applierFunction;
+    private final TransactionQueue transactionQueue;
+
     private TransactionAppender appender;
     private BatchingTransactionRepresentationStoreApplier storeApplier;
     private IndexUpdatesValidator indexUpdatesValidator;
@@ -113,17 +122,18 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     private TransactionObligationFulfiller obligationFulfiller;
     private LogFile logFile;
     private LogRotation logRotation;
+    private KernelHealth kernelHealth;
+    private StringLogger log;
+
     private volatile boolean stopped;
-    private final Function<DependencyResolver,BatchingTransactionRepresentationStoreApplier> applierFunction;
 
     public TransactionCommittingResponseUnpacker( DependencyResolver resolver, int maxBatchSize )
     {
-        this.resolver = resolver;
-        this.validatorFunction = new DefaultIndexUpdatesValidatorCreator();
-        this.applierFunction = new DefaultBatchingStoreApplierCreator();
-        this.transactionQueue = new TransactionQueue( maxBatchSize );
+        this( resolver, maxBatchSize,
+                new DefaultIndexUpdatesValidatorCreator(), new DefaultBatchingStoreApplierCreator() );
     }
 
+    // test only
     public TransactionCommittingResponseUnpacker( DependencyResolver resolver, int maxBatchSize,
             // These two are just for testing purposes, to inject different behaviour.
             // It's made hard by the fact this class is not accepting dependencies in its constructor,
@@ -186,6 +196,14 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
             // Check rotation explicitly, since the version of append that we're calling isn't doing that.
             logRotation.rotateLogIfNeeded( LogAppendEvent.NULL );
 
+            // Check kernel health after log rotation
+            if ( !kernelHealth.isHealthy() )
+            {
+                Throwable causeOfPanic = kernelHealth.getCauseOfPanic();
+                log.error( msg + " Original kernel panic cause was:\n" + causeOfPanic.getMessage() );
+                throw new IOException( msg, causeOfPanic );
+            }
+
             try
             {
                 // Apply whatever is in the queue
@@ -239,6 +257,8 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         this.obligationFulfiller = resolveTransactionObligationFulfiller( resolver );
         this.logFile = resolver.resolveDependency( LogFile.class );
         this.logRotation = resolver.resolveDependency( LogRotation.class );
+        this.kernelHealth = resolver.resolveDependency( KernelHealth.class );
+        this.log = resolver.resolveDependency( Logging.class ).getMessagesLog( getClass() );
         this.stopped = false;
     }
 

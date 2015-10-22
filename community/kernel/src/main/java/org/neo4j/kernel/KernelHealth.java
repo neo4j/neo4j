@@ -100,6 +100,15 @@ public class KernelHealth
         return tmOk;
     }
 
+    public Throwable getCauseOfPanic()
+    {
+        if ( tmOk )
+        {
+            throw new IllegalStateException( "Kernel is healthy, no panic cause found" );
+        }
+        return causeOfPanic;
+    }
+
     public void healed()
     {
         tmOk = true;

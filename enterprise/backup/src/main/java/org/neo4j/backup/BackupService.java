@@ -66,6 +66,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.logging.SystemOutLogging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -107,18 +108,20 @@ class BackupService
     static final String DIFFERENT_STORE = "Target directory contains full backup of a logically different store.";
 
     private final FileSystemAbstraction fileSystem;
+    private final Logging logging;
     private final StringLogger logger;
     private final Monitors monitors;
 
     BackupService()
     {
-        this( new DefaultFileSystemAbstraction(), StringLogger.SYSTEM, new Monitors() );
+        this( new DefaultFileSystemAbstraction(), new SystemOutLogging(), new Monitors() );
     }
 
-    BackupService( FileSystemAbstraction fileSystem, StringLogger logger, Monitors monitors )
+    BackupService( FileSystemAbstraction fileSystem, Logging logging, Monitors monitors )
     {
         this.fileSystem = fileSystem;
-        this.logger = logger;
+        this.logging = logging;
+        this.logger = logging.getMessagesLog( getClass() );
         this.monitors = monitors;
     }
 
@@ -319,8 +322,8 @@ class BackupService
         DependencyResolver resolver = targetDb.getDependencyResolver();
 
         ProgressTxHandler handler = new ProgressTxHandler();
-        Config config = targetDb.getDependencyResolver().resolveDependency( Config.class );
-        TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( resolver, 100 );
+        TransactionCommittingResponseUnpacker unpacker =
+                new TransactionCommittingResponseUnpacker( resolver, 100 );
 
         Monitors monitors = resolver.resolveDependency( Monitors.class );
         BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort,
