@@ -94,7 +94,7 @@ public class QueryInvalidationIT
         long replanTime = System.currentTimeMillis() + 1_800;
 
         //create more date
-        createData( USERS, USERS, CONNECTIONS );
+        createData( USERS, USERS, 2 * CONNECTIONS );
 
         // - after the query TTL has expired -
         while ( System.currentTimeMillis() < replanTime )
