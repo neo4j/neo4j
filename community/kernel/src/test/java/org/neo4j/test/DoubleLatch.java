@@ -22,9 +22,11 @@ package org.neo4j.test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.Assert.assertTrue;
+
 public class DoubleLatch
 {
-    private static final int FIVE_MINUTES = 5 * 60 * 1000;
+    private static final int FIVE_MINUTES = 5;
     private final CountDownLatch startSignal;
     private final CountDownLatch finishSignal;
     private final int numberOfContestants;
@@ -75,24 +77,15 @@ public class DoubleLatch
 
     public static void awaitLatch( CountDownLatch latch )
     {
-        long deadline = System.currentTimeMillis() + FIVE_MINUTES;
-        long remaining;
-
-        while( ( remaining = deadline - System.currentTimeMillis() ) >= 0 )
+        try
         {
-            try
-            {
-                latch.await( remaining, TimeUnit.MILLISECONDS  );
-                return;
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.interrupted();
-                new RuntimeException( "Thread interrupted while waiting on latch", e).printStackTrace();
-            }
-            Thread.yield();
+            assertTrue( "Latch specified waiting time elapsed.", latch.await( FIVE_MINUTES, TimeUnit.MINUTES ) );
         }
-        throw new RuntimeException( "Failed to acquire latch" );
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+            throw new RuntimeException( "Thread interrupted while waiting on latch", e );
+        }
     }
 
     @Override

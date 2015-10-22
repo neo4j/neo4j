@@ -101,7 +101,7 @@ public class HardKillIT
             proc.destroy();
             proc = null;
 
-            newMasterAvailableLatch.await( 60, SECONDS );
+            assertTrue( newMasterAvailableLatch.await( 60, SECONDS ) );
 
             assertTrue( dbWithId2.isMaster() );
             assertTrue( !dbWithId3.isMaster() );
