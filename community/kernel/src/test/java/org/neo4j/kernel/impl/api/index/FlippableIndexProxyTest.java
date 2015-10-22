@@ -34,6 +34,7 @@ import org.neo4j.test.OtherThreadExecutor;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -137,7 +138,7 @@ public class FlippableIndexProxyTest
                 triggerFinishFlip, triggerExternalAccess ) );
 
         // And I wait until the flipping thread is in the middle of "the flip"
-        triggerExternalAccess.await( 10, SECONDS );
+        assertTrue( triggerExternalAccess.await( 10, SECONDS ) );
 
         // And another thread comes along and drops the index
         Future<Void> dropIndexFuture = dropIndexThread.executeDontWait( dropTheIndex( flippable ) );
@@ -189,7 +190,7 @@ public class FlippableIndexProxyTest
                     public Void call()
                     {
                         triggerExternalAccess.countDown();
-                        awaitLatch( triggerFinishFlip );
+                        assertTrue( awaitLatch( triggerFinishFlip ) );
                         return null;
                     }
                 }, null );

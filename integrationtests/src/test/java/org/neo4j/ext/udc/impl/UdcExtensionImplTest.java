@@ -252,7 +252,7 @@ public class UdcExtensionImplTest
 
         t.run();
 
-        latch.await( 1000, TimeUnit.MILLISECONDS );
+        assertTrue( latch.await( 1000, TimeUnit.MILLISECONDS ) );
 
         t.join();
     }

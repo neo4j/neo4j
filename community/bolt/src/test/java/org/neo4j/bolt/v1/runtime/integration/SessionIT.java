@@ -277,7 +277,7 @@ public class SessionIT
         } );
 
         // Then
-        pullAllCallbackCalled.await( 30, TimeUnit.SECONDS );
+        assertTrue( pullAllCallbackCalled.await( 30, TimeUnit.SECONDS ) );
         final Neo4jError err = error.get();
         assertThat( err.status(), equalTo( (Status) Status.General.UnknownFailure ) );
         assertThat( err.message(), CoreMatchers.containsString( "Ooopsies!" ) );
