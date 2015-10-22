@@ -31,19 +31,12 @@ public class SlaveLockManager extends LifecycleAdapter implements Locks
     private final Locks local;
     private final Master master;
     private final AvailabilityGuard availabilityGuard;
-    private final Configuration config;
-
-    public interface Configuration
-    {
-        long getAvailabilityTimeout();
-    }
 
     public SlaveLockManager( Locks localLocks, RequestContextFactory requestContextFactory, Master master,
-                             AvailabilityGuard availabilityGuard, Configuration config )
+                             AvailabilityGuard availabilityGuard )
     {
         this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
-        this.config = config;
         this.local = localLocks;
         this.master = master;
     }
@@ -52,7 +45,7 @@ public class SlaveLockManager extends LifecycleAdapter implements Locks
     public Client newClient()
     {
         return new SlaveLocksClient(
-                master, local.newClient(), local, requestContextFactory, availabilityGuard, config );
+                master, local.newClient(), local, requestContextFactory, availabilityGuard );
     }
 
     @Override

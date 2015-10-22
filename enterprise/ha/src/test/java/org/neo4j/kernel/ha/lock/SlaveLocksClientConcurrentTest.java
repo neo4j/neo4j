@@ -20,11 +20,6 @@
 package org.neo4j.kernel.ha.lock;
 
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -32,6 +27,11 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -113,12 +113,12 @@ public class SlaveLocksClientConcurrentTest
     private SlaveLocksClient createClient()
     {
         return new SlaveLocksClient( master, lockManager.newClient(), lockManager,
-                requestContextFactory, availabilityGuard, new TestConfiguration() );
+                requestContextFactory, availabilityGuard );
     }
 
     private static class LockedOnMasterAnswer implements Answer
     {
-        private Response lockResult;
+        private final Response lockResult;
 
         public LockedOnMasterAnswer()
         {
@@ -213,15 +213,6 @@ public class SlaveLocksClientConcurrentTest
             this.locksClient = locksClient;
             this.resourceType = resourceType;
             this.id = id;
-        }
-    }
-
-    private static class TestConfiguration implements SlaveLockManager.Configuration
-    {
-        @Override
-        public long getAvailabilityTimeout()
-        {
-            return 100;
         }
     }
 }
