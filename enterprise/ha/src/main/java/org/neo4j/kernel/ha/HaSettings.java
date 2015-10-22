@@ -34,6 +34,7 @@ import static org.neo4j.helpers.Settings.INTEGER;
 import static org.neo4j.helpers.Settings.min;
 import static org.neo4j.helpers.Settings.options;
 import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_descending;
 
 /**
  * Settings for High Availability mode
@@ -90,8 +91,7 @@ public class HaSettings
     public static final Setting<Integer> tx_push_factor = setting( "ha.tx_push_factor", INTEGER, "1", min( 0 ) );
 
     @Description( "Push strategy of a transaction to a slave during commit." )
-    public static final Setting<TxPushStrategy> tx_push_strategy = setting( "ha.tx_push_strategy", options(
-            TxPushStrategy.class ), "fixed" );
+    public static final Setting<TxPushStrategy> tx_push_strategy = setting( "ha.tx_push_strategy", options( TxPushStrategy.class ), fixed_descending.name() );
 
     @Description( "Size of batches of transactions applied on slaves when pulling from master" )
     public static final Setting<Integer> pull_apply_batch_size = setting( "ha.pull_apply_batch_size", INTEGER, "100" );
@@ -101,7 +101,19 @@ public class HaSettings
         @Description("Round robin")
         round_robin,
 
-        @Description("Fixed")
-        fixed
+        @Deprecated
+        @Description("Deprecated, please use `fixed_ascending` or `fixed_descending` instead.")
+        fixed,
+
+        @Description("Fixed, prioritized by server id in descending order. This strategy will push to the same set of instances, as long as they remain " +
+                     "available, and will prioritize available instances with the highest instance ids.")
+        fixed_descending,
+
+        @Description("Fixed, prioritized by server id in ascending order. This strategy will push to the same set of instances, as long as they remain " +
+                     "available, and will prioritize those available instances with the lowest instance ids. This strategy makes it more likely that the most " +
+                     "up-to-date instance in a cluster will be an instance with a low id. This is consistent with the master reelection tie-breaking strategy of letting the " +
+                     "instance with the lowest id win an election if several instances are equally up-to-date. Thus, using this strategy makes it very likely " +
+                     "that failover will happen in a low-id part of the cluster, which can be very helpful in planning a multi-data center deployment.")
+        fixed_ascending
     }
 }

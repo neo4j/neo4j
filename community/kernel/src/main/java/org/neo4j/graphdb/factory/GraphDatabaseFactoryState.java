@@ -81,6 +81,14 @@ public class GraphDatabaseFactoryState
         }
     }
 
+    public void addSettingsClasses( Iterable<Class<?>> settings )
+    {
+        for ( Class<?> setting : settings )
+        {
+            settingsClasses.add( setting );
+        }
+    }
+
     public void addURLAccessRule( String protocol, URLAccessRule rule )
     {
         urlAccessRules.put( protocol, rule );

@@ -25,19 +25,31 @@ import org.junit.Test;
 import java.util.Collections;
 
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.com.Response;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlavePriorities;
 import org.neo4j.kernel.ha.com.master.SlavePriority;
 import org.neo4j.kernel.ha.com.master.Slaves;
+import org.neo4j.kernel.ha.transaction.TransactionPropagator.Configuration;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.Log;
 
+import static java.util.Arrays.asList;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_ascending;
+import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_descending;
+import static org.neo4j.kernel.ha.HaSettings.tx_push_strategy;
 
 public class TransactionPropagatorTest
 {
@@ -50,7 +62,7 @@ public class TransactionPropagatorTest
         // GIVEN
         int serverId = 1;
         final InstanceId instanceId = new InstanceId( serverId );
-        TransactionPropagator.Configuration config = new TransactionPropagator.Configuration()
+        Configuration config = new Configuration()
         {
             @Override
             public int getTxPushFactor()
@@ -67,7 +79,7 @@ public class TransactionPropagatorTest
             @Override
             public SlavePriority getReplicationStrategy()
             {
-                return SlavePriorities.fixed();
+                return SlavePriorities.fixedDescending();
             }
         };
         Log logger = mock( Log.class );
@@ -84,5 +96,83 @@ public class TransactionPropagatorTest
 
         // THEN
         verify( logger, times( 1 ) ).warn( anyString() );
+    }
+
+    @Test
+    public void shouldPrioritizeAscendingIfAsked() throws Exception
+    {
+        // GIVEN
+        Configuration propagator = TransactionPropagator.from( new Config( stringMap( tx_push_strategy.name(), fixed_ascending.name() )));
+        SlavePriority strategy = propagator.getReplicationStrategy();
+
+        // WHEN
+        Iterable<Slave> prioritize = strategy.prioritize( asList( slave( 1 ), slave( 0 ), slave( 2 ) ) );
+
+        // THEN
+        assertThat( Iterables.toList( prioritize ), equalTo( asList( slave( 0 ), slave( 1 ), slave( 2 ) ) ) );
+    }
+
+    @Test
+    public void shouldPrioritizeDescendingIfAsked() throws Exception
+    {
+        // GIVEN
+        Configuration propagator = TransactionPropagator.from( new Config( stringMap( tx_push_strategy.name(), fixed_descending.name() )));
+        SlavePriority strategy = propagator.getReplicationStrategy();
+
+        // WHEN
+        Iterable<Slave> prioritize = strategy.prioritize( asList( slave( 1 ), slave( 0 ), slave( 2 ) ) );
+
+        // THEN
+        assertThat( Iterables.toList(prioritize), equalTo( asList( slave( 2 ), slave( 1 ), slave( 0 ) ) ) );
+    }
+
+    @Test
+    public void shouldWorkWithOldFixedKeyword() throws Exception
+    {
+        // GIVEN
+        Configuration propagator = TransactionPropagator.from( new Config( stringMap( tx_push_strategy.name(), "fixed" ), HaSettings.class ));
+        SlavePriority strategy = propagator.getReplicationStrategy();
+
+        // WHEN
+        Iterable<Slave> prioritize = strategy.prioritize( asList( slave( 1 ), slave( 0 ), slave( 2 ) ) );
+
+        // THEN
+        assertThat( Iterables.toList(prioritize), equalTo( asList( slave( 2 ), slave( 1 ), slave( 0 ) ) ) );
+    }
+
+    private Slave slave( final int id )
+    {
+        return new Slave()
+        {
+            @Override
+            public Response<Void> pullUpdates( long upToAndIncludingTxId )
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public int getServerId()
+            {
+                return id;
+            }
+
+            @Override
+            public boolean equals( Object obj )
+            {
+                return obj instanceof Slave && ((Slave) obj).getServerId() == id;
+            }
+
+            @Override
+            public int hashCode()
+            {
+                return id;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "Slave[" + id + "]";
+            }
+        };
     }
 }
