@@ -218,8 +218,9 @@ public class ClusterTopologyChangesIT
         createNodeOn( cluster.getMaster() );
         cluster.sync();
 
-        ClusterClientModule clusterClient = newClusterClient( new InstanceId( 1 ) );
-        cleanup.add(clusterClient.life);
+        LifeSupport life = new LifeSupport();
+        ClusterClientModule clusterClient = newClusterClient( life, new InstanceId( 1 ) );
+        cleanup.add( life );
 
         final AtomicReference<InstanceId> coordinatorIdWhenReJoined = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch( 1 );
@@ -233,7 +234,7 @@ public class ClusterTopologyChangesIT
             }
         } );
 
-        clusterClient.life.start();
+        life.start();
 
         // Then
         assertTrue( latch.await( 20, SECONDS ) );
@@ -261,7 +262,7 @@ public class ClusterTopologyChangesIT
         }
     }
 
-    private ClusterClientModule newClusterClient( InstanceId id )
+    private ClusterClientModule newClusterClient( LifeSupport life, InstanceId id )
     {
         Map<String,String> configMap = MapUtil.stringMap(
                 ClusterSettings.initial_hosts.name(), cluster.getInitialHostsConfigString(),
@@ -271,11 +272,11 @@ public class ClusterTopologyChangesIT
         Config config = new Config( configMap, GraphDatabaseFacadeFactory.Configuration.class,
                 GraphDatabaseSettings.class );
 
-        LifeSupport life = new LifeSupport();
-        SimpleLogService logService = new SimpleLogService( FormattedLogProvider.toOutputStream( System.out ), FormattedLogProvider.toOutputStream( System.out ) );
+        SimpleLogService logService = new SimpleLogService( FormattedLogProvider.toOutputStream( System.out ),
+                FormattedLogProvider.toOutputStream( System.out ) );
 
-        return new ClusterClientModule(life, new Dependencies(  ), new Monitors(), config,
-                logService, new NotElectableElectionCredentialsProvider());
+        return new ClusterClientModule( life, new Dependencies(), new Monitors(),
+                config, logService, new NotElectableElectionCredentialsProvider() );
     }
 
     private static void attemptTransactions( HighlyAvailableGraphDatabase... dbs )

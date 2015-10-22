@@ -41,7 +41,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -91,7 +90,6 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
-
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
@@ -1035,7 +1033,7 @@ public class ClusterManager
                     }
                 }, clusterClientModule.clusterClient.getServerId() ) );
 
-                life.add( new FutureLifecycleAdapter<>( clusterClientModule.life ) );
+                life.add( new FutureLifecycleAdapter<>( clusterClientLife ) );
             }
         }
 
