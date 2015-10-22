@@ -172,6 +172,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     val ruleResult = graph.rollback(innerExecute(s"CYPHER planner=rule $queryText", params: _*))
     val costResult = executeWithCostPlannerOnly(queryText, params: _*)
     assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners")
+
     withClue("Diverging statistics between rule and cost planners") {
       ruleResult.queryStatistics() should equal(costResult.queryStatistics())
     }

@@ -41,6 +41,12 @@ case class Effects(effectsSet: Set[Effect] = Set.empty) {
     case _ => false
   }
 
+  def containsRelationshipReads = effectsSet.exists {
+    case _: ReadsRelationships => true
+    case ReadsRelationshipBoundNodes => true
+    case _ => false
+  }
+
   def regardlessOfLeafEffects = Effects(effectsSet.map {
     case LeafEffect(e) => e
     case e => e

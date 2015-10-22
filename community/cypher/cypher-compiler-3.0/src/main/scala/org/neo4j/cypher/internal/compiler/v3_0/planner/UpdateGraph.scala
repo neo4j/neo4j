@@ -51,10 +51,16 @@ case class UpdateGraph(nodePatterns: Seq[CreateNodePattern] = Seq.empty,
   }
 
   def relationshipOverlap(qg: QueryGraph) = {
-    //MATCH ()-[]->()?
-    qg.patternRelationships.exists(_.types.nonEmpty) ||
-      // CREATE ()-[:R]->() MATCH ()-[:R]-()?
-      (qg.patternRelationships.flatMap(_.types.toSet) intersect relTypes).nonEmpty
+    //CREATE () MATCH ()-->()
+    (relPatterns.nonEmpty && qg.patternRelationships.nonEmpty) && (
+      //MATCH ()-[]->()?
+      qg.patternRelationships.exists(_.types.isEmpty) ||
+        // CREATE ()-[:R]->() MATCH ()-[:R]-()?
+        (qg.patternRelationships.flatMap(_.types.toSet) intersect relTypes).nonEmpty ||
+        // CREATE (a)-[:R1]->(b) MATCH (a)-[:R2]-(b)?
+        (qg.patternRelationships.flatMap(r => Set(r.nodes._1, r.nodes._2)) intersect nodePatterns.map(_.nodeName).toSet)
+          .nonEmpty
+      )
   }
 
 
