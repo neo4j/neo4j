@@ -1,0 +1,5 @@
+#!/bin/bash
+
+mvn dependency:copy-dependencies
+
+java -cp "target/dependency/*:target/classes" org.neo4j.tools.txlog.CheckTxLogs $*
