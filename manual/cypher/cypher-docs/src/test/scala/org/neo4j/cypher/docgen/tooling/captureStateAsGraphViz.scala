@@ -33,7 +33,7 @@ import org.neo4j.walk.Walker
  */
 object captureStateAsGraphViz extends GraphIcing {
 
-  def apply(db: GraphDatabaseService, name: String, count: Int): GraphViz = GraphViz(emitGraphviz(s"$name-$count", "", db))
+  def apply(db: GraphDatabaseService, name: String, count: Int, options: String): GraphViz = GraphViz(emitGraphviz(s"$name-$count", options, db))
 
   private def emitGraphviz(testid: String, graphVizOptions: String, db: GraphDatabaseService): String = {
     val out = new ByteArrayOutputStream()

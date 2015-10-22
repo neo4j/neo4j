@@ -55,26 +55,29 @@ trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with 
    */
   def doc: Document
 
-  runTestsFor(doc)
+  def outputPath: String = "target/docs/dev/ql/"
 
-  def runTestsFor(doc: Document) = {
+  runTestsFor(doc, outputPath)
+
+  def runTestsFor(doc: Document, outputPath: String) = {
     val result = runQueries(doc)
     reportResults(result)
     if (result.success) {
-      writeResultsToFile(doc, result)
+      writeResultsToFile(doc, result, outputPath)
     }
   }
 
-  private def writeResultsToFile(doc: Document, result: TestRunResult) {
+  private def writeResultsToFile(doc: Document, result: TestRunResult, outputPath: String) {
     val document: Document = contentAndResultMerger(doc, result)
 
     val asciiDocTree = document.asciiDoc
 
-    val dir = new File(s"target/docs/dev/ql/")
+    val outputPathWithSeparator = if(outputPath.endsWith(File.separator)) outputPath else outputPath + File.separator
+    val dir = new File(outputPathWithSeparator)
     if (!dir.exists())
       dir.mkdirs()
 
-    val file = new File(s"target/docs/dev/ql/${doc.id}.adoc")
+    val file = new File(s"$outputPathWithSeparator${doc.id}.adoc")
     val pw = new PrintWriter(file)
     println(asciiDocTree)
     pw.write(asciiDocTree)

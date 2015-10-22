@@ -41,7 +41,7 @@ include::clustering-coefficient.asciidoc[]
 
 :leveloffset: 1
 
-include::pretty-graphs.asciidoc[]
+include::cypher-cookbook-pretty-graphs.adoc[]
 
 :leveloffset: 1
 

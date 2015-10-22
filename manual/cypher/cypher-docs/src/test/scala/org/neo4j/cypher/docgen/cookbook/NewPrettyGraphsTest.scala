@@ -23,17 +23,18 @@ import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.tooling.{DocBuilder, DocumentingTest, ResultAssertions}
 
 class NewPrettyGraphsTest extends DocumentingTest with QueryStatisticsTestSupport {
+  override def outputPath = "target/docs/dev/ql/cookbook/"
   override def doc = new DocBuilder {
     doc("Pretty graphs", "cypher-cookbook-pretty-graphs")
     synopsis("This section is showing how to create some of the http://en.wikipedia.org/wiki/Gallery_of_named_graphs[named pretty graphs on Wikipedia].")
     section("Star Graph") {
-      p("The graph is created by first creating a center node, and then once per element in the range, creates a leaf node and connects it to the center.")
+      p("The graph is created by first creating a center node, MATS OCH HENRIK and then once per element in the range, creates a leaf node and connects it to the center.")
       query( """CREATE (center)
                |FOREACH (x IN range(1,6)| CREATE (leaf),(center)-[:X]->(leaf))
                |RETURN id(center) AS id""", assertAStarIsBorn) {
         p("The query returns the id of the center node.")
         resultTable()
-        graphViz()
+        graphViz("graph [layout=neato]")
       }
     }
     section("Wheel graph") {
@@ -61,7 +62,7 @@ class NewPrettyGraphsTest extends DocumentingTest with QueryStatisticsTestSuppor
                |RETURN id(center) as id""", assertWheelGraph) {
         p("The query returns the id of the center node.")
         resultTable()
-        graphViz()
+        graphViz("graph [layout=neato]")
       }
     }
     section("Complete graph") {
@@ -75,7 +76,7 @@ class NewPrettyGraphsTest extends DocumentingTest with QueryStatisticsTestSuppor
                |CREATE (leaf1)-[:X]->(leaf2)""", assertCompleteGraph) {
         p("Nothing is returned by this query")
         resultTable()
-        graphViz()
+        graphViz("graph [layout=circo]")
       }
     }
     section("Friendship graph") {
@@ -86,7 +87,7 @@ class NewPrettyGraphsTest extends DocumentingTest with QueryStatisticsTestSuppor
                |  (leaf1)-[:X]->(leaf2))
                |RETURN ID(center) AS id""", assertFriendshipGraph) {
         resultTable()
-        graphViz()
+        graphViz("graph [layout=neato]")
       }
     }
   }.build()

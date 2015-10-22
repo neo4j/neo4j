@@ -233,6 +233,6 @@ trait QueryResultPlaceHolder {
   override def runnableContent(initQueries: Seq[String]) = Seq(ContentWithInit(initQueries, this))
 }
 
-class TablePlaceHolder(val assertions: QueryAssertions) extends Content with QueryResultPlaceHolder
-class GraphVizPlaceHolder() extends Content with QueryResultPlaceHolder
-class ErrorPlaceHolder() extends Content with QueryResultPlaceHolder
+case class TablePlaceHolder(assertions: QueryAssertions) extends Content with QueryResultPlaceHolder
+case class GraphVizPlaceHolder(options: String) extends Content with QueryResultPlaceHolder
+case class ErrorPlaceHolder() extends Content with QueryResultPlaceHolder

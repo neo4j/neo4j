@@ -57,7 +57,7 @@ trait DocBuilder {
     queryScope.addContent(new TablePlaceHolder(queryScope.assertions))
   }
 
-  def graphViz() = current.addContent(new GraphVizPlaceHolder())
+  def graphViz(options: String = "") = current.addContent(new GraphVizPlaceHolder(options))
 
   def synopsis(text: String) = current.addContent(Abstract(text))
 

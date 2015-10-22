@@ -42,7 +42,7 @@ class QueryRunner(formatter: (GraphDatabaseService, Transaction) => InternalExec
   def runQueries(contentsWithInit: Seq[ContentWithInit], title: String): TestRunResult = {
 
     val groupedByInits: Map[Seq[String], Seq[(String, QueryResultPlaceHolder)]] =
-      contentsWithInit.groupBy(_.initKey).mapValues(_.map(init => (init.lastInit -> init.queryResultPlaceHolder)))
+      contentsWithInit.groupBy(_.initKey).mapValues(_.map(init => init.lastInit -> init.queryResultPlaceHolder))
     var graphVizCounter = 0
 
     val results: Iterable[RunResult] = groupedByInits.flatMap {
@@ -60,7 +60,7 @@ class QueryRunner(formatter: (GraphDatabaseService, Transaction) => InternalExec
                 graphVizCounter = graphVizCounter + 1
                 Try(db.execute(queryText)) match {
                   case Success(inner) =>
-                    GraphVizRunResult(gv, captureStateAsGraphViz(db.getInnerDb, title, graphVizCounter))
+                    GraphVizRunResult(gv, captureStateAsGraphViz(db.getInnerDb, title, graphVizCounter, gv.options))
                   case Failure(error) =>
                     QueryRunResult(queryText, gv, Left(error))
                 }

@@ -278,7 +278,7 @@ class DocumentQueryTest extends CypherFunSuite {
 
   test("finds all queries and the init-queries they need") {
     val tableV = new TablePlaceHolder(NoAssertions)
-    val graphV: GraphVizPlaceHolder = new GraphVizPlaceHolder()
+    val graphV: GraphVizPlaceHolder = new GraphVizPlaceHolder("")
     val doc = Document("title", "myId", Seq("1"), Section("h1", Seq("2"),
       Section("h2", Seq("3"),
         Query("q", NoAssertions, Seq.empty, tableV)
