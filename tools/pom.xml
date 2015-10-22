@@ -7,19 +7,19 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.3.1-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
   <artifactId>neo4j-tools</artifactId>
-  <version>2.3.1-SNAPSHOT</version>
+  <version>3.0.0-SNAPSHOT</version>
 
   <name>Neo4j - Low Level Tools</name>
   <packaging>jar</packaging>
   <description>A package for low level tools.</description>
 
   <scm>
-    <url>https://github.com/neo4j/neo4j/tree/2.3/tools</url>
+    <url>https://github.com/neo4j/neo4j/tree/3.0/tools</url>
   </scm>
 
   <licenses>
