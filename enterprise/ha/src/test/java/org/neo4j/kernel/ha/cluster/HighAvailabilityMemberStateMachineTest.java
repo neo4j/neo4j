@@ -545,8 +545,7 @@ public class HighAvailabilityMemberStateMachineTest
         toTest.init();
         toTest.start();
 
-        final DelegateInvocationHandler<Master> handler = new DelegateInvocationHandler<>( Master.class,
-                NullLogProvider.getInstance() );
+        final DelegateInvocationHandler<Master> handler = new DelegateInvocationHandler<>( Master.class );
 
         MasterClientResolver masterClientResolver =  mock( MasterClientResolver.class );
         MasterClient masterClient = mock( MasterClient.class );
