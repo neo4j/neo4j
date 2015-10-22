@@ -26,24 +26,30 @@ import org.neo4j.cypher.internal.frontend.v2_3.{LabelId, PropertyKeyId, RelTypeI
 import scala.language.reflectiveCalls
 
 class GraphStatisticsSnapshotTest extends CypherFunSuite {
-  val graphStatistics = new GraphStatistics {
-    var FACTOR = 1
+  def graphStatistics() = new GraphStatistics {
+    private var _factor = 1L
+
     def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
-      Cardinality(labelId.fold(500)(_.id * 10) * FACTOR)
+      Cardinality(labelId.fold(500)(_.id * 10) * _factor)
 
     def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
-      Cardinality(relTypeId.fold(5000)(_.id * 10) * FACTOR)
+      Cardinality(relTypeId.fold(5000)(_.id * 10) * _factor)
 
     def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
-      Selectivity.of(1.0 / ((property.id + 1) * FACTOR))
+      Selectivity.of(1.0 / ((property.id + 1) * _factor))
 
     def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
-      Selectivity.of(1.0 / ((property.id + 1) * FACTOR))
+      Selectivity.of(1.0 / ((property.id + 1) * _factor))
+
+
+    def factor(factor: Long): Unit = {
+     _factor = factor
+    }
   }
 
   test("records queries and its observed values") {
     val snapshot = MutableGraphStatisticsSnapshot()
-    val instrumentedStatistics = InstrumentedGraphStatistics(graphStatistics, snapshot)
+    val instrumentedStatistics = InstrumentedGraphStatistics(graphStatistics(), snapshot)
     instrumentedStatistics.nodesWithLabelCardinality(None)
     instrumentedStatistics.indexSelectivity(LabelId(0), PropertyKeyId(3))
     instrumentedStatistics.nodesWithLabelCardinality(Some(LabelId(4)))
@@ -60,7 +66,7 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
 
   test("a snapshot shouldn't diverge from itself") {
     val snapshot = MutableGraphStatisticsSnapshot()
-    val instrumentedStatistics = InstrumentedGraphStatistics(graphStatistics, snapshot)
+    val instrumentedStatistics = InstrumentedGraphStatistics(graphStatistics(), snapshot)
     instrumentedStatistics.nodesWithLabelCardinality(None)
     instrumentedStatistics.indexSelectivity(LabelId(0), PropertyKeyId(3))
     instrumentedStatistics.nodesWithLabelCardinality(Some(LabelId(4)))
@@ -75,17 +81,18 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
 
   test("a snapshot should pick up divergences") {
     val snapshot1 = MutableGraphStatisticsSnapshot()
-    val instrumentedStatistics1 = InstrumentedGraphStatistics(graphStatistics, snapshot1)
+    val statistics = graphStatistics()
+    val instrumentedStatistics1 = InstrumentedGraphStatistics(statistics, snapshot1)
     instrumentedStatistics1.nodesWithLabelCardinality(None)
     instrumentedStatistics1.indexSelectivity(LabelId(0), PropertyKeyId(3))
     instrumentedStatistics1.nodesWithLabelCardinality(Some(LabelId(4)))
 
     val snapshot2 = MutableGraphStatisticsSnapshot()
-    val instrumentedStatistics2 = InstrumentedGraphStatistics(graphStatistics, snapshot2)
+    val instrumentedStatistics2 = InstrumentedGraphStatistics(statistics, snapshot2)
     instrumentedStatistics2.nodesWithLabelCardinality(None)
     instrumentedStatistics2.nodesWithLabelCardinality(Some(LabelId(4)))
 
-    graphStatistics.FACTOR = 2
+    statistics.factor(2)
     instrumentedStatistics2.indexSelectivity(LabelId(0), PropertyKeyId(3))
 
     val frozen1 = snapshot1.freeze
@@ -95,5 +102,27 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
 
     frozen1.diverges(frozen2, smallNumber) should equal(true)
     frozen1.diverges(frozen2, bigNumber) should equal(false)
+  }
+
+  test("if threshold is 1.0 nothing diverges") {
+    val snapshot1 = MutableGraphStatisticsSnapshot()
+    val statistics = graphStatistics()
+    val instrumentedStatistics1 = InstrumentedGraphStatistics(statistics, snapshot1)
+    instrumentedStatistics1.nodesWithLabelCardinality(None)
+    instrumentedStatistics1.indexSelectivity(LabelId(0), PropertyKeyId(3))
+    instrumentedStatistics1.nodesWithLabelCardinality(Some(LabelId(4)))
+
+    val snapshot2 = MutableGraphStatisticsSnapshot()
+    val instrumentedStatistics2 = InstrumentedGraphStatistics(statistics, snapshot2)
+    instrumentedStatistics2.nodesWithLabelCardinality(None)
+    instrumentedStatistics2.nodesWithLabelCardinality(Some(LabelId(4)))
+
+    statistics.factor(Long.MaxValue)
+    instrumentedStatistics2.indexSelectivity(LabelId(0), PropertyKeyId(3))
+
+    val frozen1 = snapshot1.freeze
+    val frozen2 = snapshot2.freeze
+
+    frozen1.diverges(frozen2, 1.0) should equal(false)
   }
 }
