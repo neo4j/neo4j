@@ -44,7 +44,7 @@ public class IndexPopulationProgress
     }
 
     /**
-     * @return percentage (from 0 to 100) of totalCount items which have been indexed. If totalCount is 0, returns 0%.
+     * @return percentage (from 0 to 100) of totalCount items which have been indexed. If totalCount is 0, returns 0.
      */
     public float getCompletedPercentage()
     {
@@ -72,5 +72,11 @@ public class IndexPopulationProgress
     public long getTotalCount()
     {
         return totalCount;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "%1.1f%%", getCompletedPercentage());
     }
 }

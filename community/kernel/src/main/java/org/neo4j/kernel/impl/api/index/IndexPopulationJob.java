@@ -234,10 +234,12 @@ public class IndexPopulationJob implements Runnable
 
     public IndexPopulationProgress getPopulationProgress()
     {
-        if (storeScan == null) {
+        if ( storeScan == null )
+        {
             // indexing hasn't begun yet
             return IndexPopulationProgress.NONE;
-        } else
+        }
+        else
         {
             return storeScan.getProgress();
         }

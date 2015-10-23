@@ -274,9 +274,10 @@ public class SchemaImpl implements Schema
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
         {
-            throw new NotFoundException( format( "No index for label %s on property %s",
-                    index.getLabel().name(), propertyKey ) );
-        }    }
+            throw new NotFoundException( format( "No index for label %s on property %s", index.getLabel().name(),
+                    propertyKey ) );
+        }
+    }
 
     @Override
     public String getIndexFailure( IndexDefinition index )
