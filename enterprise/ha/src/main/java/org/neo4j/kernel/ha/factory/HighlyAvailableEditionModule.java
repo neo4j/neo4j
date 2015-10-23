@@ -60,14 +60,12 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelData;
-import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
 import org.neo4j.kernel.ha.BranchedDataMigrator;
-import org.neo4j.kernel.ha.CommitProcessSwitcher;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighAvailabilityDiagnostics;
@@ -116,14 +114,9 @@ import org.neo4j.kernel.ha.management.HighlyAvailableKernelData;
 import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
-import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
-import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
@@ -144,10 +137,8 @@ import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByDatabaseModeException;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -529,8 +520,8 @@ public class HighlyAvailableEditionModule
         TransactionPropagator transactionPropagator = createTransactionPropagator( paxosLife, dependencies,
                 clusterClient, platformModule.jobScheduler, config, logging, monitors );
 
-        commitProcessFactory = createCommitProcessFactory( modeSwitchersLife, master, transactionPropagator,
-                requestContextFactory, highAvailabilityModeSwitcher );
+        commitProcessFactory = new HighlyAvailableCommitProcessFactory( modeSwitchersLife, master,
+                transactionPropagator, requestContextFactory, highAvailabilityModeSwitcher );
 
         headerInformationFactory = createHeaderInformationFactory( memberContext );
 
@@ -599,58 +590,6 @@ public class HighlyAvailableEditionModule
 
         return paxosLife.add( new TransactionPropagator( TransactionPropagator.from( config ),
                 logging.getInternalLog( TransactionPropagator.class ), slaves, new CommitPusher( jobScheduler ) ) );
-    }
-
-    private CommitProcessFactory createCommitProcessFactory( final LifeSupport modeSwitchersLife,
-            final Master master,
-            final TransactionPropagator transactionPropagator,
-            final RequestContextFactory requestContextFactory,
-            final HighAvailabilityModeSwitcher highAvailabilityModeSwitcher )
-    {
-        final DelegateInvocationHandler<TransactionCommitProcess> commitProcessDelegate =
-                new DelegateInvocationHandler<>( TransactionCommitProcess.class );
-
-        return new CommitProcessFactory()
-        {
-            @Override
-            public TransactionCommitProcess create( TransactionAppender appender,
-                    KernelHealth kernelHealth, NeoStores neoStores,
-                    TransactionRepresentationStoreApplier storeApplier,
-                    NeoStoreInjectedTransactionValidator txValidator,
-                    IndexUpdatesValidator indexUpdatesValidator,
-                    Config config )
-            {
-                if ( config.get( GraphDatabaseSettings.read_only ) )
-                {
-                    return new ReadOnlyTransactionCommitProcess();
-                }
-
-                removeOldCommitSwitcher();
-
-                TransactionCommitProcess inner = new TransactionRepresentationCommitProcess( appender, storeApplier,
-                        indexUpdatesValidator );
-
-                CommitProcessSwitcher commitProcessSwitcher = new CommitProcessSwitcher( transactionPropagator,
-                        master, commitProcessDelegate, requestContextFactory, highAvailabilityModeSwitcher,
-                        txValidator, inner );
-
-                modeSwitchersLife.add( commitProcessSwitcher );
-
-                return (TransactionCommitProcess) newProxyInstance( TransactionCommitProcess.class.getClassLoader(),
-                        new Class[]{TransactionCommitProcess.class}, commitProcessDelegate );
-            }
-
-            private void removeOldCommitSwitcher()
-            {
-                for ( Lifecycle instance : modeSwitchersLife.getLifecycleInstances() )
-                {
-                    if ( instance instanceof CommitProcessSwitcher )
-                    {
-                        modeSwitchersLife.remove( instance );
-                    }
-                }
-            }
-        };
     }
 
     protected IdGeneratorFactory createIdGeneratorFactory(
