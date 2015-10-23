@@ -2,6 +2,14 @@
 ---------
 o Improved performance for counting queries by utilizing the counts store
 
+2.3.1
+-----
+o Allow exists() to accept maps, enabling IS NOT NULL to work with LOAD CSV
+
+2.3.0
+-----
+o Fixes #5653 - Reverted eagerness changes
+
 2.3.0-RC1
 ---------
 o Fixed a MergeInto bug so that the direction of the relationship is considered when creating relationships
