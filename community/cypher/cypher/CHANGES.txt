@@ -1,3 +1,11 @@
+2.3.1
+-----
+o Allow exists() to accept maps, enabling IS NOT NULL to work with LOAD CSV
+
+2.3.0
+-----
+o Fixes #5653 - Reverted eagerness changes
+
 2.3.0-RC1
 ---------
 o Fixed a MergeInto bug so that the direction of the relationship is considered when creating relationships
@@ -6,6 +14,7 @@ o Generates a warning when a plan using LOAD CSV also contains an EagerPipe
 o Introduce STARTS WITH, ENDS WITH and CONTAINS
 o ShortestPath no longer has a max limit of 15 steps
 o Generates a warning when using shortestPath without supplying an upper limit
+o Removes eagerness from query execution plans in cases where it is not necessary
 o CREATE from lists is now deprecated
 o Will now allow literals to be placed on the left-hand side of an inequality predicate also when using an index
 o MergeInto will now properly take direction into account when creating relationships
