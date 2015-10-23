@@ -463,7 +463,7 @@ public class SwitchToSlave
             ClusterMember master = first( filter( hasInstanceId( serverId ), members ) );
             if ( master == null )
             {
-                throw new IllegalStateException( "Cannot find the maser among " + members +
+                throw new IllegalStateException( "Cannot find the master among " + members +
                                                  " with master serverId=" + serverId + " and uri="+masterUri  );
             }
 

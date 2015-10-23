@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.RepeatRule;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -70,6 +71,8 @@ public class PropertyConstraintsStressIT
     @Parameterized.Parameter
     public ConstraintOperations constraintOps;
 
+    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() );
 
