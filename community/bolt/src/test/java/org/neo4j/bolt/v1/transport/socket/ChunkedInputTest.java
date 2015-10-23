@@ -21,6 +21,7 @@ package org.neo4j.bolt.v1.transport.socket;
 
 import org.junit.Test;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.neo4j.bolt.v1.transport.ChunkedInput;
@@ -118,5 +119,89 @@ public class ChunkedInputTest
 
         // Then
         assertThat( bytes, equalTo( new byte[]{1, 2, 3} ) );
+    }
+
+    @Test
+    public void shouldReadShortCorrectly() throws Throwable
+    {
+        // Given
+        ChunkedInput ch = new ChunkedInput();
+
+        byte[] chunk0 = new byte[] {(byte) 0x5a};
+        byte[] chunk1 = new byte[] {(byte) 0xa5};
+
+        ch.append( wrappedBuffer( chunk0 ) );
+        ch.append( wrappedBuffer( chunk1 ) );
+
+        // When
+        short value = ch.readShort();
+
+        // Then
+        assertThat( value, equalTo( (short)0x5aa5 ) );
+    }
+
+
+    @Test
+    public void shouldReadIntCorrectly() throws Throwable
+    {
+        // Given
+        ChunkedInput ch = new ChunkedInput();
+
+        byte[] chunk0 = new byte[] {(byte) 0x5a, (byte) 0xff, (byte) 0xa5};
+        byte[] chunk1 = new byte[] {(byte) 0xa5};
+
+
+        ch.append( wrappedBuffer( chunk0 ) );
+        ch.append( wrappedBuffer( chunk1 ) );
+
+        // When
+        int value = ch.readInt();
+
+        // Then
+        assertThat( value, equalTo( 0x5affa5a5 ) );
+    }
+
+    @Test
+    public void shouldReadLongCorrectly() throws Throwable
+    {
+        // Given
+        ChunkedInput ch = new ChunkedInput();
+
+        byte[] chunk0 = new byte[] {(byte) 0x5a, (byte) 0xff, (byte) 0xa5};
+        byte[] chunk1 = new byte[] {(byte) 0xa5};
+        byte[] chunk2 = new byte[] {(byte) 0xa5, 0x00, 0x00, 0x00};
+
+
+        ch.append( wrappedBuffer( chunk0 ) );
+        ch.append( wrappedBuffer( chunk1 ) );
+        ch.append( wrappedBuffer( chunk2 ) );
+
+        // When
+        long value = ch.readLong();
+
+        // Then
+        assertThat( value, equalTo( 0x5affa5a5a5000000L ) );
+    }
+
+    @Test
+    public void shouldReadDoubleCorrectly() throws Throwable
+    {
+        // Given
+        ChunkedInput ch = new ChunkedInput();
+
+        byte[] bytes = new byte[8];
+        ByteBuffer.wrap( bytes ).putDouble( 6.28 );
+
+        byte[] chunk0 = Arrays.copyOf( bytes, 6 );
+        byte[] chunk1 = Arrays.copyOfRange( bytes, 6, 8 );
+
+        ch.append( wrappedBuffer( chunk0 ) );
+        ch.append( wrappedBuffer( chunk1 ) );
+
+        // When
+        double value = ch.readDouble();
+
+        // Then
+        assertThat( value, equalTo( 6.28 ) );
     }
 }
