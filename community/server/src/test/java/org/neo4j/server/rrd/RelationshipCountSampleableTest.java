@@ -19,25 +19,28 @@
  */
 package org.neo4j.server.rrd;
 
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.server.rrd.sampler.RelationshipCountSampleable;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.DatabaseRule;
+import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class RelationshipCountSampleableTest
 {
-    public GraphDatabaseAPI db;
+    @Rule
+    public final DatabaseRule dbRule = new ImpermanentDatabaseRule();
     public RelationshipCountSampleable sampleable;
 
     @Test
@@ -49,13 +52,7 @@ public class RelationshipCountSampleableTest
     @Test
     public void addANodeAndSampleableGoesUp()
     {
-        createARelationship( db );
-
-        assertThat( sampleable.getValue(), is( 1d ) );
-    }
-
-    private void createARelationship( GraphDatabaseAPI db )
-    {
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
             Node node1 = db.createNode();
@@ -63,18 +60,16 @@ public class RelationshipCountSampleableTest
             node1.createRelationshipTo( node2, withName( "friend" ) );
             tx.success();
         }
+
+        assertThat( sampleable.getValue(), is( 1d ) );
     }
 
     @Before
     public void setUp() throws Exception
     {
-        db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
-        sampleable = new RelationshipCountSampleable( db.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ) );
-    }
-
-    @After
-    public void shutdownDatabase()
-    {
-        this.db.shutdown();
+        DependencyResolver dependencyResolver = dbRule.getGraphDatabaseAPI().getDependencyResolver();
+        NeoStoresSupplier neoStore = dependencyResolver.resolveDependency( NeoStoresSupplier.class );
+        AvailabilityGuard guard = dependencyResolver.resolveDependency( AvailabilityGuard.class );
+        sampleable = new RelationshipCountSampleable( neoStore, guard );
     }
 }

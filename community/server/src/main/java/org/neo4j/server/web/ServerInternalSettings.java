@@ -78,6 +78,8 @@ public class ServerInternalSettings
 
     public static final Setting<File> auth_store = setting("dbms.security.auth_store.location", PATH, "data/dbms/auth");
 
+    public static final Setting<File> rrd_store = setting("dbms.security.auth_store.location", PATH, "data/rrd");
+
     public static final Setting<File> legacy_db_location = setting( "org.neo4j.server.database.location", PATH, "data/graph.db" );
 
     public static final Setting<File> legacy_db_config = setting( "org.neo4j.server.db.tuning.properties", PATH,

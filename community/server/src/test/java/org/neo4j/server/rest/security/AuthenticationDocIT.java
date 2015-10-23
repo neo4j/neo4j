@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import javax.ws.rs.core.HttpHeaders;
 
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
@@ -314,7 +315,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
 
     public void startServer( boolean authEnabled ) throws IOException
     {
-        new File( "neo4j-home/data/dbms/authorization" ).delete(); // TODO: Implement a common component for managing Neo4j file structure and use that here
+        FileUtils.deleteRecursively( new File( "neo4j-home/data/" ) ); // TODO: Implement a common component for managing Neo4j file structure and use that here
         server = CommunityServerBuilder.server()
                 .withProperty( ServerSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
                 .build();

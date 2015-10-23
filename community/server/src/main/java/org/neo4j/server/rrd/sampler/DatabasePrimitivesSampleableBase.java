@@ -21,28 +21,49 @@ package org.neo4j.server.rrd.sampler;
 
 import org.rrd4j.DsType;
 
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.server.rrd.Sampleable;
 
 public abstract class DatabasePrimitivesSampleableBase implements Sampleable
 {
-    private final NeoStoresSupplier neoStoresSupplier;
+    private final NeoStoresSupplier neoStore;
+    private final AvailabilityGuard guard;
+    private double lastReadValue = 0d;
 
-    public DatabasePrimitivesSampleableBase( NeoStoresSupplier neoStoresSupplier )
+    public DatabasePrimitivesSampleableBase( NeoStoresSupplier neoStore, AvailabilityGuard guard )
     {
-        if( neoStoresSupplier == null )
+        if ( neoStore == null )
         {
             throw new RuntimeException( "Database sampler needs a NeoStores to work, was given null." );
         }
-        this.neoStoresSupplier = neoStoresSupplier;
-
+        this.neoStore = neoStore;
+        this.guard = guard;
     }
 
-    protected NeoStores getNeoStores()
+    @Override
+    public double getValue()
     {
-        return neoStoresSupplier.get();
+        if ( guard.isAvailable( 0 ) )
+        {
+            try
+            {
+                lastReadValue = readValue( neoStore.get() );
+            }
+            catch ( Exception e )
+            {
+                /*
+                 * oh well, this is unfortunate, perhaps the db went down after the check, so let's ignore this problem
+                 * and return the old value, we'll sample again when the db is online again
+                 */
+            }
+        }
+
+        return lastReadValue;
     }
+
+    protected abstract double readValue( NeoStores neoStore );
 
     @Override
     public DsType getType()

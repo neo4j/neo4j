@@ -19,45 +19,30 @@
  */
 package org.neo4j.server.rrd;
 
-import java.util.UUID;
-
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.UUID;
+
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rrd.sampler.PropertyCountSampleable;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.DatabaseRule;
+import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
 public class PropertyCountSampleableTest
 {
-    public Database db;
+    @Rule
+    public final DatabaseRule dbRule = new ImpermanentDatabaseRule();
     public PropertyCountSampleable sampleable;
-    public long referenceNodeId;
-
-    @Before
-    public void setupReferenceNode()
-    {
-        db = new WrappedDatabase( (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase() );
-        DependencyResolver dependencyResolver = db.getGraph().getDependencyResolver();
-        sampleable = new PropertyCountSampleable( dependencyResolver.resolveDependency( NeoStoresSupplier.class ) );
-
-        try ( Transaction tx = db.getGraph().beginTx() )
-        {
-            referenceNodeId = db.getGraph().createNode().getId();
-            tx.success();
-        }
-    }
 
     @Test
     public void emptyDbHasZeroNodesInUse()
@@ -66,51 +51,47 @@ public class PropertyCountSampleableTest
     }
 
     @Test
-    public void addANodeAndSampleableGoesUp()
+    public void addANodeWithPropertyAndSampleableGoesUp()
     {
-        addPropertyToReferenceNode();
+        createNodeWithProperty();
+        assertThat( sampleable.getValue(), is( 1d ) );
+    }
 
+    @Test
+    public void addOnlyPropertiesAndSampleableGoesUp()
+    {
+        long nodeId = createNodeWithProperty();
         assertThat( sampleable.getValue(), is( 1d ) );
 
-        addNodeIntoGraph();
-        addNodeIntoGraph();
-
-        assertThat( sampleable.getValue(), is( 3d ) );
-    }
-
-    private void addNodeIntoGraph()
-    {
-        try ( Transaction tx = db.getGraph().beginTx() )
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        try ( Transaction tx = db.beginTx() )
         {
-            Node referenceNode = db.getGraph().getNodeById( referenceNodeId );
-            Node myNewNode = db.getGraph().createNode();
-            myNewNode.setProperty( "id", UUID.randomUUID().toString() );
-            myNewNode.createRelationshipTo( referenceNode, new RelationshipType()
-            {
-                @Override
-                public String name()
-                {
-                    return "knows_about";
-                }
-            } );
-
+            Node node = db.getNodeById( nodeId );
+            node.setProperty( "id", UUID.randomUUID().toString() );
             tx.success();
         }
+
+        assertThat( sampleable.getValue(), is( 2d ) );
     }
 
-    private void addPropertyToReferenceNode()
+    @Before
+    public void setupReferenceNode()
     {
-        try ( Transaction tx = db.getGraph().beginTx() )
+        DependencyResolver dependencyResolver = dbRule.getGraphDatabaseAPI().getDependencyResolver();
+        NeoStoresSupplier neoStore = dependencyResolver.resolveDependency( NeoStoresSupplier.class );
+        AvailabilityGuard gaurd = dependencyResolver.resolveDependency( AvailabilityGuard.class );
+        sampleable = new PropertyCountSampleable( neoStore, gaurd );
+    }
+
+    private long createNodeWithProperty()
+    {
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        try ( Transaction tx = db.beginTx() )
         {
-            Node n = db.getGraph().getNodeById( referenceNodeId );
+            Node n = db.createNode();
             n.setProperty( "monkey", "rock!" );
             tx.success();
+            return n.getId();
         }
-    }
-
-    @After
-    public void shutdownDatabase() throws Throwable
-    {
-        db.getGraph().shutdown();
     }
 }

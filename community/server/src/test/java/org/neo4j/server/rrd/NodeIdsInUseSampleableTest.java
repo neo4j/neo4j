@@ -19,24 +19,26 @@
  */
 package org.neo4j.server.rrd;
 
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.DatabaseRule;
+import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 
 public class NodeIdsInUseSampleableTest
 {
-    public GraphDatabaseAPI db;
+    @Rule
+    public final DatabaseRule dbRule = new ImpermanentDatabaseRule();
     public NodeIdsInUseSampleable sampleable;
 
     @Test
@@ -48,33 +50,22 @@ public class NodeIdsInUseSampleableTest
     @Test
     public void addANodeAndSampleableGoesUp()
     {
-        double oldValue = sampleable.getValue();
-
-        createNode( db );
-
-        assertThat( sampleable.getValue(), greaterThan( oldValue ) );
-    }
-
-    private void createNode( GraphDatabaseAPI db )
-    {
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
             tx.success();
         }
+
+        assertThat( sampleable.getValue(), is( 1d ) );
     }
 
     @Before
     public void setUp() throws Exception
     {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
-        DependencyResolver dependencyResolver = db.getDependencyResolver();
-        sampleable = new NodeIdsInUseSampleable( dependencyResolver.resolveDependency( NeoStoresSupplier.class ) );
-    }
-
-    @After
-    public void shutdown() throws Throwable
-    {
-        db.shutdown();
+        DependencyResolver dependencyResolver = dbRule.getGraphDatabaseAPI().getDependencyResolver();
+        NeoStoresSupplier neoStore = dependencyResolver.resolveDependency( NeoStoresSupplier.class );
+        AvailabilityGuard guard = dependencyResolver.resolveDependency( AvailabilityGuard.class );
+        sampleable = new NodeIdsInUseSampleable( neoStore, guard );
     }
 }

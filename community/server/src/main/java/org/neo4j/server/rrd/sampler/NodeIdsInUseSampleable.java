@@ -19,31 +19,26 @@
  */
 package org.neo4j.server.rrd.sampler;
 
+import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
-import org.neo4j.server.rrd.UnableToSampleException;
 
 public class NodeIdsInUseSampleable extends DatabasePrimitivesSampleableBase
 {
-
-    public NodeIdsInUseSampleable( NeoStoresSupplier neoStoresSupplier )
+    public NodeIdsInUseSampleable( NeoStoresSupplier neoStore, AvailabilityGuard guard )
     {
-        super( neoStoresSupplier );
+        super( neoStore, guard );
     }
 
-    @Override public String getName()
+    @Override
+    public String getName()
     {
         return "node_count";
     }
 
-    @Override public double getValue()
+    @Override
+    protected double readValue( NeoStores neoStore )
     {
-        try
-        {
-            return getNeoStores().getNodeStore().getNumberOfIdsInUse();
-        }
-        catch ( Exception e )
-        {
-            throw new UnableToSampleException( "Unexpected exception caught while sampling", e );
-        }
+        return neoStore.getNodeStore().getNumberOfIdsInUse();
     }
 }
