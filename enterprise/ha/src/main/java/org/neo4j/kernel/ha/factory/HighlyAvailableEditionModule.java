@@ -60,7 +60,6 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelData;
-import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -92,7 +91,6 @@ import org.neo4j.kernel.ha.cluster.SwitchToSlave;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.member.HighAvailabilitySlaves;
 import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
-import org.neo4j.kernel.ha.cluster.modeswitch.CommitProcessSwitcher;
 import org.neo4j.kernel.ha.cluster.modeswitch.ComponentSwitcherContainer;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.cluster.modeswitch.LabelTokenCreatorSwitcher;
@@ -119,13 +117,9 @@ import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
-import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
@@ -146,10 +140,8 @@ import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByDatabaseModeException;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -471,16 +463,12 @@ public class HighlyAvailableEditionModule
                 platformModule.dependencies.provideDependency( NeoStoreDataSource.class ) );
 
         ComponentSwitcherContainer componentSwitcherContainer = new ComponentSwitcherContainer();
+        Supplier<StoreId> storeIdSupplier = () -> dependencies.resolveDependency( NeoStoreDataSource.class ).getStoreId();
+
         HighAvailabilityModeSwitcher highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher(
-                switchToSlaveInstance, switchToMasterInstance,
-                clusterClient, clusterMemberAvailability, clusterClient, new Supplier<StoreId>()
-        {
-            @Override
-            public StoreId get()
-            {
-                return dependencies.resolveDependency( NeoStoreDataSource.class ).getStoreId();
-            }
-        }, config.get( ClusterSettings.server_id ), componentSwitcherContainer, logging );
+                switchToSlaveInstance, switchToMasterInstance, clusterClient, clusterMemberAvailability, clusterClient,
+                storeIdSupplier, config.get( ClusterSettings.server_id ), componentSwitcherContainer, logging );
+
         exceptionHandlerRef.set( highAvailabilityModeSwitcher );
 
         clusterClient.addBindingListener( highAvailabilityModeSwitcher );
@@ -572,52 +560,22 @@ public class HighlyAvailableEditionModule
     }
 
     private CommitProcessFactory createCommitProcessFactory( Dependencies dependencies, LogService logging,
-            Monitors monitors, Config config, LifeSupport paxosLife,
-            ClusterClient clusterClient, ClusterMembers members,
-            JobScheduler jobScheduler, Master master,
-            RequestContextFactory requestContextFactory,
-            ComponentSwitcherContainer componentSwitcherContainer )
+            Monitors monitors, Config config, LifeSupport paxosLife, ClusterClient clusterClient,
+            ClusterMembers members, JobScheduler jobScheduler, Master master,
+            RequestContextFactory requestContextFactory, ComponentSwitcherContainer componentSwitcherContainer )
     {
-        final DelegateInvocationHandler<TransactionCommitProcess> commitProcessDelegate =
-                new DelegateInvocationHandler<>( TransactionCommitProcess.class );
+        DefaultSlaveFactory slaveFactory = dependencies.satisfyDependency( new DefaultSlaveFactory(
+                logging.getInternalLogProvider(), monitors, config.get( HaSettings.com_chunk_size ).intValue() ) );
 
-        DefaultSlaveFactory slaveFactory = dependencies.satisfyDependency(
-                new DefaultSlaveFactory( logging.getInternalLogProvider(), monitors,
-                        config.get( HaSettings.com_chunk_size ).intValue() ) );
-
-        Slaves slaves = dependencies.satisfyDependency(
-                paxosLife.add( new HighAvailabilitySlaves( members, clusterClient, slaveFactory ) ) );
+        Slaves slaves = dependencies.satisfyDependency( paxosLife.add( new HighAvailabilitySlaves( members,
+                clusterClient, slaveFactory ) ) );
 
         TransactionPropagator transactionPropagator = new TransactionPropagator( TransactionPropagator.from( config ),
                 logging.getInternalLog( TransactionPropagator.class ), slaves, new CommitPusher( jobScheduler ) );
         paxosLife.add( transactionPropagator );
 
-        return new CommitProcessFactory()
-        {
-            @Override
-            public TransactionCommitProcess create( TransactionAppender appender,
-                                                    KernelHealth kernelHealth, NeoStores neoStores,
-                                                    TransactionRepresentationStoreApplier storeApplier,
-                                                    NeoStoreInjectedTransactionValidator txValidator,
-                                                    IndexUpdatesValidator indexUpdatesValidator,
-                                                    Config config )
-            {
-                if ( config.get( GraphDatabaseSettings.read_only ) )
-                {
-                    return new ReadOnlyTransactionCommitProcess();
-                }
-
-                TransactionCommitProcess inner = new TransactionRepresentationCommitProcess( appender, storeApplier,
-                        indexUpdatesValidator );
-                CommitProcessSwitcher commitProcessSwitcher = new CommitProcessSwitcher( transactionPropagator,
-                        master, commitProcessDelegate, requestContextFactory,
-                        txValidator, inner );
-                componentSwitcherContainer.add( commitProcessSwitcher );
-
-                return (TransactionCommitProcess) newProxyInstance( TransactionCommitProcess.class.getClassLoader(),
-                        new Class[]{TransactionCommitProcess.class}, commitProcessDelegate );
-            }
-        };
+        return new HighlyAvailableCommitProcessFactory( componentSwitcherContainer, master, transactionPropagator,
+                requestContextFactory );
     }
 
     private IdGeneratorFactory createIdGeneratorFactory(
@@ -661,8 +619,7 @@ public class HighlyAvailableEditionModule
 
     private TokenCreator createRelationshipTypeCreator( Config config,
             ComponentSwitcherContainer componentSwitcherContainer,
-            DelegateInvocationHandler<Master> masterInvocationHandler,
-            RequestContextFactory requestContextFactory,
+            DelegateInvocationHandler<Master> masterInvocationHandler, RequestContextFactory requestContextFactory,
             Supplier<KernelAPI> kernelProvider )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
@@ -678,15 +635,14 @@ public class HighlyAvailableEditionModule
         RelationshipTypeCreatorSwitcher typeCreatorModeSwitcher = new RelationshipTypeCreatorSwitcher(
                 relationshipTypeCreatorDelegate, masterInvocationHandler, requestContextFactory,
                 kernelProvider, idGeneratorFactory );
+
         componentSwitcherContainer.add( typeCreatorModeSwitcher );
         return relationshipTypeCreator;
     }
 
-    private TokenCreator createPropertyKeyCreator( Config config,
-            ComponentSwitcherContainer componentSwitcherContainer,
+    private TokenCreator createPropertyKeyCreator( Config config, ComponentSwitcherContainer componentSwitcherContainer,
             DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
-            RequestContextFactory requestContextFactory,
-            Supplier<KernelAPI> kernelProvider )
+            RequestContextFactory requestContextFactory, Supplier<KernelAPI> kernelProvider )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -701,15 +657,14 @@ public class HighlyAvailableEditionModule
         PropertyKeyCreatorSwitcher propertyKeyCreatorModeSwitcher = new PropertyKeyCreatorSwitcher(
                 propertyKeyCreatorDelegate, masterDelegateInvocationHandler,
                 requestContextFactory, kernelProvider, idGeneratorFactory );
+
         componentSwitcherContainer.add( propertyKeyCreatorModeSwitcher );
         return propertyTokenCreator;
     }
 
-    private TokenCreator createLabelIdCreator( Config config,
-            ComponentSwitcherContainer componentSwitcherContainer,
+    private TokenCreator createLabelIdCreator( Config config, ComponentSwitcherContainer componentSwitcherContainer,
             DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
-            RequestContextFactory requestContextFactory,
-            Supplier<KernelAPI> kernelProvider )
+            RequestContextFactory requestContextFactory, Supplier<KernelAPI> kernelProvider )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -724,6 +679,7 @@ public class HighlyAvailableEditionModule
         LabelTokenCreatorSwitcher modeSwitcher = new LabelTokenCreatorSwitcher(
                 labelIdCreatorDelegate, masterDelegateInvocationHandler, requestContextFactory, kernelProvider,
                 idGeneratorFactory );
+
         componentSwitcherContainer.add( modeSwitcher );
         return labelIdCreator;
     }
