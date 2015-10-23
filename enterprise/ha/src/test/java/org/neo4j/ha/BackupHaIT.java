@@ -38,6 +38,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -52,6 +53,8 @@ public class BackupHaIT
 {
     @Rule
     public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     private File path;
     private File backupPath;

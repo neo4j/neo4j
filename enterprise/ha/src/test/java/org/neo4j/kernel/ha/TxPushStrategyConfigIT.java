@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -37,6 +36,7 @@ import org.neo4j.helpers.TransactionTemplate;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.ha.ClusterRule;
 
 import static java.lang.Math.max;
@@ -53,10 +53,25 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 
 public class TxPushStrategyConfigIT
 {
+
+    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Rule
+    public final ClusterRule clusterRule = new ClusterRule( getClass() );
+
+    /**
+     * These are _indexes_ of cluster members in machineIds
+     */
+    private static final int MASTER = 1;
+    private static final int FIRST_SLAVE = 2;
+    private static final int SECOND_SLAVE = 3;
+    private static final int THIRD_SLAVE = 4;
+    private InstanceId[] machineIds;
+
     @Test
     public void shouldPushToSlavesInDescendingOrder() throws Exception
     {
-        ManagedCluster cluster = startCluster( 4, 2, "fixed" );
+        ManagedCluster cluster = startCluster( 4, 2, HaSettings.TxPushStrategy.fixed );
 
         for ( int i = 0; i < 5; i++ )
         {
@@ -70,7 +85,7 @@ public class TxPushStrategyConfigIT
     @Test
     public void twoRoundRobin() throws Exception
     {
-        ManagedCluster cluster = startCluster( 4, 2, "round_robin" );
+        ManagedCluster cluster = startCluster( 4, 2, HaSettings.TxPushStrategy.round_robin );
 
         long txId = getLastTx( cluster.getMaster() );
         int count = 15;
@@ -98,7 +113,7 @@ public class TxPushStrategyConfigIT
     @Test
     public void shouldPushToOneLessSlaveOnSlaveCommit() throws Exception
     {
-        ManagedCluster cluster = startCluster( 4, 2, "fixed" );
+        ManagedCluster cluster = startCluster( 4, 2, HaSettings.TxPushStrategy.fixed );
 
         createTransactionOn( cluster, new InstanceId( FIRST_SLAVE ) );
         assertLastTransactions( cluster,
@@ -125,7 +140,7 @@ public class TxPushStrategyConfigIT
     @Test
     public void slavesListGetsUpdatedWhenSlaveLeavesNicely() throws Exception
     {
-        ManagedCluster cluster = startCluster( 3, 1, "fixed" );
+        ManagedCluster cluster = startCluster( 3, 1, HaSettings.TxPushStrategy.fixed );
 
         cluster.shutdown( cluster.getAnySlave() );
         cluster.await( masterSeesSlavesAsAvailable( 1 ) );
@@ -134,7 +149,7 @@ public class TxPushStrategyConfigIT
     @Test
     public void slaveListIsCorrectAfterMasterSwitch() throws Exception
     {
-        ManagedCluster cluster = startCluster( 3, 1, "fixed" );
+        ManagedCluster cluster = startCluster( 3, 1, HaSettings.TxPushStrategy.fixed );
         cluster.shutdown( cluster.getMaster() );
         cluster.await( masterAvailable() );
         HighlyAvailableGraphDatabase newMaster = cluster.getMaster();
@@ -148,31 +163,18 @@ public class TxPushStrategyConfigIT
     @Test
     public void slavesListGetsUpdatedWhenSlaveRageQuits() throws Throwable
     {
-        ManagedCluster cluster = startCluster( 3, 1, "fixed" );
+        ManagedCluster cluster = startCluster( 3, 1, HaSettings.TxPushStrategy.fixed );
         cluster.fail( cluster.getAnySlave() );
 
         cluster.await( masterSeesSlavesAsAvailable( 1 ) );
     }
 
-    @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() );
-
-    /**
-     * These are _indexes_ of cluster members in machineIds
-     */
-    private static final int MASTER = 1;
-    private static final int FIRST_SLAVE = 2;
-    private static final int SECOND_SLAVE = 3;
-    private static final int THIRD_SLAVE = 4;
-    private InstanceId[] machineIds;
-
-    private ManagedCluster startCluster( int memberCount, final int pushFactor, final String pushStrategy )
+    private ManagedCluster startCluster( int memberCount, final int pushFactor, final HaSettings.TxPushStrategy pushStrategy )
             throws Exception
     {
         ManagedCluster cluster = clusterRule.provider( clusterOfSize( memberCount ) )
                 .config( HaSettings.tx_push_factor, "" + pushFactor )
-                .config( HaSettings.tx_push_strategy, pushStrategy )
-                .availabilityChecks( Arrays.asList( allSeesAllAsAvailable() ) )
+                .config( HaSettings.tx_push_strategy, pushStrategy.name() )
                 .startCluster();
 
         mapMachineIds( cluster );
@@ -230,29 +232,6 @@ public class TxPushStrategyConfigIT
         return new LastTxMapping( serverId, txId );
     }
 
-    private static class LastTxMapping
-    {
-        private final InstanceId serverId;
-        private final long txId;
-
-        public LastTxMapping( InstanceId serverId, long txId )
-        {
-            this.serverId = serverId;
-            this.txId = txId;
-        }
-
-        public void format( StringBuilder failures, long txId )
-        {
-            if ( txId != this.txId )
-            {
-                if ( failures.length() > 0 )
-                    failures.append( ", " );
-                failures.append( String.format( "tx id on server:%d, expected [%d] but was [%d]",
-                        serverId.toIntegerIndex(), this.txId, txId ) );
-            }
-        }
-    }
-
     private void createTransactionOnMaster( ManagedCluster cluster )
     {
         createTransaction( cluster, cluster.getMaster() );
@@ -298,4 +277,28 @@ public class TxPushStrategyConfigIT
             }
         } );
     }
+
+    private static class LastTxMapping
+    {
+        private final InstanceId serverId;
+        private final long txId;
+
+        public LastTxMapping( InstanceId serverId, long txId )
+        {
+            this.serverId = serverId;
+            this.txId = txId;
+        }
+
+        public void format( StringBuilder failures, long txId )
+        {
+            if ( txId != this.txId )
+            {
+                if ( failures.length() > 0 )
+                    failures.append( ", " );
+                failures.append( String.format( "tx id on server:%d, expected [%d] but was [%d]",
+                        serverId.toIntegerIndex(), this.txId, txId ) );
+            }
+        }
+    }
+
 }
