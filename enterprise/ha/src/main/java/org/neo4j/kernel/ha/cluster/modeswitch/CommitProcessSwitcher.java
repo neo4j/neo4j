@@ -17,43 +17,39 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
+package org.neo4j.kernel.ha.cluster.modeswitch;
 
-import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
-import org.neo4j.kernel.ha.cluster.ModeSwitcherNotifier;
+import org.neo4j.kernel.ha.DelegateInvocationHandler;
+import org.neo4j.kernel.ha.MasterTransactionCommitProcess;
+import org.neo4j.kernel.ha.SlaveTransactionCommitProcess;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 
-public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommitProcess>
+public class CommitProcessSwitcher extends AbstractComponentSwitcher<TransactionCommitProcess>
 {
     private final MasterTransactionCommitProcess masterImpl;
     private final SlaveTransactionCommitProcess slaveImpl;
 
-    public CommitProcessSwitcher( TransactionPropagator pusher,
-                                  Master master,
-                                  DelegateInvocationHandler<TransactionCommitProcess> delegate,
-                                  RequestContextFactory requestContextFactory,
-                                  ModeSwitcherNotifier modeSwitcherNotifier,
-                                  NeoStoreInjectedTransactionValidator validator,
-                                  TransactionCommitProcess innerCommitProcess )
+    public CommitProcessSwitcher( TransactionPropagator pusher, Master master,
+            DelegateInvocationHandler<TransactionCommitProcess> delegate, RequestContextFactory requestContextFactory,
+            NeoStoreInjectedTransactionValidator validator, TransactionCommitProcess innerCommitProcess )
     {
-        super( modeSwitcherNotifier, delegate );
+        super( delegate );
         this.masterImpl = new MasterTransactionCommitProcess( innerCommitProcess, pusher, validator );
         this.slaveImpl = new SlaveTransactionCommitProcess( master, requestContextFactory );
     }
 
     @Override
-    protected TransactionCommitProcess getSlaveImpl( LifeSupport life )
+    protected TransactionCommitProcess getSlaveImpl()
     {
         return slaveImpl;
     }
 
     @Override
-    protected TransactionCommitProcess getMasterImpl( LifeSupport life )
+    protected TransactionCommitProcess getMasterImpl()
     {
         return masterImpl;
     }

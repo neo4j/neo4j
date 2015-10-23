@@ -17,31 +17,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.lock;
+package org.neo4j.kernel.ha.cluster.modeswitch;
 
 import org.neo4j.function.Factory;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
-import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
-import org.neo4j.kernel.ha.cluster.ModeSwitcherNotifier;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.ha.lock.SlaveLockManager;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 
-public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
+public class LockManagerSwitcher extends AbstractComponentSwitcher<Locks>
 {
     private final DelegateInvocationHandler<Master> master;
     private final RequestContextFactory requestContextFactory;
     private final AvailabilityGuard availabilityGuard;
     private final Factory<Locks> locksFactory;
 
-    public LockManagerModeSwitcher( ModeSwitcherNotifier modeSwitcherNotifier,
-                                    DelegateInvocationHandler<Locks> delegate, DelegateInvocationHandler<Master> master,
-                                    RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
-                                    Factory<Locks> locksFactory )
+    public LockManagerSwitcher( DelegateInvocationHandler<Locks> delegate, DelegateInvocationHandler<Master> master,
+            RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
+            Factory<Locks> locksFactory )
     {
-        super( modeSwitcherNotifier, delegate );
+        super( delegate );
         this.master = master;
         this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
@@ -49,15 +46,15 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
     }
 
     @Override
-    protected Locks getMasterImpl( LifeSupport life )
+    protected Locks getMasterImpl()
     {
-        return life.add( locksFactory.newInstance() );
+        return locksFactory.newInstance();
     }
 
     @Override
-    protected Locks getSlaveImpl( LifeSupport life )
+    protected Locks getSlaveImpl()
     {
-        return life.add( new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(),
-                availabilityGuard ) );
+        return new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(),
+                availabilityGuard );
     }
 }

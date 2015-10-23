@@ -120,22 +120,6 @@ public class DelegateInvocationHandlerTest
         assertEquals( 20, cementedValue.get() );
     }
 
-    @Test
-    public void setDelegateDoesNotAcceptNullArgument()
-    {
-        DelegateInvocationHandler<Value> handler = newDelegateInvocationHandler();
-
-        try
-        {
-            handler.setDelegate( null );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( NullPointerException.class ) );
-        }
-    }
-
     private Value value( final int i )
     {
         return new Value()

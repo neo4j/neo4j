@@ -29,6 +29,7 @@ import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
+import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;

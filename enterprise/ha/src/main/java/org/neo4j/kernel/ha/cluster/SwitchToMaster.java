@@ -41,11 +41,10 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
 
 public class SwitchToMaster implements AutoCloseable
 {
-    private LogService logService;
     Factory<ConversationManager> conversationManagerFactory;
     BiFunction<ConversationManager, LifeSupport, Master> masterFactory;
     BiFunction<Master, ConversationManager, MasterServer> masterServerFactory;
@@ -65,7 +64,6 @@ public class SwitchToMaster implements AutoCloseable
             DelegateInvocationHandler<Master> masterDelegateHandler, ClusterMemberAvailability clusterMemberAvailability,
             Supplier<NeoStoreDataSource> dataSourceSupplier )
     {
-        this.logService = logService;
         this.conversationManagerFactory = conversationManagerFactory;
         this.masterFactory = masterFactory;
         this.masterServerFactory = masterServerFactory;
@@ -142,7 +140,6 @@ public class SwitchToMaster implements AutoCloseable
     @Override
     public void close() throws Exception
     {
-        logService = null;
         userLog = null;
         conversationManagerFactory = null;
         masterFactory = null;

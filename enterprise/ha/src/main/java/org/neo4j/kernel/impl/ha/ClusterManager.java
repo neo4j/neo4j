@@ -41,7 +41,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -72,10 +71,10 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
+import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -92,7 +91,6 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
-
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.copyRecursively;

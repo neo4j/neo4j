@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.cluster;
+package org.neo4j.kernel.ha.cluster.modeswitch;
 
 import java.net.URI;
 import java.util.concurrent.Executors;
@@ -35,7 +35,11 @@ import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.function.Supplier;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Functions;
-import org.neo4j.helpers.Listeners;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
+import org.neo4j.kernel.ha.cluster.SwitchToMaster;
+import org.neo4j.kernel.ha.cluster.SwitchToSlave;
 import org.neo4j.kernel.ha.store.HighAvailabilityStoreFailureException;
 import org.neo4j.kernel.ha.store.UnableToCopyStoreFromOldMasterException;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -56,8 +60,7 @@ import static org.neo4j.helpers.Uris.parameter;
  * {@link ClusterMemberAvailability#memberIsAvailable(String, URI, StoreId)} to announce it's new status to the
  * cluster.
  */
-public class HighAvailabilityModeSwitcher
-        implements HighAvailabilityMemberListener, ModeSwitcherNotifier, BindingListener, Lifecycle
+public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListener, BindingListener, Lifecycle
 {
     public static final String MASTER = "master";
     public static final String SLAVE = "slave";
@@ -65,7 +68,7 @@ public class HighAvailabilityModeSwitcher
 
     public static final String INADDR_ANY = "0.0.0.0";
 
-    private Iterable<ModeSwitcher> modeSwitchListeners = Listeners.newListeners();
+    private final ComponentSwitcher componentSwitcher;
 
     private volatile URI masterHaURI;
     private volatile URI slaveHaURI;
@@ -105,7 +108,9 @@ public class HighAvailabilityModeSwitcher
                                          ClusterMemberAvailability clusterMemberAvailability,
                                          ClusterClient clusterClient,
                                          Supplier<StoreId> storeIdSupplier,
-                                         InstanceId instanceId, LogService logService )
+                                         InstanceId instanceId,
+                                         ComponentSwitcher componentSwitcher,
+                                         LogService logService )
     {
         this.switchToSlave = switchToSlave;
         this.switchToMaster = switchToMaster;
@@ -114,6 +119,7 @@ public class HighAvailabilityModeSwitcher
         this.clusterClient = clusterClient;
         this.storeIdSupplier = storeIdSupplier;
         this.instanceId = instanceId;
+        this.componentSwitcher = componentSwitcher;
         this.msgLog = logService.getInternalLog( getClass() );
         this.userLog = logService.getUserLog( getClass() );
         this.haCommunicationLife = new LifeSupport();
@@ -196,19 +202,7 @@ public class HighAvailabilityModeSwitcher
     {
         stateChanged( event );
     }
-
-    @Override
-    public void addModeSwitcher( ModeSwitcher modeSwitcher )
-    {
-        modeSwitchListeners = Listeners.addListener( modeSwitcher, modeSwitchListeners );
-    }
-
-    @Override
-    public void removeModeSwitcher( ModeSwitcher modeSwitcher )
-    {
-        modeSwitchListeners = Listeners.removeListener( modeSwitcher, modeSwitchListeners );
-    }
-
+    
     public void forceElections()
     {
         if ( canAskForElections.compareAndSet( true, false ) )
@@ -279,14 +273,7 @@ public class HighAvailabilityModeSwitcher
                     return;
                 }
 
-                Listeners.notifyListeners( modeSwitchListeners, new Listeners.Notification<ModeSwitcher>()
-                {
-                    @Override
-                    public void notify( ModeSwitcher listener )
-                    {
-                        listener.switchToMaster();
-                    }
-                } );
+                componentSwitcher.switchToMaster();
 
                 if ( cancellationHandle.cancellationRequested() )
                 {
@@ -346,14 +333,7 @@ public class HighAvailabilityModeSwitcher
                     return;
                 }
 
-                Listeners.notifyListeners( modeSwitchListeners, new Listeners.Notification<ModeSwitcher>()
-                {
-                    @Override
-                    public void notify( ModeSwitcher listener )
-                    {
-                        listener.switchToSlave();
-                    }
-                } );
+                componentSwitcher.switchToSlave();
 
                 try
                 {
@@ -450,14 +430,7 @@ public class HighAvailabilityModeSwitcher
                     clusterMemberAvailability.memberIsUnavailable( MASTER );
                 }
 
-                Listeners.notifyListeners( modeSwitchListeners, new Listeners.Notification<ModeSwitcher>()
-                {
-                    @Override
-                    public void notify( ModeSwitcher listener )
-                    {
-                        listener.switchToPending();
-                    }
-                } );
+                componentSwitcher.switchToPending();
 
                 if ( cancellationHandle.cancellationRequested() )
                 {
