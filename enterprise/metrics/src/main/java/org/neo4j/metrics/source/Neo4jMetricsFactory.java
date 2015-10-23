@@ -62,6 +62,7 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
         final DBMetrics dbMetrics = new DBMetrics( registry, config, transactionCounters, pageCacheCounters, idGeneratorFactory );
         final NetworkMetrics networkMetrics = new NetworkMetrics( config, monitors, registry );
         final JvmMetrics jvmMetrics = new JvmMetrics( logService, config, registry );
+        final CypherMetrics cypherMetrics = new CypherMetrics( config, monitors, registry );
         return new LifecycleAdapter()
         {
             @Override
@@ -70,6 +71,7 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
                 dbMetrics.start();
                 networkMetrics.start();
                 jvmMetrics.start();
+                cypherMetrics.start();
             }
 
             @Override
@@ -78,6 +80,7 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
                 dbMetrics.stop();
                 networkMetrics.stop();
                 jvmMetrics.stop();
+                cypherMetrics.stop();
             }
         };
     }

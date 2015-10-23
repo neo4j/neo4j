@@ -84,17 +84,16 @@
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
-
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-lucene-index</artifactId>
+      <artifactId>neo4j-cypher</artifactId>
       <version>${project.version}</version>
-      <scope>test</scope>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher</artifactId>
+      <artifactId>neo4j-lucene-index</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

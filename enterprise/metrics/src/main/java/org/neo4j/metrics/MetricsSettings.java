@@ -81,6 +81,9 @@ public class MetricsSettings
     @Description( "Enable reporting metrics about the current number of threads running on the HA cluster component." )
     public static Setting<Boolean> jvmThreadsEnabled = setting( "metrics.jvm.threads.enabled", Settings.BOOLEAN, neoEnabled );
 
+    @Description( "Enable reporting metrics about number of occurred replanning events." )
+    public static Setting<Boolean> cypherPlanningEnabled = setting( "metrics.cypher.replanning.enabled", Settings.BOOLEAN, neoEnabled );
+
     // CSV settings
     @Description( "Set to `true` to enable exporting metrics to CSV files" )
     public static Setting<Boolean> csvEnabled = setting( "metrics.csv.enabled", Settings.BOOLEAN, Settings.FALSE );
