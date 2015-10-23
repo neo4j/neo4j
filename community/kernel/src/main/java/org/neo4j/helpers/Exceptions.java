@@ -188,6 +188,12 @@ public class Exceptions
         };
     }
 
+    public static Predicate<Throwable> exceptions(
+            final String message, final Class<? extends Throwable>... types )
+    {
+        return Predicates.and( exceptionWithMessage( message ), exceptionsOfType( types ) );
+    }
+
     private Exceptions()
     {
         // no instances
