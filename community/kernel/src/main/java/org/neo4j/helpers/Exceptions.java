@@ -183,15 +183,21 @@ public class Exceptions
             @Override
             public boolean accept( Throwable item )
             {
-                return item.getMessage().equals( message );
+                return item.getMessage() != null && item.getMessage().equals( message );
             }
         };
     }
 
-    public static Predicate<Throwable> exceptions(
-            final String message, final Class<? extends Throwable>... types )
+    public static Predicate<Throwable> exceptionsWithMessageContaining( final String message )
     {
-        return Predicates.and( exceptionWithMessage( message ), exceptionsOfType( types ) );
+        return new Predicate<Throwable>()
+        {
+            @Override
+            public boolean accept( Throwable item )
+            {
+                return item.getMessage() != null && item.getMessage().contains( message );
+            }
+        };
     }
 
     private Exceptions()
