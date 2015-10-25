@@ -52,7 +52,6 @@ import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
-import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
 import static org.neo4j.collection.primitive.Primitive.longSet;
@@ -253,37 +252,24 @@ public abstract class LuceneIndex implements LegacyIndex
 
         if ( searcher != null )
         {
-            boolean foundInCache = false;
-            LruCache<String, Collection<EntityId>> cachedIdsMap = null;
-            if ( keyForDirectLookup != null )
+            try
             {
-                cachedIdsMap = dataSource.getFromCache(
-                        identifier, keyForDirectLookup );
-                foundInCache = fillFromCache( cachedIdsMap, simpleTransactionStateIds,
-                        valueForDirectLookup.toString(), removedIdsFromTransactionState );
+                // Gather all added ids from fulltextTransactionStateSearcher and simpleTransactionStateIds.
+                PrimitiveLongSet idsModifiedInTransactionState = gatherIdsModifiedInTransactionState(
+                        simpleTransactionStateIds, fulltextTransactionStateSearcher, query );
+
+                // Do the combined search from store and fulltext tx state
+                DocToIdIterator hits = new DocToIdIterator( search( searcher, fulltextTransactionStateSearcher,
+                        query, additionalParametersOrNull, removedIdsFromTransactionState ),
+                        removedIdsFromTransactionState, searcher, idsModifiedInTransactionState );
+
+                idIterator = simpleTransactionStateIds.isEmpty() ? hits : new CombinedIndexHits(
+                        Arrays.<LegacyIndexHits>asList( hits,
+                                new ConstantScoreIterator( simpleTransactionStateIds, Float.NaN ) ) );
             }
-
-            if ( !foundInCache )
+            catch ( IOException e )
             {
-                try
-                {
-                    // Gather all added ids from fulltextTransactionStateSearcher and simpleTransactionStateIds.
-                    PrimitiveLongSet idsModifiedInTransactionState = gatherIdsModifiedInTransactionState(
-                            simpleTransactionStateIds, fulltextTransactionStateSearcher, query );
-
-                    // Do the combined search from store and fulltext tx state
-                    DocToIdIterator hits = new DocToIdIterator( search( searcher, fulltextTransactionStateSearcher,
-                            query, additionalParametersOrNull, removedIdsFromTransactionState ),
-                            removedIdsFromTransactionState, searcher, idsModifiedInTransactionState );
-
-                    idIterator = simpleTransactionStateIds.isEmpty() ? hits : new CombinedIndexHits(
-                            Arrays.<LegacyIndexHits>asList( hits,
-                                    new ConstantScoreIterator( simpleTransactionStateIds, Float.NaN ) ) );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( "Unable to query " + this + " with " + query, e );
-                }
+                throw new RuntimeException( "Unable to query " + this + " with " + query, e );
             }
         }
 
@@ -328,30 +314,6 @@ public abstract class LuceneIndex implements LegacyIndex
             set.add( idFromDoc( hits.doc( i ) ) );
         }
         return set;
-    }
-
-    private boolean fillFromCache(
-            LruCache<String, Collection<EntityId>> cachedNodesMap,
-            List<EntityId> ids, String valueAsString,
-            Collection<EntityId> deletedNodes )
-    {
-        boolean found = false;
-        if ( cachedNodesMap != null )
-        {
-            Collection<EntityId> cachedNodes = cachedNodesMap.get( valueAsString );
-            if ( cachedNodes != null )
-            {
-                found = true;
-                for ( EntityId cachedNodeId : cachedNodes )
-                {
-                    if ( !deletedNodes.contains( cachedNodeId ) )
-                    {
-                        ids.add( cachedNodeId );
-                    }
-                }
-            }
-        }
-        return found;
     }
 
     private IndexHits<Document> search( IndexReference searcherRef, IndexSearcher fulltextTransactionStateSearcher,

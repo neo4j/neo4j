@@ -410,20 +410,3 @@ component=neo4j-lucene-index
 source=examples/ImdbDocTest.java
 tag=defaultOperator
 ----
-
-[[indexing-lucene-caching]]
-=== Caching ===
-
-If your index lookups becomes a performance bottle neck, caching can be enabled for certain keys in certain indexes (key locations) to speed up get requests.
-The caching is implemented with an http://en.wikipedia.org/wiki/Cache_algorithms#Least_Recently_Used[LRU] cache so that only the most recently accessed results are cached (with "results" meaning a query result of a get request, not a single entity).
-You can control the size of the cache (the maximum number of results) per index key.
-
-[snippet,java]
-----
-component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
-tag=cache
-----
-
-CAUTION: This setting is not persisted after shutting down the database.
-  This means: set this value after each startup of the database if you want to keep it.

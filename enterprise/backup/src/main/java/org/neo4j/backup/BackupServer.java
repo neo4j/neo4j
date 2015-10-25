@@ -19,9 +19,11 @@
  */
 package org.neo4j.backup;
 
+import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 
 import org.neo4j.backup.BackupClient.BackupRequestType;
+import org.neo4j.com.ChunkingChannelBuffer;
 import org.neo4j.com.Client;
 import org.neo4j.com.Protocol;
 import org.neo4j.com.ProtocolVersion;
@@ -31,39 +33,58 @@ import org.neo4j.com.Server;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 
-class BackupServer extends Server<TheBackupInterface, Object>
+class BackupServer extends Server<TheBackupInterface,Object>
 {
+    private static final long DEFAULT_OLD_CHANNEL_THRESHOLD = Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS * 1000;
+    private static final int DEFAULT_MAX_CONCURRENT_TX = 3;
+
+    private static final BackupRequestType[] contexts = BackupRequestType.values();
+
     static final byte PROTOCOL_VERSION = 1;
-    private final BackupRequestType[] contexts = BackupRequestType.values();
-    static int DEFAULT_PORT = 6362;
+    static final int DEFAULT_PORT = 6362;
     static final int FRAME_LENGTH = Protocol.MEGA * 4;
 
     public BackupServer( TheBackupInterface requestTarget, final HostnamePort server,
                          LogProvider logProvider, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
-        super( requestTarget, new Configuration()
+        super( requestTarget, newBackupConfig( FRAME_LENGTH, server ), logProvider, FRAME_LENGTH,
+                new ProtocolVersion( PROTOCOL_VERSION, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ),
+                TxChecksumVerifier.ALWAYS_MATCH, SYSTEM_CLOCK, byteCounterMonitor, requestMonitor );
+    }
+
+    @Override
+    protected ChunkingChannelBuffer newChunkingBuffer( ChannelBuffer bufferToWriteTo, Channel channel, int capacity,
+            byte internalProtocolVersion, byte applicationProtocolVersion )
+    {
+        return new BufferReusingChunkingChannelBuffer( bufferToWriteTo, channel, capacity, internalProtocolVersion,
+                applicationProtocolVersion );
+    }
+
+    private static Configuration newBackupConfig( final int chunkSize, final HostnamePort server )
+    {
+        return new Configuration()
         {
             @Override
             public long getOldChannelThreshold()
             {
-                return Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS * 1000;
+                return DEFAULT_OLD_CHANNEL_THRESHOLD;
             }
 
             @Override
             public int getMaxConcurrentTransactions()
             {
-                return 3;
+                return DEFAULT_MAX_CONCURRENT_TX;
             }
 
             @Override
             public int getChunkSize()
             {
-                return FRAME_LENGTH;
+                return chunkSize;
             }
 
             @Override
@@ -71,9 +92,7 @@ class BackupServer extends Server<TheBackupInterface, Object>
             {
                 return server;
             }
-        }, logProvider, FRAME_LENGTH, new ProtocolVersion( PROTOCOL_VERSION,
-                ProtocolVersion.INTERNAL_PROTOCOL_VERSION ),
-        TxChecksumVerifier.ALWAYS_MATCH, SYSTEM_CLOCK, byteCounterMonitor, requestMonitor );
+        };
     }
 
     @Override

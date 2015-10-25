@@ -64,7 +64,6 @@ public class LuceneCommandApplier extends CommandHandler.Adapter
         context.ensureWriterInstantiated();
         context.indexType.addToDocument( context.getDocument( new IdData( command.getEntityId() ), true ).document,
                 key, value );
-        context.dataSource.invalidateCache( context.identifier, key, value );
         return false;
     }
 
@@ -78,7 +77,6 @@ public class LuceneCommandApplier extends CommandHandler.Adapter
         RelationshipData entityId = new RelationshipData( command.getEntityId(),
                 command.getStartNode(), command.getEndNode() );
         context.indexType.addToDocument( context.getDocument( entityId, true ).document, key, value );
-        context.dataSource.invalidateCache( context.identifier, key, value );
         return false;
     }
 
@@ -93,7 +91,6 @@ public class LuceneCommandApplier extends CommandHandler.Adapter
         if ( document != null )
         {
             context.indexType.removeFromDocument( document.document, key, value );
-            context.dataSource.invalidateCache( context.identifier, key, value );
         }
         return false;
     }

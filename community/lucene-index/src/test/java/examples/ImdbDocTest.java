@@ -611,15 +611,6 @@ public class ImdbDocTest
         assertEquals( theMatrixReloaded, found );
     }
 
-//    @Test
-//    public void cacheSettings()
-//    {
-//        // START SNIPPET: cache
-//        Index<Node> index = graphDb.index().forNodes( "actors" );
-//        ((LuceneIndex<Node>) index).setCacheCapacity( "name", 300000 );
-//        // END SNIPPET: cache
-//    }
-
     @Test
     public void batchInsert() throws Exception
     {

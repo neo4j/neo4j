@@ -448,7 +448,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             }
 
             bufferToWriteTo.clear();
-            final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( bufferToWriteTo, channel, chunkSize,
+            ChunkingChannelBuffer chunkingBuffer = newChunkingBuffer( bufferToWriteTo, channel, chunkSize,
                     getInternalProtocolVersion(), applicationProtocolVersion );
             submitSilent( targetCallExecutor, new TargetCaller( type, channel, context, chunkingBuffer,
                     bufferToReadFrom ) );
@@ -545,9 +545,15 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
     private ChunkingChannelBuffer newChunkingBuffer( Channel channel )
     {
-        return new ChunkingChannelBuffer( ChannelBuffers.dynamicBuffer(),
-                channel,
-                chunkSize, getInternalProtocolVersion(), applicationProtocolVersion );
+        return newChunkingBuffer( ChannelBuffers.dynamicBuffer(), channel, chunkSize, getInternalProtocolVersion(),
+                applicationProtocolVersion );
+    }
+
+    protected ChunkingChannelBuffer newChunkingBuffer( ChannelBuffer bufferToWriteTo, Channel channel, int capacity,
+            byte internalProtocolVersion, byte applicationProtocolVersion )
+    {
+        return new ChunkingChannelBuffer( bufferToWriteTo, channel, capacity, internalProtocolVersion,
+                applicationProtocolVersion );
     }
 
     private class TargetCaller implements Response.Handler, Runnable
