@@ -10,7 +10,7 @@
   <artifactId>neo4j-consistency-check-legacy</artifactId>
   <version>2.3.1-SNAPSHOT</version>
 
-  <name>Neo4j - Consistency Checker</name>
+  <name>Neo4j - Legacy Consistency Checker</name>
   <description>Legacy tool for checking consistency of a Neo4j data store.</description>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
