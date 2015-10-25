@@ -28,7 +28,7 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
 
   test("Should work around read isolation limitations using multiple set") {
     // Given
-    val n = createNode("x" -> 0, "y" -> 0, "z" -> 0)
+    val n = createNode("x" -> 0L, "y" -> 0L, "z" -> 0L)
 
     // When
     val unlocked = updateAndCount(n, "x", "MATCH (n) SET n.x = n.x + 1")
@@ -49,7 +49,7 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
       new Thread(new Runnable {
         override def run() =
           (1 to UPDATES) foreach { x =>
-            eengine.execute(query)
+            execute(query)
           }
       })
     }

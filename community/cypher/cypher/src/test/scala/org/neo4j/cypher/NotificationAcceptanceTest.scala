@@ -85,12 +85,27 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
   test("do not warn for cost unsupported on update query if planner not explicitly requested") {
     val result = innerExecute("EXPLAIN MATCH (n:Movie) SET n.title = 'The Movie'")
-    result.notifications shouldBe empty
+    result.notifications should not contain PlannerUnsupportedNotification
   }
 
-  test("warn when requesting COST on an update query") {
-    val result = innerExecute("EXPLAIN CYPHER planner=COST MATCH (n:Movie) SET n.title = 'The Movie'")
-    result.notifications should equal(Set(PlannerUnsupportedNotification))
+  test("do not warn for cost unsupported when requesting COST on a supported update query") {
+    val result = innerExecute("EXPLAIN CYPHER planner=cost MATCH (n:Movie) SET n:Seen")
+    result.notifications should not contain PlannerUnsupportedNotification
+  }
+
+  test("do not warn for cost unsupported when requesting GREEDY on a supported update query") {
+    val result = innerExecute("EXPLAIN CYPHER planner=greedy MATCH (n:Movie) SET n:Seen")
+    result.notifications should not contain PlannerUnsupportedNotification
+  }
+
+  test("do not warn for cost unsupported when requesting IDP on a supported update query") {
+    val result = innerExecute("EXPLAIN CYPHER planner=idp MATCH (n:Movie) SET n:Seen")
+    result.notifications should not contain PlannerUnsupportedNotification
+  }
+
+  test("do not warn for cost unsupported when requesting DP on a supported update query") {
+    val result = innerExecute("EXPLAIN CYPHER planner=dp MATCH (n:Movie) SET n:Seen")
+    result.notifications should not contain PlannerUnsupportedNotification
   }
 
   test("do not warn when requesting RULE on an update query") {

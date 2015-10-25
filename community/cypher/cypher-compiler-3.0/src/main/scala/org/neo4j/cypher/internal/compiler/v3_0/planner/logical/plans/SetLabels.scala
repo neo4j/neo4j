@@ -17,21 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyType
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 
-case class CreateRelationship(source: LogicalPlan, idName: IdName, startNode: IdName, typ: LazyType, endNode: IdName,
-                              properties: Option[Expression])
-                           (val solved: PlannerQuery with CardinalityEstimation)
+case class SetLabels(source: LogicalPlan, idName: IdName, labelNames: Seq[LazyLabel])
+                    (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LogicalPlanWithoutExpressions {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def availableSymbols: Set[IdName] = source.availableSymbols + idName + startNode + endNode
+  override def availableSymbols: Set[IdName] = source.availableSymbols + idName
 
   override def rhs: Option[LogicalPlan] = None
 

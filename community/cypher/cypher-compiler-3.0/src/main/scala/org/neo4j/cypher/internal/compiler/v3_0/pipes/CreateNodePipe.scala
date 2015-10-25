@@ -23,15 +23,17 @@ import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{CreatesAnyNode, CreatesNodesWithLabels, Effects}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CollectionSupport, IsMap}
-import org.neo4j.cypher.internal.compiler.v3_0.mutation.{makeValueNeoSafe, GraphElementPropertyFunctions}
+import org.neo4j.cypher.internal.compiler.v3_0.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
 import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.collection.Map
 
-case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])(val estimatedCardinality: Option[Double] = None)
-                           (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with CollectionSupport {
+case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
+                         (val estimatedCardinality: Option[Double] = None)
+                         (implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with CollectionSupport {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
@@ -48,26 +50,26 @@ case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], proper
     context += key -> node
   }
 
- private def setProperties(context: ExecutionContext, state: QueryState, nodeId: Long) = {
-   properties.foreach { expr =>
-     expr(context)(state) match {
-       case _: Node | _: Relationship => throw new
-           CypherTypeException("Parameter provided for node creation is not a Map")
-       case IsMap(f) =>
-         val propertiesMap: Map[String, Any] = f(state.query)
-         propertiesMap.foreach {
-           case (k, v) =>
-             //do not set properties for null values
-             if (v != null) {
-               val propertyKeyId = state.query.getOrCreatePropertyKeyId(k)
-               state.query.nodeOps.setProperty(nodeId, propertyKeyId, makeValueNeoSafe(v))
-             }
-         }
-       case _ =>
-         throw new CypherTypeException("Parameter provided for node creation is not a Map")
-     }
-   }
- }
+  private def setProperties(context: ExecutionContext, state: QueryState, nodeId: Long) = {
+    properties.foreach { expr =>
+      expr(context)(state) match {
+        case _: Node | _: Relationship => throw new
+            CypherTypeException("Parameter provided for node creation is not a Map")
+        case IsMap(f) =>
+          val propertiesMap: Map[String, Any] = f(state.query)
+          propertiesMap.foreach {
+            case (k, v) =>
+              //do not set properties for null values
+              if (v != null) {
+                val propertyKeyId = state.query.getOrCreatePropertyKeyId(k)
+                state.query.nodeOps.setProperty(nodeId, propertyKeyId, makeValueNeoSafe(v))
+              }
+          }
+        case _ =>
+          throw new CypherTypeException("Parameter provided for node creation is not a Map")
+      }
+    }
+  }
 
   private def setLabels(context: ExecutionContext, state: QueryState, nodeId: Long) = {
     val labelIds = labels.map(l => {

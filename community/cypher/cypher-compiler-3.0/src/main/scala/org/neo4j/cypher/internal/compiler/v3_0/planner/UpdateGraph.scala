@@ -21,9 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{PathExpression, Identifier, Delete, Expression, RelTypeName, RelationshipPattern, LabelName, NodePattern}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, Identifier, LabelName, PathExpression, RelTypeName}
 
 case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
+
+
 
   def ++(other: UpdateGraph) = copy(mutatingPatterns = mutatingPatterns ++ other.mutatingPatterns)
 
@@ -60,7 +62,7 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
       nonEmpty &&
       (nodeOverlap(qg) || relationshipOverlap(qg) || deleteOverlap(qg))
 
-  def nodeOverlap(qg: QueryGraph) = {
+  private def nodeOverlap(qg: QueryGraph) = {
     qg.patternNodes.exists(p => qg.allKnownLabelsOnNode(p).isEmpty) || //MATCH ()?
       (qg.patternNodeLabels.values.flatten.toSet intersect labels).nonEmpty // CREATE(:A:B) MATCH(:B:C)?
   }
@@ -78,19 +80,27 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
       )
   }
 
+  def setLabelOverlap(qg: QueryGraph): Boolean = {
+    val labelsToSet = mutatingPatterns.collect {
+      case SetLabelPattern(_, labels) => labels
+    }.flatten
+    qg.patternNodes.exists(p => qg.allKnownLabelsOnNode(p).intersect(labelsToSet).nonEmpty)
+  }
+
   def deleteOverlap(qg: QueryGraph): Boolean = {
     val identifiersToDelete = deleteIdentifiers
     val identifiersToRead = qg.patternNodes ++ qg.patternRelationships.map(_.name)
     (identifiersToRead intersect identifiersToDelete).nonEmpty
   }
 
-  def addNodePatterns(nodePatterns: CreateNodePattern*): UpdateGraph = {
-
+  def addNodePatterns(nodePatterns: CreateNodePattern*): UpdateGraph =
     copy(mutatingPatterns = (this.mutatingPatterns ++ nodePatterns).distinct)
-  }
 
   def addRelPatterns(relationships: CreateRelationshipPattern*): UpdateGraph =
     copy(mutatingPatterns = (this.mutatingPatterns ++ relationships).distinct)
+
+  def addSetLabel(setLabelPatterns: SetLabelPattern*): UpdateGraph =
+    copy(mutatingPatterns = this.mutatingPatterns ++ setLabelPatterns)
 
   def addDeleteExpression(deleteExpressions: DeleteExpression*) =
     copy(mutatingPatterns = this.mutatingPatterns ++ deleteExpressions)
@@ -114,5 +124,7 @@ case class CreateRelationshipPattern(relName: IdName, leftNode: IdName, relType:
 
   def inOrder =  if (direction == SemanticDirection.OUTGOING) (leftNode, rightNode) else (rightNode, leftNode)
 }
+
+case class SetLabelPattern(idName: IdName, labels: Seq[LabelName]) extends MutatingPattern
 
 case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern

@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{MutatingPattern, CantHandleQueryException, DeleteExpression, CreateNodePattern, CreateRelationshipPattern, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{PathExpression, Identifier, RelationshipPattern, NodePattern}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Identifier, PathExpression}
 
 /*
  * This coordinates PlannerQuery planning of updates.
@@ -38,6 +38,8 @@ case object PlanUpdates
     case p: CreateNodePattern => context.logicalPlanProducer.planCreateNode(inner, p)
     //CREATE (a)-[:R]->(b)
     case p: CreateRelationshipPattern => context.logicalPlanProducer.planCreateRelationship(inner, p)
+    //SET n:Foo:Bar
+    case pattern: SetLabelPattern => context.logicalPlanProducer.planSetLabel(inner, pattern)
     //DELETE a
     case p: DeleteExpression =>
       p.expression match {

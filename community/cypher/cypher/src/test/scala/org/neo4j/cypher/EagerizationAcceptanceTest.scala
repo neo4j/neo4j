@@ -837,6 +837,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createLabeledNode("A")
     createLabeledNode("B")
     val query = "MATCH (a:A), (b:B) MERGE (a)-[:BAR]->(b) WITH a MATCH (a) WHERE (a)-[:FOO]->() RETURN a"
+
     assertStats(executeWithRulePlanner(query), relationshipsCreated = 1)
     assertNumberOfEagerness(query, 0)
   }
@@ -902,6 +903,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
   test("should not be eager when merging on already bound identifiers") {
     val query = "MERGE (city:City) MERGE (country:Country) MERGE (city)-[:IN]->(country)"
+
     assertStats(executeWithRulePlanner(query), nodesCreated = 2, labelsAdded = 2, relationshipsCreated = 1)
     assertNumberOfEagerness(query,  0)
   }
@@ -916,43 +918,58 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 0)
   }
 
-  test("matching label and writing different label should not be eager") {
+  test("matching label and setting different label should not be eager") {
     createLabeledNode(Map("prop" -> 5), "Node")
     val query = "MATCH (n:Node) SET n:Lol"
-    assertStats(executeWithRulePlanner(query), labelsAdded = 1)
 
+    assertStats(updateWithBothPlanners(query), labelsAdded = 1)
     assertNumberOfEagerness(query, 0)
   }
 
-  test("matching label and writing same label should not be eager") {
+  test("matching label and setting same label should not be eager") {
     createLabeledNode(Map("prop" -> 5), "Node")
     val query = "MATCH (n:Lol) SET n:Lol"
-    assertStats(executeWithRulePlanner(query), labelsAdded = 0)
+
+    assertStats(updateWithBothPlanners(query), labelsAdded = 0)
     assertNumberOfEagerness(query, 0)
   }
 
-  test("matching label on right-hand side and writing same label should be eager") {
+  test("matching label on right-hand side and setting same label should be eager") {
     createLabeledNode("Lol")
     createNode()
     val query = "MATCH (n), (m:Lol) SET n:Lol"
-    assertStats(executeWithRulePlanner(query), labelsAdded = 1)
 
+    val result = eengine.execute(s"cypher planner=rule $query")
+    assertStatsResult(labelsAdded = 1)(result.queryStatistics())
     assertNumberOfEagerness(query, 1)
   }
 
-  test("matching label on right-hand side and writing different label should not be eager") {
+  test("matching label on right-hand side and setting same label should be eager and get the count right") {
+    createLabeledNode("Two")
+    createLabeledNode("Two")
+    createNode()
+    val query = "MATCH (m1:Two), (m2:Two), (n) SET n:Two RETURN count(*) AS c"
+
+    val result: InternalExecutionResult = updateWithBothPlanners(query)
+    assertStats(result, labelsAdded = 1)
+    assertNumberOfEagerness(query, 1)
+    result.toList should equal(List(Map("c" -> 12)))
+  }
+
+  test("matching label on right-hand side and setting different label should not be eager") {
     createLabeledNode("Lol")
     createNode()
-    val query = "MATCH (n), (m:Lol) SET n:Rofl"
-    assertStats(executeWithRulePlanner(query), labelsAdded = 2)
+    val query = "MATCH (n), (m1:Lol), (m2:Lol) SET n:Rofl"
+
+    assertStats(updateWithBothPlanners(query), labelsAdded = 2)
     assertNumberOfEagerness(query, 0)
   }
 
-  test("matching property and writing label should not be eager") {
+  test("matching property and setting label should not be eager") {
     createNode(Map("name" -> "thing"))
     val query = "MATCH (n {name : 'thing'}) SET n:Lol"
 
-    assertStats(executeWithRulePlanner(query), labelsAdded = 1)
+    assertStats(updateWithBothPlanners(query), labelsAdded = 1)
     assertNumberOfEagerness(query, 0)
   }
 

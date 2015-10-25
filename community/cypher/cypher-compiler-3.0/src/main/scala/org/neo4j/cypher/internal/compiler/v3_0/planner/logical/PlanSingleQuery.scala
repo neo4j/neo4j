@@ -72,6 +72,7 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
           leaves.size > 1 && leaves.drop(1).exists(
             nodeOverlap(_, plannerQuery) ||
               relationshipOverlap(plannerQuery) ||
+              plannerQuery.updateGraph.setLabelOverlap(plannerQuery.queryGraph) ||
               deleteOverlap(plannerQuery))
     }
   }

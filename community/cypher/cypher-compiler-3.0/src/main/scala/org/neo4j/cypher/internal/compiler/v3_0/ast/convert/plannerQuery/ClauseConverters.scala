@@ -76,8 +76,10 @@ object ClauseConverters {
       case c: Unwind => c.addUnwindToLogicalPlanInput(acc)
       case c: Start => c.addStartToLogicalPlanInput(acc)
       case c: Create => c.addCreateToLogicalPlanInput(acc)
+      case c: SetClause => c.addSetClauseToLogicalPlanInput(acc)
       case c: Delete => c.addDeleteToLogicalPlanInput(acc)
-      case x         => throw new CantHandleQueryException(s"$x is not supported by the new runtime yet")
+
+      case x => throw new CantHandleQueryException(s"$x is not supported by the new runtime yet")
     }
   }
 
@@ -100,6 +102,29 @@ object ClauseConverters {
           withReturns(returns)
       case _ =>
         throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
+    }
+  }
+
+  implicit class SetClauseConverter(val clause: SetClause) extends AnyVal {
+
+    def addSetClauseToLogicalPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = {
+      clause.items.foldLeft(acc) {
+        // SET n:Foo
+        case (builder, SetLabelItem(identifier, labelNames)) =>
+          builder.amendUpdateGraph(ug => ug.addSetLabel(SetLabelPattern(IdName.fromIdentifier(identifier), labelNames)))
+
+        // SET n.prop = ...
+        case (builder, SetPropertyItem(_, _)) =>
+          throw new CantHandleQueryException("Setting properties not supported yet")
+
+        // SET n = { id: 0, name: 'Mats', ... }
+        case (builder, SetExactPropertiesFromMapItem(_, _)) =>
+          throw new CantHandleQueryException("Setting properties using '=' not supported yet")
+
+        // SET n += { id: 10, ... }
+        case (builder, SetIncludingPropertiesFromMapItem(_, _)) =>
+          throw new CantHandleQueryException("Setting properties using '+=' not supported yet")
+      }
     }
   }
 

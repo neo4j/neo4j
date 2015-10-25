@@ -479,6 +479,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     else DeletePath(inner, delete.expression)(solved)
   }
 
+  def planSetLabel(inner: LogicalPlan, pattern: SetLabelPattern)
+                    (implicit context: LogicalPlanningContext): LogicalPlan = {
+
+    val solved = inner.solved.amendUpdateGraph(_.addSetLabel(pattern))
+
+    SetLabels(inner, pattern.idName, pattern.labels.map(LazyLabel(_)(context.semanticTable)))(solved)
+  }
 
   def planRepeatableRead(inner: LogicalPlan)
                      (implicit context: LogicalPlanningContext): LogicalPlan = {
