@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.neo4j.function.Predicate;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -32,6 +30,8 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.neo4j.function.Predicate;
 
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;
@@ -146,7 +146,11 @@ public class DebugUtil
         private final Map<Stack, AtomicInteger> uniqueStackTraces = new HashMap<>();
         private boolean considerMessages = true;
 
-        public void add( Throwable t )
+        /**
+         * Returns {@link AtomicInteger} for the unique stack trace provided. It gets updated
+         * as more are added.
+         */
+        public AtomicInteger add( Throwable t )
         {
             Stack key = new Stack( t, considerMessages );
             AtomicInteger count = uniqueStackTraces.get( key );
@@ -156,6 +160,7 @@ public class DebugUtil
                 uniqueStackTraces.put( key, count );
             }
             count.incrementAndGet();
+            return count;
         }
 
         public void print( PrintStream out, int interestThreshold )
