@@ -234,32 +234,26 @@ stopit() {
   else
     printf "Stopping $FRIENDLY_NAME [$NEO4J_PID]..."
     x=0
-    while [ $x -lt $TIMEOUT ] && [ "$NEO4J_PID" != "" ]  ; do
+    while [ "$NEO4J_PID" != "" ]  ; do
       kill $NEO4J_PID 2>/dev/null
-      printf "."
+      if [ $x -le $TIMEOUT ]; then
+        printf "."
+      fi
       sleep 1
       checkstatus
+
+      if [ $x -eq $TIMEOUT ] ;then
+	    echo ""
+	    echo "$FRIENDLY_NAME [$NEO4J_PID] is taking more than ${TIMEOUT}s to stop"
+	    echo "There might be some troubles with the shutdown of $FRIENDLY_NAME, please read log files for details"
+	    echo "This script will keep waiting fot the service to shutdown, you could manually kill the process $NEO4J_PID"
+	    echo ""
+      fi
+
       x=$[$x+1]
     done
-	  [ $x -eq $TIMEOUT ] && killit $NEO4J_PID $TIMEOUT || echo " done"
-	  [ -e "$PID_FILE" ] && rm  "$PID_FILE"
+    [ -e "$PID_FILE" ] && rm  "$PID_FILE"
   fi
-}
-
-killit() {
-   NEO4J_PID=$1
-   TIMEOUT=$2
-   echo " force shutdown"
-
-   x=0
-   while [ $x -lt $TIMEOUT ] && [ "$NEO4J_PID" != "" ]  ; do
-     kill -9 $NEO4J_PID >/dev/null
-     printf "."
-     sleep 1
-     checkstatus
-     x=$[$x+1]
-   done
-     [ $x -eq $TIMEOUT ] && echo " failed" || echo " done"
 }
 
 # Creates a user on the system
