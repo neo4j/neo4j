@@ -22,6 +22,7 @@ package org.neo4j.test;
 import java.io.File;
 import java.util.Map;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -42,7 +43,9 @@ import org.neo4j.logging.NullLogProvider;
 
 /**
  * Test factory for graph databases
+ * @deprecated use {@link TestGraphDatabase} instead
  */
+@Deprecated
 public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 {
     public TestGraphDatabaseFactory()

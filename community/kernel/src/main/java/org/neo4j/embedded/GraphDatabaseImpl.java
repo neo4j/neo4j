@@ -17,21 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test;
+package org.neo4j.embedded;
 
-import org.neo4j.embedded.TestGraphDatabase;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import java.io.File;
+import java.util.Map;
 
-/**
- * @deprecated use {@link TestGraphDatabase} instead
- */
-@Deprecated
-public class TestGraphDatabaseBuilder extends GraphDatabaseBuilder
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+
+class GraphDatabaseImpl extends GraphDatabaseFacade implements GraphDatabase
 {
-    public TestGraphDatabaseBuilder( DatabaseCreator creator )
+    GraphDatabaseImpl(
+            GraphDatabaseFacadeFactory facadeFactory,
+            File storeDir,
+            Map<String,String> params,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        super( creator );
-        super.config.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
+        // TODO: collapse FacadeFactory into this implementation
+        facadeFactory.newFacade( storeDir, params, dependencies, this );
     }
 }

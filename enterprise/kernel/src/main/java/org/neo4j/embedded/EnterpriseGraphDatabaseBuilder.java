@@ -17,23 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.factory;
+package org.neo4j.embedded;
 
-import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.embedded.HighAvailabilityTestGraphDatabase;
+import org.neo4j.kernel.impl.enterprise.EnterpriseFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 
-/**
- * @deprecated use {@link HighAvailabilityTestGraphDatabase} instead
- */
-@Deprecated
-public class TestHighlyAvailableGraphDatabaseFactory extends HighlyAvailableGraphDatabaseFactory
+abstract class EnterpriseGraphDatabaseBuilder<BUILDER extends EnterpriseGraphDatabaseBuilder<BUILDER,GRAPHDB>, GRAPHDB extends EnterpriseGraphDatabase>
+        extends GraphDatabaseBuilder<BUILDER,GRAPHDB>
 {
     @Override
-    protected void configure( GraphDatabaseBuilder builder )
+    protected GraphDatabaseFacadeFactory createFacadeFactory()
     {
-        super.configure( builder );
-        builder.setConfig( ClusterManager.CONFIG_FOR_SINGLE_JVM_CLUSTER );
-        builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
-        builder.setConfig( GraphDatabaseSettings.store_internal_log_level, "DEBUG" );
+        return new EnterpriseFacadeFactory();
     }
 }

@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -33,6 +34,10 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 
+/**
+ * Use {@link GraphDatabase#build()} to construct Graph Databases and set state
+ */
+@Deprecated
 public class GraphDatabaseFactoryState
 {
     private final List<Class<?>> settingsClasses;

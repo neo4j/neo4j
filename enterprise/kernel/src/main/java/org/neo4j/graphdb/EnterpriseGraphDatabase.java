@@ -31,6 +31,10 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 
+/**
+ * @deprecated Use {@link org.neo4j.embedded.EnterpriseGraphDatabase}
+ */
+@Deprecated
 public class EnterpriseGraphDatabase extends GraphDatabaseFacade
 {
 
