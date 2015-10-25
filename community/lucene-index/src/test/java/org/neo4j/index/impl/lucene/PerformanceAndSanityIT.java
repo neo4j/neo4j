@@ -36,16 +36,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.out;
@@ -135,7 +134,7 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
     {
         commitTx();
 
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase(testDirectory.directory( "filesClosedProperty" ) );
+        graphDb = TestGraphDatabase.open( testDirectory.directory( "filesClosedProperty" ) );
         final Index<Node> index = nodeIndex( "open-files", LuceneIndexImplementation.EXACT_CONFIG );
         final long time = System.currentTimeMillis();
         final CountDownLatch latch = new CountDownLatch( 30 );
@@ -209,7 +208,7 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
         pool.shutdown();
         pool.awaitTermination( 10, TimeUnit.DAYS );
         graphDb.shutdown();
-        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        graphDb = TestGraphDatabase.openEphemeral();
     }
 
     @Ignore

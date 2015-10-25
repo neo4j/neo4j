@@ -34,19 +34,19 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 public class LegacyIndexAddDropConcurrently
 {
     @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 
     @Test
     public void shouldHandleConcurrentIndexDropping() throws Exception
     {
         // Given
         ExecutorService exec = Executors.newFixedThreadPool( 4 );
-        final GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        final GraphDatabaseService db = dbRule.get();
 
         List<Callable<Object>> jobs = new ArrayList<>();
         for ( int i = 0; i < 4; i++ )

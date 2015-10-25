@@ -19,33 +19,31 @@
  */
 package org.neo4j.shell;
 
+import org.junit.After;
+import org.junit.Before;
+
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.RemoteClient;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.impl.SimpleAppServer;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.Integer.parseInt;
 import static java.util.regex.Pattern.compile;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.shell.ShellLobby.NO_INITIAL_SESSION;
@@ -53,14 +51,11 @@ import static org.neo4j.shell.ShellLobby.remoteLocation;
 
 public abstract class AbstractShellTest
 {
-    protected GraphDatabaseAPI db;
+    protected TestGraphDatabase db;
     protected ShellServer shellServer;
     protected ShellClient shellClient;
     private Integer remotelyAvailableOnPort;
     protected static final RelationshipType RELATIONSHIP_TYPE = withName( "TYPE" );
-
-    @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     private Transaction tx;
 
@@ -74,23 +69,23 @@ public abstract class AbstractShellTest
 
     protected SameJvmClient newShellClient( ShellServer server ) throws ShellException, RemoteException
     {
-        return newShellClient( server, Collections.<String, Serializable>singletonMap( "quiet", true ) );
+        return newShellClient( server, Collections.<String,Serializable>singletonMap( "quiet", true ) );
     }
 
-    protected SameJvmClient newShellClient( ShellServer server, Map<String, Serializable> session )
+    protected SameJvmClient newShellClient( ShellServer server, Map<String,Serializable> session )
             throws ShellException, RemoteException
     {
         return new SameJvmClient( session, server, new CollectingOutput(), InterruptSignalHandler.getHandler() );
     }
 
-    protected GraphDatabaseAPI newDb()
+    protected TestGraphDatabase newDb()
     {
-        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase();
+        return TestGraphDatabase.openEphemeral();
     }
 
-    protected ShellServer newServer( GraphDatabaseAPI db ) throws ShellException, RemoteException
+    protected ShellServer newServer( TestGraphDatabase db ) throws ShellException, RemoteException
     {
-        return new GraphDatabaseShellServer( db );
+        return new GraphDatabaseShellServer( db.getGraphDatabaseAPI() );
     }
 
     @After
@@ -121,7 +116,7 @@ public abstract class AbstractShellTest
         return newRemoteClient( NO_INITIAL_SESSION );
     }
 
-    protected ShellClient newRemoteClient( Map<String, Serializable> initialSession ) throws Exception
+    protected ShellClient newRemoteClient( Map<String,Serializable> initialSession ) throws Exception
     {
         return new RemoteClient( initialSession, remoteLocation( remotelyAvailableOnPort ),
                 new CollectingOutput(), InterruptSignalHandler.getHandler() );
@@ -207,7 +202,7 @@ public abstract class AbstractShellTest
                 }
             }
             assertTrue( "Was expecting a line matching '" + lineThatMustExist + "', but didn't find any from out of " +
-                    asCollection( output ), found != negative );
+                        asCollection( output ), found != negative );
         }
     }
 
@@ -289,7 +284,7 @@ public abstract class AbstractShellTest
 
     protected Relationship[] createRelationshipChain( RelationshipType type, int length )
     {
-        try( Transaction transaction = db.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
             Relationship[] relationshipChain = createRelationshipChain( db.createNode(), type, length );
             transaction.success();

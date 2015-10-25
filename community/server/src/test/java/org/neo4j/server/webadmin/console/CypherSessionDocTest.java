@@ -23,14 +23,13 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Test;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rest.management.console.CypherSession;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
@@ -41,8 +40,8 @@ public class CypherSessionDocTest
     @Test
     public void shouldReturnASingleNode() throws Throwable
     {
-        GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
-        Database database = new WrappedDatabase( graphdb );
+        TestGraphDatabase graphdb = TestGraphDatabase.openEphemeral();
+        Database database = new WrappedDatabase( graphdb.getGraphDatabaseAPI() );
         CypherExecutor executor = new CypherExecutor( database );
         executor.start();
         try

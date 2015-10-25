@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -36,7 +38,6 @@ import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelEx
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.index.util.FolderLayout;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -80,9 +81,9 @@ public class ConstraintIndexFailureIT
         }
     }
 
-    private GraphDatabaseService startDatabase()
+    private GraphDatabase startDatabase()
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.directory().getAbsolutePath() );
+        return TestGraphDatabase.open( storeDir.directory() );
     }
 
     private void dbWithConstraint()

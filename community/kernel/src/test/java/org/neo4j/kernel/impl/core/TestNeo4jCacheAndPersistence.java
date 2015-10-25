@@ -24,17 +24,15 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -42,7 +40,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -50,6 +47,7 @@ import static org.junit.Assert.fail;
 
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.relationship_grab_size;
 import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 
@@ -388,12 +386,9 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     @Test
     public void testLowGrabSize()
     {
-        Map<String,String> config = new HashMap<>();
-        config.put( "relationship_grab_size", "1" );
-        File storeDir = getStorePath( "neo2" );
-        deleteFileOrDirectory( storeDir );
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( config ).newGraphDatabase();
-
+        GraphDatabase graphDb = TestGraphDatabase.buildEphemeral()
+                .withSetting( relationship_grab_size, "1" )
+                .open();
         Node node1, node2;
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -445,11 +440,9 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 
     private void testLowGrabSize( boolean includeLoops )
     {
-        Map<String, String> config = new HashMap<>();
-        config.put( "relationship_grab_size", "2" );
-        File storeDir = getStorePath( "neo2" );
-        deleteFileOrDirectory( storeDir );
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( config ).newGraphDatabase();
+        GraphDatabase graphDb = TestGraphDatabase.buildEphemeral()
+                .withSetting( relationship_grab_size, "2" )
+                .open();
         Transaction tx = graphDb.beginTx();
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();

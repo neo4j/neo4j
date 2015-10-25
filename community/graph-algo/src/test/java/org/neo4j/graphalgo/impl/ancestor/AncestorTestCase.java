@@ -28,6 +28,7 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -39,7 +40,6 @@ import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.TestData;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -138,7 +138,7 @@ public class AncestorTestCase implements GraphHolder
     @BeforeClass
     public static void before()
     {
-        gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        gdb = TestGraphDatabase.openEphemeral();
     }
     @AfterClass
     public static void after()

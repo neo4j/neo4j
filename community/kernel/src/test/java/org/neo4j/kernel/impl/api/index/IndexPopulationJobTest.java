@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
@@ -41,7 +42,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexConfiguration;
@@ -74,7 +74,6 @@ import org.neo4j.test.CleanupRule;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -586,7 +585,7 @@ public class IndexPopulationJobTest
         return new InMemoryIndexProvider().getPopulator( 21, descriptor, indexConfig, samplingConfig );
     }
 
-    private GraphDatabaseAPI db;
+    private TestGraphDatabase db;
 
     private final Label FIRST = DynamicLabel.label( "FIRST" );
     private final Label SECOND = DynamicLabel.label( "SECOND" );
@@ -604,7 +603,7 @@ public class IndexPopulationJobTest
     @Before
     public void before() throws Exception
     {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        db = TestGraphDatabase.openEphemeral();
         ctxSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         counts = db.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get().getCounts();
         stateHolder = new KernelSchemaStateStore( NullLogProvider.getInstance() );

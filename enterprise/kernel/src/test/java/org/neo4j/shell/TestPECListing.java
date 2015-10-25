@@ -22,23 +22,20 @@ package org.neo4j.shell;
 import org.junit.Test;
 
 import org.neo4j.SchemaHelper;
+import org.neo4j.embedded.EnterpriseTestGraphDatabase;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 
 public class TestPECListing extends AbstractShellTest
 {
     @Override
-    protected GraphDatabaseAPI newDb()
+    protected EnterpriseTestGraphDatabase newDb()
     {
-        return (GraphDatabaseAPI) new TestEnterpriseGraphDatabaseFactory()
-                .setFileSystem( fs.get() )
-                .newImpermanentDatabase();
+        return EnterpriseTestGraphDatabase.openEphemeral();
     }
 
     @Test

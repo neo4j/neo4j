@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.embedded.HighAvailabilityGraphDatabase;
 import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -317,7 +318,7 @@ public class SchemaIndexHaIT
         @Override
         public boolean test( GraphDatabaseService item )
         {
-            return item instanceof HighlyAvailableGraphDatabase && ((HighlyAvailableGraphDatabase) item).isMaster();
+            return item instanceof HighAvailabilityGraphDatabase && ((HighAvailabilityGraphDatabase) item).isMaster();
         }
     };
 

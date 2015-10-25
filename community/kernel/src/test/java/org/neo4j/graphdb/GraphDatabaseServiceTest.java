@@ -29,12 +29,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -45,7 +46,7 @@ public class GraphDatabaseServiceTest
     public void givenShutdownDatabaseWhenBeginTxThenExceptionIsThrown() throws Exception
     {
         // Given
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        final GraphDatabase db = TestGraphDatabase.openEphemeral();
 
         db.shutdown();
 
@@ -67,7 +68,7 @@ public class GraphDatabaseServiceTest
     public void givenDatabaseAndStartedTxWhenShutdownThenWaitForTxToFinish() throws Exception
     {
         // Given
-        final GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        final GraphDatabase db = TestGraphDatabase.openEphemeral();
 
         // When
         final CountDownLatch started = new CountDownLatch( 1 );
@@ -107,7 +108,7 @@ public class GraphDatabaseServiceTest
     public void terminateTransactionThrowsExceptionOnNextOperation() throws Exception
     {
         // Given
-        final GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        final GraphDatabase db = TestGraphDatabase.openEphemeral();
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -129,7 +130,7 @@ public class GraphDatabaseServiceTest
     public void terminateNestedTransactionThrowsExceptionOnNextOperation() throws Exception
     {
         // Given
-        final GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        final GraphDatabase db = TestGraphDatabase.openEphemeral();
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -154,7 +155,7 @@ public class GraphDatabaseServiceTest
     public void terminateNestedTransactionThrowsExceptionOnNextNestedOperation() throws Exception
     {
         // Given
-        final GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        final GraphDatabase db = TestGraphDatabase.openEphemeral();
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -179,7 +180,7 @@ public class GraphDatabaseServiceTest
     public void givenDatabaseAndStartedTxWhenShutdownAndStartNewTxThenBeginTxTimesOut() throws Exception
     {
         // Given
-        final GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        final GraphDatabase db = TestGraphDatabase.openEphemeral();
 
         // When
         final CountDownLatch shutdown = new CountDownLatch( 1 );
@@ -254,7 +255,7 @@ public class GraphDatabaseServiceTest
         // GIVEN a database with a couple of entities:
         // (n1) --> (r1) --> (r2) --> (r3)
         // (n2)
-        GraphDatabaseService db = cleanup.add( new TestGraphDatabaseFactory().newImpermanentDatabase() );
+        GraphDatabaseService db = cleanup.add( TestGraphDatabase.openEphemeral() );
         Node n1 = createNode( db );
         Node n2 = createNode( db );
         Relationship r3 = createRelationship( n1 );

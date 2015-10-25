@@ -26,13 +26,13 @@ import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
@@ -53,7 +53,7 @@ public class PropertyKeyTest
         long nodeId = inserter.createNode( mapWithManyProperties( count /* larger than initial property index load threshold */ ) );
         inserter.shutdown();
         
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( dir );
+        GraphDatabase db = TestGraphDatabase.buildEphemeral().withFileSystem( fileSystem ).open( dir );
 
         // When
         try (Transaction tx = db.beginTx())

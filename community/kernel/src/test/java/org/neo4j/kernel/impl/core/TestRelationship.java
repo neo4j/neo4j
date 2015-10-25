@@ -946,7 +946,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     public void shouldLoadAllRelationships() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = getGraphDbAPI();
+        GraphDatabaseService db = getGraphDb();
         Node node;
         try ( Transaction tx = db.beginTx() )
         {

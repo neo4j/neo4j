@@ -36,9 +36,8 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.GraphTransactionRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -50,7 +49,7 @@ import static org.neo4j.helpers.Exceptions.launderedException;
 public class NodeTest
 {
     @ClassRule
-    public static DatabaseRule db = new ImpermanentDatabaseRule();
+    public static final TestGraphDatabaseRule db = TestGraphDatabaseRule.ephemeral();
 
     @Rule
     public GraphTransactionRule tx = new GraphTransactionRule( db );
@@ -483,6 +482,6 @@ public class NodeTest
 
     private GraphDatabaseService getGraphDb()
     {
-        return db.getGraphDatabaseService();
+        return db.get();
     }
 }

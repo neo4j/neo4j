@@ -25,7 +25,8 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -33,7 +34,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertTrue;
 
@@ -61,8 +61,7 @@ public class TestStoreAccess
 
     private EphemeralFileSystemAbstraction produceUncleanStore()
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() )
-                .newImpermanentDatabase( storeDir );
+        GraphDatabase db = TestGraphDatabase.buildEphemeral().withFileSystem( fs.get() ).open( storeDir );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();

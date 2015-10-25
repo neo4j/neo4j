@@ -22,8 +22,9 @@ package org.neo4j.graphdb;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
@@ -38,8 +39,7 @@ public class FirstStartupIT
     public void shouldBeEmptyWhenFirstStarted() throws Exception
     {
         // When
-        String storeDir = testDir.absolutePath();
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        GraphDatabase db = TestGraphDatabase.open( testDir.graphDbDir() );
 
         // Then
         try(Transaction ignore = db.beginTx())

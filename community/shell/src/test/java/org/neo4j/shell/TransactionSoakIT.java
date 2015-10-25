@@ -29,12 +29,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
@@ -65,15 +65,15 @@ import static org.neo4j.helpers.collection.Iterables.count;
 @Ignore("Jake 2013-09-13: Exposes bug that will be fixed by kernel API")
 public class TransactionSoakIT
 {
-    protected GraphDatabaseAPI db;
+    protected TestGraphDatabase db;
     private ShellServer server;
     private final Random r = new Random( System.currentTimeMillis() );
 
     @Before
     public void doBefore() throws Exception
     {
-        db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
-        server = new GraphDatabaseShellServer( db );
+        db = TestGraphDatabase.openEphemeral();
+        server = new GraphDatabaseShellServer( db.getGraphDatabaseAPI() );
     }
 
     @After

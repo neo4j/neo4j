@@ -22,21 +22,18 @@ package org.neo4j.kernel;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Map;
+import java.io.File;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Settings;
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
+import org.neo4j.function.Consumer;
+import org.neo4j.function.Consumers;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class StoreLockerLifecycleAdapterTest
 {
@@ -52,24 +49,30 @@ public class StoreLockerLifecycleAdapterTest
     @Test
     public void shouldNotAllowDatabasesToUseFilesetsConcurrently() throws Exception
     {
-        shouldNotAllowDatabasesToUseFilesetsConcurrently( stringMap() );
+        shouldNotAllowDatabasesToUseFilesetsConcurrently( Consumers.<TestGraphDatabase.Builder>noop() );
     }
 
     @Test
     public void shouldNotAllowDatabasesToUseFilesetsConcurrentlyEvenIfTheyAreInReadOnlyMode() throws Exception
     {
-        shouldNotAllowDatabasesToUseFilesetsConcurrently(
-                stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
+        shouldNotAllowDatabasesToUseFilesetsConcurrently( new Consumer<TestGraphDatabase.Builder>()
+        {
+            @Override
+            public void accept( TestGraphDatabase.Builder builder )
+            {
+                builder.readOnly();
+            }
+        } );
     }
 
-    private void shouldNotAllowDatabasesToUseFilesetsConcurrently( Map<String,String> config ) throws Exception
+    private void shouldNotAllowDatabasesToUseFilesetsConcurrently( Consumer<TestGraphDatabase.Builder> configure ) throws Exception
     {
-        GraphDatabaseService db = newDb();
+        GraphDatabase db = newDb();
         try
         {
-            new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir() )
-                    .setConfig( config ).newGraphDatabase();
-
+            TestGraphDatabase.Builder builder = TestGraphDatabase.build();
+            configure.accept( builder );
+            builder.open( storeDir() );
             fail();
         }
         catch ( RuntimeException e )
@@ -82,13 +85,13 @@ public class StoreLockerLifecycleAdapterTest
         }
     }
 
-    private GraphDatabaseService newDb()
+    private GraphDatabase newDb()
     {
-        return new GraphDatabaseFactory().newEmbeddedDatabase( storeDir() );
+        return TestGraphDatabase.open( storeDir() );
     }
 
-    private String storeDir()
+    private File storeDir()
     {
-        return directory.absolutePath();
+        return directory.graphDbDir();
     }
 }

@@ -22,11 +22,12 @@ package org.neo4j.kernel.impl.api.store;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.TestGraphDatabase;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 /**
  * This test ensures that lazy properties
@@ -34,13 +35,13 @@ import org.neo4j.test.ImpermanentDatabaseRule;
 public class TestReferenceDangling
 {
     @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( );
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 
     @Test
     public void testPropertyStoreReferencesOnRead() throws Throwable
     {
         // Given
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        TestGraphDatabase db = dbRule.get();
 
         // and Given the cache contains a LazyProperty
         long nId = ensurePropertyIsCachedLazyProperty( db, "some" );
@@ -60,7 +61,7 @@ public class TestReferenceDangling
     public void testPropertyStoreReferencesOnWrite() throws Throwable
     {
         // Given
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        TestGraphDatabase db = dbRule.get();
 
         // and Given the cache contains a LazyProperty
         long nId = ensurePropertyIsCachedLazyProperty( db, "some" );
@@ -76,7 +77,7 @@ public class TestReferenceDangling
         }
     }
 
-    private long ensurePropertyIsCachedLazyProperty( GraphDatabaseAPI slave, String key )
+    private long ensurePropertyIsCachedLazyProperty( GraphDatabaseService slave, String key )
     {
         long nId;
         try( Transaction tx = slave.beginTx() )
@@ -95,7 +96,7 @@ public class TestReferenceDangling
         return nId;
     }
 
-    private void restartNeoDataSource( GraphDatabaseAPI slave ) throws Throwable
+    private void restartNeoDataSource( TestGraphDatabase slave ) throws Throwable
     {
         slave.getDependencyResolver().resolveDependency( DataSourceManager.class ).getDataSource().stop();
         slave.getDependencyResolver().resolveDependency( DataSourceManager.class ).getDataSource().start();

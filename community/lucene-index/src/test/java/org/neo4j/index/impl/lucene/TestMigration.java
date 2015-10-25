@@ -33,6 +33,8 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -45,7 +47,6 @@ import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -189,9 +190,9 @@ public class TestMigration
         graphDb.shutdown();
     }
 
-    private GraphDatabaseService startDatabase( File storeDir )
+    private GraphDatabase startDatabase( File storeDir )
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
+        return TestGraphDatabase.open( storeDir );
     }
 
     private void removeProvidersFromIndexDbFile( File storeDir )

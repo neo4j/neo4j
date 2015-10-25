@@ -29,13 +29,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
@@ -75,9 +76,7 @@ public class DbRepresentation implements Serializable
     
     public static DbRepresentation of( File storeDir, boolean includeIndexes )
     {
-        GraphDatabaseBuilder builder =
-                new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.getPath() );
-        GraphDatabaseService db = builder.newGraphDatabase();
+        GraphDatabase db = TestGraphDatabase.open( storeDir );
         try
         {
             return of( db, includeIndexes );

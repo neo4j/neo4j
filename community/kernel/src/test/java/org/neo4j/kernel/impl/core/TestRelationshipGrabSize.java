@@ -26,14 +26,15 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.valueOf;
 
@@ -47,16 +48,15 @@ import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 public class TestRelationshipGrabSize
 {
     private static final int GRAB_SIZE = 10;
-    private static GraphDatabaseAPI db;
+    private static GraphDatabase db;
     private Transaction tx;
 
     @BeforeClass
     public static void doBefore() throws Exception
     {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.relationship_grab_size, valueOf( GRAB_SIZE ) )
-                .newGraphDatabase();
+        db = TestGraphDatabase.buildEphemeral()
+                .withSetting( GraphDatabaseSettings.relationship_grab_size, valueOf( GRAB_SIZE ) )
+                .open();
     }
 
     @AfterClass
@@ -221,7 +221,7 @@ public class TestRelationshipGrabSize
         clearCacheAndCreateDeleteCount( db, node1, node2, type2, type2, count );
     }
 
-    private void clearCacheAndCreateDeleteCount( GraphDatabaseAPI db, Node node1, Node node2,
+    private void clearCacheAndCreateDeleteCount( GraphDatabaseService db, Node node1, Node node2,
             RelationshipType createType, RelationshipType deleteType, int expectedCount )
     {
         try ( Transaction tx = db.beginTx() )

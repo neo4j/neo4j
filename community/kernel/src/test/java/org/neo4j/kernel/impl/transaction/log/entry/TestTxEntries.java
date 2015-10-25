@@ -24,13 +24,14 @@ import java.io.File;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
@@ -47,11 +48,11 @@ public class TestTxEntries
     @Test
     public void testStartEntryWrittenOnceOnRollback() throws Exception
     {
-        final GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
+        final GraphDatabase db = TestGraphDatabase.buildEphemeral().withFileSystem( fs.get() ).open( storeDir );
         createSomeTransactions( db );
         EphemeralFileSystemAbstraction snapshot = fs.snapshot( shutdownDbAction( db ) );
 
-        new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase( storeDir ).shutdown();
+        TestGraphDatabase.buildEphemeral().withFileSystem( snapshot ).open( storeDir ).shutdown();
     }
 
     private void createSomeTransactions( GraphDatabaseService db )

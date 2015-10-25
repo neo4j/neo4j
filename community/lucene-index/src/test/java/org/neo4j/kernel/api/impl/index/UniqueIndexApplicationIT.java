@@ -36,8 +36,7 @@ import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -56,7 +55,8 @@ import static org.neo4j.test.DatabaseFunctions.uniquenessConstraint;
 @RunWith(Parameterized.class)
 public class UniqueIndexApplicationIT
 {
-    public final @Rule DatabaseRule db = new ImpermanentDatabaseRule();
+    @Rule
+    public final TestGraphDatabaseRule db = TestGraphDatabaseRule.ephemeral();
 
     @Parameterized.Parameters(name = "{0}")
     public static List<Object[]> indexTypes()

@@ -28,18 +28,17 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.EntityOutputFormat;
 
 import static org.hamcrest.Matchers.containsString;
@@ -58,13 +57,13 @@ public class PagingTraversalTest
     private GraphDbHelper helper;
     private LeaseManager leaseManager;
     private static final int SIXTY_SECONDS = 60;
-    private GraphDatabaseAPI graph;
+    private TestGraphDatabase graph;
 
     @Before
     public void startDatabase() throws IOException
     {
-        graph = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
-        database = new WrappedDatabase(graph);
+        graph = TestGraphDatabase.openEphemeral();
+        database = new WrappedDatabase(graph.getGraphDatabaseAPI());
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         leaseManager = new LeaseManager( new FakeClock() );

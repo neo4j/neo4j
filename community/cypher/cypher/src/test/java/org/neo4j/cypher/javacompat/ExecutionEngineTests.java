@@ -24,8 +24,7 @@ import java.util.Map;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -33,12 +32,12 @@ import static org.junit.Assert.assertThat;
 public class ExecutionEngineTests
 {
     @Rule
-    public DatabaseRule database = new ImpermanentDatabaseRule();
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 
     @Test
     public void shouldConvertListsAndMapsWhenPassingFromScalaToJava() throws Exception
     {
-        ExecutionEngine executionEngine = new ExecutionEngine( database.getGraphDatabaseService() );
+        ExecutionEngine executionEngine = new ExecutionEngine( dbRule.get() );
 
         ExecutionResult result = executionEngine.execute( "RETURN { key : 'Value' , " +
                 "collectionKey: [{ inner: 'Map1' }, { inner: 'Map2' }]}" );

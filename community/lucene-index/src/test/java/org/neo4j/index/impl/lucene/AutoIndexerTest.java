@@ -24,17 +24,17 @@ import org.junit.Test;
 
 import java.util.Iterator;
 
+import org.neo4j.embedded.TestGraphDatabase;
+import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.ReadableRelationshipIndex;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 
@@ -42,16 +42,15 @@ import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class AutoIndexerTest
 {
-    public final @Rule DatabaseRule db = new EmbeddedDatabaseRule()
+    public final @Rule TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral( new Consumer<TestGraphDatabase.EphemeralBuilder>()
     {
         @Override
-        protected void configure( GraphDatabaseBuilder builder )
+        public void accept( TestGraphDatabase.EphemeralBuilder builder )
         {
-            super.configure( builder );
-            builder.setConfig( GraphDatabaseSettings.relationship_keys_indexable, "Type" );
-            builder.setConfig( GraphDatabaseSettings.relationship_auto_indexing, "true" );
+            builder.withSetting( GraphDatabaseSettings.relationship_keys_indexable, "Type" );
+            builder.withSetting( GraphDatabaseSettings.relationship_auto_indexing, "true" );
         }
-    };
+    } );
 
     @Test
     public void shouldNotSeeDeletedRelationshipWhenQueryingWithStartAndEndNode()
@@ -60,6 +59,7 @@ public class AutoIndexerTest
         long startId;
         long endId;
         Relationship rel;
+        final TestGraphDatabase db = dbRule.get();
         try ( Transaction tx = db.beginTx() )
         {
             Node start = db.createNode();

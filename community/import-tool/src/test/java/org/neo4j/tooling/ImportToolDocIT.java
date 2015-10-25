@@ -35,6 +35,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -44,7 +45,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.ImportTool.Options;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 
@@ -569,7 +569,7 @@ public class ImportToolDocIT
         printCommandToFile( arguments, realDir, "bad-duplicate-nodes-default.adoc" );
 
         // THEN
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
+        GraphDatabaseService db = TestGraphDatabase.open( directory.directory() );
         try ( Transaction tx = db.beginTx();
               ResourceIterator<Node> nodes = db.findNodes( DynamicLabel.label( "Actor" ) ) )
         {
@@ -653,7 +653,7 @@ public class ImportToolDocIT
 
     private void verifyData()
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
+        GraphDatabaseService db = TestGraphDatabase.open( directory.directory() );
         try ( Transaction tx = db.beginTx() )
         {
             int nodeCount = count( at( db ).getAllNodes() ), relationshipCount = 0, sequelCount = 0;

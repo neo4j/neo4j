@@ -37,9 +37,9 @@ import java.util.Map;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Test;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Result;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.format;
 
@@ -55,17 +55,23 @@ public class CsvExportImportRoundTripTest
         Path inputCsv = filePath( "input.csv" );
         Path exportJavascript = filePath( "CsvExportImportRoundTripTest.js" );
 
-        final GraphDatabaseService database = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        Result cypherResult = database.execute( format( "LOAD CSV WITH HEADERS FROM 'file://%s' AS line " +
-                "RETURN line.col1 AS col1, line.col2 as col2, line.col3 as col3", inputCsv ) );
-
-        String outputCsvString = exportCsvUsingNodeJs( asJsonString( cypherResult ), exportJavascript );
-
-        try ( BufferedReader reader = new BufferedReader( new FileReader( inputCsv.toFile() ) ) )
+        final GraphDatabase database = TestGraphDatabase.openEphemeral();
+        try
         {
-            String inputCsvString = readFully( reader );
+            Result cypherResult = database.execute( format( "LOAD CSV WITH HEADERS FROM 'file://%s' AS line " +
+                                                            "RETURN line.col1 AS col1, line.col2 as col2, line.col3 as col3", inputCsv ) );
 
-            assertEquals( inputCsvString, outputCsvString );
+            String outputCsvString = exportCsvUsingNodeJs( asJsonString( cypherResult ), exportJavascript );
+
+            try ( BufferedReader reader = new BufferedReader( new FileReader( inputCsv.toFile() ) ) )
+            {
+                String inputCsvString = readFully( reader );
+                assertEquals( inputCsvString, outputCsvString );
+            }
+        }
+        finally
+        {
+            database.shutdown();
         }
     }
 

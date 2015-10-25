@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.io.File;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -33,9 +32,9 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
@@ -51,8 +50,6 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -998,15 +995,12 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     // -- Set Up: Environment parts
 
-    @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
-
     @Before
-    public void setUp() {
-        File storeDir = testDirectory.graphDbDir();
-        TestGraphDatabaseFactory dbfactory = new TestGraphDatabaseFactory();
-        dbfactory.addKernelExtension( new PredefinedSchemaIndexProviderFactory( indexProvider ) );
-        db = dbfactory.newImpermanentDatabase( storeDir );
+    public void setUp()
+    {
+        db = TestGraphDatabase.buildEphemeral()
+                .addKernelExtension( new PredefinedSchemaIndexProviderFactory( indexProvider ) )
+                .open();
     }
 
     @After

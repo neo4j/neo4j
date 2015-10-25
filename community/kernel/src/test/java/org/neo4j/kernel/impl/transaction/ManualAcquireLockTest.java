@@ -32,10 +32,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.GraphTransactionRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -43,7 +42,7 @@ import static org.junit.Assert.fail;
 
 public class ManualAcquireLockTest
 {
-    public DatabaseRule db = new ImpermanentDatabaseRule(  );
+    public final TestGraphDatabaseRule db = TestGraphDatabaseRule.ephemeral();
     public GraphTransactionRule tx = new GraphTransactionRule( db );
 
     @Rule public TestRule chain = RuleChain.outerRule( db ).around( tx );
@@ -149,7 +148,7 @@ public class ManualAcquireLockTest
 
     private GraphDatabaseService getGraphDb()
     {
-        return db.getGraphDatabaseService();
+        return db.get();
     }
 
     private class State

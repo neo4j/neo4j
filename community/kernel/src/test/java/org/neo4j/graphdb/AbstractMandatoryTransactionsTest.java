@@ -22,18 +22,18 @@ package org.neo4j.graphdb;
 import org.junit.Rule;
 
 import org.neo4j.function.Consumer;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.fail;
 
 public abstract class AbstractMandatoryTransactionsTest<T>
 {
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
+    public TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 
     public T obtainEntity()
     {
-        GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabaseService = dbRule.get();
 
         try ( Transaction tx = graphDatabaseService.beginTx() )
         {
@@ -46,7 +46,7 @@ public abstract class AbstractMandatoryTransactionsTest<T>
 
     public void obtainEntityInTerminatedTransaction( Consumer<T> f )
     {
-        GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabaseService = dbRule.get();
 
         try ( Transaction tx = graphDatabaseService.beginTx() )
         {

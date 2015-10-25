@@ -174,7 +174,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldRemoveSetExistingProperty() throws Exception
     {
         // GIVEN
-        dbWithNoCache();
+        restartDb();
 
         int propertyKeyId;
         long nodeId;
@@ -354,7 +354,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldListAllPropertyKeys() throws Exception
     {
         // given
-        dbWithNoCache();
+        restartDb();
 
         long prop1;
         long prop2;

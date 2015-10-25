@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.Pair;
@@ -258,6 +259,11 @@ public class TestGraphDatabaseRule extends ExternalResource implements Supplier<
     public Schema schema()
     {
         return get().schema();
+    }
+
+    public IndexManager index()
+    {
+        return get().index();
     }
 
     public <T> T resolveDependency( Class<T> type )

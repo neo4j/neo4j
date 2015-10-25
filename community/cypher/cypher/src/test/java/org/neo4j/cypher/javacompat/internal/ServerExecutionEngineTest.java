@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -31,13 +31,13 @@ import static org.junit.Assert.assertTrue;
 public class ServerExecutionEngineTest
 {
     @Rule
-    public EmbeddedDatabaseRule rule = new EmbeddedDatabaseRule();
+    public TestGraphDatabaseRule rule = TestGraphDatabaseRule.ephemeral();
 
     @Test
     public void shouldDetectPeriodicCommitQueries() throws Exception
     {
         // GIVEN
-        QueryExecutionEngine engine = rule.getGraphDatabaseAPI().getDependencyResolver()
+        QueryExecutionEngine engine = rule.get().getDependencyResolver()
                                           .resolveDependency( QueryExecutionEngine.class );
 
         // WHEN
@@ -51,7 +51,7 @@ public class ServerExecutionEngineTest
     public void shouldNotDetectNonPeriodicCommitQueriesAsPeriodicCommitQueries() throws Exception
     {
         // GIVEN
-        QueryExecutionEngine engine = rule.getGraphDatabaseAPI().getDependencyResolver()
+        QueryExecutionEngine engine = rule.get().getDependencyResolver()
                                           .resolveDependency( QueryExecutionEngine.class );
 
         // WHEN
@@ -65,7 +65,7 @@ public class ServerExecutionEngineTest
     public void shouldNotDetectInvalidQueriesAsPeriodicCommitQueries() throws Exception
     {
         // GIVEN
-        QueryExecutionEngine engine = rule.getGraphDatabaseAPI().getDependencyResolver()
+        QueryExecutionEngine engine = rule.get().getDependencyResolver()
                                           .resolveDependency( QueryExecutionEngine.class );
 
         // WHEN
