@@ -62,7 +62,8 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     static final byte CONTINUATION_MORE = 1;
     static final byte OUTCOME_SUCCESS = 0;
     static final byte OUTCOME_FAILURE = 1;
-    private static final int MAX_WRITE_AHEAD_CHUNKS = 5;
+
+    protected static final int MAX_WRITE_AHEAD_CHUNKS = 5;
 
     private ChannelBuffer buffer;
     private final Channel channel;
@@ -535,10 +536,14 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
         {
             setContinuation( CONTINUATION_MORE );
             writeCurrentChunk();
-            // TODO Reuse buffers?
-            buffer = ChannelBuffers.dynamicBuffer();
+            buffer = newChannelBuffer();
             addRoomForContinuationHeader();
         }
+    }
+
+    protected ChannelBuffer newChannelBuffer()
+    {
+        return ChannelBuffers.dynamicBuffer( capacity );
     }
 
     private void writeCurrentChunk()
@@ -548,8 +553,13 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
 
         waitForClientToCatchUpOnReadingChunks();
         ChannelFuture future = channel.write( buffer );
-        future.addListener( this );
+        future.addListener( newChannelFutureListener( buffer ) );
         writeAheadCounter.incrementAndGet();
+    }
+
+    protected ChannelFutureListener newChannelFutureListener( ChannelBuffer buffer )
+    {
+        return this;
     }
 
     private void waitForClientToCatchUpOnReadingChunks()
