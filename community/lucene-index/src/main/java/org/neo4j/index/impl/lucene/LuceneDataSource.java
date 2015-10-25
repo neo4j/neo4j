@@ -63,7 +63,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -126,7 +125,6 @@ public class LuceneDataSource extends LifecycleAdapter
     final IndexConfigStore indexStore;
     private IndexTypeCache typeCache;
     private boolean closed;
-    private Cache caching;
     private LuceneFilesystemFacade filesystemFacade;
 
     /**
@@ -146,7 +144,6 @@ public class LuceneDataSource extends LifecycleAdapter
         this.filesystemFacade = config.get( Configuration.ephemeral ) ? LuceneFilesystemFacade.MEMORY
                 : LuceneFilesystemFacade.FS;
         indexSearchers = new IndexClockCache( config.get( Configuration.lucene_searcher_cache_size ) );
-        caching = new Cache();
         File storeDir = config.get( Configuration.store_dir );
         this.baseStorePath = this.filesystemFacade.ensureDirectoryExists( fileSystemAbstraction,
                 baseDirectory( storeDir ) );
@@ -380,7 +377,6 @@ public class LuceneDataSource extends LifecycleAdapter
     {
         closeIndex( identifier );
         deleteFileOrDirectory( getFileDirectory( baseStorePath, identifier ) );
-        invalidateCache( identifier );
         boolean removeFromIndexStore =
                 !recovery || (indexStore.has( identifier.entityType.entityClass(), identifier.indexName ));
         if ( removeFromIndexStore )
@@ -506,25 +502,6 @@ public class LuceneDataSource extends LifecycleAdapter
         }
     }
 
-    LruCache<String, Collection<EntityId>> getFromCache( IndexIdentifier identifier, String key )
-    {
-        return caching.get( identifier, key );
-    }
-
-    void invalidateCache( IndexIdentifier identifier, String key, Object value )
-    {
-        LruCache<String, Collection<EntityId>> cache = caching.get( identifier, key );
-        if ( cache != null )
-        {
-            cache.remove( value.toString() );
-        }
-    }
-
-    void invalidateCache( IndexIdentifier identifier )
-    {
-        this.caching.disable( identifier );
-    }
-
     public ResourceIterator<File> listStoreFiles( boolean includeLogicalLogs ) throws IOException
     { // Never include logical logs since they are of little importance
         final Collection<File> files = new ArrayList<>();
@@ -616,7 +593,7 @@ public class LuceneDataSource extends LifecycleAdapter
         }
     }
 
-    private static enum LuceneFilesystemFacade
+    private enum LuceneFilesystemFacade
     {
         FS
         {
