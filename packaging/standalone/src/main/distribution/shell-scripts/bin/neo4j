@@ -143,14 +143,14 @@ detectrunning() {
     ## SmartOS has a different lsof command line arguments
     newpid=$(lsof -o $NEO4J_SERVER_PORT | grep '::' | head -n1 | cut -d ' ' -f 1)
   else
-    LSOFVER=`lsof -v 2>&1 | grep revision | grep -v latest | cut -d: -f2 | tr -d ' ' | tr -d .`
+    LSOFVER=$(lsof -v 2>&1 | grep revision | grep -v latest | cut -d: -f2 | tr -d ' ' | tr -d .)
     #Newer versions of lsof has the -sTCP:LISTEN flag, which is exactly what we need.
     #This flag does not exist before 4.78, therefore grepping for TST=LISTEN worked there.
     #Only in 4.89 did grepping begin to not work, as the output from lsof changed.
-    if [ $LSOFVER -ge 478 ]; then
-      newpid=$(lsof -i :$NEO4J_SERVER_PORT -sTCP:LISTEN -t)
+    if [ "$LSOFVER" -ge 478 ]; then
+      newpid=$(lsof -i :"$NEO4J_SERVER_PORT" -sTCP:LISTEN -t)
     else
-      newpid=$(lsof -i :$NEO4J_SERVER_PORT -F T -Ts | grep -i "TST=LISTEN" -B1 | head -n1)
+      newpid=$(lsof -i :"$NEO4J_SERVER_PORT" -F T -Ts | grep -i "TST=LISTEN" -B1 | head -n1)
       newpid=${newpid:1}
     fi
   fi
