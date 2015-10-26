@@ -25,7 +25,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
+import org.neo4j.graphdb.TransientDatabaseFailureException;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.AvailabilityGuard.UnavailableException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -53,7 +55,6 @@ class SlaveLocksClient implements Locks.Client
     private final Locks localLockManager;
     private final RequestContextFactory requestContextFactory;
     private final AvailabilityGuard availabilityGuard;
-    private final SlaveLockManager.Configuration config;
 
     // Using atomic ints to avoid creating garbage through boxing.
     private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> sharedLocks;
@@ -65,15 +66,13 @@ class SlaveLocksClient implements Locks.Client
             Locks.Client local,
             Locks localLockManager,
             RequestContextFactory requestContextFactory,
-            AvailabilityGuard availabilityGuard,
-            SlaveLockManager.Configuration config )
+            AvailabilityGuard availabilityGuard )
     {
         this.master = master;
         this.client = local;
         this.localLockManager = localLockManager;
         this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
-        this.config = config;
         sharedLocks = new HashMap<>();
         exclusiveLocks = new HashMap<>();
     }
@@ -275,12 +274,13 @@ class SlaveLocksClient implements Locks.Client
     {
         try
         {
-            availabilityGuard.await( config.getAvailabilityTimeout() );
+            availabilityGuard.checkAvailable();
         }
-        catch ( AvailabilityGuard.UnavailableException e )
+        catch ( UnavailableException e )
         {
-            throw new RuntimeException( e.getMessage() );
+            throw new TransientDatabaseFailureException( "Database not available", e );
         }
+
         if ( !initialized )
         {
             try ( Response<Void> ignored = master.newLockSession( newRequestContextFor( client ) ) )

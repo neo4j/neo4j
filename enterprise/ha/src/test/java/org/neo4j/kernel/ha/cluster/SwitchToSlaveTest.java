@@ -30,25 +30,26 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.StoreCopyClient;
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.function.Function;
 import org.neo4j.function.Suppliers;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
-import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.PullerFactory;
 import org.neo4j.kernel.ha.SlaveUpdatePuller;
@@ -63,12 +64,15 @@ import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -92,6 +96,8 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import static java.util.Arrays.asList;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class SwitchToSlaveTest
 {
@@ -278,12 +284,15 @@ public class SwitchToSlaveTest
         when( master.getInstanceId() ).thenReturn( new InstanceId( 1 ) );
         when( clusterMembers.getMembers() ).thenReturn( asList( master ) );
 
-        DependencyResolver resolver = mock( DependencyResolver.class );
-        when( resolver.resolveDependency( any( Class.class ) ) ).thenReturn( mock( Lifecycle.class ) );
-        when( resolver.resolveDependency( RequestContextFactory.class ) ).thenReturn( requestContextFactory );
-        when( resolver.resolveDependency( ClusterMembers.class ) ).thenReturn( clusterMembers );
-        when( resolver.resolveDependency( TransactionObligationFulfiller.class ) )
-                .thenReturn( mock( TransactionObligationFulfiller.class ) );
+        Dependencies resolver = new Dependencies();
+        resolver.satisfyDependencies( requestContextFactory, clusterMembers,
+                mock( TransactionObligationFulfiller.class ),
+                mock( OnlineBackupKernelExtension.class ),
+                mock( IndexConfigStore.class ),
+                mock( TransactionCommittingResponseUnpacker.class ),
+                mock( DataSourceManager.class ),
+                mock( StoreLockerLifecycleAdapter.class )
+                );
 
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
         when( dataSource.getStoreId() ).thenReturn( new StoreId( 42, 42, 42, 42 ) );
@@ -332,13 +341,7 @@ public class SwitchToSlaveTest
 
     private Config configMock()
     {
-        Config config = mock( Config.class );
-        when( config.get( HaSettings.branched_data_policy ) ).thenReturn( mock( BranchedDataPolicy.class ) );
-        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( 42l );
-        when( config.get( HaSettings.com_chunk_size ) ).thenReturn( 42l );
-        when( config.get( HaSettings.state_switch_timeout ) ).thenReturn( 42l );
-        when( config.get( ClusterSettings.server_id ) ).thenReturn( new InstanceId( 42 ) );
-        return config;
+        return new Config( stringMap( ClusterSettings.server_id.name(), "1" ) );
     }
 
     private <T> T mockWithLifecycle( Class<T> clazz )

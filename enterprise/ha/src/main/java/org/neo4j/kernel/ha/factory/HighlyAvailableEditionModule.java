@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.ha.factory;
 
+import org.jboss.netty.logging.InternalLoggerFactory;
+
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -467,8 +467,7 @@ public class HighlyAvailableEditionModule
                 masterServerFactory,
                 masterDelegateInvocationHandler, clusterMemberAvailability,
                 platformModule.dependencies.provideDependency(
-                        NeoStoreDataSource.class ),
-                platformModule.transactionMonitor);
+                        NeoStoreDataSource.class ));
 
         final HighAvailabilityModeSwitcher highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher(
                 switchToSlaveInstance, switchToMasterInstance,
@@ -655,7 +654,7 @@ public class HighlyAvailableEditionModule
                 lockManagerDelegate );
         paxosLife.add( new LockManagerModeSwitcher( highAvailabilityModeSwitcher, lockManagerDelegate,
                 masterDelegateInvocationHandler,
-                requestContextFactory, availabilityGuard, config, new Factory<Locks>()
+                requestContextFactory, availabilityGuard, new Factory<Locks>()
         {
             @Override
             public Locks newInstance()
