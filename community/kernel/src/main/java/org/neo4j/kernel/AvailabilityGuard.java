@@ -235,6 +235,17 @@ public class AvailabilityGuard
     }
 
     /**
+     * Checks if available. If not then an {@link UnavailableException} is thrown describing why.
+     * This methods doesn't wait like {@link #await(long)} does.
+     *
+     * @throws UnavailableException if not available.
+     */
+    public void checkAvailable() throws UnavailableException
+    {
+        await( 0 );
+    }
+
+    /**
      * Await the database becoming available.
      *
      * @param millis to wait for availability

@@ -90,6 +90,7 @@ import org.neo4j.logging.Log;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
+
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.first;
@@ -262,8 +263,9 @@ public class SwitchToSlave
 
         monitor.switchToSlaveStarted();
 
-        // Wait for current transactions to stop first
-        long deadline = SYSTEM_CLOCK.currentTimeMillis() + config.get( HaSettings.state_switch_timeout );
+        // Wait a short while for current transactions to stop first, just to be nice.
+        // We can't wait forever since switching to our designated role is quite important.
+        long deadline = SYSTEM_CLOCK.currentTimeMillis() + config.get( HaSettings.internal_state_switch_timeout );
         while ( transactionCounters.getNumberOfActiveTransactions() > 0 && SYSTEM_CLOCK.currentTimeMillis() < deadline )
         {
             parkNanos( MILLISECONDS.toNanos( 10 ) );

@@ -24,7 +24,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -32,16 +31,15 @@ import org.neo4j.cluster.client.Clusters;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -351,7 +349,7 @@ public class ClusterTest
     }
 
     @Test
-    public void givenClusterWhenMasterGoesDownAndTxIsRunningThenWaitToSwitch() throws Throwable
+    public void givenClusterWhenMasterGoesDownAndTxIsRunningThenDontWaitToSwitch() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
                 testDirectory.directory( "waitfortx" ), MapUtil.stringMap() );
@@ -361,39 +359,26 @@ public class ClusterTest
             ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
             cluster.await( allSeesAllAsAvailable() );
 
-            HighlyAvailableGraphDatabase slave = cluster.getAnySlave(  );
+            HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
 
-            final AtomicBoolean afterTx = new AtomicBoolean(  );
-            final AtomicBoolean availableAfterTxFinished = new AtomicBoolean(  );
-
-            slave.platformModule.availabilityGuard.addListener( new AvailabilityGuard.AvailabilityListener()
+            try ( Transaction tx = slave.beginTx() )
             {
-                @Override
-                public void available()
-                {
-                    availableAfterTxFinished.set( afterTx.get() );
-                }
+                // Do a little write operation so that all "write" aspects of this tx is initializes properly
+                slave.createNode();
 
-                @Override
-                public void unavailable()
-                {
-                }
-            } );
-
-            try (Transaction tx = slave.beginTx())
-            {
+                // Shut down master while we're keeping this transaction open
                 cluster.shutdown( cluster.getMaster() );
 
-                Thread.sleep( 8000 );
+                cluster.await( masterAvailable() );
+                cluster.await( masterSeesSlavesAsAvailable( 1 ) );
+                // Ending up here means that we didn't wait for this transaction to complete
 
                 tx.success();
-                afterTx.set( true );
             }
-
-            cluster.await( masterAvailable() );
-            cluster.await( masterSeesSlavesAsAvailable( 1 ) );
-
-            assertThat("Available after tx finished", availableAfterTxFinished.get(), is(true));
+            catch ( TransactionFailureException e )
+            {
+                // Good
+            }
         }
         finally
         {

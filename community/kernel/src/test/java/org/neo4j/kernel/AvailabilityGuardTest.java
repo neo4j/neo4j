@@ -23,11 +23,16 @@ import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.TickingClock;
+import org.neo4j.kernel.AvailabilityGuard.UnavailableException;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.NullLog;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
@@ -332,5 +337,28 @@ public class AvailabilityGuardTest
 
         // Then
         assertThat( availabilityGuard.describeWhoIsBlocking(), equalTo( "2 reasons for blocking: Requirement 1, Requirement 2." ) );
+    }
+
+    @Test
+    public void shouldExplainBlockersOnCheckAvailable() throws Exception
+    {
+        // GIVEN
+        AvailabilityGuard availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK, NullLog.getInstance() );
+        // At this point it should be available
+        availabilityGuard.checkAvailable();
+
+        // WHEN
+        availabilityGuard.require( REQUIREMENT_1 );
+
+        // THEN
+        try
+        {
+            availabilityGuard.checkAvailable();
+            fail( "Should not be available" );
+        }
+        catch ( UnavailableException e )
+        {
+            assertThat( e.getMessage(), containsString( REQUIREMENT_1.description() ) );
+        }
     }
 }
