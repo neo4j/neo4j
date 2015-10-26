@@ -84,7 +84,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
         this.relTypes = relTypes;
         this.end = false;
 
-        if ( isDense )
+        if ( isDense && relationshipId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             groupStore.forceGetRecord( relationshipId, groupRecord );
             relationshipId = nextChainStart();
