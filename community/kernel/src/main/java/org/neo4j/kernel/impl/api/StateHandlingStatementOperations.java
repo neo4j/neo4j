@@ -74,6 +74,7 @@ import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -716,6 +717,28 @@ public class StateHandlingStatementOperations implements
         }
 
         return storeLayer.indexGetState( descriptor );
+    }
+
+    @Override
+    public IndexPopulationProgress indexGetPopulationProgress( KernelStatement state, IndexDescriptor descriptor ) throws
+            IndexNotFoundKernelException
+    {
+        // If index is in our state, then return 0%
+        if ( state.hasTxStateWithChanges() )
+        {
+            if ( checkIndexState( descriptor, state.txState().indexDiffSetsByLabel( descriptor.getLabelId() ) ) )
+            {
+                return IndexPopulationProgress.NONE;
+            }
+            ReadableDiffSets<IndexDescriptor> changes =
+                    state.txState().constraintIndexDiffSetsByLabel( descriptor.getLabelId() );
+            if ( checkIndexState( descriptor, changes ) )
+            {
+                return IndexPopulationProgress.NONE;
+            }
+        }
+
+        return storeLayer.indexGetPopulationProgress( descriptor );
     }
 
     private boolean checkIndexState( IndexDescriptor indexRule, ReadableDiffSets<IndexDescriptor> diffSet )

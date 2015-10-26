@@ -935,6 +935,12 @@ public class IndexingServiceTest
                 {
                     // throw new UnsupportedOperationException( "not implemented" );
                 }
+
+                @Override
+                public IndexPopulationProgress getProgress()
+                {
+                    return new IndexPopulationProgress( 42, 100 );
+                }
             };
         }
 

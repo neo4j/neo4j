@@ -52,6 +52,12 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     }
 
     @Override
+    public IndexPopulationProgress getIndexPopulationProgress()
+    {
+        return IndexPopulationProgress.NONE;
+    }
+
+    @Override
     public void start()
     {
         String message = "Unable to start index, it is in a " + getState().name() + " state.";

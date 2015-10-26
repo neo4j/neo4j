@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.shell.kernel.apps;
 
 import java.rmi.RemoteException;
@@ -54,8 +55,8 @@ public class Schema extends TransactionProvidingApp
 {
     private static final String INDENT = "  ";
 
-    private static final Function<IndexDefinition, String> LABEL_COMPARE_FUNCTION =
-            new Function<IndexDefinition, String>()
+    private static final Function<IndexDefinition,String> LABEL_COMPARE_FUNCTION =
+            new Function<IndexDefinition,String>()
             {
                 @Override
                 public String apply( IndexDefinition index )
@@ -83,19 +84,23 @@ public class Schema extends TransactionProvidingApp
     public String getDescription()
     {
         return "Accesses db schema. Usage: schema <action> <options...>\n" +
-                "Listing indexes\n" +
-                "  schema ls\n" +
-                "  schema ls -l :Person\n" +
-                "  schema ls -r :KNOWS\n" +
-                "Sample indexes all indexes\n" +
-                "  schema sample -a\n" +
-                "Sample a specific index\n" +
-                "  schema sample -l :Person -p name\n" +
-                "  schema sample -r :KNOWS -p since\n" +
-                "Force a sampling of a specific index\n" +
-                "  schema sample -f -l :Person -p name\n" +
-                "Awaiting indexes to come online\n" +
-                "  schema await -l Person -p name";
+               "Listing indexes\n" +
+               "  schema ls\n" +
+               "  schema ls -l :Person\n" +
+               "  schema ls -r :KNOWS\n" +
+               "Sample all indexes\n" +
+               "  schema sample -a\n" +
+               "Sample a specific index\n" +
+               "  schema sample -l :Person -p name\n" +
+               "  schema sample -r :KNOWS -p since\n" +
+               "Force a sampling of a specific index\n" +
+               "  schema sample -f -l :Person -p name\n" +
+               "Awaiting indexes to come online\n" +
+               "  schema await -l :Person -p name\n" +
+               "Print indexing progress\n" +
+               "  schema progress\n" +
+               "  schema progress -l :Person\n" +
+               "  schema progress -l :Person -p name";
     }
 
     @Override
@@ -110,29 +115,35 @@ public class Schema extends TransactionProvidingApp
         boolean forceSample = parser.options().containsKey( "f" );
         boolean verbose = parser.options().containsKey( "v" );
 
-        if ( action.equals( "await" ) )
+        switch ( action )
         {
+        case "await":
             if ( relTypes.length > 0 )
             {
                 throw new ShellException( "It is only possible to await nodes related index" );
             }
             awaitIndexes( out, schema, labels, property );
-        }
-        else if ( action.equals( "ls" ) )
-        {
+            break;
+        case "progress":
+            if ( relTypes.length > 0 )
+            {
+                throw new ShellException( "It is only possible to show progress on nodes related index" );
+            }
+            printIndexProgress( out, schema, labels, property );
+            break;
+        case "ls":
             listIndexesAndConstraints( out, schema, labels, relTypes, property, verbose );
-        }
-        else if ( action.equals( "sample" ) )
-        {
+            break;
+        case "sample":
             if ( relTypes.length > 0 )
             {
                 throw new ShellException( "It is only possible to sample nodes related index" );
             }
             sampleIndexes( labels, property, sampleAll, forceSample );
-        }
-        else
-        {
+            break;
+        default:
             out.println( "Unknown action: " + action + "\nUSAGE:\n" + getDescription() );
+            break;
         }
 
         return INPUT_COMPLETE;
@@ -155,7 +166,8 @@ public class Schema extends TransactionProvidingApp
         }
     }
 
-    private void sampleIndexes( Label[] labels, String property, boolean sampleAll, boolean forceSample ) throws ShellException
+    private void sampleIndexes( Label[] labels, String property, boolean sampleAll, boolean forceSample )
+            throws ShellException
     {
 
         IndexingService indexingService = getServer().getDb().getDependencyResolver().resolveDependency(
@@ -183,19 +195,19 @@ public class Schema extends TransactionProvidingApp
 
         if ( labelKey == -1 )
         {
-            throw new ShellException( "No label associated with '" + labels[0].name() + "' was found");
+            throw new ShellException( "No label associated with '" + labels[0].name() + "' was found" );
         }
         if ( propertyKey == -1 )
         {
-            throw new ShellException( "No property associated with '" + property + "' was found");
+            throw new ShellException( "No property associated with '" + property + "' was found" );
         }
 
         indexingService.triggerIndexSampling( new IndexDescriptor( labelKey, propertyKey ), samplingMode );
     }
 
-    private IndexSamplingMode getSamplingMode(boolean forceSample)
+    private IndexSamplingMode getSamplingMode( boolean forceSample )
     {
-        if (forceSample)
+        if ( forceSample )
         {
             return IndexSamplingMode.TRIGGER_REBUILD_ALL;
         }
@@ -207,7 +219,7 @@ public class Schema extends TransactionProvidingApp
 
     private void validateLabelsAndProperty( Label[] labels, String property ) throws ShellException
     {
-        if ( labels.length == 0 && property == null)
+        if ( labels.length == 0 && property == null )
         {
             throw new ShellException( "Invalid usage of sample. \nUSAGE:\n" + getDescription() );
         }
@@ -221,6 +233,16 @@ public class Schema extends TransactionProvidingApp
         if ( property == null || labels.length == 0 )
         {
             throw new ShellException( "Provide both the property and the label, or run with -a to sample all indexes" );
+        }
+    }
+
+    private void printIndexProgress( Output out, org.neo4j.graphdb.schema.Schema schema, Label[] labels,
+            String property ) throws RemoteException
+    {
+        for ( IndexDefinition index : indexesByLabelAndProperty( schema, labels, property ) )
+        {
+            out.println( String.format( "%s: %1.1f%%", index.getLabel().name(),
+                    schema.getIndexPopulationProgress( index ).getCompletedPercentage() ) );
         }
     }
 
@@ -310,7 +332,7 @@ public class Schema extends TransactionProvidingApp
     {
         ColumnPrinter printer = new ColumnPrinter( indent( "ON " ), "", "" );
         Iterable<IndexDefinition> indexes = indexesByLabelAndProperty( schema, labels, property );
-        
+
         int i = 0;
         for ( IndexDefinition index : sort( indexes, LABEL_COMPARE_FUNCTION ) )
         {
@@ -362,7 +384,7 @@ public class Schema extends TransactionProvidingApp
     }
 
     private Iterable<IndexDefinition> indexesByLabelAndProperty( org.neo4j.graphdb.schema.Schema schema,
-                                                                 Label[] labels, final String property )
+            Label[] labels, final String property )
     {
         Iterable<IndexDefinition> indexes = indexesByLabel( schema, labels );
         if ( property != null )
@@ -380,7 +402,7 @@ public class Schema extends TransactionProvidingApp
     }
 
     private Iterable<ConstraintDefinition> constraintsByLabelAndProperty( org.neo4j.graphdb.schema.Schema schema,
-                                                                          final Label[] labels, final String property )
+            final Label[] labels, final String property )
     {
 
         return filter( new Predicate<ConstraintDefinition>()

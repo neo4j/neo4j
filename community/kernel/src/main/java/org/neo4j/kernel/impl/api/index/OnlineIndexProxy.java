@@ -147,6 +147,12 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
+    public IndexPopulationProgress getIndexPopulationProgress()
+    {
+        return IndexPopulationProgress.DONE;
+    }
+
+    @Override
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
         return accessor.snapshotFiles();

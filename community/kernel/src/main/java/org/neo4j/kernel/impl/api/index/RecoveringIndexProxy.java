@@ -81,6 +81,12 @@ public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
         throw new IllegalStateException( this + " is recovering" );
     }
 
+    @Override
+    public IndexPopulationProgress getIndexPopulationProgress()
+    {
+        throw new IllegalStateException( this + " is recovering" );
+    }
+
     private UnsupportedOperationException unsupportedOperation( String message )
     {
         return new UnsupportedOperationException( message + " Recovering Index" + getDescriptor() );

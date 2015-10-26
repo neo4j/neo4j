@@ -85,6 +85,8 @@ public interface IndexProxy
      */
     IndexPopulationFailure getPopulationFailure() throws IllegalStateException;
 
+    IndexPopulationProgress getIndexPopulationProgress();
+
     void force() throws IOException;
 
     void flush() throws IOException;

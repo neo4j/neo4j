@@ -191,6 +191,12 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
+    public IndexPopulationProgress getIndexPopulationProgress()
+    {
+        return job.getPopulationProgress();
+    }
+
+    @Override
     public IndexConfiguration config()
     {
         return configuration;

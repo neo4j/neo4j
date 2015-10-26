@@ -125,4 +125,10 @@ public class IndexProxyAdapter implements IndexProxy
     {
         throw new IllegalStateException( "This index isn't failed" );
     }
+
+    @Override
+    public IndexPopulationProgress getIndexPopulationProgress()
+    {
+        return IndexPopulationProgress.NONE;
+    }
 }

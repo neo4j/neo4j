@@ -63,6 +63,7 @@ import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -316,6 +317,13 @@ public class CacheLayer implements StoreReadLayer
             throws IndexNotFoundKernelException
     {
         return diskLayer.indexGetState( descriptor );
+    }
+
+    @Override
+    public IndexPopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor )
+            throws IndexNotFoundKernelException
+    {
+        return diskLayer.indexGetPopulationProgress( descriptor );
     }
 
     @Override

@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.Matchers;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,12 +32,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.Matchers;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.DynamicLabel;
@@ -77,7 +77,6 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.format;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
@@ -93,7 +92,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -421,6 +419,12 @@ public class IndexPopulationJobTest
         public void stop()
         {
             latch.finish();
+        }
+
+        @Override
+        public IndexPopulationProgress getProgress()
+        {
+            return new IndexPopulationProgress( 42, 100 );
         }
     }
 

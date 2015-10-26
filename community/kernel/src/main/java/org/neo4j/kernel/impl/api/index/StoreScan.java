@@ -24,4 +24,6 @@ public interface StoreScan<FAILURE extends Exception>
     void run() throws FAILURE;
 
     void stop();
+
+    IndexPopulationProgress getProgress();
 }

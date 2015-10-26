@@ -40,6 +40,16 @@ classifier=sources
 tag=wait
 ----
 
+It is also possible to query the progress of the index population:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/EmbeddedNeo4jWithNewIndexing.java
+classifier=sources
+tag=progress
+----
+
 It's time to add the users:
 
 [snippet,java]

@@ -68,6 +68,7 @@ import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
@@ -658,6 +659,13 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
         return schemaRead().indexGetState( statement, descriptor );
+    }
+
+    @Override
+    public IndexPopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        statement.assertOpen();
+        return schemaRead().indexGetPopulationProgress( statement, descriptor );
     }
 
     @Override

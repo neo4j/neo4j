@@ -41,6 +41,7 @@ import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -111,6 +112,8 @@ public interface StoreReadLayer
     IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKey );
 
     InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+
+    IndexPopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
