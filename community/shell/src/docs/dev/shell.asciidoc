@@ -312,7 +312,7 @@ The +schema+ command also supports the following optional parameters:
 schema ls -l :Person
 ----
 
-* +-r :Relation:+ limit to indexes or constraints for the given relationship
+* +-r :Relationship:+ limit to indexes or constraints for the given relationship
 
 [source]
 ----
