@@ -24,10 +24,19 @@ public interface ComExceptionHandler
     static ComExceptionHandler NO_OP = new ComExceptionHandler()
     {
         @Override
-        public void handle( ComException exception )
+        public RuntimeException handle( ComException exception )
         {
+            return exception;
         }
     };
 
-    void handle( ComException exception );
+    /**
+     * Adds additional handling of a {@link ComException} when it occurs on the client side in a client->server
+     * communication scenario.
+     *
+     * @param exception {@link ComException} describing the failure.
+     * @return {@link RuntimeException} describing the failure to the user. This transaction will
+     * fail the user transaction and this exception will be the exception thrown out to the user.
+     */
+    RuntimeException handle( ComException exception );
 }

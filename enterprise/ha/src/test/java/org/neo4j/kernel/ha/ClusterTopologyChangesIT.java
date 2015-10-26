@@ -25,21 +25,19 @@ import org.junit.Test;
 
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.client.ClusterClientModule;
-import org.neo4j.cluster.member.ClusterMemberEvents;
-import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
@@ -57,10 +55,12 @@ import org.neo4j.test.RepeatRule;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.ha.ClusterRule;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.cluster.protocol.cluster.ClusterConfiguration.COORDINATOR;
 import static org.neo4j.function.Predicates.not;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
@@ -167,33 +167,11 @@ public class ClusterTopologyChangesIT
         final HighlyAvailableGraphDatabase newSlave1 = cluster.getAnySlave();
         final HighlyAvailableGraphDatabase newSlave2 = cluster.getAnySlave( newSlave1 );
 
-        // now adding another failing listener and wait for the failure due to stale epoch
-        final CountDownLatch slave1Unavailable = new CountDownLatch( 1 );
-        final CountDownLatch slave2Unavailable = new CountDownLatch( 1 );
-        ClusterMemberEvents clusterEvents = newMaster.getDependencyResolver().resolveDependency( ClusterMemberEvents.class );
-        clusterEvents.addClusterMemberListener( new ClusterMemberListener.Adapter()
-        {
-            @Override
-            public void memberIsUnavailable( String role, InstanceId unavailableId )
-            {
-                if ( instanceIdOf( newSlave1 ).equals( unavailableId ) )
-                {
-                    slave1Unavailable.countDown();
-                }
-                else if ( instanceIdOf( newSlave2 ).equals( unavailableId ) )
-                {
-                    slave2Unavailable.countDown();
-                }
-            }
-        } );
-
         // attempt to perform transactions on both slaves throws, election is triggered
-        attemptTransactions( newSlave1, newSlave2 );
-        // set a timeout in case the instance does not have stale epoch
-        assertTrue( slave1Unavailable.await( 60, TimeUnit.SECONDS ) );
-        assertTrue( slave2Unavailable.await( 60, TimeUnit.SECONDS ) );
+        assertTrue( attemptTransactionWithRetryOnTransient( newSlave1 ) );
+        assertTrue( attemptTransactionWithRetryOnTransient( newSlave2 ) );
 
-        // THEN: done with election, cluster feels good and able to serve transactions
+        // THEN: cluster feels good and able to serve transactions
         cluster.info( "Waiting for cluster to stabilize" );
         cluster.await( allSeesAllAsAvailable() );
 
@@ -272,23 +250,33 @@ public class ClusterTopologyChangesIT
                 GraphDatabaseSettings.class );
 
         LifeSupport life = new LifeSupport();
-        SimpleLogService logService = new SimpleLogService( FormattedLogProvider.toOutputStream( System.out ), FormattedLogProvider.toOutputStream( System.out ) );
+        SimpleLogService logService = new SimpleLogService( FormattedLogProvider.toOutputStream( System.out ),
+                FormattedLogProvider.toOutputStream( System.out ) );
 
         return new ClusterClientModule(life, new Dependencies(  ), new Monitors(), config,
                 logService, new NotElectableElectionCredentialsProvider());
     }
 
-    private static void attemptTransactions( HighlyAvailableGraphDatabase... dbs )
+    private static boolean attemptTransactionWithRetryOnTransient( HighlyAvailableGraphDatabase db )
+            throws InterruptedException
     {
-        for ( HighlyAvailableGraphDatabase db : dbs )
+        // There should only be required 2 attempts here, one for discovering that an invalid epoch is used,
+        // at which point an election is forced. After a while the election should have concluded and db
+        // back on track again so that the tx can succeed. Just adding some leg room on top of that.
+
+        for ( int i = 0; i < 10; i++ )
         {
             try
             {
                 createNodeOn( db );
+                return true;
             }
-            catch ( Exception ignored )
+            catch ( TransientFailureException e )
             {
+                // Just retry
+                Thread.sleep( 2_000 );
             }
         }
+        return false;
     }
 }

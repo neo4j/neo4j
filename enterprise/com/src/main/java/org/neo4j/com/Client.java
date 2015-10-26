@@ -49,6 +49,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
+
 import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
 import static org.neo4j.com.ResourcePool.DEFAULT_CHECK_INTERVAL;
@@ -256,8 +257,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         catch ( ComException e )
         {
             failure = e;
-            comExceptionHandler.handle( e );
-            throw e;
+            throw comExceptionHandler.handle( e );
         }
         catch ( Throwable e )
         {

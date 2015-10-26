@@ -28,15 +28,16 @@ import org.neo4j.com.IllegalProtocolVersionException;
 import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
+import org.neo4j.graphdb.TransientDatabaseFailureException;
 import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public class MasterClientResolver implements MasterClientFactory, ComExceptionHandler
 {
@@ -78,7 +79,7 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
     }
 
     @Override
-    public void handle( ComException exception )
+    public RuntimeException handle( ComException exception )
     {
         if ( exception instanceof IllegalProtocolVersionException )
         {
@@ -94,7 +95,10 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
             log.info( "Handling " + exception + ", will go to PENDING and ask for election" );
 
             invalidEpochHandler.handle();
+            return new TransientDatabaseFailureException(
+                    "Slave not yet up to date on recent changes to elected master", exception );
         }
+        return exception;
     }
 
     private MasterClientFactory getFor( ProtocolVersion protocolVersion )
