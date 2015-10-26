@@ -52,23 +52,28 @@ class QueryRunner(formatter: (GraphDatabaseService, Transaction) => InternalExec
         try {
           if (db.failures.nonEmpty) db.failures
           else {
-            val result = placeHolders.map {
-              case (queryText: String, tb: TablePlaceHolder) =>
-                runSingleQuery(db, queryText, tb.assertions, tb)
+            val result = placeHolders.map { queryAndPlaceHolder =>
+              try {
+                queryAndPlaceHolder match {
+                  case (queryText: String, tb: TablePlaceHolder) =>
+                    runSingleQuery(db, queryText, tb.assertions, tb)
 
-              case (queryText: String, gv: GraphVizPlaceHolder) =>
-                graphVizCounter = graphVizCounter + 1
-                Try(db.execute(queryText)) match {
-                  case Success(inner) =>
-                    GraphVizRunResult(gv, captureStateAsGraphViz(db.getInnerDb, title, graphVizCounter, gv.options))
-                  case Failure(error) =>
-                    QueryRunResult(queryText, gv, Left(error))
+                  case (queryText: String, gv: GraphVizPlaceHolder) =>
+                    graphVizCounter = graphVizCounter + 1
+                    Try(db.execute(queryText)) match {
+                      case Success(inner) =>
+                        GraphVizRunResult(gv, captureStateAsGraphViz(db.getInnerDb, title, graphVizCounter, gv.options))
+                      case Failure(error) =>
+                        QueryRunResult(queryText, gv, Left(error))
+                    }
+
+                  case _ =>
+                    ???
                 }
-
-              case _ =>
-                ???
+              } finally {
+                db.nowIsASafePointToRestartDatabase()
+              }
             }
-            db.nowIsASafePointToRestartDatabase()
             result
           }
         } finally db.shutdown()

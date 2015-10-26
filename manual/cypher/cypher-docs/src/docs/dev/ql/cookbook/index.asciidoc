@@ -39,7 +39,7 @@ include::boosting-recommendations.asciidoc[]
 
 include::clustering-coefficient.asciidoc[]
 
-:leveloffset: 1
+:leveloffset: 2
 
 include::cypher-cookbook-pretty-graphs.adoc[]
 

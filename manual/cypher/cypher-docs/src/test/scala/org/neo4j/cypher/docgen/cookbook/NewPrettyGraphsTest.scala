@@ -28,7 +28,7 @@ class NewPrettyGraphsTest extends DocumentingTest with QueryStatisticsTestSuppor
     doc("Pretty graphs", "cypher-cookbook-pretty-graphs")
     synopsis("This section is showing how to create some of the http://en.wikipedia.org/wiki/Gallery_of_named_graphs[named pretty graphs on Wikipedia].")
     section("Star Graph") {
-      p("The graph is created by first creating a center node, MATS OCH HENRIK and then once per element in the range, creates a leaf node and connects it to the center.")
+      p("The graph is created by first creating a center node, and then once per element in the range, creates a leaf node and connects it to the center.")
       query( """CREATE (center)
                |FOREACH (x IN range(1,6)| CREATE (leaf),(center)-[:X]->(leaf))
                |RETURN id(center) AS id""", assertAStarIsBorn) {
