@@ -62,8 +62,8 @@ public class ClusterClient
     private final Heartbeat heartbeat;
     private final Snapshot snapshot;
     private final Election election;
-    private LifeSupport life;
-    private ProtocolServer protocolServer;
+    private final LifeSupport life;
+    private final ProtocolServer protocolServer;
 
 
 
@@ -82,6 +82,7 @@ public class ClusterClient
     @Override
     public void broadcast( Payload payload )
     {
+        // Broadcasts this payload asynchronously and returns immediately
         broadcast.broadcast( payload );
     }
 
@@ -169,6 +170,7 @@ public class ClusterClient
         snapshot.refreshSnapshot();
     }
 
+    @Override
     public void addBindingListener( BindingListener bindingListener )
     {
         protocolServer.addBindingListener( bindingListener );

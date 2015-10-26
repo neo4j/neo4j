@@ -86,8 +86,8 @@ public class HighAvailabilityModeSwitcher
     private SwitchToMaster switchToMaster;
     private final Election election;
     private final ClusterMemberAvailability clusterMemberAvailability;
-    private ClusterClient clusterClient;
-    private Supplier<StoreId> storeIdSupplier;
+    private final ClusterClient clusterClient;
+    private final Supplier<StoreId> storeIdSupplier;
     private final InstanceId instanceId;
 
     private final Log msgLog;
@@ -190,7 +190,12 @@ public class HighAvailabilityModeSwitcher
     @Override
     public void slaveIsAvailable( HighAvailabilityMemberChangeEvent event )
     {
-        // ignored, we don't do any mode switching in slave available events
+        // we don't do any mode switching in slave available events unless something went wrong
+        if ( event.getNewState() != event.getOldState() &&
+                event.getNewState() == HighAvailabilityMemberState.PENDING_ELECTION )
+        {
+            stateChanged( event );
+        }
     }
 
     @Override
@@ -253,12 +258,22 @@ public class HighAvailabilityModeSwitcher
                 switchToSlave();
                 break;
             case PENDING:
-
                 switchToPending( event.getOldState() );
+                break;
+            case PENDING_ELECTION:
+                switchToPendingElection( event.getOldState() );
                 break;
             default:
                 // do nothing
         }
+    }
+
+    private void switchToPendingElection( HighAvailabilityMemberState oldState )
+    {
+        switchToPending( oldState );
+
+        // Force a new election. This will be our way out of this pending state.
+        election.performRoleElections();
     }
 
     private void switchToMaster()
@@ -502,7 +517,6 @@ public class HighAvailabilityModeSwitcher
                 msgLog.warn( "Got exception from cancelled task", e );
             }
         }
-
         this.cancellationHandle = cancellationHandle;
         modeSwitcherFuture = modeSwitcherExecutor.submit( switcher );
     }

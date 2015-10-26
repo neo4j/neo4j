@@ -64,6 +64,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.PENDING;
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.PENDING_ELECTION;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.TO_SLAVE;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
@@ -549,6 +550,62 @@ public class HighAvailabilityModeSwitcherTest
         // Then
         InOrder inOrder = inOrder( memberAvailability, election );
         inOrder.verify( memberAvailability ).memberIsUnavailable( HighAvailabilityModeSwitcher.SLAVE );
+        inOrder.verify( election ).performRoleElections();
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    public void shouldTriggerElectionsAfterModeSwitchToPendingElection() throws Throwable
+    {
+        // Given
+        SwitchToSlave switchToSlave = mock( SwitchToSlave.class );
+        when( switchToSlave.switchToSlave( any( LifeSupport.class ), any( URI.class ), any( URI.class ),
+                any( CancellationRequest.class ) ) ).thenReturn( URI.create( "http://localhost" ) );
+        ClusterMemberAvailability memberAvailability = mock( ClusterMemberAvailability.class );
+        Election election = mock( Election.class );
+
+        final CountDownLatch modeSwitchHappened = new CountDownLatch( 1 );
+
+        HighAvailabilityModeSwitcher modeSwitcher = new HighAvailabilityModeSwitcher( switchToSlave,
+                mock( SwitchToMaster.class ), election, memberAvailability, mock( ClusterClient.class ),
+                storeSupplierMock(),
+
+                mock( InstanceId.class ), NullLogService.getInstance() )
+        {
+            @Override
+            ScheduledExecutorService createExecutor()
+            {
+                ScheduledExecutorService executor = mock( ScheduledExecutorService.class );
+
+                doAnswer( new Answer<Future<?>>()
+                {
+                    @Override
+                    public Future<?> answer( InvocationOnMock invocation ) throws Throwable
+                    {
+                        ((Runnable) invocation.getArguments()[0]).run();
+                        modeSwitchHappened.countDown();
+                        return mock( Future.class );
+                    }
+                } ).when( executor ).submit( any( Runnable.class ) );
+
+                return executor;
+            }
+        };
+
+        modeSwitcher.init();
+        modeSwitcher.start();
+
+        modeSwitcher.forceElections();
+        reset( memberAvailability, election );
+
+        // When
+        modeSwitcher.masterIsAvailable( new HighAvailabilityMemberChangeEvent( PENDING, PENDING_ELECTION, mock( InstanceId
+                .class ),
+                URI.create( "http://localhost:9090?serverId=42" ) ) );
+        modeSwitchHappened.await();
+
+        // Then
+        InOrder inOrder = inOrder( memberAvailability, election );
         inOrder.verify( election ).performRoleElections();
         inOrder.verifyNoMoreInteractions();
     }

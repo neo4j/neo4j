@@ -59,11 +59,9 @@ public enum HighAvailabilityMemberState
                 public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context,
                                                                       InstanceId masterId, URI masterHaURI )
                 {
-//                    assert context.getAvailableMaster() == null;
                     if ( masterId.equals( context.getMyId() ) )
                     {
-                        throw new RuntimeException( "Received a MasterIsAvailable event for my InstanceId while in" +
-                                " PENDING state" );
+                        return PENDING_ELECTION;
                     }
                     return TO_SLAVE;
                 }
@@ -75,7 +73,7 @@ public enum HighAvailabilityMemberState
                 {
                     if ( slaveId.equals( context.getMyId() ) )
                     {
-                        throw new RuntimeException( "Cannot go from pending to slave" );
+                        return PENDING_ELECTION;
                     }
                     return this;
                 }
@@ -90,6 +88,52 @@ public enum HighAvailabilityMemberState
                 public boolean isAccessAllowed()
                 {
                     return false;
+                }
+            },
+
+    /**
+     * This is pending state hinting that an election should be triggered when entering this state.
+     * Otherwise this state is exactly like pending, even delegates to its methods.
+     *
+     * It should only be used when an unexpected event is registered which we don't know how to handle. These
+     * can occur with various race conditions, such as two master elections happening almost simultaneously and
+     * a member goes to pending before receiving the call (from itself) that it is available as master. In this
+     * case there will be another member acting as master, this node is in pending, and the slaves can be confused
+     * as to which master is the real one. So, trigger an election to resolve the issue.
+     */
+    PENDING_ELECTION
+            {
+                @Override
+                public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context,
+                        InstanceId masterId )
+                {
+                    return PENDING.masterIsElected( context, masterId );
+                }
+
+                @Override
+                public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context,
+                        InstanceId masterId, URI masterHaURI )
+                {
+                    return PENDING.masterIsAvailable( context, masterId, masterHaURI );
+                }
+
+                @Override
+                public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context,
+                        InstanceId slaveId, URI slaveUri )
+                {
+                    return PENDING.slaveIsAvailable( context, slaveId, slaveUri );
+                }
+
+                @Override
+                public boolean isEligibleForElection()
+                {
+                    return PENDING.isEligibleForElection();
+                }
+
+                @Override
+                public boolean isAccessAllowed()
+                {
+                    return PENDING.isAccessAllowed();
                 }
             },
 
@@ -123,17 +167,14 @@ public enum HighAvailabilityMemberState
                 {
                     if ( masterId.equals( context.getMyId() ) )
                     {
-                        throw new RuntimeException( "i (" + context.getMyId() + ") am trying to become a slave but " +
-                                "someone said i am available as master" );
+                        return PENDING_ELECTION;
                     }
                     if ( masterId.equals( context.getElectedMasterId() ) )
                     {
                         // A member joined and we all got the same event
                         return this;
                     }
-                    throw new RuntimeException( "my (" + context.getMyId() + ") current master is " + context
-                            .getAvailableHaMaster() + " (elected as " + context.getElectedMasterId() + " but i got a " +
-                            "masterIsAvailable event for " + masterHaURI );
+                    return PENDING_ELECTION;
                 }
 
                 @Override
@@ -187,8 +228,7 @@ public enum HighAvailabilityMemberState
                     {
                         return MASTER;
                     }
-                    throw new RuntimeException( "Received a MasterIsAvailable event for instance " + masterId
-                    + " while in TO_MASTER state");
+                    return PENDING_ELECTION;
                 }
 
                 @Override
@@ -198,7 +238,7 @@ public enum HighAvailabilityMemberState
                 {
                     if ( slaveId.equals( context.getMyId() ) )
                     {
-                        throw new RuntimeException( "Cannot be transitioning to master and slave at the same time" );
+                        return PENDING_ELECTION;
                     }
                     return this;
                 }
@@ -243,9 +283,7 @@ public enum HighAvailabilityMemberState
                     {
                         return this;
                     }
-                    throw new RuntimeException( "I, " + context.getMyId() + " got a masterIsAvailable for " +
-                            masterHaURI + " (id is " + masterId + " ) while in MASTER state. Probably missed a " +
-                            "MasterIsElected event." );
+                    return PENDING_ELECTION;
                 }
 
                 @Override
@@ -255,7 +293,7 @@ public enum HighAvailabilityMemberState
                 {
                     if ( slaveId.equals( context.getMyId() ) )
                     {
-                        throw new RuntimeException( "Cannot be master and transition to slave at the same time" );
+                        return PENDING_ELECTION;
                     }
                     return this;
                 }
@@ -300,16 +338,14 @@ public enum HighAvailabilityMemberState
                 {
                     if ( masterId.equals( context.getMyId() ) )
                     {
-                        throw new RuntimeException( "Cannot transition to MASTER directly from SLAVE state" );
+                        return PENDING_ELECTION;
                     }
                     else if ( masterId.equals( context.getElectedMasterId() ) )
                     {
                         // this is just someone else that joined the cluster
                         return this;
                     }
-                    throw new RuntimeException( "Received a MasterIsAvailable event for " + masterId +
-                            " which is different from the current master (" + context.getElectedMasterId() +
-                            ") while in the SLAVE state (probably missed a MasterIsElected event)" );
+                    return PENDING_ELECTION;
                 }
 
                 @Override
